@@ -495,11 +495,7 @@ function renderDetail(){
   else if(S.detailTab==='messages')content=renderMessages(S.selectedId);
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
-  else if(S.detailTab==='alertes'){
-    content='<div class="box">';
-    s.alertes.forEach(function(a){content+='<div style="font-size:13px;background:#FAEEDA;color:#854F0B;border-radius:6px;padding:8px 12px;margin-bottom:8px">! '+a+'</div>';});
-    content+='</div>';
-  }
+  else if(S.detailTab==='alertes')content=renderAlertes(S.selectedId,s);
   else if(S.detailTab==='ia')content=renderAI(s);
   var h='<div class="app">';
   h+='<button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin-bottom:16px" onclick="goBack()">&#8592; Retour</button>';
@@ -1241,6 +1237,56 @@ function renderFichiers(sid){
   }
   h+='</div>';
   return h;
+}
+
+// ── Alertes (ajout + suppression) ─────────────────────────────────────────────
+function renderAlertes(sid,s){
+  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var h='<div>';
+  if(isAdmin){
+    h+='<div class="box">';
+    h+='<div style="font-weight:600;font-size:14px;margin-bottom:12px">Ajouter une alerte</div>';
+    h+='<div style="display:flex;gap:8px">';
+    h+='<input id="new-alerte" type="text" placeholder="Ex: Deadline signature bail 15/04/2026" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ajouterAlerte(\''+sid+'\');}" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>';
+    h+='<button class="btn btn-primary" onclick="ajouterAlerte(\''+sid+'\')">Ajouter</button>';
+    h+='</div></div>';
+  }
+  h+='<div class="box">';
+  h+='<div style="font-weight:600;font-size:14px;margin-bottom:12px">Alertes actives ('+s.alertes.length+')</div>';
+  if(s.alertes.length===0){
+    h+='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune alerte</div>';
+  } else {
+    s.alertes.forEach(function(a,i){
+      h+='<div style="display:flex;align-items:center;justify-content:space-between;background:#FAEEDA;color:#854F0B;border-radius:8px;padding:10px 14px;margin-bottom:8px">';
+      h+='<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="font-weight:600">!</span> '+a+'</div>';
+      if(isAdmin){
+        h+='<button onclick="supprimerAlerte(\''+sid+'\','+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#A32D2D;padding:2px 6px;border-radius:4px" title="Supprimer">&times;</button>';
+      }
+      h+='</div>';
+    });
+  }
+  h+='</div></div>';
+  return h;
+}
+
+async function ajouterAlerte(sid){
+  var input=document.getElementById('new-alerte');
+  var texte=input&&input.value&&input.value.trim();
+  if(!texte){toast('Saisissez une alerte');return;}
+  var s=Object.assign({},S.studios[sid]);
+  s.alertes=s.alertes.slice();
+  s.alertes.push(texte);
+  await saveStudio(sid,s);
+  toast('Alerte ajoutee');
+}
+
+async function supprimerAlerte(sid,idx){
+  if(!confirm('Supprimer cette alerte ?'))return;
+  var s=Object.assign({},S.studios[sid]);
+  s.alertes=s.alertes.slice();
+  s.alertes.splice(idx,1);
+  await saveStudio(sid,s);
+  toast('Alerte supprimee');
 }
 
 function renderAI(s){
