@@ -612,7 +612,7 @@ function renderAdherents(sid,s){
 
   // ── Simulateur CA prévisionnel ───────────────────────────────────────────
   // Lire config sauvegardée ou valeurs BP par défaut
-  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
   h+=renderSimCA(sid,ay,bpArr,realArr,simCfg);
   h+='</div>';
   return h;
@@ -1463,18 +1463,41 @@ async function askAI(){
 }
 
 // ── Simulateur CA prévisionnel ────────────────────────────────────────────────
+// ARPU total BP par année = CA total / sum(membres.mois)
+// Ces valeurs incluent cours + boutique et sont les seules références cohérentes
+var SIM_ARPU_TOTAL_BP={
+  1: Math.round(448800/2693*100)/100,   // 166.65
+  2: Math.round(610190/3854*100)/100,   // 158.33
+  3: Math.round(761841/4484*100)/100,   // 169.90
+};
+
+// CA BP mensuel de référence = directement issu du dossier (somme = CA annuel exact)
+// computeBPCA : membres × ARPU_total_BP
+function computeBPCA(membres,ay){
+  return Math.round(membres*(SIM_ARPU_TOTAL_BP[ay]||SIM_ARPU_TOTAL_BP[1]));
+}
+
+// ARPU simulé packs = pondération des prix choisis
+// Pour cohérence avec BP : prix affichés = prix calibrés (packs × facteur boutique incluse)
+// Facteurs A1=1.0638 A2=1.0106 A3=1.0845 — on utilise A1 comme référence d'affichage
+// Prix de référence affichés dans l'UI = prix calibrés A1
+var SIM_PRIX_REF={prix4:117,prix8:206,prixi:294}; // 110×1.064 / 193.33×1.064 / 276.67×1.064
+
+function computeSimARPU(cfg){
+  var p4=num(cfg.p4,47)/100, p8=num(cfg.p8,50)/100, pi=num(cfg.pi,3)/100;
+  return p4*num(cfg.prix4,SIM_PRIX_REF.prix4) + p8*num(cfg.prix8,SIM_PRIX_REF.prix8) + pi*num(cfg.prixi,SIM_PRIX_REF.prixi);
+}
+
 function computeSimCA(membres,cfg){
-  var p4=num(cfg.p4,47)/100,p8=num(cfg.p8,50)/100,pi=num(cfg.pi,3)/100;
-  var prix4=num(cfg.prix4,110),prix8=num(cfg.prix8,193.33),prixi=num(cfg.prixi,276.67);
-  return Math.round(membres*(p4*prix4+p8*prix8+pi*prixi));
+  return Math.round(membres*computeSimARPU(cfg));
 }
 
 function renderSimCA(sid,ay,bpArr,realArr,cfg){
-  // Construire tableau 12 mois : membres = réel si saisi, sinon BP
   var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
   var caArr=membres.map(function(m){return computeSimCA(m,cfg);});
   var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
-  var caBPAnnuel=bpArr.map(function(m){return computeSimCA(m,{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67});}).reduce(function(s,v){return s+v;},0);
+  // CA BP référence = somme directe des CA mensuels dossier (écart 0 avec ARPU_BP)
+  var caBPAnnuel=bpArr.map(function(m){return computeBPCA(m,ay);}).reduce(function(s,v){return s+v;},0);
   var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
   var total=p4+p8+pi;
 
@@ -1585,7 +1608,7 @@ function buildSimCAChart(caArr,membres,realArr){
 }
 
 function updateSimRep(sid,field,val,ay){
-  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
   S.simConfig[sid][field]=num(val);
   // Sync libellé slider
   var lbl=document.getElementById('sim-lbl-'+field);
@@ -1594,10 +1617,10 @@ function updateSimRep(sid,field,val,ay){
 }
 
 function updateSimPrix(sid,field,val,ay){
-  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
   S.simConfig[sid][field]=num(val);
   // Mettre à jour delta vs BP
-  var refs={prix4:110,prix8:193.33,prixi:276.67};
+  var refs={prix4:117,prix8:206,prixi:294};
   var ref=refs[field];
   var delta=ref?Math.round((num(val)-ref)/ref*100):0;
   var el=document.getElementById('sim-delta-'+field);
@@ -1609,7 +1632,7 @@ function updateSimPrix(sid,field,val,ay){
 }
 
 function _refreshSimCA(sid,ay){
-  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
   var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
   var total=p4+p8+pi;
 
@@ -1639,9 +1662,10 @@ function _refreshSimCA(sid,ay){
     realArr.push(actuel[k]!=null?num(actuel[k]):null);
   }
   var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
-  var caArr=membres.map(function(m){return computeSimCA(m,cfg);});
+  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay);});
   var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
-  var caBPAnnuel=bpArr.map(function(m){return computeSimCA(m,{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67});}).reduce(function(s,v){return s+v;},0);
+  var caMensuelRef=ay===1?CA_MENSUEL_A1:ay===2?CA_MENSUEL_A2:CA_MENSUEL_A3;
+  var caBPAnnuel=caMensuelRef.reduce(function(s,v){return s+v;},0);
 
   // Mise à jour DOM résultats
   var elCA=document.getElementById('sim-ca-annuel');
