@@ -381,10 +381,22 @@ async function loadAll(){
     else if(id.endsWith('_depenses')){S.depenses[id.slice(0,-9)]=r.data&&r.data.depenses||[];}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
-    else if(id.endsWith('_simconfig')){S.simConfig[id.slice(0,-10)]=r.data&&r.data.config||{};}
+    else if(id.endsWith('_simconfig')){
+      var sc=r.data&&r.data.config||{};
+      if(Object.keys(sc).length>0){
+        S.simConfig[id.slice(0,-10)]=sc;
+        try{localStorage.setItem('isseo_sim_'+id.slice(0,-10),JSON.stringify(sc));}catch(e){}
+      }
+    }
     else{studios[id]=r.data;}
   });
   if(Object.keys(studios).length>0)S.studios=studios;
+  // Fallback localStorage pour studios sans simConfig Supabase
+  Object.keys(S.studios).forEach(function(k){
+    if(!S.simConfig[k]||Object.keys(S.simConfig[k]).length===0){
+      try{var lc=JSON.parse(localStorage.getItem('isseo_sim_'+k)||'null');if(lc)S.simConfig[k]=lc;}catch(e){}
+    }
+  });
   // Patch config fields from INIT (ouverture, moisDebut) — source of truth is the code
   Object.keys(INIT).forEach(function(k){
     if(!S.studios[k])return;
@@ -418,10 +430,13 @@ function restoreNavState(){
 // ── SimConfig persistence ──────────────────────────────────────────────────────
 var _simSaveTimeout={};
 function saveSimConfig(sid){
+  // 1. localStorage immédiat — survit au refresh même si Supabase échoue
+  try{localStorage.setItem('isseo_sim_'+sid,JSON.stringify(S.simConfig[sid]));}catch(e){}
+  // 2. Supabase avec debounce 500ms — partage inter-utilisateurs
   if(_simSaveTimeout[sid])clearTimeout(_simSaveTimeout[sid]);
   _simSaveTimeout[sid]=setTimeout(function(){
     sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
-  },1000);
+  },500);
 }
 async function saveStudio(id,studio){
   S.studios[id]=studio;
@@ -1962,7 +1977,11 @@ async function syncData(){
       if(JSON.stringify(nv)!==JSON.stringify(S.adherents[id.slice(0,-10)]||{})){S.adherents[id.slice(0,-10)]=nv;changed=true;}
     } else if(id.endsWith('_simconfig')){
       var nv=r.data&&r.data.config||{};
-      if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[id.slice(0,-10)]||{})){S.simConfig[id.slice(0,-10)]=nv;changed=true;}
+      if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[id.slice(0,-10)]||{})){
+        S.simConfig[id.slice(0,-10)]=nv;
+        try{localStorage.setItem('isseo_sim_'+id.slice(0,-10),JSON.stringify(nv));}catch(e){}
+        changed=true;
+      }
     } else if(!id.endsWith('_messages')){
       if(r.data&&JSON.stringify(r.data)!==JSON.stringify(S.studios[id]||{})){S.studios[id]=r.data;changed=true;}
     }
