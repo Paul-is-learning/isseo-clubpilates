@@ -1809,7 +1809,7 @@ async function syncData(){
 
 function startSync(){
   if(_syncInterval)clearInterval(_syncInterval);
-  _syncInterval=setInterval(syncData,2000);
+  _syncInterval=setInterval(syncData,5000);
 }
 
 sb.auth.getSession().then(function(res){
