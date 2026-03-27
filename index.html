@@ -364,6 +364,7 @@ var S={
   showNewForm:false,newForm:{},
   aiResp:'',aiLoading:false,
   simConfig:{},  // config simulateur par studio : {p4,p8,pi,prix4,prix8,prixi}
+  mapFilter:'default',  // filtre carte localisation
 };
 
 async function loadAll(){
@@ -1209,19 +1210,46 @@ async function rechargerMessages(sid){
   }
 }
 
+var MAP_FILTERS=[
+  {id:'default',  label:'Vue générale',    icon:'🗺️', q:null},
+  {id:'commerces',label:'Commerces',       icon:'🛍️', q:'commerces restaurants cafés boutiques'},
+  {id:'bureaux',  label:'Bureaux & Orgs',  icon:'🏢', q:'bureaux coworking entreprises organisations'},
+  {id:'transports',label:'Transports',     icon:'🚇', q:'métro bus RER station tramway transport'},
+  {id:'pilates',  label:'Pilates & Fitness',icon:'🏋️',q:'pilates reformer fitness salle de sport'},
+];
+
+function setMapFilter(f){S.mapFilter=f;render();}
+
 function renderLocalisation(s){
   var ae=encodeURIComponent(s.addr);
-  var gmSrc='https://maps.google.com/maps?q='+ae+'&output=embed&hl=fr&z=16';
-  return '<div>'
-    +'<div style="border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06)">'
-    +'<iframe src="'+gmSrc+'" width="100%" height="400" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>'
-    +'</div>'
-    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'
-    +'<a href="https://www.google.com/maps/search/'+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">&#128205;</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Ouvrir dans Google Maps</div></div></div></a>'
-    +'<a href="https://www.openstreetmap.org/search?query='+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">&#128506;</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Ouvrir dans OSM</div></div></div></a>'
-    +'</div>'
-    +'<div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">'+s.addr+'</div></div>'
-    +'</div>';
+  var mf=S.mapFilter||'default';
+  var filterObj=MAP_FILTERS.find(function(f){return f.id===mf;})||MAP_FILTERS[0];
+  var gmQ=filterObj.q?encodeURIComponent(filterObj.q+' near '+s.addr):ae;
+  var gmSrc='https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+(filterObj.q?'15':'16');
+
+  var h='<div>';
+  // Filtres
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
+  MAP_FILTERS.forEach(function(f){
+    var active=mf===f.id;
+    h+='<button onclick="setMapFilter(\''+f.id+'\')" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:0.5px solid '+(active?'#1a1a1a':'#ddd')+';background:'+(active?'#1a1a1a':'#fff')+';color:'+(active?'#fff':'#555')+';font-size:13px;cursor:pointer;font-weight:'+(active?600:400)+';transition:all 0.15s">';
+    h+='<span>'+f.icon+'</span><span>'+f.label+'</span></button>';
+  });
+  h+='</div>';
+
+  // Carte
+  h+='<div style="border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06)">';
+  h+='<iframe src="'+gmSrc+'" width="100%" height="420" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+  h+='</div>';
+
+  // Liens
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
+  h+='<a href="https://www.google.com/maps/search/'+gmQ+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">📍</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Ouvrir dans Google Maps</div></div></div></a>';
+  h+='<a href="https://www.openstreetmap.org/search?query='+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">🗺️</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Ouvrir dans OSM</div></div></div></a>';
+  h+='</div>';
+  h+='<div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">'+s.addr+'</div></div>';
+  h+='</div>';
+  return h;
 }
 
 function renderFichiers(sid){
