@@ -156,7 +156,7 @@ const INIT={
 let S={
   user:null,profile:null,
   studios:JSON.parse(JSON.stringify(INIT)),
-  files:{},depenses:{},
+  files:{},depenses:{},messages:{},
   view:'auth',selectedId:null,
   mainTab:'studios',detailTab:'workflow',
   forecastSection:'summary',
@@ -179,6 +179,12 @@ async function loadFiles(){
   S.files={};
   if(data)data.forEach(r=>{if(r.id.endsWith('_files')){const sid=r.id.slice(0,-6);S.files[sid]=r.data?.files||[];}});
 }
+async function loadMessages(){
+  const {data}=await sb.from('studios').select('id,data');
+  S.messages={};
+  if(data)data.forEach(r=>{if(r.id.endsWith('_messages')){const sid=r.id.slice(0,-9);S.messages[sid]=r.data?.messages||[];}});
+}
+
 async function loadDepenses(){
   const {data}=await sb.from('studios').select('id,data');
   S.depenses={};
@@ -278,10 +284,11 @@ function renderDetail(){
   const s=S.studios[S.selectedId];
   if(!s)return '';
   const isAdmin=S.profile?.role==='admin';
-  const tabs=[['workflow','Workflow'],['engagements','Engagements'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  const tabs=[['workflow','Workflow'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   let content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
   else if(S.detailTab==='engagements')content=renderEngagements(S.selectedId,s);
+  else if(S.detailTab==='messages')content=renderMessages(S.selectedId);
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
   else if(S.detailTab==='forecast')content=renderForecast(s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
@@ -456,6 +463,59 @@ async function uploadJustif(studioId,idx,input){
   toast('Justificatif ajouté');render();
 }
 
+// ── Messages ──────────────────────────────────────────────────────────────────
+async function loadMessages(){
+  const {data}=await sb.from('studios').select('id,data');
+  S.messages={};
+  if(data)data.forEach(r=>{if(r.id.endsWith('_messages')){const sid=r.id.slice(0,-9);S.messages[sid]=r.data?.messages||[];}});
+}
+
+function renderMessages(studioId){
+  const msgs=S.messages[studioId]||[];
+  const me=S.profile?.nom||S.profile?.email||'';
+  return `<div>
+    <div class="box" style="padding:0;overflow:hidden">
+      <!-- Fil de messages -->
+      <div id="msgs-list" style="height:420px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px">
+        ${msgs.length===0
+          ?`<div style="text-align:center;color:#aaa;font-size:13px;margin:auto">Aucun message — soyez le premier à écrire !</div>`
+          :msgs.map(m=>{
+            const isMe=m.auteur===me;
+            return`<div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'}">
+              <div style="font-size:11px;color:#888;margin-bottom:3px">${isMe?'':m.auteur+' · '}${m.date}</div>
+              <div style="background:${isMe?'#1a1a1a':'#f0f0ea'};color:${isMe?'#fff':'#1a1a1a'};padding:10px 14px;border-radius:${isMe?'12px 12px 2px 12px':'12px 12px 12px 2px'};max-width:75%;font-size:13px;line-height:1.5">${m.texte}</div>
+            </div>`;
+          }).join('')}
+      </div>
+      <!-- Saisie -->
+      <div style="border-top:0.5px solid #e0e0d8;padding:12px 16px;display:flex;gap:8px;background:#fff">
+        <input id="msg-input" type="text" placeholder="Votre message..." 
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();envoyerMessage('${studioId}');}"
+          style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>
+        <button class="btn btn-primary" onclick="envoyerMessage('${studioId}')">Envoyer</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+async function envoyerMessage(studioId){
+  const input=document.getElementById('msg-input');
+  const texte=input?.value?.trim();
+  if(!texte)return;
+  if(!S.messages[studioId])S.messages[studioId]=[];
+  const now=new Date();
+  S.messages[studioId].push({
+    auteur:S.profile?.nom||S.profile?.email||'',
+    texte,
+    date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    ts:now.toISOString(),
+  });
+  await sb.from('studios').upsert({id:studioId+'_messages',data:{messages:S.messages[studioId]},updated_at:new Date().toISOString()});
+  render();
+  // Scroll vers le bas
+  setTimeout(()=>{const el=document.getElementById('msgs-list');if(el)el.scrollTop=el.scrollHeight;},50);
+}
+
 function renderLocalisation(s){
   const addrEnc=encodeURIComponent(s.addr);
   const staticMap=`https://staticmap.openstreetmap.de/staticmap.php?center=${addrEnc}&zoom=16&size=640x360&markers=${addrEnc},red-pushpin`;
@@ -585,7 +645,7 @@ async function doLogin(){
   S.user=data.user;
   const {data:prof}=await sb.from('profiles').select('*').eq('id',data.user.id).single();
   S.profile=prof;
-  await loadStudios();await loadFiles();await loadDepenses();
+  await loadStudios();await loadFiles();await loadDepenses();await loadMessages();
   S.view='dashboard';render();
 }
 async function doLogout(){await sb.auth.signOut();S={...S,user:null,profile:null,view:'auth',selectedId:null};render();}
@@ -684,7 +744,7 @@ sb.auth.getSession().then(async({data:{session}})=>{
     S.user=session.user;
     const {data:prof}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
     S.profile=prof;
-    await loadStudios();await loadFiles();await loadDepenses();
+    await loadStudios();await loadFiles();await loadDepenses();await loadMessages();
     S.view='dashboard';
   }
   render();
