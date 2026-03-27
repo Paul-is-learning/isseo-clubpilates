@@ -475,9 +475,10 @@ function renderAdherentChart(labels,bp,real,annee){
     h+='<path d="'+rPath+'" fill="none" stroke="#1D9E75" stroke-width="2.5"/>';
   }
   bp.forEach(function(v,i){h+='<circle cx="'+xPos(i)+'" cy="'+yPos(v)+'" r="3" fill="#5b7fa6" opacity="0.6"/>';});
+  // Afficher les points réels même si 1 seul point saisi
   realPoints.forEach(function(p){
-    h+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#1D9E75"/>';
-    h+='<text x="'+p.x+'" y="'+(p.y-8)+'" text-anchor="middle" font-size="9" fill="#0F6E56" font-weight="600">'+p.v+'</text>';
+    h+='<circle cx="'+p.x+'" cy="'+p.y+'" r="5" fill="#1D9E75" stroke="#fff" stroke-width="1.5"/>';
+    h+='<text x="'+p.x+'" y="'+(p.y-10)+'" text-anchor="middle" font-size="9" fill="#0F6E56" font-weight="600">'+p.v+'</text>';
   });
   h+='<line x1="'+(W-130)+'" y1="14" x2="'+(W-110)+'" y2="14" stroke="#5b7fa6" stroke-width="2" stroke-dasharray="6,3"/>';
   h+='<text x="'+(W-106)+'" y="17" font-size="9" fill="#5b7fa6">BP Plan Fin.</text>';
@@ -1049,6 +1050,7 @@ async function saisirAdherent(sid,year,moisIdx,val){
   if(val===''||val===null){delete S.adherents[sid][key];}
   else{S.adherents[sid][key]=num(val);}
   await saveAdherents(sid);
+  render();
 }
 
 async function uploadFichier(sid,input){
