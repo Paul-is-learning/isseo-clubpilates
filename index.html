@@ -6,6 +6,687 @@
 <title>Club Pilates — ISSEO</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:14px}
+.app{max-width:1100px;margin:0 auto;padding:1.5rem}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f5f5f0}
+.auth-box{background:#fff;border:0.5px solid #ddd;border-radius:16px;padding:2rem;width:380px}
+.auth-box input{width:100%;padding:10px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none}
+.btn{padding:8px 16px;border:0.5px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}
+.btn:hover{background:#f0f0ea}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.btn-primary:hover{background:#333}
+.btn-full{width:100%}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:20px}
+.kpi{background:#f0f0ea;border-radius:8px;padding:0.7rem 0.9rem}
+.kpi-label{font-size:11px;color:#888;margin-bottom:3px}
+.kpi-val{font-size:15px;font-weight:600}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:0.5px solid #e0e0d8;padding-bottom:8px;flex-wrap:wrap}
+.tab{padding:4px 14px;border-radius:6px;background:transparent;border:0.5px solid transparent;cursor:pointer;font-size:13px}
+.tab.active{background:#f0f0ea;border-color:#ccc;font-weight:500}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:1rem 1.25rem;cursor:pointer;transition:border-color 0.15s}
+.card:hover{border-color:#bbb}
+.badge{font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;white-space:nowrap}
+.alerte-pill{margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px}
+.prog-header{display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;color:#888}
+.prog-bar{background:#e8e8e0;border-radius:4px;height:6px}
+.prog-fill{background:#1D9E75;border-radius:4px;height:6px}
+.back-btn{background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin-bottom:16px}
+.box{background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px}
+.step-row{display:flex;gap:12px;margin-bottom:10px}
+.step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600}
+.forecast-table{overflow-x:auto;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{padding:5px 6px;text-align:center;border-bottom:0.5px solid #e8e8e0}
+th{font-weight:500;color:#888}
+td.lbl{text-align:left;padding-left:8px;color:#555;min-width:140px}
+.month-btn{padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;border:0.5px solid #ccc;background:#f0f0ea}
+.month-btn.ok{background:#E1F5EE;color:#0F6E56;border-color:#1D9E75;font-weight:500}
+.months-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.fg label{font-size:11px;color:#888;display:block;margin-bottom:4px}
+.fg input,.fg select{width:100%;padding:8px 10px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none}
+.edit-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:12px}
+.info-box{background:#f0f0ea;border-radius:8px;padding:10px 14px;font-size:12px;margin-bottom:12px}
+.sec-title{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:8px;margin-top:12px}
+.chip{font-size:12px;background:#f0f0ea;border-radius:6px;padding:3px 10px;cursor:pointer;display:inline-block;margin:3px 3px 0 0}
+.file-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid #e8e8e0}
+.toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+@media(max-width:600px){.form-grid,.edit-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="root"></div>
+<div class="toast" id="toast"></div>
+<script>
+const SUPA_URL='https://wfqtpcujujqxgfsgbpvp.supabase.co';
+const SUPA_KEY='sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+
+const MOIS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const fmt=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
+const fmtN=n=>isNaN(n)?'—':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);
+const num=(v,fb=0)=>{const n=parseFloat(v);return isNaN(n)?fb:n;};
+
+const ROLE_FILTER={
+  admin:null, tom:null, pascal:null,
+  coquel:s=>['COBE Society','SACOBE Society'].includes(s.societe),
+  sabourin:s=>s.societe==='SACOBE Society',
+  caroline:s=>s.societe==='COBE Society',
+};
+
+const STATUT_CFG={
+  pipeline:   {bg:'#F1EFE8',text:'#5F5E5A',label:'Pipeline'},
+  preparation:{bg:'#E6F1FB',text:'#185FA5',label:'Préparation'},
+  chantier:   {bg:'#EAF3DE',text:'#3B6D11',label:'En chantier'},
+  ouvert:     {bg:'#E1F5EE',text:'#0F6E56',label:'Ouvert'},
+  abandonne:  {bg:'#FCEBEB',text:'#A32D2D',label:'Abandonné'},
+};
+
+const STEPS=[
+  {id:'testfit',label:'Test fit local',desc:"Surface 135-180m², H≥2m45, 12 postes, façade enseigne, quartier CSP+"},
+  {id:'loi',label:'LOI bail signée',desc:"Lettre d'intention, conditions suspensives, franchise loyer"},
+  {id:'devis',label:'Devis travaux & équipements',desc:"Devis entrepreneur + commande Balanced Body"},
+  {id:'bail',label:'Bail commercial 3/6/9',desc:"Signature bail définitif, remise des clés"},
+  {id:'financement',label:'Offre de prêt obtenue',desc:"Accord bancaire + crédit-bail machines"},
+  {id:'at',label:'Autorisation de travaux',desc:"Dépôt et obtention AT"},
+  {id:'franchise',label:'Contrat franchise signé',desc:"Signature TMCP Fitness France, droit d'entrée 40 000€"},
+  {id:'admin',label:'Documents administratifs',desc:"KBis, statuts, compte pro, assurances"},
+  {id:'chantier',label:'Démarrage chantier',desc:"GO travaux, livraison équipements"},
+  {id:'preventes',label:'Phase pré-ventes (J-60)',desc:"Campagne membres, objectif 100+ avant ouverture"},
+  {id:'opening',label:'Soft / Grand opening',desc:"Objectif 150+ Soft Opening, 200+ Grand Opening"},
+];
+
+const BP_LINES=[
+  {id:'ca_cours',label:'CA Cours collectifs',cat:'p',pctCA:0.985},
+  {id:'ca_prives',label:'CA Cours privés',cat:'p',pctCA:0.015},
+  {id:'ca_boutique',label:'CA Boutique',cat:'p',pctCA:0.03},
+  {id:'coachs',label:'Coachs / instructeurs',cat:'c',fixed:10000},
+  {id:'loyer',label:'Loyer bail commercial',cat:'c',fixed:3238},
+  {id:'charges_loc',label:'Charges locatives',cat:'c',fixed:192},
+  {id:'royalties',label:'Royalties franchise (9%)',cat:'c',pctCA:0.09},
+  {id:'pub',label:'Publicité / marketing',cat:'c',fixed:2550},
+  {id:'software',label:'Abonnements software',cat:'c',fixed:455},
+  {id:'assurance',label:'Assurances',cat:'c',fixed:200},
+  {id:'nettoyage',label:'Nettoyage',cat:'c',fixed:317},
+  {id:'compta',label:'Honoraires compta',cat:'c',fixed:208},
+  {id:'entretien',label:'Entretien & réparations',cat:'c',fixed:150},
+  {id:'creditbail',label:'Crédit-bail machines',cat:'c',fixed:2197},
+  {id:'salaries',label:'Charges de personnel',cat:'c',fixed:7500},
+  {id:'amort',label:'Amortissements',cat:'c',fixed:3836},
+  {id:'charges_fin',label:'Charges financières',cat:'c',fixed:714},
+  {id:'is',label:'Impôt sur bénéfices',cat:'c',fixed:172},
+];
+const PRODUITS=BP_LINES.filter(l=>l.cat==='p');
+const CHARGES=BP_LINES.filter(l=>l.cat==='c');
+
+function buildBP(annualCA,moisDebut=0){
+  const ramp=[0.055,0.065,0.075,0.08,0.085,0.09,0.09,0.085,0.085,0.08,0.08,0.075];
+  return Array.from({length:12},(_,i)=>{
+    const ca=Math.round(annualCA*ramp[i]);
+    const row={mi:(moisDebut+i)%12,_ca:ca};
+    BP_LINES.forEach(l=>{row[l.id]=l.fixed??Math.round(ca*(l.pctCA||0));});
+    row._charges=CHARGES.reduce((s,l)=>s+row[l.id],0);
+    row._result=ca-row._charges;
+    return row;
+  });
+}
+
+function inferStatut(steps){
+  const done=STEPS.filter(s=>steps[s.id]).length;
+  if(done===STEPS.length)return 'ouvert';
+  if(done>=5)return 'chantier';
+  if(done>=1)return 'preparation';
+  return 'pipeline';
+}
+
+const INIT={
+  lattes:{name:'Montpellier — Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'T3 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2026','Financement à finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:6,annee:2026,actuel:{}}},
+  garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la République, 92250',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Pacte associés COBE à finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
+  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Bail commercial à finaliser'],steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
+  issy:{name:'Issy-les-Moulineaux',addr:'39 av. Victor Cresson, 92130',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Crédit-bail équipements à mettre en place'],steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
+  toulouse:{name:'Toulouse / Montpellier Nord',addr:'Zone réservée — site à identifier',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2027','Site à identifier'],steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:0,annee:2027,actuel:{}}},
+};
+
+let S={
+  user:null,profile:null,
+  studios:JSON.parse(JSON.stringify(INIT)),
+  files:{},
+  view:'auth',selectedId:null,
+  mainTab:'studios',detailTab:'workflow',
+  forecastSection:'summary',
+  editMoisIdx:null,editVals:{},
+  showNewForm:false,newForm:{},
+  aiResp:'',aiLoading:false,
+};
+
+// ── DB helpers ────────────────────────────────────────────────────────────────
+async function loadStudios(){
+  const {data}=await sb.from('studios').select('id,data').not('id','like','%_files');
+  if(data&&data.length){const s={};data.forEach(r=>{s[r.id]=r.data;});S.studios=s;}
+}
+async function loadFiles(){
+  const {data}=await sb.from('studios').select('id,data').like('id','%_files');
+  S.files={};
+  if(data)data.forEach(r=>{const sid=r.id.replace('_files','');S.files[sid]=r.data?.files||[];});
+}
+async function saveStudio(id,studio){
+  S.studios[id]=studio;
+  await sb.from('studios').upsert({id,data:studio,updated_at:new Date().toISOString()});
+  render();
+}
+
+// ── Toast ─────────────────────────────────────────────────────────────────────
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
+
+// ── Badge / Progress ──────────────────────────────────────────────────────────
+function badge(statut){
+  const s=STATUT_CFG[statut]||STATUT_CFG.pipeline;
+  return `<span class="badge" style="background:${s.bg};color:${s.text}">${s.label}</span>`;
+}
+function progBar(steps){
+  const done=STEPS.filter(s=>steps[s.id]).length;
+  const p=Math.round(done/STEPS.length*100);
+  return `<div class="prog-header"><span>${done}/${STEPS.length} étapes</span><span>${p}%</span></div>
+  <div class="prog-bar"><div class="prog-fill" style="width:${p}%"></div></div>`;
+}
+
+// ── Logo SVG ──────────────────────────────────────────────────────────────────
+const LOGO_ISSEO=`<svg width="70" viewBox="0 0 260 110" xmlns="http://www.w3.org/2000/svg">
+  <text x="0" y="80" font-family="Georgia,serif" font-size="88" font-weight="700" fill="#1a1a1a">Isseo</text>
+  <text x="8" y="102" font-family="Arial,sans-serif" font-size="10" letter-spacing="3" fill="#888">DÉVELOPPER &amp; VALORISER</text>
+</svg>`;
+const LOGO_CP=`<svg width="120" viewBox="0 0 240 55" xmlns="http://www.w3.org/2000/svg">
+  <text x="0" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">CLUB</text>
+  <circle cx="90" cy="27" r="22" fill="none" stroke="#5b7fa6" stroke-width="1.5" stroke-dasharray="3,2"/>
+  <ellipse cx="90" cy="27" rx="12" ry="15" fill="#5b7fa6" opacity="0.2"/>
+  <ellipse cx="90" cy="27" rx="16" ry="9" fill="#5b7fa6" opacity="0.2"/>
+  <circle cx="90" cy="27" r="6" fill="#5b7fa6" opacity="0.5"/>
+  <text x="118" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">PILATES</text>
+</svg>`;
+
+// ── Auth ──────────────────────────────────────────────────────────────────────
+function renderAuth(){
+  return `<div class="auth-wrap"><div class="auth-box">
+    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px">
+      ${LOGO_ISSEO}
+      <div style="width:1px;height:40px;background:#e0e0d8"></div>
+      ${LOGO_CP}
+    </div>
+    <div style="text-align:center;font-size:12px;color:#888;margin-bottom:22px">Plateforme de suivi des projets</div>
+    <input id="ae" type="email" placeholder="Votre email" autocomplete="email"/>
+    <input id="ap" type="password" placeholder="Mot de passe" autocomplete="current-password"/>
+    <div id="aerr" style="font-size:12px;color:#c00;margin-bottom:10px;display:none"></div>
+    <button class="btn btn-primary btn-full" onclick="doLogin()">Se connecter</button>
+  </div></div>`;
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────────
+function renderDashboard(){
+  const filter=ROLE_FILTER[S.profile?.role];
+  const ids=Object.keys(S.studios).filter(id=>!filter||filter(S.studios[id]));
+  const totalCapex=ids.reduce((s,id)=>s+S.studios[id].capex,0);
+  const alerts=ids.reduce((s,id)=>s+S.studios[id].alertes.length,0);
+  const enPrep=ids.filter(id=>S.studios[id].statut==='preparation').length;
+  const totalBP=ids.reduce((s,id)=>s+S.studios[id].forecast.annualCA,0);
+  const isAdmin=S.profile?.role==='admin';
+
+  return `<div class="app">
+    <div class="header">
+      <div style="display:flex;align-items:center;gap:14px">
+        ${LOGO_ISSEO}
+        <div style="width:1px;height:32px;background:#e0e0d8"></div>
+        ${LOGO_CP}
+      </div>
+      <div style="display:flex;align-items:center;gap:10px">
+        <span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px;color:#444">${S.profile?.nom||S.profile?.email||''}</span>
+        <button class="btn" onclick="doLogout()">Déconnexion</button>
+      </div>
+    </div>
+    <div class="kpis">
+      <div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">${ids.length}</div></div>
+      <div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">${fmt(totalCapex)}</div></div>
+      <div class="kpi"><div class="kpi-label">CA BP cumulé</div><div class="kpi-val">${fmt(totalBP)}</div></div>
+      <div class="kpi"><div class="kpi-label">Alertes</div><div class="kpi-val">${alerts}</div></div>
+      <div class="kpi"><div class="kpi-label">En préparation</div><div class="kpi-val">${enPrep}</div></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:12px">
+      <div style="display:flex;gap:6px">
+        <button class="tab ${S.mainTab==='studios'?'active':''}" onclick="setMainTab('studios')">Studios</button>
+        <button class="tab ${S.mainTab==='pipeline'?'active':''}" onclick="setMainTab('pipeline')">Pipeline</button>
+      </div>
+      ${isAdmin?`<button class="btn" onclick="toggleNewForm()">${S.showNewForm?'Annuler':'+ Nouveau studio'}</button>`:''}
+    </div>
+    ${S.showNewForm?renderNewForm():''}
+    ${S.mainTab==='studios'
+      ?`<div class="cards">${ids.map(id=>renderCard(id,S.studios[id])).join('')}</div>`
+      :renderPipeline(ids)}
+  </div>`;
+}
+
+function renderCard(id,s){
+  return `<div class="card" onclick="openDetail('${id}')">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+      <div><div style="font-weight:600;font-size:14px">${s.name}</div><div style="font-size:12px;color:#888;margin-top:2px">${s.societe}</div></div>
+      ${badge(s.statut)}
+    </div>
+    <div style="font-size:11px;color:#888;margin-bottom:10px">Ouverture : <strong>${s.ouverture}</strong></div>
+    ${progBar(s.steps)}
+    ${s.alertes.length>0?`<div class="alerte-pill">⚡ ${s.alertes[0]}</div>`:''}
+  </div>`;
+}
+
+function renderPipeline(ids){
+  const cIds=['lattes','garenne','levallois','issy','toulouse'];
+  const extras=ids.filter(id=>!cIds.includes(id));
+  const cohortes=[
+    {label:'Cohorte 1 — 2026',ids:['lattes','garenne','levallois','issy'],note:'5 studios · 1,53M€ CAPEX'},
+    {label:'Cohorte 2 — 2027',ids:['toulouse'],note:'5 studios dont Montpellier Nord'},
+    {label:'Cohorte 3 — 2028',ids:[],note:'5 studios · à confirmer'},
+    {label:'Cohorte 4 — 2029',ids:[],note:'2 studios · Total 17'},
+  ];
+  let h=cohortes.map(c=>{
+    const chips=c.ids.filter(id=>S.studios[id]).map(id=>`<span class="chip" onclick="openDetail('${id}')">${S.studios[id].name}</span>`).join('');
+    return `<div class="box" style="border-radius:10px;padding:0.9rem 1.1rem">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <span style="font-weight:600">${c.label}</span>
+        <span style="font-size:11px;color:#888">${c.note}</span>
+      </div>
+      ${chips?`<div style="margin-top:8px">${chips}</div>`:''}
+    </div>`;
+  }).join('');
+  if(extras.length){
+    h+=`<div style="font-weight:500;font-size:13px;margin:16px 0 8px;color:#888">Projets ajoutés</div>
+    <div class="cards">${extras.map(id=>renderCard(id,S.studios[id])).join('')}</div>`;
+  }
+  h+=`<div class="box" style="margin-top:16px;background:#f5f5f0">
+    <div style="font-weight:600;font-size:13px;margin-bottom:10px">Valorisation DCF — Plan 17 studios</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(90px,1fr));gap:8px">
+      ${[['Equity Value','30,8 M€'],['MOIC','18,1x'],['TRI','78%'],['CA A10','15,7 M€'],['EBITDA A10','6,8 M€'],['FCF cumulé','32,5 M€']].map(([l,v])=>`<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-val" style="font-size:13px">${v}</div></div>`).join('')}
+    </div>
+  </div>`;
+  return h;
+}
+
+// ── Detail ────────────────────────────────────────────────────────────────────
+function renderDetail(){
+  const s=S.studios[S.selectedId];
+  if(!s)return '';
+  const isAdmin=S.profile?.role==='admin';
+  const adminBtns=isAdmin?`<div style="display:flex;gap:8px;margin-bottom:14px">
+    ${s.statut!=='abandonne'
+      ?`<button class="btn" style="color:#854F0B;border-color:#e0a060" onclick="archiverStudio('${S.selectedId}')">Archiver</button>`
+      :`<button class="btn" style="color:#185FA5;border-color:#185FA5" onclick="restaurerStudio('${S.selectedId}')">Restaurer</button>`}
+    <button class="btn" style="color:#A32D2D;border-color:#e0a0a0" onclick="supprimerStudio('${S.selectedId}')">Supprimer</button>
+  </div>`:'';
+  const tabs=[['workflow','Workflow'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  let content='';
+  if(S.detailTab==='workflow')content=renderWorkflow(s);
+  else if(S.detailTab==='forecast')content=renderForecast(s);
+  else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
+  else if(S.detailTab==='alertes')content=`<div class="box">${s.alertes.map(a=>`<div style="font-size:13px;background:#FAEEDA;color:#854F0B;border-radius:6px;padding:8px 12px;margin-bottom:8px">⚡ ${a}</div>`).join('')}</div>`;
+  else if(S.detailTab==='ia')content=renderAI(s);
+  return `<div class="app">
+    <button class="back-btn" onclick="goBack()">← Retour</button>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">
+      <span style="font-size:18px;font-weight:600">${s.name}</span>${badge(s.statut)}
+    </div>
+    <div style="font-size:13px;color:#888;margin-bottom:14px">${s.addr} · ${s.societe} · ${s.ouverture}</div>
+    ${adminBtns}
+    <div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${S.detailTab===k?'active':''}" onclick="setDetailTab('${k}')">${l}</button>`).join('')}</div>
+    ${content}
+  </div>`;
+}
+
+function renderWorkflow(s){
+  const canEdit=S.profile?.role==='admin';
+  let h=`<div class="box">${progBar(s.steps)}<div style="margin-top:16px">`;
+  STEPS.forEach((step,i)=>{
+    const done=s.steps[step.id];
+    const unlocked=i===0||s.steps[STEPS[i-1].id];
+    const opacity=(!done&&!unlocked)?0.4:1;
+    const bg=done?'#1D9E75':'transparent';
+    const border=done?'#1D9E75':unlocked?'#aaa':'#ddd';
+    const cursor=(unlocked&&canEdit)?'pointer':'default';
+    h+=`<div class="step-row" style="opacity:${opacity}">
+      <div style="display:flex;flex-direction:column;align-items:center">
+        <div class="step-dot" style="background:${bg};border:2px solid ${border};cursor:${cursor}" onclick="${unlocked&&canEdit?`toggleStep('${S.selectedId}','${step.id}')`:''}">${done?'✓':''}</div>
+        ${i<STEPS.length-1?`<div style="width:2px;flex:1;min-height:14px;background:${done?'#1D9E75':'#e0e0d8'};margin-top:2px"></div>`:''}
+      </div>
+      <div style="padding-bottom:8px">
+        <div style="font-size:13px;font-weight:${done?600:400}">${step.label}</div>
+        <div style="font-size:11px;color:#888;margin-top:2px">${step.desc}</div>
+      </div>
+    </div>`;
+  });
+  h+='</div></div>';
+  return h;
+}
+
+function renderForecast(s){
+  const {forecastSection,editMoisIdx,editVals}=S;
+  const {moisDebut,annee,actuel,annualCA}=s.forecast;
+  const bp=buildBP(annualCA,moisDebut);
+  const totals=bp.map((r,idx)=>{
+    const a=actuel[idx]||{};
+    const hasReal=Object.keys(a).length>0;
+    const aCA=hasReal?num(a.ca_cours)+num(a.ca_prives)+num(a.ca_boutique):null;
+    const aCharges=hasReal?CHARGES.reduce((sum,l)=>sum+num(a[l.id],r[l.id]),0):null;
+    return{bpCA:r._ca,bpCharges:r._charges,bpResult:r._result,aCA,aCharges,aResult:hasReal?aCA-aCharges:null,hasReal};
+  });
+  const rm=totals.filter(t=>t.hasReal);
+  const cumBPCA=totals.reduce((s,t)=>s+t.bpCA,0);
+  const cumActCA=rm.reduce((s,t)=>s+t.aCA,0);
+  const cumBPRes=totals.reduce((s,t)=>s+t.bpResult,0);
+  const cumActRes=rm.reduce((s,t)=>s+t.aResult,0);
+  const refCA=rm.reduce((s,t)=>s+t.bpCA,0);
+  const ecart=refCA?Math.round((cumActCA/refCA-1)*100):0;
+
+  let h=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">
+    ${[['CA BP annuel',fmt(annualCA),''],['CA réel cumulé',fmt(cumActCA),''],['Ecart CA',(ecart>=0?'+':'')+ecart+'%',ecart>=0?'#3B6D11':'#A32D2D'],['Résultat BP',fmt(cumBPRes),''],['Résultat réel',fmt(cumActRes),'']].map(([l,v,c])=>`<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-val" style="${c?'color:'+c:''}">${v}</div></div>`).join('')}
+  </div>
+  <div style="display:flex;gap:6px;margin-bottom:12px">
+    ${[['summary','Synthèse'],['detail','Détail'],['saisie','Saisie']].map(([k,l])=>`<button class="tab ${forecastSection===k?'active':''}" onclick="setFS('${k}')">${l}</button>`).join('')}
+  </div>`;
+
+  if(forecastSection==='summary'){
+    const rows=[
+      {l:'CA — BP',vals:totals.map(t=>t.bpCA),tot:cumBPCA,bold:true},
+      {l:'CA — Réel',vals:totals.map(t=>t.aCA),tot:cumActCA,blue:true},
+      {l:'Charges — BP',vals:totals.map(t=>t.bpCharges),tot:totals.reduce((s,t)=>s+t.bpCharges,0)},
+      {l:'Résultat — BP',vals:totals.map(t=>t.bpResult),tot:cumBPRes,bold:true},
+      {l:'Résultat — Réel',vals:totals.map(t=>t.aResult),tot:cumActRes,blue:true,res:true},
+    ];
+    h+=`<div class="forecast-table"><table>
+      <tr><th style="text-align:left;padding-left:8px">Ligne</th>${bp.map(r=>`<th>${MOIS[r.mi]}</th>`).join('')}<th>Total</th></tr>
+      ${rows.map(row=>`<tr style="background:${row.bold?'#f5f5f0':''}">
+        <td class="lbl" style="font-weight:${row.bold?600:400}">${row.l}</td>
+        ${row.vals.map(v=>`<td style="color:${row.blue&&v!==null?(row.res?(v>=0?'#3B6D11':'#A32D2D'):'#185FA5'):'inherit'}">${v===null?'—':fmtN(v)}</td>`).join('')}
+        <td style="font-weight:600">${row.tot?fmtN(row.tot):'—'}</td>
+      </tr>`).join('')}
+    </table></div>`;
+  }
+
+  if(forecastSection==='detail'){
+    h+=`<div class="forecast-table"><table>
+      <tr><th style="text-align:left;padding-left:8px;min-width:140px">Ligne</th>${bp.map(r=>`<th>${MOIS[r.mi]}</th>`).join('')}</tr>
+      <tr><td class="lbl" colspan="13" style="background:#f5f5f0;font-weight:600;padding:5px 8px">PRODUITS</td></tr>
+      ${PRODUITS.map(l=>`<tr><td class="lbl">${l.label}</td>${bp.map((r,i)=>{const a=actuel[i]?.[l.id];return`<td><div style="font-size:10px">${fmtN(r[l.id])}</div>${a!==undefined?`<div style="font-size:10px;color:#185FA5;font-weight:600">${fmtN(a)}</div>`:''}</td>`;}).join('')}</tr>`).join('')}
+      <tr><td class="lbl" colspan="13" style="background:#f5f5f0;font-weight:600;padding:5px 8px">CHARGES</td></tr>
+      ${CHARGES.map(l=>`<tr><td class="lbl">${l.label}</td>${bp.map((r,i)=>{const a=actuel[i]?.[l.id];return`<td><div style="font-size:10px">${fmtN(r[l.id])}</div>${a!==undefined?`<div style="font-size:10px;color:#185FA5;font-weight:600">${fmtN(a)}</div>`:''}</td>`;}).join('')}</tr>`).join('')}
+      <tr style="background:#f5f5f0"><td class="lbl" style="font-weight:600">RÉSULTAT NET</td>${totals.map((t,i)=>`<td><div style="font-size:10px;font-weight:600">${fmtN(bp[i]._result)}</div>${t.hasReal?`<div style="font-size:10px;color:${t.aResult>=0?'#3B6D11':'#A32D2D'};font-weight:600">${fmtN(t.aResult)}</div>`:''}</td>`).join('')}</tr>
+    </table></div><div style="font-size:10px;color:#888">Gris = BP · Bleu = Réel saisi</div>`;
+  }
+
+  if(forecastSection==='saisie'){
+    h+=`<div class="months-grid">${bp.map((r,idx)=>{
+      const ok=actuel[idx]&&Object.keys(actuel[idx]).length>0;
+      return`<button class="month-btn ${ok?'ok':''}" onclick="openEditMois(${idx})">${MOIS[r.mi]} ${annee}${ok?' ✓':''}</button>`;
+    }).join('')}</div>`;
+    if(editMoisIdx!==null){
+      const r=bp[editMoisIdx];
+      h+=`<div class="box">
+        <div style="font-weight:600;font-size:14px;margin-bottom:4px">Saisie — ${MOIS[r.mi]} ${annee}</div>
+        <div style="font-size:12px;color:#888;margin-bottom:12px">Laissez vide pour garder la valeur BP</div>
+        <div class="sec-title">Produits</div>
+        <div class="edit-grid">${PRODUITS.map(l=>`<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">${l.label} <span style="color:#bbb">(${fmtN(r[l.id])})</span></label><input type="number" value="${editVals[l.id]||''}" oninput="setEV('${l.id}',this.value)" placeholder="${r[l.id]}" style="width:100%;padding:7px 9px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>`).join('')}</div>
+        <div class="sec-title">Charges</div>
+        <div class="edit-grid">${CHARGES.map(l=>`<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">${l.label} <span style="color:#bbb">(${fmtN(r[l.id])})</span></label><input type="number" value="${editVals[l.id]||''}" oninput="setEV('${l.id}',this.value)" placeholder="${r[l.id]}" style="width:100%;padding:7px 9px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>`).join('')}</div>
+        <div style="display:flex;gap:8px;margin-top:12px">
+          <button class="btn btn-primary" onclick="saveMois()">Enregistrer</button>
+          <button class="btn" onclick="clearMois()">Effacer</button>
+          <button class="btn" onclick="cancelEdit()">Annuler</button>
+        </div>
+      </div>`;
+    }
+  }
+  return h;
+}
+
+function renderFichiers(studioId){
+  const files=S.files[studioId]||[];
+  const icons={pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',ppt:'📋',pptx:'📋',jpg:'🖼',jpeg:'🖼',png:'🖼'};
+  const icon=name=>{const e=name.split('.').pop().toLowerCase();return icons[e]||'📎';};
+  return `<div class="box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <span style="font-weight:600;font-size:14px">Documents du projet (${files.length})</span>
+      <label class="btn btn-primary" style="cursor:pointer;font-size:12px">
+        + Ajouter
+        <input type="file" style="display:none" onchange="uploadFichier('${studioId}',this)" multiple/>
+      </label>
+    </div>
+    <div id="uprog-${studioId}" style="display:none;font-size:12px;color:#5b7fa6;margin-bottom:10px">Upload en cours...</div>
+    ${files.length===0
+      ?`<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucun document — cliquez sur "Ajouter"</div>`
+      :files.map(f=>`<div class="file-row">
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font-size:20px">${icon(f.name)}</span>
+            <div>
+              <div style="font-size:13px;font-weight:500">${f.name}</div>
+              <div style="font-size:11px;color:#888">${f.date} · ${f.size}</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <a href="${f.url}" target="_blank" class="btn" style="font-size:12px;text-decoration:none">Ouvrir</a>
+            <button class="btn" style="font-size:12px;color:#A32D2D" onclick="deleteFichier('${studioId}','${f.path}')">✕</button>
+          </div>
+        </div>`).join('')}
+  </div>`;
+}
+
+function renderAI(s){
+  return `<div class="box">
+    <div style="font-weight:600;font-size:14px;margin-bottom:10px">Analyste IA</div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <input id="aiq" type="text" placeholder="Ex: Quand atteindre le seuil de rentabilite ?" onkeydown="if(event.key==='Enter')askAI()" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>
+      <button class="btn btn-primary" onclick="askAI()" ${S.aiLoading?'disabled':''}>${S.aiLoading?'...':'Analyser'}</button>
+    </div>
+    ${S.aiResp?`<div style="font-size:13px;line-height:1.6;background:#f5f5f0;border-radius:8px;padding:10px 14px;white-space:pre-wrap">${S.aiResp}</div>`:''}
+  </div>`;
+}
+
+function renderNewForm(){
+  const f=S.newForm;
+  return `<div class="box">
+    <div style="font-weight:600;font-size:15px;margin-bottom:14px">Nouveau studio</div>
+    <div class="form-grid">
+      <div class="fg"><label>Nom du studio</label><input value="${f.name||''}" oninput="setNF('name',this.value)" placeholder="Ex: Paris 16e"/></div>
+      <div class="fg"><label>Adresse</label><input value="${f.addr||''}" oninput="setNF('addr',this.value)" placeholder="Rue, CP Ville"/></div>
+      <div class="fg"><label>Société porteuse</label><select onchange="setNF('societe',this.value)">
+        ${['P&W Occitanie','COBE Society','SACOBE Society'].map(s=>`<option ${f.societe===s?'selected':''}>${s}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Ouverture prévue</label><input value="${f.ouverture||''}" oninput="setNF('ouverture',this.value)" placeholder="Ex: T2 2027"/></div>
+      <div class="fg"><label>CA annuel BP (€)</label><input type="number" value="${f.annualCA||448800}" oninput="setNF('annualCA',this.value)"/></div>
+      <div class="fg"><label>Mois d'ouverture</label><select onchange="setNF('moisDebut',this.value)">
+        ${MOIS.map((m,i)=>`<option value="${i}" ${(f.moisDebut||0)==i?'selected':''}>${m}</option>`).join('')}
+      </select></div>
+      <div class="fg"><label>Année</label><select onchange="setNF('annee',this.value)">
+        ${[2026,2027,2028,2029].map(y=>`<option ${(f.annee||2026)==y?'selected':''}>${y}</option>`).join('')}
+      </select></div>
+    </div>
+    <div class="info-box">Workflow démarre à l'étape 1 : Test fit local — 11 étapes séquentielles.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-primary" onclick="createStudio()">Créer</button>
+      <button class="btn" onclick="toggleNewForm()">Annuler</button>
+    </div>
+  </div>`;
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function doLogin(){
+  const email=document.getElementById('ae').value;
+  const pwd=document.getElementById('ap').value;
+  const err=document.getElementById('aerr');
+  const {data,error}=await sb.auth.signInWithPassword({email,password:pwd});
+  if(error){err.style.display='block';err.textContent=error.message;return;}
+  S.user=data.user;
+  const {data:prof}=await sb.from('profiles').select('*').eq('id',data.user.id).single();
+  S.profile=prof;
+  await loadStudios();
+  await loadFiles();
+  S.view='dashboard';
+  render();
+}
+
+async function doLogout(){
+  await sb.auth.signOut();
+  S={...S,user:null,profile:null,view:'auth',selectedId:null};
+  render();
+}
+
+function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';render();}
+function goBack(){S.view='dashboard';S.selectedId=null;render();}
+function setMainTab(t){S.mainTab=t;render();}
+function setDetailTab(t){S.detailTab=t;S.aiResp='';render();}
+function setFS(s){S.forecastSection=s;S.editMoisIdx=null;render();}
+function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:448800,moisDebut:0,annee:2026};render();}
+function setNF(k,v){S.newForm[k]=v;}
+function setEV(k,v){S.editVals[k]=v;}
+function openEditMois(idx){S.editMoisIdx=idx;S.editVals={...(S.studios[S.selectedId].forecast.actuel[idx]||{})};render();}
+function cancelEdit(){S.editMoisIdx=null;render();}
+
+async function toggleStep(sid,stepId){
+  const s=S.studios[sid];
+  const newSteps={...s.steps,[stepId]:!s.steps[stepId]};
+  await saveStudio(sid,{...s,steps:newSteps,statut:inferStatut(newSteps)});
+  toast('Étape mise à jour');
+}
+
+async function saveMois(){
+  const s=S.studios[S.selectedId];
+  const newActuel={...s.forecast.actuel,[S.editMoisIdx]:{...S.editVals}};
+  await saveStudio(S.selectedId,{...s,forecast:{...s.forecast,actuel:newActuel}});
+  S.editMoisIdx=null;
+  toast('Saisie enregistrée');
+}
+
+async function clearMois(){
+  const s=S.studios[S.selectedId];
+  const newActuel={...s.forecast.actuel};
+  delete newActuel[S.editMoisIdx];
+  await saveStudio(S.selectedId,{...s,forecast:{...s.forecast,actuel:newActuel}});
+  S.editMoisIdx=null;
+  toast('Mois effacé');
+}
+
+async function uploadFichier(studioId,input){
+  const files=Array.from(input.files);
+  if(!files.length)return;
+  const prog=document.getElementById('uprog-'+studioId);
+  if(prog)prog.style.display='block';
+  // Recharger la liste depuis Supabase pour ne pas écraser
+  const {data:existing}=await sb.from('studios').select('data').eq('id',studioId+'_files').maybeSingle();
+  const currentFiles=existing?.data?.files||S.files[studioId]||[];
+  for(const file of files){
+    const path=`${studioId}/${Date.now()}_${file.name}`;
+    const {error}=await sb.storage.from('studio-files').upload(path,file);
+    if(!error){
+      const {data}=sb.storage.from('studio-files').getPublicUrl(path);
+      const size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
+      currentFiles.push({name:file.name,path,url:data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size});
+    }
+  }
+  S.files[studioId]=currentFiles;
+  await sb.from('studios').upsert({id:studioId+'_files',data:{files:currentFiles},updated_at:new Date().toISOString()});
+  if(prog)prog.style.display='none';
+  toast(files.length+' fichier(s) ajouté(s)');
+  render();
+}
+
+async function deleteFichier(studioId,path){
+  if(!confirm('Supprimer ce fichier ?'))return;
+  await sb.storage.from('studio-files').remove([path]);
+  S.files[studioId]=(S.files[studioId]||[]).filter(f=>f.path!==path);
+  await sb.from('studios').upsert({id:studioId+'_files',data:{files:S.files[studioId]},updated_at:new Date().toISOString()});
+  toast('Fichier supprimé');
+  render();
+}
+
+async function archiverStudio(id){
+  if(!confirm('Marquer ce studio comme abandonné ?'))return;
+  await saveStudio(id,{...S.studios[id],statut:'abandonne'});
+  toast('Studio archivé');
+}
+
+async function restaurerStudio(id){
+  const s=S.studios[id];
+  await saveStudio(id,{...s,statut:inferStatut(s.steps)});
+  toast('Studio restauré');
+}
+
+async function supprimerStudio(id){
+  if(!confirm('Supprimer définitivement ? Action irréversible.'))return;
+  await sb.from('studios').delete().eq('id',id);
+  delete S.studios[id];
+  S.view='dashboard';S.selectedId=null;
+  render();toast('Studio supprimé');
+}
+
+async function createStudio(){
+  const f=S.newForm;
+  if(!f.name||!f.addr||!f.ouverture){toast('Remplissez tous les champs');return;}
+  const id='proj_'+Date.now();
+  await saveStudio(id,{
+    name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,
+    statut:'pipeline',capex:306200,emprunt:214340,
+    alertes:['Nouveau projet — démarrer par le test fit local'],
+    steps:Object.fromEntries(STEPS.map(s=>[s.id,false])),
+    forecast:{annualCA:num(f.annualCA,448800),moisDebut:num(f.moisDebut,0),annee:num(f.annee,2026),actuel:{}},
+  });
+  S.showNewForm=false;
+  toast('Studio créé');
+}
+
+async function askAI(){
+  const q=document.getElementById('aiq')?.value;
+  if(!q)return;
+  S.aiLoading=true;S.aiResp='';render();
+  const s=S.studios[S.selectedId];
+  const ctx=`Assistant expert Club Pilates / ISSEO. Studio: ${s.name} (${s.societe}), statut: ${s.statut}, ouverture: ${s.ouverture}. CAPEX: ${fmt(s.capex)}, emprunt: ${fmt(s.emprunt)}. BP annuel: ${fmt(s.forecast.annualCA)}. Alertes: ${s.alertes.join(' | ')}. Reponds en francais, concis.`;
+  try{
+    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:ctx,messages:[{role:'user',content:q}]})});
+    const d=await r.json();
+    S.aiResp=d.content?.[0]?.text||'Pas de reponse.';
+  }catch{S.aiResp='Erreur de connexion.';}
+  S.aiLoading=false;render();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render(){
+  const root=document.getElementById('root');
+  if(S.view==='auth')root.innerHTML=renderAuth();
+  else if(S.view==='dashboard')root.innerHTML=renderDashboard();
+  else if(S.view==='detail')root.innerHTML=renderDetail();
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+sb.auth.getSession().then(async({data:{session}})=>{
+  if(session){
+    S.user=session.user;
+    const {data:prof}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
+    S.profile=prof;
+    await loadStudios();
+    await loadFiles();
+    S.view='dashboard';
+  }
+  render();
+});
+</script>
+</body>
+</html>
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Club Pilates — ISSEO</title>
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<style>
   *{box-sizing:border-box;margin:0;padding:0}
   body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:14px}
   .app{max-width:1100px;margin:0 auto;padding:1.5rem}
