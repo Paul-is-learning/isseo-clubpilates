@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Club Pilates — ISSEO</title>
+<title>Club Pilates ISSEO</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -17,7 +17,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 .btn-primary:hover{background:#333}
 .btn-full{width:100%}
-.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:20px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
 .kpi{background:#f0f0ea;border-radius:8px;padding:0.7rem 0.9rem}
 .kpi-label{font-size:11px;color:#888;margin-bottom:3px}
 .kpi-val{font-size:15px;font-weight:600}
@@ -29,13 +29,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card:hover{border-color:#bbb}
 .badge{font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;white-space:nowrap}
 .prog-bar{background:#e8e8e0;border-radius:4px;height:6px}
-.prog-fill{background:#1D9E75;border-radius:4px;height:6px}
 .box{background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px}
 .step-dot{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th,td{padding:5px 6px;text-align:center;border-bottom:0.5px solid #e8e8e0}
 th{font-weight:500;color:#888;background:#f5f5f0}
-td.lbl{text-align:left;padding-left:8px;color:#555;min-width:140px}
+td.lbl{text-align:left;padding-left:8px;color:#555;min-width:130px}
 .month-btn{padding:6px 12px;border-radius:8px;cursor:pointer;font-size:12px;border:0.5px solid #ccc;background:#f0f0ea}
 .month-btn.ok{background:#E1F5EE;color:#0F6E56;border-color:#1D9E75;font-weight:500}
 .months-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
@@ -49,6 +48,8 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:140px}
 .file-row{display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:0.5px solid #e8e8e0}
 .toast{position:fixed;bottom:20px;right:20px;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:999;opacity:0;transition:opacity 0.3s;pointer-events:none}
 .toast.show{opacity:1}
+.yr-tab{padding:4px 14px;border-radius:6px;background:transparent;border:0.5px solid transparent;cursor:pointer;font-size:12px}
+.yr-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 @media(max-width:600px){.form-grid,.edit-grid{grid-template-columns:1fr}}
 </style>
 </head>
@@ -56,25 +57,57 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:140px}
 <div id="root"></div>
 <div class="toast" id="toast"></div>
 <script>
-const SUPA_URL='https://wfqtpcujujqxgfsgbpvp.supabase.co';
-const SUPA_KEY='sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv';
-const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+const SURL='https://wfqtpcujujqxgfsgbpvp.supabase.co';
+const SKEY='sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv';
+const sb=supabase.createClient(SURL,SKEY);
 
 const MOIS=['Jan','Fev','Mar','Avr','Mai','Jun','Jul','Aou','Sep','Oct','Nov','Dec'];
-const fmt=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
-const fmtN=n=>isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);
-const num=(v,fb=0)=>{const n=parseFloat(v);return isNaN(n)?fb:n;};
-const cleanName=n=>n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]/g,'_').replace(/_+/g,'_');
+const fmt=function(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);};
+const fmtN=function(n){return isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);};
+const num=function(v,fb){if(fb===undefined)fb=0;var n=parseFloat(v);return isNaN(n)?fb:n;};
+const cleanName=function(n){return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]/g,'_').replace(/_+/g,'_');};
 
-const DEPENSE_CATS=['Travaux / Amenagement','Equipements Pilates','Droit entree franchise','Honoraires / Juridique','Marketing lancement','Depot garantie bail','Autre'];
+// ── BP Adherents 36 mois (source Plan Financier Club Pilates PDF) ─────────────
+// A1 M1-M12 : consolidation semaines pre-vente / soft / grand opening
+// A2 M13-M24 : projection mensuelle du PDF
+// A3 M25-M36 : prolongation vers 400 membres
+const BP_ADHERENTS=[
+  65,175,199,211,222,233,243,252,261,270,277,285,  // A1
+  292,298,304,310,315,321,325,330,334,338,342,345,  // A2
+  349,353,357,361,365,370,375,381,386,391,396,400   // A3 -> 400
+];
+
+// Churn mensuel BP (source PDF)
+const BP_CHURN=[
+  0,0,
+  -12,-13,-13,-14,-15,-15,-16,-16,-16,-17,
+  -17,-18,-18,-18,-19,-19,-19,-20,-20,-20,-20,-21,
+  -21,-21,-22,-22,-22,-22,-23,-23,-23,-23,-23,-23
+];
+
+// Repartition abonnements (source PDF)
+const PACK_REP={pack4:0.47,pack8:0.50,illimite:0.03};
+const PRIX={seance:33.33,pack4:110.00,pack8:193.33,illimite:276.67};
+
+// CA BP 3 ans (source PDF)
+const CA_A1=665180,CA_A2=731698,CA_A3=804868;
+
+// Rampe mensuelle sur 12 mois (somme=1)
+const RAMP=[0.04,0.26,0.044,0.055,0.058,0.060,0.063,0.065,0.067,0.069,0.071,0.072];
+
+const DEPENSE_CATS=['Travaux Amenagement','Equipements Pilates','Droit entree franchise','Honoraires Juridique','Marketing lancement','Depot garantie bail','Autre'];
 const DEPENSE_FINS=['Emprunt bancaire','Credit-bail','Fonds propres'];
-const DEBLOCAGE={attente:{label:'A demander',bg:'#F1EFE8',color:'#5F5E5A'},demande:{label:'Demande',bg:'#FAEEDA',color:'#854F0B'},debloque:{label:'Debloque',bg:'#E1F5EE',color:'#0F6E56'}};
+const DEBLOCAGE={
+  attente:{label:'A demander',bg:'#F1EFE8',color:'#5F5E5A'},
+  demande:{label:'Demande',bg:'#FAEEDA',color:'#854F0B'},
+  debloque:{label:'Debloque',bg:'#E1F5EE',color:'#0F6E56'}
+};
 
 const ROLE_FILTER={
   admin:null,tom:null,pascal:null,
-  coquel:s=>['COBE Society','SACOBE Society'].includes(s.societe),
-  sabourin:s=>s.societe==='SACOBE Society',
-  caroline:s=>s.societe==='COBE Society',
+  coquel:function(s){return s.societe==='COBE Society'||s.societe==='SACOBE Society';},
+  sabourin:function(s){return s.societe==='SACOBE Society';},
+  caroline:function(s){return s.societe==='COBE Society';},
 };
 
 const STATUT_CFG={
@@ -88,54 +121,63 @@ const STATUT_CFG={
 const STEPS=[
   {id:'testfit',label:'Test fit local',desc:'Surface 135-180m2, H2m45, 12 postes, facade enseigne'},
   {id:'loi',label:'LOI bail signee',desc:'Lettre intention, franchise loyer'},
-  {id:'devis',label:'Devis travaux et equipements',desc:'Devis entrepreneur + commande Balanced Body'},
-  {id:'bail',label:'Bail commercial 3/6/9',desc:'Signature bail definitif, remise des cles'},
-  {id:'financement',label:'Offre de pret obtenue',desc:'Accord bancaire + credit-bail machines'},
-  {id:'at',label:'Autorisation de travaux',desc:'Depot et obtention AT'},
-  {id:'franchise',label:'Contrat franchise signe',desc:'Signature TMCP Fitness France, 40000 EUR'},
+  {id:'devis',label:'Devis travaux equipements',desc:'Devis entrepreneur + commande Balanced Body'},
+  {id:'bail',label:'Bail commercial',desc:'Signature bail definitif, remise des cles'},
+  {id:'financement',label:'Offre de pret',desc:'Accord bancaire + credit-bail machines'},
+  {id:'at',label:'Autorisation travaux',desc:'Depot et obtention AT'},
+  {id:'franchise',label:'Contrat franchise',desc:'Signature TMCP Fitness France'},
   {id:'admin',label:'Documents administratifs',desc:'KBis, statuts, compte pro, assurances'},
   {id:'chantier',label:'Demarrage chantier',desc:'GO travaux, livraison equipements'},
-  {id:'preventes',label:'Phase pre-ventes J-60',desc:'Campagne membres, objectif 100+'},
-  {id:'opening',label:'Soft / Grand opening',desc:'Objectif 150+ Soft, 200+ Grand Opening'},
+  {id:'preventes',label:'Pre-ventes J-60',desc:'Campagne membres, objectif 100+'},
+  {id:'opening',label:'Soft Grand opening',desc:'Objectif 150+ Soft, 200+ Grand Opening'},
 ];
 
 const BP_LINES=[
-  {id:'ca_cours',label:'CA Cours collectifs',cat:'p',pctCA:0.985},
-  {id:'ca_prives',label:'CA Cours prives',cat:'p',pctCA:0.015},
+  {id:'ca_cours',label:'CA Cours collectifs',cat:'p',pctCA:0.95},
+  {id:'ca_prives',label:'CA Personal Training',cat:'p',pctCA:0.02},
   {id:'ca_boutique',label:'CA Boutique',cat:'p',pctCA:0.03},
   {id:'coachs',label:'Coachs instructeurs',cat:'c',fixed:10000},
   {id:'loyer',label:'Loyer bail',cat:'c',fixed:3238},
   {id:'charges_loc',label:'Charges locatives',cat:'c',fixed:192},
-  {id:'royalties',label:'Royalties franchise 9pct',cat:'c',pctCA:0.09},
-  {id:'pub',label:'Pub marketing',cat:'c',fixed:2550},
-  {id:'software',label:'Abonnements software',cat:'c',fixed:455},
+  {id:'royalties',label:'Royalties 9pct',cat:'c',pctCA:0.09},
+  {id:'pub',label:'Marketing pub',cat:'c',fixed:2550},
+  {id:'software',label:'Software',cat:'c',fixed:455},
   {id:'assurance',label:'Assurances',cat:'c',fixed:200},
   {id:'nettoyage',label:'Nettoyage',cat:'c',fixed:317},
-  {id:'compta',label:'Honoraires compta',cat:'c',fixed:208},
-  {id:'entretien',label:'Entretien reparations',cat:'c',fixed:150},
+  {id:'compta',label:'Compta juridique',cat:'c',fixed:208},
+  {id:'entretien',label:'Entretien',cat:'c',fixed:150},
   {id:'creditbail',label:'Credit-bail machines',cat:'c',fixed:2197},
   {id:'salaries',label:'Charges personnel',cat:'c',fixed:7500},
   {id:'amort',label:'Amortissements',cat:'c',fixed:3836},
   {id:'charges_fin',label:'Charges financieres',cat:'c',fixed:714},
   {id:'is',label:'Impot societes',cat:'c',fixed:172},
 ];
-const PRODUITS=BP_LINES.filter(l=>l.cat==='p');
-const CHARGES=BP_LINES.filter(l=>l.cat==='c');
+const PRODUITS=BP_LINES.filter(function(l){return l.cat==='p';});
+const CHARGES=BP_LINES.filter(function(l){return l.cat==='c';});
+const CHARGES_NO_AMORT=BP_LINES.filter(function(l){return l.cat==='c'&&l.id!=='amort'&&l.id!=='is'&&l.id!=='charges_fin';});
 
 function buildBP(annualCA,moisDebut){
-  const ramp=[0.055,0.065,0.075,0.08,0.085,0.09,0.09,0.085,0.085,0.08,0.08,0.075];
-  return Array.from({length:12},(_,i)=>{
-    const ca=Math.round(annualCA*ramp[i]);
-    const row={mi:(moisDebut+i)%12,_ca:ca};
-    BP_LINES.forEach(l=>{row[l.id]=l.fixed!=null?l.fixed:Math.round(ca*(l.pctCA||0));});
-    row._charges=CHARGES.reduce((s,l)=>s+row[l.id],0);
+  return Array.from({length:12},function(_,i){
+    var ca=Math.round(annualCA*RAMP[i]);
+    var row={mi:(moisDebut+i)%12,_ca:ca};
+    BP_LINES.forEach(function(l){row[l.id]=l.fixed!=null?l.fixed:Math.round(ca*(l.pctCA||0));});
+    row._charges=CHARGES.reduce(function(s,l){return s+row[l.id];},0);
     row._result=ca-row._charges;
+    row._ebitda=ca-CHARGES_NO_AMORT.reduce(function(s,l){return s+row[l.id];},0);
     return row;
   });
 }
 
+function build3YearBP(forecast){
+  var md=forecast.moisDebut||0;
+  var a1=buildBP(forecast.annualCA||CA_A1,md);
+  var a2=buildBP(forecast.annualCA2||(forecast.annualCA?Math.round(forecast.annualCA*1.10):CA_A2),md);
+  var a3=buildBP(forecast.annualCA3||(forecast.annualCA?Math.round(forecast.annualCA*1.21):CA_A3),md);
+  return {a1:a1,a2:a2,a3:a3};
+}
+
 function inferStatut(steps){
-  const done=STEPS.filter(s=>steps[s.id]).length;
+  var done=STEPS.filter(function(s){return steps[s.id];}).length;
   if(done===STEPS.length)return 'ouvert';
   if(done>=5)return 'chantier';
   if(done>=1)return 'preparation';
@@ -143,79 +185,70 @@ function inferStatut(steps){
 }
 
 const INIT={
-  lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'T3 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2026','Financement a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:6,annee:2026,actuel:{}}},
-  garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Pacte associes COBE a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
-  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Bail commercial a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
-  issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Credit-bail equipements a mettre en place'],steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
-  toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2027','Site a identifier'],steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:0,annee:2027,actuel:{}}},
+  lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'T3 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2026'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:6,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Pacte associes COBE a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Bail commercial a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Credit-bail equipements a mettre en place'],steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2027'],steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
 };
 
-let S={
+var S={
   user:null,profile:null,
   studios:JSON.parse(JSON.stringify(INIT)),
-  files:{},depenses:{},messages:{},
+  files:{},depenses:{},messages:{},adherents:{},
   view:'auth',selectedId:null,
   mainTab:'studios',detailTab:'workflow',
-  forecastSection:'summary',
+  forecastYear:1,forecastSection:'summary',
   editMoisIdx:null,editVals:{},
+  adherentYear:1,
   showNewForm:false,newForm:{},
   aiResp:'',aiLoading:false,
 };
 
-async function loadStudios(){
-  const {data}=await sb.from('studios').select('id,data');
-  if(data&&data.length){
-    const s={};
-    data.forEach(r=>{
-      if(!r.id.includes('_files')&&!r.id.includes('_depenses')&&!r.id.includes('_messages'))
-        s[r.id]=r.data;
-    });
-    if(Object.keys(s).length>0)S.studios=s;
-  }
-}
-async function loadFiles(){
-  const {data}=await sb.from('studios').select('id,data');
-  S.files={};
-  if(data)data.forEach(r=>{if(r.id.endsWith('_files')){S.files[r.id.slice(0,-6)]=r.data?.files||[];}});
-}
-async function loadDepenses(){
-  const {data}=await sb.from('studios').select('id,data');
-  S.depenses={};
-  if(data)data.forEach(r=>{if(r.id.endsWith('_depenses')){S.depenses[r.id.slice(0,-9)]=r.data?.depenses||[];}});
-}
-async function loadMessages(){
-  const {data}=await sb.from('studios').select('id,data');
-  S.messages={};
-  if(data)data.forEach(r=>{if(r.id.endsWith('_messages')){S.messages[r.id.slice(0,-9)]=r.data?.messages||[];}});
+async function loadAll(){
+  var res=await sb.from('studios').select('id,data');
+  var data=res.data||[];
+  var studios={};
+  S.files={};S.depenses={};S.messages={};S.adherents={};
+  data.forEach(function(r){
+    var id=r.id;
+    if(id.endsWith('_files')){S.files[id.slice(0,-6)]=r.data&&r.data.files||[];}
+    else if(id.endsWith('_depenses')){S.depenses[id.slice(0,-9)]=r.data&&r.data.depenses||[];}
+    else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
+    else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
+    else{studios[id]=r.data;}
+  });
+  if(Object.keys(studios).length>0)S.studios=studios;
 }
 async function saveStudio(id,studio){
   S.studios[id]=studio;
-  await sb.from('studios').upsert({id,data:studio,updated_at:new Date().toISOString()});
+  await sb.from('studios').upsert({id:id,data:studio,updated_at:new Date().toISOString()});
   render();
 }
 async function saveDepenses(sid){
   await sb.from('studios').upsert({id:sid+'_depenses',data:{depenses:S.depenses[sid]},updated_at:new Date().toISOString()});
 }
+async function saveAdherents(sid){
+  await sb.from('studios').upsert({id:sid+'_adherents',data:{actuel:S.adherents[sid]||{}},updated_at:new Date().toISOString()});
+}
 
 function toast(msg){
-  const t=document.getElementById('toast');
+  var t=document.getElementById('toast');
   t.textContent=msg;t.classList.add('show');
-  setTimeout(()=>t.classList.remove('show'),2500);
+  setTimeout(function(){t.classList.remove('show');},2500);
 }
-
 function badge(statut){
-  const s=STATUT_CFG[statut]||STATUT_CFG.pipeline;
+  var s=STATUT_CFG[statut]||STATUT_CFG.pipeline;
   return '<span class="badge" style="background:'+s.bg+';color:'+s.text+'">'+s.label+'</span>';
 }
-
 function progBar(steps){
-  const done=STEPS.filter(s=>steps[s.id]).length;
-  const p=Math.round(done/STEPS.length*100);
-  return '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;color:#888"><span>'+done+'/'+STEPS.length+' etapes</span><span>'+p+'%</span></div><div class="prog-bar"><div class="prog-fill" style="width:'+p+'%"></div></div>';
+  var done=STEPS.filter(function(s){return steps[s.id];}).length;
+  var p=Math.round(done/STEPS.length*100);
+  return '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;color:#888"><span>'+done+'/'+STEPS.length+'</span><span>'+p+'%</span></div><div class="prog-bar"><div style="width:'+p+'%;background:#1D9E75;border-radius:4px;height:6px"></div></div>';
 }
 
-const LI='<svg width="70" viewBox="0 0 260 110"><text x="0" y="80" font-family="Georgia,serif" font-size="88" font-weight="700" fill="#1a1a1a">Isseo</text><text x="8" y="102" font-family="Arial,sans-serif" font-size="10" letter-spacing="3" fill="#888">DEV &amp; VALORISER</text></svg>';
-const LC='<svg width="120" viewBox="0 0 240 55"><text x="0" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">CLUB</text><circle cx="90" cy="27" r="22" fill="none" stroke="#5b7fa6" stroke-width="1.5" stroke-dasharray="3,2"/><circle cx="90" cy="27" r="8" fill="#5b7fa6" opacity="0.4"/><text x="118" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">PILATES</text></svg>';
+var LI='<svg width="70" viewBox="0 0 260 110"><text x="0" y="80" font-family="Georgia,serif" font-size="88" font-weight="700" fill="#1a1a1a">Isseo</text><text x="8" y="102" font-family="Arial,sans-serif" font-size="10" letter-spacing="3" fill="#888">DEV &amp; VALORISER</text></svg>';
+var LC='<svg width="110" viewBox="0 0 230 50"><text x="0" y="34" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="#5b7fa6">CLUB</text><circle cx="85" cy="25" r="20" fill="none" stroke="#5b7fa6" stroke-width="1.5" stroke-dasharray="3,2"/><circle cx="85" cy="25" r="7" fill="#5b7fa6" opacity="0.4"/><text x="110" y="34" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="#5b7fa6">PILATES</text></svg>';
 
 function renderAuth(){
   return '<div class="auth-wrap"><div class="auth-box">'
@@ -229,38 +262,37 @@ function renderAuth(){
 }
 
 function renderDashboard(){
-  const filter=ROLE_FILTER[S.profile&&S.profile.role];
-  const ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
-  const isAdmin=S.profile&&S.profile.role==='admin';
-  var html='<div class="app">';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
-  html+='<div style="display:flex;align-items:center;gap:14px">'+LI+'<div style="width:1px;height:32px;background:#e0e0d8"></div>'+LC+'</div>';
-  html+='<div style="display:flex;align-items:center;gap:10px">';
-  html+='<span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px">'+(S.profile&&S.profile.nom||'')+'</span>';
-  html+='<button class="btn" onclick="doLogout()">Deconnexion</button></div></div>';
-  html+='<div class="kpis">';
-  html+='<div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">'+ids.length+'</div></div>';
-  html+='<div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+S.studios[id].capex;},0))+'</div></div>';
-  html+='<div class="kpi"><div class="kpi-label">CA BP cumule</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+S.studios[id].forecast.annualCA;},0))+'</div></div>';
-  html+='<div class="kpi"><div class="kpi-label">Alertes</div><div class="kpi-val">'+ids.reduce(function(s,id){return s+S.studios[id].alertes.length;},0)+'</div></div>';
-  html+='</div>';
-  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
-  html+='<div style="display:flex;gap:6px">';
-  html+='<button class="tab '+(S.mainTab==='studios'?'active':'')+'" onclick="setMainTab(\'studios\')">Studios</button>';
-  html+='<button class="tab '+(S.mainTab==='pipeline'?'active':'')+'" onclick="setMainTab(\'pipeline\')">Pipeline</button>';
-  html+='</div>';
-  if(isAdmin)html+='<button class="btn" onclick="toggleNewForm()">'+(S.showNewForm?'Annuler':'+ Nouveau studio')+'</button>';
-  html+='</div>';
-  if(S.showNewForm)html+=renderNewForm();
+  var filter=ROLE_FILTER[S.profile&&S.profile.role];
+  var ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
+  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var h='<div class="app">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
+  h+='<div style="display:flex;align-items:center;gap:14px">'+LI+'<div style="width:1px;height:32px;background:#e0e0d8"></div>'+LC+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px">'+(S.profile&&S.profile.nom||'')+'</span>';
+  h+='<button class="btn" onclick="doLogout()">Deconnexion</button></div></div>';
+  h+='<div class="kpis">';
+  h+='<div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">'+ids.length+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+S.studios[id].capex;},0))+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">CA BP A1 total</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0))+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Alertes</div><div class="kpi-val">'+ids.reduce(function(s,id){return s+S.studios[id].alertes.length;},0)+'</div></div>';
+  h+='</div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+  h+='<div style="display:flex;gap:6px">';
+  h+='<button class="tab '+(S.mainTab==='studios'?'active':'')+'" onclick="setMainTab(\'studios\')">Studios</button>';
+  h+='<button class="tab '+(S.mainTab==='pipeline'?'active':'')+'" onclick="setMainTab(\'pipeline\')">Pipeline</button>';
+  h+='</div>';
+  if(isAdmin)h+='<button class="btn" onclick="toggleNewForm()">'+(S.showNewForm?'Annuler':'+ Nouveau studio')+'</button>';
+  h+='</div>';
+  if(S.showNewForm)h+=renderNewForm();
   if(S.mainTab==='studios'){
-    html+='<div class="cards">';
-    ids.forEach(function(id){html+=renderCard(id,S.studios[id]);});
-    html+='</div>';
+    h+='<div class="cards">';
+    ids.forEach(function(id){h+=renderCard(id,S.studios[id]);});
+    h+='</div>';
   } else {
-    html+=renderPipeline(ids);
+    h+=renderPipeline(ids);
   }
-  html+='</div>';
-  return html;
+  h+='</div>';
+  return h;
 }
 
 function renderCard(id,s){
@@ -275,41 +307,32 @@ function renderCard(id,s){
 }
 
 function renderPipeline(ids){
-  var cIds=['lattes','garenne','levallois','issy','toulouse'];
-  var extras=ids.filter(function(id){return cIds.indexOf(id)<0;});
-  var cohortes=[
-    {label:'Cohorte 1 - 2026',ids:['lattes','garenne','levallois','issy'],note:'5 studios'},
-    {label:'Cohorte 2 - 2027',ids:['toulouse'],note:'5 studios dont Montpellier Nord'},
-    {label:'Cohorte 3 - 2028',ids:[],note:'5 studios a confirmer'},
-    {label:'Cohorte 4 - 2029',ids:[],note:'2 studios - Total 17'},
-  ];
   var h='';
-  cohortes.forEach(function(c){
+  [{label:'Cohorte 1 - 2026',ids:['lattes','garenne','levallois','issy'],note:'4 studios'},
+   {label:'Cohorte 2 - 2027',ids:['toulouse'],note:'5 studios'},
+   {label:'Cohorte 3 - 2028',ids:[],note:'5 studios'},
+   {label:'Cohorte 4 - 2029',ids:[],note:'2 studios'}].forEach(function(c){
     h+='<div class="box"><div style="display:flex;justify-content:space-between"><span style="font-weight:600">'+c.label+'</span><span style="font-size:11px;color:#888">'+c.note+'</span></div>';
     c.ids.filter(function(id){return S.studios[id];}).forEach(function(id){
       h+='<span class="chip" onclick="openDetail(\''+id+'\')">'+S.studios[id].name+'</span>';
     });
     h+='</div>';
   });
-  if(extras.length){
-    h+='<div style="font-weight:500;font-size:13px;margin:12px 0 8px;color:#888">Projets ajoutes</div><div class="cards">';
-    extras.forEach(function(id){h+=renderCard(id,S.studios[id]);});
-    h+='</div>';
-  }
   return h;
 }
 
 function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
-  var isAdmin=S.profile&&S.profile.role==='admin';
-  var tabs=[['workflow','Workflow'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var tabs=[['workflow','Workflow'],['adherents','Adherents'],['forecast','Forecast'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   var content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
+  else if(S.detailTab==='adherents')content=renderAdherents(S.selectedId,s);
+  else if(S.detailTab==='forecast')content=renderForecast(S.selectedId,s);
   else if(S.detailTab==='engagements')content=renderEngagements(S.selectedId,s);
   else if(S.detailTab==='messages')content=renderMessages(S.selectedId);
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
-  else if(S.detailTab==='forecast')content=renderForecast(s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
   else if(S.detailTab==='alertes'){
     content='<div class="box">';
@@ -318,13 +341,12 @@ function renderDetail(){
   }
   else if(S.detailTab==='ia')content=renderAI(s);
   var h='<div class="app">';
-  h+='<button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin-bottom:16px" onclick="goBack()">← Retour</button>';
+  h+='<button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin-bottom:16px" onclick="goBack()">&#8592; Retour</button>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut)+'</div>';
-  h+='<div style="font-size:13px;color:#888;margin-bottom:14px">'+s.addr+' · '+s.societe+' · '+s.ouverture+'</div>';
+  h+='<div style="font-size:13px;color:#888;margin-bottom:14px">'+s.addr+' &middot; '+s.societe+' &middot; '+s.ouverture+'</div>';
   if(isAdmin){
     h+='<div style="display:flex;gap:8px;margin-bottom:14px">';
-    if(s.statut!=='abandonne')h+='<button class="btn" style="color:#854F0B" onclick="archiverStudio(\''+S.selectedId+'\')">Archiver</button>';
-    else h+='<button class="btn" style="color:#185FA5" onclick="restaurerStudio(\''+S.selectedId+'\')">Restaurer</button>';
+    h+=(s.statut!=='abandonne'?'<button class="btn" style="color:#854F0B" onclick="archiverStudio(\''+S.selectedId+'\')">Archiver</button>':'<button class="btn" style="color:#185FA5" onclick="restaurerStudio(\''+S.selectedId+'\')">Restaurer</button>');
     h+='<button class="btn" style="color:#A32D2D" onclick="supprimerStudio(\''+S.selectedId+'\')">Supprimer</button></div>';
   }
   h+='<div class="tabs">';
@@ -334,24 +356,392 @@ function renderDetail(){
 }
 
 function renderWorkflow(s){
-  var canEdit=S.profile&&S.profile.role==='admin';
+  var canEdit=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
   var h='<div class="box">'+progBar(s.steps)+'<div style="margin-top:16px">';
   STEPS.forEach(function(step,i){
     var done=s.steps[step.id];
     var unlocked=i===0||s.steps[STEPS[i-1].id];
     var bg=done?'#1D9E75':'transparent';
     var border=done?'#1D9E75':unlocked?'#aaa':'#ddd';
-    var cursor=(unlocked&&canEdit)?'pointer':'default';
-    var click=(unlocked&&canEdit)?'onclick="toggleStep(\''+S.selectedId+'\',\''+step.id+'\')"':'';
+    var cursor=unlocked&&canEdit?'pointer':'default';
+    var click=unlocked&&canEdit?'onclick="toggleStep(\''+S.selectedId+'\',\''+step.id+'\')">':'>';
     h+='<div style="display:flex;gap:12px;margin-bottom:10px;opacity:'+((!done&&!unlocked)?0.4:1)+'">';
     h+='<div style="display:flex;flex-direction:column;align-items:center">';
-    h+='<div class="step-dot" style="background:'+bg+';border:2px solid '+border+';cursor:'+cursor+'" '+click+'>'+(done?'v':'')+'</div>';
+    h+='<div class="step-dot" style="background:'+bg+';border:2px solid '+border+';color:'+(done?'#fff':'#aaa')+';cursor:'+cursor+'" '+click+(done?'&#10003;':'')+'</div>';
     if(i<STEPS.length-1)h+='<div style="width:2px;flex:1;min-height:14px;background:'+(done?'#1D9E75':'#e0e0d8')+';margin-top:2px"></div>';
     h+='</div><div style="padding-bottom:8px"><div style="font-size:13px;font-weight:'+(done?600:400)+'">'+step.label+'</div><div style="font-size:11px;color:#888;margin-top:2px">'+step.desc+'</div></div></div>';
   });
   return h+'</div></div>';
 }
 
+// ── Adherents ─────────────────────────────────────────────────────────────────
+function renderAdherents(sid,s){
+  var ay=S.adherentYear||1;
+  var actuel=S.adherents[sid]||{};
+  var moisDebut=s.forecast&&s.forecast.moisDebut||0;
+  var annee=(s.forecast&&s.forecast.annee||2026)+(ay-1);
+  var offset=(ay-1)*12;
+  var bpArr=[],churnArr=[];
+  for(var i=0;i<12;i++){
+    var idx=offset+i;
+    bpArr.push(idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400);
+    churnArr.push(idx<BP_CHURN.length?BP_CHURN[idx]:0);
+  }
+  var realArr=[];
+  for(var i=0;i<12;i++){
+    var key='y'+ay+'_m'+i;
+    realArr.push(actuel[key]!=null?num(actuel[key]):null);
+  }
+  var lastReal=null;
+  var nbReal=0;
+  for(var i=0;i<realArr.length;i++){if(realArr[i]!==null){lastReal=realArr[i];nbReal=i+1;}}
+  var bpCible=bpArr[11];
+  var ecart=lastReal!==null&&nbReal>0?Math.round(lastReal-bpArr[nbReal-1]):null;
+  var moisLabels=[];
+  for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
+
+  var h='<div>';
+  h+='<div style="display:flex;gap:8px;margin-bottom:16px">';
+  [1,2,3].forEach(function(y){
+    h+='<button class="yr-tab '+(ay===y?'active':'')+'" onclick="setAdherentYear('+y+')">Annee '+y+' ('+((s.forecast&&s.forecast.annee||2026)+(y-1))+')</button>';
+  });
+  h+='</div>';
+  h+='<div class="kpis" style="margin-bottom:16px">';
+  h+='<div class="kpi"><div class="kpi-label">Cible BP fin A'+ay+'</div><div class="kpi-val">'+bpCible+' mbr</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Membres reels</div><div class="kpi-val" style="color:#185FA5">'+(lastReal!==null?lastReal+'':'--')+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Ecart vs BP</div><div class="kpi-val" style="color:'+(ecart!==null?(ecart>=0?'#3B6D11':'#A32D2D'):'#888')+'">'+(ecart!==null?(ecart>=0?'+':'')+ecart:'--')+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Seuil rentabilite</div><div class="kpi-val">150-200</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Pack4/Pack8/Illim.</div><div class="kpi-val" style="font-size:11px">47% / 50% / 3%</div></div>';
+  h+='</div>';
+  h+=renderAdherentChart(moisLabels,bpArr,realArr,annee);
+  h+='<div class="box" style="background:#f5f5f0;margin-bottom:12px">';
+  h+='<div style="font-weight:600;font-size:12px;margin-bottom:8px;color:#555">Churn mensuel BP (source Plan Financier)</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+  for(var i=0;i<12;i++){
+    var c=churnArr[i];
+    h+='<div style="text-align:center;min-width:44px;background:#fff;border-radius:6px;padding:4px 6px">';
+    h+='<div style="font-size:10px;color:#888">'+moisLabels[i]+'</div>';
+    h+='<div style="font-size:12px;font-weight:600;color:'+(c<0?'#A32D2D':'#888')+'">'+c+'</div></div>';
+  }
+  h+='</div></div>';
+  h+='<div class="box">';
+  h+='<div style="font-weight:600;font-size:14px;margin-bottom:12px">Saisie mensuelle &mdash; Annee '+ay+' ('+annee+')</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px">';
+  for(var i=0;i<12;i++){
+    var key='y'+ay+'_m'+i;
+    var rVal=actuel[key]!=null?actuel[key]:'';
+    var bp=bpArr[i];
+    var diff=rVal!==''?num(rVal)-bp:null;
+    var diffColor=diff!==null?(diff>=0?'#3B6D11':'#A32D2D'):'#888';
+    h+='<div style="background:#f5f5f0;border-radius:8px;padding:8px">';
+    h+='<div style="font-size:11px;font-weight:600;margin-bottom:2px">'+moisLabels[i]+'</div>';
+    h+='<div style="font-size:10px;color:#888;margin-bottom:3px">BP: '+bp+' (churn '+churnArr[i]+')</div>';
+    h+='<input type="number" value="'+rVal+'" placeholder="--" onchange="saisirAdherent(\''+sid+'\','+ay+','+i+',this.value)" style="width:100%;padding:5px 7px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;outline:none;background:#fff"/>';
+    if(diff!==null)h+='<div style="font-size:10px;color:'+diffColor+';margin-top:3px;font-weight:600">'+(diff>=0?'+':'')+diff+'</div>';
+    h+='</div>';
+  }
+  h+='</div></div></div>';
+  return h;
+}
+
+function renderAdherentChart(labels,bp,real,annee){
+  var W=680,H=240,PL=44,PR=20,PT=20,PB=30;
+  var cW=W-PL-PR,cH=H-PT-PB;
+  var allVals=bp.concat(real.filter(function(v){return v!==null;}));
+  var maxV=Math.max.apply(null,allVals)*1.12;
+  function xPos(i){return PL+i*(cW/(labels.length-1));}
+  function yPos(v){return PT+cH-(v/maxV)*cH;}
+  var h='<div class="box" style="margin-bottom:12px;padding:1rem">';
+  h+='<div style="font-weight:600;font-size:13px;margin-bottom:12px">Evolution adherents &mdash; '+annee+' &nbsp; BP vs Realise</div>';
+  h+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
+  for(var g=0;g<=5;g++){
+    var gv=Math.round(maxV*g/5);
+    var gy=yPos(gv);
+    h+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="#e8e8e0" stroke-width="1"/>';
+    h+='<text x="'+(PL-5)+'" y="'+(gy+4)+'" text-anchor="end" font-size="9" fill="#aaa">'+gv+'</text>';
+  }
+  var yR150=yPos(150),yR200=yPos(200);
+  h+='<rect x="'+PL+'" y="'+yR200+'" width="'+cW+'" height="'+(yR150-yR200)+'" fill="#E1F5EE" opacity="0.5"/>';
+  h+='<text x="'+(PL+4)+'" y="'+(yR200-3)+'" font-size="8" fill="#0F6E56">Seuil 150-200</text>';
+  labels.forEach(function(l,i){h+='<text x="'+xPos(i)+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="#888">'+l+'</text>';});
+  var bpPath='M';
+  bp.forEach(function(v,i){bpPath+=(i>0?' L':'')+xPos(i)+' '+yPos(v);});
+  h+='<path d="'+bpPath+'" fill="none" stroke="#5b7fa6" stroke-width="2" stroke-dasharray="6,3"/>';
+  var realPoints=[];
+  real.forEach(function(v,i){if(v!==null)realPoints.push({x:xPos(i),y:yPos(v),v:v});});
+  if(realPoints.length>1){
+    var rPath='M';
+    realPoints.forEach(function(p,i){rPath+=(i>0?' L':'')+p.x+' '+p.y;});
+    h+='<path d="'+rPath+'" fill="none" stroke="#1D9E75" stroke-width="2.5"/>';
+  }
+  bp.forEach(function(v,i){h+='<circle cx="'+xPos(i)+'" cy="'+yPos(v)+'" r="3" fill="#5b7fa6" opacity="0.6"/>';});
+  realPoints.forEach(function(p){
+    h+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="#1D9E75"/>';
+    h+='<text x="'+p.x+'" y="'+(p.y-8)+'" text-anchor="middle" font-size="9" fill="#0F6E56" font-weight="600">'+p.v+'</text>';
+  });
+  h+='<line x1="'+(W-130)+'" y1="14" x2="'+(W-110)+'" y2="14" stroke="#5b7fa6" stroke-width="2" stroke-dasharray="6,3"/>';
+  h+='<text x="'+(W-106)+'" y="17" font-size="9" fill="#5b7fa6">BP Plan Fin.</text>';
+  h+='<line x1="'+(W-130)+'" y1="27" x2="'+(W-110)+'" y2="27" stroke="#1D9E75" stroke-width="2.5"/>';
+  h+='<text x="'+(W-106)+'" y="30" font-size="9" fill="#1D9E75">Realise</text>';
+  h+='</svg></div>';
+  return h;
+}
+
+// ── Forecast ──────────────────────────────────────────────────────────────────
+function renderForecast(sid,s){
+  var fy=S.forecastYear||1;
+  var fs=S.forecastSection||'summary';
+  var fc=s.forecast||{};
+  var bps=build3YearBP(fc);
+  var bp=fy===1?bps.a1:fy===2?bps.a2:bps.a3;
+  var actuelKey=fy===1?'actuel':fy===2?'actuel2':'actuel3';
+  var actuel=fc[actuelKey]||{};
+  var annee=(fc.annee||2026)+(fy-1);
+  var moisDebut=fc.moisDebut||0;
+  var annualCA=fy===1?(fc.annualCA||CA_A1):fy===2?(fc.annualCA2||CA_A2):(fc.annualCA3||CA_A3);
+
+  var totals=bp.map(function(r,idx){
+    var a=actuel[idx]||{};
+    var hasReal=Object.keys(a).length>0;
+    var aCA=hasReal?num(a.ca_cours)+num(a.ca_prives)+num(a.ca_boutique):null;
+    var aCharges=hasReal?CHARGES.reduce(function(sum,l){return sum+num(a[l.id]!=null?a[l.id]:r[l.id]);},0):null;
+    var aEBITDA=hasReal?(aCA-CHARGES_NO_AMORT.reduce(function(sum,l){return sum+num(a[l.id]!=null?a[l.id]:r[l.id]);},0)):null;
+    return{bpCA:r._ca,bpCharges:r._charges,bpResult:r._result,bpEBITDA:r._ebitda,
+      aCA:aCA,aCharges:aCharges,aResult:hasReal?aCA-aCharges:null,aEBITDA:aEBITDA,hasReal:hasReal};
+  });
+
+  var rm=totals.filter(function(t){return t.hasReal;});
+  var cumBPCA=totals.reduce(function(s,t){return s+t.bpCA;},0);
+  var cumActCA=rm.reduce(function(s,t){return s+t.aCA;},0);
+  var cumBPRes=totals.reduce(function(s,t){return s+t.bpResult;},0);
+  var cumActRes=rm.reduce(function(s,t){return s+t.aResult;},0);
+  var cumBPEBITDA=totals.reduce(function(s,t){return s+t.bpEBITDA;},0);
+  var cumActEBITDA=rm.reduce(function(s,t){return s+t.aEBITDA;},0);
+  var refCA=rm.reduce(function(s,t){return s+t.bpCA;},0);
+  var ecartCA=refCA?Math.round((cumActCA/refCA-1)*100):0;
+  var moisLabels=[];
+  for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
+
+  var h='<div>';
+  // Selecteur annee avec CA
+  h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  [1,2,3].forEach(function(y){
+    var yCA=y===1?(fc.annualCA||CA_A1):y===2?(fc.annualCA2||CA_A2):(fc.annualCA3||CA_A3);
+    h+='<button class="yr-tab '+(fy===y?'active':'')+'" onclick="setForecastYear('+y+')">A'+y+' ('+(( fc.annee||2026)+(y-1))+') &mdash; '+fmt(yCA)+'</button>';
+  });
+  h+='</div>';
+
+  h+='<div class="kpis" style="margin-bottom:16px">';
+  h+='<div class="kpi"><div class="kpi-label">CA BP annuel</div><div class="kpi-val">'+fmt(annualCA)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">CA reel cumule</div><div class="kpi-val" style="color:#185FA5">'+fmt(cumActCA)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Ecart CA</div><div class="kpi-val" style="color:'+(ecartCA>=0?'#3B6D11':'#A32D2D')+'">'+(ecartCA>=0?'+':'')+ecartCA+'%</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">EBITDA BP</div><div class="kpi-val" style="color:#0F6E56">'+fmt(cumBPEBITDA)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">EBITDA reel</div><div class="kpi-val" style="color:'+(cumActEBITDA>=0?'#0F6E56':'#A32D2D')+'">'+fmt(cumActEBITDA)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Resultat BP</div><div class="kpi-val">'+fmt(cumBPRes)+'</div></div>';
+  h+='</div>';
+
+  h+='<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">';
+  h+='<button class="tab '+(fs==='summary'?'active':'')+'" onclick="setFS(\'summary\')">Synthese</button>';
+  h+='<button class="tab '+(fs==='detail'?'active':'')+'" onclick="setFS(\'detail\')">Detail complet</button>';
+  h+='<button class="tab '+(fs==='saisie'?'active':'')+'" onclick="setFS(\'saisie\')">Saisie mensuelle</button>';
+  h+='<button class="tab '+(fs==='recap3'?'active':'')+'" onclick="setFS(\'recap3\')">Recap 3 ans</button>';
+  h+='</div>';
+
+  if(fs==='summary'){
+    var rows=[
+      {l:'CA BP',vals:totals.map(function(t){return t.bpCA;}),tot:cumBPCA,bold:true},
+      {l:'CA Reel',vals:totals.map(function(t){return t.aCA;}),tot:cumActCA,blue:true},
+      {l:'EBITDA BP',vals:totals.map(function(t){return t.bpEBITDA;}),tot:cumBPEBITDA,bold:true,green:true},
+      {l:'EBITDA Reel',vals:totals.map(function(t){return t.aEBITDA;}),tot:cumActEBITDA,blue:true,res:true},
+      {l:'Charges BP',vals:totals.map(function(t){return t.bpCharges;}),tot:totals.reduce(function(s,t){return s+t.bpCharges;},0)},
+      {l:'Resultat BP',vals:totals.map(function(t){return t.bpResult;}),tot:cumBPRes,bold:true},
+      {l:'Resultat Reel',vals:totals.map(function(t){return t.aResult;}),tot:cumActRes,blue:true,res:true},
+    ];
+    h+='<div style="overflow-x:auto"><table>';
+    h+='<tr><th style="text-align:left;padding-left:8px">Ligne</th>';
+    moisLabels.forEach(function(m){h+='<th>'+m+'</th>';});
+    h+='<th>Total</th></tr>';
+    rows.forEach(function(row){
+      h+='<tr style="background:'+(row.green?'#f0faf5':row.bold?'#f5f5f0':'')+'">';
+      h+='<td class="lbl" style="font-weight:'+(row.bold||row.green?600:400)+';color:'+(row.green?'#0F6E56':'inherit')+'">'+row.l+'</td>';
+      row.vals.forEach(function(v){
+        var c='inherit';
+        if(row.green&&v!==null)c='#0F6E56';
+        else if(row.blue&&v!==null)c=row.res?(v>=0?'#3B6D11':'#A32D2D'):'#185FA5';
+        h+='<td style="color:'+c+'">'+(v===null?'<span style="color:#ddd">--</span>':fmtN(v))+'</td>';
+      });
+      var totColor=row.green?'#0F6E56':row.res?(row.tot>=0?'#3B6D11':'#A32D2D'):'inherit';
+      h+='<td style="font-weight:700;color:'+totColor+'">'+fmtN(row.tot)+'</td></tr>';
+    });
+    h+='</table></div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:6px">Noir/gris = BP &middot; Bleu = Reel saisi &middot; Vert = EBITDA</div>';
+  }
+
+  if(fs==='detail'){
+    h+='<div style="overflow-x:auto"><table>';
+    h+='<tr><th style="text-align:left;padding-left:8px;min-width:150px">Ligne</th>';
+    moisLabels.forEach(function(m){h+='<th>'+m+'</th>';});
+    h+='<th style="font-weight:700">Total</th></tr>';
+    // Produits
+    h+='<tr style="background:#e8f0f8"><td class="lbl" colspan="14" style="font-weight:700;color:#185FA5;padding:6px 8px">PRODUITS</td></tr>';
+    PRODUITS.forEach(function(l){
+      var tot=0;
+      h+='<tr><td class="lbl" style="padding-left:16px">'+l.label+'</td>';
+      bp.forEach(function(r,i){
+        var bv=r[l.id];tot+=bv;
+        var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
+        h+='<td><div style="font-size:10px;color:#444">'+fmtN(bv)+'</div>'+(a!==null?'<div style="font-size:10px;color:#185FA5;font-weight:600">'+fmtN(a)+'</div>':'')+'</td>';
+      });
+      h+='<td style="font-weight:600;font-size:10px">'+fmtN(tot)+'</td></tr>';
+    });
+    // EBITDA
+    h+='<tr style="background:#f0faf5"><td class="lbl" colspan="14" style="font-weight:700;color:#0F6E56;padding:6px 8px">EBITDA</td></tr>';
+    h+='<tr style="background:#f0faf5"><td class="lbl" style="padding-left:16px;font-weight:600;color:#0F6E56">EBITDA mensuel</td>';
+    var totEB=0;
+    totals.forEach(function(t){
+      totEB+=t.bpEBITDA;
+      h+='<td><div style="font-size:10px;font-weight:600;color:#0F6E56">'+fmtN(t.bpEBITDA)+'</div>';
+      if(t.hasReal)h+='<div style="font-size:10px;color:'+(t.aEBITDA>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+fmtN(t.aEBITDA)+'</div>';
+      h+='</td>';
+    });
+    h+='<td style="font-weight:700;color:#0F6E56">'+fmtN(totEB)+'</td></tr>';
+    // Charges
+    h+='<tr style="background:#fafafa"><td class="lbl" colspan="14" style="font-weight:700;color:#555;padding:6px 8px">CHARGES</td></tr>';
+    CHARGES.forEach(function(l){
+      var tot=0;
+      h+='<tr><td class="lbl" style="padding-left:16px">'+l.label+'</td>';
+      bp.forEach(function(r,i){
+        var bv=r[l.id];tot+=bv;
+        var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
+        h+='<td><div style="font-size:10px;color:#444">'+fmtN(bv)+'</div>'+(a!==null?'<div style="font-size:10px;color:#185FA5;font-weight:600">'+fmtN(a)+'</div>':'')+'</td>';
+      });
+      h+='<td style="font-weight:600;font-size:10px">'+fmtN(tot)+'</td></tr>';
+    });
+    // Resultat
+    h+='<tr style="background:#f5f5f0"><td class="lbl" style="font-weight:700">RESULTAT NET</td>';
+    var totRN=0;
+    totals.forEach(function(t){
+      totRN+=t.bpResult;
+      h+='<td><div style="font-size:10px;font-weight:700">'+fmtN(t.bpResult)+'</div>';
+      if(t.hasReal)h+='<div style="font-size:10px;color:'+(t.aResult>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+fmtN(t.aResult)+'</div>';
+      h+='</td>';
+    });
+    h+='<td style="font-weight:700">'+fmtN(totRN)+'</td></tr>';
+    h+='</table></div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:6px">Gris/noir = BP &middot; Bleu = Reel saisi</div>';
+  }
+
+  if(fs==='saisie'){
+    h+='<div class="months-grid">';
+    for(var i=0;i<12;i++){
+      var ok=actuel[i]&&Object.keys(actuel[i]).length>0;
+      h+='<button class="month-btn '+(ok?'ok':'')+'" onclick="openEditMois('+i+')">'+moisLabels[i]+' '+(ok?'&#10003;':'')+'</button>';
+    }
+    h+='</div>';
+    if(S.editMoisIdx!==null){
+      var r=bp[S.editMoisIdx];
+      h+='<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:4px">Saisie &mdash; '+moisLabels[S.editMoisIdx]+' '+annee+'</div>';
+      h+='<div class="sec-title">Produits</div><div class="edit-grid">';
+      PRODUITS.forEach(function(l){
+        h+='<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">'+l.label+' (BP: '+fmtN(r[l.id])+')</label>';
+        h+='<input type="number" value="'+(S.editVals[l.id]||'')+'" oninput="setEV(\''+l.id+'\',this.value)" placeholder="'+r[l.id]+'" style="width:100%;padding:7px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>';
+      });
+      h+='</div><div class="sec-title">Charges</div><div class="edit-grid">';
+      CHARGES.forEach(function(l){
+        h+='<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">'+l.label+' (BP: '+fmtN(r[l.id])+')</label>';
+        h+='<input type="number" value="'+(S.editVals[l.id]||'')+'" oninput="setEV(\''+l.id+'\',this.value)" placeholder="'+r[l.id]+'" style="width:100%;padding:7px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>';
+      });
+      h+='</div><div style="display:flex;gap:8px;margin-top:12px">';
+      h+='<button class="btn btn-primary" onclick="saveMois()">Enregistrer</button>';
+      h+='<button class="btn" onclick="clearMois()">Effacer</button>';
+      h+='<button class="btn" onclick="cancelEdit()">Annuler</button>';
+      h+='</div></div>';
+    }
+  }
+
+  if(fs==='recap3'){
+    var a1s=bps.a1,a2s=bps.a2,a3s=bps.a3;
+    function sumF(arr,f){return arr.reduce(function(s,r){return s+r[f];},0);}
+    var sCA1=sumF(a1s,'_ca'),sCA2=sumF(a2s,'_ca'),sCA3=sumF(a3s,'_ca');
+    var sEB1=sumF(a1s,'_ebitda'),sEB2=sumF(a2s,'_ebitda'),sEB3=sumF(a3s,'_ebitda');
+    var sRN1=sumF(a1s,'_result'),sRN2=sumF(a2s,'_result'),sRN3=sumF(a3s,'_result');
+    var sCH1=sumF(a1s,'_charges'),sCH2=sumF(a2s,'_charges'),sCH3=sumF(a3s,'_charges');
+    h+='<div class="box">';
+    h+='<div style="font-weight:600;font-size:14px;margin-bottom:14px">Recapitulatif 3 ans &mdash; Plan Financier BP</div>';
+    h+='<div style="overflow-x:auto"><table>';
+    h+='<tr><th style="text-align:left;padding-left:8px;min-width:180px">Indicateur</th>';
+    h+='<th>A1 ('+(fc.annee||2026)+')</th><th>A2 ('+(fc.annee?fc.annee+1:2027)+')</th><th>A3 ('+(fc.annee?fc.annee+2:2028)+')</th><th>Cumule 3 ans</th></tr>';
+    var lines3=[
+      {l:'CA annuel',v:[sCA1,sCA2,sCA3],cur:true},
+      {l:'Charges totales',v:[sCH1,sCH2,sCH3],cur:true},
+      {l:'EBITDA',v:[sEB1,sEB2,sEB3],cur:true,green:true},
+      {l:'Marge EBITDA',v:[Math.round(sEB1/sCA1*100),Math.round(sEB2/sCA2*100),Math.round(sEB3/sCA3*100)],pct:true},
+      {l:'Resultat net',v:[sRN1,sRN2,sRN3],cur:true},
+      {l:'Marge nette',v:[Math.round(sRN1/sCA1*100),Math.round(sRN2/sCA2*100),Math.round(sRN3/sCA3*100)],pct:true},
+      {l:'Adherents fin annee',v:[BP_ADHERENTS[11],BP_ADHERENTS[23],BP_ADHERENTS[35]],adh:true},
+    ];
+    lines3.forEach(function(row){
+      var cum=row.pct||row.adh?'--':(row.v[0]+row.v[1]+row.v[2]);
+      h+='<tr style="background:'+(row.green?'#f0faf5':'')+'"><td class="lbl" style="font-weight:'+(row.green?600:400)+';color:'+(row.green?'#0F6E56':'inherit')+'">'+row.l+'</td>';
+      row.v.forEach(function(v){
+        var d=row.pct?(v+'%'):row.adh?fmtN(v):fmt(v);
+        h+='<td style="color:'+(row.green?'#0F6E56':'inherit')+';font-weight:'+(row.green?600:400)+'">'+d+'</td>';
+      });
+      h+='<td style="font-weight:700;color:'+(row.green?'#0F6E56':'inherit')+'">'+(row.pct||row.adh?'--':fmt(cum))+'</td></tr>';
+    });
+    h+='</table></div></div>';
+    // Graphique CA 3 ans
+    h+=renderCA3Chart(a1s,a2s,a3s,fc);
+  }
+  h+='</div>';
+  return h;
+}
+
+function renderCA3Chart(a1s,a2s,a3s,fc){
+  var all=[].concat(a1s,a2s,a3s).map(function(r){return r._ca;});
+  var allEB=[].concat(a1s,a2s,a3s).map(function(r){return r._ebitda;});
+  var W=680,H=180,PL=52,PR=10,PT=16,PB=26;
+  var cW=W-PL-PR,cH=H-PT-PB;
+  var maxV=Math.max.apply(null,all)*1.1;
+  function xp(i){return PL+i*(cW/(all.length-1));}
+  function yp(v){return PT+cH-(v/maxV)*cH;}
+  var colors=['#5b7fa6','#1D9E75','#854F0B'];
+  var years=[a1s,a2s,a3s];
+  var h='<div class="box"><div style="font-weight:600;font-size:13px;margin-bottom:10px">CA mensuel BP &mdash; 3 ans compares</div>';
+  h+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
+  for(var g=0;g<=4;g++){
+    var gv=Math.round(maxV*g/4);
+    var gy=yp(gv);
+    h+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="#e8e8e0" stroke-width="1"/>';
+    h+='<text x="'+(PL-4)+'" y="'+(gy+4)+'" text-anchor="end" font-size="8" fill="#aaa">'+fmt(gv)+'</text>';
+  }
+  var off=0;
+  years.forEach(function(ys,yi){
+    var path='M';
+    ys.forEach(function(r,i){path+=(i>0?' L':'')+xp(off+i)+' '+yp(r._ca);});
+    h+='<path d="'+path+'" fill="none" stroke="'+colors[yi]+'" stroke-width="2"/>';
+    // EBITDA area
+    var eb='M'+xp(off)+' '+yp(0);
+    ys.forEach(function(r,i){eb+=' L'+xp(off+i)+' '+yp(r._ebitda);});
+    eb+=' L'+xp(off+11)+' '+yp(0)+' Z';
+    h+='<path d="'+eb+'" fill="'+colors[yi]+'" opacity="0.08"/>';
+    ys.forEach(function(r,i){h+='<circle cx="'+xp(off+i)+'" cy="'+yp(r._ca)+'" r="2.5" fill="'+colors[yi]+'"/>';});
+    off+=12;
+  });
+  h+='<line x1="'+xp(12)+'" y1="'+PT+'" x2="'+xp(12)+'" y2="'+(H-PB)+'" stroke="#ddd" stroke-dasharray="4,2"/>';
+  h+='<line x1="'+xp(24)+'" y1="'+PT+'" x2="'+xp(24)+'" y2="'+(H-PB)+'" stroke="#ddd" stroke-dasharray="4,2"/>';
+  var lblY=H-PB+14;
+  h+='<text x="'+xp(6)+'" y="'+lblY+'" text-anchor="middle" font-size="9" fill="'+colors[0]+'">A1 ('+(fc.annee||2026)+')</text>';
+  h+='<text x="'+xp(18)+'" y="'+lblY+'" text-anchor="middle" font-size="9" fill="'+colors[1]+'">A2 ('+(fc.annee?fc.annee+1:2027)+')</text>';
+  h+='<text x="'+xp(30)+'" y="'+lblY+'" text-anchor="middle" font-size="9" fill="'+colors[2]+'">A3 ('+(fc.annee?fc.annee+2:2028)+')</text>';
+  // Legende
+  h+='<rect x="'+(W-100)+'" y="8" width="8" height="8" fill="'+colors[0]+'" opacity="0.3"/>';
+  h+='<text x="'+(W-88)+'" y="15" font-size="8" fill="#888">Zone EBITDA</text>';
+  h+='</svg></div>';
+  return h;
+}
+
+// ── Engagements ───────────────────────────────────────────────────────────────
 function renderEngagements(sid,s){
   var deps=S.depenses[sid]||[];
   var budget=s.capex||306200;
@@ -360,7 +750,7 @@ function renderEngagements(sid,s){
   var demande=deps.filter(function(d){return d.deblocage==='demande';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
   var pctE=Math.min(100,Math.round(engage/budget*100));
   var pctD=Math.min(100,Math.round(debloque/budget*100));
-  var isAdmin=S.profile&&S.profile.role==='admin';
+  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
   var h='<div>';
   h+='<div class="kpis" style="margin-bottom:12px">';
   h+='<div class="kpi"><div class="kpi-label">Budget CAPEX</div><div class="kpi-val">'+fmt(budget)+'</div></div>';
@@ -388,9 +778,8 @@ function renderEngagements(sid,s){
     h+='<tr><th style="text-align:left;padding-left:8px">Categorie</th><th style="text-align:left">Description</th><th>TTC</th><th>Financement</th><th>Par</th><th>Date</th><th>Deblocage</th><th>Justif</th>'+(isAdmin?'<th></th>':'')+'</tr>';
     deps.forEach(function(d,i){
       var st=DEBLOCAGE[d.deblocage]||DEBLOCAGE.attente;
-      h+='<tr>';
-      h+='<td style="padding:8px;font-size:12px;font-weight:500;text-align:left">'+d.categorie+'</td>';
-      h+='<td style="padding:8px;font-size:12px;color:#555;text-align:left">'+( d.description||'--')+'</td>';
+      h+='<tr><td style="padding:8px;font-size:12px;font-weight:500;text-align:left">'+d.categorie+'</td>';
+      h+='<td style="padding:8px;font-size:12px;color:#555;text-align:left">'+(d.description||'--')+'</td>';
       h+='<td style="padding:8px;font-size:12px;font-weight:600">'+fmt(num(d.ttc))+'</td>';
       h+='<td style="padding:8px"><span style="background:#E6F1FB;color:#185FA5;padding:2px 6px;border-radius:5px;font-size:10px">'+d.financement+'</span></td>';
       h+='<td style="padding:8px;font-size:11px">'+(d.engage_par||'--')+'</td>';
@@ -400,10 +789,10 @@ function renderEngagements(sid,s){
       if(d.deblocage==='debloque')h+='<div style="font-size:10px;color:#0F6E56">'+(d.date_deblocage||'')+'</div>';
       h+='</td>';
       h+='<td style="padding:8px;text-align:center">';
-      if(d.fichierUrl)h+='<a href="'+d.fichierUrl+'" target="_blank" style="font-size:13px;text-decoration:none">doc</a> ';
-      if(isAdmin)h+='<label style="cursor:pointer;font-size:13px" title="Ajouter">+<input type="file" style="display:none" onchange="uploadJustif(\''+sid+'\','+i+',this)"/></label>';
+      if(d.fichierUrl)h+='<a href="'+d.fichierUrl+'" target="_blank" style="font-size:11px;color:#185FA5;text-decoration:none">doc</a> ';
+      if(isAdmin)h+='<label style="cursor:pointer;font-size:13px">+<input type="file" style="display:none" onchange="uploadJustif(\''+sid+'\','+i+',this)"/></label>';
       h+='</td>';
-      if(isAdmin)h+='<td style="padding:8px"><button class="btn" style="font-size:11px;padding:3px 8px;color:#A32D2D" onclick="supprimerDepense(\''+sid+'\','+i+')">x</button></td>';
+      if(isAdmin)h+='<td style="padding:8px"><button class="btn" style="font-size:11px;padding:3px 8px;color:#A32D2D" onclick="supprimerDepense(\''+sid+'\','+i+')">&times;</button></td>';
       h+='</tr>';
     });
     h+='</table></div>';
@@ -415,22 +804,19 @@ function renderEngagements(sid,s){
 function ouvrirFormDepense(sid){
   var div=document.getElementById('form-depense-'+sid);
   if(!div)return;
-  var h='<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:12px">Nouvelle depense</div>';
-  h+='<div class="form-grid">';
+  var h='<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:12px">Nouvelle depense</div><div class="form-grid">';
   h+='<div class="fg"><label>Categorie</label><select id="dep-cat"><option value="">Selectionner...</option>';
   DEPENSE_CATS.forEach(function(c){h+='<option>'+c+'</option>';});
-  h+='</select></div>';
-  h+='<div class="fg"><label>Description</label><input id="dep-desc" placeholder="Ex: Devis ISOSPACE"/></div>';
+  h+='</select></div><div class="fg"><label>Description</label><input id="dep-desc" placeholder="Ex: Devis ISOSPACE"/></div>';
   h+='<div class="fg"><label>Montant HT</label><input id="dep-ht" type="number" placeholder="0" oninput="calcTTC()"/></div>';
-  h+='<div class="fg"><label>TVA %</label><select id="dep-tva" onchange="calcTTC()"><option value="20">20%</option><option value="10">10%</option><option value="0">0%</option></select></div>';
+  h+='<div class="fg"><label>TVA</label><select id="dep-tva" onchange="calcTTC()"><option value="20">20%</option><option value="10">10%</option><option value="0">0%</option></select></div>';
   h+='<div class="fg"><label>Montant TTC</label><input id="dep-ttc" type="number" placeholder="0"/></div>';
   h+='<div class="fg"><label>Financement</label><select id="dep-fin">';
   DEPENSE_FINS.forEach(function(f){h+='<option>'+f+'</option>';});
   h+='</select></div>';
   h+='<div class="fg"><label>Engage par</label><select id="dep-par"><option>Paul Becaud</option><option>Pascal Becaud</option><option>Tom Becaud</option><option>Paul Sabourin</option><option>Caroline Coquel</option><option>Clement Coquel</option></select></div>';
   h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div>';
-  h+='</div>';
-  h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderDepense(\''+sid+'\')">Enregistrer</button>';
+  h+='</div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderDepense(\''+sid+'\')">Enregistrer</button>';
   h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
   div.innerHTML=h;
 }
@@ -464,8 +850,7 @@ async function sauvegarderDepense(sid){
 async function supprimerDepense(sid,idx){
   if(!confirm('Supprimer ?'))return;
   S.depenses[sid].splice(idx,1);
-  await saveDepenses(sid);
-  toast('Supprime');render();
+  await saveDepenses(sid);render();
 }
 
 async function changerDeblocage(sid,idx){
@@ -474,8 +859,7 @@ async function changerDeblocage(sid,idx){
   if(d.deblocage==='attente'){d.deblocage='demande';d.date_demande=today;}
   else if(d.deblocage==='demande'){d.deblocage='debloque';d.date_deblocage=today;}
   else{d.deblocage='attente';d.date_demande=null;d.date_deblocage=null;}
-  await saveDepenses(sid);
-  toast('Statut mis a jour');render();
+  await saveDepenses(sid);render();
 }
 
 async function uploadJustif(sid,idx,input){
@@ -483,32 +867,31 @@ async function uploadJustif(sid,idx,input){
   var path=sid+'/justif_'+Date.now()+'_'+cleanName(file.name);
   var res=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
   if(res.error){toast('Erreur upload');return;}
-  var url=sb.storage.from('studio-files').getPublicUrl(path);
-  S.depenses[sid][idx].fichierUrl=url.data.publicUrl;
+  var pu=sb.storage.from('studio-files').getPublicUrl(path);
+  S.depenses[sid][idx].fichierUrl=pu.data.publicUrl;
   S.depenses[sid][idx].fichierPath=path;
-  await saveDepenses(sid);
-  toast('Justificatif ajoute');render();
+  await saveDepenses(sid);render();
 }
 
 function renderMessages(sid){
   var msgs=S.messages[sid]||[];
   var me=(S.profile&&S.profile.nom)||'';
   var colors=['#185FA5','#0F6E56','#854F0B','#993C1D','#533AB7','#A32D2D'];
-  function authorColor(name){var h=0;for(var i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return colors[Math.abs(h)%colors.length];}
-  function initials(name){return name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);}
+  function aC(name){var h=0;for(var i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return colors[Math.abs(h)%colors.length];}
+  function ini(name){return name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);}
   var h='<div><div class="box" style="padding:0;overflow:hidden">';
   h+='<div id="msgs-list" style="height:420px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">';
   if(msgs.length===0){
-    h+='<div style="text-align:center;color:#aaa;font-size:13px;margin:auto">Aucun message - soyez le premier a ecrire !</div>';
+    h+='<div style="text-align:center;color:#aaa;font-size:13px;margin:auto">Aucun message</div>';
   } else {
     msgs.forEach(function(m){
       var isMe=m.auteur===me;
-      var color=authorColor(m.auteur);
-      var ini=initials(m.auteur);
+      var color=aC(m.auteur);
+      var in2=ini(m.auteur);
       h+='<div style="display:flex;flex-direction:'+(isMe?'row-reverse':'row')+';align-items:flex-end;gap:8px">';
-      h+='<div style="width:32px;height:32px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:#fff">'+ini+'</div>';
+      h+='<div style="width:32px;height:32px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:#fff">'+in2+'</div>';
       h+='<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';max-width:72%">';
-      h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' - '+m.date+'</div>';
+      h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' &mdash; '+m.date+'</div>';
       h+='<div style="background:'+(isMe?'#1a1a1a':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
       h+='</div></div>';
     });
@@ -540,129 +923,29 @@ async function envoyerMessage(sid){
 }
 
 function renderLocalisation(s){
-  var addrEnc=encodeURIComponent(s.addr);
-  var staticMap='https://staticmap.openstreetmap.de/staticmap.php?center='+addrEnc+'&zoom=16&size=640x360&markers='+addrEnc+',red-pushpin';
-  var h='<div>';
-  h+='<div class="box" style="padding:0;overflow:hidden;margin-bottom:12px">';
-  h+='<img src="'+staticMap+'" style="width:100%;height:360px;object-fit:cover;display:block" onerror="this.outerHTML=\'<div style=padding:3rem;text-align:center;color:#aaa;font-size:13px>Apercu non disponible</div>\'" alt="Carte"/>';
-  h+='</div>';
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
-  h+='<a href="https://www.google.com/maps/search/'+addrEnc+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0;cursor:pointer"><span style="font-size:24px">P</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Vue satellite et Street View</div></div></div></a>';
-  h+='<a href="https://www.openstreetmap.org/search?query='+addrEnc+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0;cursor:pointer"><span style="font-size:24px">M</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Carte interactive</div></div></div></a>';
-  h+='</div>';
-  h+='<div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">'+s.addr+'</div></div>';
-  h+='</div>';
-  return h;
-}
-
-function renderForecast(s){
-  var fs=S.forecastSection;
-  var moisDebut=s.forecast.moisDebut;
-  var annee=s.forecast.annee;
-  var actuel=s.forecast.actuel;
-  var annualCA=s.forecast.annualCA;
-  var bp=buildBP(annualCA,moisDebut);
-  var totals=bp.map(function(r,idx){
-    var a=actuel[idx]||{};
-    var hasReal=Object.keys(a).length>0;
-    var aCA=hasReal?num(a.ca_cours)+num(a.ca_prives)+num(a.ca_boutique):null;
-    var aCharges=hasReal?CHARGES.reduce(function(sum,l){return sum+num(a[l.id]!=null?a[l.id]:r[l.id]);},0):null;
-    return{bpCA:r._ca,bpCharges:r._charges,bpResult:r._result,aCA:aCA,aCharges:aCharges,aResult:hasReal?aCA-aCharges:null,hasReal:hasReal};
-  });
-  var rm=totals.filter(function(t){return t.hasReal;});
-  var cumBPCA=totals.reduce(function(s,t){return s+t.bpCA;},0);
-  var cumActCA=rm.reduce(function(s,t){return s+t.aCA;},0);
-  var cumBPRes=totals.reduce(function(s,t){return s+t.bpResult;},0);
-  var cumActRes=rm.reduce(function(s,t){return s+t.aResult;},0);
-  var refCA=rm.reduce(function(s,t){return s+t.bpCA;},0);
-  var ecart=refCA?Math.round((cumActCA/refCA-1)*100):0;
-  var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">';
-  h+='<div class="kpi"><div class="kpi-label">CA BP annuel</div><div class="kpi-val">'+fmt(annualCA)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">CA reel cumule</div><div class="kpi-val">'+fmt(cumActCA)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Ecart CA</div><div class="kpi-val" style="color:'+(ecart>=0?'#3B6D11':'#A32D2D')+'">'+(ecart>=0?'+':'')+ecart+'%</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Resultat BP</div><div class="kpi-val">'+fmt(cumBPRes)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Resultat reel</div><div class="kpi-val">'+fmt(cumActRes)+'</div></div>';
-  h+='</div>';
-  h+='<div style="display:flex;gap:6px;margin-bottom:12px">';
-  h+='<button class="tab '+(fs==='summary'?'active':'')+'" onclick="setFS(\'summary\')">Synthese</button>';
-  h+='<button class="tab '+(fs==='detail'?'active':'')+'" onclick="setFS(\'detail\')">Detail</button>';
-  h+='<button class="tab '+(fs==='saisie'?'active':'')+'" onclick="setFS(\'saisie\')">Saisie</button>';
-  h+='</div>';
-  if(fs==='summary'){
-    var rows=[
-      {l:'CA BP',vals:totals.map(function(t){return t.bpCA;}),tot:cumBPCA,bold:true},
-      {l:'CA Reel',vals:totals.map(function(t){return t.aCA;}),tot:cumActCA,blue:true},
-      {l:'Charges BP',vals:totals.map(function(t){return t.bpCharges;}),tot:totals.reduce(function(s,t){return s+t.bpCharges;},0)},
-      {l:'Resultat BP',vals:totals.map(function(t){return t.bpResult;}),tot:cumBPRes,bold:true},
-      {l:'Resultat Reel',vals:totals.map(function(t){return t.aResult;}),tot:cumActRes,blue:true,res:true},
-    ];
-    h+='<div style="overflow-x:auto"><table>';
-    h+='<tr><th style="text-align:left;padding-left:8px">Ligne</th>';
-    bp.forEach(function(r){h+='<th>'+MOIS[r.mi]+'</th>';});
-    h+='<th>Total</th></tr>';
-    rows.forEach(function(row){
-      h+='<tr style="background:'+(row.bold?'#f5f5f0':'')+'">';
-      h+='<td class="lbl" style="font-weight:'+(row.bold?600:400)+'">'+row.l+'</td>';
-      row.vals.forEach(function(v){
-        var c=row.blue&&v!==null?(row.res?(v>=0?'#3B6D11':'#A32D2D'):'#185FA5'):'inherit';
-        h+='<td style="color:'+c+'">'+(v===null?'--':fmtN(v))+'</td>';
-      });
-      h+='<td style="font-weight:600">'+(row.tot?fmtN(row.tot):'--')+'</td></tr>';
-    });
-    h+='</table></div>';
-  }
-  if(fs==='saisie'){
-    h+='<div class="months-grid">';
-    bp.forEach(function(r,idx){
-      var ok=actuel[idx]&&Object.keys(actuel[idx]).length>0;
-      h+='<button class="month-btn '+(ok?'ok':'')+'" onclick="openEditMois('+idx+')">'+MOIS[r.mi]+' '+annee+(ok?' v':'')+'</button>';
-    });
-    h+='</div>';
-    if(S.editMoisIdx!==null){
-      var r=bp[S.editMoisIdx];
-      h+='<div class="box">';
-      h+='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Saisie - '+MOIS[r.mi]+' '+annee+'</div>';
-      h+='<div class="sec-title">Produits</div><div class="edit-grid">';
-      PRODUITS.forEach(function(l){
-        h+='<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">'+l.label+' ('+fmtN(r[l.id])+')</label>';
-        h+='<input type="number" value="'+(S.editVals[l.id]||'')+'" oninput="setEV(\''+l.id+'\',this.value)" placeholder="'+r[l.id]+'" style="width:100%;padding:7px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>';
-      });
-      h+='</div><div class="sec-title">Charges</div><div class="edit-grid">';
-      CHARGES.forEach(function(l){
-        h+='<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">'+l.label+' ('+fmtN(r[l.id])+')</label>';
-        h+='<input type="number" value="'+(S.editVals[l.id]||'')+'" oninput="setEV(\''+l.id+'\',this.value)" placeholder="'+r[l.id]+'" style="width:100%;padding:7px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>';
-      });
-      h+='</div><div style="display:flex;gap:8px;margin-top:12px">';
-      h+='<button class="btn btn-primary" onclick="saveMois()">Enregistrer</button>';
-      h+='<button class="btn" onclick="clearMois()">Effacer</button>';
-      h+='<button class="btn" onclick="cancelEdit()">Annuler</button>';
-      h+='</div></div>';
-    }
-  }
-  return h;
+  var ae=encodeURIComponent(s.addr);
+  var sm='https://staticmap.openstreetmap.de/staticmap.php?center='+ae+'&zoom=16&size=640x360&markers='+ae+',red-pushpin';
+  return '<div><div class="box" style="padding:0;overflow:hidden;margin-bottom:12px"><img src="'+sm+'" style="width:100%;height:360px;object-fit:cover;display:block" onerror="this.outerHTML=\'<div style=padding:3rem;text-align:center;color:#aaa;font-size:13px>Apercu non disponible</div>\'" alt="Carte"/></div>'
+    +'<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">'
+    +'<a href="https://www.google.com/maps/search/'+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">&#128205;</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Street View et satellite</div></div></div></a>'
+    +'<a href="https://www.openstreetmap.org/search?query='+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">&#128506;</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Carte interactive</div></div></div></a>'
+    +'</div><div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">'+s.addr+'</div></div></div>';
 }
 
 function renderFichiers(sid){
   var files=S.files[sid]||[];
-  var icons={pdf:'doc',doc:'txt',docx:'txt',xls:'xls',xlsx:'xls',jpg:'img',jpeg:'img',png:'img'};
-  function icon(n){var e=n.split('.').pop().toLowerCase();return icons[e]||'file';}
-  var h='<div class="box">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+  var h='<div class="box"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
   h+='<span style="font-weight:600;font-size:14px">Documents ('+files.length+')</span>';
   h+='<label class="btn btn-primary" style="cursor:pointer;font-size:12px">+ Ajouter<input type="file" style="display:none" onchange="uploadFichier(\''+sid+'\',this)" multiple/></label>';
-  h+='</div>';
-  h+='<div id="uprog-'+sid+'" style="display:none;font-size:12px;color:#5b7fa6;margin-bottom:10px">Upload...</div>';
-  if(files.length===0){
-    h+='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucun document</div>';
-  } else {
+  h+='</div><div id="uprog-'+sid+'" style="display:none;font-size:12px;color:#5b7fa6;margin-bottom:10px">Upload en cours...</div>';
+  if(files.length===0){h+='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucun document</div>';}
+  else{
     files.forEach(function(f){
-      h+='<div class="file-row">';
-      h+='<div style="display:flex;align-items:center;gap:10px">';
-      h+='<span style="font-size:13px;background:#f0f0ea;padding:4px 8px;border-radius:6px">'+icon(f.name)+'</span>';
-      h+='<div><div style="font-size:13px;font-weight:500">'+f.name+'</div><div style="font-size:11px;color:#888">'+f.date+' - '+f.size+'</div></div></div>';
+      h+='<div class="file-row"><div style="display:flex;align-items:center;gap:10px">';
+      h+='<span style="font-size:12px;background:#f0f0ea;padding:4px 8px;border-radius:6px">'+f.name.split('.').pop().toUpperCase()+'</span>';
+      h+='<div><div style="font-size:13px;font-weight:500">'+f.name+'</div><div style="font-size:11px;color:#888">'+f.date+' &mdash; '+f.size+'</div></div></div>';
       h+='<div style="display:flex;gap:8px"><a href="'+f.url+'" target="_blank" class="btn" style="font-size:12px;text-decoration:none">Ouvrir</a>';
-      h+='<button class="btn" style="font-size:12px;color:#A32D2D" onclick="deleteFichier(\''+sid+'\',\''+f.path+'\')">x</button></div>';
-      h+='</div>';
+      h+='<button class="btn" style="font-size:12px;color:#A32D2D" onclick="deleteFichier(\''+sid+'\',\''+f.path+'\')">&#10005;</button></div></div>';
     });
   }
   h+='</div>';
@@ -670,12 +953,16 @@ function renderFichiers(sid){
 }
 
 function renderAI(s){
-  return '<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:10px">Analyste IA</div>'+
-    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
-    '<input id="aiq" type="text" placeholder="Ex: Quand atteindre le seuil de rentabilite ?" onkeydown="if(event.key===\'Enter\')askAI()" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>'+
-    '<button class="btn btn-primary" onclick="askAI()" '+(S.aiLoading?'disabled':'')+'>'+( S.aiLoading?'...':'Analyser')+'</button></div>'+
-    (S.aiResp?'<div style="font-size:13px;line-height:1.6;background:#f5f5f0;border-radius:8px;padding:10px 14px;white-space:pre-wrap">'+S.aiResp+'</div>':'')+
-    '</div>';
+  var ctx='Studio Club Pilates: '+s.name+', societe: '+s.societe+', statut: '+s.statut+'. ';
+  ctx+='BP adherents: 285 fin A1, 345 fin A2, 400 fin A3. ';
+  ctx+='Repartition: Pack4 47% a 110 HT, Pack8 50% a 193.33 HT, Illimite 3% a 276.67 HT. ';
+  ctx+='CA BP: A1='+fmt(s.forecast&&s.forecast.annualCA||CA_A1)+', A2='+fmt(s.forecast&&s.forecast.annualCA2||CA_A2)+', A3='+fmt(s.forecast&&s.forecast.annualCA3||CA_A3)+'.';
+  return '<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:4px">Analyste IA &mdash; '+s.name+'</div>'
+    +'<div style="font-size:11px;color:#888;margin-bottom:12px">Questions sur ce studio : performances, seuil de rentabilite, scenarios...</div>'
+    +'<div style="display:flex;gap:8px;margin-bottom:12px"><input id="aiq" type="text" placeholder="Ex: Quand atteindre le seuil de rentabilite ?" onkeydown="if(event.key===\'Enter\')askAI()" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>'
+    +'<button class="btn btn-primary" onclick="askAI()" '+(S.aiLoading?'disabled':'')+'>'+( S.aiLoading?'...':'Analyser')+'</button></div>'
+    +(S.aiResp?'<div style="font-size:13px;line-height:1.6;background:#f5f5f0;border-radius:8px;padding:10px 14px;white-space:pre-wrap">'+S.aiResp+'</div>':'')
+    +'</div>';
 }
 
 function renderNewForm(){
@@ -683,13 +970,13 @@ function renderNewForm(){
   var h='<div class="box"><div style="font-weight:600;font-size:15px;margin-bottom:14px">Nouveau studio</div><div class="form-grid">';
   h+='<div class="fg"><label>Nom</label><input value="'+(f.name||'')+'" oninput="setNF(\'name\',this.value)" placeholder="Ex: Paris 16e"/></div>';
   h+='<div class="fg"><label>Adresse</label><input value="'+(f.addr||'')+'" oninput="setNF(\'addr\',this.value)" placeholder="Rue, CP Ville"/></div>';
-  h+='<div class="fg"><label>Societe</label><select onchange="setNF(\'societe\',this.value)"><option>P&W Occitanie</option><option>COBE Society</option><option>SACOBE Society</option></select></div>';
+  h+='<div class="fg"><label>Societe</label><select onchange="setNF(\'societe\',this.value)"><option>P&amp;W Occitanie</option><option>COBE Society</option><option>SACOBE Society</option></select></div>';
   h+='<div class="fg"><label>Ouverture</label><input value="'+(f.ouverture||'')+'" oninput="setNF(\'ouverture\',this.value)" placeholder="Ex: T2 2027"/></div>';
-  h+='<div class="fg"><label>CA annuel BP</label><input type="number" value="'+(f.annualCA||448800)+'" oninput="setNF(\'annualCA\',this.value)"/></div>';
+  h+='<div class="fg"><label>CA annuel A1</label><input type="number" value="'+(f.annualCA||CA_A1)+'" oninput="setNF(\'annualCA\',this.value)"/></div>';
   h+='<div class="fg"><label>Mois ouverture</label><select onchange="setNF(\'moisDebut\',this.value)">';
-  MOIS.forEach(function(m,i){h+='<option value="'+i+'" '+(( f.moisDebut||0)==i?'selected':'')+'>'+m+'</option>';});
+  MOIS.forEach(function(m,i){h+='<option value="'+i+'" '+((f.moisDebut||0)==i?'selected':'')+'>'+m+'</option>';});
   h+='</select></div></div>';
-  h+='<div class="info-box">Workflow demarre a letape 1 : Test fit local.</div>';
+  h+='<div class="info-box">CA A2 et A3 calcules automatiquement sur base A1 (+10% / +21%). Repartition et churn BP issus du Plan Financier CP.</div>';
   h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="createStudio()">Creer</button><button class="btn" onclick="toggleNewForm()">Annuler</button></div></div>';
   return h;
 }
@@ -703,49 +990,73 @@ async function doLogin(){
   S.user=res.data.user;
   var prof=await sb.from('profiles').select('*').eq('id',res.data.user.id).single();
   S.profile=prof.data;
-  await loadStudios();await loadFiles();await loadDepenses();await loadMessages();
+  await loadAll();
   S.view='dashboard';render();
 }
 async function doLogout(){await sb.auth.signOut();S.user=null;S.profile=null;S.view='auth';S.selectedId=null;render();}
-function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';render();}
+function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;render();}
 function goBack(){S.view='dashboard';S.selectedId=null;render();}
 function setMainTab(t){S.mainTab=t;render();}
-function setDetailTab(t){S.detailTab=t;S.aiResp='';render();}
+function setDetailTab(t){S.detailTab=t;S.aiResp='';S.editMoisIdx=null;render();}
 function setFS(s){S.forecastSection=s;S.editMoisIdx=null;render();}
-function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:448800,moisDebut:0,annee:2026};render();}
+function setForecastYear(y){S.forecastYear=y;S.editMoisIdx=null;render();}
+function setAdherentYear(y){S.adherentYear=y;render();}
+function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:CA_A1,moisDebut:0,annee:2026};render();}
 function setNF(k,v){S.newForm[k]=v;}
 function setEV(k,v){S.editVals[k]=v;}
-function openEditMois(idx){S.editMoisIdx=idx;S.editVals=Object.assign({},S.studios[S.selectedId].forecast.actuel[idx]||{});render();}
+function openEditMois(idx){
+  S.editMoisIdx=idx;
+  var fc=S.studios[S.selectedId].forecast;
+  var ak=S.forecastYear===1?'actuel':S.forecastYear===2?'actuel2':'actuel3';
+  S.editVals=Object.assign({},fc[ak]&&fc[ak][idx]||{});
+  render();
+}
 function cancelEdit(){S.editMoisIdx=null;render();}
 
 async function toggleStep(sid,stepId){
   var s=S.studios[sid];
-  var newSteps=Object.assign({},s.steps);
-  newSteps[stepId]=!s.steps[stepId];
-  await saveStudio(sid,Object.assign({},s,{steps:newSteps,statut:inferStatut(newSteps)}));
+  var ns=Object.assign({},s.steps);
+  ns[stepId]=!s.steps[stepId];
+  await saveStudio(sid,Object.assign({},s,{steps:ns,statut:inferStatut(ns)}));
   toast('Etape mise a jour');
 }
+
 async function saveMois(){
   var s=S.studios[S.selectedId];
-  var newActuel=Object.assign({},s.forecast.actuel);
-  newActuel[S.editMoisIdx]=Object.assign({},S.editVals);
-  await saveStudio(S.selectedId,Object.assign({},s,{forecast:Object.assign({},s.forecast,{actuel:newActuel})}));
+  var fc=s.forecast;
+  var ak=S.forecastYear===1?'actuel':S.forecastYear===2?'actuel2':'actuel3';
+  var newAk=Object.assign({},fc[ak]||{});
+  newAk[S.editMoisIdx]=Object.assign({},S.editVals);
+  var newFc=Object.assign({},fc);newFc[ak]=newAk;
+  await saveStudio(S.selectedId,Object.assign({},s,{forecast:newFc}));
   S.editMoisIdx=null;toast('Saisie enregistree');
 }
+
 async function clearMois(){
   var s=S.studios[S.selectedId];
-  var newActuel=Object.assign({},s.forecast.actuel);
-  delete newActuel[S.editMoisIdx];
-  await saveStudio(S.selectedId,Object.assign({},s,{forecast:Object.assign({},s.forecast,{actuel:newActuel})}));
+  var fc=s.forecast;
+  var ak=S.forecastYear===1?'actuel':S.forecastYear===2?'actuel2':'actuel3';
+  var newAk=Object.assign({},fc[ak]||{});
+  delete newAk[S.editMoisIdx];
+  var newFc=Object.assign({},fc);newFc[ak]=newAk;
+  await saveStudio(S.selectedId,Object.assign({},s,{forecast:newFc}));
   S.editMoisIdx=null;toast('Mois efface');
 }
+
+async function saisirAdherent(sid,year,moisIdx,val){
+  if(!S.adherents[sid])S.adherents[sid]={};
+  var key='y'+year+'_m'+moisIdx;
+  if(val===''||val===null){delete S.adherents[sid][key];}
+  else{S.adherents[sid][key]=num(val);}
+  await saveAdherents(sid);
+}
+
 async function uploadFichier(sid,input){
   var files=Array.from(input.files);if(!files.length)return;
   var prog=document.getElementById('uprog-'+sid);if(prog)prog.style.display='block';
   var ex=await sb.from('studios').select('data').eq('id',sid+'_files').maybeSingle();
-  var currentFiles=(ex.data&&ex.data.data&&ex.data.data.files)||S.files[sid]||[];
-  currentFiles=currentFiles.slice();
-  var added=0;
+  var cur=(ex.data&&ex.data.data&&ex.data.data.files)||S.files[sid]||[];
+  cur=cur.slice();var added=0;
   for(var i=0;i<files.length;i++){
     var file=files[i];
     var path=sid+'/'+Date.now()+'_'+cleanName(file.name);
@@ -753,15 +1064,15 @@ async function uploadFichier(sid,input){
     if(!ur.error){
       var pu=sb.storage.from('studio-files').getPublicUrl(path);
       var size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
-      currentFiles.push({name:file.name,path:path,url:pu.data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size:size});
+      cur.push({name:file.name,path:path,url:pu.data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size:size});
       added++;
     }
   }
-  await sb.from('studios').upsert({id:sid+'_files',data:{files:currentFiles},updated_at:new Date().toISOString()});
-  S.files[sid]=currentFiles;
-  if(prog)prog.style.display='none';
+  await sb.from('studios').upsert({id:sid+'_files',data:{files:cur},updated_at:new Date().toISOString()});
+  S.files[sid]=cur;if(prog)prog.style.display='none';
   toast(added+' fichier(s) ajoute(s)');render();
 }
+
 async function deleteFichier(sid,path){
   if(!confirm('Supprimer ?'))return;
   await sb.storage.from('studio-files').remove([path]);
@@ -769,6 +1080,7 @@ async function deleteFichier(sid,path){
   await sb.from('studios').upsert({id:sid+'_files',data:{files:S.files[sid]},updated_at:new Date().toISOString()});
   toast('Supprime');render();
 }
+
 async function archiverStudio(id){if(!confirm('Archiver ?'))return;await saveStudio(id,Object.assign({},S.studios[id],{statut:'abandonne'}));toast('Archive');}
 async function restaurerStudio(id){var s=S.studios[id];await saveStudio(id,Object.assign({},s,{statut:inferStatut(s.steps)}));toast('Restaure');}
 async function supprimerStudio(id){
@@ -781,17 +1093,39 @@ async function createStudio(){
   if(!f.name||!f.addr||!f.ouverture){toast('Remplissez tous les champs');return;}
   var id='proj_'+Date.now();
   var steps={};STEPS.forEach(function(s){steps[s.id]=false;});
-  await saveStudio(id,{name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,statut:'pipeline',capex:306200,emprunt:214340,alertes:['Nouveau projet - demarrer par le test fit local'],steps:steps,forecast:{annualCA:num(f.annualCA,448800),moisDebut:num(f.moisDebut,0),annee:num(f.annee,2026),actuel:{}}});
+  var ca1=num(f.annualCA,CA_A1);
+  await saveStudio(id,{
+    name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,
+    statut:'pipeline',capex:306200,emprunt:214340,alertes:['Nouveau projet'],steps:steps,
+    forecast:{annualCA:ca1,annualCA2:Math.round(ca1*1.10),annualCA3:Math.round(ca1*1.21),
+      moisDebut:num(f.moisDebut,0),annee:num(f.annee||2026),actuel:{},actuel2:{},actuel3:{}}
+  });
   S.showNewForm=false;toast('Studio cree');
 }
+
 async function askAI(){
   var q=document.getElementById('aiq');if(!q||!q.value)return;
   S.aiLoading=true;S.aiResp='';render();
   var s=S.studios[S.selectedId];
+  var ctx='Studio Club Pilates: '+s.name+', societe: '+s.societe+', statut: '+s.statut+'. ';
+  ctx+='BP adherents cible: 285 fin A1, 345 fin A2, 400 fin A3. ';
+  ctx+='Repartition: Pack4 47% a 110 EUR HT, Pack8 50% a 193.33 EUR HT, Illimite 3% a 276.67 EUR HT. ';
+  ctx+='CA BP: A1='+fmt(s.forecast&&s.forecast.annualCA||CA_A1)+', A2='+fmt(s.forecast&&s.forecast.annualCA2||CA_A2)+', A3='+fmt(s.forecast&&s.forecast.annualCA3||CA_A3)+'. ';
+  ctx+='CAPEX: '+fmt(s.capex||306200)+', emprunt: '+fmt(s.emprunt||214340)+'.';
   try{
-    var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'Expert Club Pilates ISSEO. Studio: '+s.name+', statut: '+s.statut+', CAPEX: '+fmt(s.capex)+', BP: '+fmt(s.forecast.annualCA)+'. Reponds en francais, concis.',messages:[{role:'user',content:q.value}]})});
-    var d=await r.json();S.aiResp=(d.content&&d.content[0]&&d.content[0].text)||'Pas de reponse.';
-  }catch(e){S.aiResp='Erreur.';}
+    var r=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1000,
+        system:'Tu es un expert financier Club Pilates France. '+ctx+' Reponds en francais, de maniere concise et chiffree.',
+        messages:[{role:'user',content:q.value}]
+      })
+    });
+    var d=await r.json();
+    S.aiResp=(d.content&&d.content[0]&&d.content[0].text)||'Pas de reponse.';
+  }catch(e){S.aiResp='Erreur de connexion.';}
   S.aiLoading=false;render();
 }
 
@@ -809,19 +1143,9 @@ sb.auth.getSession().then(function(res){
     S.user=session.user;
     sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){
       S.profile=r.data;
-      loadStudios().then(function(){
-        loadFiles().then(function(){
-          loadDepenses().then(function(){
-            loadMessages().then(function(){
-              S.view='dashboard';render();
-            });
-          });
-        });
-      });
+      loadAll().then(function(){S.view='dashboard';render();});
     });
-  } else {
-    render();
-  }
+  } else {render();}
 });
 </script>
 </body>
