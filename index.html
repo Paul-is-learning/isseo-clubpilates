@@ -1247,20 +1247,16 @@ function renderLocalisation(s){
   var z=S.mapZoom||14;
   var sv=S.mapStreetView||false;
   var coords=S.mapCoords&&S.selectedId&&S.mapCoords[S.selectedId];
-  var svSrc=coords
-    ?'https://maps.google.com/maps?q=&layer=c&cbll='+coords.lat+','+coords.lon+'&cbp=12,0,0,0,0&output=svembed'
-    :'https://maps.google.com/maps?q='+ae+'&layer=c&cbp=12,0,0,0,0&output=svembed';
-  var gmSrc=sv?svSrc:'https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+z;
+  var gmSrc='https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+z;
 
   var h='<div>';
 
   // Toggle Carte / Street View
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
   h+='<div style="display:flex;background:#f0f0ea;border-radius:10px;padding:3px;gap:2px">';
-  h+='<button onclick="if(S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'transparent':'#fff')+';color:'+(sv?'#888':'#1a1a1a')+';font-size:13px;cursor:pointer;font-weight:'+(sv?400:600)+';box-shadow:'+(sv?'none':'0 1px 3px rgba(0,0,0,0.1)')+';transition:all 0.15s">🗺️ Carte</button>';
-  h+='<button onclick="if(!S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'#fff':'transparent')+';color:'+(sv?'#1a1a1a':'#888')+';font-size:13px;cursor:pointer;font-weight:'+(sv?600:400)+';box-shadow:'+(sv?'0 1px 3px rgba(0,0,0,0.1)':'none')+';transition:all 0.15s">📸 Street View</button>';
+  h+='<button onclick="if(S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'transparent':'#fff')+';color:'+(sv?'#888':'#1a1a1a')+';font-size:13px;cursor:pointer;font-weight:'+(sv?400:600)+';box-shadow:'+(sv?'none':'0 1px 3px rgba(0,0,0,0.1)')+'">🗺️ Carte</button>';
+  h+='<button onclick="if(!S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'#fff':'transparent')+';color:'+(sv?'#1a1a1a':'#888')+';font-size:13px;cursor:pointer;font-weight:'+(sv?600:400)+';box-shadow:'+(sv?'0 1px 3px rgba(0,0,0,0.1)':'none')+'">📸 Street View</button>';
   h+='</div>';
-  // Filtres (masqués en mode street view)
   if(!sv){
     h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
     MAP_FILTERS.forEach(function(f){
@@ -1269,22 +1265,38 @@ function renderLocalisation(s){
       h+='<span>'+f.icon+'</span><span>'+f.label+'</span></button>';
     });
     h+='</div>';
-  } else {
-    h+='<div style="font-size:12px;color:#888;background:#f0f0ea;padding:5px 12px;border-radius:8px">Vue immersive au niveau de la rue</div>';
   }
   h+='</div>';
 
-  // Carte + contrôles zoom
-  h+='<div style="position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06)">';
-  h+='<iframe src="'+gmSrc+'" width="100%" height="440" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
   if(!sv){
+    // ── Mode Carte ──
+    h+='<div style="position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06)">';
+    h+='<iframe src="'+gmSrc+'" width="100%" height="440" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
     h+='<div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:10">';
     h+='<button onclick="setMapZoom(1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600">+</button>';
     h+='<div style="text-align:center;font-size:10px;color:#888;background:#fff;border-radius:6px;padding:2px 4px;border:0.5px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,0.1)">'+z+'</div>';
     h+='<button onclick="setMapZoom(-1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600">−</button>';
+    h+='</div></div>';
+  } else {
+    // ── Mode Street View ──
+    var svUrl=coords
+      ?'https://www.google.com/maps/@'+coords.lat+','+coords.lon+',3a,90y,0h,90t/'
+      :'https://www.google.com/maps?q='+ae+'&layer=c';
+    var imgUrl=coords
+      ?'https://maps.googleapis.com/maps/api/streetview?size=900x440&location='+coords.lat+','+coords.lon+'&fov=90&pitch=0&return_error_code=true'
+      :'https://maps.googleapis.com/maps/api/streetview?size=900x440&location='+ae+'&fov=90&pitch=0&return_error_code=true';
+    h+='<div style="position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06);background:#1a1a1a">';
+    h+='<img src="'+imgUrl+'" style="width:100%;height:440px;object-fit:cover;display:block" '
+      +'onerror="this.style.display=\'none\';document.getElementById(\'sv-fallback\').style.display=\'flex\'" alt="Street View"/>';
+    h+='<div id="sv-fallback" style="display:none;height:440px;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#1a1a1a;color:#fff">';
+    h+='<span style="font-size:48px">📸</span>';
+    h+='<div style="font-size:14px;color:#aaa;text-align:center">Aperçu Street View non disponible ici<br><span style="font-size:12px">Cliquez ci-dessous pour l\'ouvrir dans Google Maps</span></div>';
     h+='</div>';
+    // Overlay bouton "Ouvrir dans Google Maps"
+    h+='<a href="'+svUrl+'" target="_blank" style="position:absolute;bottom:14px;right:14px;text-decoration:none">';
+    h+='<div style="background:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#1a1a1a;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px">📍 Ouvrir Street View</div>';
+    h+='</a></div>';
   }
-  h+='</div>';
 
   // Liens
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
