@@ -335,13 +335,11 @@ function buildBP(annualCA,moisDebut,ramp){
 
 function build3YearBP(forecast){
   var md=forecast.moisDebut||0;
-  var ca1=forecast.annualCA||CA_A1;
-  var ca2=forecast.annualCA2||CA_A2;
-  var ca3=forecast.annualCA3||CA_A3;
+  // On utilise TOUJOURS les CA du dossier de financement — les valeurs Supabase sont ignorées
   return {
-    a1:buildBPFromDossier(ca1,md,1),
-    a2:buildBPFromDossier(ca2,md,2),
-    a3:buildBPFromDossier(ca3,md,3),
+    a1:buildBPFromDossier(CA_A1,md,1),
+    a2:buildBPFromDossier(CA_A2,md,2),
+    a3:buildBPFromDossier(CA_A3,md,3),
   };
 }
 
@@ -687,7 +685,7 @@ function renderForecast(sid,s){
   var actuel=fc[actuelKey]||{};
   var annee=(fc.annee||2026)+(fy-1);
   var moisDebut=fc.moisDebut||0;
-  var annualCA=fy===1?(fc.annualCA||CA_A1):fy===2?(fc.annualCA2||CA_A2):(fc.annualCA3||CA_A3);
+  var annualCA=fy===1?CA_A1:fy===2?CA_A2:CA_A3; // toujours depuis les constantes dossier
 
   var totals=bp.map(function(r,idx){
     var a=actuel[idx]||{};
