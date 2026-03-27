@@ -425,7 +425,7 @@ function renderAuth(){
 function renderDashboard(){
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
   var ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
-  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var isAdmin=!!S.profile;
   var h='<div class="app">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
   h+='<div style="display:flex;align-items:center;gap:14px">'+LI+'<div style="width:1px;height:32px;background:#e0e0d8"></div>'+LC+'</div>';
@@ -485,7 +485,7 @@ function renderPipeline(ids){
 function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
-  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var isAdmin=!!S.profile;
   var tabs=[['workflow','Workflow'],['adherents','Adherents'],['forecast','Forecast'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   var content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
@@ -513,7 +513,7 @@ function renderDetail(){
 }
 
 function renderWorkflow(s){
-  var canEdit=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var canEdit=!!S.profile;
   var h='<div class="box">'+progBar(s.steps)+'<div style="margin-top:16px">';
   STEPS.forEach(function(step,i){
     var done=s.steps[step.id];
@@ -1012,7 +1012,7 @@ function renderEngagements(sid,s){
   var demande=deps.filter(function(d){return d.deblocage==='demande';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
   var pctE=Math.min(100,Math.round(engage/budget*100));
   var pctD=Math.min(100,Math.round(debloque/budget*100));
-  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var isAdmin=!!S.profile;
   var h='<div>';
   h+='<div class="kpis" style="margin-bottom:12px">';
   h+='<div class="kpi"><div class="kpi-label">Budget CAPEX</div><div class="kpi-val">'+fmt(budget)+'</div></div>';
@@ -1241,7 +1241,7 @@ function renderFichiers(sid){
 
 // ── Alertes (ajout + suppression) ─────────────────────────────────────────────
 function renderAlertes(sid,s){
-  var isAdmin=S.profile&&(S.profile.role==='admin'||S.profile.role==='tom'||S.profile.role==='pascal');
+  var isAdmin=!!S.profile;
   var h='<div>';
   if(isAdmin){
     h+='<div class="box">';
@@ -1780,13 +1780,45 @@ function render(){
   else if(S.view==='detail')root.innerHTML=renderDetail();
 }
 
+// ── Sync temps réel : polling toutes les 15s ──────────────────────────────────
+var _syncInterval=null;
+
+async function syncData(){
+  // Ne pas rafraîchir si l'utilisateur est en train d'éditer
+  if(S.editMoisIdx!==null||S.showNewForm)return;
+  var res=await sb.from('studios').select('id,data,updated_at');
+  var rows=res.data||[];
+  var changed=false;
+  rows.forEach(function(r){
+    var id=r.id;
+    if(id.endsWith('_files')){
+      var nv=r.data&&r.data.files||[];
+      if(JSON.stringify(nv)!==JSON.stringify(S.files[id.slice(0,-6)]||[])){S.files[id.slice(0,-6)]=nv;changed=true;}
+    } else if(id.endsWith('_depenses')){
+      var nv=r.data&&r.data.depenses||[];
+      if(JSON.stringify(nv)!==JSON.stringify(S.depenses[id.slice(0,-9)]||[])){S.depenses[id.slice(0,-9)]=nv;changed=true;}
+    } else if(id.endsWith('_adherents')){
+      var nv=r.data&&r.data.actuel||{};
+      if(JSON.stringify(nv)!==JSON.stringify(S.adherents[id.slice(0,-10)]||{})){S.adherents[id.slice(0,-10)]=nv;changed=true;}
+    } else if(!id.endsWith('_messages')){
+      if(r.data&&JSON.stringify(r.data)!==JSON.stringify(S.studios[id]||{})){S.studios[id]=r.data;changed=true;}
+    }
+  });
+  if(changed)render();
+}
+
+function startSync(){
+  if(_syncInterval)clearInterval(_syncInterval);
+  _syncInterval=setInterval(syncData,15000);
+}
+
 sb.auth.getSession().then(function(res){
   var session=res.data&&res.data.session;
   if(session){
     S.user=session.user;
     sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){
       S.profile=r.data;
-      loadAll().then(function(){S.view='dashboard';render();});
+      loadAll().then(function(){S.view='dashboard';render();startSync();});
     });
   } else {render();}
 });
