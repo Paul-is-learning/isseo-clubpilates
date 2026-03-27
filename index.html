@@ -366,6 +366,7 @@ var S={
   simConfig:{},  // config simulateur par studio : {p4,p8,pi,prix4,prix8,prixi}
   mapFilter:'default',  // filtre carte localisation
   mapZoom:14,           // niveau de zoom carte (1-20)
+  mapStreetView:false,  // mode street view
 };
 
 async function loadAll(){
@@ -1221,6 +1222,7 @@ var MAP_FILTERS=[
 
 function setMapFilter(f){S.mapFilter=f;render();}
 function setMapZoom(delta){S.mapZoom=Math.min(19,Math.max(10,S.mapZoom+delta));render();}
+function toggleStreetView(){S.mapStreetView=!S.mapStreetView;render();}
 
 function renderLocalisation(s){
   var ae=encodeURIComponent(s.addr);
@@ -1228,26 +1230,43 @@ function renderLocalisation(s){
   var filterObj=MAP_FILTERS.find(function(f){return f.id===mf;})||MAP_FILTERS[0];
   var gmQ=filterObj.q?encodeURIComponent(filterObj.q+' near '+s.addr):ae;
   var z=S.mapZoom||14;
-  var gmSrc='https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+z;
+  var sv=S.mapStreetView||false;
+  var gmSrc=sv
+    ?'https://maps.google.com/maps?q='+ae+'&layer=c&output=embed&hl=fr'
+    :'https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+z;
 
   var h='<div>';
-  // Filtres
-  h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px">';
-  MAP_FILTERS.forEach(function(f){
-    var active=mf===f.id;
-    h+='<button onclick="setMapFilter(\''+f.id+'\')" style="display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:20px;border:0.5px solid '+(active?'#1a1a1a':'#ddd')+';background:'+(active?'#1a1a1a':'#fff')+';color:'+(active?'#fff':'#555')+';font-size:13px;cursor:pointer;font-weight:'+(active?600:400)+';transition:all 0.15s">';
-    h+='<span>'+f.icon+'</span><span>'+f.label+'</span></button>';
-  });
+
+  // Toggle Carte / Street View
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+  h+='<div style="display:flex;background:#f0f0ea;border-radius:10px;padding:3px;gap:2px">';
+  h+='<button onclick="if(S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'transparent':'#fff')+';color:'+(sv?'#888':'#1a1a1a')+';font-size:13px;cursor:pointer;font-weight:'+(sv?400:600)+';box-shadow:'+(sv?'none':'0 1px 3px rgba(0,0,0,0.1)')+';transition:all 0.15s">🗺️ Carte</button>';
+  h+='<button onclick="if(!S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'#fff':'transparent')+';color:'+(sv?'#1a1a1a':'#888')+';font-size:13px;cursor:pointer;font-weight:'+(sv?600:400)+';box-shadow:'+(sv?'0 1px 3px rgba(0,0,0,0.1)':'none')+';transition:all 0.15s">📸 Street View</button>';
+  h+='</div>';
+  // Filtres (masqués en mode street view)
+  if(!sv){
+    h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
+    MAP_FILTERS.forEach(function(f){
+      var active=mf===f.id;
+      h+='<button onclick="setMapFilter(\''+f.id+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:0.5px solid '+(active?'#1a1a1a':'#ddd')+';background:'+(active?'#1a1a1a':'#fff')+';color:'+(active?'#fff':'#555')+';font-size:12px;cursor:pointer;font-weight:'+(active?600:400)+'">';
+      h+='<span>'+f.icon+'</span><span>'+f.label+'</span></button>';
+    });
+    h+='</div>';
+  } else {
+    h+='<div style="font-size:12px;color:#888;background:#f0f0ea;padding:5px 12px;border-radius:8px">Vue immersive au niveau de la rue</div>';
+  }
   h+='</div>';
 
   // Carte + contrôles zoom
   h+='<div style="position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06)">';
-  h+='<iframe src="'+gmSrc+'" width="100%" height="420" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
-  h+='<div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:10">';
-  h+='<button onclick="setMapZoom(1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600" title="Zoom avant">+</button>';
-  h+='<div style="text-align:center;font-size:10px;color:#888;background:#fff;border-radius:6px;padding:2px 4px;border:0.5px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,0.1)">'+z+'</div>';
-  h+='<button onclick="setMapZoom(-1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600" title="Zoom arrière">−</button>';
-  h+='</div>';
+  h+='<iframe src="'+gmSrc+'" width="100%" height="440" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
+  if(!sv){
+    h+='<div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:10">';
+    h+='<button onclick="setMapZoom(1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600">+</button>';
+    h+='<div style="text-align:center;font-size:10px;color:#888;background:#fff;border-radius:6px;padding:2px 4px;border:0.5px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,0.1)">'+z+'</div>';
+    h+='<button onclick="setMapZoom(-1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600">−</button>';
+    h+='</div>';
+  }
   h+='</div>';
 
   // Liens
