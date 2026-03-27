@@ -104,19 +104,14 @@ const RAMP_A1=CA_MENSUEL_A1.map(function(v){return v/448800;});
 const RAMP_CRUISE=CA_MENSUEL_A2.map(function(v){return v/610190;});
 const RAMP=RAMP_A1;
 
-// ── Charges BP par année (source : Dossier Financement Lattes p.9) ────────────
-// Certaines charges varient entre A1/A2/A3 → on utilise des objets par année
-// Loyer A1 = 16 800€ (6 mois franchise) / A2+ = 38 850€
-// Coachs A1-A2 = 120 000€ / A3 = 130 000€
-// Charges financières : décroissantes (8574 / 7488 / 6359) → mensuel moyen
-// IS : 15% ≤42500€ puis 25% → calculé en fin d'année
+// ── Charges BP par année — valeurs EXACTES du dossier financement (screenshot) ─
 const BP_CHARGES_ANNUELLES={
-  1:{ // Année 1 — source page 9
+  1:{
     fournitures:13500,
-    loyer:16800,          // 6 mois franchise loyer
+    loyer:16800,
     charges_loc:2300,
     coachs:120000,
-    royalties_pct:0.09,   // 9% du CA prestations
+    royalties_pct:0.09,   // 39 204 / 435 600 prestations ≈ 9%
     pub:30600,
     software:5460,
     assurance:2400,
@@ -124,18 +119,16 @@ const BP_CHARGES_ANNUELLES={
     nettoyage:3800,
     compta:2500,
     entretien:1800,
-    missions:20000,       // fort en A1 (lancement)
+    missions:20000,
     telecom:1200,
     social:648,
-    creditbail:26370,     // loyers CB annuels (décroissants : solde + CB)
+    creditbail:26370,
     salaries:90000,
     impots_taxes:3815,
     amort:46033,
     charges_fin:8574,
-    is_taux1:0.15,        // 15% sur les 42 500 premiers €
-    is_taux2:0.25,
   },
-  2:{ // Année 2
+  2:{
     fournitures:13500,
     loyer:38850,
     charges_loc:2300,
@@ -156,14 +149,12 @@ const BP_CHARGES_ANNUELLES={
     impots_taxes:5187,
     amort:46033,
     charges_fin:7488,
-    is_taux1:0.15,
-    is_taux2:0.25,
   },
-  3:{ // Année 3
+  3:{
     fournitures:13500,
     loyer:38850,
     charges_loc:2300,
-    coachs:130000,        // +10K en A3
+    coachs:130000,
     royalties_pct:0.09,
     pub:30600,
     software:5460,
@@ -180,8 +171,6 @@ const BP_CHARGES_ANNUELLES={
     impots_taxes:6476,
     amort:46032,
     charges_fin:6359,
-    is_taux1:0.15,
-    is_taux2:0.25,
   },
 };
 
@@ -271,13 +260,16 @@ function buildBPFromDossier(annualCA,moisDebut,annee){
   var ratio=annualCA/caRef; // = 1.0 pour les studios standard, autre si CA custom
   var ch=BP_CHARGES_ANNUELLES[annee]||BP_CHARGES_ANNUELLES[3];
 
-  // IS annuel calculé sur le CA annuel réel
-  var caPrestaAnnuel=annualCA*0.969;
-  var royaltiesAnnuels=Math.round(caPrestaAnnuel*ch.royalties_pct);
-  var chargesOpAnnuelles=ch.fournitures+ch.loyer+ch.charges_loc+ch.coachs+royaltiesAnnuels
+  // Royalties annuelles exactes du dossier (pas de recalcul approximatif)
+  var royaltiesAnnuelles=annee===1?39204:annee===2?53303:66628;
+  // Ratio royalties mensuel = proportionnel au CA mensuel
+  var royaltiesRatio=royaltiesAnnuelles/(annee===1?CA_A1:annee===2?CA_A2:CA_A3);
+
+  // IS annuel calculé sur le résultat exact du dossier
+  var totalChargesHorsFinIS=ch.fournitures+ch.loyer+ch.charges_loc+ch.coachs+royaltiesAnnuelles
     +ch.pub+ch.software+ch.assurance+ch.mutuelle+ch.nettoyage+ch.compta+ch.entretien
     +ch.missions+ch.telecom+ch.social+ch.creditbail+ch.salaries+ch.impots_taxes+ch.amort;
-  var rexAnnuel=annualCA-chargesOpAnnuelles;
+  var rexAnnuel=annualCA-totalChargesHorsFinIS;
   var rcaiAnnuel=rexAnnuel-ch.charges_fin;
   var isAnnuel=rcaiAnnuel<=0?0:Math.round(Math.min(rcaiAnnuel,42500)*0.15+Math.max(0,rcaiAnnuel-42500)*0.25);
 
@@ -286,16 +278,17 @@ function buildBPFromDossier(annualCA,moisDebut,annee){
     var ca=Math.round(caMensuelRef[i]*ratio);
     var caPresta=Math.round(ca*0.969);
     var row={mi:(moisDebut+i)%12,_ca:ca,annee:annee};
-    // Produits (répartition dossier : cours 95.5%, prives 1.5%, boutique 3%)
-    row.ca_cours=Math.round(ca*0.9848);  // 429k/435.6k
-    row.ca_prives=Math.round(ca*0.0152); // 6.6k/435.6k
-    row.ca_boutique=Math.round(ca*0.0294);// 13.2k/448.8k
-    // Charges fixes mensualisées exactement depuis annuelles
+    // Produits — répartition exacte du dossier
+    // A1: cours 429000, prives 6600, boutique 13200 sur CA 448800
+    row.ca_cours=Math.round(ca*(annee===1?429000/448800:annee===2?583050/610190:728813/761841));
+    row.ca_prives=Math.round(ca*(annee===1?6600/448800:annee===2?9200/610190:11500/761841));
+    row.ca_boutique=Math.round(ca*(annee===1?13200/448800:annee===2?17940/610190:21528/761841));
+    // Charges fixes mensualisées
     row.fournitures=Math.round(ch.fournitures/12);
     row.loyer=Math.round(ch.loyer/12);
     row.charges_loc=Math.round(ch.charges_loc/12);
     row.coachs=Math.round(ch.coachs/12);
-    row.royalties=Math.round(caPresta*ch.royalties_pct);
+    row.royalties=Math.round(ca*royaltiesRatio); // proportionnel au CA mensuel
     row.pub=Math.round(ch.pub/12);
     row.software=Math.round(ch.software/12);
     row.assurance=Math.round(ch.assurance/12);
