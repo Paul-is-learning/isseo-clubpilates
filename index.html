@@ -617,6 +617,11 @@ async function uploadFichier(studioId, input){
   if(!files.length) return;
   const prog = document.getElementById(`upload-progress-${studioId}`);
   if(prog) prog.style.display='block';
+
+  // Charger la liste existante depuis Supabase avant d'ajouter
+  const {data:existing} = await sb.from('studios').select('data').eq('id', studioId+'_files').single();
+  const currentFiles = existing?.data?.files || STATE.files[studioId] || [];
+
   for(const file of files){
     const path = `${studioId}/${Date.now()}_${file.name}`;
     const {error} = await sb.storage.from('studio-files').upload(path, file);
@@ -624,11 +629,18 @@ async function uploadFichier(studioId, input){
       const {data} = sb.storage.from('studio-files').getPublicUrl(path);
       const size = file.size > 1024*1024 ? (file.size/1024/1024).toFixed(1)+' Mo' : (file.size/1024).toFixed(0)+' Ko';
       const date = new Date().toLocaleDateString('fr-FR');
-      if(!STATE.files[studioId]) STATE.files[studioId]=[];
-      STATE.files[studioId].push({name:file.name,path,url:data.publicUrl,date,size});
-      await sb.from('studios').upsert({id:studioId+'_files', data:{files:STATE.files[studioId]}, updated_at:new Date().toISOString()});
+      currentFiles.push({name:file.name, path, url:data.publicUrl, date, size});
     }
   }
+
+  // Sauvegarder la liste complète
+  STATE.files[studioId] = currentFiles;
+  await sb.from('studios').upsert({
+    id: studioId+'_files',
+    data: {files: currentFiles},
+    updated_at: new Date().toISOString()
+  });
+
   if(prog) prog.style.display='none';
   toast(`${files.length} fichier(s) ajouté(s)`);
   render();
