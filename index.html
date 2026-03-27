@@ -1175,6 +1175,7 @@ async function envoyerMessage(sid){
   var input=document.getElementById('msg-input');
   var texte=input&&input.value&&input.value.trim();
   if(!texte)return;
+  if(input)input.value=''; // vider l'input immédiatement
   if(!S.messages[sid])S.messages[sid]=[];
   var now=new Date();
   S.messages[sid].push({
@@ -1183,9 +1184,33 @@ async function envoyerMessage(sid){
     date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
     ts:now.toISOString(),
   });
-  await sb.from('studios').upsert({id:sid+'_messages',data:{messages:S.messages[sid]},updated_at:new Date().toISOString()});
+  // Sauvegarder en lisant d'abord la version Supabase pour ne pas écraser les messages des autres
+  var ex=await sb.from('studios').select('data').eq('id',sid+'_messages').maybeSingle();
+  var existing=(ex.data&&ex.data.data&&ex.data.data.messages)||[];
+  // Fusionner : garder les messages existants + ajouter le nouveau
+  var dernierMsg=S.messages[sid][S.messages[sid].length-1];
+  var merged=existing.concat([dernierMsg]);
+  // Dédupliquer par ts
+  var seen=new Set();
+  merged=merged.filter(function(m){if(seen.has(m.ts))return false;seen.add(m.ts);return true;});
+  merged.sort(function(a,b){return a.ts>b.ts?1:-1;});
+  S.messages[sid]=merged;
+  await sb.from('studios').upsert({id:sid+'_messages',data:{messages:merged},updated_at:new Date().toISOString()});
   render();
   setTimeout(function(){var el=document.getElementById('msgs-list');if(el)el.scrollTop=el.scrollHeight;},50);
+}
+
+// Recharger les messages depuis Supabase (pour voir ceux des autres utilisateurs)
+async function rechargerMessages(sid){
+  var res=await sb.from('studios').select('data').eq('id',sid+'_messages').maybeSingle();
+  var msgs=(res.data&&res.data.data&&res.data.data.messages)||[];
+  var avant=JSON.stringify(S.messages[sid]||[]);
+  S.messages[sid]=msgs;
+  // Re-render seulement si nouveaux messages
+  if(JSON.stringify(msgs)!==avant){
+    render();
+    setTimeout(function(){var el=document.getElementById('msgs-list');if(el)el.scrollTop=el.scrollHeight;},50);
+  }
 }
 
 function renderLocalisation(s){
@@ -1263,7 +1288,22 @@ async function doLogout(){await sb.auth.signOut();S.user=null;S.profile=null;S.v
 function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;render();}
 function goBack(){S.view='dashboard';S.selectedId=null;render();}
 function setMainTab(t){S.mainTab=t;render();}
-function setDetailTab(t){S.detailTab=t;S.aiResp='';S.editMoisIdx=null;render();}
+var _msgPollInterval=null;
+
+function setDetailTab(t){
+  S.detailTab=t;S.aiResp='';S.editMoisIdx=null;
+  // Arrêter le polling précédent
+  if(_msgPollInterval){clearInterval(_msgPollInterval);_msgPollInterval=null;}
+  // Démarrer le polling si on est sur l'onglet messages
+  if(t==='messages'&&S.selectedId){
+    rechargerMessages(S.selectedId);
+    _msgPollInterval=setInterval(function(){
+      if(S.detailTab==='messages'&&S.selectedId){rechargerMessages(S.selectedId);}
+      else{clearInterval(_msgPollInterval);_msgPollInterval=null;}
+    },8000); // toutes les 8 secondes
+  }
+  render();
+}
 function setFS(s){S.forecastSection=s;S.editMoisIdx=null;render();}
 function setForecastYear(y){S.forecastYear=y;S.editMoisIdx=null;render();}
 function setAdherentYear(y){S.adherentYear=y;render();}
