@@ -589,28 +589,33 @@ async function uploadFichier(studioId,input){
   const prog=document.getElementById('uprog-'+studioId);
   if(prog)prog.style.display='block';
 
-  // Recharger depuis Supabase
+  // Nettoyer le nom de fichier (supprimer accents, espaces, caractères spéciaux)
+  const cleanName=name=>name
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')  // supprimer accents
+    .replace(/[^a-zA-Z0-9._-]/g,'_')                   // remplacer caractères spéciaux par _
+    .replace(/_+/g,'_');                                // éviter les __ consécutifs
+
   const {data:existing}=await sb.from('studios').select('data').eq('id',studioId+'_files').maybeSingle();
   const currentFiles=[...(existing?.data?.files||S.files[studioId]||[])];
 
   let added=0;
   for(const file of files){
-    const path=`${studioId}/${Date.now()}_${file.name}`;
-    const {data:upData,error}=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
-    if(error){ console.error('upload error',error); continue; }
+    const safeName=cleanName(file.name);
+    const path=`${studioId}/${Date.now()}_${safeName}`;
+    const {error}=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
+    if(error){console.error('upload error',error);continue;}
     const {data:urlData}=sb.storage.from('studio-files').getPublicUrl(path);
     const size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
     currentFiles.push({name:file.name,path,url:urlData.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size});
     added++;
   }
 
-  // Sauvegarder
   const {error:saveErr}=await sb.from('studios').upsert({
     id:studioId+'_files',
     data:{files:currentFiles},
     updated_at:new Date().toISOString()
   });
-  if(saveErr){ console.error('save error',saveErr); toast('Erreur sauvegarde'); return; }
+  if(saveErr){console.error('save error',saveErr);toast('Erreur sauvegarde');return;}
 
   S.files[studioId]=currentFiles;
   if(prog)prog.style.display='none';
