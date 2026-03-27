@@ -1225,7 +1225,7 @@ function renderLocalisation(s){
   var mf=S.mapFilter||'default';
   var filterObj=MAP_FILTERS.find(function(f){return f.id===mf;})||MAP_FILTERS[0];
   var gmQ=filterObj.q?encodeURIComponent(filterObj.q+' near '+s.addr):ae;
-  var gmSrc='https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+(filterObj.q?'15':'16');
+  var gmSrc='https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+(filterObj.q?'13':'14');
 
   var h='<div>';
   // Filtres
