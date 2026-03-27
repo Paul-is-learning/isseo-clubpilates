@@ -1687,10 +1687,18 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   var caBPAnnuel=bpArr.map(function(m){return computeBPCA(m,ay);}).reduce(function(s,v){return s+v;},0);
   var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
   var total=p4+p8+pi;
+  // ── EBITDA simulé : recalcul BP avec le CA simulé ──
+  var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
+  var simBPRows=buildBP(caAnnuel,md);
+  var ebitdaSim=simBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var bpRows=buildBP(caBPAnnuel,md);
+  var ebitdaBP=bpRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
+  var ebitdaEcart=ebitdaSim-ebitdaBP;
 
   var h='<div class="box" id="sim-ca-box">';
-  h+='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Simulateur CA prvisionnel</div>';
-  h+='<div style="font-size:11px;color:#888;margin-bottom:14px">Ajuste la repartition et les prix &mdash; le CA se recalcule en direct</div>';
+  h+='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Simulateur CA &mdash; pr&eacute;visionnel vs BP</div>';
+  h+='<div style="font-size:11px;color:#888;margin-bottom:14px">Ajuste la repartition et les prix &mdash; le CA et l\'EBITDA se recalculent en direct</div>';
 
   // ── Répartition ──
   h+='<div style="font-weight:500;font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Repartition des abonnes</div>';
@@ -1743,15 +1751,25 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
   // CA mensuel moyen simulé
   var caMoyMensuel=Math.round(caAnnuel/12);
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA annuel simule</div><div id="sim-ca-annuel" style="font-size:18px;font-weight:700;color:#1a1a1a">'+fmt(caAnnuel)+'</div></div>';
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA moyen/mois</div><div id="sim-ca-moy" style="font-size:15px;font-weight:600;color:#185FA5">'+fmt(caMoyMensuel)+'</div></div>';
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Ecart vs BP</div>';
   var ecartCA=caAnnuel-caBPAnnuel;
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA annuel simul&eacute;</div><div id="sim-ca-annuel" style="font-size:18px;font-weight:700;color:#1a1a1a">'+fmt(caAnnuel)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA moyen/mois</div><div id="sim-ca-moy" style="font-size:15px;font-weight:600;color:#185FA5">'+fmt(caMoyMensuel)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Ecart CA vs BP</div>';
   h+='<div id="sim-ca-ecart" style="font-size:15px;font-weight:600;color:'+(ecartCA>=0?'#3B6D11':'#A32D2D')+'">'+(ecartCA>=0?'+':'')+fmt(ecartCA)+'</div></div>';
   // ARPU simulé
   var lastMembres=membres[membres.length-1];
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">ARPU moyen/mois</div>';
   h+='<div id="sim-arpu" style="font-size:15px;font-weight:600;color:#854F0B">'+(lastMembres>0?fmt(Math.round(computeSimCA(lastMembres,cfg)/lastMembres)):'--')+'</div></div>';
+  // ── EBITDA simulé ──
+  h+='<div style="border-top:0.5px solid #e0e0d8;grid-column:1/-1;margin:4px 0 -4px"></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA simul&eacute;</div>';
+  h+='<div id="sim-ebitda" style="font-size:18px;font-weight:700;color:'+(ebitdaSim>=0?'#854F0B':'#A32D2D')+'">'+fmt(ebitdaSim)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Marge EBITDA</div>';
+  h+='<div id="sim-ebitda-margin" style="font-size:15px;font-weight:600;color:'+(ebitdaMargin>=20?'#3B6D11':ebitdaMargin>=0?'#854F0B':'#A32D2D')+'">'+ebitdaMargin+'%</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Ecart EBITDA vs BP</div>';
+  h+='<div id="sim-ebitda-ecart" style="font-size:15px;font-weight:600;color:'+(ebitdaEcart>=0?'#3B6D11':'#A32D2D')+'">'+(ebitdaEcart>=0?'+':'')+fmt(ebitdaEcart)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA BP ref.</div>';
+  h+='<div style="font-size:15px;font-weight:600;color:#888">'+fmt(ebitdaBP)+'</div></div>';
   h+='</div>';
   // Mini graphique CA mensuel simulé
   h+='<div style="margin-top:14px">'+buildSimCAChart(caArr,membres,realArr)+'</div>';
@@ -1865,6 +1883,19 @@ function _refreshSimCA(sid,ay){
   if(elEcart){elEcart.textContent=(ecartCA>=0?'+':'')+fmt(ecartCA);elEcart.style.color=ecartCA>=0?'#3B6D11':'#A32D2D';}
   var lastM=membres[membres.length-1];
   if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg)/lastM)):'--';
+  // Mise à jour EBITDA simulé en live
+  var simBPRowsLive=buildBP(caAnnuel,moisDebut);
+  var ebitdaSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var bpRowsLive=buildBP(caBPAnnuel,moisDebut);
+  var ebitdaBPLive=bpRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var ebitdaMarginLive=caAnnuel>0?Math.round(ebitdaSimLive/caAnnuel*100):0;
+  var ebitdaEcartLive=ebitdaSimLive-ebitdaBPLive;
+  var elEb=document.getElementById('sim-ebitda');
+  var elEbM=document.getElementById('sim-ebitda-margin');
+  var elEbE=document.getElementById('sim-ebitda-ecart');
+  if(elEb){elEb.textContent=fmt(ebitdaSimLive);elEb.style.color=ebitdaSimLive>=0?'#854F0B':'#A32D2D';}
+  if(elEbM){elEbM.textContent=ebitdaMarginLive+'%';elEbM.style.color=ebitdaMarginLive>=20?'#3B6D11':ebitdaMarginLive>=0?'#854F0B':'#A32D2D';}
+  if(elEbE){elEbE.textContent=(ebitdaEcartLive>=0?'+':'')+fmt(ebitdaEcartLive);elEbE.style.color=ebitdaEcartLive>=0?'#3B6D11':'#A32D2D';}
 
   // Redessine graphique CA simulé
   var chartWrap=document.getElementById('sim-chart-svg');
