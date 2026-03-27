@@ -367,6 +367,7 @@ var S={
   mapFilter:'default',  // filtre carte localisation
   mapZoom:14,           // niveau de zoom carte (1-20)
   mapStreetView:false,  // mode street view
+  mapCoords:{},         // coords geocodées par studio {sid: {lat,lon}}
 };
 
 async function loadAll(){
@@ -1222,7 +1223,21 @@ var MAP_FILTERS=[
 
 function setMapFilter(f){S.mapFilter=f;render();}
 function setMapZoom(delta){S.mapZoom=Math.min(19,Math.max(10,S.mapZoom+delta));render();}
-function toggleStreetView(){S.mapStreetView=!S.mapStreetView;render();}
+async function toggleStreetView(){
+  S.mapStreetView=!S.mapStreetView;
+  // Si on passe en Street View, géocoder l'adresse si pas encore fait
+  if(S.mapStreetView&&S.selectedId&&!S.mapCoords[S.selectedId]){
+    var addr=S.studios[S.selectedId]&&S.studios[S.selectedId].addr;
+    if(addr){
+      try{
+        var res=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr)+'&limit=1');
+        var data=await res.json();
+        if(data&&data[0])S.mapCoords[S.selectedId]={lat:parseFloat(data[0].lat),lon:parseFloat(data[0].lon)};
+      }catch(e){}
+    }
+  }
+  render();
+}
 
 function renderLocalisation(s){
   var ae=encodeURIComponent(s.addr);
@@ -1231,9 +1246,11 @@ function renderLocalisation(s){
   var gmQ=filterObj.q?encodeURIComponent(filterObj.q+' near '+s.addr):ae;
   var z=S.mapZoom||14;
   var sv=S.mapStreetView||false;
-  var gmSrc=sv
-    ?'https://maps.google.com/maps?q='+ae+'&layer=c&output=embed&hl=fr'
-    :'https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+z;
+  var coords=S.mapCoords&&S.selectedId&&S.mapCoords[S.selectedId];
+  var svSrc=coords
+    ?'https://maps.google.com/maps?q=&layer=c&cbll='+coords.lat+','+coords.lon+'&cbp=12,0,0,0,0&output=svembed'
+    :'https://maps.google.com/maps?q='+ae+'&layer=c&cbp=12,0,0,0,0&output=svembed';
+  var gmSrc=sv?svSrc:'https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+z;
 
   var h='<div>';
 
