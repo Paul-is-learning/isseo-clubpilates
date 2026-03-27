@@ -585,7 +585,194 @@ function renderWorkflow(s){
     if(i<STEPS.length-1)h+='<div style="width:2px;flex:1;min-height:14px;background:'+(done?'#1D9E75':'#e0e0d8')+';margin-top:2px"></div>';
     h+='</div><div style="padding-bottom:8px"><div style="font-size:13px;font-weight:'+(done?600:400)+'">'+step.label+'</div><div style="font-size:11px;color:#888;margin-top:2px">'+step.desc+'</div></div></div>';
   });
-  return h+'</div></div>';
+  h+='</div></div>';
+  h+=renderBP3YInfographic(s);
+  return h;
+}
+
+// ── Infographie KPIs prévisionnels 3 ans — onglet Workflow ────────────────────
+function renderBP3YInfographic(s){
+  var bp=build3YearBP(s.forecast||{});
+  var annee0=s.forecast&&s.forecast.annee||2026;
+
+  // 36 monthly rows
+  var allRows=bp.a1.concat(bp.a2).concat(bp.a3);
+  var caArr=allRows.map(function(r){return r._ca||0;});
+  var ebtArr=allRows.map(function(r){return r._ebitda||0;});
+
+  // Annual aggregates
+  var YR=[bp.a1,bp.a2,bp.a3].map(function(rows,yi){
+    var ca=0,ebitda=0,rex=0,rnet=0;
+    rows.forEach(function(r){ca+=r._ca;ebitda+=r._ebitda;rex+=r._rex;rnet+=r._result;});
+    var offset=yi*12,mbrs=0,lastMbrs=0;
+    for(var i=0;i<12;i++){
+      var v=offset+i<BP_ADHERENTS.length?BP_ADHERENTS[offset+i]:400;
+      mbrs+=v; if(i===11)lastMbrs=v;
+    }
+    return{ca:ca,ebitda:ebitda,rex:rex,rnet:rnet,avgMbrs:Math.round(mbrs/12),lastMbrs:lastMbrs,annee:annee0+yi};
+  });
+
+  // ── SVG Chart 36 mois ──────────────────────────────────────────────────────
+  var W=580,H=130,PL=50,PR=10,PT=10,PB=22;
+  var cW=W-PL-PR,cH=H-PT-PB,N=36;
+  var maxV=Math.max.apply(null,caArr)*1.12||1;
+  function xp(i){return PL+i*(cW/(N-1));}
+  function yv(v){return PT+cH-(Math.max(0,v)/maxV)*cH;}
+
+  // Break-even (première transition neg→pos EBITDA)
+  var beM=-1;
+  for(var k=1;k<N;k++){if(ebtArr[k]>0&&ebtArr[k-1]<=0){beM=k;break;}}
+
+  var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
+
+  // Grid lines
+  [0,0.5,1].forEach(function(t){
+    var gv=Math.round(maxV*t);
+    var gy=yv(gv);
+    svg+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="'+(t===0?'#d4d4cc':'#eaeae2')+'" stroke-width="'+(t===0?1:0.5)+'"'+(t>0?' stroke-dasharray="3,4"':'')+'/>';
+    svg+='<text x="'+(PL-4)+'" y="'+(gy+3)+'" text-anchor="end" font-size="8" fill="#c0c0b8">'+Math.round(gv/1000)+'k</text>';
+  });
+
+  // Year bands + separateurs + labels
+  var bandBg=['rgba(24,95,165,0.04)','rgba(15,110,86,0.05)','rgba(133,79,11,0.04)'];
+  for(var y=0;y<3;y++){
+    var bx0=xp(y*12),bx1=y<2?xp((y+1)*12):W-PR;
+    svg+='<rect x="'+bx0+'" y="'+PT+'" width="'+(bx1-bx0)+'" height="'+cH+'" fill="'+bandBg[y]+'"/>';
+    if(y>0)svg+='<line x1="'+bx0+'" y1="'+PT+'" x2="'+bx0+'" y2="'+(PT+cH)+'" stroke="#ddd" stroke-width="1" stroke-dasharray="3,3"/>';
+    svg+='<text x="'+((bx0+bx1)/2)+'" y="'+(H-5)+'" text-anchor="middle" font-size="8" fill="#c4c4bc" font-weight="600">A'+(y+1)+'  '+(annee0+y)+'</text>';
+  }
+
+  // CA — aire + ligne
+  var caA='M'+xp(0)+' '+(PT+cH);
+  caArr.forEach(function(v,i){caA+=' L'+xp(i)+' '+yv(v);});
+  caA+=' L'+xp(N-1)+' '+(PT+cH)+' Z';
+  svg+='<path d="'+caA+'" fill="#1D9E75" opacity="0.1"/>';
+  var caL='';caArr.forEach(function(v,i){caL+=(i===0?'M':'L')+xp(i)+' '+yv(v)+' ';});
+  svg+='<path d="'+caL+'" fill="none" stroke="#1D9E75" stroke-width="1.8"/>';
+
+  // EBITDA — aires positives
+  var eseg=null;
+  ebtArr.forEach(function(v,i){
+    if(v>0){
+      if(!eseg)eseg='M'+xp(i)+' '+(PT+cH);
+      eseg+=' L'+xp(i)+' '+yv(v);
+    } else {
+      if(eseg){eseg+=' L'+xp(i-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="#854F0B" opacity="0.14"/>';eseg=null;}
+    }
+  });
+  if(eseg){eseg+=' L'+xp(N-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="#854F0B" opacity="0.14"/>';}
+
+  // EBITDA — lignes (segments positifs seulement)
+  var eparts=[],ecur=null;
+  ebtArr.forEach(function(v,i){
+    if(v>=0){if(!ecur)ecur='M'+xp(i)+' '+yv(v);else ecur+=' L'+xp(i)+' '+yv(v);}
+    else{if(ecur){eparts.push(ecur);ecur=null;}}
+  });
+  if(ecur)eparts.push(ecur);
+  eparts.forEach(function(p){svg+='<path d="'+p+'" fill="none" stroke="#854F0B" stroke-width="1.5"/>';});
+
+  // Mois EBITDA négatifs → point rouge en bas
+  ebtArr.forEach(function(v,i){if(v<0)svg+='<circle cx="'+xp(i)+'" cy="'+(PT+cH)+'" r="1.8" fill="#A32D2D" opacity="0.35"/>';});
+
+  // Marqueur break-even
+  if(beM>=0){
+    var bx=xp(beM);
+    svg+='<line x1="'+bx+'" y1="'+PT+'" x2="'+bx+'" y2="'+(PT+cH)+'" stroke="#1D9E75" stroke-width="1" stroke-dasharray="2,3" opacity="0.65"/>';
+    svg+='<rect x="'+(bx+2)+'" y="'+(PT+1)+'" width="20" height="11" rx="3" fill="#1D9E75" opacity="0.15"/>';
+    svg+='<text x="'+(bx+12)+'" y="'+(PT+9)+'" text-anchor="middle" font-size="7.5" fill="#0F6E56" font-weight="700">BE</text>';
+  }
+  svg+='</svg>';
+
+  // ── HTML ────────────────────────────────────────────────────────────────────
+  var ACCENTS=['#185FA5','#0F6E56','#854F0B'];
+  var h='<div style="margin-top:16px;border-radius:16px;overflow:hidden;border:0.5px solid #ddddd6;box-shadow:0 8px 32px rgba(0,0,0,0.08)">';
+
+  // Header sombre
+  h+='<div style="background:linear-gradient(135deg,#0f1e2d 0%,#182f48 55%,#0c2218 100%);padding:16px 20px 14px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">';
+  h+='<div>';
+  h+='<div style="font-size:8.5px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.38);margin-bottom:4px">Projection · Dossier financement</div>';
+  h+='<div style="font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.3px">Performance pr&eacute;visionnelle &mdash; 3 ans</div>';
+  h+='<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px">Ouverture '+s.ouverture+' &middot; Club Pilates Reformer</div>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:5px;flex-wrap:wrap">';
+  [{l:'CA A3',v:fmt(YR[2].ca),c:'rgba(29,158,117,0.9)',b:'rgba(29,158,117,0.28)'},{l:'EBITDA A3',v:fmt(YR[2].ebitda),c:'rgba(200,135,55,0.9)',b:'rgba(200,135,55,0.28)'},{l:'R\u00e9sultat A3',v:fmt(YR[2].rnet),c:'rgba(90,148,215,0.9)',b:'rgba(90,148,215,0.22)'}].forEach(function(k){
+    h+='<div style="border:0.5px solid '+k.b+';border-radius:8px;padding:5px 10px;text-align:center;background:rgba(255,255,255,0.06);min-width:74px">';
+    h+='<div style="font-size:7.5px;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.34);margin-bottom:2px">'+k.l+'</div>';
+    h+='<div style="font-size:13px;font-weight:700;color:'+k.c+'">'+k.v+'</div>';
+    h+='</div>';
+  });
+  h+='</div></div></div>';
+
+  // Cartes 3 ans
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#fff">';
+  YR.forEach(function(yr,i){
+    var accent=ACCENTS[i];
+    var eMargin=yr.ca>0?Math.round(yr.ebitda/yr.ca*100):0;
+    var rexMargin=yr.ca>0?Math.round(yr.rex/yr.ca*100):0;
+    var mbrPct=Math.min(100,Math.round(yr.lastMbrs/400*100));
+    var borderR=i<2?'border-right:0.5px solid #ebebE6;':'';
+    h+='<div style="padding:14px 16px;background:'+(i===2?'#f9f8f5':'#fff')+';'+borderR+'border-bottom:0.5px solid #ebebE6">';
+
+    // En-tête année
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+    h+='<div style="display:flex;align-items:center;gap:6px">';
+    h+='<div style="width:22px;height:22px;border-radius:6px;background:'+accent+';display:flex;align-items:center;justify-content:center"><span style="font-size:10px;font-weight:800;color:#fff">A'+(i+1)+'</span></div>';
+    h+='<span style="font-size:12px;font-weight:700;color:#1a1a1a">Ann\u00e9e '+(i+1)+'</span>';
+    h+='</div>';
+    h+='<span style="font-size:11px;color:#ccc">'+yr.annee+'</span>';
+    h+='</div>';
+
+    // Jauge membres
+    h+='<div style="background:#f5f5f0;border-radius:8px;padding:8px 10px;margin-bottom:10px">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+    h+='<span style="font-size:10px;color:#888;font-weight:500">&#128101; Membres</span>';
+    h+='<div><span style="font-size:15px;font-weight:800;color:#1a1a1a">'+yr.lastMbrs+'</span><span style="font-size:9px;color:#bbb;margin-left:2px">fin A'+(i+1)+'</span></div>';
+    h+='</div>';
+    h+='<div style="height:4px;background:#e6e6e0;border-radius:2px;overflow:hidden">';
+    h+='<div style="height:100%;width:'+mbrPct+'%;background:linear-gradient(90deg,'+accent+','+accent+'bb);border-radius:2px"></div>';
+    h+='</div>';
+    h+='<div style="display:flex;justify-content:space-between;margin-top:3px">';
+    h+='<span style="font-size:9px;color:#ccc">moy. '+yr.avgMbrs+'/mois</span>';
+    h+='<span style="font-size:9px;color:#ccc">'+mbrPct+'% / 400</span>';
+    h+='</div></div>';
+
+    // Métriques financières
+    [{label:'CA annuel',value:fmt(yr.ca),sub:null,color:'#1a1a1a',sz:14,fw:700},
+     {label:'EBITDA',value:fmt(yr.ebitda),sub:eMargin+'% du CA',color:yr.ebitda>0?'#854F0B':'#A32D2D',sz:12,fw:600},
+     {label:'REX',value:fmt(yr.rex),sub:rexMargin+'% marge',color:yr.rex>0?'#0F6E56':'#A32D2D',sz:12,fw:600},
+     {label:'R\u00e9sultat net',value:fmt(yr.rnet),sub:null,color:yr.rnet>0?'#185FA5':'#A32D2D',sz:12,fw:600}
+    ].forEach(function(m,mi){
+      var sep=mi<3?'padding-bottom:6px;margin-bottom:6px;border-bottom:0.5px solid #f2f2ed;':'';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;'+sep+'">';
+      h+='<span style="font-size:10.5px;color:#888">'+m.label+'</span>';
+      h+='<div style="text-align:right"><div style="font-size:'+m.sz+'px;font-weight:'+m.fw+';color:'+m.color+'">'+m.value+'</div>';
+      if(m.sub)h+='<div style="font-size:9px;color:'+m.color+';opacity:0.72">'+m.sub+'</div>';
+      h+='</div></div>';
+    });
+
+    // Barre marge EBITDA
+    h+='<div style="margin-top:8px"><div style="height:3px;background:#f0f0ea;border-radius:2px;overflow:hidden">';
+    h+='<div style="height:100%;width:'+Math.min(100,Math.max(0,eMargin*2.2))+'%;background:'+accent+';border-radius:2px"></div>';
+    h+='</div>';
+    h+='<div style="font-size:9px;color:#ccc;margin-top:2px;text-align:right">Marge EBITDA <strong style="color:'+accent+'">'+eMargin+'%</strong></div>';
+    h+='</div></div>';
+  });
+  h+='</div>';
+
+  // Section graphique
+  h+='<div style="background:#f7f7f4;border-top:0.5px solid #e8e8e2;padding:12px 16px 10px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
+  h+='<div style="font-size:11px;font-weight:600;color:#666">Trajectoire CA &amp; EBITDA &mdash; 36 mois</div>';
+  h+='<div style="display:flex;gap:12px;align-items:center">';
+  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#1D9E75;border-radius:1px"></div><span style="font-size:9.5px;color:#999">CA mensuel</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#854F0B;border-radius:1px"></div><span style="font-size:9.5px;color:#999">EBITDA mensuel</span></div>';
+  if(beM>=0)h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:1px;height:12px;background:#0F6E56;opacity:0.65"></div><span style="font-size:9.5px;color:#0F6E56;font-weight:600">Break-even</span></div>';
+  h+='</div></div>';
+  h+=svg;
+  h+='</div>';
+  h+='</div>';
+  return h;
 }
 
 // ── Adherents ─────────────────────────────────────────────────────────────────
