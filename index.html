@@ -587,7 +587,15 @@ async function doLogout(){
 function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';render();}
 function goBack(){S.view='dashboard';S.selectedId=null;render();}
 function setMainTab(t){S.mainTab=t;render();}
-function setDetailTab(t){S.detailTab=t;S.aiResp='';render();}
+function setDetailTab(t){
+  S.detailTab=t;
+  S.aiResp='';
+  render();
+  if(t==='localisation' && S.selectedId){
+    const s=S.studios[S.selectedId];
+    if(s) loadMap('map_loc', s.addr);
+  }
+}
 function setFS(s){S.forecastSection=s;S.editMoisIdx=null;render();}
 function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:448800,moisDebut:0,annee:2026};render();}
 function setNF(k,v){S.newForm[k]=v;}
