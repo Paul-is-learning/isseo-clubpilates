@@ -345,7 +345,7 @@ function inferStatut(steps){
 }
 
 const INIT={
-  lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'T3 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2026'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:6,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'Septembre 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2026'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Pacte associes COBE a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Bail commercial a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Credit-bail equipements a mettre en place'],steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
@@ -384,6 +384,18 @@ async function loadAll(){
     else{studios[id]=r.data;}
   });
   if(Object.keys(studios).length>0)S.studios=studios;
+  // Patch config fields from INIT (ouverture, moisDebut) — source of truth is the code
+  Object.keys(INIT).forEach(function(k){
+    if(!S.studios[k])return;
+    var changed=false;
+    if(INIT[k].ouverture!==undefined&&S.studios[k].ouverture!==INIT[k].ouverture){
+      S.studios[k].ouverture=INIT[k].ouverture;changed=true;
+    }
+    if(INIT[k].forecast&&INIT[k].forecast.moisDebut!==undefined&&S.studios[k].forecast&&S.studios[k].forecast.moisDebut!==INIT[k].forecast.moisDebut){
+      S.studios[k].forecast.moisDebut=INIT[k].forecast.moisDebut;changed=true;
+    }
+    if(changed)sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()});
+  });
 }
 async function saveStudio(id,studio){
   S.studios[id]=studio;
@@ -1280,7 +1292,7 @@ function renderLocalisation(s){
   } else {
     // ── Mode Street View ──
     var svUrl=coords
-      ?'https://www.google.com/maps/@'+coords.lat+','+coords.lon+',3a,90y,0h,90t/'
+      ?'https://maps.google.com/maps?q=&layer=c&cbll='+coords.lat+','+coords.lon+'&cbp=12,0,,0,0'
       :'https://www.google.com/maps?q='+ae+'&layer=c';
     var imgUrl=coords
       ?'https://maps.googleapis.com/maps/api/streetview?size=900x440&location='+coords.lat+','+coords.lon+'&fov=90&pitch=0&return_error_code=true'
