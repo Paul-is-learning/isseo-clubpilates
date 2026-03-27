@@ -203,6 +203,7 @@ var S={
   adherentYear:1,
   showNewForm:false,newForm:{},
   aiResp:'',aiLoading:false,
+  simConfig:{},  // config simulateur par studio : {p4,p8,pi,prix4,prix8,prixi}
 };
 
 async function loadAll(){
@@ -408,8 +409,8 @@ function renderAdherents(sid,s){
   h+='</div>';
   h+='<div class="kpis" style="margin-bottom:16px">';
   h+='<div class="kpi"><div class="kpi-label">Cible BP fin A'+ay+'</div><div class="kpi-val">'+bpCible+' mbr</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Membres reels</div><div class="kpi-val" style="color:#185FA5">'+(lastReal!==null?lastReal+'':'--')+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Ecart vs BP</div><div class="kpi-val" style="color:'+(ecart!==null?(ecart>=0?'#3B6D11':'#A32D2D'):'#888')+'">'+(ecart!==null?(ecart>=0?'+':'')+ecart:'--')+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Membres reels</div><div class="kpi-val" style="color:#185FA5" id="kpi-adh-real">'+(lastReal!==null?lastReal+'':'--')+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Ecart vs BP</div><div class="kpi-val" id="kpi-adh-ecart" style="color:'+(ecart!==null?(ecart>=0?'#3B6D11':'#A32D2D'):'#888')+'">'+(ecart!==null?(ecart>=0?'+':'')+ecart:'--')+'</div></div>';
   h+='<div class="kpi"><div class="kpi-label">Seuil rentabilite</div><div class="kpi-val">150-200</div></div>';
   h+='<div class="kpi"><div class="kpi-label">Pack4/Pack8/Illim.</div><div class="kpi-val" style="font-size:11px">47% / 50% / 3%</div></div>';
   h+='</div>';
@@ -436,24 +437,29 @@ function renderAdherents(sid,s){
     h+='<div style="background:#f5f5f0;border-radius:8px;padding:8px">';
     h+='<div style="font-size:11px;font-weight:600;margin-bottom:2px">'+moisLabels[i]+'</div>';
     h+='<div style="font-size:10px;color:#888;margin-bottom:3px">BP: '+bp+' (churn '+churnArr[i]+')</div>';
-    h+='<input type="number" value="'+rVal+'" placeholder="--" onchange="saisirAdherent(\''+sid+'\','+ay+','+i+',this.value)" style="width:100%;padding:5px 7px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;outline:none;background:#fff"/>';
-    if(diff!==null)h+='<div style="font-size:10px;color:'+diffColor+';margin-top:3px;font-weight:600">'+(diff>=0?'+':'')+diff+'</div>';
+    h+='<input type="number" value="'+rVal+'" placeholder="--" oninput="saisirAdherentLive(\''+sid+'\','+ay+','+i+',this.value)" style="width:100%;padding:5px 7px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;outline:none;background:#fff"/>';
+    if(diff!==null)h+='<div id="adh-diff-'+i+'" style="font-size:10px;color:'+diffColor+';margin-top:3px;font-weight:600">'+(diff>=0?'+':'')+diff+'</div>';
+    else h+='<div id="adh-diff-'+i+'" style="font-size:10px;margin-top:3px;font-weight:600"></div>';
     h+='</div>';
   }
-  h+='</div></div></div>';
+  h+='</div></div>';
+
+  // ── Simulateur CA prévisionnel ───────────────────────────────────────────
+  // Lire config sauvegardée ou valeurs BP par défaut
+  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  h+=renderSimCA(sid,ay,bpArr,realArr,simCfg);
+  h+='</div>';
   return h;
 }
 
-function renderAdherentChart(labels,bp,real,annee){
+function buildAdherentSVG(labels,bp,real,annee){
   var W=680,H=240,PL=44,PR=20,PT=20,PB=30;
   var cW=W-PL-PR,cH=H-PT-PB;
   var allVals=bp.concat(real.filter(function(v){return v!==null;}));
   var maxV=Math.max.apply(null,allVals)*1.12;
   function xPos(i){return PL+i*(cW/(labels.length-1));}
   function yPos(v){return PT+cH-(v/maxV)*cH;}
-  var h='<div class="box" style="margin-bottom:12px;padding:1rem">';
-  h+='<div style="font-weight:600;font-size:13px;margin-bottom:12px">Evolution adherents &mdash; '+annee+' &nbsp; BP vs Realise</div>';
-  h+='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
+  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
   for(var g=0;g<=5;g++){
     var gv=Math.round(maxV*g/5);
     var gy=yPos(gv);
@@ -475,7 +481,6 @@ function renderAdherentChart(labels,bp,real,annee){
     h+='<path d="'+rPath+'" fill="none" stroke="#1D9E75" stroke-width="2.5"/>';
   }
   bp.forEach(function(v,i){h+='<circle cx="'+xPos(i)+'" cy="'+yPos(v)+'" r="3" fill="#5b7fa6" opacity="0.6"/>';});
-  // Afficher les points réels même si 1 seul point saisi
   realPoints.forEach(function(p){
     h+='<circle cx="'+p.x+'" cy="'+p.y+'" r="5" fill="#1D9E75" stroke="#fff" stroke-width="1.5"/>';
     h+='<text x="'+p.x+'" y="'+(p.y-10)+'" text-anchor="middle" font-size="9" fill="#0F6E56" font-weight="600">'+p.v+'</text>';
@@ -484,7 +489,15 @@ function renderAdherentChart(labels,bp,real,annee){
   h+='<text x="'+(W-106)+'" y="17" font-size="9" fill="#5b7fa6">BP Plan Fin.</text>';
   h+='<line x1="'+(W-130)+'" y1="27" x2="'+(W-110)+'" y2="27" stroke="#1D9E75" stroke-width="2.5"/>';
   h+='<text x="'+(W-106)+'" y="30" font-size="9" fill="#1D9E75">Realise</text>';
-  h+='</svg></div>';
+  h+='</svg>';
+  return h;
+}
+
+function renderAdherentChart(labels,bp,real,annee){
+  var h='<div class="box" style="margin-bottom:12px;padding:1rem">';
+  h+='<div style="font-weight:600;font-size:13px;margin-bottom:12px">Evolution adherents &mdash; '+annee+' &nbsp; BP vs Realise</div>';
+  h+='<div id="adh-chart-wrap">'+buildAdherentSVG(labels,bp,real,annee)+'</div>';
+  h+='</div>';
   return h;
 }
 
@@ -1053,6 +1066,72 @@ async function saisirAdherent(sid,year,moisIdx,val){
   render();
 }
 
+function saisirAdherentLive(sid,year,moisIdx,val){
+  // Mise a jour état immédiate
+  if(!S.adherents[sid])S.adherents[sid]={};
+  var key='y'+year+'_m'+moisIdx;
+  if(val===''||val===null){delete S.adherents[sid][key];}
+  else{S.adherents[sid][key]=num(val);}
+
+  // Redessine uniquement le SVG du graphique (sans toucher aux inputs)
+  var s=S.studios[sid];
+  var ay=year;
+  var moisDebut=s.forecast&&s.forecast.moisDebut||0;
+  var annee=(s.forecast&&s.forecast.annee||2026)+(ay-1);
+  var offset=(ay-1)*12;
+  var bpArr=[];
+  for(var i=0;i<12;i++){
+    var idx=offset+i;
+    bpArr.push(idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400);
+  }
+  var actuel=S.adherents[sid]||{};
+  var realArr=[];
+  for(var i=0;i<12;i++){
+    var k='y'+ay+'_m'+i;
+    realArr.push(actuel[k]!=null?num(actuel[k]):null);
+  }
+  var moisLabels=[];
+  for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
+
+  // Mise à jour ecart diff sous l'input courant
+  var bp=bpArr[moisIdx];
+  var rVal=val!==''&&val!==null?num(val):null;
+  var diffEl=document.getElementById('adh-diff-'+moisIdx);
+  if(diffEl){
+    if(rVal!==null){
+      var diff=Math.round(rVal-bp);
+      diffEl.textContent=(diff>=0?'+':'')+diff;
+      diffEl.style.color=diff>=0?'#3B6D11':'#A32D2D';
+    } else {
+      diffEl.textContent='';
+    }
+  }
+
+  // Mise à jour KPI membres réels
+  var lastReal=null,nbReal=0;
+  for(var i=0;i<realArr.length;i++){if(realArr[i]!==null){lastReal=realArr[i];nbReal=i+1;}}
+  var ecart=lastReal!==null&&nbReal>0?Math.round(lastReal-bpArr[nbReal-1]):null;
+  var kpiEl=document.getElementById('kpi-adh-real');
+  if(kpiEl)kpiEl.textContent=lastReal!==null?lastReal+'':'--';
+  var kpiEcEl=document.getElementById('kpi-adh-ecart');
+  if(kpiEcEl){
+    kpiEcEl.textContent=ecart!==null?(ecart>=0?'+':'')+ecart:'--';
+    kpiEcEl.style.color=ecart!==null?(ecart>=0?'#3B6D11':'#A32D2D'):'#888';
+  }
+
+  // Redessine le SVG inline
+  var svgWrap=document.getElementById('adh-chart-wrap');
+  if(svgWrap){
+    svgWrap.innerHTML=buildAdherentSVG(moisLabels,bpArr,realArr,annee);
+  }
+
+  // Mise à jour simulateur CA en live
+  _refreshSimCA(sid,ay);
+
+  // Sauvegarde async sans bloquer
+  saveAdherents(sid);
+}
+
 async function uploadFichier(sid,input){
   var files=Array.from(input.files);if(!files.length)return;
   var prog=document.getElementById('uprog-'+sid);if(prog)prog.style.display='block';
@@ -1131,7 +1210,207 @@ async function askAI(){
   S.aiLoading=false;render();
 }
 
-function render(){
+// ── Simulateur CA prévisionnel ────────────────────────────────────────────────
+function computeSimCA(membres,cfg){
+  var p4=num(cfg.p4,47)/100,p8=num(cfg.p8,50)/100,pi=num(cfg.pi,3)/100;
+  var prix4=num(cfg.prix4,110),prix8=num(cfg.prix8,193.33),prixi=num(cfg.prixi,276.67);
+  return Math.round(membres*(p4*prix4+p8*prix8+pi*prixi));
+}
+
+function renderSimCA(sid,ay,bpArr,realArr,cfg){
+  // Construire tableau 12 mois : membres = réel si saisi, sinon BP
+  var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
+  var caArr=membres.map(function(m){return computeSimCA(m,cfg);});
+  var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
+  var caBPAnnuel=bpArr.map(function(m){return computeSimCA(m,{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67});}).reduce(function(s,v){return s+v;},0);
+  var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
+  var total=p4+p8+pi;
+
+  var h='<div class="box" id="sim-ca-box">';
+  h+='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Simulateur CA prvisionnel</div>';
+  h+='<div style="font-size:11px;color:#888;margin-bottom:14px">Ajuste la repartition et les prix &mdash; le CA se recalcule en direct</div>';
+
+  // ── Répartition ──
+  h+='<div style="font-weight:500;font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Repartition des abonnes</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:6px">';
+  var packs=[
+    {id:'p4',label:'Pack 4 seances',color:'#5b7fa6',val:p4},
+    {id:'p8',label:'Pack 8 seances',color:'#1D9E75',val:p8},
+    {id:'pi',label:'Illimite',color:'#854F0B',val:pi},
+  ];
+  packs.forEach(function(pk){
+    h+='<div>';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+    h+='<span style="font-size:12px;font-weight:500;color:'+pk.color+'">'+pk.label+'</span>';
+    h+='<span id="sim-lbl-'+pk.id+'" style="font-size:13px;font-weight:700;color:'+pk.color+'">'+pk.val+'%</span>';
+    h+='</div>';
+    h+='<input type="range" min="0" max="100" value="'+pk.val+'" id="sim-rng-'+pk.id+'" oninput="updateSimRep(\''+sid+'\',\''+pk.id+'\',this.value,'+ay+')" style="width:100%;accent-color:'+pk.color+'"/>';
+    h+='</div>';
+  });
+  h+='</div>';
+  // Barre de répartition visuelle
+  h+='<div style="display:flex;height:8px;border-radius:6px;overflow:hidden;margin-bottom:4px">';
+  h+='<div id="sim-bar-p4" style="width:'+Math.round(p4/total*100)+'%;background:#5b7fa6;transition:width 0.2s"></div>';
+  h+='<div id="sim-bar-p8" style="width:'+Math.round(p8/total*100)+'%;background:#1D9E75;transition:width 0.2s"></div>';
+  h+='<div id="sim-bar-pi" style="flex:1;background:#854F0B;transition:width 0.2s"></div>';
+  h+='</div>';
+  h+='<div id="sim-warn" style="font-size:11px;color:#A32D2D;margin-bottom:10px;min-height:16px">'+(total!==100?'Total = '+total+'% (doit etre 100%)':'')+'</div>';
+
+  // ── Prix ──
+  h+='<div style="font-weight:500;font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Prix abonnements (HT/mois)</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">';
+  var prixCfg=[
+    {id:'prix4',label:'Pack 4',ref:110,color:'#5b7fa6',val:num(cfg.prix4,110)},
+    {id:'prix8',label:'Pack 8',ref:193.33,color:'#1D9E75',val:num(cfg.prix8,193.33)},
+    {id:'prixi',label:'Illimite',ref:276.67,color:'#854F0B',val:num(cfg.prixi,276.67)},
+  ];
+  prixCfg.forEach(function(px){
+    var delta=Math.round((px.val-px.ref)/px.ref*100);
+    h+='<div>';
+    h+='<div style="font-size:11px;color:#888;margin-bottom:4px">'+px.label+' <span style="font-size:10px;color:#aaa">(BP: '+px.ref+' EUR)</span></div>';
+    h+='<div style="display:flex;align-items:center;gap:6px">';
+    h+='<input type="number" value="'+px.val+'" step="0.5" id="sim-'+px.id+'" oninput="updateSimPrix(\''+sid+'\',\''+px.id+'\',this.value,'+ay+')" style="width:100%;padding:6px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-weight:600;color:'+px.color+';outline:none"/>';
+    h+='</div>';
+    h+='<div id="sim-delta-'+px.id+'" style="font-size:10px;margin-top:3px;color:'+(delta>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+(delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP')+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // ── Résultats ──
+  h+='<div style="background:#f5f5f0;border-radius:10px;padding:14px 16px">';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
+  // CA mensuel moyen simulé
+  var caMoyMensuel=Math.round(caAnnuel/12);
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA annuel simule</div><div id="sim-ca-annuel" style="font-size:18px;font-weight:700;color:#1a1a1a">'+fmt(caAnnuel)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA moyen/mois</div><div id="sim-ca-moy" style="font-size:15px;font-weight:600;color:#185FA5">'+fmt(caMoyMensuel)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Ecart vs BP</div>';
+  var ecartCA=caAnnuel-caBPAnnuel;
+  h+='<div id="sim-ca-ecart" style="font-size:15px;font-weight:600;color:'+(ecartCA>=0?'#3B6D11':'#A32D2D')+'">'+(ecartCA>=0?'+':'')+fmt(ecartCA)+'</div></div>';
+  // ARPU simulé
+  var lastMembres=membres[membres.length-1];
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">ARPU moyen/mois</div>';
+  h+='<div id="sim-arpu" style="font-size:15px;font-weight:600;color:#854F0B">'+(lastMembres>0?fmt(Math.round(computeSimCA(lastMembres,cfg)/lastMembres)):'--')+'</div></div>';
+  h+='</div>';
+  // Mini graphique CA mensuel simulé
+  h+='<div style="margin-top:14px">'+buildSimCAChart(caArr,membres,realArr)+'</div>';
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+function buildSimCAChart(caArr,membres,realArr){
+  var W=620,H=100,PL=52,PR=10,PT=10,PB=20;
+  var cW=W-PL-PR,cH=H-PT-PB;
+  var maxCA=Math.max.apply(null,caArr)*1.15||1;
+  function xp(i){return PL+i*(cW/(caArr.length-1));}
+  function yp(v){return PT+cH-(v/maxCA)*cH;}
+  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block" id="sim-chart-svg">';
+  // Grid
+  for(var g=0;g<=3;g++){
+    var gv=Math.round(maxCA*g/3);
+    var gy=yp(gv);
+    h+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="#e0e0d8" stroke-width="1"/>';
+    h+='<text x="'+(PL-4)+'" y="'+(gy+3)+'" text-anchor="end" font-size="8" fill="#bbb">'+fmt(gv)+'</text>';
+  }
+  // Area fill
+  var area='M'+xp(0)+' '+yp(0);
+  caArr.forEach(function(v,i){area+=' L'+xp(i)+' '+yp(v);});
+  area+=' L'+xp(caArr.length-1)+' '+yp(0)+' Z';
+  h+='<path d="'+area+'" fill="#1D9E75" opacity="0.10"/>';
+  // Ligne CA
+  var line='M';
+  caArr.forEach(function(v,i){line+=(i>0?' L':'')+xp(i)+' '+yp(v);});
+  h+='<path d="'+line+'" fill="none" stroke="#1D9E75" stroke-width="2"/>';
+  // Points : vert foncé si réel saisi, vert clair si BP
+  caArr.forEach(function(v,i){
+    var isReal=realArr[i]!==null;
+    h+='<circle cx="'+xp(i)+'" cy="'+yp(v)+'" r="3.5" fill="'+(isReal?'#0F6E56':'#1D9E75')+'" opacity="'+(isReal?1:0.5)+'"/>';
+    h+='<text x="'+xp(i)+'" y="'+(yp(v)-6)+'" text-anchor="middle" font-size="7.5" fill="#0F6E56" font-weight="600">'+fmt(v)+'</text>';
+  });
+  h+='</svg>';
+  h+='<div style="font-size:10px;color:#888;margin-top:3px">Points fonces = mois avec adherents reels saisis &middot; Points clairs = projection BP</div>';
+  return h;
+}
+
+function updateSimRep(sid,field,val,ay){
+  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  S.simConfig[sid][field]=num(val);
+  // Sync libellé slider
+  var lbl=document.getElementById('sim-lbl-'+field);
+  if(lbl)lbl.textContent=Math.round(num(val))+'%';
+  _refreshSimCA(sid,ay);
+}
+
+function updateSimPrix(sid,field,val,ay){
+  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  S.simConfig[sid][field]=num(val);
+  // Mettre à jour delta vs BP
+  var refs={prix4:110,prix8:193.33,prixi:276.67};
+  var ref=refs[field];
+  var delta=ref?Math.round((num(val)-ref)/ref*100):0;
+  var el=document.getElementById('sim-delta-'+field);
+  if(el){
+    el.textContent=delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP';
+    el.style.color=delta>=0?'#3B6D11':'#A32D2D';
+  }
+  _refreshSimCA(sid,ay);
+}
+
+function _refreshSimCA(sid,ay){
+  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
+  var total=p4+p8+pi;
+
+  // Barre de répartition
+  var bp4=document.getElementById('sim-bar-p4');
+  var bp8=document.getElementById('sim-bar-p8');
+  if(bp4)bp4.style.width=Math.round(p4/total*100)+'%';
+  if(bp8)bp8.style.width=Math.round(p8/total*100)+'%';
+
+  // Avertissement total != 100
+  var warn=document.getElementById('sim-warn');
+  if(warn)warn.textContent=total!==100?'Total = '+total+'% (doit etre 100%)':'';
+
+  // Recalculer CA
+  var s=S.studios[sid];
+  var moisDebut=s.forecast&&s.forecast.moisDebut||0;
+  var offset=(ay-1)*12;
+  var bpArr=[];
+  for(var i=0;i<12;i++){
+    var idx=offset+i;
+    bpArr.push(idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400);
+  }
+  var actuel=S.adherents[sid]||{};
+  var realArr=[];
+  for(var i=0;i<12;i++){
+    var k='y'+ay+'_m'+i;
+    realArr.push(actuel[k]!=null?num(actuel[k]):null);
+  }
+  var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
+  var caArr=membres.map(function(m){return computeSimCA(m,cfg);});
+  var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
+  var caBPAnnuel=bpArr.map(function(m){return computeSimCA(m,{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67});}).reduce(function(s,v){return s+v;},0);
+
+  // Mise à jour DOM résultats
+  var elCA=document.getElementById('sim-ca-annuel');
+  var elMoy=document.getElementById('sim-ca-moy');
+  var elEcart=document.getElementById('sim-ca-ecart');
+  var elARPU=document.getElementById('sim-arpu');
+  if(elCA)elCA.textContent=fmt(caAnnuel);
+  if(elMoy)elMoy.textContent=fmt(Math.round(caAnnuel/12));
+  var ecartCA=caAnnuel-caBPAnnuel;
+  if(elEcart){elEcart.textContent=(ecartCA>=0?'+':'')+fmt(ecartCA);elEcart.style.color=ecartCA>=0?'#3B6D11':'#A32D2D';}
+  var lastM=membres[membres.length-1];
+  if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg)/lastM)):'--';
+
+  // Redessine graphique CA simulé
+  var chartWrap=document.getElementById('sim-chart-svg');
+  if(chartWrap&&chartWrap.parentNode){
+    chartWrap.parentNode.innerHTML=buildSimCAChart(caArr,membres,realArr);
+  }
+}
+
+
   var root=document.getElementById('root');
   if(!root)return;
   if(S.view==='auth')root.innerHTML=renderAuth();
