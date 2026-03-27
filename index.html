@@ -56,21 +56,19 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:140px}
 <div id="root"></div>
 <div class="toast" id="toast"></div>
 <script>
-// ── Config ────────────────────────────────────────────────────────────────────
 const SUPA_URL='https://wfqtpcujujqxgfsgbpvp.supabase.co';
 const SUPA_KEY='sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv';
 const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
 
-// ── Constants ─────────────────────────────────────────────────────────────────
-const MOIS=['Jan','Fév','Mar','Avr','Mai','Jun','Jul','Aoû','Sep','Oct','Nov','Déc'];
+const MOIS=['Jan','Fev','Mar','Avr','Mai','Jun','Jul','Aou','Sep','Oct','Nov','Dec'];
 const fmt=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);
-const fmtN=n=>isNaN(n)?'—':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);
+const fmtN=n=>isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);
 const num=(v,fb=0)=>{const n=parseFloat(v);return isNaN(n)?fb:n;};
 const cleanName=n=>n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]/g,'_').replace(/_+/g,'_');
 
-const DEPENSE_CATS=['Travaux / Aménagement','Equipements Pilates','Droit entrée franchise','Honoraires / Juridique','Marketing lancement','Dépôt garantie bail','Autre'];
-const DEPENSE_FINS=['Emprunt bancaire','Crédit-bail','Fonds propres'];
-const DEBLOCAGE_ST={attente:{label:'À demander',bg:'#F1EFE8',color:'#5F5E5A'},demande:{label:'Demandé',bg:'#FAEEDA',color:'#854F0B'},debloque:{label:'Débloqué',bg:'#E1F5EE',color:'#0F6E56'}};
+const DEPENSE_CATS=['Travaux / Amenagement','Equipements Pilates','Droit entree franchise','Honoraires / Juridique','Marketing lancement','Depot garantie bail','Autre'];
+const DEPENSE_FINS=['Emprunt bancaire','Credit-bail','Fonds propres'];
+const DEBLOCAGE={attente:{label:'A demander',bg:'#F1EFE8',color:'#5F5E5A'},demande:{label:'Demande',bg:'#FAEEDA',color:'#854F0B'},debloque:{label:'Debloque',bg:'#E1F5EE',color:'#0F6E56'}};
 
 const ROLE_FILTER={
   admin:null,tom:null,pascal:null,
@@ -81,55 +79,55 @@ const ROLE_FILTER={
 
 const STATUT_CFG={
   pipeline:{bg:'#F1EFE8',text:'#5F5E5A',label:'Pipeline'},
-  preparation:{bg:'#E6F1FB',text:'#185FA5',label:'Préparation'},
+  preparation:{bg:'#E6F1FB',text:'#185FA5',label:'Preparation'},
   chantier:{bg:'#EAF3DE',text:'#3B6D11',label:'En chantier'},
   ouvert:{bg:'#E1F5EE',text:'#0F6E56',label:'Ouvert'},
-  abandonne:{bg:'#FCEBEB',text:'#A32D2D',label:'Abandonné'},
+  abandonne:{bg:'#FCEBEB',text:'#A32D2D',label:'Abandonne'},
 };
 
 const STEPS=[
-  {id:'testfit',label:'Test fit local',desc:'Surface 135-180m², H≥2m45, 12 postes, façade enseigne'},
-  {id:'loi',label:'LOI bail signée',desc:"Lettre d'intention, franchise loyer négociée"},
-  {id:'devis',label:'Devis travaux & équipements',desc:'Devis entrepreneur + commande Balanced Body'},
-  {id:'bail',label:'Bail commercial 3/6/9',desc:'Signature bail définitif, remise des clés'},
-  {id:'financement',label:'Offre de prêt obtenue',desc:'Accord bancaire + crédit-bail machines'},
-  {id:'at',label:'Autorisation de travaux',desc:'Dépôt et obtention AT'},
-  {id:'franchise',label:'Contrat franchise signé',desc:"Signature TMCP Fitness France, 40 000€"},
+  {id:'testfit',label:'Test fit local',desc:'Surface 135-180m2, H2m45, 12 postes, facade enseigne'},
+  {id:'loi',label:'LOI bail signee',desc:'Lettre intention, franchise loyer'},
+  {id:'devis',label:'Devis travaux et equipements',desc:'Devis entrepreneur + commande Balanced Body'},
+  {id:'bail',label:'Bail commercial 3/6/9',desc:'Signature bail definitif, remise des cles'},
+  {id:'financement',label:'Offre de pret obtenue',desc:'Accord bancaire + credit-bail machines'},
+  {id:'at',label:'Autorisation de travaux',desc:'Depot et obtention AT'},
+  {id:'franchise',label:'Contrat franchise signe',desc:'Signature TMCP Fitness France, 40000 EUR'},
   {id:'admin',label:'Documents administratifs',desc:'KBis, statuts, compte pro, assurances'},
-  {id:'chantier',label:'Démarrage chantier',desc:'GO travaux, livraison équipements'},
-  {id:'preventes',label:'Phase pré-ventes (J-60)',desc:'Campagne membres, objectif 100+'},
+  {id:'chantier',label:'Demarrage chantier',desc:'GO travaux, livraison equipements'},
+  {id:'preventes',label:'Phase pre-ventes J-60',desc:'Campagne membres, objectif 100+'},
   {id:'opening',label:'Soft / Grand opening',desc:'Objectif 150+ Soft, 200+ Grand Opening'},
 ];
 
 const BP_LINES=[
   {id:'ca_cours',label:'CA Cours collectifs',cat:'p',pctCA:0.985},
-  {id:'ca_prives',label:'CA Cours privés',cat:'p',pctCA:0.015},
+  {id:'ca_prives',label:'CA Cours prives',cat:'p',pctCA:0.015},
   {id:'ca_boutique',label:'CA Boutique',cat:'p',pctCA:0.03},
-  {id:'coachs',label:'Coachs / instructeurs',cat:'c',fixed:10000},
-  {id:'loyer',label:'Loyer bail commercial',cat:'c',fixed:3238},
+  {id:'coachs',label:'Coachs instructeurs',cat:'c',fixed:10000},
+  {id:'loyer',label:'Loyer bail',cat:'c',fixed:3238},
   {id:'charges_loc',label:'Charges locatives',cat:'c',fixed:192},
-  {id:'royalties',label:'Royalties franchise (9%)',cat:'c',pctCA:0.09},
-  {id:'pub',label:'Publicité / marketing',cat:'c',fixed:2550},
+  {id:'royalties',label:'Royalties franchise 9pct',cat:'c',pctCA:0.09},
+  {id:'pub',label:'Pub marketing',cat:'c',fixed:2550},
   {id:'software',label:'Abonnements software',cat:'c',fixed:455},
   {id:'assurance',label:'Assurances',cat:'c',fixed:200},
   {id:'nettoyage',label:'Nettoyage',cat:'c',fixed:317},
   {id:'compta',label:'Honoraires compta',cat:'c',fixed:208},
-  {id:'entretien',label:'Entretien & réparations',cat:'c',fixed:150},
-  {id:'creditbail',label:'Crédit-bail machines',cat:'c',fixed:2197},
-  {id:'salaries',label:'Charges de personnel',cat:'c',fixed:7500},
+  {id:'entretien',label:'Entretien reparations',cat:'c',fixed:150},
+  {id:'creditbail',label:'Credit-bail machines',cat:'c',fixed:2197},
+  {id:'salaries',label:'Charges personnel',cat:'c',fixed:7500},
   {id:'amort',label:'Amortissements',cat:'c',fixed:3836},
-  {id:'charges_fin',label:'Charges financières',cat:'c',fixed:714},
-  {id:'is',label:'Impôt sur bénéfices',cat:'c',fixed:172},
+  {id:'charges_fin',label:'Charges financieres',cat:'c',fixed:714},
+  {id:'is',label:'Impot societes',cat:'c',fixed:172},
 ];
 const PRODUITS=BP_LINES.filter(l=>l.cat==='p');
 const CHARGES=BP_LINES.filter(l=>l.cat==='c');
 
-function buildBP(annualCA,moisDebut=0){
+function buildBP(annualCA,moisDebut){
   const ramp=[0.055,0.065,0.075,0.08,0.085,0.09,0.09,0.085,0.085,0.08,0.08,0.075];
   return Array.from({length:12},(_,i)=>{
     const ca=Math.round(annualCA*ramp[i]);
     const row={mi:(moisDebut+i)%12,_ca:ca};
-    BP_LINES.forEach(l=>{row[l.id]=l.fixed??Math.round(ca*(l.pctCA||0));});
+    BP_LINES.forEach(l=>{row[l.id]=l.fixed!=null?l.fixed:Math.round(ca*(l.pctCA||0));});
     row._charges=CHARGES.reduce((s,l)=>s+row[l.id],0);
     row._result=ca-row._charges;
     return row;
@@ -145,14 +143,13 @@ function inferStatut(steps){
 }
 
 const INIT={
-  lattes:{name:'Montpellier — Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'T3 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2026','Financement à finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:6,annee:2026,actuel:{}}},
-  garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la République, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Pacte associés COBE à finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
-  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Bail commercial à finaliser'],steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
-  issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Crédit-bail équipements à mettre en place'],steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
-  toulouse:{name:'Toulouse / Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2027','Site à identifier'],steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:0,annee:2027,actuel:{}}},
+  lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'T3 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2026','Financement a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:6,annee:2026,actuel:{}}},
+  garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Pacte associes COBE a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
+  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Bail commercial a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
+  issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:306200,emprunt:214340,alertes:['Credit-bail equipements a mettre en place'],steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:8,annee:2026,actuel:{}}},
+  toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:306200,emprunt:214340,alertes:['Deadline franchise 30/06/2027','Site a identifier'],steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:448800,moisDebut:0,annee:2027,actuel:{}}},
 };
 
-// ── State ─────────────────────────────────────────────────────────────────────
 let S={
   user:null,profile:null,
   studios:JSON.parse(JSON.stringify(INIT)),
@@ -165,498 +162,551 @@ let S={
   aiResp:'',aiLoading:false,
 };
 
-// ── DB ────────────────────────────────────────────────────────────────────────
 async function loadStudios(){
   const {data}=await sb.from('studios').select('id,data');
   if(data&&data.length){
     const s={};
-    data.forEach(r=>{if(!r.id.includes('_files')&&!r.id.includes('_depenses'))s[r.id]=r.data;});
+    data.forEach(r=>{
+      if(!r.id.includes('_files')&&!r.id.includes('_depenses')&&!r.id.includes('_messages'))
+        s[r.id]=r.data;
+    });
     if(Object.keys(s).length>0)S.studios=s;
   }
 }
 async function loadFiles(){
   const {data}=await sb.from('studios').select('id,data');
   S.files={};
-  if(data)data.forEach(r=>{if(r.id.endsWith('_files')){const sid=r.id.slice(0,-6);S.files[sid]=r.data?.files||[];}});
+  if(data)data.forEach(r=>{if(r.id.endsWith('_files')){S.files[r.id.slice(0,-6)]=r.data?.files||[];}});
+}
+async function loadDepenses(){
+  const {data}=await sb.from('studios').select('id,data');
+  S.depenses={};
+  if(data)data.forEach(r=>{if(r.id.endsWith('_depenses')){S.depenses[r.id.slice(0,-9)]=r.data?.depenses||[];}});
 }
 async function loadMessages(){
   const {data}=await sb.from('studios').select('id,data');
   S.messages={};
-  if(data)data.forEach(r=>{if(r.id.endsWith('_messages')){const sid=r.id.slice(0,-9);S.messages[sid]=r.data?.messages||[];}});
-}
-
-async function loadDepenses(){
-  const {data}=await sb.from('studios').select('id,data');
-  S.depenses={};
-  if(data)data.forEach(r=>{if(r.id.endsWith('_depenses')){const sid=r.id.slice(0,-9);S.depenses[sid]=r.data?.depenses||[];}});
+  if(data)data.forEach(r=>{if(r.id.endsWith('_messages')){S.messages[r.id.slice(0,-9)]=r.data?.messages||[];}});
 }
 async function saveStudio(id,studio){
   S.studios[id]=studio;
   await sb.from('studios').upsert({id,data:studio,updated_at:new Date().toISOString()});
   render();
 }
-async function saveDepenses(studioId){
-  await sb.from('studios').upsert({id:studioId+'_depenses',data:{depenses:S.depenses[studioId]},updated_at:new Date().toISOString()});
+async function saveDepenses(sid){
+  await sb.from('studios').upsert({id:sid+'_depenses',data:{depenses:S.depenses[sid]},updated_at:new Date().toISOString()});
 }
 
-// ── Toast ─────────────────────────────────────────────────────────────────────
-function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),2500);}
+function toast(msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.classList.add('show');
+  setTimeout(()=>t.classList.remove('show'),2500);
+}
 
-// ── UI helpers ────────────────────────────────────────────────────────────────
-function badge(statut){const s=STATUT_CFG[statut]||STATUT_CFG.pipeline;return `<span class="badge" style="background:${s.bg};color:${s.text}">${s.label}</span>`;}
+function badge(statut){
+  const s=STATUT_CFG[statut]||STATUT_CFG.pipeline;
+  return '<span class="badge" style="background:'+s.bg+';color:'+s.text+'">'+s.label+'</span>';
+}
+
 function progBar(steps){
   const done=STEPS.filter(s=>steps[s.id]).length;
   const p=Math.round(done/STEPS.length*100);
-  return `<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;color:#888"><span>${done}/${STEPS.length} étapes</span><span>${p}%</span></div><div class="prog-bar"><div class="prog-fill" style="width:${p}%"></div></div>`;
+  return '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;color:#888"><span>'+done+'/'+STEPS.length+' etapes</span><span>'+p+'%</span></div><div class="prog-bar"><div class="prog-fill" style="width:'+p+'%"></div></div>';
 }
-const LOGO_ISSEO=`<svg width="70" viewBox="0 0 260 110"><text x="0" y="80" font-family="Georgia,serif" font-size="88" font-weight="700" fill="#1a1a1a">Isseo</text><text x="8" y="102" font-family="Arial,sans-serif" font-size="10" letter-spacing="3" fill="#888">DÉVELOPPER &amp; VALORISER</text></svg>`;
-const LOGO_CP=`<svg width="120" viewBox="0 0 240 55"><text x="0" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">CLUB</text><circle cx="90" cy="27" r="22" fill="none" stroke="#5b7fa6" stroke-width="1.5" stroke-dasharray="3,2"/><ellipse cx="90" cy="27" rx="12" ry="15" fill="#5b7fa6" opacity="0.2"/><ellipse cx="90" cy="27" rx="16" ry="9" fill="#5b7fa6" opacity="0.2"/><circle cx="90" cy="27" r="6" fill="#5b7fa6" opacity="0.5"/><text x="118" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">PILATES</text></svg>`;
 
-// ── Views ─────────────────────────────────────────────────────────────────────
+const LI='<svg width="70" viewBox="0 0 260 110"><text x="0" y="80" font-family="Georgia,serif" font-size="88" font-weight="700" fill="#1a1a1a">Isseo</text><text x="8" y="102" font-family="Arial,sans-serif" font-size="10" letter-spacing="3" fill="#888">DEV &amp; VALORISER</text></svg>';
+const LC='<svg width="120" viewBox="0 0 240 55"><text x="0" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">CLUB</text><circle cx="90" cy="27" r="22" fill="none" stroke="#5b7fa6" stroke-width="1.5" stroke-dasharray="3,2"/><circle cx="90" cy="27" r="8" fill="#5b7fa6" opacity="0.4"/><text x="118" y="38" font-family="Arial,sans-serif" font-size="17" font-weight="700" letter-spacing="2" fill="#5b7fa6">PILATES</text></svg>';
+
 function renderAuth(){
-  return `<div class="auth-wrap"><div class="auth-box">
-    <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px">${LOGO_ISSEO}<div style="width:1px;height:40px;background:#e0e0d8"></div>${LOGO_CP}</div>
-    <div style="text-align:center;font-size:12px;color:#888;margin-bottom:22px">Plateforme de suivi des projets</div>
-    <input id="ae" type="email" placeholder="Votre email" autocomplete="email"/>
-    <input id="ap" type="password" placeholder="Mot de passe" autocomplete="current-password"/>
-    <div id="aerr" style="font-size:12px;color:#c00;margin-bottom:10px;display:none"></div>
-    <button class="btn btn-primary btn-full" onclick="doLogin()">Se connecter</button>
-  </div></div>`;
+  return '<div class="auth-wrap"><div class="auth-box">'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px">'+LI+'<div style="width:1px;height:40px;background:#e0e0d8"></div>'+LC+'</div>'
+    +'<div style="text-align:center;font-size:12px;color:#888;margin-bottom:22px">Plateforme de suivi des projets</div>'
+    +'<input id="ae" type="email" placeholder="Email" autocomplete="email"/>'
+    +'<input id="ap" type="password" placeholder="Mot de passe" autocomplete="current-password"/>'
+    +'<div id="aerr" style="font-size:12px;color:#c00;margin-bottom:10px;display:none"></div>'
+    +'<button class="btn btn-primary btn-full" onclick="doLogin()">Se connecter</button>'
+    +'</div></div>';
 }
 
 function renderDashboard(){
-  const filter=ROLE_FILTER[S.profile?.role];
-  const ids=Object.keys(S.studios).filter(id=>!filter||filter(S.studios[id]));
-  const isAdmin=S.profile?.role==='admin';
-  return `<div class="app">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-      <div style="display:flex;align-items:center;gap:14px">${LOGO_ISSEO}<div style="width:1px;height:32px;background:#e0e0d8"></div>${LOGO_CP}</div>
-      <div style="display:flex;align-items:center;gap:10px">
-        <span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px">${S.profile?.nom||''}</span>
-        <button class="btn" onclick="doLogout()">Déconnexion</button>
-      </div>
-    </div>
-    <div class="kpis">
-      <div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">${ids.length}</div></div>
-      <div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">${fmt(ids.reduce((s,id)=>s+S.studios[id].capex,0))}</div></div>
-      <div class="kpi"><div class="kpi-label">CA BP cumulé</div><div class="kpi-val">${fmt(ids.reduce((s,id)=>s+S.studios[id].forecast.annualCA,0))}</div></div>
-      <div class="kpi"><div class="kpi-label">Alertes</div><div class="kpi-val">${ids.reduce((s,id)=>s+S.studios[id].alertes.length,0)}</div></div>
-      <div class="kpi"><div class="kpi-label">En préparation</div><div class="kpi-val">${ids.filter(id=>S.studios[id].statut==='preparation').length}</div></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">
-      <div style="display:flex;gap:6px">
-        <button class="tab ${S.mainTab==='studios'?'active':''}" onclick="setMainTab('studios')">Studios</button>
-        <button class="tab ${S.mainTab==='pipeline'?'active':''}" onclick="setMainTab('pipeline')">Pipeline</button>
-      </div>
-      ${isAdmin?`<button class="btn" onclick="toggleNewForm()">${S.showNewForm?'Annuler':'+ Nouveau studio'}</button>`:''}
-    </div>
-    ${S.showNewForm?renderNewForm():''}
-    ${S.mainTab==='studios'?`<div class="cards">${ids.map(id=>renderCard(id,S.studios[id])).join('')}</div>`:renderPipeline(ids)}
-  </div>`;
+  const filter=ROLE_FILTER[S.profile&&S.profile.role];
+  const ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
+  const isAdmin=S.profile&&S.profile.role==='admin';
+  var html='<div class="app">';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
+  html+='<div style="display:flex;align-items:center;gap:14px">'+LI+'<div style="width:1px;height:32px;background:#e0e0d8"></div>'+LC+'</div>';
+  html+='<div style="display:flex;align-items:center;gap:10px">';
+  html+='<span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px">'+(S.profile&&S.profile.nom||'')+'</span>';
+  html+='<button class="btn" onclick="doLogout()">Deconnexion</button></div></div>';
+  html+='<div class="kpis">';
+  html+='<div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">'+ids.length+'</div></div>';
+  html+='<div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+S.studios[id].capex;},0))+'</div></div>';
+  html+='<div class="kpi"><div class="kpi-label">CA BP cumule</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+S.studios[id].forecast.annualCA;},0))+'</div></div>';
+  html+='<div class="kpi"><div class="kpi-label">Alertes</div><div class="kpi-val">'+ids.reduce(function(s,id){return s+S.studios[id].alertes.length;},0)+'</div></div>';
+  html+='</div>';
+  html+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+  html+='<div style="display:flex;gap:6px">';
+  html+='<button class="tab '+(S.mainTab==='studios'?'active':'')+'" onclick="setMainTab(\'studios\')">Studios</button>';
+  html+='<button class="tab '+(S.mainTab==='pipeline'?'active':'')+'" onclick="setMainTab(\'pipeline\')">Pipeline</button>';
+  html+='</div>';
+  if(isAdmin)html+='<button class="btn" onclick="toggleNewForm()">'+(S.showNewForm?'Annuler':'+ Nouveau studio')+'</button>';
+  html+='</div>';
+  if(S.showNewForm)html+=renderNewForm();
+  if(S.mainTab==='studios'){
+    html+='<div class="cards">';
+    ids.forEach(function(id){html+=renderCard(id,S.studios[id]);});
+    html+='</div>';
+  } else {
+    html+=renderPipeline(ids);
+  }
+  html+='</div>';
+  return html;
 }
 
 function renderCard(id,s){
-  return `<div class="card" onclick="openDetail('${id}')">
-    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-      <div><div style="font-weight:600;font-size:14px">${s.name}</div><div style="font-size:12px;color:#888;margin-top:2px">${s.societe}</div></div>
-      ${badge(s.statut)}
-    </div>
-    <div style="font-size:11px;color:#888;margin-bottom:10px">Ouverture : <strong>${s.ouverture}</strong></div>
-    ${progBar(s.steps)}
-    ${s.alertes.length>0?`<div style="margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">⚡ ${s.alertes[0]}</div>`:''}
-  </div>`;
+  return '<div class="card" onclick="openDetail(\''+id+'\')">'+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
+    '<div><div style="font-weight:600;font-size:14px">'+s.name+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+s.societe+'</div></div>'+
+    badge(s.statut)+'</div>'+
+    '<div style="font-size:11px;color:#888;margin-bottom:10px">Ouverture : <strong>'+s.ouverture+'</strong></div>'+
+    progBar(s.steps)+
+    (s.alertes.length>0?'<div style="margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+s.alertes[0]+'</div>':'')+
+    '</div>';
 }
 
 function renderPipeline(ids){
-  const cIds=['lattes','garenne','levallois','issy','toulouse'];
-  const extras=ids.filter(id=>!cIds.includes(id));
-  let h=[
-    {label:'Cohorte 1 — 2026',ids:['lattes','garenne','levallois','issy'],note:'5 studios · 1,53M€ CAPEX'},
-    {label:'Cohorte 2 — 2027',ids:['toulouse'],note:'5 studios dont Montpellier Nord'},
-    {label:'Cohorte 3 — 2028',ids:[],note:'5 studios · à confirmer'},
-    {label:'Cohorte 4 — 2029',ids:[],note:'2 studios · Total 17'},
-  ].map(c=>`<div class="box"><div style="display:flex;justify-content:space-between"><span style="font-weight:600">${c.label}</span><span style="font-size:11px;color:#888">${c.note}</span></div>${c.ids.filter(id=>S.studios[id]).map(id=>`<span class="chip" onclick="openDetail('${id}')">${S.studios[id].name}</span>`).join('')}</div>`).join('');
-  if(extras.length)h+=`<div style="font-weight:500;font-size:13px;margin:12px 0 8px;color:#888">Projets ajoutés</div><div class="cards">${extras.map(id=>renderCard(id,S.studios[id])).join('')}</div>`;
+  var cIds=['lattes','garenne','levallois','issy','toulouse'];
+  var extras=ids.filter(function(id){return cIds.indexOf(id)<0;});
+  var cohortes=[
+    {label:'Cohorte 1 - 2026',ids:['lattes','garenne','levallois','issy'],note:'5 studios'},
+    {label:'Cohorte 2 - 2027',ids:['toulouse'],note:'5 studios dont Montpellier Nord'},
+    {label:'Cohorte 3 - 2028',ids:[],note:'5 studios a confirmer'},
+    {label:'Cohorte 4 - 2029',ids:[],note:'2 studios - Total 17'},
+  ];
+  var h='';
+  cohortes.forEach(function(c){
+    h+='<div class="box"><div style="display:flex;justify-content:space-between"><span style="font-weight:600">'+c.label+'</span><span style="font-size:11px;color:#888">'+c.note+'</span></div>';
+    c.ids.filter(function(id){return S.studios[id];}).forEach(function(id){
+      h+='<span class="chip" onclick="openDetail(\''+id+'\')">'+S.studios[id].name+'</span>';
+    });
+    h+='</div>';
+  });
+  if(extras.length){
+    h+='<div style="font-weight:500;font-size:13px;margin:12px 0 8px;color:#888">Projets ajoutes</div><div class="cards">';
+    extras.forEach(function(id){h+=renderCard(id,S.studios[id]);});
+    h+='</div>';
+  }
   return h;
 }
 
 function renderDetail(){
-  const s=S.studios[S.selectedId];
+  var s=S.studios[S.selectedId];
   if(!s)return '';
-  const isAdmin=S.profile?.role==='admin';
-  const tabs=[['workflow','Workflow'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
-  let content='';
+  var isAdmin=S.profile&&S.profile.role==='admin';
+  var tabs=[['workflow','Workflow'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
   else if(S.detailTab==='engagements')content=renderEngagements(S.selectedId,s);
   else if(S.detailTab==='messages')content=renderMessages(S.selectedId);
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
   else if(S.detailTab==='forecast')content=renderForecast(s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
-  else if(S.detailTab==='alertes')content=`<div class="box">${s.alertes.map(a=>`<div style="font-size:13px;background:#FAEEDA;color:#854F0B;border-radius:6px;padding:8px 12px;margin-bottom:8px">⚡ ${a}</div>`).join('')}</div>`;
+  else if(S.detailTab==='alertes'){
+    content='<div class="box">';
+    s.alertes.forEach(function(a){content+='<div style="font-size:13px;background:#FAEEDA;color:#854F0B;border-radius:6px;padding:8px 12px;margin-bottom:8px">! '+a+'</div>';});
+    content+='</div>';
+  }
   else if(S.detailTab==='ia')content=renderAI(s);
-  return `<div class="app">
-    <button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin-bottom:16px" onclick="goBack()">← Retour</button>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">${s.name}</span>${badge(s.statut)}</div>
-    <div style="font-size:13px;color:#888;margin-bottom:14px">${s.addr} · ${s.societe} · ${s.ouverture}</div>
-    ${isAdmin?`<div style="display:flex;gap:8px;margin-bottom:14px">
-      ${s.statut!=='abandonne'?`<button class="btn" style="color:#854F0B" onclick="archiverStudio('${S.selectedId}')">Archiver</button>`:`<button class="btn" style="color:#185FA5" onclick="restaurerStudio('${S.selectedId}')">Restaurer</button>`}
-      <button class="btn" style="color:#A32D2D" onclick="supprimerStudio('${S.selectedId}')">Supprimer</button>
-    </div>`:''}
-    <div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${S.detailTab===k?'active':''}" onclick="setDetailTab('${k}')">${l}</button>`).join('')}</div>
-    ${content}
-  </div>`;
+  var h='<div class="app">';
+  h+='<button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin-bottom:16px" onclick="goBack()">← Retour</button>';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut)+'</div>';
+  h+='<div style="font-size:13px;color:#888;margin-bottom:14px">'+s.addr+' · '+s.societe+' · '+s.ouverture+'</div>';
+  if(isAdmin){
+    h+='<div style="display:flex;gap:8px;margin-bottom:14px">';
+    if(s.statut!=='abandonne')h+='<button class="btn" style="color:#854F0B" onclick="archiverStudio(\''+S.selectedId+'\')">Archiver</button>';
+    else h+='<button class="btn" style="color:#185FA5" onclick="restaurerStudio(\''+S.selectedId+'\')">Restaurer</button>';
+    h+='<button class="btn" style="color:#A32D2D" onclick="supprimerStudio(\''+S.selectedId+'\')">Supprimer</button></div>';
+  }
+  h+='<div class="tabs">';
+  tabs.forEach(function(t){h+='<button class="tab '+(S.detailTab===t[0]?'active':'')+'" onclick="setDetailTab(\''+t[0]+'\')">'+t[1]+'</button>';});
+  h+='</div>'+content+'</div>';
+  return h;
 }
 
 function renderWorkflow(s){
-  const canEdit=S.profile?.role==='admin';
-  let h=`<div class="box">${progBar(s.steps)}<div style="margin-top:16px">`;
-  STEPS.forEach((step,i)=>{
-    const done=s.steps[step.id];
-    const unlocked=i===0||s.steps[STEPS[i-1].id];
-    h+=`<div style="display:flex;gap:12px;margin-bottom:10px;opacity:${(!done&&!unlocked)?0.4:1}">
-      <div style="display:flex;flex-direction:column;align-items:center">
-        <div class="step-dot" style="background:${done?'#1D9E75':'transparent'};border:2px solid ${done?'#1D9E75':unlocked?'#aaa':'#ddd'};cursor:${unlocked&&canEdit?'pointer':'default'}" onclick="${unlocked&&canEdit?`toggleStep('${S.selectedId}','${step.id}')`:''}">${done?'✓':''}</div>
-        ${i<STEPS.length-1?`<div style="width:2px;flex:1;min-height:14px;background:${done?'#1D9E75':'#e0e0d8'};margin-top:2px"></div>`:''}
-      </div>
-      <div style="padding-bottom:8px"><div style="font-size:13px;font-weight:${done?600:400}">${step.label}</div><div style="font-size:11px;color:#888;margin-top:2px">${step.desc}</div></div>
-    </div>`;
+  var canEdit=S.profile&&S.profile.role==='admin';
+  var h='<div class="box">'+progBar(s.steps)+'<div style="margin-top:16px">';
+  STEPS.forEach(function(step,i){
+    var done=s.steps[step.id];
+    var unlocked=i===0||s.steps[STEPS[i-1].id];
+    var bg=done?'#1D9E75':'transparent';
+    var border=done?'#1D9E75':unlocked?'#aaa':'#ddd';
+    var cursor=(unlocked&&canEdit)?'pointer':'default';
+    var click=(unlocked&&canEdit)?'onclick="toggleStep(\''+S.selectedId+'\',\''+step.id+'\')"':'';
+    h+='<div style="display:flex;gap:12px;margin-bottom:10px;opacity:'+((!done&&!unlocked)?0.4:1)+'">';
+    h+='<div style="display:flex;flex-direction:column;align-items:center">';
+    h+='<div class="step-dot" style="background:'+bg+';border:2px solid '+border+';cursor:'+cursor+'" '+click+'>'+(done?'v':'')+'</div>';
+    if(i<STEPS.length-1)h+='<div style="width:2px;flex:1;min-height:14px;background:'+(done?'#1D9E75':'#e0e0d8')+';margin-top:2px"></div>';
+    h+='</div><div style="padding-bottom:8px"><div style="font-size:13px;font-weight:'+(done?600:400)+'">'+step.label+'</div><div style="font-size:11px;color:#888;margin-top:2px">'+step.desc+'</div></div></div>';
   });
   return h+'</div></div>';
 }
 
-function renderEngagements(studioId,s){
-  const deps=S.depenses[studioId]||[];
-  const budget=s.capex||306200;
-  const engage=deps.reduce((sum,d)=>sum+num(d.ttc),0);
-  const debloque=deps.filter(d=>d.deblocage==='debloque').reduce((sum,d)=>sum+num(d.ttc),0);
-  const demande=deps.filter(d=>d.deblocage==='demande').reduce((sum,d)=>sum+num(d.ttc),0);
-  const pctE=Math.min(100,Math.round(engage/budget*100));
-  const pctD=Math.min(100,Math.round(debloque/budget*100));
-  const isAdmin=S.profile?.role==='admin';
-  const byFin=DEPENSE_FINS.map(f=>({f,e:deps.filter(d=>d.financement===f).reduce((s,d)=>s+num(d.ttc),0),d:deps.filter(d=>d.financement===f&&d.deblocage==='debloque').reduce((s,d)=>s+num(d.ttc),0)}));
-  return `<div>
-    <div class="kpis" style="margin-bottom:12px">
-      <div class="kpi"><div class="kpi-label">Budget CAPEX</div><div class="kpi-val">${fmt(budget)}</div></div>
-      <div class="kpi"><div class="kpi-label">Engagé</div><div class="kpi-val" style="color:#185FA5">${fmt(engage)}</div></div>
-      <div class="kpi"><div class="kpi-label">Débloqué</div><div class="kpi-val" style="color:#0F6E56">${fmt(debloque)}</div></div>
-      <div class="kpi"><div class="kpi-label">En attente</div><div class="kpi-val" style="color:#854F0B">${fmt(demande)}</div></div>
-      <div class="kpi"><div class="kpi-label">Reste à engager</div><div class="kpi-val">${fmt(Math.max(0,budget-engage))}</div></div>
-    </div>
-    <div class="box">
-      <div style="margin-bottom:10px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#888">Engagements / Budget</span><span style="font-weight:500">${pctE}%</span></div>
-        <div class="prog-bar"><div style="width:${pctE}%;background:#185FA5;border-radius:4px;height:6px"></div></div>
-      </div>
-      <div style="margin-bottom:14px">
-        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#888">Déblocages / Budget</span><span style="font-weight:500">${pctD}%</span></div>
-        <div class="prog-bar"><div style="width:${pctD}%;background:#1D9E75;border-radius:4px;height:6px"></div></div>
-      </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
-        ${byFin.map(({f,e,d})=>`<div style="text-align:center"><div style="font-size:11px;color:#888;margin-bottom:3px">${f}</div><div style="font-size:13px;font-weight:600;color:#185FA5">${fmt(e)}</div><div style="font-size:11px;color:#0F6E56">${fmt(d)} débloqué</div></div>`).join('')}
-      </div>
-    </div>
-    ${isAdmin?`<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary" onclick="ouvrirFormDepense('${studioId}')">+ Ajouter une dépense</button></div>`:''}
-    <div id="form-depense-${studioId}"></div>
-    ${deps.length===0
-      ?`<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune dépense saisie</div>`
-      :`<div style="overflow-x:auto"><table style="min-width:750px">
-        <tr><th style="text-align:left;padding-left:8px">Catégorie</th><th style="text-align:left">Description</th><th>TTC</th><th>Financement</th><th>Par</th><th>Date</th><th>Déblocage</th><th>Justif.</th>${isAdmin?'<th></th>':''}</tr>
-        ${deps.map((d,i)=>{
-          const st=DEBLOCAGE_ST[d.deblocage]||DEBLOCAGE_ST.attente;
-          return`<tr>
-            <td style="padding:8px;font-size:12px;font-weight:500;text-align:left">${d.categorie}</td>
-            <td style="padding:8px;font-size:12px;color:#555;text-align:left;max-width:160px">${d.description||'—'}</td>
-            <td style="padding:8px;font-size:12px;font-weight:600">${fmt(num(d.ttc))}</td>
-            <td style="padding:8px"><span style="background:#E6F1FB;color:#185FA5;padding:2px 6px;border-radius:5px;font-size:10px">${d.financement}</span></td>
-            <td style="padding:8px;font-size:11px">${d.engage_par||'—'}</td>
-            <td style="padding:8px;font-size:11px;color:#888">${d.date||'—'}</td>
-            <td style="padding:8px">
-              <span style="background:${st.bg};color:${st.color};padding:2px 7px;border-radius:5px;font-size:11px;cursor:${isAdmin?'pointer':'default'}" onclick="${isAdmin?`changerDeblocage('${studioId}',${i})`:''}">${st.label}</span>
-              ${d.deblocage==='demande'?`<div style="font-size:10px;color:#888">${d.date_demande||''}</div>`:''}
-              ${d.deblocage==='debloque'?`<div style="font-size:10px;color:#0F6E56">${d.date_deblocage||''}</div>`:''}
-            </td>
-            <td style="padding:8px">
-              ${d.fichierUrl?`<a href="${d.fichierUrl}" target="_blank" style="font-size:11px;color:#185FA5;text-decoration:none">📄</a> `:''}
-              ${isAdmin?`<label style="cursor:pointer;font-size:13px" title="Ajouter justificatif">📎<input type="file" style="display:none" onchange="uploadJustif('${studioId}',${i},this)"/></label>`:''}
-            </td>
-            ${isAdmin?`<td style="padding:8px"><button class="btn" style="font-size:11px;padding:3px 8px;color:#A32D2D" onclick="supprimerDepense('${studioId}',${i})">✕</button></td>`:''}
-          </tr>`;
-        }).join('')}
-      </table></div>`}
-  </div>`;
+function renderEngagements(sid,s){
+  var deps=S.depenses[sid]||[];
+  var budget=s.capex||306200;
+  var engage=deps.reduce(function(sum,d){return sum+num(d.ttc);},0);
+  var debloque=deps.filter(function(d){return d.deblocage==='debloque';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
+  var demande=deps.filter(function(d){return d.deblocage==='demande';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
+  var pctE=Math.min(100,Math.round(engage/budget*100));
+  var pctD=Math.min(100,Math.round(debloque/budget*100));
+  var isAdmin=S.profile&&S.profile.role==='admin';
+  var h='<div>';
+  h+='<div class="kpis" style="margin-bottom:12px">';
+  h+='<div class="kpi"><div class="kpi-label">Budget CAPEX</div><div class="kpi-val">'+fmt(budget)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Engage</div><div class="kpi-val" style="color:#185FA5">'+fmt(engage)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Debloque</div><div class="kpi-val" style="color:#0F6E56">'+fmt(debloque)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">En attente</div><div class="kpi-val" style="color:#854F0B">'+fmt(demande)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Reste</div><div class="kpi-val">'+fmt(Math.max(0,budget-engage))+'</div></div>';
+  h+='</div>';
+  h+='<div class="box">';
+  h+='<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#888">Engagements / Budget</span><span>'+pctE+'%</span></div><div class="prog-bar"><div style="width:'+pctE+'%;background:#185FA5;border-radius:4px;height:6px"></div></div></div>';
+  h+='<div><div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px"><span style="color:#888">Deblocages / Budget</span><span>'+pctD+'%</span></div><div class="prog-bar"><div style="width:'+pctD+'%;background:#1D9E75;border-radius:4px;height:6px"></div></div></div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px">';
+  DEPENSE_FINS.forEach(function(f){
+    var fe=deps.filter(function(d){return d.financement===f;}).reduce(function(s,d){return s+num(d.ttc);},0);
+    var fd=deps.filter(function(d){return d.financement===f&&d.deblocage==='debloque';}).reduce(function(s,d){return s+num(d.ttc);},0);
+    h+='<div style="text-align:center"><div style="font-size:11px;color:#888;margin-bottom:3px">'+f+'</div><div style="font-size:13px;font-weight:600;color:#185FA5">'+fmt(fe)+'</div><div style="font-size:11px;color:#0F6E56">'+fmt(fd)+' debloque</div></div>';
+  });
+  h+='</div></div>';
+  if(isAdmin)h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary" onclick="ouvrirFormDepense(\''+sid+'\')">+ Ajouter une depense</button></div>';
+  h+='<div id="form-depense-'+sid+'"></div>';
+  if(deps.length===0){
+    h+='<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune depense saisie</div>';
+  } else {
+    h+='<div style="overflow-x:auto"><table style="min-width:700px">';
+    h+='<tr><th style="text-align:left;padding-left:8px">Categorie</th><th style="text-align:left">Description</th><th>TTC</th><th>Financement</th><th>Par</th><th>Date</th><th>Deblocage</th><th>Justif</th>'+(isAdmin?'<th></th>':'')+'</tr>';
+    deps.forEach(function(d,i){
+      var st=DEBLOCAGE[d.deblocage]||DEBLOCAGE.attente;
+      h+='<tr>';
+      h+='<td style="padding:8px;font-size:12px;font-weight:500;text-align:left">'+d.categorie+'</td>';
+      h+='<td style="padding:8px;font-size:12px;color:#555;text-align:left">'+( d.description||'--')+'</td>';
+      h+='<td style="padding:8px;font-size:12px;font-weight:600">'+fmt(num(d.ttc))+'</td>';
+      h+='<td style="padding:8px"><span style="background:#E6F1FB;color:#185FA5;padding:2px 6px;border-radius:5px;font-size:10px">'+d.financement+'</span></td>';
+      h+='<td style="padding:8px;font-size:11px">'+(d.engage_par||'--')+'</td>';
+      h+='<td style="padding:8px;font-size:11px;color:#888">'+(d.date||'--')+'</td>';
+      h+='<td style="padding:8px"><span style="background:'+st.bg+';color:'+st.color+';padding:2px 7px;border-radius:5px;font-size:11px;cursor:'+(isAdmin?'pointer':'default')+'" '+(isAdmin?'onclick="changerDeblocage(\''+sid+'\','+i+')"':'')+'>'+st.label+'</span>';
+      if(d.deblocage==='demande')h+='<div style="font-size:10px;color:#888">'+(d.date_demande||'')+'</div>';
+      if(d.deblocage==='debloque')h+='<div style="font-size:10px;color:#0F6E56">'+(d.date_deblocage||'')+'</div>';
+      h+='</td>';
+      h+='<td style="padding:8px;text-align:center">';
+      if(d.fichierUrl)h+='<a href="'+d.fichierUrl+'" target="_blank" style="font-size:13px;text-decoration:none">doc</a> ';
+      if(isAdmin)h+='<label style="cursor:pointer;font-size:13px" title="Ajouter">+<input type="file" style="display:none" onchange="uploadJustif(\''+sid+'\','+i+',this)"/></label>';
+      h+='</td>';
+      if(isAdmin)h+='<td style="padding:8px"><button class="btn" style="font-size:11px;padding:3px 8px;color:#A32D2D" onclick="supprimerDepense(\''+sid+'\','+i+')">x</button></td>';
+      h+='</tr>';
+    });
+    h+='</table></div>';
+  }
+  h+='</div>';
+  return h;
 }
 
-function ouvrirFormDepense(studioId){
-  const div=document.getElementById('form-depense-'+studioId);
+function ouvrirFormDepense(sid){
+  var div=document.getElementById('form-depense-'+sid);
   if(!div)return;
-  div.innerHTML=`<div class="box">
-    <div style="font-weight:600;font-size:14px;margin-bottom:12px">Nouvelle dépense</div>
-    <div class="form-grid">
-      <div class="fg"><label>Catégorie</label><select id="dep-cat"><option value="">Sélectionner...</option>${DEPENSE_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
-      <div class="fg"><label>Description</label><input id="dep-desc" placeholder="Ex: Devis ISOSPACE"/></div>
-      <div class="fg"><label>Montant HT (€)</label><input id="dep-ht" type="number" placeholder="0" oninput="calcTTC()"/></div>
-      <div class="fg"><label>TVA (%)</label><select id="dep-tva" onchange="calcTTC()"><option value="20">20%</option><option value="10">10%</option><option value="0">0%</option></select></div>
-      <div class="fg"><label>Montant TTC (€)</label><input id="dep-ttc" type="number" placeholder="0"/></div>
-      <div class="fg"><label>Source financement</label><select id="dep-fin">${DEPENSE_FINS.map(f=>`<option>${f}</option>`).join('')}</select></div>
-      <div class="fg"><label>Engagé par</label><select id="dep-par"><option>Paul Bécaud</option><option>Pascal Bécaud</option><option>Tom Bécaud</option><option>Paul Sabourin</option><option>Caroline Coquel</option><option>Clément Coquel</option></select></div>
-      <div class="fg"><label>Date</label><input id="dep-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div>
-    </div>
-    <div style="display:flex;gap:8px">
-      <button class="btn btn-primary" onclick="sauvegarderDepense('${studioId}')">Enregistrer</button>
-      <button class="btn" onclick="document.getElementById('form-depense-${studioId}').innerHTML=''">Annuler</button>
-    </div>
-  </div>`;
+  var h='<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:12px">Nouvelle depense</div>';
+  h+='<div class="form-grid">';
+  h+='<div class="fg"><label>Categorie</label><select id="dep-cat"><option value="">Selectionner...</option>';
+  DEPENSE_CATS.forEach(function(c){h+='<option>'+c+'</option>';});
+  h+='</select></div>';
+  h+='<div class="fg"><label>Description</label><input id="dep-desc" placeholder="Ex: Devis ISOSPACE"/></div>';
+  h+='<div class="fg"><label>Montant HT</label><input id="dep-ht" type="number" placeholder="0" oninput="calcTTC()"/></div>';
+  h+='<div class="fg"><label>TVA %</label><select id="dep-tva" onchange="calcTTC()"><option value="20">20%</option><option value="10">10%</option><option value="0">0%</option></select></div>';
+  h+='<div class="fg"><label>Montant TTC</label><input id="dep-ttc" type="number" placeholder="0"/></div>';
+  h+='<div class="fg"><label>Financement</label><select id="dep-fin">';
+  DEPENSE_FINS.forEach(function(f){h+='<option>'+f+'</option>';});
+  h+='</select></div>';
+  h+='<div class="fg"><label>Engage par</label><select id="dep-par"><option>Paul Becaud</option><option>Pascal Becaud</option><option>Tom Becaud</option><option>Paul Sabourin</option><option>Caroline Coquel</option><option>Clement Coquel</option></select></div>';
+  h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderDepense(\''+sid+'\')">Enregistrer</button>';
+  h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
+  div.innerHTML=h;
 }
 
 function calcTTC(){
-  const ht=num(document.getElementById('dep-ht')?.value);
-  const tva=num(document.getElementById('dep-tva')?.value,20);
-  const el=document.getElementById('dep-ttc');
+  var ht=num(document.getElementById('dep-ht')&&document.getElementById('dep-ht').value);
+  var tva=num(document.getElementById('dep-tva')&&document.getElementById('dep-tva').value,20);
+  var el=document.getElementById('dep-ttc');
   if(el)el.value=Math.round(ht*(1+tva/100));
 }
 
-async function sauvegarderDepense(studioId){
-  const cat=document.getElementById('dep-cat')?.value;
-  if(!cat){toast('Sélectionnez une catégorie');return;}
-  if(!S.depenses[studioId])S.depenses[studioId]=[];
-  S.depenses[studioId].push({
+async function sauvegarderDepense(sid){
+  var cat=document.getElementById('dep-cat')&&document.getElementById('dep-cat').value;
+  if(!cat){toast('Selectionnez une categorie');return;}
+  if(!S.depenses[sid])S.depenses[sid]=[];
+  S.depenses[sid].push({
     categorie:cat,
-    description:document.getElementById('dep-desc')?.value||'',
-    ht:num(document.getElementById('dep-ht')?.value),
-    tva:num(document.getElementById('dep-tva')?.value,20),
-    ttc:num(document.getElementById('dep-ttc')?.value),
-    financement:document.getElementById('dep-fin')?.value||'Emprunt bancaire',
-    engage_par:document.getElementById('dep-par')?.value||'',
-    date:document.getElementById('dep-date')?.value||'',
+    description:(document.getElementById('dep-desc')&&document.getElementById('dep-desc').value)||'',
+    ht:num(document.getElementById('dep-ht')&&document.getElementById('dep-ht').value),
+    tva:num(document.getElementById('dep-tva')&&document.getElementById('dep-tva').value,20),
+    ttc:num(document.getElementById('dep-ttc')&&document.getElementById('dep-ttc').value),
+    financement:(document.getElementById('dep-fin')&&document.getElementById('dep-fin').value)||'Emprunt bancaire',
+    engage_par:(document.getElementById('dep-par')&&document.getElementById('dep-par').value)||'',
+    date:(document.getElementById('dep-date')&&document.getElementById('dep-date').value)||'',
     deblocage:'attente',fichierUrl:null,fichierPath:null,date_demande:null,date_deblocage:null,
   });
-  await saveDepenses(studioId);
-  toast('Dépense enregistrée');render();
+  await saveDepenses(sid);
+  toast('Depense enregistree');render();
 }
 
-async function supprimerDepense(studioId,idx){
+async function supprimerDepense(sid,idx){
   if(!confirm('Supprimer ?'))return;
-  S.depenses[studioId].splice(idx,1);
-  await saveDepenses(studioId);
-  toast('Supprimé');render();
+  S.depenses[sid].splice(idx,1);
+  await saveDepenses(sid);
+  toast('Supprime');render();
 }
 
-async function changerDeblocage(studioId,idx){
-  const d=S.depenses[studioId][idx];
-  const today=new Date().toLocaleDateString('fr-FR');
+async function changerDeblocage(sid,idx){
+  var d=S.depenses[sid][idx];
+  var today=new Date().toLocaleDateString('fr-FR');
   if(d.deblocage==='attente'){d.deblocage='demande';d.date_demande=today;}
   else if(d.deblocage==='demande'){d.deblocage='debloque';d.date_deblocage=today;}
   else{d.deblocage='attente';d.date_demande=null;d.date_deblocage=null;}
-  await saveDepenses(studioId);
-  toast('Statut déblocage mis à jour');render();
+  await saveDepenses(sid);
+  toast('Statut mis a jour');render();
 }
 
-async function uploadJustif(studioId,idx,input){
-  const file=input.files[0];if(!file)return;
-  const path=`${studioId}/justif_${Date.now()}_${cleanName(file.name)}`;
-  const {error}=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
-  if(error){toast('Erreur upload');return;}
-  const {data}=sb.storage.from('studio-files').getPublicUrl(path);
-  S.depenses[studioId][idx].fichierUrl=data.publicUrl;
-  S.depenses[studioId][idx].fichierPath=path;
-  await saveDepenses(studioId);
-  toast('Justificatif ajouté');render();
+async function uploadJustif(sid,idx,input){
+  var file=input.files[0];if(!file)return;
+  var path=sid+'/justif_'+Date.now()+'_'+cleanName(file.name);
+  var res=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
+  if(res.error){toast('Erreur upload');return;}
+  var url=sb.storage.from('studio-files').getPublicUrl(path);
+  S.depenses[sid][idx].fichierUrl=url.data.publicUrl;
+  S.depenses[sid][idx].fichierPath=path;
+  await saveDepenses(sid);
+  toast('Justificatif ajoute');render();
 }
 
-// ── Messages ──────────────────────────────────────────────────────────────────
-async function loadMessages(){
-  const {data}=await sb.from('studios').select('id,data');
-  S.messages={};
-  if(data)data.forEach(r=>{if(r.id.endsWith('_messages')){const sid=r.id.slice(0,-9);S.messages[sid]=r.data?.messages||[];}});
+function renderMessages(sid){
+  var msgs=S.messages[sid]||[];
+  var me=(S.profile&&S.profile.nom)||'';
+  var colors=['#185FA5','#0F6E56','#854F0B','#993C1D','#533AB7','#A32D2D'];
+  function authorColor(name){var h=0;for(var i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return colors[Math.abs(h)%colors.length];}
+  function initials(name){return name.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);}
+  var h='<div><div class="box" style="padding:0;overflow:hidden">';
+  h+='<div id="msgs-list" style="height:420px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">';
+  if(msgs.length===0){
+    h+='<div style="text-align:center;color:#aaa;font-size:13px;margin:auto">Aucun message - soyez le premier a ecrire !</div>';
+  } else {
+    msgs.forEach(function(m){
+      var isMe=m.auteur===me;
+      var color=authorColor(m.auteur);
+      var ini=initials(m.auteur);
+      h+='<div style="display:flex;flex-direction:'+(isMe?'row-reverse':'row')+';align-items:flex-end;gap:8px">';
+      h+='<div style="width:32px;height:32px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:#fff">'+ini+'</div>';
+      h+='<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';max-width:72%">';
+      h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' - '+m.date+'</div>';
+      h+='<div style="background:'+(isMe?'#1a1a1a':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
+      h+='</div></div>';
+    });
+  }
+  h+='</div>';
+  h+='<div style="border-top:0.5px solid #e0e0d8;padding:12px 16px;display:flex;gap:8px;background:#fff">';
+  h+='<input id="msg-input" type="text" placeholder="Votre message..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();envoyerMessage(\''+sid+'\');}" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>';
+  h+='<button class="btn btn-primary" onclick="envoyerMessage(\''+sid+'\')">Envoyer</button>';
+  h+='</div></div></div>';
+  setTimeout(function(){var el=document.getElementById('msgs-list');if(el)el.scrollTop=el.scrollHeight;},50);
+  return h;
 }
 
-function renderMessages(studioId){
-  const msgs=S.messages[studioId]||[];
-  const me=S.profile?.nom||S.profile?.email||'';
-  const colors=['#185FA5','#0F6E56','#854F0B','#993C1D','#533AB7','#A32D2D'];
-  const authorColor=(name)=>{let h=0;for(let i=0;i<name.length;i++)h=name.charCodeAt(i)+((h<<5)-h);return colors[Math.abs(h)%colors.length];};
-  const initials=(name)=>name.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
-  return `<div>
-    <div class="box" style="padding:0;overflow:hidden">
-      <div id="msgs-list" style="height:420px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">
-        ${msgs.length===0
-          ?`<div style="text-align:center;color:#aaa;font-size:13px;margin:auto">Aucun message — soyez le premier à écrire !</div>`
-          :msgs.map(m=>{
-            const isMe=m.auteur===me;
-            const color=authorColor(m.auteur);
-            const ini=initials(m.auteur);
-            return`<div style="display:flex;flex-direction:${isMe?'row-reverse':'row'};align-items:flex-end;gap:8px">
-              <!-- Avatar -->
-              <div style="width:32px;height:32px;border-radius:50%;background:${color};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:#fff">${ini}</div>
-              <!-- Bulle -->
-              <div style="display:flex;flex-direction:column;align-items:${isMe?'flex-end':'flex-start'};max-width:72%">
-                <div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">${m.auteur} · ${m.date}</div>
-                <div style="background:${isMe?'#1a1a1a':'#f0f0ea'};color:${isMe?'#fff':'#1a1a1a'};padding:10px 14px;border-radius:${isMe?'12px 12px 2px 12px':'12px 12px 12px 2px'};font-size:13px;line-height:1.5">${m.texte}</div>
-              </div>
-            </div>`;
-          }).join('')}
-      </div>
-      <div style="border-top:0.5px solid #e0e0d8;padding:12px 16px;display:flex;gap:8px;background:#fff">
-        <input id="msg-input" type="text" placeholder="Votre message..."
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();envoyerMessage('${studioId}');}"
-          style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>
-        <button class="btn btn-primary" onclick="envoyerMessage('${studioId}')">Envoyer</button>
-      </div>
-    </div>
-  </div>`;
-}
-
-async function envoyerMessage(studioId){
-  const input=document.getElementById('msg-input');
-  const texte=input?.value?.trim();
+async function envoyerMessage(sid){
+  var input=document.getElementById('msg-input');
+  var texte=input&&input.value&&input.value.trim();
   if(!texte)return;
-  if(!S.messages[studioId])S.messages[studioId]=[];
-  const now=new Date();
-  S.messages[studioId].push({
-    auteur:S.profile?.nom||S.profile?.email||'',
-    texte,
+  if(!S.messages[sid])S.messages[sid]=[];
+  var now=new Date();
+  S.messages[sid].push({
+    auteur:(S.profile&&S.profile.nom)||'',
+    texte:texte,
     date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
     ts:now.toISOString(),
   });
-  await sb.from('studios').upsert({id:studioId+'_messages',data:{messages:S.messages[studioId]},updated_at:new Date().toISOString()});
+  await sb.from('studios').upsert({id:sid+'_messages',data:{messages:S.messages[sid]},updated_at:new Date().toISOString()});
   render();
-  // Scroll vers le bas
-  setTimeout(()=>{const el=document.getElementById('msgs-list');if(el)el.scrollTop=el.scrollHeight;},50);
+  setTimeout(function(){var el=document.getElementById('msgs-list');if(el)el.scrollTop=el.scrollHeight;},50);
 }
 
 function renderLocalisation(s){
-  const addrEnc=encodeURIComponent(s.addr);
-  const staticMap=`https://staticmap.openstreetmap.de/staticmap.php?center=${addrEnc}&zoom=16&size=640x360&markers=${addrEnc},red-pushpin`;
-  return `<div>
-    <div class="box" style="padding:0;overflow:hidden;margin-bottom:12px">
-      <img src="${staticMap}" style="width:100%;height:360px;object-fit:cover;display:block"
-        onerror="this.outerHTML='<div style=padding:3rem;text-align:center;color:#aaa;font-size:13px>Aperçu non disponible</div>'" alt="Carte"/>
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">
-      <a href="https://www.google.com/maps/search/${addrEnc}" target="_blank" style="text-decoration:none">
-        <div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0;cursor:pointer">
-          <span style="font-size:24px">📍</span>
-          <div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Vue satellite & Street View</div></div>
-        </div>
-      </a>
-      <a href="https://www.openstreetmap.org/search?query=${addrEnc}" target="_blank" style="text-decoration:none">
-        <div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0;cursor:pointer">
-          <span style="font-size:24px">🗺</span>
-          <div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Carte interactive</div></div>
-        </div>
-      </a>
-    </div>
-    <div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">${s.addr}</div></div>
-  </div>`;
+  var addrEnc=encodeURIComponent(s.addr);
+  var staticMap='https://staticmap.openstreetmap.de/staticmap.php?center='+addrEnc+'&zoom=16&size=640x360&markers='+addrEnc+',red-pushpin';
+  var h='<div>';
+  h+='<div class="box" style="padding:0;overflow:hidden;margin-bottom:12px">';
+  h+='<img src="'+staticMap+'" style="width:100%;height:360px;object-fit:cover;display:block" onerror="this.outerHTML=\'<div style=padding:3rem;text-align:center;color:#aaa;font-size:13px>Apercu non disponible</div>\'" alt="Carte"/>';
+  h+='</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
+  h+='<a href="https://www.google.com/maps/search/'+addrEnc+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0;cursor:pointer"><span style="font-size:24px">P</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Vue satellite et Street View</div></div></div></a>';
+  h+='<a href="https://www.openstreetmap.org/search?query='+addrEnc+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0;cursor:pointer"><span style="font-size:24px">M</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Carte interactive</div></div></div></a>';
+  h+='</div>';
+  h+='<div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">'+s.addr+'</div></div>';
+  h+='</div>';
+  return h;
 }
 
 function renderForecast(s){
-  const {forecastSection,editMoisIdx,editVals}=S;
-  const {moisDebut,annee,actuel,annualCA}=s.forecast;
-  const bp=buildBP(annualCA,moisDebut);
-  const totals=bp.map((r,idx)=>{
-    const a=actuel[idx]||{};
-    const hasReal=Object.keys(a).length>0;
-    const aCA=hasReal?num(a.ca_cours)+num(a.ca_prives)+num(a.ca_boutique):null;
-    const aCharges=hasReal?CHARGES.reduce((sum,l)=>sum+num(a[l.id],r[l.id]),0):null;
-    return{bpCA:r._ca,bpCharges:r._charges,bpResult:r._result,aCA,aCharges,aResult:hasReal?aCA-aCharges:null,hasReal};
+  var fs=S.forecastSection;
+  var moisDebut=s.forecast.moisDebut;
+  var annee=s.forecast.annee;
+  var actuel=s.forecast.actuel;
+  var annualCA=s.forecast.annualCA;
+  var bp=buildBP(annualCA,moisDebut);
+  var totals=bp.map(function(r,idx){
+    var a=actuel[idx]||{};
+    var hasReal=Object.keys(a).length>0;
+    var aCA=hasReal?num(a.ca_cours)+num(a.ca_prives)+num(a.ca_boutique):null;
+    var aCharges=hasReal?CHARGES.reduce(function(sum,l){return sum+num(a[l.id]!=null?a[l.id]:r[l.id]);},0):null;
+    return{bpCA:r._ca,bpCharges:r._charges,bpResult:r._result,aCA:aCA,aCharges:aCharges,aResult:hasReal?aCA-aCharges:null,hasReal:hasReal};
   });
-  const rm=totals.filter(t=>t.hasReal);
-  const cumBPCA=totals.reduce((s,t)=>s+t.bpCA,0);
-  const cumActCA=rm.reduce((s,t)=>s+t.aCA,0);
-  const cumBPRes=totals.reduce((s,t)=>s+t.bpResult,0);
-  const cumActRes=rm.reduce((s,t)=>s+t.aResult,0);
-  const ecart=rm.length?Math.round((cumActCA/rm.reduce((s,t)=>s+t.bpCA,0)-1)*100):0;
-  let h=`<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">
-    ${[['CA BP annuel',fmt(annualCA),''],['CA réel cumulé',fmt(cumActCA),''],['Ecart CA',(ecart>=0?'+':'')+ecart+'%',ecart>=0?'#3B6D11':'#A32D2D'],['Résultat BP',fmt(cumBPRes),''],['Résultat réel',fmt(cumActRes),'']].map(([l,v,c])=>`<div class="kpi"><div class="kpi-label">${l}</div><div class="kpi-val" style="${c?'color:'+c:''}">${v}</div></div>`).join('')}
-  </div>
-  <div style="display:flex;gap:6px;margin-bottom:12px">
-    ${[['summary','Synthèse'],['detail','Détail'],['saisie','Saisie']].map(([k,l])=>`<button class="tab ${forecastSection===k?'active':''}" onclick="setFS('${k}')">${l}</button>`).join('')}
-  </div>`;
-  if(forecastSection==='summary'){
-    h+=`<div style="overflow-x:auto"><table><tr><th style="text-align:left;padding-left:8px">Ligne</th>${bp.map(r=>`<th>${MOIS[r.mi]}</th>`).join('')}<th>Total</th></tr>
-    ${[{l:'CA — BP',vals:totals.map(t=>t.bpCA),tot:cumBPCA,bold:true},{l:'CA — Réel',vals:totals.map(t=>t.aCA),tot:cumActCA,blue:true},{l:'Charges — BP',vals:totals.map(t=>t.bpCharges),tot:totals.reduce((s,t)=>s+t.bpCharges,0)},{l:'Résultat — BP',vals:totals.map(t=>t.bpResult),tot:cumBPRes,bold:true},{l:'Résultat — Réel',vals:totals.map(t=>t.aResult),tot:cumActRes,blue:true,res:true}].map(row=>`<tr style="background:${row.bold?'#f5f5f0':''}"><td class="lbl" style="font-weight:${row.bold?600:400}">${row.l}</td>${row.vals.map(v=>`<td style="color:${row.blue&&v!==null?(row.res?(v>=0?'#3B6D11':'#A32D2D'):'#185FA5'):'inherit'}">${v===null?'—':fmtN(v)}</td>`).join('')}<td style="font-weight:600">${row.tot?fmtN(row.tot):'—'}</td></tr>`).join('')}
-    </table></div>`;
+  var rm=totals.filter(function(t){return t.hasReal;});
+  var cumBPCA=totals.reduce(function(s,t){return s+t.bpCA;},0);
+  var cumActCA=rm.reduce(function(s,t){return s+t.aCA;},0);
+  var cumBPRes=totals.reduce(function(s,t){return s+t.bpResult;},0);
+  var cumActRes=rm.reduce(function(s,t){return s+t.aResult;},0);
+  var refCA=rm.reduce(function(s,t){return s+t.bpCA;},0);
+  var ecart=refCA?Math.round((cumActCA/refCA-1)*100):0;
+  var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:16px">';
+  h+='<div class="kpi"><div class="kpi-label">CA BP annuel</div><div class="kpi-val">'+fmt(annualCA)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">CA reel cumule</div><div class="kpi-val">'+fmt(cumActCA)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Ecart CA</div><div class="kpi-val" style="color:'+(ecart>=0?'#3B6D11':'#A32D2D')+'">'+(ecart>=0?'+':'')+ecart+'%</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Resultat BP</div><div class="kpi-val">'+fmt(cumBPRes)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Resultat reel</div><div class="kpi-val">'+fmt(cumActRes)+'</div></div>';
+  h+='</div>';
+  h+='<div style="display:flex;gap:6px;margin-bottom:12px">';
+  h+='<button class="tab '+(fs==='summary'?'active':'')+'" onclick="setFS(\'summary\')">Synthese</button>';
+  h+='<button class="tab '+(fs==='detail'?'active':'')+'" onclick="setFS(\'detail\')">Detail</button>';
+  h+='<button class="tab '+(fs==='saisie'?'active':'')+'" onclick="setFS(\'saisie\')">Saisie</button>';
+  h+='</div>';
+  if(fs==='summary'){
+    var rows=[
+      {l:'CA BP',vals:totals.map(function(t){return t.bpCA;}),tot:cumBPCA,bold:true},
+      {l:'CA Reel',vals:totals.map(function(t){return t.aCA;}),tot:cumActCA,blue:true},
+      {l:'Charges BP',vals:totals.map(function(t){return t.bpCharges;}),tot:totals.reduce(function(s,t){return s+t.bpCharges;},0)},
+      {l:'Resultat BP',vals:totals.map(function(t){return t.bpResult;}),tot:cumBPRes,bold:true},
+      {l:'Resultat Reel',vals:totals.map(function(t){return t.aResult;}),tot:cumActRes,blue:true,res:true},
+    ];
+    h+='<div style="overflow-x:auto"><table>';
+    h+='<tr><th style="text-align:left;padding-left:8px">Ligne</th>';
+    bp.forEach(function(r){h+='<th>'+MOIS[r.mi]+'</th>';});
+    h+='<th>Total</th></tr>';
+    rows.forEach(function(row){
+      h+='<tr style="background:'+(row.bold?'#f5f5f0':'')+'">';
+      h+='<td class="lbl" style="font-weight:'+(row.bold?600:400)+'">'+row.l+'</td>';
+      row.vals.forEach(function(v){
+        var c=row.blue&&v!==null?(row.res?(v>=0?'#3B6D11':'#A32D2D'):'#185FA5'):'inherit';
+        h+='<td style="color:'+c+'">'+(v===null?'--':fmtN(v))+'</td>';
+      });
+      h+='<td style="font-weight:600">'+(row.tot?fmtN(row.tot):'--')+'</td></tr>';
+    });
+    h+='</table></div>';
   }
-  if(forecastSection==='detail'){
-    h+=`<div style="overflow-x:auto"><table><tr><th style="text-align:left;padding-left:8px;min-width:140px">Ligne</th>${bp.map(r=>`<th>${MOIS[r.mi]}</th>`).join('')}</tr>
-    <tr><td class="lbl" colspan="13" style="font-weight:600;padding:5px 8px">PRODUITS</td></tr>
-    ${PRODUITS.map(l=>`<tr><td class="lbl">${l.label}</td>${bp.map((r,i)=>{const a=actuel[i]?.[l.id];return`<td><div style="font-size:10px">${fmtN(r[l.id])}</div>${a!==undefined?`<div style="font-size:10px;color:#185FA5;font-weight:600">${fmtN(a)}</div>`:''}</td>`;}).join('')}</tr>`).join('')}
-    <tr><td class="lbl" colspan="13" style="font-weight:600;padding:5px 8px">CHARGES</td></tr>
-    ${CHARGES.map(l=>`<tr><td class="lbl">${l.label}</td>${bp.map((r,i)=>{const a=actuel[i]?.[l.id];return`<td><div style="font-size:10px">${fmtN(r[l.id])}</div>${a!==undefined?`<div style="font-size:10px;color:#185FA5;font-weight:600">${fmtN(a)}</div>`:''}</td>`;}).join('')}</tr>`).join('')}
-    <tr style="background:#f5f5f0"><td class="lbl" style="font-weight:600">RÉSULTAT NET</td>${totals.map((t,i)=>`<td><div style="font-size:10px;font-weight:600">${fmtN(bp[i]._result)}</div>${t.hasReal?`<div style="font-size:10px;color:${t.aResult>=0?'#3B6D11':'#A32D2D'};font-weight:600">${fmtN(t.aResult)}</div>`:''}</td>`).join('')}</tr>
-    </table></div><div style="font-size:10px;color:#888;margin-top:6px">Gris = BP · Bleu = Réel</div>`;
-  }
-  if(forecastSection==='saisie'){
-    h+=`<div class="months-grid">${bp.map((r,idx)=>{const ok=actuel[idx]&&Object.keys(actuel[idx]).length>0;return`<button class="month-btn ${ok?'ok':''}" onclick="openEditMois(${idx})">${MOIS[r.mi]} ${annee}${ok?' ✓':''}</button>`;}).join('')}</div>`;
-    if(editMoisIdx!==null){
-      const r=bp[editMoisIdx];
-      h+=`<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:4px">Saisie — ${MOIS[r.mi]} ${annee}</div>
-      <div class="sec-title">Produits</div><div class="edit-grid">${PRODUITS.map(l=>`<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">${l.label} <span style="color:#bbb">(${fmtN(r[l.id])})</span></label><input type="number" value="${editVals[l.id]||''}" oninput="setEV('${l.id}',this.value)" placeholder="${r[l.id]}" style="width:100%;padding:7px 9px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>`).join('')}</div>
-      <div class="sec-title">Charges</div><div class="edit-grid">${CHARGES.map(l=>`<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">${l.label} <span style="color:#bbb">(${fmtN(r[l.id])})</span></label><input type="number" value="${editVals[l.id]||''}" oninput="setEV('${l.id}',this.value)" placeholder="${r[l.id]}" style="width:100%;padding:7px 9px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>`).join('')}</div>
-      <div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" onclick="saveMois()">Enregistrer</button><button class="btn" onclick="clearMois()">Effacer</button><button class="btn" onclick="cancelEdit()">Annuler</button></div></div>`;
+  if(fs==='saisie'){
+    h+='<div class="months-grid">';
+    bp.forEach(function(r,idx){
+      var ok=actuel[idx]&&Object.keys(actuel[idx]).length>0;
+      h+='<button class="month-btn '+(ok?'ok':'')+'" onclick="openEditMois('+idx+')">'+MOIS[r.mi]+' '+annee+(ok?' v':'')+'</button>';
+    });
+    h+='</div>';
+    if(S.editMoisIdx!==null){
+      var r=bp[S.editMoisIdx];
+      h+='<div class="box">';
+      h+='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Saisie - '+MOIS[r.mi]+' '+annee+'</div>';
+      h+='<div class="sec-title">Produits</div><div class="edit-grid">';
+      PRODUITS.forEach(function(l){
+        h+='<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">'+l.label+' ('+fmtN(r[l.id])+')</label>';
+        h+='<input type="number" value="'+(S.editVals[l.id]||'')+'" oninput="setEV(\''+l.id+'\',this.value)" placeholder="'+r[l.id]+'" style="width:100%;padding:7px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>';
+      });
+      h+='</div><div class="sec-title">Charges</div><div class="edit-grid">';
+      CHARGES.forEach(function(l){
+        h+='<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">'+l.label+' ('+fmtN(r[l.id])+')</label>';
+        h+='<input type="number" value="'+(S.editVals[l.id]||'')+'" oninput="setEV(\''+l.id+'\',this.value)" placeholder="'+r[l.id]+'" style="width:100%;padding:7px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>';
+      });
+      h+='</div><div style="display:flex;gap:8px;margin-top:12px">';
+      h+='<button class="btn btn-primary" onclick="saveMois()">Enregistrer</button>';
+      h+='<button class="btn" onclick="clearMois()">Effacer</button>';
+      h+='<button class="btn" onclick="cancelEdit()">Annuler</button>';
+      h+='</div></div>';
     }
   }
   return h;
 }
 
-function renderFichiers(studioId){
-  const files=S.files[studioId]||[];
-  const icons={pdf:'📄',doc:'📝',docx:'📝',xls:'📊',xlsx:'📊',jpg:'🖼',jpeg:'🖼',png:'🖼'};
-  const icon=n=>{const e=n.split('.').pop().toLowerCase();return icons[e]||'📎';};
-  return `<div class="box">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <span style="font-weight:600;font-size:14px">Documents (${files.length})</span>
-      <label class="btn btn-primary" style="cursor:pointer;font-size:12px">+ Ajouter<input type="file" style="display:none" onchange="uploadFichier('${studioId}',this)" multiple/></label>
-    </div>
-    <div id="uprog-${studioId}" style="display:none;font-size:12px;color:#5b7fa6;margin-bottom:10px">Upload...</div>
-    ${files.length===0?`<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucun document</div>`:files.map(f=>`<div class="file-row"><div style="display:flex;align-items:center;gap:10px"><span style="font-size:20px">${icon(f.name)}</span><div><div style="font-size:13px;font-weight:500">${f.name}</div><div style="font-size:11px;color:#888">${f.date} · ${f.size}</div></div></div><div style="display:flex;gap:8px"><a href="${f.url}" target="_blank" class="btn" style="font-size:12px;text-decoration:none">Ouvrir</a><button class="btn" style="font-size:12px;color:#A32D2D" onclick="deleteFichier('${studioId}','${f.path}')">✕</button></div></div>`).join('')}
-  </div>`;
+function renderFichiers(sid){
+  var files=S.files[sid]||[];
+  var icons={pdf:'doc',doc:'txt',docx:'txt',xls:'xls',xlsx:'xls',jpg:'img',jpeg:'img',png:'img'};
+  function icon(n){var e=n.split('.').pop().toLowerCase();return icons[e]||'file';}
+  var h='<div class="box">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">';
+  h+='<span style="font-weight:600;font-size:14px">Documents ('+files.length+')</span>';
+  h+='<label class="btn btn-primary" style="cursor:pointer;font-size:12px">+ Ajouter<input type="file" style="display:none" onchange="uploadFichier(\''+sid+'\',this)" multiple/></label>';
+  h+='</div>';
+  h+='<div id="uprog-'+sid+'" style="display:none;font-size:12px;color:#5b7fa6;margin-bottom:10px">Upload...</div>';
+  if(files.length===0){
+    h+='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucun document</div>';
+  } else {
+    files.forEach(function(f){
+      h+='<div class="file-row">';
+      h+='<div style="display:flex;align-items:center;gap:10px">';
+      h+='<span style="font-size:13px;background:#f0f0ea;padding:4px 8px;border-radius:6px">'+icon(f.name)+'</span>';
+      h+='<div><div style="font-size:13px;font-weight:500">'+f.name+'</div><div style="font-size:11px;color:#888">'+f.date+' - '+f.size+'</div></div></div>';
+      h+='<div style="display:flex;gap:8px"><a href="'+f.url+'" target="_blank" class="btn" style="font-size:12px;text-decoration:none">Ouvrir</a>';
+      h+='<button class="btn" style="font-size:12px;color:#A32D2D" onclick="deleteFichier(\''+sid+'\',\''+f.path+'\')">x</button></div>';
+      h+='</div>';
+    });
+  }
+  h+='</div>';
+  return h;
 }
 
 function renderAI(s){
-  return `<div class="box">
-    <div style="font-weight:600;font-size:14px;margin-bottom:10px">Analyste IA</div>
-    <div style="display:flex;gap:8px;margin-bottom:12px">
-      <input id="aiq" type="text" placeholder="Ex: Quand atteindre le seuil de rentabilite ?" onkeydown="if(event.key==='Enter')askAI()" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>
-      <button class="btn btn-primary" onclick="askAI()" ${S.aiLoading?'disabled':''}>${S.aiLoading?'...':'Analyser'}</button>
-    </div>
-    ${S.aiResp?`<div style="font-size:13px;line-height:1.6;background:#f5f5f0;border-radius:8px;padding:10px 14px;white-space:pre-wrap">${S.aiResp}</div>`:''}
-  </div>`;
+  return '<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:10px">Analyste IA</div>'+
+    '<div style="display:flex;gap:8px;margin-bottom:12px">'+
+    '<input id="aiq" type="text" placeholder="Ex: Quand atteindre le seuil de rentabilite ?" onkeydown="if(event.key===\'Enter\')askAI()" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>'+
+    '<button class="btn btn-primary" onclick="askAI()" '+(S.aiLoading?'disabled':'')+'>'+( S.aiLoading?'...':'Analyser')+'</button></div>'+
+    (S.aiResp?'<div style="font-size:13px;line-height:1.6;background:#f5f5f0;border-radius:8px;padding:10px 14px;white-space:pre-wrap">'+S.aiResp+'</div>':'')+
+    '</div>';
 }
 
 function renderNewForm(){
-  const f=S.newForm;
-  return `<div class="box">
-    <div style="font-weight:600;font-size:15px;margin-bottom:14px">Nouveau studio</div>
-    <div class="form-grid">
-      <div class="fg"><label>Nom</label><input value="${f.name||''}" oninput="setNF('name',this.value)" placeholder="Ex: Paris 16e"/></div>
-      <div class="fg"><label>Adresse</label><input value="${f.addr||''}" oninput="setNF('addr',this.value)" placeholder="Rue, CP Ville"/></div>
-      <div class="fg"><label>Société</label><select onchange="setNF('societe',this.value)">${['P&W Occitanie','COBE Society','SACOBE Society'].map(s=>`<option ${f.societe===s?'selected':''}>${s}</option>`).join('')}</select></div>
-      <div class="fg"><label>Ouverture</label><input value="${f.ouverture||''}" oninput="setNF('ouverture',this.value)" placeholder="Ex: T2 2027"/></div>
-      <div class="fg"><label>CA annuel BP (€)</label><input type="number" value="${f.annualCA||448800}" oninput="setNF('annualCA',this.value)"/></div>
-      <div class="fg"><label>Mois ouverture</label><select onchange="setNF('moisDebut',this.value)">${MOIS.map((m,i)=>`<option value="${i}" ${(f.moisDebut||0)==i?'selected':''}>${m}</option>`).join('')}</select></div>
-      <div class="fg"><label>Année</label><select onchange="setNF('annee',this.value)">${[2026,2027,2028,2029].map(y=>`<option ${(f.annee||2026)==y?'selected':''}>${y}</option>`).join('')}</select></div>
-    </div>
-    <div class="info-box">Workflow démarre à l'étape 1 : Test fit local.</div>
-    <div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="createStudio()">Créer</button><button class="btn" onclick="toggleNewForm()">Annuler</button></div>
-  </div>`;
+  var f=S.newForm;
+  var h='<div class="box"><div style="font-weight:600;font-size:15px;margin-bottom:14px">Nouveau studio</div><div class="form-grid">';
+  h+='<div class="fg"><label>Nom</label><input value="'+(f.name||'')+'" oninput="setNF(\'name\',this.value)" placeholder="Ex: Paris 16e"/></div>';
+  h+='<div class="fg"><label>Adresse</label><input value="'+(f.addr||'')+'" oninput="setNF(\'addr\',this.value)" placeholder="Rue, CP Ville"/></div>';
+  h+='<div class="fg"><label>Societe</label><select onchange="setNF(\'societe\',this.value)"><option>P&W Occitanie</option><option>COBE Society</option><option>SACOBE Society</option></select></div>';
+  h+='<div class="fg"><label>Ouverture</label><input value="'+(f.ouverture||'')+'" oninput="setNF(\'ouverture\',this.value)" placeholder="Ex: T2 2027"/></div>';
+  h+='<div class="fg"><label>CA annuel BP</label><input type="number" value="'+(f.annualCA||448800)+'" oninput="setNF(\'annualCA\',this.value)"/></div>';
+  h+='<div class="fg"><label>Mois ouverture</label><select onchange="setNF(\'moisDebut\',this.value)">';
+  MOIS.forEach(function(m,i){h+='<option value="'+i+'" '+(( f.moisDebut||0)==i?'selected':'')+'>'+m+'</option>';});
+  h+='</select></div></div>';
+  h+='<div class="info-box">Workflow demarre a letape 1 : Test fit local.</div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="createStudio()">Creer</button><button class="btn" onclick="toggleNewForm()">Annuler</button></div></div>';
+  return h;
 }
 
-// ── Actions ───────────────────────────────────────────────────────────────────
 async function doLogin(){
-  const email=document.getElementById('ae').value;
-  const pwd=document.getElementById('ap').value;
-  const err=document.getElementById('aerr');
-  const {data,error}=await sb.auth.signInWithPassword({email,password:pwd});
-  if(error){err.style.display='block';err.textContent=error.message;return;}
-  S.user=data.user;
-  const {data:prof}=await sb.from('profiles').select('*').eq('id',data.user.id).single();
-  S.profile=prof;
+  var email=document.getElementById('ae').value;
+  var pwd=document.getElementById('ap').value;
+  var err=document.getElementById('aerr');
+  var res=await sb.auth.signInWithPassword({email:email,password:pwd});
+  if(res.error){err.style.display='block';err.textContent=res.error.message;return;}
+  S.user=res.data.user;
+  var prof=await sb.from('profiles').select('*').eq('id',res.data.user.id).single();
+  S.profile=prof.data;
   await loadStudios();await loadFiles();await loadDepenses();await loadMessages();
   S.view='dashboard';render();
 }
-async function doLogout(){await sb.auth.signOut();S={...S,user:null,profile:null,view:'auth',selectedId:null};render();}
+async function doLogout(){await sb.auth.signOut();S.user=null;S.profile=null;S.view='auth';S.selectedId=null;render();}
 function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';render();}
 function goBack(){S.view='dashboard';S.selectedId=null;render();}
 function setMainTab(t){S.mainTab=t;render();}
@@ -665,97 +715,113 @@ function setFS(s){S.forecastSection=s;S.editMoisIdx=null;render();}
 function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:448800,moisDebut:0,annee:2026};render();}
 function setNF(k,v){S.newForm[k]=v;}
 function setEV(k,v){S.editVals[k]=v;}
-function openEditMois(idx){S.editMoisIdx=idx;S.editVals={...(S.studios[S.selectedId].forecast.actuel[idx]||{})};render();}
+function openEditMois(idx){S.editMoisIdx=idx;S.editVals=Object.assign({},S.studios[S.selectedId].forecast.actuel[idx]||{});render();}
 function cancelEdit(){S.editMoisIdx=null;render();}
 
 async function toggleStep(sid,stepId){
-  const s=S.studios[sid];
-  const newSteps={...s.steps,[stepId]:!s.steps[stepId]};
-  await saveStudio(sid,{...s,steps:newSteps,statut:inferStatut(newSteps)});
-  toast('Étape mise à jour');
+  var s=S.studios[sid];
+  var newSteps=Object.assign({},s.steps);
+  newSteps[stepId]=!s.steps[stepId];
+  await saveStudio(sid,Object.assign({},s,{steps:newSteps,statut:inferStatut(newSteps)}));
+  toast('Etape mise a jour');
 }
 async function saveMois(){
-  const s=S.studios[S.selectedId];
-  const newActuel={...s.forecast.actuel,[S.editMoisIdx]:{...S.editVals}};
-  await saveStudio(S.selectedId,{...s,forecast:{...s.forecast,actuel:newActuel}});
-  S.editMoisIdx=null;toast('Saisie enregistrée');
+  var s=S.studios[S.selectedId];
+  var newActuel=Object.assign({},s.forecast.actuel);
+  newActuel[S.editMoisIdx]=Object.assign({},S.editVals);
+  await saveStudio(S.selectedId,Object.assign({},s,{forecast:Object.assign({},s.forecast,{actuel:newActuel})}));
+  S.editMoisIdx=null;toast('Saisie enregistree');
 }
 async function clearMois(){
-  const s=S.studios[S.selectedId];
-  const newActuel={...s.forecast.actuel};
+  var s=S.studios[S.selectedId];
+  var newActuel=Object.assign({},s.forecast.actuel);
   delete newActuel[S.editMoisIdx];
-  await saveStudio(S.selectedId,{...s,forecast:{...s.forecast,actuel:newActuel}});
-  S.editMoisIdx=null;toast('Mois effacé');
+  await saveStudio(S.selectedId,Object.assign({},s,{forecast:Object.assign({},s.forecast,{actuel:newActuel})}));
+  S.editMoisIdx=null;toast('Mois efface');
 }
-async function uploadFichier(studioId,input){
-  const files=Array.from(input.files);if(!files.length)return;
-  const prog=document.getElementById('uprog-'+studioId);if(prog)prog.style.display='block';
-  const {data:existing}=await sb.from('studios').select('data').eq('id',studioId+'_files').maybeSingle();
-  const currentFiles=[...(existing?.data?.files||S.files[studioId]||[])];
-  let added=0;
-  for(const file of files){
-    const path=`${studioId}/${Date.now()}_${cleanName(file.name)}`;
-    const {error}=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
-    if(!error){
-      const {data:u}=sb.storage.from('studio-files').getPublicUrl(path);
-      const size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
-      currentFiles.push({name:file.name,path,url:u.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size});
+async function uploadFichier(sid,input){
+  var files=Array.from(input.files);if(!files.length)return;
+  var prog=document.getElementById('uprog-'+sid);if(prog)prog.style.display='block';
+  var ex=await sb.from('studios').select('data').eq('id',sid+'_files').maybeSingle();
+  var currentFiles=(ex.data&&ex.data.data&&ex.data.data.files)||S.files[sid]||[];
+  currentFiles=currentFiles.slice();
+  var added=0;
+  for(var i=0;i<files.length;i++){
+    var file=files[i];
+    var path=sid+'/'+Date.now()+'_'+cleanName(file.name);
+    var ur=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
+    if(!ur.error){
+      var pu=sb.storage.from('studio-files').getPublicUrl(path);
+      var size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
+      currentFiles.push({name:file.name,path:path,url:pu.data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size:size});
       added++;
     }
   }
-  await sb.from('studios').upsert({id:studioId+'_files',data:{files:currentFiles},updated_at:new Date().toISOString()});
-  S.files[studioId]=currentFiles;
+  await sb.from('studios').upsert({id:sid+'_files',data:{files:currentFiles},updated_at:new Date().toISOString()});
+  S.files[sid]=currentFiles;
   if(prog)prog.style.display='none';
-  toast(added+' fichier(s) ajouté(s)');render();
+  toast(added+' fichier(s) ajoute(s)');render();
 }
-async function deleteFichier(studioId,path){
+async function deleteFichier(sid,path){
   if(!confirm('Supprimer ?'))return;
   await sb.storage.from('studio-files').remove([path]);
-  S.files[studioId]=(S.files[studioId]||[]).filter(f=>f.path!==path);
-  await sb.from('studios').upsert({id:studioId+'_files',data:{files:S.files[studioId]},updated_at:new Date().toISOString()});
-  toast('Supprimé');render();
+  S.files[sid]=(S.files[sid]||[]).filter(function(f){return f.path!==path;});
+  await sb.from('studios').upsert({id:sid+'_files',data:{files:S.files[sid]},updated_at:new Date().toISOString()});
+  toast('Supprime');render();
 }
-async function archiverStudio(id){if(!confirm('Archiver ?'))return;await saveStudio(id,{...S.studios[id],statut:'abandonne'});toast('Archivé');}
-async function restaurerStudio(id){const s=S.studios[id];await saveStudio(id,{...s,statut:inferStatut(s.steps)});toast('Restauré');}
+async function archiverStudio(id){if(!confirm('Archiver ?'))return;await saveStudio(id,Object.assign({},S.studios[id],{statut:'abandonne'}));toast('Archive');}
+async function restaurerStudio(id){var s=S.studios[id];await saveStudio(id,Object.assign({},s,{statut:inferStatut(s.steps)}));toast('Restaure');}
 async function supprimerStudio(id){
-  if(!confirm('Supprimer définitivement ?'))return;
+  if(!confirm('Supprimer definitivement ?'))return;
   await sb.from('studios').delete().eq('id',id);
-  delete S.studios[id];S.view='dashboard';S.selectedId=null;render();toast('Supprimé');
+  delete S.studios[id];S.view='dashboard';S.selectedId=null;render();toast('Supprime');
 }
 async function createStudio(){
-  const f=S.newForm;
+  var f=S.newForm;
   if(!f.name||!f.addr||!f.ouverture){toast('Remplissez tous les champs');return;}
-  const id='proj_'+Date.now();
-  await saveStudio(id,{name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,statut:'pipeline',capex:306200,emprunt:214340,alertes:['Nouveau projet — démarrer par le test fit local'],steps:Object.fromEntries(STEPS.map(s=>[s.id,false])),forecast:{annualCA:num(f.annualCA,448800),moisDebut:num(f.moisDebut,0),annee:num(f.annee,2026),actuel:{}}});
-  S.showNewForm=false;toast('Studio créé');
+  var id='proj_'+Date.now();
+  var steps={};STEPS.forEach(function(s){steps[s.id]=false;});
+  await saveStudio(id,{name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,statut:'pipeline',capex:306200,emprunt:214340,alertes:['Nouveau projet - demarrer par le test fit local'],steps:steps,forecast:{annualCA:num(f.annualCA,448800),moisDebut:num(f.moisDebut,0),annee:num(f.annee,2026),actuel:{}}});
+  S.showNewForm=false;toast('Studio cree');
 }
 async function askAI(){
-  const q=document.getElementById('aiq')?.value;if(!q)return;
+  var q=document.getElementById('aiq');if(!q||!q.value)return;
   S.aiLoading=true;S.aiResp='';render();
-  const s=S.studios[S.selectedId];
+  var s=S.studios[S.selectedId];
   try{
-    const r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:`Expert Club Pilates ISSEO. Studio: ${s.name}, statut: ${s.statut}, CAPEX: ${fmt(s.capex)}, BP: ${fmt(s.forecast.annualCA)}. Réponds en français, concis.`,messages:[{role:'user',content:q}]})});
-    const d=await r.json();S.aiResp=d.content?.[0]?.text||'Pas de réponse.';
-  }catch{S.aiResp='Erreur.';}
+    var r=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,system:'Expert Club Pilates ISSEO. Studio: '+s.name+', statut: '+s.statut+', CAPEX: '+fmt(s.capex)+', BP: '+fmt(s.forecast.annualCA)+'. Reponds en francais, concis.',messages:[{role:'user',content:q.value}]})});
+    var d=await r.json();S.aiResp=(d.content&&d.content[0]&&d.content[0].text)||'Pas de reponse.';
+  }catch(e){S.aiResp='Erreur.';}
   S.aiLoading=false;render();
 }
 
 function render(){
-  const root=document.getElementById('root');
+  var root=document.getElementById('root');
+  if(!root)return;
   if(S.view==='auth')root.innerHTML=renderAuth();
   else if(S.view==='dashboard')root.innerHTML=renderDashboard();
   else if(S.view==='detail')root.innerHTML=renderDetail();
 }
 
-sb.auth.getSession().then(async({data:{session}})=>{
+sb.auth.getSession().then(function(res){
+  var session=res.data&&res.data.session;
   if(session){
     S.user=session.user;
-    const {data:prof}=await sb.from('profiles').select('*').eq('id',session.user.id).single();
-    S.profile=prof;
-    await loadStudios();await loadFiles();await loadDepenses();await loadMessages();
-    S.view='dashboard';
+    sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){
+      S.profile=r.data;
+      loadStudios().then(function(){
+        loadFiles().then(function(){
+          loadDepenses().then(function(){
+            loadMessages().then(function(){
+              S.view='dashboard';render();
+            });
+          });
+        });
+      });
+    });
+  } else {
+    render();
   }
-  render();
 });
 </script>
 </body>
