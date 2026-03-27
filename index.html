@@ -70,7 +70,11 @@ const fmt=n=>new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maxi
 const fmtN=n=>isNaN(n)?'—':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);
 const num=(v,fb=0)=>{const n=parseFloat(v);return isNaN(n)?fb:n;};
 
-const ROLE_FILTER={
+const DEPENSE_CATS=['Travaux / Aménagement','Equipements Pilates','Droit entrée franchise','Honoraires / Juridique','Marketing lancement','Dépôt garantie bail','Autre'];
+const DEPENSE_FINANCEMENTS=['Emprunt bancaire','Crédit-bail','Fonds propres'];
+const DEPENSE_STATUTS={attente:{label:'À demander',bg:'#F1EFE8',color:'#5F5E5A'},demande:{label:'Demandé',bg:'#FAEEDA',color:'#854F0B'},debloque:{label:'Débloqué',bg:'#E1F5EE',color:'#0F6E56'}};
+
+
   admin:null,tom:null,pascal:null,
   coquel:s=>['COBE Society','SACOBE Society'].includes(s.societe),
   sabourin:s=>s.societe==='SACOBE Society',
@@ -153,7 +157,7 @@ const INIT={
 let S={
   user:null,profile:null,
   studios:JSON.parse(JSON.stringify(INIT)),
-  files:{},
+  files:{},depenses:{},
   view:'auth',selectedId:null,
   mainTab:'studios',detailTab:'workflow',
   forecastSection:'summary',
@@ -290,9 +294,10 @@ function renderDetail(){
     ${s.statut!=='abandonne'?`<button class="btn" style="color:#854F0B;border-color:#e0a060" onclick="archiverStudio('${S.selectedId}')">Archiver</button>`:`<button class="btn" style="color:#185FA5" onclick="restaurerStudio('${S.selectedId}')">Restaurer</button>`}
     <button class="btn" style="color:#A32D2D;border-color:#e0a0a0" onclick="supprimerStudio('${S.selectedId}')">Supprimer</button>
   </div>`:'';
-  const tabs=[['workflow','Workflow'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  const tabs=[['workflow','Workflow'],['engagements','Engagements'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   let content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
+  else if(S.detailTab==='engagements')content=renderEngagements(S.selectedId,s);
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
   else if(S.detailTab==='forecast')content=renderForecast(s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
@@ -306,6 +311,199 @@ function renderDetail(){
     <div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${S.detailTab===k?'active':''}" onclick="setDetailTab('${k}')">${l}</button>`).join('')}</div>
     ${content}
   </div>`;
+}
+
+function renderEngagements(studioId, s){
+  const depenses = S.depenses[studioId] || [];
+  const capexBudget = s.capex || 306200;
+  const totalEngage = depenses.reduce((sum,d)=>sum+num(d.ttc),0);
+  const totalDebloque = depenses.filter(d=>d.deblocage==='debloque').reduce((sum,d)=>sum+num(d.ttc),0);
+  const totalDemande = depenses.filter(d=>d.deblocage==='demande').reduce((sum,d)=>sum+num(d.ttc),0);
+  const pctEngage = Math.min(100,Math.round(totalEngage/capexBudget*100));
+  const pctDebloque = Math.min(100,Math.round(totalDebloque/capexBudget*100));
+  const isAdmin = S.profile?.role==='admin';
+
+  // Group by financement
+  const byFin = {};
+  DEPENSE_FINANCEMENTS.forEach(f=>{
+    const ds=depenses.filter(d=>d.financement===f);
+    byFin[f]={engage:ds.reduce((s,d)=>s+num(d.ttc),0),debloque:ds.filter(d=>d.deblocage==='debloque').reduce((s,d)=>s+num(d.ttc),0)};
+  });
+
+  return `<div>
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px">
+      <div class="kpi"><div class="kpi-label">Budget CAPEX</div><div class="kpi-val">${fmt(capexBudget)}</div></div>
+      <div class="kpi"><div class="kpi-label">Engagé</div><div class="kpi-val" style="color:#185FA5">${fmt(totalEngage)}</div></div>
+      <div class="kpi"><div class="kpi-label">Débloqué</div><div class="kpi-val" style="color:#0F6E56">${fmt(totalDebloque)}</div></div>
+      <div class="kpi"><div class="kpi-label">En attente déblocage</div><div class="kpi-val" style="color:#854F0B">${fmt(totalDemande)}</div></div>
+      <div class="kpi"><div class="kpi-label">Reste à engager</div><div class="kpi-val">${fmt(Math.max(0,capexBudget-totalEngage))}</div></div>
+    </div>
+
+    <!-- Barres de progression -->
+    <div class="box" style="margin-bottom:12px">
+      <div style="margin-bottom:10px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="color:#888">Engagements / Budget</span><span style="font-weight:500">${pctEngage}%</span>
+        </div>
+        <div style="background:#e8e8e0;border-radius:4px;height:8px">
+          <div style="width:${pctEngage}%;background:#185FA5;border-radius:4px;height:8px"></div>
+        </div>
+      </div>
+      <div>
+        <div style="display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px">
+          <span style="color:#888">Déblocages / Budget</span><span style="font-weight:500">${pctDebloque}%</span>
+        </div>
+        <div style="background:#e8e8e0;border-radius:4px;height:8px">
+          <div style="width:${pctDebloque}%;background:#1D9E75;border-radius:4px;height:8px"></div>
+        </div>
+      </div>
+      <!-- Par source de financement -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px">
+        ${DEPENSE_FINANCEMENTS.map(f=>`<div style="text-align:center">
+          <div style="font-size:11px;color:#888;margin-bottom:3px">${f}</div>
+          <div style="font-size:13px;font-weight:600;color:#185FA5">${fmt(byFin[f].engage)}</div>
+          <div style="font-size:11px;color:#0F6E56">${fmt(byFin[f].debloque)} débloqué</div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Bouton ajouter -->
+    ${isAdmin?`<div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+      <button class="btn btn-primary" onclick="ouvrirFormDepense('${studioId}')">+ Ajouter une dépense</button>
+    </div>`:''}
+
+    <!-- Formulaire ajout -->
+    <div id="form-depense-${studioId}" style="display:none"></div>
+
+    <!-- Liste des dépenses -->
+    ${depenses.length===0
+      ?`<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune dépense saisie — cliquez sur "Ajouter une dépense"</div>`
+      :`<div style="overflow-x:auto"><table style="min-width:700px">
+        <tr style="background:#f5f5f0">
+          <th style="text-align:left;padding-left:8px;min-width:140px">Catégorie</th>
+          <th style="text-align:left">Description</th>
+          <th>Montant TTC</th>
+          <th>Financement</th>
+          <th>Engagé par</th>
+          <th>Date</th>
+          <th>Déblocage</th>
+          <th>Justif.</th>
+          ${isAdmin?'<th></th>':''}
+        </tr>
+        ${depenses.map((d,i)=>{
+          const st=DEPENSE_STATUTS[d.deblocage]||DEPENSE_STATUTS.attente;
+          const fichierBtn=d.fichierUrl?`<a href="${d.fichierUrl}" target="_blank" style="font-size:11px;color:#185FA5;text-decoration:none">📄 Voir</a>`:`<span style="font-size:11px;color:#ccc">—</span>`;
+          return`<tr style="border-bottom:0.5px solid #e8e8e0">
+            <td style="padding:8px;font-size:12px;font-weight:500">${d.categorie}</td>
+            <td style="padding:8px;font-size:12px;color:#555;max-width:180px">${d.description||'—'}</td>
+            <td style="padding:8px;font-size:12px;text-align:center;font-weight:600">${fmt(num(d.ttc))}</td>
+            <td style="padding:8px;font-size:11px;text-align:center"><span style="background:#E6F1FB;color:#185FA5;padding:2px 7px;border-radius:5px">${d.financement}</span></td>
+            <td style="padding:8px;font-size:12px;text-align:center">${d.engage_par||'—'}</td>
+            <td style="padding:8px;font-size:11px;text-align:center;color:#888">${d.date||'—'}</td>
+            <td style="padding:8px;text-align:center">
+              <span style="background:${st.bg};color:${st.color};padding:2px 7px;border-radius:5px;font-size:11px;cursor:${isAdmin?'pointer':'default'}"
+                onclick="${isAdmin?`changerStatutDeblocage('${studioId}',${i})`:''}">
+                ${st.label}
+              </span>
+              ${d.deblocage==='demande'?`<div style="font-size:10px;color:#888;margin-top:2px">${d.date_demande||''}</div>`:''}
+              ${d.deblocage==='debloque'?`<div style="font-size:10px;color:#0F6E56;margin-top:2px">${d.date_deblocage||''}</div>`:''}
+            </td>
+            <td style="padding:8px;text-align:center">${fichierBtn}${isAdmin?`<label style="cursor:pointer;margin-left:6px;font-size:11px;color:#888">📎<input type="file" style="display:none" onchange="uploadJustificatif('${studioId}',${i},this)"/></label>`:''}</td>
+            ${isAdmin?`<td style="padding:8px;text-align:center"><button class="btn" style="font-size:11px;padding:3px 8px;color:#A32D2D" onclick="supprimerDepense('${studioId}',${i})">✕</button></td>`:''}
+          </tr>`;
+        }).join('')}
+      </table></div>`}
+  </div>`;
+}
+
+function ouvrirFormDepense(studioId){
+  const div=document.getElementById('form-depense-'+studioId);
+  if(!div)return;
+  div.style.display='block';
+  div.innerHTML=`<div class="box" style="margin-bottom:12px">
+    <div style="font-weight:600;font-size:14px;margin-bottom:12px">Nouvelle dépense</div>
+    <div class="form-grid">
+      <div class="fg"><label>Catégorie</label><select id="dep-cat"><option value="">Sélectionner...</option>${DEPENSE_CATS.map(c=>`<option>${c}</option>`).join('')}</select></div>
+      <div class="fg"><label>Description</label><input id="dep-desc" placeholder="Ex: Devis ISOSPACE DE0001379412"/></div>
+      <div class="fg"><label>Montant HT (€)</label><input id="dep-ht" type="number" placeholder="0" oninput="calcTTC()"/></div>
+      <div class="fg"><label>TVA (%)</label><select id="dep-tva" onchange="calcTTC()"><option value="20">20%</option><option value="10">10%</option><option value="0">0%</option></select></div>
+      <div class="fg"><label>Montant TTC (€)</label><input id="dep-ttc" type="number" placeholder="0"/></div>
+      <div class="fg"><label>Source financement</label><select id="dep-fin">${DEPENSE_FINANCEMENTS.map(f=>`<option>${f}</option>`).join('')}</select></div>
+      <div class="fg"><label>Engagé par</label><select id="dep-par"><option>Paul Bécaud</option><option>Pascal Bécaud</option><option>Tom Bécaud</option><option>Paul Sabourin</option><option>Caroline Coquel</option><option>Clément Coquel</option></select></div>
+      <div class="fg"><label>Date</label><input id="dep-date" type="date" value="${new Date().toISOString().split('T')[0]}"/></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:4px">
+      <button class="btn btn-primary" onclick="sauvegarderDepense('${studioId}')">Enregistrer</button>
+      <button class="btn" onclick="document.getElementById('form-depense-${studioId}').style.display='none'">Annuler</button>
+    </div>
+  </div>`;
+}
+
+function calcTTC(){
+  const ht=num(document.getElementById('dep-ht')?.value);
+  const tva=num(document.getElementById('dep-tva')?.value,20);
+  const ttcEl=document.getElementById('dep-ttc');
+  if(ttcEl)ttcEl.value=Math.round(ht*(1+tva/100));
+}
+
+async function sauvegarderDepense(studioId){
+  const cat=document.getElementById('dep-cat')?.value;
+  if(!cat){toast('Sélectionnez une catégorie');return;}
+  const depense={
+    categorie:cat,
+    description:document.getElementById('dep-desc')?.value||'',
+    ht:num(document.getElementById('dep-ht')?.value),
+    tva:num(document.getElementById('dep-tva')?.value,20),
+    ttc:num(document.getElementById('dep-ttc')?.value),
+    financement:document.getElementById('dep-fin')?.value||'Emprunt bancaire',
+    engage_par:document.getElementById('dep-par')?.value||'',
+    date:document.getElementById('dep-date')?.value||'',
+    deblocage:'attente',
+    fichierUrl:null,fichierPath:null,
+    date_demande:null,date_deblocage:null,
+  };
+  if(!S.depenses[studioId])S.depenses[studioId]=[];
+  S.depenses[studioId].push(depense);
+  await sb.from('studios').upsert({id:studioId+'_depenses',data:{depenses:S.depenses[studioId]},updated_at:new Date().toISOString()});
+  toast('Dépense enregistrée');
+  render();
+}
+
+async function supprimerDepense(studioId,idx){
+  if(!confirm('Supprimer cette dépense ?'))return;
+  S.depenses[studioId].splice(idx,1);
+  await sb.from('studios').upsert({id:studioId+'_depenses',data:{depenses:S.depenses[studioId]},updated_at:new Date().toISOString()});
+  toast('Dépense supprimée');render();
+}
+
+async function changerStatutDeblocage(studioId,idx){
+  const d=S.depenses[studioId][idx];
+  const today=new Date().toLocaleDateString('fr-FR');
+  if(d.deblocage==='attente'){d.deblocage='demande';d.date_demande=today;}
+  else if(d.deblocage==='demande'){d.deblocage='debloque';d.date_deblocage=today;}
+  else{d.deblocage='attente';d.date_demande=null;d.date_deblocage=null;}
+  await sb.from('studios').upsert({id:studioId+'_depenses',data:{depenses:S.depenses[studioId]},updated_at:new Date().toISOString()});
+  toast('Statut mis à jour');render();
+}
+
+async function uploadJustificatif(studioId,idx,input){
+  const file=input.files[0];
+  if(!file)return;
+  const path=`${studioId}/justif_${Date.now()}_${cleanName(file.name)}`;
+  const {error}=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
+  if(error){toast('Erreur upload');return;}
+  const {data}=sb.storage.from('studio-files').getPublicUrl(path);
+  S.depenses[studioId][idx].fichierUrl=data.publicUrl;
+  S.depenses[studioId][idx].fichierPath=path;
+  await sb.from('studios').upsert({id:studioId+'_depenses',data:{depenses:S.depenses[studioId]},updated_at:new Date().toISOString()});
+  toast('Justificatif ajouté');render();
+}
+
+async function loadDepenses(){
+  const {data}=await sb.from('studios').select('id,data');
+  S.depenses={};
+  if(data)data.forEach(r=>{if(r.id.includes('_depenses')){const sid=r.id.replace('_depenses','');S.depenses[sid]=r.data?.depenses||[];}});
 }
 
 function renderLocalisation(s){
@@ -466,6 +664,7 @@ async function doLogin(){
   S.profile=prof;
   await loadStudios();
   await loadFiles();
+  await loadDepenses();
   S.view='dashboard';
   render();
 }
@@ -608,6 +807,7 @@ sb.auth.getSession().then(async({data:{session}})=>{
     S.profile=prof;
     await loadStudios();
     await loadFiles();
+    await loadDepenses();
     S.view='dashboard';
   }
   render();
