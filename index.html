@@ -169,9 +169,16 @@ async function loadStudios(){
   if(data&&data.length){const s={};data.forEach(r=>{s[r.id]=r.data;});S.studios=s;}
 }
 async function loadFiles(){
-  const {data}=await sb.from('studios').select('id,data').like('id','%_files');
-  S.files={};
-  if(data)data.forEach(r=>{const sid=r.id.replace('_files','');S.files[sid]=r.data?.files||[];});
+  try {
+    const {data,error}=await sb.from('studios').select('id,data');
+    S.files={};
+    if(data) data.forEach(r=>{
+      if(r.id.endsWith('_files')){
+        const sid=r.id.slice(0,-6);
+        S.files[sid]=r.data?.files||[];
+      }
+    });
+  } catch(e){ console.error('loadFiles error',e); }
 }
 async function saveStudio(id,studio){
   S.studios[id]=studio;
@@ -581,22 +588,33 @@ async function uploadFichier(studioId,input){
   if(!files.length)return;
   const prog=document.getElementById('uprog-'+studioId);
   if(prog)prog.style.display='block';
-  // Recharger la liste depuis Supabase pour ne pas écraser
+
+  // Recharger depuis Supabase
   const {data:existing}=await sb.from('studios').select('data').eq('id',studioId+'_files').maybeSingle();
-  const currentFiles=existing?.data?.files||S.files[studioId]||[];
+  const currentFiles=[...(existing?.data?.files||S.files[studioId]||[])];
+
+  let added=0;
   for(const file of files){
     const path=`${studioId}/${Date.now()}_${file.name}`;
-    const {error}=await sb.storage.from('studio-files').upload(path,file);
-    if(!error){
-      const {data}=sb.storage.from('studio-files').getPublicUrl(path);
-      const size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
-      currentFiles.push({name:file.name,path,url:data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size});
-    }
+    const {data:upData,error}=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
+    if(error){ console.error('upload error',error); continue; }
+    const {data:urlData}=sb.storage.from('studio-files').getPublicUrl(path);
+    const size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
+    currentFiles.push({name:file.name,path,url:urlData.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size});
+    added++;
   }
+
+  // Sauvegarder
+  const {error:saveErr}=await sb.from('studios').upsert({
+    id:studioId+'_files',
+    data:{files:currentFiles},
+    updated_at:new Date().toISOString()
+  });
+  if(saveErr){ console.error('save error',saveErr); toast('Erreur sauvegarde'); return; }
+
   S.files[studioId]=currentFiles;
-  await sb.from('studios').upsert({id:studioId+'_files',data:{files:currentFiles},updated_at:new Date().toISOString()});
   if(prog)prog.style.display='none';
-  toast(files.length+' fichier(s) ajouté(s)');
+  toast(added+' fichier(s) ajouté(s)');
   render();
 }
 
