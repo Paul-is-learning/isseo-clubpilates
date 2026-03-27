@@ -333,9 +333,10 @@ function renderDetail(){
       :`<button class="btn" style="color:#185FA5;border-color:#185FA5" onclick="restaurerStudio('${S.selectedId}')">Restaurer</button>`}
     <button class="btn" style="color:#A32D2D;border-color:#e0a0a0" onclick="supprimerStudio('${S.selectedId}')">Supprimer</button>
   </div>`:'';
-  const tabs=[['workflow','Workflow'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  const tabs=[['workflow','Workflow'],['localisation','Localisation'],['forecast','Forecast'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   let content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
+  else if(S.detailTab==='localisation')content=renderLocalisation(s);
   else if(S.detailTab==='forecast')content=renderForecast(s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
   else if(S.detailTab==='alertes')content=`<div class="box">${s.alertes.map(a=>`<div style="font-size:13px;background:#FAEEDA;color:#854F0B;border-radius:6px;padding:8px 12px;margin-bottom:8px">⚡ ${a}</div>`).join('')}</div>`;
@@ -349,6 +350,41 @@ function renderDetail(){
     ${adminBtns}
     <div class="tabs">${tabs.map(([k,l])=>`<button class="tab ${S.detailTab===k?'active':''}" onclick="setDetailTab('${k}')">${l}</button>`).join('')}</div>
     ${content}
+  </div>`;
+}
+
+function renderLocalisation(s){
+  const addr=encodeURIComponent(s.addr);
+  const mapUrl=`https://www.google.com/maps/embed/v1/place?key=${GMAPS_KEY}&q=${addr}&zoom=16&language=fr`;
+  const sv1=`https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${addr}&fov=90&heading=0&pitch=0&key=${GMAPS_KEY}`;
+  const sv2=`https://maps.googleapis.com/maps/api/streetview?size=600x300&location=${addr}&fov=90&heading=180&pitch=0&key=${GMAPS_KEY}`;
+  return `<div>
+    <div class="box" style="padding:0;overflow:hidden;margin-bottom:12px">
+      <iframe
+        width="100%" height="360"
+        style="border:0;display:block"
+        loading="lazy"
+        allowfullscreen
+        src="${mapUrl}">
+      </iframe>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="box" style="padding:0;overflow:hidden">
+        <img src="${sv1}" style="width:100%;display:block;height:200px;object-fit:cover"
+          onerror="this.parentElement.innerHTML='<div style=padding:2rem;text-align:center;color:#aaa;font-size:13px>Pas de Street View disponible</div>'"/>
+        <div style="padding:8px 12px;font-size:11px;color:#888">Vue façade</div>
+      </div>
+      <div class="box" style="padding:0;overflow:hidden">
+        <img src="${sv2}" style="width:100%;display:block;height:200px;object-fit:cover"
+          onerror="this.parentElement.innerHTML='<div style=padding:2rem;text-align:center;color:#aaa;font-size:13px>Pas de Street View disponible</div>'"/>
+        <div style="padding:8px 12px;font-size:11px;color:#888">Vue opposée</div>
+      </div>
+    </div>
+    <div style="margin-top:12px;text-align:center">
+      <a href="https://www.google.com/maps/search/${addr}" target="_blank" class="btn" style="font-size:12px;text-decoration:none">
+        Ouvrir dans Google Maps →
+      </a>
+    </div>
   </div>`;
 }
 
