@@ -381,6 +381,7 @@ async function loadAll(){
     else if(id.endsWith('_depenses')){S.depenses[id.slice(0,-9)]=r.data&&r.data.depenses||[];}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
+    else if(id.endsWith('_simconfig')){S.simConfig[id.slice(0,-10)]=r.data&&r.data.config||{};}
     else{studios[id]=r.data;}
   });
   if(Object.keys(studios).length>0)S.studios=studios;
@@ -396,6 +397,31 @@ async function loadAll(){
     }
     if(changed)sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()});
   });
+}
+
+// ── Navigation persistante ─────────────────────────────────────────────────────
+function saveNavState(){
+  try{localStorage.setItem('isseo_nav',JSON.stringify({view:S.view,sid:S.selectedId,tab:S.detailTab,main:S.mainTab}));}catch(e){}
+}
+function restoreNavState(){
+  try{
+    var n=JSON.parse(localStorage.getItem('isseo_nav')||'{}');
+    if(n.view==='detail'&&n.sid&&S.studios[n.sid]){
+      S.view='detail';S.selectedId=n.sid;S.detailTab=n.tab||'workflow';
+      S.adherentYear=1;S.forecastYear=1;S.forecastSection='summary';
+    } else {
+      S.view='dashboard';S.mainTab=n.main||'studios';
+    }
+  }catch(e){S.view='dashboard';}
+}
+
+// ── SimConfig persistence ──────────────────────────────────────────────────────
+var _simSaveTimeout={};
+function saveSimConfig(sid){
+  if(_simSaveTimeout[sid])clearTimeout(_simSaveTimeout[sid]);
+  _simSaveTimeout[sid]=setTimeout(function(){
+    sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
+  },1000);
 }
 async function saveStudio(id,studio){
   S.studios[id]=studio;
@@ -1429,16 +1455,16 @@ async function doLogin(){
   var prof=await sb.from('profiles').select('*').eq('id',res.data.user.id).single();
   S.profile=prof.data;
   await loadAll();
-  S.view='dashboard';render();
+  restoreNavState();render();
 }
-async function doLogout(){await sb.auth.signOut();S.user=null;S.profile=null;S.view='auth';S.selectedId=null;render();}
-function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;render();}
-function goBack(){S.view='dashboard';S.selectedId=null;render();}
-function setMainTab(t){S.mainTab=t;render();}
+async function doLogout(){await sb.auth.signOut();S.user=null;S.profile=null;S.view='auth';S.selectedId=null;try{localStorage.removeItem('isseo_nav');}catch(e){}render();}
+function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
+function goBack(){S.view='dashboard';S.selectedId=null;saveNavState();render();}
+function setMainTab(t){S.mainTab=t;saveNavState();render();}
 var _msgPollInterval=null;
 
 function setDetailTab(t){
-  S.detailTab=t;S.aiResp='';S.editMoisIdx=null;
+  S.detailTab=t;S.aiResp='';S.editMoisIdx=null;saveNavState();
   // Arrêter le polling précédent
   if(_msgPollInterval){clearInterval(_msgPollInterval);_msgPollInterval=null;}
   // Démarrer le polling si on est sur l'onglet messages
@@ -1818,12 +1844,14 @@ function updateSimRep(sid,field,val,ay){
   // Sync libellé slider
   var lbl=document.getElementById('sim-lbl-'+field);
   if(lbl)lbl.textContent=Math.round(num(val))+'%';
+  saveSimConfig(sid);
   _refreshSimCA(sid,ay);
 }
 
 function updateSimPrix(sid,field,val,ay){
   if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
   S.simConfig[sid][field]=num(val);
+  saveSimConfig(sid);
   // Mettre à jour delta vs BP
   var refs={prix4:117,prix8:206,prixi:294};
   var ref=refs[field];
@@ -1932,6 +1960,9 @@ async function syncData(){
     } else if(id.endsWith('_adherents')){
       var nv=r.data&&r.data.actuel||{};
       if(JSON.stringify(nv)!==JSON.stringify(S.adherents[id.slice(0,-10)]||{})){S.adherents[id.slice(0,-10)]=nv;changed=true;}
+    } else if(id.endsWith('_simconfig')){
+      var nv=r.data&&r.data.config||{};
+      if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[id.slice(0,-10)]||{})){S.simConfig[id.slice(0,-10)]=nv;changed=true;}
     } else if(!id.endsWith('_messages')){
       if(r.data&&JSON.stringify(r.data)!==JSON.stringify(S.studios[id]||{})){S.studios[id]=r.data;changed=true;}
     }
@@ -1950,7 +1981,7 @@ sb.auth.getSession().then(function(res){
     S.user=session.user;
     sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){
       S.profile=r.data;
-      loadAll().then(function(){S.view='dashboard';render();startSync();});
+      loadAll().then(function(){restoreNavState();render();startSync();});
     });
   } else {render();}
 });
