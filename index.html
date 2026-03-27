@@ -92,13 +92,16 @@ const PRIX={seance:33.33,pack4:110.00,pack8:193.33,illimite:276.67};
 // ── CA BP 3 ans (source : Dossier Financement Lattes p.9) ─────────────────────
 const CA_A1=448800,CA_A2=610190,CA_A3=761841;
 
-// Rampe A1 : franchise loyer 6 mois (loyer réduit) + pic grand opening M2
-// Normalisée pour sommer à 1 — cohérente avec CA annuel 448 800€
-const RAMP_A1=[0.043,0.281,0.048,0.060,0.063,0.065,0.068,0.070,0.073,0.075,0.077,0.077];
-// Rampe A2/A3 : studio en croisière, montée régulière sans pic (somme=1)
-const RAMP_CRUISE=[0.076,0.080,0.083,0.085,0.086,0.087,0.087,0.087,0.086,0.085,0.083,0.075];
+// ── CA BP mensuel exact (source : dossier Lattes p.9 + adhérents BP) ──────────
+// Calculés proportionnellement aux adhérents BP — somment exactement aux CA annuels
+// A1 : 448 800€  A2 : 610 190€  A3 : 761 841€
+const CA_MENSUEL_A1=[10833,29165,33164,35164,36997,38830,40497,41997,43497,44997,46163,47496];
+const CA_MENSUEL_A2=[46231,47181,48131,49081,49873,50823,51456,52248,52881,53514,54148,54623];
+const CA_MENSUEL_A3=[59296,59975,60655,61335,62014,62864,63713,64733,65582,66432,67281,67961];
 
-// Pour rétrocompatibilité
+// Rampes dérivées (pour compatibilité avec le reste du code)
+const RAMP_A1=CA_MENSUEL_A1.map(function(v){return v/448800;});
+const RAMP_CRUISE=CA_MENSUEL_A2.map(function(v){return v/610190;});
 const RAMP=RAMP_A1;
 
 // ── Charges BP par année (source : Dossier Financement Lattes p.9) ────────────
@@ -259,18 +262,35 @@ const CHARGES=BP_LINES.filter(function(l){return l.cat==='c';});
 const CHARGES_NO_AMORT=BP_LINES.filter(function(l){return l.cat==='c'&&l.id!=='amort'&&l.id!=='is'&&l.id!=='charges_fin';});
 
 // Construit un BP mensuel fidèle au dossier de financement Lattes (p.9)
+// Utilise les CA mensuels absolus calculés depuis les adhérents BP
 function buildBPFromDossier(annualCA,moisDebut,annee){
-  var ramp=annee===1?RAMP_A1:RAMP_CRUISE;
+  // Sélectionner la table de CA mensuel de référence selon l'année
+  // Si le CA passé diffère du CA de référence (studio custom), on scale proportionnellement
+  var caRef=annee===1?CA_A1:annee===2?CA_A2:CA_A3;
+  var caMensuelRef=annee===1?CA_MENSUEL_A1:annee===2?CA_MENSUEL_A2:CA_MENSUEL_A3;
+  var ratio=annualCA/caRef; // = 1.0 pour les studios standard, autre si CA custom
   var ch=BP_CHARGES_ANNUELLES[annee]||BP_CHARGES_ANNUELLES[3];
+
+  // IS annuel calculé sur le CA annuel réel
+  var caPrestaAnnuel=annualCA*0.969;
+  var royaltiesAnnuels=Math.round(caPrestaAnnuel*ch.royalties_pct);
+  var chargesOpAnnuelles=ch.fournitures+ch.loyer+ch.charges_loc+ch.coachs+royaltiesAnnuels
+    +ch.pub+ch.software+ch.assurance+ch.mutuelle+ch.nettoyage+ch.compta+ch.entretien
+    +ch.missions+ch.telecom+ch.social+ch.creditbail+ch.salaries+ch.impots_taxes+ch.amort;
+  var rexAnnuel=annualCA-chargesOpAnnuelles;
+  var rcaiAnnuel=rexAnnuel-ch.charges_fin;
+  var isAnnuel=rcaiAnnuel<=0?0:Math.round(Math.min(rcaiAnnuel,42500)*0.15+Math.max(0,rcaiAnnuel-42500)*0.25);
+
   return Array.from({length:12},function(_,i){
-    var ca=Math.round(annualCA*ramp[i]);
-    var caPresta=Math.round(ca*0.969); // 96.9% = cours+prives, base royalties
+    // CA mensuel = valeur absolue de référence × ratio (= valeur exacte si ratio=1)
+    var ca=Math.round(caMensuelRef[i]*ratio);
+    var caPresta=Math.round(ca*0.969);
     var row={mi:(moisDebut+i)%12,_ca:ca,annee:annee};
-    // Produits
-    row.ca_cours=Math.round(ca*0.984);
-    row.ca_prives=Math.round(ca*0.015);
-    row.ca_boutique=Math.round(ca*0.030);
-    // Charges mensualisées depuis annuelles
+    // Produits (répartition dossier : cours 95.5%, prives 1.5%, boutique 3%)
+    row.ca_cours=Math.round(ca*0.9848);  // 429k/435.6k
+    row.ca_prives=Math.round(ca*0.0152); // 6.6k/435.6k
+    row.ca_boutique=Math.round(ca*0.0294);// 13.2k/448.8k
+    // Charges fixes mensualisées exactement depuis annuelles
     row.fournitures=Math.round(ch.fournitures/12);
     row.loyer=Math.round(ch.loyer/12);
     row.charges_loc=Math.round(ch.charges_loc/12);
@@ -291,17 +311,6 @@ function buildBPFromDossier(annualCA,moisDebut,annee){
     row.impots=Math.round(ch.impots_taxes/12);
     row.amort=Math.round(ch.amort/12);
     row.charges_fin=Math.round(ch.charges_fin/12);
-
-    // IS : calculé sur base annuelle puis lissé mensuellement
-    // pour éviter les distorsions dues à la rampe mensuelle
-    var caPrestaAnnuel=annualCA*0.969;
-    var royaltiesAnnuels=Math.round(caPrestaAnnuel*ch.royalties_pct);
-    var chargesOpAnnuelles=ch.fournitures+ch.loyer+ch.charges_loc+ch.coachs+royaltiesAnnuels
-      +ch.pub+ch.software+ch.assurance+ch.mutuelle+ch.nettoyage+ch.compta+ch.entretien
-      +ch.missions+ch.telecom+ch.social+ch.creditbail+ch.salaries+ch.impots_taxes+ch.amort;
-    var rexAnnuel=annualCA-chargesOpAnnuelles;
-    var rcaiAnnuel=rexAnnuel-ch.charges_fin;
-    var isAnnuel=rcaiAnnuel<=0?0:Math.round(Math.min(rcaiAnnuel,42500)*0.15+Math.max(0,rcaiAnnuel-42500)*0.25);
     row.is=Math.round(isAnnuel/12);
 
     // Totaux mensuels
@@ -562,9 +571,15 @@ function renderAdherents(sid,s){
   for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
 
   var h='<div>';
-  h+='<div style="display:flex;gap:8px;margin-bottom:16px">';
+  h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  var bps3=build3YearBP(s.forecast||{});
   [1,2,3].forEach(function(y){
-    h+='<button class="yr-tab '+(ay===y?'active':'')+'" onclick="setAdherentYear('+y+')">Annee '+y+' ('+((s.forecast&&s.forecast.annee||2026)+(y-1))+')</button>';
+    var ys=y===1?bps3.a1:y===2?bps3.a2:bps3.a3;
+    var yCA=ys.reduce(function(s,r){return s+r._ca;},0);
+    h+='<button class="yr-tab '+(ay===y?'active':'')+'" onclick="setAdherentYear('+y+')" style="text-align:left;padding:6px 14px">';
+    h+='<div style="font-weight:600">Annee '+y+' ('+((s.forecast&&s.forecast.annee||2026)+(y-1))+')</div>';
+    h+='<div style="font-size:10px;opacity:0.8">CA BP '+fmt(yCA)+'</div>';
+    h+='</button>';
   });
   h+='</div>';
   h+='<div class="kpis" style="margin-bottom:16px">';
@@ -707,9 +722,17 @@ function renderForecast(sid,s){
 
   var h='<div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
+  // Utiliser la somme réelle des 12 mois pour chaque année — cohérent avec le tableau
   [1,2,3].forEach(function(y){
-    var yCA=y===1?(fc.annualCA||CA_A1):y===2?(fc.annualCA2||CA_A2):(fc.annualCA3||CA_A3);
-    h+='<button class="yr-tab '+(fy===y?'active':'')+'" onclick="setForecastYear('+y+')">A'+y+' ('+(( fc.annee||2026)+(y-1))+') &mdash; '+fmt(yCA)+'</button>';
+    var ys=y===1?bps.a1:y===2?bps.a2:bps.a3;
+    var yCAtotal=ys.reduce(function(s,r){return s+r._ca;},0);
+    var yRex=ys.reduce(function(s,r){return s+r._rex;},0);
+    var yRN=ys.reduce(function(s,r){return s+r._result;},0);
+    var isActive=fy===y;
+    h+='<button class="yr-tab '+(isActive?'active':'')+'" onclick="setForecastYear('+y+')" style="text-align:left;padding:6px 14px">';
+    h+='<div style="font-weight:600">A'+y+' ('+(( fc.annee||2026)+(y-1))+')</div>';
+    h+='<div style="font-size:10px;opacity:0.8">CA '+fmt(yCAtotal)+' &middot; RN '+(yRN>=0?'+':'')+fmt(yRN)+'</div>';
+    h+='</button>';
   });
   h+='</div>';
 
