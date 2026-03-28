@@ -331,8 +331,41 @@ const BP_RESULTATS={
   3:{ca:761841,charges:484752,rex:277089,rnet:207297,caf:253329,treso:217618,marge_rex:0.364,marge_nette:0.272},
 };
 
-const DEPENSE_CATS=['Travaux Amenagement','Equipements Pilates','Droit entree franchise','Honoraires Juridique','Marketing lancement','Depot garantie bail','Autre'];
-const DEPENSE_FINS=['Emprunt bancaire','Credit-bail','Fonds propres'];
+const DEPENSE_CATS=[
+  "Droit d'entrée franchise",
+  'Réservation de zone et assistance pré contractuelle',
+  'Formation initiale (Franchisé, Manager, 2 Sales)',
+  'Coaching Pré ventes (Road to 200)',
+  'Frais liés au bail (Dépôt Garantie + agence)',
+  'Construction et Architecte',
+  'Enseigne et décoration intérieure',
+  'Pack Équipement Pilates (leasing)',
+  'Pack de démarrage',
+  'Pack Marketing Lancement',
+  'Trésorerie',
+  'Autre',
+];
+const DEPENSE_FINS=['Emprunt bancaire','Crédit-bail (leasing)','Fonds propres'];
+const DEPENSE_CONTRIBUTORS=[
+  'SAS Isséo','SAS P&W Studios','Holding Coquel Immo','Pilatine','Holding Sabourin',
+  'Paul Bécaud','Pascal Bécaud','Tom Bécaud','Paul Sabourin','Caroline Coquel','Clément Coquel',
+];
+
+// ── Budget de référence par poste (source : dossier franchise) ────────────────
+const BUDGET_CAPEX_DETAIL=[
+  {label:"Droit d'entrée",montant:40000,fin:'Emprunt bancaire'},
+  {label:'Réservation de zone et assistance pré contractuelle',montant:10000,fin:'Emprunt bancaire'},
+  {label:'Formation initiale (Franchisé, Manager, 2 Sales)',montant:5000,fin:'Emprunt bancaire'},
+  {label:'Coaching Pré ventes (Road to 200)',montant:5000,fin:'Emprunt bancaire'},
+  {label:'Frais liés au bail (Dépôt Garantie + agence)',montant:25000,fin:'Emprunt bancaire'},
+  {label:'Construction et Architecte',montant:200000,fin:'Emprunt bancaire'},
+  {label:'Enseigne et décoration intérieure',montant:10000,fin:'Emprunt bancaire'},
+  {label:'Pack Équipement Pilates',montant:121600,fin:'Crédit-bail (leasing)',leasing:true},
+  {label:'Pack de démarrage',montant:28500,fin:'Emprunt bancaire'},
+  {label:'Pack Marketing Lancement',montant:10000,fin:'Fonds propres'},
+  {label:'Trésorerie',montant:20000,fin:'Fonds propres'},
+  {label:'Négos remise Groupe',montant:-20000,fin:null,remise:true},
+];
 const DEBLOCAGE={
   attente:{label:'A demander',bg:'#F1EFE8',color:'#5F5E5A'},
   demande:{label:'Demande',bg:'#FAEEDA',color:'#854F0B'},
@@ -518,6 +551,7 @@ var S={
   mapZoom:14,           // niveau de zoom carte (1-20)
   mapStreetView:false,  // mode street view
   mapCoords:{},         // coords geocodées par studio {sid: {lat,lon}}
+  showCapexDetail:{},   // toggle détail CAPEX par studio
 };
 
 async function loadAll(){
@@ -1516,9 +1550,13 @@ function renderEngagements(sid,s){
   // 3 blocs : CAPEX detail + Leasing highlight + résumé
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">';
 
-  // Bloc CAPEX
-  h+='<div style="border:1px solid #d0d9ec;border-radius:10px;padding:14px 16px">';
-  h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#1a3a6b;font-weight:700;margin-bottom:10px">CAPEX</div>';
+  // Bloc CAPEX (cliquable → détail)
+  var capexOpen=!!(S.showCapexDetail&&S.showCapexDetail[sid]);
+  h+='<div style="border:1px solid #d0d9ec;border-radius:10px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s" onclick="toggleCapexDetail(\''+sid+'\')" title="Cliquer pour voir le détail du budget">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
+  h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#1a3a6b;font-weight:700">CAPEX</div>';
+  h+='<div style="font-size:10px;color:#1a3a6b;font-weight:600;background:#e8eef8;padding:2px 8px;border-radius:20px">'+(capexOpen?'▲ Réduire':'▼ Détail')+'</div>';
+  h+='</div>';
   h+='<div style="font-size:20px;font-weight:700;color:#0f1f3d;letter-spacing:-0.5px;margin-bottom:12px">'+fmt(capex)+'</div>';
   // Mini barre emprunt/FP
   h+='<div style="height:6px;border-radius:4px;overflow:hidden;display:flex;gap:1px;margin-bottom:8px">';
@@ -1547,7 +1585,47 @@ function renderEngagements(sid,s){
   h+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#0F6E56">Fonds propres</span><b>'+fmt(fp)+'</b></div>';
   h+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#92630a">Leasing</span><b>'+fmt(leasing)+'</b></div>';
   h+='</div></div>';
-  h+='</div></div></div>';
+  h+='</div>';
+
+  // ── Détail CAPEX expandable ──────────────────────────────────────────────────
+  if(capexOpen){
+    var grossTotal=BUDGET_CAPEX_DETAIL.reduce(function(s,r){return s+(r.montant>0?r.montant:0);},0);
+    var netTotal=BUDGET_CAPEX_DETAIL.reduce(function(s,r){return s+r.montant;},0)+121600; // +leasing for gross invest display
+    h+='<div style="margin:14px 0 0;border:1px solid #d0d9ec;border-radius:10px;overflow:hidden">';
+    h+='<div style="background:#f0f4fa;padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #d0d9ec">';
+    h+='<div style="width:3px;height:16px;background:#1a3a6b;border-radius:2px"></div>';
+    h+='<div style="font-size:11px;font-weight:700;color:#1a3a6b">Détail du budget CAPEX</div>';
+    h+='<div style="margin-left:auto;font-size:10px;color:#64748b">Budget brut : <b style="color:#0f1f3d">'+fmt(grossTotal)+'</b> &nbsp;|&nbsp; Net hors leasing : <b style="color:#0f1f3d">'+fmt(grossTotal-121600)+'</b></div>';
+    h+='</div>';
+    h+='<div style="padding:4px 0">';
+    h+='<table style="width:100%;border-collapse:collapse">';
+    h+='<tr style="background:#f8f9fb"><th style="text-align:left;padding:8px 16px;font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Poste</th>';
+    h+='<th style="text-align:right;padding:8px 16px;font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Montant</th>';
+    h+='<th style="text-align:center;padding:8px 16px;font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Financement</th></tr>';
+    BUDGET_CAPEX_DETAIL.forEach(function(row,idx){
+      var rowBg=row.remise?'#f0fdf4':row.leasing?'#fffdf0':idx%2===0?'#ffffff':'#fafafa';
+      var amtColor=row.remise?'#0F6E56':row.leasing?'#92630a':'#0f1f3d';
+      var amtPrefix=row.remise?'− ':'';
+      var finBadge='';
+      if(row.fin==='Crédit-bail (leasing)') finBadge='<span style="background:#fef3c7;color:#92630a;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">Leasing</span>';
+      else if(row.fin==='Emprunt bancaire') finBadge='<span style="background:#dbeafe;color:#1a3a6b;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">Emprunt</span>';
+      else if(row.fin==='Fonds propres') finBadge='<span style="background:#d1fae5;color:#065f46;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">Fonds propres</span>';
+      else finBadge='<span style="background:#fef3c7;color:#0F6E56;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">Remise</span>';
+      h+='<tr style="background:'+rowBg+';border-top:1px solid #f0f0f0">';
+      h+='<td style="padding:9px 16px;font-size:12px;color:#1a1a2e">'+row.label+(row.leasing?' <span style="font-size:9px;color:#92630a">(leasing)</span>':'')+(row.remise?' <span style="font-size:9px;color:#0F6E56">✓ remise groupe</span>':'')+'</td>';
+      h+='<td style="padding:9px 16px;font-size:12px;font-weight:700;color:'+amtColor+';text-align:right">'+amtPrefix+fmt(Math.abs(row.montant))+'</td>';
+      h+='<td style="padding:9px 16px;text-align:center">'+finBadge+'</td>';
+      h+='</tr>';
+    });
+    // Total row
+    h+='<tr style="background:#f0f4fa;border-top:2px solid #d0d9ec">';
+    h+='<td style="padding:10px 16px;font-size:12px;font-weight:700;color:#0f1f3d">Total CAPEX (hors leasing)</td>';
+    h+='<td style="padding:10px 16px;font-size:14px;font-weight:700;color:#1a3a6b;text-align:right">'+fmt(capex)+'</td>';
+    h+='<td style="padding:10px 16px;text-align:center"><span style="font-size:10px;color:#64748b">333 500 €</span></td>';
+    h+='</tr>';
+    h+='</table></div></div>';
+  }
+  h+='</div></div>';
 
   // ── Suivi des dépenses ──────────────────────────────────────────────────────
   h+='<div class="box" style="margin-bottom:14px">';
@@ -1610,6 +1688,12 @@ function renderEngagements(sid,s){
   return h;
 }
 
+function toggleCapexDetail(sid){
+  if(!S.showCapexDetail)S.showCapexDetail={};
+  S.showCapexDetail[sid]=!S.showCapexDetail[sid];
+  renderDetail(sid);
+}
+
 function ouvrirFormDepense(sid){
   var div=document.getElementById('form-depense-'+sid);
   if(!div)return;
@@ -1623,7 +1707,9 @@ function ouvrirFormDepense(sid){
   h+='<div class="fg"><label>Financement</label><select id="dep-fin">';
   DEPENSE_FINS.forEach(function(f){h+='<option>'+f+'</option>';});
   h+='</select></div>';
-  h+='<div class="fg"><label>Engage par</label><select id="dep-par"><option>Paul Becaud</option><option>Pascal Becaud</option><option>Tom Becaud</option><option>Paul Sabourin</option><option>Caroline Coquel</option><option>Clement Coquel</option></select></div>';
+  h+='<div class="fg"><label>Engag&eacute; par</label><select id="dep-par"><option value="">Sélectionner...</option>';
+  DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option>'+c+'</option>';});
+  h+='</select></div>';
   h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div>';
   h+='</div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderDepense(\''+sid+'\')">Enregistrer</button>';
   h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
