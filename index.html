@@ -811,7 +811,9 @@ function renderAdminPanel(){
 }
 
 async function saveAdminSettings(){
-  await sb.from('studios').upsert({id:'_admin_settings',data:{settings:S.adminSettings},updated_at:new Date().toISOString()});
+  var res=await sb.from('studios').upsert({id:'_admin_settings',data:{settings:S.adminSettings},updated_at:new Date().toISOString()});
+  if(res.error){toast('Erreur sauvegarde: '+res.error.message);return false;}
+  return true;
 }
 
 async function toggleUserAccess(uid,block){
@@ -820,7 +822,8 @@ async function toggleUserAccess(uid,block){
   if(block){if(blocked.indexOf(uid)<0)blocked.push(uid);}
   else{blocked=blocked.filter(function(id){return id!==uid;});}
   S.adminSettings.blocked=blocked;
-  await saveAdminSettings();
+  var ok=await saveAdminSettings();
+  if(ok)toast(block?'Accès suspendu.':'Accès réactivé.');
   render();
 }
 
@@ -828,8 +831,9 @@ async function setUserRole(uid,role){
   if(!isSuperAdmin())return;
   if(!S.adminSettings.roles)S.adminSettings.roles={};
   S.adminSettings.roles[uid]=role;
-  await saveAdminSettings();
-  // Pas de re-render complet pour ne pas perdre le select focus
+  var ok=await saveAdminSettings();
+  var label=ROLE_LABELS[role]||role;
+  if(ok)toast('Rôle mis à jour : '+label+'. Effectif sous 5s pour l\'utilisateur.');
 }
 
 function renderDashboard(){
@@ -2356,7 +2360,10 @@ function isSuperAdmin(){
   return nom==='paul'||nom==='tom';
 }
 function isViewer(){
-  return !!(S.profile&&S.profile.role==='viewer');
+  // Double vérification : S.profile.role ET adminSettings.roles directement
+  if(S.profile&&S.profile.role==='viewer')return true;
+  if(S.user&&S.adminSettings&&S.adminSettings.roles&&S.adminSettings.roles[S.user.id]==='viewer')return true;
+  return false;
 }
 
 var _inactivityTimer=null;
