@@ -331,6 +331,32 @@ const BP_RESULTATS={
   3:{ca:761841,charges:484752,rex:277089,rnet:207297,caf:253329,treso:217618,marge_rex:0.364,marge_nette:0.272},
 };
 
+// ── Charges & résultats pour sites hors Lattes (loyer 4 800€/mois HT) ─────────
+// Lattes : loyer annuel Y2/Y3 = 38 850€ (≈3 238€/mois). Autres sites : 4 800€/mois.
+// Y1 : 5 mois de loyer (bail signé ~août, ouverture septembre) = 24 000€
+// Y2/Y3 : 12 mois × 4 800 = 57 600€  → delta vs Lattes : +7200 Y1, +18750 Y2/Y3
+const BP_CHARGES_ANNUELLES_OTHER={
+  1:{fournitures:13500,loyer:24000,charges_loc:2300,coachs:120000,royalties_pct:0.09,pub:30600,software:5460,assurance:2400,mutuelle:0,nettoyage:3800,compta:2500,entretien:1800,missions:20000,telecom:1200,social:648,creditbail:26370,salaries:90000,impots_taxes:3815,amort:46033,charges_fin:8574},
+  2:{fournitures:13500,loyer:57600,charges_loc:2300,coachs:120000,royalties_pct:0.09,pub:30600,software:5460,assurance:2400,mutuelle:2400,nettoyage:3800,compta:2500,entretien:1800,missions:4000,telecom:1200,social:1296,creditbail:20040,salaries:94225,impots_taxes:5187,amort:46033,charges_fin:7488},
+  3:{fournitures:13500,loyer:57600,charges_loc:2300,coachs:130000,royalties_pct:0.09,pub:30600,software:5460,assurance:2400,mutuelle:2400,nettoyage:3800,compta:2500,entretien:1800,missions:4000,telecom:1200,social:1296,creditbail:20040,salaries:105470,impots_taxes:6476,amort:46032,charges_fin:6359},
+};
+// Résultats recalculés : rex = CA - charges (loyer ajusté), IS recalculé, CAF = rnet+amort, tréso = CAF - 35711 (annuité fixe)
+const BP_RESULTATS_OTHER={
+  1:{ca:448800,charges:433630,rex:15170,rnet:5607,caf:51640,treso:15929,marge_rex:0.034,marge_nette:0.013},
+  2:{ca:610190,charges:467644,rex:142546,rnet:105544,caf:151577,treso:115866,marge_rex:0.234,marge_nette:0.173},
+  3:{ca:761841,charges:503502,rex:258339,rnet:193235,caf:239267,treso:203556,marge_rex:0.339,marge_nette:0.254},
+};
+
+// Helper : renvoie les bonnes charges/résultats selon le studio
+function isLattesStudio(sid){return sid==='lattes';}
+function getStudioCharges(sid,annee){
+  var tbl=isLattesStudio(sid)?BP_CHARGES_ANNUELLES:BP_CHARGES_ANNUELLES_OTHER;
+  return tbl[annee]||tbl[3];
+}
+function getStudioResultats(sid){
+  return isLattesStudio(sid)?BP_RESULTATS:BP_RESULTATS_OTHER;
+}
+
 const DEPENSE_CATS=[
   "Droit d'entrée franchise",
   'Réservation de zone et assistance pré contractuelle',
@@ -435,13 +461,13 @@ const CHARGES_NO_AMORT=BP_LINES.filter(function(l){return l.cat==='c'&&l.id!=='a
 
 // Construit un BP mensuel fidèle au dossier de financement Lattes (p.9)
 // Utilise les CA mensuels absolus calculés depuis les adhérents BP
-function buildBPFromDossier(annualCA,moisDebut,annee){
+function buildBPFromDossier(annualCA,moisDebut,annee,sid){
   // Sélectionner la table de CA mensuel de référence selon l'année
   // Si le CA passé diffère du CA de référence (studio custom), on scale proportionnellement
   var caRef=annee===1?CA_A1:annee===2?CA_A2:CA_A3;
   var caMensuelRef=annee===1?CA_MENSUEL_A1:annee===2?CA_MENSUEL_A2:CA_MENSUEL_A3;
   var ratio=annualCA/caRef; // = 1.0 pour les studios standard, autre si CA custom
-  var ch=BP_CHARGES_ANNUELLES[annee]||BP_CHARGES_ANNUELLES[3];
+  var ch=getStudioCharges(sid||'lattes',annee);
 
   // Royalties annuelles exactes du dossier (pas de recalcul approximatif)
   var royaltiesAnnuelles=annee===1?39204:annee===2?53303:66628;
@@ -504,18 +530,18 @@ function buildBPFromDossier(annualCA,moisDebut,annee){
   });
 }
 
-function buildBP(annualCA,moisDebut,ramp){
+function buildBP(annualCA,moisDebut,ramp,sid){
   var annee=annualCA<=(CA_A1*1.1)?1:annualCA<=(CA_A2*1.1)?2:3;
-  return buildBPFromDossier(annualCA,moisDebut,annee);
+  return buildBPFromDossier(annualCA,moisDebut,annee,sid);
 }
 
-function build3YearBP(forecast){
+function build3YearBP(forecast,sid){
   var md=forecast.moisDebut||0;
   // On utilise TOUJOURS les CA du dossier de financement — les valeurs Supabase sont ignorées
   return {
-    a1:buildBPFromDossier(CA_A1,md,1),
-    a2:buildBPFromDossier(CA_A2,md,2),
-    a3:buildBPFromDossier(CA_A3,md,3),
+    a1:buildBPFromDossier(CA_A1,md,1,sid),
+    a2:buildBPFromDossier(CA_A2,md,2,sid),
+    a3:buildBPFromDossier(CA_A3,md,3,sid),
   };
 }
 
@@ -778,7 +804,7 @@ function renderWorkflow(s){
 
 // ── Infographie KPIs prévisionnels 3 ans — onglet Workflow ────────────────────
 function renderBP3YInfographic(sid,s){
-  var bp=build3YearBP(s.forecast||{});
+  var bp=build3YearBP(s.forecast||{},sid);
   var annee0=s.forecast&&s.forecast.annee||2026;
   var md=s.forecast&&s.forecast.moisDebut||0;
 
@@ -815,7 +841,7 @@ function renderBP3YInfographic(sid,s){
   var SIM_YR=[0,1,2].map(function(yi){
     var caM=simMonthlyCA.slice(yi*12,(yi+1)*12);
     var caAn=caM.reduce(function(s,v){return s+v;},0);
-    var rows=buildBP(caAn,md);
+    var rows=buildBP(caAn,md,null,sid);
     var eb=rows.reduce(function(s,r){return s+(r._ebitda||0);},0);
     return{ca:caAn,ebitda:eb};
   });
@@ -1059,7 +1085,7 @@ function renderAdherents(sid,s){
 
   var h='<div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
-  var bps3=build3YearBP(s.forecast||{});
+  var bps3=build3YearBP(s.forecast||{},sid);
   [1,2,3].forEach(function(y){
     var ys=y===1?bps3.a1:y===2?bps3.a2:bps3.a3;
     var yCA=ys.reduce(function(s,r){return s+r._ca;},0);
@@ -1168,7 +1194,7 @@ function renderForecast(sid,s){
   var fy=S.forecastYear||1;
   var fs=S.forecastSection||'summary';
   var fc=s.forecast||{};
-  var bps=build3YearBP(fc);
+  var bps=build3YearBP(fc,sid);
   var bp=fy===1?bps.a1:fy===2?bps.a2:bps.a3;
   var actuelKey=fy===1?'actuel':fy===2?'actuel2':'actuel3';
   var actuel=fc[actuelKey]||{};
@@ -1203,7 +1229,7 @@ function renderForecast(sid,s){
   var refCA=rm.reduce(function(s,t){return s+t.bpCA;},0);
   var ecartCA=refCA?Math.round((cumActCA/refCA-1)*100):0;
   // Référence dossier pour l'année sélectionnée
-  var refDossier=BP_RESULTATS[fy]||BP_RESULTATS[1];
+  var refDossier=(getStudioResultats(sid))[fy]||(getStudioResultats(sid))[1];
   var moisLabels=[];
   for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
 
@@ -1368,11 +1394,11 @@ function renderForecast(sid,s){
     var rembt=Math.round(214340/7); // 35 711€/an (7 ans à 4%)
     var sTreso1=sCAF1-rembt,sTreso2=sCAF2-rembt,sTreso3=sCAF3-rembt;
     // Valeurs dossier pour comparaison
-    var ref=BP_RESULTATS;
+    var ref=getStudioResultats(sid);
     h+='<div class="box">';
     h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">';
     h+='<div style="font-weight:600;font-size:14px">Recapitulatif 3 ans &mdash; Dossier Financement</div>';
-    h+='<div style="font-size:11px;color:#888;background:#f0f0ea;padding:3px 10px;border-radius:6px">Ref. Lattes p.9</div>';
+    h+='<div style="font-size:11px;color:#888;background:#f0f0ea;padding:3px 10px;border-radius:6px">'+(isLattesStudio(sid)?'Ref. Lattes p.9':'Loyer 4 800€/mois')+'</div>';
     h+='</div>';
     h+='<div style="overflow-x:auto"><table>';
     h+='<tr><th style="text-align:left;padding-left:8px;min-width:200px">Indicateur</th>';
@@ -2445,8 +2471,10 @@ async function askAI(){
   var leasing=s.leasing||121600;
   var rembtAn=Math.round(emprunt/7);        // remboursement capital/an (7 ans)
   var leasingAn=Math.round(leasing/60*12);  // mensualités leasing annualisées (5 ans)
-  var r1=BP_RESULTATS[1],r2=BP_RESULTATS[2],r3=BP_RESULTATS[3];
-  var c1=BP_CHARGES_ANNUELLES[1],c2=BP_CHARGES_ANNUELLES[2],c3=BP_CHARGES_ANNUELLES[3];
+  var _aiSid=S.selectedId;
+  var _aiRef=getStudioResultats(_aiSid);
+  var r1=_aiRef[1],r2=_aiRef[2],r3=_aiRef[3];
+  var c1=getStudioCharges(_aiSid,1),c2=getStudioCharges(_aiSid,2),c3=getStudioCharges(_aiSid,3);
   var ebitda1=Math.round(r1.rex+c1.amort+c1.charges_fin);
   var ebitda2=Math.round(r2.rex+c2.amort+c2.charges_fin);
   var ebitda3=Math.round(r3.rex+c3.amort+c3.charges_fin);
@@ -2497,7 +2525,7 @@ async function askAI(){
       if(reel!==null)hasReal=true;
     }
     var simCaAn=simCaMois.reduce(function(s,v){return s+v;},0);
-    var simRows=buildBP(simCaAn,md);
+    var simRows=buildBP(simCaAn,md,null,_aiSid);
     var simEbitda=simRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
     var simRex=simRows.reduce(function(s,r){return s+(r._rex||0);},0);
     var simRnet=simRows.reduce(function(s,r){return s+(r._result||0);},0);
@@ -2572,9 +2600,9 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   var total=p4+p8+pi;
   // ── EBITDA simulé : recalcul BP avec le CA simulé ──
   var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
-  var simBPRows=buildBP(caAnnuel,md);
+  var simBPRows=buildBP(caAnnuel,md,null,sid);
   var ebitdaSim=simBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var bpRows=buildBP(caBPAnnuel,md);
+  var bpRows=buildBP(caBPAnnuel,md,null,sid);
   var ebitdaBP=bpRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
   var ebitdaEcart=ebitdaSim-ebitdaBP;
@@ -2769,9 +2797,10 @@ function _refreshSimCA(sid,ay){
   var lastM=membres[membres.length-1];
   if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg)/lastM)):'--';
   // Mise à jour EBITDA simulé en live
-  var simBPRowsLive=buildBP(caAnnuel,moisDebut);
+  var _liveSid=S.selectedId;
+  var simBPRowsLive=buildBP(caAnnuel,moisDebut,null,_liveSid);
   var ebitdaSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var bpRowsLive=buildBP(caBPAnnuel,moisDebut);
+  var bpRowsLive=buildBP(caBPAnnuel,moisDebut,null,_liveSid);
   var ebitdaBPLive=bpRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMarginLive=caAnnuel>0?Math.round(ebitdaSimLive/caAnnuel*100):0;
   var ebitdaEcartLive=ebitdaSimLive-ebitdaBPLive;
