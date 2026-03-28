@@ -1904,8 +1904,10 @@ function renderEngagements(sid,s){
   var _capexTots=computeCapexTotals(_capexDet);
   var capex=_capexTots.capex||s.capex||333500;
   var leasing=_capexTots.leasing||s.leasing||121600;
-  var emprunt=s.emprunt||230000;
-  var fp=capex-emprunt; // Fonds propres
+  // Emprunt : si CAPEX customisé, on scale à 70% du CAPEX (ratio dossier de référence)
+  var _hasCustomCapex=s.capexDetail&&Object.keys(s.capexDetail||{}).length>0;
+  var emprunt=_hasCustomCapex?Math.round(capex*0.70):(s.emprunt||230000);
+  var fp=capex-emprunt; // Fonds propres = 30% du CAPEX si custom, sinon valeur sauvegardée
   var totalInvest=capex+leasing;
   // Répartition financement CAPEX (barres proportionnelles)
   var pctEmprunt=Math.round(emprunt/capex*100);
@@ -2946,7 +2948,7 @@ async function askAI(){
       var membres=reel!==null?reel:bpM;
       bpMois.push(bpM);
       realMois.push(reel);
-      simCaMois.push(computeSimCA(membres,cfg));
+      simCaMois.push(computeSimCA(membres,cfg,ay));
       if(reel!==null)hasReal=true;
     }
     var simCaAn=simCaMois.reduce(function(s,v){return s+v;},0);
@@ -3000,24 +3002,35 @@ function computeBPCA(membres,ay){
   return Math.round(membres*(SIM_ARPU_TOTAL_BP[ay]||SIM_ARPU_TOTAL_BP[1]));
 }
 
-// ARPU simulé packs = pondération des prix choisis
-// Pour cohérence avec BP : prix affichés = prix calibrés (packs × facteur boutique incluse)
-// Facteurs A1=1.0638 A2=1.0106 A3=1.0845 — on utilise A1 comme référence d'affichage
-// Prix de référence affichés dans l'UI = prix calibrés A1
-var SIM_PRIX_REF={prix4:110,prix8:193.33,prixi:276.67}; // Prix BP de référence (dossier officiel)
+// Prix BP de référence (dossier officiel)
+var SIM_PRIX_REF={prix4:110,prix8:193.33,prixi:276.67};
+
+// ARPU packs seuls au défaut BP (sans boutique/privés) = 0.47×110 + 0.50×193.33 + 0.03×276.67
+var _BP_PACK_ARPU_DEF=0.47*110+0.50*193.33+0.03*276.67; // ≈ 156.665
+
+// Facteur boutique par année : garantit que CA_sim = CA_BP quand prix = prix BP défaut
+// À défauts (47/50/3, 110/193.33/276.67) → CA_sim = CA_BP exactement
+var SIM_BOUTIQUE_FACTOR={
+  1:SIM_ARPU_TOTAL_BP[1]/_BP_PACK_ARPU_DEF,   // ≈ 1.0638
+  2:SIM_ARPU_TOTAL_BP[2]/_BP_PACK_ARPU_DEF,   // ≈ 1.0106
+  3:SIM_ARPU_TOTAL_BP[3]/_BP_PACK_ARPU_DEF,   // ≈ 1.0845
+};
 
 function computeSimARPU(cfg){
   var p4=num(cfg.p4,47)/100, p8=num(cfg.p8,50)/100, pi=num(cfg.pi,3)/100;
   return p4*num(cfg.prix4,SIM_PRIX_REF.prix4) + p8*num(cfg.prix8,SIM_PRIX_REF.prix8) + pi*num(cfg.prixi,SIM_PRIX_REF.prixi);
 }
 
-function computeSimCA(membres,cfg){
-  return Math.round(membres*computeSimARPU(cfg));
+// CA simulé mensuel = membres × ARPU_packs × facteur_boutique(année)
+// Cohérence garantie : au défaut BP, CA_sim = CA_BP exact
+function computeSimCA(membres,cfg,ay){
+  var f=SIM_BOUTIQUE_FACTOR[ay]||SIM_BOUTIQUE_FACTOR[1];
+  return Math.round(membres*computeSimARPU(cfg)*f);
 }
 
 function renderSimCA(sid,ay,bpArr,realArr,cfg){
   var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
-  var caArr=membres.map(function(m){return computeSimCA(m,cfg);});
+  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay);});
   var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
   // CA BP référence = somme directe des CA mensuels dossier (écart 0 avec ARPU_BP)
   var caBPAnnuel=bpArr.map(function(m){return computeBPCA(m,ay);}).reduce(function(s,v){return s+v;},0);
@@ -3095,7 +3108,7 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   // ARPU simulé
   var lastMembres=membres[membres.length-1];
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">ARPU moyen/mois</div>';
-  h+='<div id="sim-arpu" style="font-size:15px;font-weight:600;color:#854F0B">'+(lastMembres>0?fmt(Math.round(computeSimCA(lastMembres,cfg)/lastMembres)):'--')+'</div></div>';
+  h+='<div id="sim-arpu" style="font-size:15px;font-weight:600;color:#854F0B">'+(lastMembres>0?fmt(Math.round(computeSimCA(lastMembres,cfg,ay)/lastMembres)):'--')+'</div></div>';
   // ── EBITDA simulé ──
   h+='<div style="border-top:0.5px solid #e0e0d8;grid-column:1/-1;margin:4px 0 -4px"></div>';
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA simul&eacute;</div>';
@@ -3220,7 +3233,7 @@ function _refreshSimCA(sid,ay){
   var ecartCA=caAnnuel-caBPAnnuel;
   if(elEcart){elEcart.textContent=(ecartCA>=0?'+':'')+fmt(ecartCA);elEcart.style.color=ecartCA>=0?'#3B6D11':'#A32D2D';}
   var lastM=membres[membres.length-1];
-  if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg)/lastM)):'--';
+  if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg,ay)/lastM)):'--';
   // Mise à jour EBITDA simulé en live
   var _liveSid=S.selectedId;
   var simBPRowsLive=buildBP(caAnnuel,moisDebut,null,_liveSid,getStudioBPOpts(_liveSid));
