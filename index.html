@@ -1776,12 +1776,14 @@ function renderAI(s){
   var h='<div>';
   // Header
   h+='<div class="box" style="padding:0;overflow:hidden;margin-bottom:14px">';
-  h+='<div style="background:linear-gradient(135deg,#1a3a6b,#0f2348);padding:16px 20px;display:flex;align-items:center;gap:12px">';
-  h+='<div style="width:36px;height:36px;background:rgba(255,255,255,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">✦</div>';
-  h+='<div>';
-  h+='<div style="font-size:14px;font-weight:700;color:#fff">Analyste IA &mdash; '+s.name+'</div>';
-  h+='<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">Propuls&eacute; par Mistral AI &middot; Contexte financier int&eacute;gr&eacute;</div>';
-  h+='</div></div>';
+  h+='<div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:16px 22px;display:flex;align-items:center;gap:14px">';
+  h+='<div style="width:38px;height:38px;background:#f0f4fc;border:1px solid #d0d9ec;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;color:#1a3a6b;flex-shrink:0">✦</div>';
+  h+='<div style="flex:1">';
+  h+='<div style="font-size:15px;font-weight:700;color:#0f1f3d;letter-spacing:-0.3px">Analyste IA &mdash; <span style="color:#1a3a6b">'+s.name+'</span></div>';
+  h+='<div style="font-size:10.5px;color:#94a3b8;margin-top:2px;letter-spacing:0.1px">Propuls&eacute; par Mistral AI &middot; Contexte financier int&eacute;gr&eacute;</div>';
+  h+='</div>';
+  h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#1a3a6b;font-weight:700;background:#f0f4fc;border:1px solid #d0d9ec;border-radius:20px;padding:4px 10px">IA</div>';
+  h+='</div>';
   // Zone saisie
   h+='<div style="padding:16px 20px 20px">';
   h+='<div style="display:flex;gap:8px;margin-bottom:12px">';
