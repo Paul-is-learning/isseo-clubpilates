@@ -748,7 +748,9 @@ async function saveAdherents(sid){
 var _tauxTimeout={};
 var _tauxPending={}; // bloque l'écrasement par syncData pendant le debounce
 function saveTauxInteret(sid,valPct){
-  var taux=Math.max(0.1,Math.min(15,valPct))/100;
+  // Ignorer les valeurs vides, nulles ou hors plage raisonnable
+  if(!valPct||isNaN(valPct)||valPct<1||valPct>15)return;
+  var taux=valPct/100;
   if(!S.studios[sid])return;
   // Mise à jour locale immédiate
   S.studios[sid].tauxInteret=taux;
@@ -2057,7 +2059,7 @@ function renderEngagements(sid,s){
   h+='<span style="color:#555;font-size:10.5px">Taux d\'int&eacute;r&ecirc;t</span>';
   if(isAdmin){
     h+='<div style="display:flex;align-items:center;gap:3px">';
-    h+='<input type="number" value="'+_tauxPct+'" min="0.5" max="15" step="0.1" id="eng-taux-input" oninput="saveTauxInteret(\''+sid+'\',+this.value)" style="width:50px;padding:3px 6px;border:1px solid #d0d9ec;border-radius:6px;font-size:12px;font-weight:700;color:#1a3a6b;text-align:right;outline:none;background:#f5f7fd">';
+    h+='<input type="number" value="'+_tauxPct+'" min="1" max="15" step="0.1" id="eng-taux-input" onchange="saveTauxInteret(\''+sid+'\',+this.value)" style="width:50px;padding:3px 6px;border:1px solid #d0d9ec;border-radius:6px;font-size:12px;font-weight:700;color:#1a3a6b;text-align:right;outline:none;background:#f5f7fd">';
     h+='<span style="font-size:11px;color:#64748b;font-weight:600">%</span>';
     h+='</div>';
   }else{
