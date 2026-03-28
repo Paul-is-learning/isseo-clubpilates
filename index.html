@@ -2543,11 +2543,9 @@ function calcPopZone(sid,radiusM){
   if(!densityItem)return null;
   var density=parseDemographicNum(densityItem.kpi);
   if(!density)return null;
-  var maxPop=popItem?parseDemographicNum(popItem.kpi):0;
   var radiusKm=radiusM/1000;
   var areaKm2=Math.PI*radiusKm*radiusKm;
   var estPop=Math.round(density*areaKm2);
-  if(maxPop>0)estPop=Math.min(estPop,Math.round(maxPop*0.9));
   return{estPop:estPop,density:density,areaKm2:Math.round(areaKm2*10)/10};
 }
 
