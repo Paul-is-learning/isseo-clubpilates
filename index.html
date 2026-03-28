@@ -2113,19 +2113,24 @@ async function askAI(){
   ctx+='CA BP : A1='+fmt(s.forecast&&s.forecast.annualCA||CA_A1)+', A2='+fmt(s.forecast&&s.forecast.annualCA2||CA_A2)+', A3='+fmt(s.forecast&&s.forecast.annualCA3||CA_A3)+'. ';
   ctx+='CAPEX : '+fmt(s.capex||333500)+', Emprunt : '+fmt(s.emprunt||230000)+', Leasing équipement : '+fmt(s.leasing||121600)+'.';
   try{
+    // Récupérer le vrai token JWT de session
+    var sessRes=await sb.auth.getSession();
+    var jwt=(sessRes.data&&sessRes.data.session&&sessRes.data.session.access_token)||'';
+    var ANON_JWT='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndmcXRwY3VqdWpxeGdmc2dicHZwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ1OTc4NjQsImV4cCI6MjA5MDE3Mzg2NH0.nxIQe-02Nts6xDD4SVJY67XnxbsESd27mZj7i3Re4I8';
+    var token=jwt||ANON_JWT;
     var r=await fetch(SURL+'/functions/v1/ask-ai',{
       method:'POST',
       headers:{
         'Content-Type':'application/json',
-        'apikey':SKEY,
-        'Authorization':'Bearer '+SKEY
+        'apikey':ANON_JWT,
+        'Authorization':'Bearer '+token
       },
       body:JSON.stringify({question:q.value.trim(),context:ctx})
     });
     var d=await r.json();
     if(d.error)S.aiResp='⚠️ '+d.error;
     else S.aiResp=d.text||'Pas de réponse.';
-  }catch(e){S.aiResp='❌ Erreur de connexion : '+e.message;}
+  }catch(e){S.aiResp='❌ Erreur : '+e.message;}
   S.aiLoading=false;render();
 }
 
