@@ -352,12 +352,50 @@ const BP_RESULTATS_OTHER={
 
 // Helper : renvoie les bonnes charges/résultats selon le studio
 function isLattesStudio(sid){return sid==='lattes';}
-function getStudioCharges(sid,annee){
+function getStudioCharges(sid,annee,lm){
   var tbl=isLattesStudio(sid)?BP_CHARGES_ANNUELLES:BP_CHARGES_ANNUELLES_OTHER;
-  return tbl[annee]||tbl[3];
+  var ch=Object.assign({},tbl[annee]||tbl[3]);
+  // Loyer mensuel custom (règle i) : remplace la ligne loyer dans les charges
+  if(lm!=null&&lm>0)ch.loyer=Math.round(lm*12);
+  return ch;
 }
 function getStudioResultats(sid){
   return isLattesStudio(sid)?BP_RESULTATS:BP_RESULTATS_OTHER;
+}
+
+// ── Helpers CAPEX custom & loyer ─────────────────────────────────────────────
+// Renvoie le détail CAPEX pour un studio avec les montants custom si définis
+function getCapexDetailForStudio(sid){
+  var s=S.studios[sid];
+  var ov=s&&s.capexDetail||{};
+  return BUDGET_CAPEX_DETAIL.map(function(line,i){
+    var key='l'+i;
+    var montant=ov[key]!==undefined?ov[key]:line.montant;
+    return Object.assign({},line,{montant:montant});
+  });
+}
+// Calcule les totaux capex/leasing depuis un détail
+function computeCapexTotals(detail){
+  var capex=0,leasing=0;
+  detail.forEach(function(line){
+    if(line.leasing){leasing+=line.montant;}
+    else{capex+=line.montant;} // inclut la remise (négatif)
+  });
+  return{capex:capex,leasing:leasing};
+}
+// Renvoie les opts BP d'un studio (loyer + capex custom)
+function getStudioBPOpts(sid){
+  var s=S.studios[sid];
+  if(!s)return{};
+  var opts={};
+  if(s.loyer_mensuel>0)opts.lm=s.loyer_mensuel;
+  if(s.capexDetail&&Object.keys(s.capexDetail).length>0){
+    var det=getCapexDetailForStudio(sid);
+    var tots=computeCapexTotals(det);
+    opts.capex=tots.capex;
+    opts.leasing=tots.leasing;
+  }
+  return opts;
 }
 
 const DEPENSE_CATS=[
@@ -465,13 +503,21 @@ const CHARGES_NO_AMORT=BP_LINES.filter(function(l){return l.cat==='c'&&l.id!=='a
 
 // Construit un BP mensuel fidèle au dossier de financement Lattes (p.9)
 // Utilise les CA mensuels absolus calculés depuis les adhérents BP
-function buildBPFromDossier(annualCA,moisDebut,annee,sid){
+function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
+  opts=opts||{};
   // Sélectionner la table de CA mensuel de référence selon l'année
   // Si le CA passé diffère du CA de référence (studio custom), on scale proportionnellement
   var caRef=annee===1?CA_A1:annee===2?CA_A2:CA_A3;
   var caMensuelRef=annee===1?CA_MENSUEL_A1:annee===2?CA_MENSUEL_A2:CA_MENSUEL_A3;
   var ratio=annualCA/caRef; // = 1.0 pour les studios standard, autre si CA custom
-  var ch=getStudioCharges(sid||'lattes',annee);
+  var ch=getStudioCharges(sid||'lattes',annee,opts.lm);
+  // Régler amort proportionnellement au CAPEX custom (règle ii)
+  var CAPEX_REF=333500,LEASING_REF=121600;
+  if(opts.capex&&opts.capex>0&&Math.round(opts.capex)!==CAPEX_REF)
+    ch.amort=Math.round(ch.amort*opts.capex/CAPEX_REF);
+  // Régler creditbail proportionnellement au leasing custom
+  if(opts.leasing&&opts.leasing>0&&Math.round(opts.leasing)!==LEASING_REF)
+    ch.creditbail=Math.round(ch.creditbail*opts.leasing/LEASING_REF);
 
   // Royalties annuelles exactes du dossier (pas de recalcul approximatif)
   var royaltiesAnnuelles=annee===1?39204:annee===2?53303:66628;
@@ -534,18 +580,18 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid){
   });
 }
 
-function buildBP(annualCA,moisDebut,ramp,sid){
+function buildBP(annualCA,moisDebut,ramp,sid,opts){
   var annee=annualCA<=(CA_A1*1.1)?1:annualCA<=(CA_A2*1.1)?2:3;
-  return buildBPFromDossier(annualCA,moisDebut,annee,sid);
+  return buildBPFromDossier(annualCA,moisDebut,annee,sid,opts);
 }
 
-function build3YearBP(forecast,sid){
+function build3YearBP(forecast,sid,opts){
   var md=forecast.moisDebut||0;
   // On utilise TOUJOURS les CA du dossier de financement — les valeurs Supabase sont ignorées
   return {
-    a1:buildBPFromDossier(CA_A1,md,1,sid),
-    a2:buildBPFromDossier(CA_A2,md,2,sid),
-    a3:buildBPFromDossier(CA_A3,md,3,sid),
+    a1:buildBPFromDossier(CA_A1,md,1,sid,opts),
+    a2:buildBPFromDossier(CA_A2,md,2,sid,opts),
+    a3:buildBPFromDossier(CA_A3,md,3,sid,opts),
   };
 }
 
@@ -1105,7 +1151,7 @@ function renderWorkflow(s){
 
 // ── Infographie KPIs prévisionnels 3 ans — onglet Workflow ────────────────────
 function renderBP3YInfographic(sid,s){
-  var bp=build3YearBP(s.forecast||{},sid);
+  var bp=build3YearBP(s.forecast||{},sid,getStudioBPOpts(sid));
   var annee0=s.forecast&&s.forecast.annee||2026;
   var md=s.forecast&&s.forecast.moisDebut||0;
 
@@ -1149,7 +1195,7 @@ function renderBP3YInfographic(sid,s){
   var SIM_YR=[0,1,2].map(function(yi){
     var caM=simMonthlyCA.slice(yi*12,(yi+1)*12);
     var caAn=caM.reduce(function(s,v){return s+v;},0);
-    var rows=buildBP(caAn,md,null,sid);
+    var rows=buildBP(caAn,md,null,sid,getStudioBPOpts(sid));
     var eb=rows.reduce(function(s,r){return s+(r._ebitda||0);},0);
     return{ca:caAn,ebitda:eb};
   });
@@ -1393,7 +1439,7 @@ function renderAdherents(sid,s){
 
   var h='<div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
-  var bps3=build3YearBP(s.forecast||{},sid);
+  var bps3=build3YearBP(s.forecast||{},sid,getStudioBPOpts(sid));
   [1,2,3].forEach(function(y){
     var ys=y===1?bps3.a1:y===2?bps3.a2:bps3.a3;
     var yCA=ys.reduce(function(s,r){return s+r._ca;},0);
@@ -1502,7 +1548,7 @@ function renderForecast(sid,s){
   var fy=S.forecastYear||1;
   var fs=S.forecastSection||'summary';
   var fc=s.forecast||{};
-  var bps=build3YearBP(fc,sid);
+  var bps=build3YearBP(fc,sid,getStudioBPOpts(sid));
   var bp=fy===1?bps.a1:fy===2?bps.a2:bps.a3;
   var actuelKey=fy===1?'actuel':fy===2?'actuel2':'actuel3';
   var actuel=fc[actuelKey]||{};
@@ -1542,6 +1588,19 @@ function renderForecast(sid,s){
   for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
 
   var h='<div>';
+  // ── Réglage loyer mensuel (règle i) ─────────────────────────────────────────
+  if(!isViewer()){
+    var lmDefault=isLattesStudio(sid)?Math.round(38850/12):4800;
+    var lmCurrent=s.loyer_mensuel>0?s.loyer_mensuel:lmDefault;
+    h+='<div style="display:flex;align-items:center;gap:10px;background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">';
+    h+='<div style="width:3px;height:16px;background:#1a3a6b;border-radius:2px;flex-shrink:0"></div>';
+    h+='<span style="font-size:12px;font-weight:600;color:#1a3a6b;white-space:nowrap">Loyer mensuel HT</span>';
+    h+='<input type="number" min="0" step="100" value="'+lmCurrent+'" '
+      +'onchange="saveLoyerMensuel(\''+sid+'\',+this.value)" '
+      +'style="width:110px;padding:4px 8px;border:1px solid #dce1ea;border-radius:6px;font-size:13px;font-weight:600;text-align:right;outline:none"> €/mois';
+    h+='<span style="font-size:11px;color:#888;margin-left:4px">→ Loyer annuel BP : <b style="color:#0f1f3d">'+fmt(lmCurrent*12)+'</b>&nbsp;&nbsp;Référence : <b>'+fmt(lmDefault*12)+'</b></span>';
+    h+='</div>';
+  }
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
   // Utiliser la somme réelle des 12 mois pour chaque année — cohérent avec le tableau
   [1,2,3].forEach(function(y){
@@ -1840,9 +1899,12 @@ function renderCA3Chart(a1s,a2s,a3s,fc){
 // ── Engagements ───────────────────────────────────────────────────────────────
 function renderEngagements(sid,s){
   var deps=S.depenses[sid]||[];
-  var capex=s.capex||333500;
+  // Utiliser le détail CAPEX custom si défini (règle ii), sinon valeurs INIT
+  var _capexDet=getCapexDetailForStudio(sid);
+  var _capexTots=computeCapexTotals(_capexDet);
+  var capex=_capexTots.capex||s.capex||333500;
+  var leasing=_capexTots.leasing||s.leasing||121600;
   var emprunt=s.emprunt||230000;
-  var leasing=s.leasing||121600;
   var fp=capex-emprunt; // Fonds propres
   var totalInvest=capex+leasing;
   // Répartition financement CAPEX (barres proportionnelles)
@@ -1928,20 +1990,22 @@ function renderEngagements(sid,s){
 
   // ── Détail CAPEX expandable ──────────────────────────────────────────────────
   if(capexOpen){
-    var grossTotal=BUDGET_CAPEX_DETAIL.reduce(function(s,r){return s+(r.montant>0?r.montant:0);},0);
-    var netTotal=BUDGET_CAPEX_DETAIL.reduce(function(s,r){return s+r.montant;},0)+121600; // +leasing for gross invest display
+    var _capexGross=_capexDet.reduce(function(s,r){return s+(r.montant>0?r.montant:0);},0);
+    var _capexNet=_capexTots.capex; // hors leasing, hors remises
+    var _capexViewer=isViewer();
     h+='<div style="margin:14px 0 0;border:1px solid #d0d9ec;border-radius:10px;overflow:hidden">';
-    h+='<div style="background:#f0f4fa;padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #d0d9ec">';
-    h+='<div style="width:3px;height:16px;background:#1a3a6b;border-radius:2px"></div>';
+    h+='<div style="background:#f0f4fa;padding:10px 16px;display:flex;align-items:center;gap:10px;border-bottom:1px solid #d0d9ec;flex-wrap:wrap">';
+    h+='<div style="width:3px;height:16px;background:#1a3a6b;border-radius:2px;flex-shrink:0"></div>';
     h+='<div style="font-size:11px;font-weight:700;color:#1a3a6b">Détail du budget CAPEX</div>';
-    h+='<div style="margin-left:auto;font-size:10px;color:#64748b">Budget brut : <b style="color:#0f1f3d">'+fmt(grossTotal)+'</b> &nbsp;|&nbsp; Net hors leasing : <b style="color:#0f1f3d">'+fmt(grossTotal-121600)+'</b></div>';
+    if(!_capexViewer)h+='<div style="font-size:10px;color:#92630a;margin-left:4px">✎ modifiable</div>';
+    h+='<div style="margin-left:auto;font-size:10px;color:#64748b">Hors leasing : <b style="color:#0f1f3d">'+fmt(_capexNet)+'</b> &nbsp;|&nbsp; Leasing : <b style="color:#92630a">'+fmt(_capexTots.leasing)+'</b></div>';
     h+='</div>';
     h+='<div style="padding:4px 0">';
     h+='<table style="width:100%;border-collapse:collapse">';
     h+='<tr style="background:#f8f9fb"><th style="text-align:left;padding:8px 16px;font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Poste</th>';
     h+='<th style="text-align:right;padding:8px 16px;font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Montant</th>';
     h+='<th style="text-align:center;padding:8px 16px;font-size:10px;color:#64748b;font-weight:600;text-transform:uppercase;letter-spacing:0.8px">Financement</th></tr>';
-    BUDGET_CAPEX_DETAIL.forEach(function(row,idx){
+    _capexDet.forEach(function(row,idx){
       var rowBg=row.remise?'#f0fdf4':row.leasing?'#fffdf0':idx%2===0?'#ffffff':'#fafafa';
       var amtColor=row.remise?'#0F6E56':row.leasing?'#92630a':'#0f1f3d';
       var amtPrefix=row.remise?'− ':'';
@@ -1952,7 +2016,15 @@ function renderEngagements(sid,s){
       else finBadge='<span style="background:#fef3c7;color:#0F6E56;font-size:9px;font-weight:700;padding:2px 7px;border-radius:12px">Remise</span>';
       h+='<tr style="background:'+rowBg+';border-top:1px solid #f0f0f0">';
       h+='<td style="padding:9px 16px;font-size:12px;color:#1a1a2e">'+row.label+(row.leasing?' <span style="font-size:9px;color:#92630a">(leasing)</span>':'')+(row.remise?' <span style="font-size:9px;color:#0F6E56">✓ remise groupe</span>':'')+'</td>';
-      h+='<td style="padding:9px 16px;font-size:12px;font-weight:700;color:'+amtColor+';text-align:right">'+amtPrefix+fmt(Math.abs(row.montant))+'</td>';
+      if(_capexViewer||row.remise){
+        h+='<td style="padding:9px 16px;font-size:12px;font-weight:700;color:'+amtColor+';text-align:right">'+amtPrefix+fmt(Math.abs(row.montant))+'</td>';
+      } else {
+        h+='<td style="padding:6px 12px;text-align:right">';
+        h+='<input type="number" min="0" step="100" value="'+Math.abs(row.montant)+'" '
+          +'onchange="saveCapexLine(\''+sid+'\','+idx+','+(row.remise?'-':'')+'+this.value)" '
+          +'style="width:100px;padding:3px 7px;border:1px solid #d0d9ec;border-radius:5px;font-size:12px;font-weight:700;color:'+amtColor+';text-align:right;background:'+(row.leasing?'#fffdf0':row.remise?'#f0fdf4':'#fff')+';outline:none">';
+        h+='</td>';
+      }
       h+='<td style="padding:9px 16px;text-align:center">'+finBadge+'</td>';
       h+='</tr>';
     });
@@ -1960,7 +2032,12 @@ function renderEngagements(sid,s){
     h+='<tr style="background:#f0f4fa;border-top:2px solid #d0d9ec">';
     h+='<td style="padding:10px 16px;font-size:12px;font-weight:700;color:#0f1f3d">Total CAPEX (hors leasing)</td>';
     h+='<td style="padding:10px 16px;font-size:14px;font-weight:700;color:#1a3a6b;text-align:right">'+fmt(capex)+'</td>';
-    h+='<td style="padding:10px 16px;text-align:center"><span style="font-size:10px;color:#64748b">333 500 €</span></td>';
+    h+='<td style="padding:10px 16px;text-align:center"><span style="font-size:10px;color:#64748b">réf. 333 500 €</span></td>';
+    h+='</tr>';
+    h+='<tr style="background:#fffdf0;border-top:1px solid #e8e0c0">';
+    h+='<td style="padding:10px 16px;font-size:12px;font-weight:700;color:#92630a">Total Leasing</td>';
+    h+='<td style="padding:10px 16px;font-size:14px;font-weight:700;color:#92630a;text-align:right">'+fmt(leasing)+'</td>';
+    h+='<td style="padding:10px 16px;text-align:center"><span style="font-size:10px;color:#64748b">réf. 121 600 €</span></td>';
     h+='</tr>';
     h+='</table></div></div>';
   }
@@ -2492,7 +2569,10 @@ function renderNewForm(){
   h+='<div class="fg"><label>CA annuel A1</label><input type="number" value="'+(f.annualCA||CA_A1)+'" oninput="setNF(\'annualCA\',this.value)"/></div>';
   h+='<div class="fg"><label>Mois ouverture</label><select onchange="setNF(\'moisDebut\',this.value)">';
   MOIS.forEach(function(m,i){h+='<option value="'+i+'" '+((f.moisDebut||0)==i?'selected':'')+'>'+m+'</option>';});
-  h+='</select></div></div>';
+  h+='</select></div>';
+  h+='<div class="fg"><label>Loyer mensuel HT (€)</label><input type="number" min="0" step="100" value="'+(f.loyerMensuel||4800)+'" oninput="setNF(\'loyerMensuel\',+this.value)" placeholder="4800"/></div>';
+  h+='<div class="fg"><div style="font-size:11px;color:#64748b;padding-top:22px">→ Loyer annuel BP : <b style="color:#1a3a6b">'+fmt((f.loyerMensuel||4800)*12)+'</b> &nbsp;•&nbsp; Impact direct sur EBITDA / REX / Résultat net</div></div>';
+  h+='</div>';
   h+='<div class="info-box">CA A2 et A3 calcules automatiquement sur base A1 (+10% / +21%). Repartition et churn BP issus du Plan Financier CP.</div>';
   h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="createStudio()">Creer</button><button class="btn" onclick="toggleNewForm()">Annuler</button></div></div>';
   return h;
@@ -2621,7 +2701,7 @@ function setFS(s){S.forecastSection=s;S.editMoisIdx=null;render();}
 function setForecastYear(y){S.forecastYear=y;S.editMoisIdx=null;render();}
 function setAdherentYear(y){S.adherentYear=y;render();}
 function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:CA_A1,moisDebut:0,annee:2026};render();}
-function setNF(k,v){S.newForm[k]=v;}
+function setNF(k,v){S.newForm[k]=v;if(k==='loyerMensuel')render();}
 function setEV(k,v){S.editVals[k]=v;}
 function openEditMois(idx){
   if(isViewer())return;
@@ -2795,9 +2875,11 @@ async function createStudio(){
   var id='proj_'+Date.now();
   var steps={};STEPS.forEach(function(s){steps[s.id]=false;});
   var ca1=num(f.annualCA,CA_A1);
+  var lm=num(f.loyerMensuel,4800);
   await saveStudio(id,{
     name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,
     statut:'pipeline',capex:306200,emprunt:214340,alertes:['Nouveau projet'],steps:steps,
+    loyer_mensuel:lm,
     forecast:{annualCA:ca1,annualCA2:Math.round(ca1*1.10),annualCA3:Math.round(ca1*1.21),
       moisDebut:num(f.moisDebut,0),annee:num(f.annee||2026),actuel:{},actuel2:{},actuel3:{}}
   });
@@ -2868,7 +2950,7 @@ async function askAI(){
       if(reel!==null)hasReal=true;
     }
     var simCaAn=simCaMois.reduce(function(s,v){return s+v;},0);
-    var simRows=buildBP(simCaAn,md,null,_aiSid);
+    var simRows=buildBP(simCaAn,md,null,_aiSid,getStudioBPOpts(_aiSid));
     var simEbitda=simRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
     var simRex=simRows.reduce(function(s,r){return s+(r._rex||0);},0);
     var simRnet=simRows.reduce(function(s,r){return s+(r._result||0);},0);
@@ -2943,9 +3025,9 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   var total=p4+p8+pi;
   // ── EBITDA simulé : recalcul BP avec le CA simulé ──
   var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
-  var simBPRows=buildBP(caAnnuel,md,null,sid);
+  var simBPRows=buildBP(caAnnuel,md,null,sid,getStudioBPOpts(sid));
   var ebitdaSim=simBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var bpRows=buildBP(caBPAnnuel,md,null,sid);
+  var bpRows=buildBP(caBPAnnuel,md,null,sid,getStudioBPOpts(sid));
   var ebitdaBP=bpRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
   var ebitdaEcart=ebitdaSim-ebitdaBP;
@@ -3141,9 +3223,9 @@ function _refreshSimCA(sid,ay){
   if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg)/lastM)):'--';
   // Mise à jour EBITDA simulé en live
   var _liveSid=S.selectedId;
-  var simBPRowsLive=buildBP(caAnnuel,moisDebut,null,_liveSid);
+  var simBPRowsLive=buildBP(caAnnuel,moisDebut,null,_liveSid,getStudioBPOpts(_liveSid));
   var ebitdaSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var bpRowsLive=buildBP(caBPAnnuel,moisDebut,null,_liveSid);
+  var bpRowsLive=buildBP(caBPAnnuel,moisDebut,null,_liveSid,getStudioBPOpts(_liveSid));
   var ebitdaBPLive=bpRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMarginLive=caAnnuel>0?Math.round(ebitdaSimLive/caAnnuel*100):0;
   var ebitdaEcartLive=ebitdaSimLive-ebitdaBPLive;
@@ -3225,6 +3307,34 @@ function renderFloatingChat(){
   h+='</button>';
   h+='</div>';
   return h;
+}
+
+async function saveLoyerMensuel(sid,lm){
+  if(isViewer())return;
+  if(!S.studios[sid])S.studios[sid]={};
+  S.studios[sid].loyer_mensuel=lm>0?lm:0;
+  render();
+  var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();
+  var d=Object.assign({},ex.data&&ex.data.data||{});
+  d.loyer_mensuel=lm>0?lm:0;
+  await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});
+  toast('Loyer mis à jour ✓');
+}
+
+async function saveCapexLine(sid,idx,val){
+  if(isViewer())return;
+  if(!S.studios[sid])S.studios[sid]={};
+  if(!S.studios[sid].capexDetail)S.studios[sid].capexDetail={};
+  var key='l'+idx;
+  val=Math.max(0,Math.round(+val)||0);
+  S.studios[sid].capexDetail[key]=val;
+  render();
+  // Persist capexDetail only (capex/leasing derived at render time via getCapexDetailForStudio)
+  var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();
+  var d=Object.assign({},ex.data&&ex.data.data||{});
+  d.capexDetail=S.studios[sid].capexDetail;
+  await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});
+  toast('CAPEX mis à jour ✓');
 }
 
 function renderChat(){
@@ -3373,7 +3483,12 @@ async function syncData(){
       }
     }
   });
-  if(changed)render();
+  if(changed){
+    // Ne pas re-render si l'utilisateur tape dans un input (loyer, capex, etc.)
+    var ae=document.activeElement;
+    var skipRender=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')&&ae.id!=='global-chat-input';
+    if(!skipRender)render();
+  }
 }
 
 function startSync(){
