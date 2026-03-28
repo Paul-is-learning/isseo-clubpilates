@@ -845,6 +845,9 @@ function renderBP3YInfographic(sid,s){
   // ── Simulation Adhérents — même logique exacte que l'onglet Adhérents ────────
   var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   var actuelWF=S.adherents[sid]||{};
+  var hasRealAdherents=Object.keys(actuelWF).length>0;
+  var isDefaultCfg=(simCfg.p4==47&&simCfg.p8==50&&simCfg.pi==3&&
+    Math.abs(simCfg.prix4-110)<0.5&&Math.abs(simCfg.prix8-193.33)<0.5&&Math.abs(simCfg.prixi-276.67)<0.5);
   var simMonthlyCA=[];
   for(var si=0;si<36;si++){
     var ayWF=Math.floor(si/12)+1;
@@ -855,7 +858,16 @@ function renderBP3YInfographic(sid,s){
     var sm=actuelWF[keyWF]!==undefined?actuelWF[keyWF]:bpM;
     simMonthlyCA.push(computeSimCA(sm,simCfg));
   }
+  // Quand aucun réel + config par défaut → la courbe simulée = courbe BP (alignement parfait)
+  if(!hasRealAdherents&&isDefaultCfg){simMonthlyCA=caArr.slice(0,36);}
   var SIM_YR=[0,1,2].map(function(yi){
+    // Quand aucune donnée réelle et config par défaut → aligner exactement sur les valeurs BP
+    if(!hasRealAdherents&&isDefaultCfg){
+      var bpRows=[bp.a1,bp.a2,bp.a3][yi];
+      var caAn=bpRows.reduce(function(s,r){return s+r._ca;},0);
+      var eb=bpRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+      return{ca:caAn,ebitda:eb};
+    }
     var caM=simMonthlyCA.slice(yi*12,(yi+1)*12);
     var caAn=caM.reduce(function(s,v){return s+v;},0);
     var rows=buildBP(caAn,md,null,sid);
