@@ -584,6 +584,7 @@ var S={
   globalChat:[],        // messages chat global entre associés
   chatOpen:false,       // panneau chat ouvert/fermé
   chatLastSeen:localStorage.getItem('chatLastSeen')||'', // ts du dernier message lu
+  adminSettings:{blocked:[],roles:{}}, // contrôle accès utilisateurs
 };
 
 async function loadAll(){
@@ -596,6 +597,7 @@ async function loadAll(){
     if(id.endsWith('_files')){S.files[id.slice(0,-6)]=r.data&&r.data.files||[];}
     else if(id.endsWith('_depenses')){S.depenses[id.slice(0,-9)]=r.data&&r.data.depenses||[];}
     else if(id==='global_chat'){S.globalChat=r.data&&r.data.messages||[];}
+    else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{}},r.data&&r.data.settings||{});}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
     else if(id.endsWith('_simconfig')){
@@ -715,6 +717,119 @@ function renderAuth(){
     +'</div></div>';
 }
 
+var _adminUsers=[];// cache liste utilisateurs chargée async
+
+async function loadAdminUsers(){
+  var res=await sb.from('profiles').select('*');
+  _adminUsers=(res.data||[]).sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');});
+  render();
+}
+
+const ROLE_LABELS={
+  admin:'Admin complet',
+  tom:'Admin complet',
+  pascal:'Admin complet',
+  coquel:'COBE + SACOBE',
+  sabourin:'SACOBE uniquement',
+  caroline:'COBE uniquement',
+};
+
+function renderAdminPanel(){
+  var blocked=S.adminSettings.blocked||[];
+  var roles=S.adminSettings.roles||{};
+  var h='<div class="box" style="padding:0;overflow:hidden">';
+  h+='<div style="background:#0f1f3d;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
+  h+='<div><div style="color:#fff;font-weight:700;font-size:14px">⚙ Gestion des accès utilisateurs</div>';
+  h+='<div style="color:rgba(255,255,255,0.55);font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
+  h+='<button onclick="loadAdminUsers()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
+  h+='</div>';
+  if(_adminUsers.length===0){
+    h+='<div style="padding:40px;text-align:center;color:#aaa">';
+    h+='<div style="font-size:24px;margin-bottom:8px">👥</div>';
+    h+='<div style="font-weight:600;margin-bottom:4px">Chargement des utilisateurs…</div>';
+    h+='<button onclick="loadAdminUsers()" style="background:#0f1f3d;color:#fff;border:none;border-radius:6px;padding:7px 16px;font-size:12px;cursor:pointer;margin-top:8px">Charger la liste</button>';
+    h+='</div>';
+  } else {
+    h+='<table style="width:100%;border-collapse:collapse">';
+    h+='<thead><tr style="background:#f8f9fb;border-bottom:1px solid #e8eaf0">';
+    h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Utilisateur</th>';
+    h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Rôle / Périmètre</th>';
+    h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Accès</th>';
+    h+='</tr></thead><tbody>';
+    _adminUsers.forEach(function(u,i){
+      var uid=u.id;
+      var isMe=S.user&&S.user.id===uid;
+      var isBlocked=blocked.indexOf(uid)>=0;
+      var roleOverride=roles[uid]||u.role||'admin';
+      var bg=i%2===0?'#fff':'#fafafa';
+      h+='<tr style="border-bottom:1px solid #f0f0ea;background:'+bg+(isMe?';background:#fffbe6':'')+(isBlocked?';background:#fff5f5;opacity:0.8':'')+'">';
+      // Nom
+      h+='<td style="padding:12px 16px">';
+      h+='<div style="display:flex;align-items:center;gap:10px">';
+      var initials=(u.nom||'?').split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
+      var colors=['#185FA5','#0F6E56','#854F0B','#993C1D','#533AB7','#A32D2D'];
+      var ci=Math.abs((u.nom||'').charCodeAt(0)||0)%colors.length;
+      h+='<div style="width:34px;height:34px;border-radius:50%;background:'+colors[ci]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">'+initials+'</div>';
+      h+='<div><div style="font-weight:600;font-size:13px">'+(u.nom||'—')+(isMe?' <span style="font-size:10px;color:#854F0B;font-weight:400">(vous)</span>':'')+'</div>';
+      h+='<div style="font-size:11px;color:#999">'+(u.email||u.id||'')+'</div></div>';
+      h+='</div></td>';
+      // Rôle
+      h+='<td style="padding:12px 16px">';
+      if(isMe){
+        h+='<span style="font-size:12px;color:#666;background:#f0f0ea;padding:3px 8px;border-radius:4px">'+(ROLE_LABELS[roleOverride]||roleOverride)+'</span>';
+      } else {
+        h+='<select onchange="setUserRole(\''+uid+'\',this.value)" style="border:1px solid #dce1ea;border-radius:6px;padding:5px 8px;font-size:12px;background:#fff;cursor:pointer">';
+        ['admin','pascal','coquel','sabourin','caroline'].forEach(function(r){
+          h+='<option value="'+r+'"'+(roleOverride===r?' selected':'')+'>'+r+' — '+(ROLE_LABELS[r]||r)+'</option>';
+        });
+        h+='</select>';
+      }
+      h+='</td>';
+      // Toggle accès
+      h+='<td style="padding:12px 16px;text-align:center">';
+      if(isMe){
+        h+='<span style="font-size:11px;color:#aaa">—</span>';
+      } else if(isBlocked){
+        h+='<div style="display:flex;flex-direction:column;align-items:center;gap:4px">';
+        h+='<span style="font-size:10px;color:#c53030;font-weight:600;background:#fed7d7;padding:2px 7px;border-radius:10px">Suspendu</span>';
+        h+='<button onclick="toggleUserAccess(\''+uid+'\',false)" style="background:#276749;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin-top:2px">✓ Réactiver</button>';
+        h+='</div>';
+      } else {
+        h+='<div style="display:flex;flex-direction:column;align-items:center;gap:4px">';
+        h+='<span style="font-size:10px;color:#276749;font-weight:600;background:#c6f6d5;padding:2px 7px;border-radius:10px">Actif</span>';
+        h+='<button onclick="toggleUserAccess(\''+uid+'\',true)" style="background:#c53030;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin-top:2px">⊘ Suspendre</button>';
+        h+='</div>';
+      }
+      h+='</td></tr>';
+    });
+    h+='</tbody></table>';
+  }
+  h+='</div>';
+  return h;
+}
+
+async function saveAdminSettings(){
+  await sb.from('studios').upsert({id:'_admin_settings',data:{settings:S.adminSettings},updated_at:new Date().toISOString()});
+}
+
+async function toggleUserAccess(uid,block){
+  if(!isSuperAdmin())return;
+  var blocked=S.adminSettings.blocked||[];
+  if(block){if(blocked.indexOf(uid)<0)blocked.push(uid);}
+  else{blocked=blocked.filter(function(id){return id!==uid;});}
+  S.adminSettings.blocked=blocked;
+  await saveAdminSettings();
+  render();
+}
+
+async function setUserRole(uid,role){
+  if(!isSuperAdmin())return;
+  if(!S.adminSettings.roles)S.adminSettings.roles={};
+  S.adminSettings.roles[uid]=role;
+  await saveAdminSettings();
+  // Pas de re-render complet pour ne pas perdre le select focus
+}
+
 function renderDashboard(){
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
   var ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
@@ -734,16 +849,19 @@ function renderDashboard(){
   h+='<div style="display:flex;gap:6px">';
   h+='<button class="tab '+(S.mainTab==='studios'?'active':'')+'" onclick="setMainTab(\'studios\')">Studios</button>';
   h+='<button class="tab '+(S.mainTab==='pipeline'?'active':'')+'" onclick="setMainTab(\'pipeline\')">Pipeline</button>';
+  if(isSuperAdmin())h+='<button class="tab '+(S.mainTab==='admin'?'active':'')+'" onclick="setMainTab(\'admin\')" style="color:'+(S.mainTab==='admin'?'':'#854F0B')+'">⚙ Admin</button>';
   h+='</div>';
-  if(isAdmin)h+='<button class="btn" onclick="toggleNewForm()">'+(S.showNewForm?'Annuler':'+ Nouveau studio')+'</button>';
+  if(isAdmin&&S.mainTab!=='admin')h+='<button class="btn" onclick="toggleNewForm()">'+(S.showNewForm?'Annuler':'+ Nouveau studio')+'</button>';
   h+='</div>';
-  if(S.showNewForm)h+=renderNewForm();
+  if(S.showNewForm&&S.mainTab!=='admin')h+=renderNewForm();
   if(S.mainTab==='studios'){
     h+='<div class="cards">';
     ids.forEach(function(id){h+=renderCard(id,S.studios[id]);});
     h+='</div>';
-  } else {
+  } else if(S.mainTab==='pipeline'){
     h+=renderPipeline(ids);
+  } else if(S.mainTab==='admin'){
+    h+=renderAdminPanel();
   }
   h+='</div>';
   return h;
@@ -2287,6 +2405,17 @@ async function doLogin(){
   var prof=await sb.from('profiles').select('*').eq('id',res.data.user.id).single();
   S.profile=prof.data;
   await loadAll();
+  // Appliquer override de rôle si défini par l'admin
+  if(S.adminSettings.roles&&S.adminSettings.roles[S.user.id]){
+    S.profile=Object.assign({},S.profile,{role:S.adminSettings.roles[S.user.id]});
+  }
+  // Vérifier si l'accès est bloqué par l'admin
+  if(S.adminSettings.blocked&&S.adminSettings.blocked.indexOf(S.user.id)>=0){
+    await sb.auth.signOut();S.user=null;S.profile=null;
+    var er=document.getElementById('aerr');
+    if(er){er.style.display='block';er.textContent='Votre accès à la plateforme a été suspendu. Contactez l\'administrateur.';}
+    return;
+  }
   restoreNavState();render();
   _startSessionWatcher();
 }
@@ -2885,15 +3014,17 @@ function renderFloatingChat(){
     if(msgs.length===0){
       h+='<div style="text-align:center;color:#aaa;font-size:12px;margin:auto;padding:20px 0">Aucun message pour l\'instant.<br>Commencez la discussion !</div>';
     }
+    var canDeleteMsg=isSuperAdmin();
     msgs.forEach(function(m){
       var isMe=m.auteur===me;
       var c=aC(m.auteur||'?');
-      h+='<div style="display:flex;gap:7px;align-items:flex-end;'+(isMe?'flex-direction:row-reverse':'')+'">';
+      var ts=m.ts||'';
+      h+='<div style="display:flex;gap:7px;align-items:flex-end;'+(isMe?'flex-direction:row-reverse':'')+'" class="chat-msg-row">';
       h+='<div style="width:26px;height:26px;border-radius:50%;background:'+c+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;flex-shrink:0">'+ini(m.auteur||'?')+'</div>';
-      h+='<div style="max-width:200px">';
+      h+='<div style="max-width:200px;position:relative">';
       if(!isMe)h+='<div style="font-size:9.5px;color:#888;margin-bottom:2px;font-weight:600">'+(m.auteur||'')+'</div>';
       h+='<div style="background:'+(isMe?'#0f1f3d':'#fff')+';color:'+(isMe?'#fff':'#2c3e50')+';border-radius:'+(isMe?'12px 12px 4px 12px':'12px 12px 12px 4px')+';padding:7px 10px;font-size:12px;line-height:1.45;box-shadow:0 1px 3px rgba(0,0,0,0.08);word-break:break-word">'+(m.texte||'')+'</div>';
-      h+='<div style="font-size:9px;color:#bbb;margin-top:2px;text-align:'+(isMe?'right':'left')+'">'+(m.date||'')+'</div>';
+      h+='<div style="font-size:9px;color:#bbb;margin-top:2px;text-align:'+(isMe?'right':'left')+'">'+(m.date||'')+(canDeleteMsg?'&nbsp;<button onclick="supprimerGlobalMessage(\''+ts.replace(/'/g,"\\'")+'\')" style="background:none;border:none;cursor:pointer;color:#ddd;font-size:10px;padding:0;line-height:1;margin-left:2px" title="Supprimer">🗑</button>':'')+'</div>';
       h+='</div></div>';
     });
     h+='</div>';
@@ -2973,6 +3104,13 @@ async function envoyerGlobalMessage(){
   setTimeout(function(){var i=document.getElementById('global-chat-input');if(i)i.focus();},50);
 }
 
+async function supprimerGlobalMessage(ts){
+  if(!isSuperAdmin())return;
+  S.globalChat=S.globalChat.filter(function(m){return m.ts!==ts;});
+  renderChat();
+  await sb.from('studios').upsert({id:'global_chat',data:{messages:S.globalChat},updated_at:new Date().toISOString()});
+}
+
 function render(){
   var root=document.getElementById('root');
   if(!root)return;
@@ -3009,6 +3147,9 @@ async function syncData(){
         try{localStorage.setItem('isseo_sim_'+id.slice(0,-10),JSON.stringify(nv));}catch(e){}
         changed=true;
       }
+    } else if(id==='_admin_settings'){
+      var nv=Object.assign({blocked:[],roles:{}},r.data&&r.data.settings||{});
+      if(JSON.stringify(nv)!==JSON.stringify(S.adminSettings)){S.adminSettings=nv;changed=true;}
     } else if(id==='global_chat'){
       var nv=r.data&&r.data.messages||[];
       if(JSON.stringify(nv)!==JSON.stringify(S.globalChat)){
@@ -3054,7 +3195,14 @@ sb.auth.getSession().then(function(res){
     S.user=session.user;
     sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){
       S.profile=r.data;
-      loadAll().then(function(){restoreNavState();render();startSync();_startSessionWatcher();});
+      loadAll().then(function(){
+        if(S.adminSettings.roles&&S.adminSettings.roles[session.user.id])
+          S.profile=Object.assign({},S.profile,{role:S.adminSettings.roles[session.user.id]});
+        if(S.adminSettings.blocked&&S.adminSettings.blocked.indexOf(session.user.id)>=0){
+          sb.auth.signOut();S.user=null;S.profile=null;render();return;
+        }
+        restoreNavState();render();startSync();_startSessionWatcher();
+      });
     });
   } else {render();}
 });
