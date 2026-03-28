@@ -558,7 +558,7 @@ function renderDetail(){
   h+='<button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin-bottom:16px" onclick="goBack()">&#8592; Retour</button>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut)+'</div>';
   h+='<div style="font-size:13px;color:#888;margin-bottom:14px">'+s.addr+' &middot; '+s.societe+' &middot; '+s.ouverture+'</div>';
-  if(isAdmin){
+  if(isSuperAdmin()){
     h+='<div style="display:flex;gap:8px;margin-bottom:14px">';
     h+=(s.statut!=='abandonne'?'<button class="btn" style="color:#854F0B" onclick="archiverStudio(\''+S.selectedId+'\')">Archiver</button>':'<button class="btn" style="color:#185FA5" onclick="restaurerStudio(\''+S.selectedId+'\')">Restaurer</button>');
     h+='<button class="btn" style="color:#A32D2D" onclick="supprimerStudio(\''+S.selectedId+'\')">Supprimer</button></div>';
@@ -1713,9 +1713,15 @@ function renderNewForm(){
 }
 
 // ── Sécurité session : déconnexion automatique ───────────────────────────
+// Super-admins (archivage / suppression de projets)
+function isSuperAdmin(){
+  var nom=(S.profile&&S.profile.nom||'').toLowerCase().trim().split(' ')[0];
+  return nom==='paul'||nom==='tom';
+}
+
 var _inactivityTimer=null;
 var _inactivityWarnTimer=null;
-var _INACTIVITY_MS=10*60*1000; // 10 minutes
+var _INACTIVITY_MS=5*60*1000; // 5 minutes
 
 function _clearInactivityTimers(){
   if(_inactivityTimer)clearTimeout(_inactivityTimer);
@@ -1739,7 +1745,7 @@ function _resetInactivityTimer(){
     w.innerHTML='<div style="font-weight:600;margin-bottom:3px">Session bient\u00f4t expir\u00e9e</div><div style="font-size:11.5px;color:rgba(255,255,255,0.55)">Inactivit\u00e9 d\u00e9tect\u00e9e. D\u00e9connexion automatique dans <b style="color:#c8a84b">1 minute</b>.</div><div style="margin-top:8px"><button onclick="_resetInactivityTimer()" style="background:#4d7a5c;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer">Rester connect\u00e9</button></div>';
     document.body.appendChild(w);
   },_INACTIVITY_MS-60000);
-  // Déconnexion effective à 10 min
+  // Déconnexion effective à 5 min
   _inactivityTimer=setTimeout(function(){
     if(!S.user)return;
     _removeInactivityWarn();
@@ -1957,10 +1963,18 @@ async function deleteFichier(sid,path){
   toast('Supprime');render();
 }
 
-async function archiverStudio(id){if(!confirm('Archiver ?'))return;await saveStudio(id,Object.assign({},S.studios[id],{statut:'abandonne'}));toast('Archive');}
-async function restaurerStudio(id){var s=S.studios[id];await saveStudio(id,Object.assign({},s,{statut:inferStatut(s.steps)}));toast('Restaure');}
+async function archiverStudio(id){
+  if(!isSuperAdmin()){toast('Action réservée aux administrateurs principaux.');return;}
+  if(!confirm('Archiver ce projet ?'))return;
+  await saveStudio(id,Object.assign({},S.studios[id],{statut:'abandonne'}));toast('Archive');
+}
+async function restaurerStudio(id){
+  if(!isSuperAdmin()){toast('Action réservée aux administrateurs principaux.');return;}
+  var s=S.studios[id];await saveStudio(id,Object.assign({},s,{statut:inferStatut(s.steps)}));toast('Restaure');
+}
 async function supprimerStudio(id){
-  if(!confirm('Supprimer definitivement ?'))return;
+  if(!isSuperAdmin()){toast('Action réservée aux administrateurs principaux.');return;}
+  if(!confirm('Supprimer définitivement ce projet ? Cette action est irréversible.'))return;
   await sb.from('studios').delete().eq('id',id);
   delete S.studios[id];S.view='dashboard';S.selectedId=null;render();toast('Supprime');
 }
