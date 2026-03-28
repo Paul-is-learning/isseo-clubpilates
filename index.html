@@ -765,11 +765,17 @@ function renderBP3YInfographic(sid,s){
     return{ca:ca,ebitda:ebitda,rex:rex,rnet:rnet,avgMbrs:Math.round(mbrs/12),lastMbrs:lastMbrs,annee:annee0+yi};
   });
 
-  // ── Simulation Adhérents ────────────────────────────────────────────────────
+  // ── Simulation Adhérents — même logique exacte que l'onglet Adhérents ────────
   var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
+  var actuelWF=S.adherents[sid]||{};
   var simMonthlyCA=[];
   for(var si=0;si<36;si++){
-    var sm=si<BP_ADHERENTS.length?BP_ADHERENTS[si]:400;
+    var ayWF=Math.floor(si/12)+1;
+    var mWF=si%12;
+    var keyWF='y'+ayWF+'_m'+mWF;
+    var bpM=si<BP_ADHERENTS.length?BP_ADHERENTS[si]:400;
+    // Adhérent réel saisi dans l'onglet Adhérents en priorité, sinon BP
+    var sm=actuelWF[keyWF]!==undefined?actuelWF[keyWF]:bpM;
     simMonthlyCA.push(computeSimCA(sm,simCfg));
   }
   var SIM_YR=[0,1,2].map(function(yi){
