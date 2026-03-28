@@ -332,17 +332,19 @@ const BP_RESULTATS={
 };
 
 // ── Charges & résultats pour sites hors Lattes (loyer 4 800€/mois HT) ─────────
-// Lattes : loyer annuel Y2/Y3 = 38 850€ (≈3 238€/mois). Autres sites : 4 800€/mois.
-// Y1 : 5 mois de loyer (bail signé ~août, ouverture septembre) = 24 000€
-// Y2/Y3 : 12 mois × 4 800 = 57 600€  → delta vs Lattes : +7200 Y1, +18750 Y2/Y3
+// L'app calcule TOUJOURS sur 12 mois glissants depuis l'ouverture.
+// → loyer = 4 800 × 12 = 57 600€/an pour les 3 années (pas de partiel).
+// Lattes conserve ses valeurs d'origine (dossier officiel Lattes p.9).
 const BP_CHARGES_ANNUELLES_OTHER={
-  1:{fournitures:13500,loyer:24000,charges_loc:2300,coachs:120000,royalties_pct:0.09,pub:30600,software:5460,assurance:2400,mutuelle:0,nettoyage:3800,compta:2500,entretien:1800,missions:20000,telecom:1200,social:648,creditbail:26370,salaries:90000,impots_taxes:3815,amort:46033,charges_fin:8574},
+  1:{fournitures:13500,loyer:57600,charges_loc:2300,coachs:120000,royalties_pct:0.09,pub:30600,software:5460,assurance:2400,mutuelle:0,nettoyage:3800,compta:2500,entretien:1800,missions:20000,telecom:1200,social:648,creditbail:26370,salaries:90000,impots_taxes:3815,amort:46033,charges_fin:8574},
   2:{fournitures:13500,loyer:57600,charges_loc:2300,coachs:120000,royalties_pct:0.09,pub:30600,software:5460,assurance:2400,mutuelle:2400,nettoyage:3800,compta:2500,entretien:1800,missions:4000,telecom:1200,social:1296,creditbail:20040,salaries:94225,impots_taxes:5187,amort:46033,charges_fin:7488},
   3:{fournitures:13500,loyer:57600,charges_loc:2300,coachs:130000,royalties_pct:0.09,pub:30600,software:5460,assurance:2400,mutuelle:2400,nettoyage:3800,compta:2500,entretien:1800,missions:4000,telecom:1200,social:1296,creditbail:20040,salaries:105470,impots_taxes:6476,amort:46032,charges_fin:6359},
 };
-// Résultats recalculés : rex = CA - charges (loyer ajusté), IS recalculé, CAF = rnet+amort, tréso = CAF - 35711 (annuité fixe)
+// Résultats recalculés avec loyer 57 600€/an (12 mois × 4 800€) pour toutes les années.
+// Y1 : rex négatif car ramp-up CA (448 800€) < charges avec loyer IDF — réaliste.
+// IS=0 si perte. CAF = rnet+amort. Tréso = CAF - 35 711 (annuité emprunt fixe).
 const BP_RESULTATS_OTHER={
-  1:{ca:448800,charges:433630,rex:15170,rnet:5607,caf:51640,treso:15929,marge_rex:0.034,marge_nette:0.013},
+  1:{ca:448800,charges:467230,rex:-18430,rnet:-27004,caf:19029,treso:-16682,marge_rex:-0.041,marge_nette:-0.060},
   2:{ca:610190,charges:467644,rex:142546,rnet:105544,caf:151577,treso:115866,marge_rex:0.234,marge_nette:0.173},
   3:{ca:761841,charges:503502,rex:258339,rnet:193235,caf:239267,treso:203556,marge_rex:0.339,marge_nette:0.254},
 };
