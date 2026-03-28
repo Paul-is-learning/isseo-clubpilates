@@ -3332,9 +3332,10 @@ async function syncData(){
         else{renderChat();} // Rafraîchir le chat en direct si ouvert
       }
     } else if(!id.endsWith('_messages')){
-      if(r.data&&JSON.stringify(r.data)!==JSON.stringify(S.studios[id]||{})){
-        var sd=r.data;
-        // Toujours appliquer les valeurs INIT (source de vérité) — évite réversion après sync
+      if(r.data){
+        // Appliquer INIT AVANT la comparaison pour éviter un mismatch permanent
+        // (S.studios a déjà les valeurs INIT, r.data est brut depuis Supabase)
+        var sd=Object.assign({},r.data);
         if(INIT[id]){
           ['capex','emprunt','leasing','ouverture'].forEach(function(f){
             if(INIT[id][f]!==undefined)sd[f]=INIT[id][f];
@@ -3342,7 +3343,9 @@ async function syncData(){
           if(INIT[id].forecast&&INIT[id].forecast.moisDebut!==undefined&&sd.forecast)
             sd.forecast.moisDebut=INIT[id].forecast.moisDebut;
         }
-        S.studios[id]=sd;changed=true;
+        if(JSON.stringify(sd)!==JSON.stringify(S.studios[id]||{})){
+          S.studios[id]=sd;changed=true;
+        }
       }
     }
   });
