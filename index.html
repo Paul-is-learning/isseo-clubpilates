@@ -54,6 +54,9 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:130px}
 .yr-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 @media(max-width:600px){.form-grid,.edit-grid{grid-template-columns:1fr}}
 @keyframes locPulse{0%{transform:scale(0.5);opacity:0.7}80%{transform:scale(2);opacity:0}100%{transform:scale(2);opacity:0}}
+input[type=range].zone-slider{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;background:linear-gradient(to right,#1D9E75 0%,#1D9E75 var(--pct,40%),#e2e8f0 var(--pct,40%),#e2e8f0 100%);outline:none;cursor:pointer}
+input[type=range].zone-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#0F6E56;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer}
+input[type=range].zone-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#0F6E56;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer;border:none}
 .loc-pulse-ring{position:absolute;width:100%;height:100%;border-radius:50%;background:rgba(15,110,86,0.35);animation:locPulse 2.2s ease-out infinite}
 </style>
 </head>
@@ -654,6 +657,7 @@ var S={
   mapStreetView:false,  // mode street view
   mapCoords:{},         // coords geocodées par studio {sid: {lat,lon}}
   mapShowZones:true,    // afficher les zones de chalandise sur la carte
+  mapZoneRadius:2000,   // rayon de la zone ajustable (m) — curseur
   showCapexDetail:{},   // toggle détail CAPEX par studio
   globalChat:[],        // messages chat global entre associés
   chatOpen:false,       // panneau chat ouvert/fermé
@@ -2436,38 +2440,60 @@ function renderLocalisation(s){
     h+='</div>';
 
     // Colonne droite : KPI panel
+    var zr=S.mapZoneRadius||2000;
+    var zrKm=zr>=1000?(zr/1000).toFixed(1)+' km':zr+' m';
+    var zrPct=((zr-500)/(5000-500)*100).toFixed(1);
     h+='<div style="display:flex;flex-direction:column;gap:10px">';
+
+    // ── Curseur zone + Population ──
+    h+='<div style="background:#fff;border:0.5px solid #d4e8d0;border-radius:14px;padding:14px 16px">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+    h+='<div style="font-size:9.5px;color:#0F6E56;text-transform:uppercase;letter-spacing:0.06em;font-weight:700">⭕ Zone de chalandise</div>';
+    h+='<div style="font-size:13px;font-weight:700;color:#0f1f3d">Rayon : <span id="map-radius-label">'+zrKm+'</span></div>';
+    h+='</div>';
+    h+='<input type="range" id="map-zone-slider" class="zone-slider" min="500" max="5000" step="250" value="'+zr+'" '
+      +'style="--pct:'+zrPct+'%" oninput="updateZoneRadius(this.value)"/>';
+    h+='<div style="display:flex;justify-content:space-between;font-size:9.5px;color:#94a3b8;margin-top:4px;margin-bottom:12px"><span>500 m</span><span>1 km</span><span>2 km</span><span>3.5 km</span><span>5 km</span></div>';
+    h+='<div id="map-pop-estimate" style="background:#f0f7f4;border-radius:10px;padding:12px;text-align:center;min-height:62px;display:flex;align-items:center;justify-content:center">';
+    h+='<div style="font-size:11px;color:#94a3b8">Calcul en cours…</div>';
+    h+='</div></div>';
+
     if(ld){
-      // Démographie : 3 cartes
-      (ld.demo||[]).slice(0,3).forEach(function(d){
-        h+='<div style="background:#fff;border:0.5px solid #e2e8f0;border-radius:12px;padding:13px 15px;border-left:3px solid '+d.col+'">';
-        h+='<div style="font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px">'+d.lbl+'</div>';
-        h+='<div style="font-size:'+(d.kpi.length>10?'14':'17')+'px;font-weight:700;color:#0f1f3d;line-height:1.2">'+d.kpi+'</div>';
-        h+='<div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.4">'+d.sub+'</div>';
-        h+='</div>';
-      });
-      // Transport principal
-      if(ld.transports&&ld.transports[0]){
-        var t0=ld.transports[0];
-        h+='<div style="background:#fff;border:0.5px solid #e2e8f0;border-radius:12px;padding:13px 15px;border-left:3px solid '+t0.col+'">';
-        h+='<div style="font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px">Transport principal</div>';
-        h+='<div style="font-size:13px;font-weight:700;color:#0f1f3d;line-height:1.3">'+t0.kpi+'</div>';
-        h+='<div style="font-size:10px;color:#94a3b8;margin-top:3px">'+t0.lbl+'</div>';
+      // TMJA trafic routier
+      if(ld.trafic&&ld.trafic[0]){
+        var tf=ld.trafic[0];
+        var tmjaStr2=tf.kpi;
+        var tmjaV=0;var tx1=tmjaStr2.match(/(\d+)[–\-–—](\d+)\s*[Kk]/);
+        if(tx1){tmjaV=(parseInt(tx1[1])+parseInt(tx1[2]))/2*1000;}
+        else{var tx2=tmjaStr2.match(/~?(\d[\d ]+)/);if(tx2)tmjaV=parseDemographicNum(tx2[1]);}
+        var tC2=tmjaV>25000?'#D85A30':tmjaV>15000?'#E89B2A':'#4BA874';
+        var tBg2=tmjaV>25000?'#FEF3EF':tmjaV>15000?'#FEF9EF':'#EDF7F2';
+        h+='<div style="background:'+tBg2+';border:0.5px solid '+tC2+'44;border-radius:12px;padding:13px 15px;border-left:3px solid '+tC2+'">';
+        h+='<div style="font-size:9.5px;color:'+tC2+';text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px">🚗 Trafic routier · TMJA</div>';
+        h+='<div style="font-size:22px;font-weight:700;color:'+tC2+';line-height:1">'+tmjaStr2+'</div>';
+        h+='<div style="font-size:10px;color:#94a3b8;margin-top:3px">véh/jour · '+tf.lbl+'</div>';
         h+='</div>';
       }
-      // Top 4 tags
-      var topTags=(ld.tags||[]).filter(function(t){return t.c==='tg';}).slice(0,4);
-      if(topTags.length){
-        h+='<div style="background:#f0f7f4;border:0.5px solid #b8d9c4;border-radius:12px;padding:12px 14px">';
-        h+='<div style="font-size:9.5px;color:#0F6E56;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:8px">✓ Atouts clés</div>';
-        h+=topTags.map(_locTag).join('');
+      // Revenu médian
+      var revItem=(ld.demo||[]).find(function(d){return /revenu/i.test(d.lbl);});
+      if(revItem){
+        h+='<div style="background:#fff;border:0.5px solid #e2e8f0;border-radius:12px;padding:13px 15px;border-left:3px solid '+revItem.col+'">';
+        h+='<div style="font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px">'+revItem.lbl+'</div>';
+        h+='<div style="font-size:17px;font-weight:700;color:#0f1f3d;line-height:1.2">'+revItem.kpi+'</div>';
+        h+='<div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.4">'+revItem.sub+'</div>';
         h+='</div>';
       }
-      // Nb transports
-      if(ld.transports&&ld.transports.length>1){
-        h+='<div style="background:#EEF4FB;border:0.5px solid #c5d8ef;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">';
-        h+='<div style="font-size:24px;font-weight:700;color:#185FA5">'+ld.transports.length+'</div>';
-        h+='<div style="font-size:11px;color:#2d5a8e;line-height:1.4"><strong>lignes TC</strong><br>desservant le studio</div>';
+      // TC badge + top tags
+      var topTags=(ld.tags||[]).filter(function(t){return t.c==='tg';}).slice(0,3);
+      if(ld.transports&&ld.transports.length>0||topTags.length){
+        h+='<div style="background:#EEF4FB;border:0.5px solid #c5d8ef;border-radius:12px;padding:12px 14px">';
+        if(ld.transports&&ld.transports.length>0){
+          h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">';
+          h+='<div style="font-size:22px;font-weight:700;color:#185FA5;line-height:1">'+ld.transports.length+'</div>';
+          h+='<div style="font-size:11px;color:#2d5a8e;line-height:1.4"><strong>lignes TC</strong><br>desservant le studio</div>';
+          h+='</div>';
+        }
+        if(topTags.length)h+=topTags.map(_locTag).join('');
         h+='</div>';
       }
     } else {
@@ -2505,6 +2531,62 @@ function renderLocalisation(s){
 
 // ── Carte Leaflet interactive ──────────────────────────────────────────────────
 var _leafletMapInst=null;
+var _leafletCircles=[];   // références aux cercles de zone (max = [2])
+
+// Parse une chaîne démographique type "~30 000" ou "16 700" → nombre entier
+function parseDemographicNum(str){
+  if(!str)return 0;
+  var clean=String(str).replace(/[~€≈>< km²]/gi,'').replace(/\s/g,'').replace(/\./g,'');
+  var n=parseInt(clean);return isNaN(n)?0:n;
+}
+
+// Estime la population dans un cercle de rayon radiusM
+function calcPopZone(sid,radiusM){
+  var ld=LOCALISATION_DATA[sid];
+  if(!ld||!ld.demo)return null;
+  var densityItem=(ld.demo||[]).find(function(d){return /densit/i.test(d.lbl);});
+  var popItem=(ld.demo||[]).find(function(d){return /population/i.test(d.lbl);});
+  if(!densityItem)return null;
+  var density=parseDemographicNum(densityItem.kpi);
+  if(!density)return null;
+  var maxPop=popItem?parseDemographicNum(popItem.kpi):0;
+  var radiusKm=radiusM/1000;
+  var areaKm2=Math.PI*radiusKm*radiusKm;
+  var estPop=Math.round(density*areaKm2);
+  if(maxPop>0)estPop=Math.min(estPop,Math.round(maxPop*0.9));
+  return{estPop:estPop,density:density,areaKm2:Math.round(areaKm2*10)/10};
+}
+
+// Met à jour le cercle ajustable + l'affichage population sans re-render
+function updateZoneRadius(val){
+  var r=Math.max(500,Math.min(5000,parseInt(val)||2000));
+  S.mapZoneRadius=r;
+  // Mettre à jour le cercle sur la carte existante
+  if(_leafletMapInst&&_leafletCircles[2])_leafletCircles[2].setRadius(r);
+  // Label rayon
+  var lbl=document.getElementById('map-radius-label');
+  if(lbl){var km=r>=1000?(r/1000).toFixed(1)+' km':r+' m';lbl.textContent=km;}
+  // Gradient du curseur
+  var sl=document.getElementById('map-zone-slider');
+  if(sl){var pct=((r-500)/(5000-500)*100).toFixed(1);sl.style.setProperty('--pct',pct+'%');}
+  // Estimation population
+  var popEl=document.getElementById('map-pop-estimate');
+  if(popEl){
+    var sid=S.selectedId;
+    var pop=calcPopZone(sid,r);
+    var km2=r>=1000?(r/1000).toFixed(1)+' km':r+' m';
+    if(pop&&pop.estPop>0){
+      var popFmt=new Intl.NumberFormat('fr-FR').format(pop.estPop);
+      popEl.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
+        +'<div style="font-size:24px;font-weight:700;color:#0f1f3d;line-height:1">'+popFmt+'</div>'
+        +'<div style="font-size:10px;color:#64748b;font-weight:500">hab. estimés dans un rayon de '+km2+'</div>'
+        +'<div style="font-size:9.5px;color:#94a3b8;margin-top:2px">Densité : '+new Intl.NumberFormat('fr-FR').format(pop.density)+' hab/km²</div>'
+        +'</div>';
+    } else {
+      popEl.innerHTML='<div style="font-size:11px;color:#94a3b8;text-align:center">Densité non disponible</div>';
+    }
+  }
+}
 
 function initLocalisationMap(sid){
   var el=document.getElementById('leaflet-map');
@@ -2516,6 +2598,7 @@ function initLocalisationMap(sid){
 
   // Détruire l'instance précédente
   if(_leafletMapInst){try{_leafletMapInst.remove();}catch(e){} _leafletMapInst=null;}
+  _leafletCircles=[];
 
   // Initialisation
   var map=L.map('leaflet-map',{center:[coords.lat,coords.lon],zoom:14,zoomControl:false,attributionControl:true});
@@ -2531,10 +2614,54 @@ function initLocalisationMap(sid){
   L.control.zoom({position:'bottomright'}).addTo(map);
 
   // ── Zones de chalandise ──
+  // Les 2 premières (500m et 1km) sont fixes. La 3e est ajustable via le curseur.
+  var outerR=S.mapZoneRadius||2000;
+  var outerColor=outerR<=1500?'#378ADD':outerR<=3000?'#7F77DD':'#9B59B6';
+  var zoneDefs=[
+    [500,'#1D9E75',0.75,0.07,null],
+    [1000,'#378ADD',0.55,0.04,'6 4'],
+    [outerR,outerColor,0.5,0.025,'4 3'],
+  ];
   if(S.mapShowZones!==false){
-    [[500,'#1D9E75',0.75,0.07,null],[1000,'#378ADD',0.55,0.04,'6 4'],[2000,'#7F77DD',0.4,0.025,'4 3']].forEach(function(c){
-      L.circle([coords.lat,coords.lon],{radius:c[0],color:c[1],weight:2,opacity:c[2],fill:true,fillColor:c[1],fillOpacity:c[3],dashArray:c[4]}).addTo(map);
+    zoneDefs.forEach(function(c,i){
+      var circ=L.circle([coords.lat,coords.lon],{radius:c[0],color:c[1],weight:i===2?2.5:1.5,opacity:c[2],fill:true,fillColor:c[1],fillOpacity:c[3],dashArray:c[4]}).addTo(map);
+      _leafletCircles.push(circ);
     });
+  }
+
+  // ── Visualisation trafic routier ──
+  if(ld&&ld.trafic&&ld.trafic[0]){
+    var tmjaStr=ld.trafic[0].kpi;
+    var tmja=0;
+    var tm1=tmjaStr.match(/(\d+)[–\-–—](\d+)\s*[Kk]/);
+    if(tm1){tmja=(parseInt(tm1[1])+parseInt(tm1[2]))/2*1000;}
+    else{var tm2=tmjaStr.match(/~?(\d[\d ]+)/);if(tm2)tmja=parseDemographicNum(tm2[1]);}
+    if(tmja>0){
+      var tColor=tmja>25000?'#D85A30':tmja>15000?'#E89B2A':'#5BAD70';
+      var tWeight=Math.max(5,Math.min(10,tmja/3500));
+      // Segment de route symbolique passant par le studio (~900m)
+      var dLon=0.007/Math.cos(coords.lat*Math.PI/180);
+      L.polyline([[coords.lat-0.0005,coords.lon-dLon],[coords.lat+0.0005,coords.lon+dLon]],{
+        color:tColor,weight:tWeight,opacity:0.55,lineCap:'round',lineJoin:'round',
+      }).addTo(map).bindPopup(
+        '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">🚗 Trafic routier estimé</div>'
+        +'<div style="font-size:20px;font-weight:700;color:'+tColor+'">'+tmjaStr+'</div>'
+        +'<div style="font-size:11px;color:#475569;margin-top:2px">véhicules / jour (TMJA)</div>'
+        +'<div style="font-size:10px;color:#94a3b8;margin-top:4px">'+ld.trafic[0].lbl+'<br>'+ld.trafic[0].sub+'</div>',
+        {maxWidth:240}
+      );
+      // Badge TMJA intégré à la carte
+      var TmjaCtrl=L.Control.extend({options:{position:'topright'},onAdd:function(){
+        var d=L.DomUtil.create('div');
+        d.style.cssText='background:rgba(255,255,255,0.94);border-radius:10px;padding:8px 12px;border:0.5px solid rgba(0,0,0,0.1);box-shadow:0 2px 10px rgba(0,0,0,0.12);font-family:-apple-system,BlinkMacSystemFont,sans-serif;text-align:center';
+        d.innerHTML='<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px">Trafic routier</div>'
+          +'<div style="font-size:16px;font-weight:700;color:'+tColor+'">'+tmjaStr+'</div>'
+          +'<div style="font-size:9px;color:#94a3b8">véh/jour (TMJA)</div>';
+        L.DomEvent.disableClickPropagation(d);
+        return d;
+      }});
+      new TmjaCtrl().addTo(map);
+    }
   }
 
   // ── Marqueurs transports ──
@@ -2572,18 +2699,22 @@ function initLocalisationMap(sid){
 
   // ── Légende (Leaflet Control bas gauche) ──
   if(S.mapShowZones!==false){
+    var outerLabel=outerR>=1000?(outerR/1000).toFixed(1)+' km':outerR+' m';
     var LegCtrl=L.Control.extend({options:{position:'bottomleft'},onAdd:function(){
       var d=L.DomUtil.create('div');
       d.style.cssText='background:rgba(255,255,255,0.94);border-radius:10px;padding:9px 13px;border:0.5px solid rgba(0,0,0,0.1);box-shadow:0 2px 10px rgba(0,0,0,0.12);font-family:-apple-system,BlinkMacSystemFont,sans-serif';
       d.innerHTML='<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Zones de chalandise</div>'
         +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:24px;height:2px;background:#1D9E75;border-radius:1px"></div><span style="font-size:10px;color:#475569">500 m — Marche</span></div>'
         +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:24px;height:0;border-top:2px dashed #378ADD;opacity:0.7"></div><span style="font-size:10px;color:#475569">1 km — TC</span></div>'
-        +'<div style="display:flex;align-items:center;gap:7px"><div style="width:24px;height:0;border-top:2px dashed #7F77DD;opacity:0.5"></div><span style="font-size:10px;color:#475569">2 km — Vélo</span></div>';
+        +'<div id="loc-leg-outer" style="display:flex;align-items:center;gap:7px"><div style="width:24px;height:0;border-top:2px dashed '+outerColor+';opacity:0.6"></div><span style="font-size:10px;color:#475569">'+outerLabel+' — Zone active</span></div>';
       L.DomEvent.disableClickPropagation(d);
       return d;
     }});
     new LegCtrl().addTo(map);
   }
+
+  // Initialiser l'affichage population après un court délai
+  setTimeout(function(){updateZoneRadius(S.mapZoneRadius||2000);},80);
 
   // ── Badge nom du studio (haut gauche) ──
   var NameCtrl=L.Control.extend({options:{position:'topleft'},onAdd:function(){
