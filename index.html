@@ -596,6 +596,8 @@ async function loadAll(){
     else if(id.endsWith('_simconfig')){
       var sc=r.data&&r.data.config||{};
       if(Object.keys(sc).length>0){
+        // Reset si les prix sauvegardés sont les anciens defaults incorrects (117/206/294)
+        if(sc.prix4===117&&sc.prix8===206&&sc.prixi===294){sc.prix4=110;sc.prix8=193.33;sc.prixi=276.67;}
         S.simConfig[id.slice(0,-10)]=sc;
         try{localStorage.setItem('isseo_sim_'+id.slice(0,-10),JSON.stringify(sc));}catch(e){}
       }
@@ -828,7 +830,7 @@ function renderBP3YInfographic(sid,s){
   });
 
   // ── Simulation Adhérents — même logique exacte que l'onglet Adhérents ────────
-  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
+  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   var actuelWF=S.adherents[sid]||{};
   var simMonthlyCA=[];
   for(var si=0;si<36;si++){
@@ -1136,7 +1138,7 @@ function renderAdherents(sid,s){
 
   // ── Simulateur CA prévisionnel ───────────────────────────────────────────
   // Lire config sauvegardée ou valeurs BP par défaut
-  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
+  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   h+=renderSimCA(sid,ay,bpArr,realArr,simCfg);
   h+='</div>';
   return h;
@@ -2581,7 +2583,7 @@ function computeBPCA(membres,ay){
 // Pour cohérence avec BP : prix affichés = prix calibrés (packs × facteur boutique incluse)
 // Facteurs A1=1.0638 A2=1.0106 A3=1.0845 — on utilise A1 comme référence d'affichage
 // Prix de référence affichés dans l'UI = prix calibrés A1
-var SIM_PRIX_REF={prix4:117,prix8:206,prixi:294}; // 110×1.064 / 193.33×1.064 / 276.67×1.064
+var SIM_PRIX_REF={prix4:110,prix8:193.33,prixi:276.67}; // Prix BP de référence (dossier officiel)
 
 function computeSimARPU(cfg){
   var p4=num(cfg.p4,47)/100, p8=num(cfg.p8,50)/100, pi=num(cfg.pi,3)/100;
@@ -2726,7 +2728,7 @@ function buildSimCAChart(caArr,membres,realArr){
 }
 
 function updateSimRep(sid,field,val,ay){
-  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
+  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.simConfig[sid][field]=num(val);
   // Sync libellé slider
   var lbl=document.getElementById('sim-lbl-'+field);
@@ -2736,11 +2738,11 @@ function updateSimRep(sid,field,val,ay){
 }
 
 function updateSimPrix(sid,field,val,ay){
-  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
+  if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.simConfig[sid][field]=num(val);
   saveSimConfig(sid);
   // Mettre à jour delta vs BP
-  var refs={prix4:117,prix8:206,prixi:294};
+  var refs={prix4:110,prix8:193.33,prixi:276.67};
   var ref=refs[field];
   var delta=ref?Math.round((num(val)-ref)/ref*100):0;
   var el=document.getElementById('sim-delta-'+field);
@@ -2752,7 +2754,7 @@ function updateSimPrix(sid,field,val,ay){
 }
 
 function _refreshSimCA(sid,ay){
-  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
+  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
   var total=p4+p8+pi;
 
