@@ -2527,6 +2527,57 @@ function renderLocalisation(s){
 var _leafletMapInst=null;
 var _leafletCircles=[];   // références aux cercles de zone (max = [2])
 
+// ── INSEE : population réelle par zone (geo.api.gouv.fr) ──────────────────────
+var _inseePopCache={};      // cache {sid_radius: result}
+var _inseeDebounceTimer=null;
+
+// Distance en mètres entre deux points GPS (Haversine)
+function haversineM(lat1,lon1,lat2,lon2){
+  var R=6371000,dLat=(lat2-lat1)*Math.PI/180,dLon=(lon2-lon1)*Math.PI/180;
+  var a=Math.sin(dLat/2)*Math.sin(dLat/2)+Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)*Math.sin(dLon/2);
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+
+// Aire d'intersection exacte de deux cercles (formule géométrique)
+function circleIntersectArea(d,r1,r2){
+  if(d>=r1+r2)return 0;                        // Pas de chevauchement
+  if(d+r2<=r1)return Math.PI*r2*r2;            // Commune entièrement dans la zone
+  if(d+r1<=r2)return Math.PI*r1*r1;            // Zone entièrement dans la commune
+  var a=Math.max(-1,Math.min(1,(d*d+r1*r1-r2*r2)/(2*d*r1)));
+  var b=Math.max(-1,Math.min(1,(d*d+r2*r2-r1*r1)/(2*d*r2)));
+  var alpha=Math.acos(a),beta=Math.acos(b);
+  var tri=0.5*Math.sqrt(Math.max(0,(-d+r1+r2)*(d+r1-r2)*(d-r1+r2)*(d+r1+r2)));
+  return r1*r1*alpha+r2*r2*beta-tri;
+}
+
+// Estimation de population via geo.api.gouv.fr (données INSEE officielles)
+// Pour chaque commune intersectant le cercle, calcule la fraction de population pondérée
+async function calcPopZoneINSEE(lat,lon,radiusM){
+  var url='https://geo.api.gouv.fr/communes?lat='+lat+'&lon='+lon+'&distance='+radiusM+'&fields=nom,population,surface,centre&format=json&limit=50';
+  try{
+    var res=await fetch(url);
+    if(!res.ok)return null;
+    var communes=await res.json();
+    if(!Array.isArray(communes)||!communes.length)return null;
+    var total=0,details=[];
+    communes.forEach(function(c){
+      if(!c.population||!c.surface)return;
+      var communeAreaM2=c.surface*10000;              // hectares → m²
+      var communeRadius=Math.sqrt(communeAreaM2/Math.PI); // rayon équivalent (m)
+      var centroid=c.centre&&c.centre.coordinates;
+      // Distance studio → centroïde commune
+      var d=centroid?haversineM(lat,lon,centroid[1],centroid[0]):0;
+      // Fraction de la commune dans la zone = aire intersection / aire commune
+      var intersect=circleIntersectArea(d,radiusM,communeRadius);
+      var fraction=Math.min(1,intersect/communeAreaM2);
+      var contrib=Math.round(c.population*fraction);
+      if(contrib>0){total+=contrib;details.push({nom:c.nom,population:c.population,fraction:Math.round(fraction*100),contrib:contrib});}
+    });
+    details.sort(function(a,b){return b.contrib-a.contrib;});
+    return total>0?{total:total,communes:details,nbCommunes:communes.length}:null;
+  }catch(e){return null;}
+}
+
 // Parse une chaîne démographique type "~30 000" ou "16 700" → nombre entier
 function parseDemographicNum(str){
   if(!str)return 0;
@@ -2549,34 +2600,65 @@ function calcPopZone(sid,radiusM){
   return{estPop:estPop,density:density,areaKm2:Math.round(areaKm2*10)/10};
 }
 
-// Met à jour le cercle ajustable + l'affichage population sans re-render
+// Met à jour le cercle + déclenche le calcul INSEE (debounce 500ms)
 function updateZoneRadius(val){
   var r=Math.max(500,Math.min(5000,parseInt(val)||2000));
   S.mapZoneRadius=r;
-  // Mettre à jour le cercle sur la carte existante
+  // Mise à jour immédiate cercle + UI
   if(_leafletMapInst&&_leafletCircles[2])_leafletCircles[2].setRadius(r);
-  // Label rayon
+  var km=r>=1000?(r/1000).toFixed(1)+' km':r+' m';
   var lbl=document.getElementById('map-radius-label');
-  if(lbl){var km=r>=1000?(r/1000).toFixed(1)+' km':r+' m';lbl.textContent=km;}
-  // Gradient du curseur
+  if(lbl)lbl.textContent=km;
   var sl=document.getElementById('map-zone-slider');
   if(sl){var pct=((r-500)/(5000-500)*100).toFixed(1);sl.style.setProperty('--pct',pct+'%');}
-  // Estimation population
+  // Loader pendant le debounce
   var popEl=document.getElementById('map-pop-estimate');
-  if(popEl){
+  if(popEl)popEl.innerHTML='<div style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:7px">'
+    +'<div style="width:14px;height:14px;border:2px solid #e2e8f0;border-top-color:#0F6E56;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>'
+    +'Données INSEE en cours…</div>';
+  // Debounce : appel API 500ms après arrêt du curseur
+  if(_inseeDebounceTimer)clearTimeout(_inseeDebounceTimer);
+  _inseeDebounceTimer=setTimeout(function(){
     var sid=S.selectedId;
-    var pop=calcPopZone(sid,r);
-    var km2=r>=1000?(r/1000).toFixed(1)+' km':r+' m';
-    if(pop&&pop.estPop>0){
-      var popFmt=new Intl.NumberFormat('fr-FR').format(pop.estPop);
-      popEl.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:2px">'
-        +'<div style="font-size:24px;font-weight:700;color:#0f1f3d;line-height:1">'+popFmt+'</div>'
-        +'<div style="font-size:10px;color:#64748b;font-weight:500">hab. estimés dans un rayon de '+km2+'</div>'
-        +'<div style="font-size:9.5px;color:#94a3b8;margin-top:2px">Densité : '+new Intl.NumberFormat('fr-FR').format(pop.density)+' hab/km²</div>'
-        +'</div>';
-    } else {
-      popEl.innerHTML='<div style="font-size:11px;color:#94a3b8;text-align:center">Densité non disponible</div>';
-    }
+    var coords=S.mapCoords[sid];
+    var cacheKey=sid+'_'+r;
+    if(_inseePopCache[cacheKey]){_renderINSEEPop(popEl,_inseePopCache[cacheKey],r);return;}
+    if(!coords){_renderDensityPop(popEl,sid,r);return;}
+    calcPopZoneINSEE(coords.lat,coords.lon,r).then(function(result){
+      if(result&&result.total>0){_inseePopCache[cacheKey]=result;_renderINSEEPop(popEl,result,r);}
+      else{_renderDensityPop(popEl,sid,r);}
+    });
+  },500);
+}
+
+function _renderINSEEPop(popEl,result,radiusM){
+  if(!popEl)return;
+  var km=radiusM>=1000?(radiusM/1000).toFixed(1)+' km':radiusM+' m';
+  var fmt=new Intl.NumberFormat('fr-FR');
+  var top=result.communes.slice(0,3).map(function(c){
+    return '<span style="white-space:nowrap">'+c.nom+' <b>'+fmt.format(c.contrib)+'</b> ('+c.fraction+'%)</span>';
+  }).join(' &middot; ');
+  popEl.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:100%">'
+    +'<div style="font-size:26px;font-weight:700;color:#0f1f3d;line-height:1">'+fmt.format(result.total)+'</div>'
+    +'<div style="font-size:10px;color:#64748b;font-weight:500">habitants dans un rayon de '+km+'</div>'
+    +'<div style="font-size:9px;background:#E1F5EE;color:#0F6E56;border-radius:20px;padding:2px 9px;margin-top:4px;font-weight:600">📊 Source : INSEE 2021 · '+result.communes.length+' commune'+(result.communes.length>1?'s':'')+'</div>'
+    +(top?'<div style="font-size:9px;color:#94a3b8;margin-top:5px;text-align:center;line-height:1.5">'+top+'</div>':'')
+    +'</div>';
+}
+
+function _renderDensityPop(popEl,sid,radiusM){
+  if(!popEl)return;
+  var pop=calcPopZone(sid,radiusM);
+  var km=radiusM>=1000?(radiusM/1000).toFixed(1)+' km':radiusM+' m';
+  var fmt=new Intl.NumberFormat('fr-FR');
+  if(pop&&pop.estPop>0){
+    popEl.innerHTML='<div style="display:flex;flex-direction:column;align-items:center;gap:3px;width:100%">'
+      +'<div style="font-size:26px;font-weight:700;color:#0f1f3d;line-height:1">'+fmt.format(pop.estPop)+'</div>'
+      +'<div style="font-size:10px;color:#64748b;font-weight:500">hab. estimés · rayon '+km+'</div>'
+      +'<div style="font-size:9px;background:#f0f0ea;color:#888;border-radius:20px;padding:2px 9px;margin-top:4px">Estimation · densité communale</div>'
+      +'</div>';
+  } else {
+    popEl.innerHTML='<div style="font-size:11px;color:#94a3b8;text-align:center">Données non disponibles</div>';
   }
 }
 
