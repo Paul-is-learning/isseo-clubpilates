@@ -1791,7 +1791,7 @@ function renderAI(s){
   // Suggestions rapides
   h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">';
   suggestions.forEach(function(sg){
-    h+='<button onclick="document.getElementById(\'aiq\').value=\''+sg.replace(/'/g,"\\'")+'\';" style="background:#f0f4fc;color:#1a3a6b;border:1px solid #d0d9ec;border-radius:20px;padding:4px 11px;font-size:11px;cursor:pointer;font-weight:500">'+sg+'</button>';
+    h+='<button onclick="document.getElementById(\'aiq\').value=\''+sg.replace(/'/g,"\\'")+'\';askAI();" style="background:#f0f4fc;color:#1a3a6b;border:1px solid #d0d9ec;border-radius:20px;padding:4px 11px;font-size:11px;cursor:pointer;font-weight:500">'+sg+'</button>';
   });
   h+='</div>';
   // Réponse
