@@ -2652,18 +2652,6 @@ async function initLocalisationMap(sid){
     else{var tm2=tmjaStr.match(/~?(\d[\d ]+)/);if(tm2)tmja=parseDemographicNum(tm2[1]);}
     if(tmja>0){
       var tColor=tmja>25000?'#D85A30':tmja>15000?'#E89B2A':'#5BAD70';
-      var tWeight=Math.max(5,Math.min(10,tmja/3500));
-      // Segment de route symbolique passant par le studio (~900m)
-      var dLon=0.007/Math.cos(coords.lat*Math.PI/180);
-      L.polyline([[coords.lat-0.0005,coords.lon-dLon],[coords.lat+0.0005,coords.lon+dLon]],{
-        color:tColor,weight:tWeight,opacity:0.55,lineCap:'round',lineJoin:'round',
-      }).addTo(map).bindPopup(
-        '<div style="font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;margin-bottom:6px">🚗 Trafic routier estimé</div>'
-        +'<div style="font-size:20px;font-weight:700;color:'+tColor+'">'+tmjaStr+'</div>'
-        +'<div style="font-size:11px;color:#475569;margin-top:2px">véhicules / jour (TMJA)</div>'
-        +'<div style="font-size:10px;color:#94a3b8;margin-top:4px">'+ld.trafic[0].lbl+'<br>'+ld.trafic[0].sub+'</div>',
-        {maxWidth:240}
-      );
       // Badge TMJA intégré à la carte
       var TmjaCtrl=L.Control.extend({options:{position:'topright'},onAdd:function(){
         var d=L.DomUtil.create('div');
