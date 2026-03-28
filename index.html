@@ -3179,7 +3179,19 @@ async function syncData(){
       }
     } else if(id==='_admin_settings'){
       var nv=Object.assign({blocked:[],roles:{}},r.data&&r.data.settings||{});
-      if(JSON.stringify(nv)!==JSON.stringify(S.adminSettings)){S.adminSettings=nv;changed=true;}
+      if(JSON.stringify(nv)!==JSON.stringify(S.adminSettings)){
+        S.adminSettings=nv;
+        // Appliquer immédiatement le nouvel override de rôle à la session courante
+        if(S.user&&S.profile){
+          var newRole=nv.roles&&nv.roles[S.user.id];
+          if(newRole){S.profile=Object.assign({},S.profile,{role:newRole});}
+        }
+        // Vérifier si l'utilisateur courant vient d'être bloqué
+        if(S.user&&nv.blocked&&nv.blocked.indexOf(S.user.id)>=0){
+          sb.auth.signOut();S.user=null;S.profile=null;S.view='auth';render();return;
+        }
+        changed=true;
+      }
     } else if(id==='global_chat'){
       var nv=r.data&&r.data.messages||[];
       if(JSON.stringify(nv)!==JSON.stringify(S.globalChat)){
