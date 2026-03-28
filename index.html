@@ -586,6 +586,7 @@ var S={
   chatOpen:false,       // panneau chat ouvert/fermé
   chatLastSeen:localStorage.getItem('chatLastSeen')||'', // ts du dernier message lu
   adminSettings:{blocked:[],roles:{},viewers:[]}, // contrôle accès utilisateurs
+  avatarUrls:{}, // URLs photos uploadées par chaque utilisateur {nom: url}
 };
 
 async function loadAll(){
@@ -599,6 +600,7 @@ async function loadAll(){
     else if(id.endsWith('_depenses')){S.depenses[id.slice(0,-9)]=r.data&&r.data.depenses||[];}
     else if(id==='global_chat'){S.globalChat=r.data&&r.data.messages||[];}
     else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{},viewers:[]},r.data&&r.data.settings||{});}
+    else if(id==='_avatars'){S.avatarUrls=r.data&&r.data.avatars||{};}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
     else if(id.endsWith('_simconfig')){
@@ -732,7 +734,7 @@ function _ini(n){return (n||'').split(' ').map(function(w){return w[0]||'';}).jo
 function avatarHTML(nom,size){
   size=size||32;
   var key=(nom||'').toLowerCase().trim();
-  var photo=PHOTO_MAP[key]||PHOTO_MAP[key.split(' ')[0]]||null;
+  var photo=(S.avatarUrls&&S.avatarUrls[key])||PHOTO_MAP[key]||PHOTO_MAP[key.split(' ')[0]]||null;
   var bg=_aC(nom||'?');var txt=_ini(nom||'?');
   var fs=Math.round(size*0.34);
   var base='width:'+size+'px;height:'+size+'px;border-radius:50%;flex-shrink:0;';
@@ -880,6 +882,50 @@ async function toggleUserAccess(uid,block){
   render();
 }
 
+// ── Avatar utilisateur connecté ──────────────────────────────────────────────
+function userAvatarWidget(profile){
+  if(!profile)return '';
+  var nom=profile.nom||'';
+  var h='<div style="display:flex;align-items:center;gap:9px">';
+  // Avatar cliquable
+  h+='<div style="position:relative;cursor:pointer;flex-shrink:0" onclick="document.getElementById(\'avatar-upload-input\').click()" title="Changer ma photo de profil">';
+  h+=avatarHTML(nom,38);
+  h+='<div style="position:absolute;bottom:0;right:0;background:#276749;border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;border:1.5px solid #fff;line-height:1">✎</div>';
+  h+='</div>';
+  h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
+  // Nom
+  h+='<span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px;font-weight:500">'+nom+'</span>';
+  h+='</div>';
+  return h;
+}
+
+async function uploadAvatar(input){
+  var file=input.files&&input.files[0];
+  if(!file||!S.user||!S.profile)return;
+  if(file.size>8*1024*1024){toast('Fichier trop volumineux (max 8MB)');return;}
+  var nom=(S.profile.nom||'').toLowerCase().trim();
+  var ext=file.name.split('.').pop().toLowerCase()||'jpg';
+  var path='avatars/'+S.user.id+'.'+ext;
+  toast('Chargement de la photo…');
+  var up=await sb.storage.from('studio-files').upload(path,file,{upsert:true,contentType:file.type});
+  if(up.error){toast('Erreur upload : '+up.error.message);return;}
+  var pu=sb.storage.from('studio-files').getPublicUrl(path);
+  var url=pu.data&&pu.data.publicUrl;
+  if(!url){toast('Erreur URL publique');return;}
+  // Cache-bust URL pour forcer le rechargement du navigateur
+  url=url.split('?')[0]+'?v='+Date.now();
+  S.avatarUrls[nom]=url;
+  // Persister en Supabase
+  var ex=await sb.from('studios').select('data').eq('id','_avatars').maybeSingle();
+  var existing=(ex.data&&ex.data.data&&ex.data.data.avatars)||{};
+  existing[nom]=url;
+  await sb.from('studios').upsert({id:'_avatars',data:{avatars:existing},updated_at:new Date().toISOString()});
+  toast('Photo mise à jour ! ✓');
+  render();renderChat();
+  // Reset input pour permettre un re-upload du même fichier
+  input.value='';
+}
+
 async function toggleViewer(uid,enable){
   if(!isSuperAdmin())return;
   var viewers=S.adminSettings.viewers||[];
@@ -907,7 +953,8 @@ function renderDashboard(){
   var h='<div class="app">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
   h+='<div style="display:flex;align-items:center;gap:12px">'+LI+COLLAB_SEP+LC+'</div>';
-  h+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px">'+(S.profile&&S.profile.nom||'')+'</span>';
+  h+='<div style="display:flex;align-items:center;gap:10px">';
+  h+=userAvatarWidget(S.profile);
   h+='<button class="btn" onclick="doLogout()">Deconnexion</button></div></div>';
   h+='<div class="kpis">';
   h+='<div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">'+ids.length+'</div></div>';
@@ -993,7 +1040,8 @@ function renderDetail(){
   var h='<div class="app">';
   h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px">';
   h+='<button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin:0" onclick="goBack()">&#8592; Retour</button>';
-  h+='<div style="display:flex;align-items:center;gap:10px">'+LI+COLLAB_SEP+LC+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:12px">'+LI+COLLAB_SEP+LC+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:8px">'+userAvatarWidget(S.profile)+'</div>';
   h+='</div>';
   if(isViewer())h+='<div style="display:inline-flex;align-items:center;gap:5px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:4px 10px;font-size:11px;color:#1D4ED8;font-weight:600;margin-bottom:10px">👁 Mode lecture seule — consultation uniquement</div>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut)+'</div>';
@@ -3270,6 +3318,9 @@ async function syncData(){
         }
         changed=true;
       }
+    } else if(id==='_avatars'){
+      var nv=r.data&&r.data.avatars||{};
+      if(JSON.stringify(nv)!==JSON.stringify(S.avatarUrls)){S.avatarUrls=nv;changed=true;}
     } else if(id==='global_chat'){
       var nv=r.data&&r.data.messages||[];
       if(JSON.stringify(nv)!==JSON.stringify(S.globalChat)){
