@@ -2820,7 +2820,18 @@ async function syncData(){
         changed=true;
       }
     } else if(!id.endsWith('_messages')){
-      if(r.data&&JSON.stringify(r.data)!==JSON.stringify(S.studios[id]||{})){S.studios[id]=r.data;changed=true;}
+      if(r.data&&JSON.stringify(r.data)!==JSON.stringify(S.studios[id]||{})){
+        var sd=r.data;
+        // Toujours appliquer les valeurs INIT (source de vérité) — évite réversion après sync
+        if(INIT[id]){
+          ['capex','emprunt','leasing','ouverture'].forEach(function(f){
+            if(INIT[id][f]!==undefined)sd[f]=INIT[id][f];
+          });
+          if(INIT[id].forecast&&INIT[id].forecast.moisDebut!==undefined&&sd.forecast)
+            sd.forecast.moisDebut=INIT[id].forecast.moisDebut;
+        }
+        S.studios[id]=sd;changed=true;
+      }
     }
   });
   if(changed)render();
