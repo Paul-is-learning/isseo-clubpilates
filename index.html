@@ -2109,11 +2109,41 @@ async function askAI(){
   S.aiLoading=true;S.aiResp='';render();
   var s=S.studios[S.selectedId];
   var cfg=S.simConfig[S.selectedId]||{};
-  var ctx='Studio : '+s.name+', société : '+s.societe+', statut : '+s.statut+'. ';
-  ctx+='Adhérents cibles : 285 fin A1, 345 fin A2, 400 fin A3. ';
-  ctx+='Répartition : Pack4 ('+Math.round((cfg.p4||47))+'%) à '+(cfg.prix4||110)+' € HT, Pack8 ('+Math.round((cfg.p8||50))+'%) à '+(cfg.prix8||193.33)+' € HT, Illimité ('+Math.round((cfg.pi||3))+'%) à '+(cfg.prixi||276.67)+' € HT. ';
-  ctx+='CA BP : A1='+fmt(s.forecast&&s.forecast.annualCA||CA_A1)+', A2='+fmt(s.forecast&&s.forecast.annualCA2||CA_A2)+', A3='+fmt(s.forecast&&s.forecast.annualCA3||CA_A3)+'. ';
-  ctx+='CAPEX : '+fmt(s.capex||333500)+', Emprunt : '+fmt(s.emprunt||230000)+', Leasing équipement : '+fmt(s.leasing||121600)+'.';
+  var capex=s.capex||333500;
+  var emprunt=s.emprunt||230000;
+  var leasing=s.leasing||121600;
+  var rembtAn=Math.round(emprunt/7);        // remboursement capital/an (7 ans)
+  var leasingAn=Math.round(leasing/60*12);  // mensualités leasing annualisées (5 ans)
+  var r1=BP_RESULTATS[1],r2=BP_RESULTATS[2],r3=BP_RESULTATS[3];
+  var c1=BP_CHARGES_ANNUELLES[1],c2=BP_CHARGES_ANNUELLES[2],c3=BP_CHARGES_ANNUELLES[3];
+  var ebitda1=Math.round(r1.rex+c1.amort+c1.charges_fin);
+  var ebitda2=Math.round(r2.rex+c2.amort+c2.charges_fin);
+  var ebitda3=Math.round(r3.rex+c3.amort+c3.charges_fin);
+  // Construction du contexte P&L complet
+  var ctx='=== CONTEXTE FINANCIER CLUB PILATES — '+s.name.toUpperCase()+' ===\n';
+  ctx+='Société : '+s.societe+' | Ouverture : '+s.ouverture+'\n\n';
+  ctx+='--- STRUCTURE INVESTISSEMENT (montants UNIQUES, non récurrents) ---\n';
+  ctx+='CAPEX total (investissement initial unique) : '+capex+'€\n';
+  ctx+='  dont Emprunt bancaire (remboursé sur 7 ans) : '+emprunt+'€ → '+rembtAn+'€/an en capital\n';
+  ctx+='  dont Leasing équipement Pilates (60 mois) : '+leasing+'€ → '+leasingAn+'€/an en mensualités\n';
+  ctx+='  dont Fonds propres : '+(capex-emprunt)+'€\n\n';
+  ctx+='--- COMPTE DE RÉSULTAT BP ANNUEL (chiffres EXACTS du plan financier) ---\n';
+  ctx+='                          A1          A2          A3\n';
+  ctx+='CA total (HT)        : '+r1.ca+'€    '+r2.ca+'€    '+r3.ca+'€\n';
+  ctx+='Charges opé totales  : '+r1.charges+'€  '+r2.charges+'€  '+r3.charges+'€\n';
+  ctx+='  dont Coachs/Salaires: '+c1.coachs+'€     '+c2.coachs+'€     '+c3.coachs+'€\n';
+  ctx+='  dont Loyer          : '+c1.loyer+'€      '+c2.loyer+'€      '+c3.loyer+'€\n';
+  ctx+='  dont Royalties (9%) : '+Math.round(r1.ca*0.09)+'€      '+Math.round(r2.ca*0.09)+'€      '+Math.round(r3.ca*0.09)+'€\n';
+  ctx+='  dont Amortissements : '+c1.amort+'€      '+c2.amort+'€      '+c3.amort+'€\n';
+  ctx+='  dont Charges fin.   : '+c1.charges_fin+'€       '+c2.charges_fin+'€       '+c3.charges_fin+'€\n';
+  ctx+='EBITDA               : '+ebitda1+'€      '+ebitda2+'€     '+ebitda3+'€\n';
+  ctx+='REX (résultat exploit): '+r1.rex+'€      '+r2.rex+'€     '+r3.rex+'€\n';
+  ctx+='Résultat net         : '+r1.rnet+'€      '+r2.rnet+'€     '+r3.rnet+'€\n';
+  ctx+='CAF                  : '+r1.caf+'€      '+r2.caf+'€     '+r3.caf+'€\n';
+  ctx+='Tréso (après rembt)  : '+r1.treso+'€      '+r2.treso+'€     '+r3.treso+'€\n\n';
+  ctx+='--- ADHÉRENTS & PRICING ---\n';
+  ctx+='Adhérents cibles : 285 fin A1, 345 fin A2, 400 fin A3\n';
+  ctx+='Pack4 ('+Math.round(cfg.p4||47)+'%) : '+(cfg.prix4||110)+'€ HT/mois | Pack8 ('+Math.round(cfg.p8||50)+'%) : '+(cfg.prix8||193.33)+'€ HT/mois | Illimité ('+Math.round(cfg.pi||3)+'%) : '+(cfg.prixi||276.67)+'€ HT/mois\n';
   try{
     // Récupérer le vrai token JWT de session
     var sessRes=await sb.auth.getSession();

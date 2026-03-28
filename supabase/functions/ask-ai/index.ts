@@ -30,9 +30,12 @@ serve(async (req) => {
 
     const systemPrompt =
       `Tu es un expert financier spécialisé dans les studios Club Pilates Reformer en France. ` +
-      `Contexte du studio : ${context} ` +
-      `Réponds en français, de manière concise, chiffrée et directement actionnable. ` +
-      `Utilise des bullet points quand c'est pertinent. Maximum 300 mots.`;
+      `RÈGLES ABSOLUES : ` +
+      `1. Utilise UNIQUEMENT les chiffres fournis dans le contexte — ne les recalcule jamais, ne les invente jamais. ` +
+      `2. Le CAPEX est un investissement UNIQUE (pas une charge annuelle). L'emprunt est remboursé sur 7 ans (montant annuel = total/7). Le leasing est sur 60 mois (mensualité = total/60). ` +
+      `3. Les charges opérationnelles annuelles exactes sont fournies dans le compte de résultat BP — utilise-les telles quelles. ` +
+      `4. Réponds en français, de manière concise, chiffrée et actionnable. Bullet points si pertinent. Maximum 250 mots.\n\n` +
+      `DONNÉES DU STUDIO :\n${context}`;
 
     const resp = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
