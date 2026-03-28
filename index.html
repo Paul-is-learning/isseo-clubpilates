@@ -652,7 +652,7 @@ function renderBP3YInfographic(sid,s){
   });
 
   // Year bands + separateurs + labels
-  var bandBg=['rgba(24,95,165,0.04)','rgba(15,110,86,0.05)','rgba(133,79,11,0.04)'];
+  var bandBg=['rgba(77,122,92,0.06)','rgba(15,110,86,0.05)','rgba(138,90,14,0.04)'];
   for(var y=0;y<3;y++){
     var bx0=xp(y*12),bx1=y<2?xp((y+1)*12):W-PR;
     svg+='<rect x="'+bx0+'" y="'+PT+'" width="'+(bx1-bx0)+'" height="'+cH+'" fill="'+bandBg[y]+'"/>';
@@ -699,25 +699,25 @@ function renderBP3YInfographic(sid,s){
     svg+='<rect x="'+(bx+2)+'" y="'+(PT+1)+'" width="20" height="11" rx="3" fill="#1D9E75" opacity="0.15"/>';
     svg+='<text x="'+(bx+12)+'" y="'+(PT+9)+'" text-anchor="middle" font-size="7.5" fill="#0F6E56" font-weight="700">BE</text>';
   }
-  // Ligne CA simulée (pointillé bleu)
+  // Ligne CA simulée (pointillé vert sauge)
   var simL='';simMonthlyCA.forEach(function(v,i){simL+=(i===0?'M':'L')+xp(i)+' '+yv(v)+' ';});
-  svg+='<path d="'+simL+'" fill="none" stroke="#185FA5" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.65"/>';
+  svg+='<path d="'+simL+'" fill="none" stroke="#4d7a5c" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.7"/>';
   svg+='</svg>';
 
   // ── HTML ────────────────────────────────────────────────────────────────────
-  var ACCENTS=['#185FA5','#0F6E56','#854F0B'];
-  var h='<div style="margin-top:16px;border-radius:16px;overflow:hidden;border:0.5px solid #ddddd6;box-shadow:0 8px 32px rgba(0,0,0,0.08)">';
+  var ACCENTS=['#4d7a5c','#0F6E56','#8a5a0e'];
+  var h='<div style="margin-top:16px;border-radius:16px;overflow:hidden;border:0.5px solid #d8d8d0;box-shadow:0 8px 32px rgba(0,0,0,0.08)">';
 
-  // Header sombre
-  h+='<div style="background:linear-gradient(135deg,#0f1e2d 0%,#182f48 55%,#0c2218 100%);padding:16px 20px 14px">';
+  // Header sombre — palette verte/ambre, sans bleu
+  h+='<div style="background:linear-gradient(135deg,#141414 0%,#1d2d1d 55%,#121c10 100%);padding:16px 20px 14px">';
   h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px">';
   h+='<div>';
-  h+='<div style="font-size:8.5px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.38);margin-bottom:4px">Projection · Dossier financement</div>';
+  h+='<div style="font-size:8.5px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.35);margin-bottom:4px">Projection financi&egrave;re</div>';
   h+='<div style="font-size:15px;font-weight:700;color:#fff;letter-spacing:-0.3px">Performance pr&eacute;visionnelle &mdash; 3 ans</div>';
-  h+='<div style="font-size:10px;color:rgba(255,255,255,0.4);margin-top:3px">Ouverture '+s.ouverture+' &middot; Club Pilates Reformer</div>';
+  h+='<div style="font-size:10px;color:rgba(255,255,255,0.38);margin-top:3px">Ouverture '+s.ouverture+' &middot; Club Pilates Reformer</div>';
   h+='</div>';
   h+='<div style="display:flex;gap:5px;flex-wrap:wrap">';
-  [{l:'CA A3',v:fmt(YR[2].ca),c:'rgba(29,158,117,0.9)',b:'rgba(29,158,117,0.28)'},{l:'EBITDA A3',v:fmt(YR[2].ebitda),c:'rgba(200,135,55,0.9)',b:'rgba(200,135,55,0.28)'},{l:'R\u00e9sultat A3',v:fmt(YR[2].rnet),c:'rgba(90,148,215,0.9)',b:'rgba(90,148,215,0.22)'}].forEach(function(k){
+  [{l:'CA A3',v:fmt(YR[2].ca),c:'rgba(29,158,117,0.95)',b:'rgba(29,158,117,0.3)'},{l:'EBITDA A3',v:fmt(YR[2].ebitda),c:'rgba(200,140,50,0.95)',b:'rgba(200,140,50,0.3)'},{l:'R\u00e9sultat A3',v:fmt(YR[2].rnet),c:'rgba(208,192,145,0.95)',b:'rgba(195,178,128,0.3)'}].forEach(function(k){
     h+='<div style="border:0.5px solid '+k.b+';border-radius:8px;padding:5px 10px;text-align:center;background:rgba(255,255,255,0.06);min-width:74px">';
     h+='<div style="font-size:7.5px;text-transform:uppercase;letter-spacing:0.8px;color:rgba(255,255,255,0.34);margin-bottom:2px">'+k.l+'</div>';
     h+='<div style="font-size:13px;font-weight:700;color:'+k.c+'">'+k.v+'</div>';
@@ -762,7 +762,7 @@ function renderBP3YInfographic(sid,s){
     [{label:'CA annuel',value:fmt(yr.ca),sub:null,color:'#1a1a1a',sz:14,fw:700},
      {label:'EBITDA',value:fmt(yr.ebitda),sub:eMargin+'% du CA',color:yr.ebitda>0?'#854F0B':'#A32D2D',sz:12,fw:600},
      {label:'REX',value:fmt(yr.rex),sub:rexMargin+'% marge',color:yr.rex>0?'#0F6E56':'#A32D2D',sz:12,fw:600},
-     {label:'R\u00e9sultat net',value:fmt(yr.rnet),sub:null,color:yr.rnet>0?'#185FA5':'#A32D2D',sz:12,fw:600}
+     {label:'R\u00e9sultat net',value:fmt(yr.rnet),sub:null,color:yr.rnet>0?'#6a8a72':'#A32D2D',sz:12,fw:600}
     ].forEach(function(m,mi){
       var sep=mi<3?'padding-bottom:6px;margin-bottom:6px;border-bottom:0.5px solid #f2f2ed;':'';
       h+='<div style="display:flex;justify-content:space-between;align-items:center;'+sep+'">';
@@ -788,15 +788,15 @@ function renderBP3YInfographic(sid,s){
   h+='<div style="border-top:0.5px solid #e8e8e2;background:linear-gradient(180deg,#f2f5fb 0%,#f7f7f4 100%);padding:12px 16px 14px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
   h+='<div style="display:flex;align-items:center;gap:8px">';
-  h+='<div style="width:24px;height:24px;border-radius:7px;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:13px">&#127890;</div>';
+  h+='<div style="width:24px;height:24px;border-radius:7px;background:#3d5a3a;display:flex;align-items:center;justify-content:center;font-size:13px">&#127890;</div>';
   h+='<div><div style="font-size:11px;font-weight:700;color:#1a1a1a">Simulation personnalis\u00e9e \u2014 Adh\u00e9rents</div>';
   h+='<div style="font-size:9.5px;color:#888;margin-top:1px">R\u00e9partition : <strong>'+p4+'%&nbsp;/&nbsp;'+p8+'%&nbsp;/&nbsp;'+pi+'%</strong> &nbsp;&middot;&nbsp; Prix&nbsp;: <strong>'+px4+'\u20ac&nbsp;/&nbsp;'+px8+'\u20ac&nbsp;/&nbsp;'+pxi+'\u20ac</strong>&nbsp;HT/mois'+(isDefault?'&nbsp;<span style="color:#bbb">(d\u00e9faut)</span>':'')+'</div>';
   h+='</div></div>';
-  h+='<button onclick="setDetailTab(\'adherents\')" style="background:#185FA5;color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;cursor:pointer">Modifier &#8599;</button>';
+  h+='<button onclick="setDetailTab(\'adherents\')" style="background:#3d5a3a;color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;cursor:pointer">Modifier &#8599;</button>';
   h+='</div>';
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
   SIM_YR.forEach(function(sy,i){
-    var accent=['#185FA5','#0F6E56','#854F0B'][i];
+    var accent=['#4d7a5c','#0F6E56','#8a5a0e'][i];
     var dCA=sy.ca-YR[i].ca,dEB=sy.ebitda-YR[i].ebitda;
     var dCApct=YR[i].ca>0?Math.round((sy.ca/YR[i].ca-1)*100):0;
     var eMargin=sy.ca>0?Math.round(sy.ebitda/sy.ca*100):0;
