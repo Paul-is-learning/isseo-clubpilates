@@ -1527,11 +1527,17 @@ function renderEngagements(sid,s){
 
   // ── Panneau : Structure de financement ──────────────────────────────────────
   h+='<div class="box" style="padding:0;overflow:hidden;margin-bottom:14px">';
-  // Header
-  h+='<div style="background:#f8f9fb;border-bottom:1px solid #e8eaf0;padding:12px 18px;display:flex;align-items:center;gap:10px">';
-  h+='<div style="width:3px;height:20px;border-radius:2px;background:#1a3a6b;flex-shrink:0"></div>';
-  h+='<div style="font-size:12px;font-weight:700;color:#1a3a6b;letter-spacing:0.2px">Structure de financement</div>';
-  h+='<div style="margin-left:auto;font-size:11px;color:#64748b">Investissement total : <b style="color:#0f1f3d">'+fmt(totalInvest)+'</b></div>';
+  // Header hero — investissement total mis en valeur
+  h+='<div style="background:linear-gradient(135deg,#0f1f3d 0%,#1a3a6b 100%);padding:20px 24px;display:flex;align-items:center;justify-content:space-between">';
+  h+='<div>';
+  h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.6);font-weight:600;margin-bottom:6px">Structure de financement</div>';
+  h+='<div style="font-size:28px;font-weight:800;color:#ffffff;letter-spacing:-0.5px;line-height:1">'+fmt(totalInvest)+'</div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.55);margin-top:4px">Investissement total</div>';
+  h+='</div>';
+  h+='<div style="display:flex;flex-direction:column;gap:8px;text-align:right">';
+  h+='<div><span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5)">CAPEX</span><br><span style="font-size:15px;font-weight:700;color:#ffffff">'+fmt(capex)+'</span></div>';
+  h+='<div><span style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5)">Leasing</span><br><span style="font-size:15px;font-weight:700;color:#f0c040">'+fmt(leasing)+'</span></div>';
+  h+='</div>';
   h+='</div>';
   h+='<div style="padding:18px 20px">';
 
