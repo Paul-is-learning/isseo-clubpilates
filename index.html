@@ -3234,19 +3234,19 @@ function buildSimCommentHTML(sid,cfg,bpOpts){
   var _bpO=bpOpts||{};
   if(_bpO.lm&&Math.round(_bpO.lm)!==_LM_REF){
     var _dlm=_bpO.lm-_LM_REF,_dlmpct=Math.round(_dlm/_LM_REF*100);
-    _hyp.push({icon:'🏠',text:'Loyer mensuel <b>'+fmt(_bpO.lm)+'&nbsp;€/mois</b> (BP&nbsp;: '+fmt(_LM_REF)+'€) — '+(_dlm>0?'+':'')+fmt(_dlm)+'€/mois ('+(_dlmpct>0?'+':'')+_dlmpct+'%)'});
+    _hyp.push({icon:'🏠',text:'Loyer mensuel <b>'+fmt(_bpO.lm)+'/mois</b> (BP&nbsp;: '+fmt(_LM_REF)+') — '+(_dlm>0?'+':'')+fmt(_dlm)+'/mois ('+(_dlmpct>0?'+':'')+_dlmpct+'%)'});
   }
   if(_bpO.capex&&Math.round(_bpO.capex)!==_CAPEX_REF){
     var _dcp=_bpO.capex-_CAPEX_REF,_dcpct=Math.round(_dcp/_CAPEX_REF*100);
-    _hyp.push({icon:'🏗️',text:'CAPEX <b>'+fmt(_bpO.capex)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_CAPEX_REF)+'€) — '+(_dcp>0?'+':'')+fmt(_dcp)+'€ ('+(_dcpct>0?'+':'')+_dcpct+'%) → amortissements ajustés'});
+    _hyp.push({icon:'🏗️',text:'CAPEX <b>'+fmt(_bpO.capex)+'</b> (BP&nbsp;: '+fmt(_CAPEX_REF)+') — '+(_dcp>0?'+':'')+fmt(_dcp)+' ('+(_dcpct>0?'+':'')+_dcpct+'%) → amortissements ajustés'});
   }
   if(_bpO.leasing&&Math.round(_bpO.leasing)!==_LEASING_REF){
     var _dls=_bpO.leasing-_LEASING_REF,_dlspct=Math.round(_dls/_LEASING_REF*100);
-    _hyp.push({icon:'📦',text:'Leasing <b>'+fmt(_bpO.leasing)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_LEASING_REF)+'€) — crédit-bail '+(_dlspct>0?'+':'')+_dlspct+'%'});
+    _hyp.push({icon:'📦',text:'Leasing <b>'+fmt(_bpO.leasing)+'</b> (BP&nbsp;: '+fmt(_LEASING_REF)+') — crédit-bail '+(_dlspct>0?'+':'')+_dlspct+'%'});
   }
   if(_bpO.emprunt&&Math.round(_bpO.emprunt)!==_EMPRUNT_REF){
     var _dem=_bpO.emprunt-_EMPRUNT_REF,_dempct=Math.round(_dem/_EMPRUNT_REF*100);
-    _hyp.push({icon:'🏦',text:'Emprunt <b>'+fmt(_bpO.emprunt)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_EMPRUNT_REF)+'€) — '+(_dempct>0?'+':'')+_dempct+'% → charges fin. ajustées'});
+    _hyp.push({icon:'🏦',text:'Emprunt <b>'+fmt(_bpO.emprunt)+'</b> (BP&nbsp;: '+fmt(_EMPRUNT_REF)+') — '+(_dempct>0?'+':'')+_dempct+'% → charges fin. ajustées'});
   }
   var _ts=S.studios[sid]&&S.studios[sid].tauxInteret!=null?S.studios[sid].tauxInteret:null;
   if(_ts!=null&&Math.abs(_ts-_TAUX_REF/100)>0.0001){
