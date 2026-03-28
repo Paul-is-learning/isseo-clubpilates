@@ -596,8 +596,11 @@ async function loadAll(){
     else if(id.endsWith('_simconfig')){
       var sc=r.data&&r.data.config||{};
       if(Object.keys(sc).length>0){
-        // Reset si les prix sauvegardés sont les anciens defaults incorrects (117/206/294)
-        if(sc.prix4===117&&sc.prix8===206&&sc.prixi===294){sc.prix4=110;sc.prix8=193.33;sc.prixi=276.67;}
+        // Reset complet si les prix sauvegardés sont les anciens defaults incorrects (117/206/294)
+        if(sc.prix4===117&&sc.prix8===206&&sc.prixi===294){
+          sc.prix4=110;sc.prix8=193.33;sc.prixi=276.67;
+          sc.p4=47;sc.p8=50;sc.pi=3; // Reset aussi les proportions au BP
+        }
         S.simConfig[id.slice(0,-10)]=sc;
         try{localStorage.setItem('isseo_sim_'+id.slice(0,-10),JSON.stringify(sc));}catch(e){}
       }
@@ -608,7 +611,17 @@ async function loadAll(){
   // Fallback localStorage pour studios sans simConfig Supabase
   Object.keys(S.studios).forEach(function(k){
     if(!S.simConfig[k]||Object.keys(S.simConfig[k]).length===0){
-      try{var lc=JSON.parse(localStorage.getItem('isseo_sim_'+k)||'null');if(lc)S.simConfig[k]=lc;}catch(e){}
+      try{
+        var lc=JSON.parse(localStorage.getItem('isseo_sim_'+k)||'null');
+        if(lc){
+          // Purge cache localStorage si anciens prix incorrects
+          if(lc.prix4===117&&lc.prix8===206&&lc.prixi===294){
+            lc.prix4=110;lc.prix8=193.33;lc.prixi=276.67;lc.p4=47;lc.p8=50;lc.pi=3;
+            localStorage.setItem('isseo_sim_'+k,JSON.stringify(lc));
+          }
+          S.simConfig[k]=lc;
+        }
+      }catch(e){}
     }
   });
   // Patch config fields from INIT — source of truth is the code
