@@ -62,6 +62,156 @@ const SKEY='sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv';
 const sb=supabase.createClient(SURL,SKEY);
 
 const MOIS=['Jan','Fev','Mar','Avr','Mai','Jun','Jul','Aou','Sep','Oct','Nov','Dec'];
+
+// ── Données localisation par studio ───────────────────────────────────────────
+const LOCALISATION_DATA={
+  garenne:{
+    trafic:[
+      {lbl:'TMJA estimé RD908',kpi:'~20–30K',sub:'véh/jour, 2 sens · Données CD92 (open data)',col:'#D85A30'},
+      {lbl:'Profil de l\'axe',kpi:'Voie urbaine dense',sub:'Ancienne RN308 → RD908 · Traversée centre-ville, 2×1 voie',col:'#D85A30'},
+      {lbl:'Nature du trafic',kpi:'Domicile – travail',sub:'Flux dominants : La Défense + transit Clichy / Colombes',col:'#D85A30'},
+    ],
+    transports:[
+      {lbl:'Transilien L — Paris Saint-Lazare',kpi:'Gare La Garenne-Colombes',sub:'~700m du studio (à pied ~9 min) · 1 train / 10 min · Saint-Lazare en ~12 min',tags:[{t:'8 900 entrants/jour',c:'tb'}],col:'#378ADD'},
+      {lbl:'Tramway T2 — Pont de Bezons ↔ Porte de Versailles',kpi:'Stations Charlebourg / Les Fauvelles',sub:'Connexion La Défense directe · Correspondance Transilien L',tags:[{t:'Dessert le corridor La Défense',c:'tb'}],col:'#378ADD'},
+      {lbl:'Bus RATP (5 lignes)',kpi:'73 · 163 · 176 · 178 · 363',sub:'Ligne 73 → Musée d\'Orsay direct · Lignes nocturnes N24 · N152',tags:[{t:'Maillage TC exceptionnel',c:'tg'}],col:'#1D9E75'},
+      {lbl:'Densité TC',kpi:'2,24 stations/km²',sub:'vs 0,76 moyenne Hauts-de-Seine · Record parmi les communes 92',tags:[{t:'Forte capture piétonne potentielle',c:'tg'}],col:'#1D9E75'},
+    ],
+    demo:[
+      {lbl:'Population (2022)',kpi:'~30 000',sub:'hab sur 1,78 km² · +26% vs 1999',col:'#7F77DD'},
+      {lbl:'Densité',kpi:'16 700',sub:'hab/km² — extrêmement élevée · Top 5% France',col:'#7F77DD'},
+      {lbl:'Revenu médian ménage',kpi:'39 200 €',sub:'/ an — très élevé · Cible Club Pilates premium',col:'#7F77DD'},
+    ],
+    comparaison:[
+      {lbl:'TMJA (véh/jour)',pct:95,col:'#378ADD',note:'Lattes ~28K · La Garenne ~25K → comparable'},
+      {lbl:'Densité TC',pct:100,col:'#1D9E75',note:'La Garenne >> Lattes — 4 modes vs 1 tram'},
+      {lbl:'Densité pop.',pct:100,col:'#7F77DD',note:'La Garenne : 16 700/km² vs Lattes : ~600/km²'},
+      {lbl:'Revenu médian',pct:88,col:'#BA7517',note:'La Garenne : 39K€ vs Lattes : 26K€ — +50%'},
+      {lbl:'Flux piéton',pct:100,col:'#D85A30',note:'La Garenne >> Lattes — marche à pied 81% usagers gare'},
+      {lbl:'Saisonnalité',pct:20,col:'#888780',note:'La Garenne : quasi-nulle vs Lattes : +30% été'},
+    ],
+    tags:[
+      {t:'Densité pop. exceptionnelle',c:'tg'},{t:'Revenu élevé — cible Pilates',c:'tg'},
+      {t:'TC multi-modal (L + T2 + 5 bus)',c:'tg'},{t:'Flux piéton fort depuis gare',c:'tg'},
+      {t:'Proximité La Défense (cadres)',c:'tg'},{t:'Trafic auto stable toute l\'année',c:'tg'},
+      {t:'Axe 2×1 voie — visibilité auto limitée',c:'ta'},{t:'Stationnement limité centre-ville',c:'ta'},
+      {t:'Concurrence pilates / fitness à identifier',c:'tr'},{t:'Profil navetteur → créneaux 6h30-9h + 18h-20h30',c:'tb'},
+    ],
+    synthese:'Contrairement à Lattes (flux auto dominant, dépendance voiture), La Garenne-Colombes offre un profil <b>radicalement différent</b> : flux piéton très élevé, TC dense, revenus supérieurs, et une clientèle de cadres navetteurs La Défense — cœur de cible Club Pilates. Le studio doit capitaliser sur la capture piétonne depuis la gare et les créneaux 6h30–9h + 18h–20h30.',
+  },
+  lattes:{
+    trafic:[
+      {lbl:'TMJA av. de Montpellier',kpi:'~28 000',sub:'véh/jour · Axe structurant Montpellier–Lattes',col:'#D85A30'},
+      {lbl:'Profil de l\'axe',kpi:'Avenue commerciale',sub:'2×2 voies · Fort flux pendulaire · Bonne visibilité',col:'#D85A30'},
+      {lbl:'Nature du trafic',kpi:'Flux automobile dominant',sub:'Dépendance voiture forte · Clientèle de proximité',col:'#D85A30'},
+    ],
+    transports:[
+      {lbl:'Tramway ligne 1 — Mosson ↔ Odysseum',kpi:'Arrêt Lattes Centre (~1,5 km)',sub:'Connexion centre Montpellier en ~20 min',tags:[{t:'Réseau TaM Montpellier',c:'tb'}],col:'#378ADD'},
+      {lbl:'Bus TaM (plusieurs lignes)',kpi:'Desserte Lattes / Montpellier',sub:'Fréquence correcte en heure de pointe',tags:[{t:'TC moins dense qu\'en IDF',c:'ta'}],col:'#378ADD'},
+    ],
+    demo:[
+      {lbl:'Population (2022)',kpi:'~17 500',sub:'hab · Commune résidentielle en forte croissance',col:'#7F77DD'},
+      {lbl:'Densité',kpi:'~600',sub:'hab/km² — faible (territoire étendu)',col:'#7F77DD'},
+      {lbl:'Revenu médian ménage',kpi:'26 000 €',sub:'/ an · Profil familial CSP+ en développement',col:'#7F77DD'},
+    ],
+    comparaison:[
+      {lbl:'TMJA (véh/jour)',pct:100,col:'#378ADD',note:'Lattes : ~28K — meilleure visibilité auto'},
+      {lbl:'Densité TC',pct:25,col:'#1D9E75',note:'Lattes : 1 tram + bus vs 4 modes à La Garenne'},
+      {lbl:'Densité pop.',pct:5,col:'#7F77DD',note:'Lattes : ~600/km² — population plus dispersée'},
+      {lbl:'Revenu médian',pct:65,col:'#BA7517',note:'Lattes : 26K€ vs Garenne : 39K€'},
+      {lbl:'Croissance pop.',pct:95,col:'#D85A30',note:'Forte croissance résidentielle +40% en 20 ans'},
+      {lbl:'Bassin de vie',pct:80,col:'#888780',note:'ZAC Montpellier Sud en développement — potentiel'},
+    ],
+    tags:[
+      {t:'Fort trafic automobile',c:'tg'},{t:'Zone commerciale attractive',c:'tg'},
+      {t:'Croissance résidentielle forte',c:'tg'},{t:'Stationnement aisé',c:'tg'},
+      {t:'TC limité — dépendance voiture',c:'ta'},{t:'Revenu médian plus faible',c:'ta'},
+      {t:'Saisonnalité estivale +30%',c:'ta'},{t:'Concurrence fitness à surveiller',c:'tr'},
+    ],
+    synthese:'Lattes présente un profil "flux automobile" avec un fort TMJA et une clientèle de proximité résidentielle. La croissance démographique soutenue du bassin de vie Montpellier Sud constitue un atout majeur. Le studio bénéficiera d\'une excellente visibilité depuis l\'avenue et d\'un parking aisé, critères déterminants dans ce contexte de mobilité voiture.',
+  },
+  levallois:{
+    trafic:[
+      {lbl:'TMJA Rue Édouard Vaillant',kpi:'~15–20K',sub:'véh/jour · Rue commerçante structurante',col:'#D85A30'},
+      {lbl:'Profil de l\'axe',kpi:'Artère commerçante dense',sub:'Centre-ville Levallois · 2×1 voie · Flux piéton élevé',col:'#D85A30'},
+      {lbl:'Nature du trafic',kpi:'Mix piéton / voiture',sub:'Fort flux résidentiel · Cadres CSP++ dominant',col:'#D85A30'},
+    ],
+    transports:[
+      {lbl:'Métro ligne 3 — Pont de Levallois',kpi:'~400m du studio (~5 min à pied)',sub:'Connexion Opéra / République en ~15 min',tags:[{t:'Terminus ligne 3',c:'tb'}],col:'#378ADD'},
+      {lbl:'Bus RATP (4 lignes)',kpi:'163 · 174 · 175 · 176',sub:'Connexion Neuilly, La Défense, Paris',tags:[{t:'Desserte dense',c:'tg'}],col:'#1D9E75'},
+      {lbl:'Vélos & trottinettes',kpi:'Vélib + opérateurs free-floating',sub:'Usage très élevé — profil jeune actif',tags:[{t:'Mobilité douce forte',c:'tg'}],col:'#1D9E75'},
+    ],
+    demo:[
+      {lbl:'Population (2022)',kpi:'~65 000',sub:'hab sur 2,4 km² · +12% en 10 ans',col:'#7F77DD'},
+      {lbl:'Densité',kpi:'27 000',sub:'hab/km² — parmi les + denses de France',col:'#7F77DD'},
+      {lbl:'Revenu médian ménage',kpi:'38 500 €',sub:'/ an — très élevé · Profil cadres CSP++',col:'#7F77DD'},
+    ],
+    comparaison:[
+      {lbl:'Densité pop.',pct:100,col:'#7F77DD',note:'Levallois : 27 000/km² — Top 3 France'},
+      {lbl:'Revenu médian',pct:90,col:'#BA7517',note:'Levallois : 38,5K€ — profil premium identique Garenne'},
+      {lbl:'Proximité métro',pct:100,col:'#378ADD',note:'400m métro ligne 3 — accessibilité maximale'},
+      {lbl:'Flux piéton',pct:90,col:'#D85A30',note:'Artère commerçante à fort trafic piéton'},
+      {lbl:'Stationnement',pct:30,col:'#888780',note:'Centre-ville dense — parking difficile'},
+    ],
+    tags:[
+      {t:'Densité pop. exceptionnelle',c:'tg'},{t:'Métro L3 à 400m',c:'tg'},
+      {t:'Revenu élevé — cible Pilates',c:'tg'},{t:'Forte fréquentation piétonne',c:'tg'},
+      {t:'Cadres CSP++ La Défense / Paris',c:'tg'},{t:'Stationnement difficile',c:'ta'},
+      {t:'Loyers élevés',c:'ta'},{t:'Concurrence fitness dense',c:'tr'},
+    ],
+    synthese:'Levallois-Perret est l\'un des marchés les plus favorables d\'Île-de-France pour Club Pilates : densité record, revenus très élevés, métro ligne 3 à 400m et flux piéton important sur une artère commerçante. La clientèle cible (cadres 30-50 ans, revenus > 38K€) est surreprésentée. Enjeu principal : se positionner sur les créneaux 7h-9h et 18h30-20h30.',
+  },
+  issy:{
+    trafic:[
+      {lbl:'TMJA avenue Victor Cresson',kpi:'~18–22K',sub:'véh/jour · Axe résidentiel/commercial mixte',col:'#D85A30'},
+      {lbl:'Profil de l\'axe',kpi:'Avenue résidentielle',sub:'Quartier Val de Seine · Proximité quais de Seine',col:'#D85A30'},
+      {lbl:'Nature du trafic',kpi:'Résidentiel premium',sub:'Forte proportion cadres/dirigeants · Nombreuses entreprises tech',col:'#D85A30'},
+    ],
+    transports:[
+      {lbl:'Métro ligne 12 — Mairie d\'Issy',kpi:'~600m du studio (~8 min à pied)',sub:'Paris Montparnasse en ~12 min',tags:[{t:'Ligne 12',c:'tb'}],col:'#378ADD'},
+      {lbl:'Tramway T2',kpi:'Issy Val de Seine',sub:'Connexion La Défense · Pont de Bezons',tags:[{t:'Connexion La Défense',c:'tb'}],col:'#378ADD'},
+      {lbl:'RER C',kpi:'Issy-Plaine',sub:'Connexion Paris Rive Gauche directe',tags:[{t:'Multimodal',c:'tg'}],col:'#1D9E75'},
+    ],
+    demo:[
+      {lbl:'Population (2022)',kpi:'~67 000',sub:'hab · Commune en forte attractivité',col:'#7F77DD'},
+      {lbl:'Densité',kpi:'11 800',sub:'hab/km² — élevée · Quartier mixte résidentiel/tertiaire',col:'#7F77DD'},
+      {lbl:'Revenu médian ménage',kpi:'40 500 €',sub:'/ an — top 92 · Concentration cadres tech & finance',col:'#7F77DD'},
+    ],
+    comparaison:[
+      {lbl:'Revenu médian',pct:100,col:'#BA7517',note:'Issy : 40,5K€ — le plus élevé du portefeuille'},
+      {lbl:'Multimodalité TC',pct:95,col:'#378ADD',note:'Métro L12 + T2 + RER C — trio exceptionnel'},
+      {lbl:'Pôles entreprises',pct:100,col:'#D85A30',note:'Canal+, Microsoft, SFR, Bouygues — cible B2B forte'},
+      {lbl:'Flux piéton',pct:75,col:'#7F77DD',note:'Artère résidentielle — moins commerçante'},
+    ],
+    tags:[
+      {t:'Revenu le + élevé du portefeuille',c:'tg'},{t:'Multimodalité TC excellente',c:'tg'},
+      {t:'Pôle tech & media (Canal+, Microsoft)',c:'tg'},{t:'Cible dirigeants / cadres sup',c:'tg'},
+      {t:'Flux piéton modéré',c:'ta'},{t:'Visibilité depuis rue à confirmer',c:'ta'},
+      {t:'Marché fitness très concurrentiel',c:'tr'},
+    ],
+    synthese:'Issy-les-Moulineaux présente le profil de revenu le plus élevé du portefeuille (40 500€ médian) avec une concentration unique de cadres supérieurs et dirigeants des grandes entreprises tech et médias (Canal+, Microsoft, SFR). La trimodalité TC (métro L12 + T2 + RER C) offre une accessibilité maximale. Fort potentiel B2B avec les entreprises du secteur.',
+  },
+  toulouse:{
+    trafic:[
+      {lbl:'Zone à définir',kpi:'À étudier',sub:'Données trafic à collecter selon emplacement retenu',col:'#D85A30'},
+    ],
+    transports:[
+      {lbl:'Métro Toulouse',kpi:'Lignes A & B',sub:'Réseau dense en centre-ville · Couverture à confirmer selon adresse',tags:[{t:'En cours d\'étude',c:'ta'}],col:'#378ADD'},
+    ],
+    demo:[
+      {lbl:'Population aire urbaine',kpi:'~800 000',sub:'3e aire urbaine de France · Croissance +1,5%/an',col:'#7F77DD'},
+      {lbl:'Revenu médian',kpi:'~27 000 €',sub:'/ an · Marché plus accessible que l\'IDF',col:'#7F77DD'},
+      {lbl:'Potentiel marché',kpi:'Fort',sub:'1er marché CP France hors IDF · Jeune et dynamique',col:'#7F77DD'},
+    ],
+    comparaison:[],
+    tags:[
+      {t:'3e ville de France',c:'tg'},{t:'Forte croissance démographique',c:'tg'},
+      {t:'Marché pilates en développement',c:'tg'},{t:'Emplacement à finaliser',c:'ta'},
+      {t:'Données précises à collecter',c:'ta'},
+    ],
+    synthese:'Toulouse représente un marché stratégique de premier plan — 3e aire urbaine française avec une croissance démographique soutenue (+1,5%/an) et un marché Pilates Reformer encore peu saturé. L\'emplacement précis reste à définir pour affiner l\'analyse trafic et démographique.',
+  },
+};
 const fmt=function(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);};
 const fmtN=function(n){return isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);};
 const num=function(v,fb){if(fb===undefined)fb=0;var n=parseFloat(v);return isNaN(n)?fb:n;};
@@ -1691,6 +1841,90 @@ function renderLocalisation(s){
   h+='<a href="https://www.openstreetmap.org/search?query='+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">🗺️</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Ouvrir dans OSM</div></div></div></a>';
   h+='</div>';
   h+='<div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">'+s.addr+'</div></div>';
+
+  // ── Données flux & démographie ─────────────────────────────────────────────
+  var sid=S.selectedId;
+  var ld=LOCALISATION_DATA[sid];
+  if(ld){h+=renderLocalisationData(ld,s);}
+  h+='</div>';
+  return h;
+}
+
+function _locTag(tag){
+  var cols={tg:{bg:'#EAF3DE',c:'#3B6D11'},ta:{bg:'#FAEEDA',c:'#854F0B'},tr:{bg:'#FCEBEB',c:'#A32D2D'},tb:{bg:'#E6F1FB',c:'#185FA5'},tp:{bg:'#EEEDFE',c:'#534AB7'}};
+  var col=cols[tag.c]||cols.tb;
+  return '<span style="display:inline-block;font-size:10.5px;padding:2px 9px;border-radius:12px;background:'+col.bg+';color:'+col.c+';margin:2px 2px 0 0;font-weight:500">'+tag.t+'</span>';
+}
+
+function _locCard(item,wide){
+  var h='<div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:12px;padding:13px 16px;border-left:3px solid '+item.col+';'+(wide?'grid-column:1/-1':'')+'">';
+  h+='<div style="font-size:10.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;font-weight:600;margin-bottom:4px">'+item.lbl+'</div>';
+  h+='<div style="font-size:'+(item.kpi.length>10?'15':'18')+'px;font-weight:700;color:#0f1f3d;margin:3px 0 5px">'+item.kpi+'</div>';
+  h+='<div style="font-size:11.5px;color:#64748b;line-height:1.5">'+item.sub+'</div>';
+  if(item.tags&&item.tags.length)h+='<div style="margin-top:6px">'+item.tags.map(_locTag).join('')+'</div>';
+  h+='</div>';
+  return h;
+}
+
+function _locSection(title){
+  return '<div style="font-size:12.5px;font-weight:600;color:#64748b;margin:20px 0 10px;padding-bottom:5px;border-bottom:1px solid #e2e8f0;text-transform:uppercase;letter-spacing:0.06em">'+title+'</div>';
+}
+
+function renderLocalisationData(ld,s){
+  var h='<div style="margin-top:16px">';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">';
+  h+='<div style="width:3px;height:20px;background:#1a3a6b;border-radius:2px"></div>';
+  h+='<div style="font-size:14px;font-weight:700;color:#0f1f3d">Analyse du site</div>';
+  h+='<div style="font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#1a3a6b;background:#f0f4fc;border:1px solid #d0d9ec;border-radius:20px;padding:3px 10px;margin-left:auto;font-weight:600">Data</div>';
+  h+='</div>';
+
+  // Trafic routier
+  if(ld.trafic&&ld.trafic.length){
+    h+=_locSection('Trafic routier');
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">';
+    ld.trafic.forEach(function(item){h+=_locCard(item,false);});
+    h+='</div>';
+  }
+
+  // Transports
+  if(ld.transports&&ld.transports.length){
+    h+=_locSection('Transports en commun — desserte');
+    var cols=ld.transports.length<=2?'repeat(2,1fr)':'repeat(2,1fr)';
+    h+='<div style="display:grid;grid-template-columns:'+cols+';gap:10px;margin-bottom:4px">';
+    ld.transports.forEach(function(item){h+=_locCard(item,false);});
+    h+='</div>';
+  }
+
+  // Démographie
+  if(ld.demo&&ld.demo.length){
+    h+=_locSection('Profil socio-démographique — zone de chalandise');
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:4px">';
+    ld.demo.forEach(function(item){h+=_locCard(item,false);});
+    h+='</div>';
+  }
+
+  // Comparaison barres
+  if(ld.comparaison&&ld.comparaison.length){
+    h+=_locSection('Comparaison vs portefeuille');
+    h+='<div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin-bottom:4px">';
+    ld.comparaison.forEach(function(item){
+      h+='<div style="display:flex;align-items:center;gap:10px;margin:7px 0">';
+      h+='<div style="width:130px;flex-shrink:0;font-size:11.5px;color:#555;font-weight:500">'+item.lbl+'</div>';
+      h+='<div style="flex:1;height:7px;background:#e2e8f0;border-radius:4px;overflow:hidden"><div style="width:'+item.pct+'%;height:100%;background:'+item.col+';border-radius:4px"></div></div>';
+      h+='<div style="font-size:11px;color:#64748b;min-width:180px">'+item.note+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  // Synthèse + tags
+  if(ld.tags&&ld.tags.length){
+    h+=_locSection('Synthèse — attractivité commerciale');
+    h+='<div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:12px;padding:14px 18px">';
+    h+='<div style="margin-bottom:10px">'+ld.tags.map(_locTag).join('')+'</div>';
+    if(ld.synthese)h+='<div style="font-size:12px;color:#475569;line-height:1.6">'+ld.synthese+'</div>';
+    h+='</div>';
+  }
   h+='</div>';
   return h;
 }
