@@ -737,14 +737,16 @@ function avatarHTML(nom,size){
   var photo=(S.avatarUrls&&S.avatarUrls[key])||PHOTO_MAP[key]||PHOTO_MAP[key.split(' ')[0]]||null;
   var bg=_aC(nom||'?');var txt=_ini(nom||'?');
   var fs=Math.round(size*0.34);
-  var base='width:'+size+'px;height:'+size+'px;border-radius:50%;flex-shrink:0;';
+  // Style commun — pas de position:relative ici pour éviter tout conflit de stacking
+  var circle='width:'+size+'px;height:'+size+'px;border-radius:50%;flex-shrink:0;overflow:hidden;';
   if(photo){
-    return '<div style="'+base+'position:relative;overflow:hidden;background:'+bg+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:'+fs+'px;font-weight:700">'
-      +'<span style="position:absolute;z-index:0">'+txt+'</span>'
-      +'<img src="'+photo+'" style="position:absolute;z-index:1;width:100%;height:100%;object-fit:cover;object-position:center top" onerror="this.style.display=\'none\'">'
+    // Conteneur simple overflow:hidden + image 100% — aucun élément positionné à l'intérieur
+    return '<div style="'+circle+'background:'+bg+'">'
+      +'<img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block" '
+      +'onerror="this.style.display=\'none\'">'
       +'</div>';
   }
-  return '<div style="'+base+'background:'+bg+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:'+fs+'px;font-weight:700">'+txt+'</div>';
+  return '<div style="'+circle+'background:'+bg+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:'+fs+'px;font-weight:700">'+txt+'</div>';
 }
 var COLLAB_SEP_LOGIN='<span style="font-size:26px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
 
@@ -989,8 +991,8 @@ function renderCard(id,s){
   var dirSection='';
   if(dir){
     dirSection='<div style="display:flex;align-items:center;gap:9px;margin-top:12px;padding-top:10px;border-top:1px solid #f0f0ea">'
-      +'<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;background:'+_aC(dir.nom)+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.13)">'
-      +'<img src="'+dir.photo+'" style="width:100%;height:100%;object-fit:cover;object-position:center top" onerror="this.style.display=\'none\'">'
+      +'<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;background:'+_aC(dir.nom)+';border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.13)">'
+      +'<img src="'+dir.photo+'" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block" onerror="this.style.display=\'none\'">'
       +'</div>'
       +'<div><div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Dir. opérationnel</div>'
       +'<div style="font-size:12px;font-weight:600;color:#333">'+dir.nom+'</div></div>'
