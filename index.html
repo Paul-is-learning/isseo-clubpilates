@@ -2912,9 +2912,9 @@ function renderChat(){
   var cr=document.getElementById('chat-root');
   if(!cr)return;
   if(S.view==='auth'){cr.innerHTML='';return;}
-  // Ne pas écraser si l'utilisateur est en train de taper
+  // Ne pas écraser si l'utilisateur est en train de taper (input non vide + focus)
   var inp=document.getElementById('global-chat-input');
-  if(inp&&document.activeElement===inp)return;
+  if(inp&&document.activeElement===inp&&inp.value.length>0)return;
   cr.innerHTML=renderFloatingChat();
   if(S.chatOpen){
     var list=document.getElementById('global-chat-msgs');
