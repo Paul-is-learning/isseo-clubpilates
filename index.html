@@ -745,12 +745,18 @@ async function saveDepenses(sid){
 async function saveAdherents(sid){
   await sb.from('studios').upsert({id:sid+'_adherents',data:{actuel:S.adherents[sid]||{}},updated_at:new Date().toISOString()});
 }
-async function saveTauxInteret(sid,valPct){
+var _tauxTimeout={};
+function saveTauxInteret(sid,valPct){
   var taux=Math.max(0.1,Math.min(15,valPct))/100;
   if(!S.studios[sid])return;
+  // Mise à jour locale immédiate (affichage réactif)
   S.studios[sid].tauxInteret=taux;
-  await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});
-  render();
+  // Debounce 1 200ms avant envoi Supabase — laisse le temps de finir la saisie
+  if(_tauxTimeout[sid])clearTimeout(_tauxTimeout[sid]);
+  _tauxTimeout[sid]=setTimeout(function(){
+    sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});
+    render();
+  },1200);
 }
 
 function toast(msg){
