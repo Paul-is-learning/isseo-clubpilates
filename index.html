@@ -709,6 +709,12 @@ var LC_LOGIN='<img src="logo-cp.webp" style="height:52px;width:auto;display:bloc
 var COLLAB_SEP='<span style="font-size:18px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
 
 // ── Photos utilisateurs ──────────────────────────────────────────────────────
+// Mapping email → photo (pour les utilisateurs sans nom dans la DB)
+var EMAIL_PHOTO_MAP={
+  'caro.falzon@gmail.com':    'photos/caroline.jpg',
+  'clementcoquel@yahoo.fr':   'photos/clement.jpg',
+  'paulsabourin3@gmail.com':  'photos/paul-s.jpg',
+};
 var PHOTO_MAP={
   'pascal':   'photos/pascal.jpg',
   'paul':     'photos/paul-b.jpg',
@@ -748,6 +754,21 @@ function avatarHTML(nom,size){
   }
   return '<div style="'+circle+'background:'+bg+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:'+fs+'px;font-weight:700">'+txt+'</div>';
 }
+// Version enrichie pour le panel admin : cherche aussi par email si le nom est vide
+function avatarHTMLForUser(u,size){
+  var emailKey=(u.email||'').toLowerCase().trim();
+  var emailPhoto=(S.avatarUrls&&S.avatarUrls[emailKey])||EMAIL_PHOTO_MAP[emailKey]||null;
+  if(emailPhoto){
+    size=size||32;
+    var bg=_aC(u.nom||u.email||'?');
+    var circle='width:'+size+'px;height:'+size+'px;border-radius:50%;flex-shrink:0;overflow:hidden;';
+    return '<div style="'+circle+'background:'+bg+'">'
+      +'<img src="'+emailPhoto+'" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block" '
+      +'onerror="this.style.display=\'none\'">'
+      +'</div>';
+  }
+  return avatarHTML(u.nom||u.email||'?',size);
+}
 var COLLAB_SEP_LOGIN='<span style="font-size:26px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
 
 function renderAuth(){
@@ -783,10 +804,10 @@ function renderAdminPanel(){
   var blocked=S.adminSettings.blocked||[];
   var roles=S.adminSettings.roles||{};
   var h='<div class="box" style="padding:0;overflow:hidden">';
-  h+='<div style="background:#0f1f3d;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
-  h+='<div><div style="color:#fff;font-weight:700;font-size:14px">⚙ Gestion des accès utilisateurs</div>';
-  h+='<div style="color:rgba(255,255,255,0.55);font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
-  h+='<button onclick="loadAdminUsers()" style="background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.2);color:#fff;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
+  h+='<div style="background:#fff;border-bottom:1px solid #e8eaf0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
+  h+='<div><div style="color:#0f1f3d;font-weight:700;font-size:14px">⚙ Gestion des accès utilisateurs</div>';
+  h+='<div style="color:#888;font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
+  h+='<button onclick="loadAdminUsers()" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
   h+='</div>';
   if(_adminUsers.length===0){
     h+='<div style="padding:40px;text-align:center;color:#aaa">';
@@ -814,7 +835,7 @@ function renderAdminPanel(){
       // Nom
       h+='<td style="padding:12px 16px">';
       h+='<div style="display:flex;align-items:center;gap:10px">';
-      h+=avatarHTML(u.nom,34);
+      h+=avatarHTMLForUser(u,34);
       h+='<div><div style="font-weight:600;font-size:13px">'+(u.nom||'—')+(isMe?' <span style="font-size:10px;color:#854F0B;font-weight:400">(vous)</span>':'')+'</div>';
       h+='<div style="font-size:11px;color:#999">'+(u.email||u.id||'')+'</div></div>';
       h+='</div></td>';
@@ -2481,7 +2502,10 @@ function renderNewForm(){
 // Super-admins (archivage / suppression de projets)
 function isSuperAdmin(){
   var nom=(S.profile&&S.profile.nom||'').toLowerCase().trim().split(' ')[0];
-  return nom==='paul'||nom==='tom';
+  var email=(S.user&&S.user.email||'').toLowerCase();
+  return nom==='paul'||nom==='tom'
+    ||email==='tombecaud@isseo-dev.com'
+    ||email==='paulbecaud@isseo-dev.com';
 }
 function isViewer(){
   if(!S.user||!S.adminSettings)return false;
