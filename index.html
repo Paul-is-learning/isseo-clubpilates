@@ -746,14 +746,17 @@ async function saveAdherents(sid){
   await sb.from('studios').upsert({id:sid+'_adherents',data:{actuel:S.adherents[sid]||{}},updated_at:new Date().toISOString()});
 }
 var _tauxTimeout={};
+var _tauxPending={}; // bloque l'écrasement par syncData pendant le debounce
 function saveTauxInteret(sid,valPct){
   var taux=Math.max(0.1,Math.min(15,valPct))/100;
   if(!S.studios[sid])return;
-  // Mise à jour locale immédiate (affichage réactif)
+  // Mise à jour locale immédiate
   S.studios[sid].tauxInteret=taux;
-  // Debounce 1 200ms avant envoi Supabase — laisse le temps de finir la saisie
+  // Marquer comme "en attente d'écriture" → syncData ne doit pas écraser
+  _tauxPending[sid]=true;
   if(_tauxTimeout[sid])clearTimeout(_tauxTimeout[sid]);
   _tauxTimeout[sid]=setTimeout(function(){
+    _tauxPending[sid]=false;
     sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});
     render();
   },1200);
@@ -3673,7 +3676,7 @@ async function syncData(){
         else{renderChat();} // Rafraîchir le chat en direct si ouvert
       }
     } else if(!id.endsWith('_messages')){
-      if(r.data){
+      if(r.data&&!_tauxPending[id]){
         // Appliquer INIT AVANT la comparaison pour éviter un mismatch permanent
         // (S.studios a déjà les valeurs INIT, r.data est brut depuis Supabase)
         var sd=Object.assign({},r.data);
