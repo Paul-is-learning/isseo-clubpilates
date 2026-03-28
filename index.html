@@ -3085,12 +3085,16 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   ];
   prixCfg.forEach(function(px){
     var delta=Math.round((px.val-px.ref)/px.ref*100);
+    var ttc=(Math.round(px.val*1.20*100)/100).toFixed(2).replace('.',',');
     h+='<div>';
     h+='<div style="font-size:11px;color:#888;margin-bottom:4px">'+px.label+' <span style="font-size:10px;color:#aaa">(BP: '+px.ref+' EUR)</span></div>';
     h+='<div style="display:flex;align-items:center;gap:6px">';
     h+='<input type="number" value="'+px.val+'" step="0.5" id="sim-'+px.id+'" oninput="updateSimPrix(\''+sid+'\',\''+px.id+'\',this.value,'+ay+')" style="width:100%;padding:6px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-weight:600;color:'+px.color+';outline:none"/>';
     h+='</div>';
-    h+='<div id="sim-delta-'+px.id+'" style="font-size:10px;margin-top:3px;color:'+(delta>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+(delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP')+'</div>';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px">';
+    h+='<div id="sim-delta-'+px.id+'" style="font-size:10px;color:'+(delta>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+(delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP')+'</div>';
+    h+='<div id="sim-ttc-'+px.id+'" style="font-size:10px;color:#64748b;font-weight:500">→ <b>'+ttc+' €</b> TTC</div>';
+    h+='</div>';
     h+='</div>';
   });
   h+='</div>';
@@ -3183,6 +3187,12 @@ function updateSimPrix(sid,field,val,ay){
   if(el){
     el.textContent=delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP';
     el.style.color=delta>=0?'#3B6D11':'#A32D2D';
+  }
+  // Mise à jour TTC live
+  var elTtc=document.getElementById('sim-ttc-'+field);
+  if(elTtc){
+    var ttcVal=(Math.round(num(val)*1.20*100)/100).toFixed(2).replace('.',',');
+    elTtc.innerHTML='→ <b>'+ttcVal+' €</b> TTC';
   }
   _refreshSimCA(sid,ay);
 }
