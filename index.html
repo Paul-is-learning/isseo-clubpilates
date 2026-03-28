@@ -571,14 +571,17 @@ function renderDetail(){
 
 function renderWorkflow(s){
   var canEdit=!!S.profile;
-  var h='<div class="box">'+progBar(s.steps)+'<div style="margin-top:16px">';
+  var sid=S.selectedId;
+  // Infographie en tête de page
+  var h=renderBP3YInfographic(sid,s);
+  h+='<div class="box" style="margin-top:16px">'+progBar(s.steps)+'<div style="margin-top:16px">';
   STEPS.forEach(function(step,i){
     var done=s.steps[step.id];
     var unlocked=i===0||s.steps[STEPS[i-1].id];
     var bg=done?'#1D9E75':'transparent';
     var border=done?'#1D9E75':unlocked?'#aaa':'#ddd';
     var cursor=unlocked&&canEdit?'pointer':'default';
-    var click=unlocked&&canEdit?'onclick="toggleStep(\''+S.selectedId+'\',\''+step.id+'\')">':'>';
+    var click=unlocked&&canEdit?'onclick="toggleStep(\''+sid+'\',\''+step.id+'\')">':'>';
     h+='<div style="display:flex;gap:12px;margin-bottom:10px;opacity:'+((!done&&!unlocked)?0.4:1)+'">';
     h+='<div style="display:flex;flex-direction:column;align-items:center">';
     h+='<div class="step-dot" style="background:'+bg+';border:2px solid '+border+';color:'+(done?'#fff':'#aaa')+';cursor:'+cursor+'" '+click+(done?'&#10003;':'')+'</div>';
@@ -586,21 +589,21 @@ function renderWorkflow(s){
     h+='</div><div style="padding-bottom:8px"><div style="font-size:13px;font-weight:'+(done?600:400)+'">'+step.label+'</div><div style="font-size:11px;color:#888;margin-top:2px">'+step.desc+'</div></div></div>';
   });
   h+='</div></div>';
-  h+=renderBP3YInfographic(s);
   return h;
 }
 
 // ── Infographie KPIs prévisionnels 3 ans — onglet Workflow ────────────────────
-function renderBP3YInfographic(s){
+function renderBP3YInfographic(sid,s){
   var bp=build3YearBP(s.forecast||{});
   var annee0=s.forecast&&s.forecast.annee||2026;
+  var md=s.forecast&&s.forecast.moisDebut||0;
 
-  // 36 monthly rows
+  // 36 monthly rows BP
   var allRows=bp.a1.concat(bp.a2).concat(bp.a3);
   var caArr=allRows.map(function(r){return r._ca||0;});
   var ebtArr=allRows.map(function(r){return r._ebitda||0;});
 
-  // Annual aggregates
+  // Annual aggregates (BP)
   var YR=[bp.a1,bp.a2,bp.a3].map(function(rows,yi){
     var ca=0,ebitda=0,rex=0,rnet=0;
     rows.forEach(function(r){ca+=r._ca;ebitda+=r._ebitda;rex+=r._rex;rnet+=r._result;});
@@ -612,10 +615,25 @@ function renderBP3YInfographic(s){
     return{ca:ca,ebitda:ebitda,rex:rex,rnet:rnet,avgMbrs:Math.round(mbrs/12),lastMbrs:lastMbrs,annee:annee0+yi};
   });
 
+  // ── Simulation Adhérents ────────────────────────────────────────────────────
+  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:117,prix8:206,prixi:294};
+  var simMonthlyCA=[];
+  for(var si=0;si<36;si++){
+    var sm=si<BP_ADHERENTS.length?BP_ADHERENTS[si]:400;
+    simMonthlyCA.push(computeSimCA(sm,simCfg));
+  }
+  var SIM_YR=[0,1,2].map(function(yi){
+    var caM=simMonthlyCA.slice(yi*12,(yi+1)*12);
+    var caAn=caM.reduce(function(s,v){return s+v;},0);
+    var rows=buildBP(caAn,md);
+    var eb=rows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+    return{ca:caAn,ebitda:eb};
+  });
+
   // ── SVG Chart 36 mois ──────────────────────────────────────────────────────
   var W=580,H=130,PL=50,PR=10,PT=10,PB=22;
   var cW=W-PL-PR,cH=H-PT-PB,N=36;
-  var maxV=Math.max.apply(null,caArr)*1.12||1;
+  var maxV=Math.max(Math.max.apply(null,caArr),Math.max.apply(null,simMonthlyCA))*1.12||1;
   function xp(i){return PL+i*(cW/(N-1));}
   function yv(v){return PT+cH-(Math.max(0,v)/maxV)*cH;}
 
@@ -681,6 +699,9 @@ function renderBP3YInfographic(s){
     svg+='<rect x="'+(bx+2)+'" y="'+(PT+1)+'" width="20" height="11" rx="3" fill="#1D9E75" opacity="0.15"/>';
     svg+='<text x="'+(bx+12)+'" y="'+(PT+9)+'" text-anchor="middle" font-size="7.5" fill="#0F6E56" font-weight="700">BE</text>';
   }
+  // Ligne CA simulée (pointillé bleu)
+  var simL='';simMonthlyCA.forEach(function(v,i){simL+=(i===0?'M':'L')+xp(i)+' '+yv(v)+' ';});
+  svg+='<path d="'+simL+'" fill="none" stroke="#185FA5" stroke-width="1.5" stroke-dasharray="5,3" opacity="0.65"/>';
   svg+='</svg>';
 
   // ── HTML ────────────────────────────────────────────────────────────────────
@@ -760,14 +781,56 @@ function renderBP3YInfographic(s){
   });
   h+='</div>';
 
-  // Section graphique
+  // ── Section Simulation Adhérents ──────────────────────────────────────────
+  var p4=num(simCfg.p4,47),p8=num(simCfg.p8,50),pi=num(simCfg.pi,3);
+  var px4=num(simCfg.prix4,117),px8=num(simCfg.prix8,206),pxi=num(simCfg.prixi,294);
+  var isDefault=(p4===47&&p8===50&&pi===3&&px4===117&&px8===206&&pxi===294);
+  h+='<div style="border-top:0.5px solid #e8e8e2;background:linear-gradient(180deg,#f2f5fb 0%,#f7f7f4 100%);padding:12px 16px 14px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
+  h+='<div style="display:flex;align-items:center;gap:8px">';
+  h+='<div style="width:24px;height:24px;border-radius:7px;background:#185FA5;display:flex;align-items:center;justify-content:center;font-size:13px">&#127890;</div>';
+  h+='<div><div style="font-size:11px;font-weight:700;color:#1a1a1a">Simulation personnalis\u00e9e \u2014 Adh\u00e9rents</div>';
+  h+='<div style="font-size:9.5px;color:#888;margin-top:1px">R\u00e9partition : <strong>'+p4+'%&nbsp;/&nbsp;'+p8+'%&nbsp;/&nbsp;'+pi+'%</strong> &nbsp;&middot;&nbsp; Prix&nbsp;: <strong>'+px4+'\u20ac&nbsp;/&nbsp;'+px8+'\u20ac&nbsp;/&nbsp;'+pxi+'\u20ac</strong>&nbsp;HT/mois'+(isDefault?'&nbsp;<span style="color:#bbb">(d\u00e9faut)</span>':'')+'</div>';
+  h+='</div></div>';
+  h+='<button onclick="setDetailTab(\'adherents\')" style="background:#185FA5;color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;cursor:pointer">Modifier &#8599;</button>';
+  h+='</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
+  SIM_YR.forEach(function(sy,i){
+    var accent=['#185FA5','#0F6E56','#854F0B'][i];
+    var dCA=sy.ca-YR[i].ca,dEB=sy.ebitda-YR[i].ebitda;
+    var dCApct=YR[i].ca>0?Math.round((sy.ca/YR[i].ca-1)*100):0;
+    var eMargin=sy.ca>0?Math.round(sy.ebitda/sy.ca*100):0;
+    h+='<div style="background:#fff;border-radius:10px;padding:10px 12px;border:0.5px solid #e0e0da;box-shadow:0 1px 5px rgba(0,0,0,0.04)">';
+    h+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">';
+    h+='<div style="width:18px;height:18px;border-radius:5px;background:'+accent+';display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:800;color:#fff">A'+(i+1)+'</span></div>';
+    h+='<span style="font-size:10px;font-weight:700;color:#555">Simul\u00e9</span>';
+    h+='</div>';
+    h+='<div style="margin-bottom:7px;padding-bottom:7px;border-bottom:0.5px solid #f0f0ea">';
+    h+='<div style="font-size:9px;color:#aaa;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.5px">CA annuel</div>';
+    h+='<div style="font-size:14px;font-weight:700;color:#1a1a1a">'+fmt(sy.ca)+'</div>';
+    h+='<div style="display:flex;align-items:center;gap:3px;margin-top:2px">';
+    h+='<span style="font-size:9px;color:#aaa">vs BP :</span>';
+    h+='<span style="font-size:9px;font-weight:700;color:'+(dCA>=0?'#3B6D11':'#A32D2D')+'">'+(dCA>=0?'+':'')+fmt(dCA)+'&nbsp;('+(dCApct>=0?'+':'')+dCApct+'%)</span>';
+    h+='</div></div>';
+    h+='<div>';
+    h+='<div style="font-size:9px;color:#aaa;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.5px">EBITDA</div>';
+    h+='<div style="font-size:13px;font-weight:700;color:'+(sy.ebitda>0?'#854F0B':'#A32D2D')+'">'+fmt(sy.ebitda)+'</div>';
+    h+='<div style="display:flex;justify-content:space-between;margin-top:2px;align-items:center">';
+    h+='<span style="font-size:9px;font-weight:700;color:'+(dEB>=0?'#3B6D11':'#A32D2D')+'">'+(dEB>=0?'+':'')+fmt(dEB)+'</span>';
+    h+='<span style="font-size:10px;font-weight:700;color:'+accent+'">'+eMargin+'%</span>';
+    h+='</div></div></div>';
+  });
+  h+='</div></div>';
+
+  // ── Graphique 36 mois ──────────────────────────────────────────────────────
   h+='<div style="background:#f7f7f4;border-top:0.5px solid #e8e8e2;padding:12px 16px 10px">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">';
-  h+='<div style="font-size:11px;font-weight:600;color:#666">Trajectoire CA &amp; EBITDA &mdash; 36 mois</div>';
-  h+='<div style="display:flex;gap:12px;align-items:center">';
-  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#1D9E75;border-radius:1px"></div><span style="font-size:9.5px;color:#999">CA mensuel</span></div>';
-  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#854F0B;border-radius:1px"></div><span style="font-size:9.5px;color:#999">EBITDA mensuel</span></div>';
-  if(beM>=0)h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:1px;height:12px;background:#0F6E56;opacity:0.65"></div><span style="font-size:9.5px;color:#0F6E56;font-weight:600">Break-even</span></div>';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">';
+  h+='<div style="font-size:11px;font-weight:600;color:#666">Trajectoire CA &amp; EBITDA \u2014 36 mois</div>';
+  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">';
+  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#1D9E75;border-radius:1px"></div><span style="font-size:9px;color:#999">CA BP</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:3px"><svg width="14" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke="#185FA5" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.7"/></svg><span style="font-size:9px;color:#999">CA Simul\u00e9</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#854F0B;border-radius:1px"></div><span style="font-size:9px;color:#999">EBITDA BP</span></div>';
+  if(beM>=0)h+='<div style="display:flex;align-items:center;gap:3px"><div style="width:1px;height:11px;background:#0F6E56;opacity:0.6"></div><span style="font-size:9px;color:#0F6E56;font-weight:600">Break-even</span></div>';
   h+='</div></div>';
   h+=svg;
   h+='</div>';
