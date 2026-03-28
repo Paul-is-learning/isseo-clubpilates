@@ -699,12 +699,14 @@ function progBar(steps){
 
 var LI='<img src="logo-black.png" style="height:42px;width:auto;display:block" alt="Isseo">';
 var LI_LOGIN='<img src="logo-black.png" style="height:80px;width:auto;display:block;margin:0 auto" alt="Isseo">';
-var LC='<svg width="110" viewBox="0 0 230 50"><text x="0" y="34" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="#5b7fa6">CLUB</text><circle cx="85" cy="25" r="20" fill="none" stroke="#5b7fa6" stroke-width="1.5" stroke-dasharray="3,2"/><circle cx="85" cy="25" r="7" fill="#5b7fa6" opacity="0.4"/><text x="110" y="34" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="#5b7fa6">PILATES</text></svg>';
+var LC='<img src="logo-cp.webp" style="height:36px;width:auto;display:block" alt="Club Pilates">';
+var LC_LOGIN='<img src="logo-cp.webp" style="height:52px;width:auto;display:block" alt="Club Pilates">';
+var COLLAB_SEP='<span style="font-size:18px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
+var COLLAB_SEP_LOGIN='<span style="font-size:26px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
 
 function renderAuth(){
   return '<div class="auth-wrap"><div class="auth-box">'
-    +'<div style="text-align:center;margin-bottom:16px">'+LI_LOGIN+'</div>'
-    +'<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px"><div style="width:1px;height:32px;background:#e0e0d8"></div>'+LC+'<div style="width:1px;height:32px;background:#e0e0d8"></div></div>'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px">'+LI_LOGIN+COLLAB_SEP_LOGIN+LC_LOGIN+'</div>'
     +'<div style="text-align:center;font-size:12px;color:#888;margin-bottom:22px">Plateforme de suivi des projets</div>'
     +'<input id="ae" type="email" placeholder="Email" autocomplete="email"/>'
     +'<input id="ap" type="password" placeholder="Mot de passe" autocomplete="current-password"/>'
@@ -719,7 +721,7 @@ function renderDashboard(){
   var isAdmin=!!S.profile;
   var h='<div class="app">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
-  h+='<div style="display:flex;align-items:center;gap:14px">'+LI+'<div style="width:1px;height:32px;background:#e0e0d8"></div>'+LC+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:12px">'+LI+COLLAB_SEP+LC+'</div>';
   h+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px">'+(S.profile&&S.profile.nom||'')+'</span>';
   h+='<button class="btn" onclick="doLogout()">Deconnexion</button></div></div>';
   h+='<div class="kpis">';
