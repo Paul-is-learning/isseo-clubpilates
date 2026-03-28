@@ -3094,12 +3094,12 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
     h+='<div style="display:flex;align-items:center;gap:6px">';
     h+='<input type="number" value="'+px.val+'" step="0.5" id="sim-'+px.id+'" oninput="updateSimPrix(\''+sid+'\',\''+px.id+'\',this.value,'+ay+')" style="width:100%;padding:6px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-weight:600;color:'+px.color+';outline:none"/>';
     h+='</div>';
-    if(unitTTC){
-      h+='<div id="sim-unit-'+px.id+'" style="font-size:10px;color:#94a3b8;margin-top:3px">soit <b style="color:#555">'+unitTTC+' €</b> TTC/séance</div>';
-    }
-    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:2px">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px">';
     h+='<div id="sim-delta-'+px.id+'" style="font-size:10px;color:'+(delta>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+(delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP')+'</div>';
-    h+='<div id="sim-ttc-'+px.id+'" style="font-size:10px;color:#64748b;font-weight:500">→ <b>'+ttc+' €</b> TTC/mois</div>';
+    if(unitTTC){h+='<div id="sim-unit-'+px.id+'" style="font-size:10px;color:#94a3b8;text-align:right">soit <b style="color:#555">'+unitTTC+'&nbsp;€</b> TTC/séance</div>';}
+    h+='</div>';
+    h+='<div style="text-align:right;margin-top:1px">';
+    h+='<div id="sim-ttc-'+px.id+'" style="font-size:10px;color:#64748b;font-weight:500">→ <b>'+ttc+'&nbsp;€</b> TTC/mois</div>';
     h+='</div>';
     h+='</div>';
   });
