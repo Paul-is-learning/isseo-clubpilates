@@ -697,12 +697,14 @@ function progBar(steps){
   return '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;color:#888"><span>'+done+'/'+STEPS.length+'</span><span>'+p+'%</span></div><div class="prog-bar"><div style="width:'+p+'%;background:#1D9E75;border-radius:4px;height:6px"></div></div>';
 }
 
-var LI='<svg width="70" viewBox="0 0 260 110"><text x="0" y="80" font-family="Georgia,serif" font-size="88" font-weight="700" fill="#1a1a1a">Isseo</text><text x="8" y="102" font-family="Arial,sans-serif" font-size="10" letter-spacing="3" fill="#888">DEV &amp; VALORISER</text></svg>';
+var LI='<img src="logo-black.png" style="height:42px;width:auto;display:block" alt="Isseo">';
+var LI_LOGIN='<img src="logo-black.png" style="height:80px;width:auto;display:block;margin:0 auto" alt="Isseo">';
 var LC='<svg width="110" viewBox="0 0 230 50"><text x="0" y="34" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="#5b7fa6">CLUB</text><circle cx="85" cy="25" r="20" fill="none" stroke="#5b7fa6" stroke-width="1.5" stroke-dasharray="3,2"/><circle cx="85" cy="25" r="7" fill="#5b7fa6" opacity="0.4"/><text x="110" y="34" font-family="Arial,sans-serif" font-size="16" font-weight="700" letter-spacing="2" fill="#5b7fa6">PILATES</text></svg>';
 
 function renderAuth(){
   return '<div class="auth-wrap"><div class="auth-box">'
-    +'<div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px">'+LI+'<div style="width:1px;height:40px;background:#e0e0d8"></div>'+LC+'</div>'
+    +'<div style="text-align:center;margin-bottom:16px">'+LI_LOGIN+'</div>'
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:18px"><div style="width:1px;height:32px;background:#e0e0d8"></div>'+LC+'<div style="width:1px;height:32px;background:#e0e0d8"></div></div>'
     +'<div style="text-align:center;font-size:12px;color:#888;margin-bottom:22px">Plateforme de suivi des projets</div>'
     +'<input id="ae" type="email" placeholder="Email" autocomplete="email"/>'
     +'<input id="ap" type="password" placeholder="Mot de passe" autocomplete="current-password"/>'
