@@ -705,6 +705,45 @@ var LI_LOGIN='<img src="logo-black.png" style="height:60px;width:auto;display:bl
 var LC='<img src="logo-cp.webp" style="height:36px;width:auto;display:block" alt="Club Pilates">';
 var LC_LOGIN='<img src="logo-cp.webp" style="height:52px;width:auto;display:block" alt="Club Pilates">';
 var COLLAB_SEP='<span style="font-size:18px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
+
+// ── Photos utilisateurs ──────────────────────────────────────────────────────
+var PHOTO_MAP={
+  'pascal':   'photos/pascal.jpg',
+  'paul':     'photos/paul-b.jpg',
+  'tom':      'photos/tom.jpg',
+  'caroline': 'photos/caroline.jpg',
+  'clement':  'photos/clement.jpg',
+  'paul s':   'photos/paul-s.jpg',
+};
+// Directeurs opérationnels par studio (matching sur nom ou société)
+var STUDIO_DIRECTOR=[
+  {match:'sacobe', nom:'Paul S.',   photo:'photos/paul-s.jpg'},
+  {match:'p&w',    nom:'Tom',       photo:'photos/tom.jpg'},
+  {match:'cobe',   nom:'Caroline',  photo:'photos/caroline.jpg'},
+];
+function getStudioDirector(s){
+  var key=((s.name||'')+' '+(s.societe||'')).toLowerCase();
+  for(var i=0;i<STUDIO_DIRECTOR.length;i++){if(key.indexOf(STUDIO_DIRECTOR[i].match)>=0)return STUDIO_DIRECTOR[i];}
+  return null;
+}
+var _AV_COLORS=['#185FA5','#0F6E56','#854F0B','#993C1D','#533AB7','#A32D2D'];
+function _aC(n){var h=0;for(var i=0;i<(n||'').length;i++)h=n.charCodeAt(i)+((h<<5)-h);return _AV_COLORS[Math.abs(h)%_AV_COLORS.length];}
+function _ini(n){return (n||'').split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);}
+function avatarHTML(nom,size){
+  size=size||32;
+  var key=(nom||'').toLowerCase().trim();
+  var photo=PHOTO_MAP[key]||PHOTO_MAP[key.split(' ')[0]]||null;
+  var bg=_aC(nom||'?');var txt=_ini(nom||'?');
+  var fs=Math.round(size*0.34);
+  var base='width:'+size+'px;height:'+size+'px;border-radius:50%;flex-shrink:0;';
+  if(photo){
+    return '<div style="'+base+'position:relative;overflow:hidden;background:'+bg+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:'+fs+'px;font-weight:700">'
+      +'<span style="position:absolute;z-index:0">'+txt+'</span>'
+      +'<img src="'+photo+'" style="position:absolute;z-index:1;width:100%;height:100%;object-fit:cover;object-position:center top" onerror="this.style.display=\'none\'">'
+      +'</div>';
+  }
+  return '<div style="'+base+'background:'+bg+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:'+fs+'px;font-weight:700">'+txt+'</div>';
+}
 var COLLAB_SEP_LOGIN='<span style="font-size:26px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
 
 function renderAuth(){
@@ -771,10 +810,7 @@ function renderAdminPanel(){
       // Nom
       h+='<td style="padding:12px 16px">';
       h+='<div style="display:flex;align-items:center;gap:10px">';
-      var initials=(u.nom||'?').split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
-      var colors=['#185FA5','#0F6E56','#854F0B','#993C1D','#533AB7','#A32D2D'];
-      var ci=Math.abs((u.nom||'').charCodeAt(0)||0)%colors.length;
-      h+='<div style="width:34px;height:34px;border-radius:50%;background:'+colors[ci]+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:11px;font-weight:700">'+initials+'</div>';
+      h+=avatarHTML(u.nom,34);
       h+='<div><div style="font-weight:600;font-size:13px">'+(u.nom||'—')+(isMe?' <span style="font-size:10px;color:#854F0B;font-weight:400">(vous)</span>':'')+'</div>';
       h+='<div style="font-size:11px;color:#999">'+(u.email||u.id||'')+'</div></div>';
       h+='</div></td>';
@@ -902,6 +938,17 @@ function renderDashboard(){
 }
 
 function renderCard(id,s){
+  var dir=getStudioDirector(s);
+  var dirSection='';
+  if(dir){
+    dirSection='<div style="display:flex;align-items:center;gap:9px;margin-top:12px;padding-top:10px;border-top:1px solid #f0f0ea">'
+      +'<div style="width:40px;height:40px;border-radius:50%;overflow:hidden;flex-shrink:0;background:'+_aC(dir.nom)+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,0.13)">'
+      +'<img src="'+dir.photo+'" style="width:100%;height:100%;object-fit:cover;object-position:center top" onerror="this.style.display=\'none\'">'
+      +'</div>'
+      +'<div><div style="font-size:9px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;font-weight:600">Dir. opérationnel</div>'
+      +'<div style="font-size:12px;font-weight:600;color:#333">'+dir.nom+'</div></div>'
+      +'</div>';
+  }
   return '<div class="card" onclick="openDetail(\''+id+'\')">'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
     '<div><div style="font-weight:600;font-size:14px">'+s.name+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+s.societe+'</div></div>'+
@@ -909,6 +956,7 @@ function renderCard(id,s){
     '<div style="font-size:11px;color:#888;margin-bottom:10px">Ouverture : <strong>'+s.ouverture+'</strong></div>'+
     progBar(s.steps)+
     (s.alertes.length>0?'<div style="margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+s.alertes[0]+'</div>':'')+
+    dirSection+
     '</div>';
 }
 
@@ -2005,10 +2053,8 @@ function renderMessages(sid){
   } else {
     msgs.forEach(function(m){
       var isMe=m.auteur===me;
-      var color=aC(m.auteur);
-      var in2=ini(m.auteur);
       h+='<div style="display:flex;flex-direction:'+(isMe?'row-reverse':'row')+';align-items:flex-end;gap:8px">';
-      h+='<div style="width:32px;height:32px;border-radius:50%;background:'+color+';display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:600;color:#fff">'+in2+'</div>';
+      h+=avatarHTML(m.auteur,32);
       h+='<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';max-width:72%">';
       h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' &mdash; '+m.date+'</div>';
       h+='<div style="background:'+(isMe?'#1a1a1a':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
@@ -3075,10 +3121,9 @@ function renderFloatingChat(){
     var canDeleteMsg=isSuperAdmin();
     msgs.forEach(function(m){
       var isMe=m.auteur===me;
-      var c=aC(m.auteur||'?');
       var ts=m.ts||'';
       h+='<div style="display:flex;gap:7px;align-items:flex-end;'+(isMe?'flex-direction:row-reverse':'')+'" class="chat-msg-row">';
-      h+='<div style="width:26px;height:26px;border-radius:50%;background:'+c+';display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;flex-shrink:0">'+ini(m.auteur||'?')+'</div>';
+      h+=avatarHTML(m.auteur||'?',26);
       h+='<div style="max-width:200px;position:relative">';
       if(!isMe)h+='<div style="font-size:9.5px;color:#888;margin-bottom:2px;font-weight:600">'+(m.auteur||'')+'</div>';
       h+='<div style="background:'+(isMe?'#0f1f3d':'#fff')+';color:'+(isMe?'#fff':'#2c3e50')+';border-radius:'+(isMe?'12px 12px 4px 12px':'12px 12px 12px 4px')+';padding:7px 10px;font-size:12px;line-height:1.45;box-shadow:0 1px 3px rgba(0,0,0,0.08);word-break:break-word">'+(m.texte||'')+'</div>';
