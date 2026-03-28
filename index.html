@@ -585,7 +585,7 @@ var S={
   globalChat:[],        // messages chat global entre associés
   chatOpen:false,       // panneau chat ouvert/fermé
   chatLastSeen:localStorage.getItem('chatLastSeen')||'', // ts du dernier message lu
-  adminSettings:{blocked:[],roles:{}}, // contrôle accès utilisateurs
+  adminSettings:{blocked:[],roles:{},viewers:[]}, // contrôle accès utilisateurs
 };
 
 async function loadAll(){
@@ -598,7 +598,7 @@ async function loadAll(){
     if(id.endsWith('_files')){S.files[id.slice(0,-6)]=r.data&&r.data.files||[];}
     else if(id.endsWith('_depenses')){S.depenses[id.slice(0,-9)]=r.data&&r.data.depenses||[];}
     else if(id==='global_chat'){S.globalChat=r.data&&r.data.messages||[];}
-    else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{}},r.data&&r.data.settings||{});}
+    else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{},viewers:[]},r.data&&r.data.settings||{});}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
     else if(id.endsWith('_simconfig')){
@@ -756,12 +756,15 @@ function renderAdminPanel(){
     h+='<thead><tr style="background:#f8f9fb;border-bottom:1px solid #e8eaf0">';
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Utilisateur</th>';
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Rôle / Périmètre</th>';
+    h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Lecture seule</th>';
     h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Accès</th>';
     h+='</tr></thead><tbody>';
+    var viewers=S.adminSettings.viewers||[];
     _adminUsers.forEach(function(u,i){
       var uid=u.id;
       var isMe=S.user&&S.user.id===uid;
       var isBlocked=blocked.indexOf(uid)>=0;
+      var isViewerUser=viewers.indexOf(uid)>=0;
       var roleOverride=roles[uid]||u.role||'admin';
       var bg=i%2===0?'#fff':'#fafafa';
       h+='<tr style="border-bottom:1px solid #f0f0ea;background:'+bg+(isMe?';background:#fffbe6':'')+(isBlocked?';background:#fff5f5;opacity:0.8':'')+'">';
@@ -781,13 +784,27 @@ function renderAdminPanel(){
         h+='<span style="font-size:12px;color:#666;background:#f0f0ea;padding:3px 8px;border-radius:4px">'+(ROLE_LABELS[roleOverride]||roleOverride)+'</span>';
       } else {
         h+='<select onchange="setUserRole(\''+uid+'\',this.value)" style="border:1px solid #dce1ea;border-radius:6px;padding:5px 8px;font-size:12px;background:#fff;cursor:pointer">';
-        ['admin','pascal','viewer','coquel','sabourin','caroline'].forEach(function(r){
+        ['admin','pascal','coquel','sabourin','caroline'].forEach(function(r){
           h+='<option value="'+r+'"'+(roleOverride===r?' selected':'')+'>'+r+' — '+(ROLE_LABELS[r]||r)+'</option>';
         });
         h+='</select>';
       }
       h+='</td>';
-      // Toggle accès
+      // Toggle lecture seule (viewer)
+      h+='<td style="padding:12px 16px;text-align:center">';
+      if(isMe){
+        h+='<span style="font-size:11px;color:#aaa">—</span>';
+      } else {
+        var vChecked=isViewerUser?'checked':'';
+        var vBg=isViewerUser?'#EFF6FF':'#f8f9fb';
+        var vBorder=isViewerUser?'#BFDBFE':'#dce1ea';
+        h+='<label style="display:inline-flex;align-items:center;gap:7px;cursor:pointer;background:'+vBg+';border:1px solid '+vBorder+';border-radius:8px;padding:5px 10px;transition:all .15s">';
+        h+='<input type="checkbox" '+vChecked+' onchange="toggleViewer(\''+uid+'\',this.checked)" style="width:15px;height:15px;cursor:pointer;accent-color:#1D4ED8">';
+        h+='<span style="font-size:11px;font-weight:600;color:'+(isViewerUser?'#1D4ED8':'#888')+'">👁 Viewer</span>';
+        h+='</label>';
+      }
+      h+='</td>';
+      // Toggle accès (actif/suspendu)
       h+='<td style="padding:12px 16px;text-align:center">';
       if(isMe){
         h+='<span style="font-size:11px;color:#aaa">—</span>';
@@ -824,6 +841,17 @@ async function toggleUserAccess(uid,block){
   S.adminSettings.blocked=blocked;
   var ok=await saveAdminSettings();
   if(ok)toast(block?'Accès suspendu.':'Accès réactivé.');
+  render();
+}
+
+async function toggleViewer(uid,enable){
+  if(!isSuperAdmin())return;
+  var viewers=S.adminSettings.viewers||[];
+  if(enable){if(viewers.indexOf(uid)<0)viewers.push(uid);}
+  else{viewers=viewers.filter(function(id){return id!==uid;});}
+  S.adminSettings.viewers=viewers;
+  var ok=await saveAdminSettings();
+  if(ok)toast(enable?'Mode lecture seule activé.':'Mode lecture seule désactivé.');
   render();
 }
 
@@ -2360,10 +2388,8 @@ function isSuperAdmin(){
   return nom==='paul'||nom==='tom';
 }
 function isViewer(){
-  // Double vérification : S.profile.role ET adminSettings.roles directement
-  if(S.profile&&S.profile.role==='viewer')return true;
-  if(S.user&&S.adminSettings&&S.adminSettings.roles&&S.adminSettings.roles[S.user.id]==='viewer')return true;
-  return false;
+  if(!S.user||!S.adminSettings)return false;
+  return !!(S.adminSettings.viewers&&S.adminSettings.viewers.indexOf(S.user.id)>=0);
 }
 
 var _inactivityTimer=null;
@@ -3185,7 +3211,7 @@ async function syncData(){
         changed=true;
       }
     } else if(id==='_admin_settings'){
-      var nv=Object.assign({blocked:[],roles:{}},r.data&&r.data.settings||{});
+      var nv=Object.assign({blocked:[],roles:{},viewers:[]},r.data&&r.data.settings||{});
       if(JSON.stringify(nv)!==JSON.stringify(S.adminSettings)){
         S.adminSettings=nv;
         // Appliquer immédiatement le nouvel override de rôle à la session courante
