@@ -396,7 +396,7 @@ function getStudioBPOpts(sid){
     opts.leasing=tots.leasing;
     opts.emprunt=Math.round(tots.capex*0.70); // 70% du CAPEX custom → emprunt bancaire
   }
-  if(s.tauxInteret!=null)opts.tauxInteret=s.tauxInteret;
+  if(s.tauxInteret!=null&&s.tauxInteret>=0.01)opts.tauxInteret=s.tauxInteret;
   return opts;
 }
 
@@ -2052,7 +2052,9 @@ function renderEngagements(sid,s){
   h+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#0F6E56">Fonds propres</span><b>'+fmt(fp)+'</b></div>';
   h+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="color:#92630a">Leasing</span><b>'+fmt(leasing)+'</b></div>';
   // Taux d'intérêt
-  var _tauxRaw=S.studios[sid]&&S.studios[sid].tauxInteret!=null?S.studios[sid].tauxInteret:0.0373;
+  var _tauxRawStored=S.studios[sid]&&S.studios[sid].tauxInteret!=null?S.studios[sid].tauxInteret:0;
+  // Ignorer les valeurs corrompues (< 1%) et revenir au défaut BP
+  var _tauxRaw=(_tauxRawStored>=0.01)?_tauxRawStored:0.0373;
   var _tauxPct=Math.round(_tauxRaw*10000)/100;
   h+='<div style="border-top:1px solid #e2e8f0;padding-top:8px;margin-top:2px">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center">';
