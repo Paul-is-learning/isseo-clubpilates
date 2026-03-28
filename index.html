@@ -403,6 +403,7 @@ const DEBLOCAGE={
 
 const ROLE_FILTER={
   admin:null,tom:null,pascal:null,
+  viewer:null,
   coquel:function(s){return s.societe==='COBE Society'||s.societe==='SACOBE Society';},
   sabourin:function(s){return s.societe==='SACOBE Society';},
   caroline:function(s){return s.societe==='COBE Society';},
@@ -729,6 +730,7 @@ const ROLE_LABELS={
   admin:'Admin complet',
   tom:'Admin complet',
   pascal:'Admin complet',
+  viewer:'Lecture seule',
   coquel:'COBE + SACOBE',
   sabourin:'SACOBE uniquement',
   caroline:'COBE uniquement',
@@ -779,7 +781,7 @@ function renderAdminPanel(){
         h+='<span style="font-size:12px;color:#666;background:#f0f0ea;padding:3px 8px;border-radius:4px">'+(ROLE_LABELS[roleOverride]||roleOverride)+'</span>';
       } else {
         h+='<select onchange="setUserRole(\''+uid+'\',this.value)" style="border:1px solid #dce1ea;border-radius:6px;padding:5px 8px;font-size:12px;background:#fff;cursor:pointer">';
-        ['admin','pascal','coquel','sabourin','caroline'].forEach(function(r){
+        ['admin','pascal','viewer','coquel','sabourin','caroline'].forEach(function(r){
           h+='<option value="'+r+'"'+(roleOverride===r?' selected':'')+'>'+r+' — '+(ROLE_LABELS[r]||r)+'</option>';
         });
         h+='</select>';
@@ -833,7 +835,7 @@ async function setUserRole(uid,role){
 function renderDashboard(){
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
   var ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
-  var isAdmin=!!S.profile;
+  var isAdmin=!!S.profile&&!isViewer();
   var h='<div class="app">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
   h+='<div style="display:flex;align-items:center;gap:12px">'+LI+COLLAB_SEP+LC+'</div>';
@@ -896,7 +898,7 @@ function renderPipeline(ids){
 function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
-  var isAdmin=!!S.profile;
+  var isAdmin=!!S.profile&&!isViewer();
   var tabs=[['workflow','Workflow'],['adherents','Adherents'],['forecast','Forecast'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   var content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
@@ -913,6 +915,7 @@ function renderDetail(){
   h+='<button style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0;margin:0" onclick="goBack()">&#8592; Retour</button>';
   h+='<div style="display:flex;align-items:center;gap:10px">'+LI+COLLAB_SEP+LC+'</div>';
   h+='</div>';
+  if(isViewer())h+='<div style="display:inline-flex;align-items:center;gap:5px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:4px 10px;font-size:11px;color:#1D4ED8;font-weight:600;margin-bottom:10px">👁 Mode lecture seule — consultation uniquement</div>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut)+'</div>';
   h+='<div style="font-size:13px;color:#888;margin-bottom:14px">'+s.addr+' &middot; '+s.societe+' &middot; '+s.ouverture+'</div>';
   if(isSuperAdmin()){
@@ -927,7 +930,7 @@ function renderDetail(){
 }
 
 function renderWorkflow(s){
-  var canEdit=!!S.profile;
+  var canEdit=!!S.profile&&!isViewer();
   var sid=S.selectedId;
   // Infographie en tête de page
   var h=renderBP3YInfographic(sid,s);
@@ -1702,7 +1705,7 @@ function renderEngagements(sid,s){
   var demande=deps.filter(function(d){return d.deblocage==='demande';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
   var pctE=Math.min(100,Math.round(engage/capex*100));
   var pctD=Math.min(100,Math.round(debloque/capex*100));
-  var isAdmin=!!S.profile;
+  var isAdmin=!!S.profile&&!isViewer();
   var h='<div>';
 
   // ── Panneau : Structure de financement ──────────────────────────────────────
@@ -1880,6 +1883,7 @@ function toggleCapexDetail(sid){
 }
 
 function ouvrirFormDepense(sid){
+  if(isViewer())return;
   var div=document.getElementById('form-depense-'+sid);
   if(!div)return;
   var h='<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:12px">Nouvelle depense</div><div class="form-grid">';
@@ -1928,12 +1932,14 @@ async function sauvegarderDepense(sid){
 }
 
 async function supprimerDepense(sid,idx){
+  if(isViewer())return;
   if(!confirm('Supprimer ?'))return;
   S.depenses[sid].splice(idx,1);
   await saveDepenses(sid);render();
 }
 
 async function changerDeblocage(sid,idx){
+  if(isViewer())return;
   var d=S.depenses[sid][idx];
   var today=new Date().toLocaleDateString('fr-FR');
   if(d.deblocage==='attente'){d.deblocage='demande';d.date_demande=today;}
@@ -1943,6 +1949,7 @@ async function changerDeblocage(sid,idx){
 }
 
 async function uploadJustif(sid,idx,input){
+  if(isViewer())return;
   var file=input.files[0];if(!file)return;
   var path=sid+'/justif_'+Date.now()+'_'+cleanName(file.name);
   var res=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
@@ -1977,15 +1984,21 @@ function renderMessages(sid){
     });
   }
   h+='</div>';
-  h+='<div style="border-top:0.5px solid #e0e0d8;padding:12px 16px;display:flex;gap:8px;background:#fff">';
-  h+='<input id="msg-input" type="text" placeholder="Votre message..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();envoyerMessage(\''+sid+'\');}" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>';
-  h+='<button class="btn btn-primary" onclick="envoyerMessage(\''+sid+'\')">Envoyer</button>';
-  h+='</div></div></div>';
+  if(isViewer()){
+    h+='<div style="border-top:0.5px solid #e0e0d8;padding:10px 16px;background:#f8f9fb;text-align:center;font-size:11px;color:#aaa">👁 Mode lecture seule — envoi de messages désactivé</div>';
+  } else {
+    h+='<div style="border-top:0.5px solid #e0e0d8;padding:12px 16px;display:flex;gap:8px;background:#fff">';
+    h+='<input id="msg-input" type="text" placeholder="Votre message..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();envoyerMessage(\''+sid+'\');}" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>';
+    h+='<button class="btn btn-primary" onclick="envoyerMessage(\''+sid+'\')">Envoyer</button>';
+    h+='</div>';
+  }
+  h+='</div></div>';
   setTimeout(function(){var el=document.getElementById('msgs-list');if(el)el.scrollTop=el.scrollHeight;},50);
   return h;
 }
 
 async function envoyerMessage(sid){
+  if(isViewer())return;
   var input=document.getElementById('msg-input');
   var texte=input&&input.value&&input.value.trim();
   if(!texte)return;
@@ -2228,7 +2241,7 @@ function renderFichiers(sid){
 
 // ── Alertes (ajout + suppression) ─────────────────────────────────────────────
 function renderAlertes(sid,s){
-  var isAdmin=!!S.profile;
+  var isAdmin=!!S.profile&&!isViewer();
   var h='<div>';
   if(isAdmin){
     h+='<div class="box">';
@@ -2257,6 +2270,7 @@ function renderAlertes(sid,s){
 }
 
 async function ajouterAlerte(sid){
+  if(isViewer())return;
   var input=document.getElementById('new-alerte');
   var texte=input&&input.value&&input.value.trim();
   if(!texte){toast('Saisissez une alerte');return;}
@@ -2268,6 +2282,7 @@ async function ajouterAlerte(sid){
 }
 
 async function supprimerAlerte(sid,idx){
+  if(isViewer())return;
   if(!confirm('Supprimer cette alerte ?'))return;
   var s=Object.assign({},S.studios[sid]);
   s.alertes=s.alertes.slice();
@@ -2339,6 +2354,9 @@ function renderNewForm(){
 function isSuperAdmin(){
   var nom=(S.profile&&S.profile.nom||'').toLowerCase().trim().split(' ')[0];
   return nom==='paul'||nom==='tom';
+}
+function isViewer(){
+  return !!(S.profile&&S.profile.role==='viewer');
 }
 
 var _inactivityTimer=null;
@@ -2453,6 +2471,7 @@ function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Oc
 function setNF(k,v){S.newForm[k]=v;}
 function setEV(k,v){S.editVals[k]=v;}
 function openEditMois(idx){
+  if(isViewer())return;
   S.editMoisIdx=idx;
   var fc=S.studios[S.selectedId].forecast;
   var ak=S.forecastYear===1?'actuel':S.forecastYear===2?'actuel2':'actuel3';
@@ -2462,6 +2481,7 @@ function openEditMois(idx){
 function cancelEdit(){S.editMoisIdx=null;render();}
 
 async function toggleStep(sid,stepId){
+  if(isViewer())return;
   var s=S.studios[sid];
   var ns=Object.assign({},s.steps);
   ns[stepId]=!s.steps[stepId];
@@ -2470,6 +2490,7 @@ async function toggleStep(sid,stepId){
 }
 
 async function saveMois(){
+  if(isViewer())return;
   var s=S.studios[S.selectedId];
   var fc=s.forecast;
   var ak=S.forecastYear===1?'actuel':S.forecastYear===2?'actuel2':'actuel3';
@@ -2492,6 +2513,7 @@ async function clearMois(){
 }
 
 async function saisirAdherent(sid,year,moisIdx,val){
+  if(isViewer())return;
   if(!S.adherents[sid])S.adherents[sid]={};
   var key='y'+year+'_m'+moisIdx;
   if(val===''||val===null){delete S.adherents[sid][key];}
@@ -2501,6 +2523,7 @@ async function saisirAdherent(sid,year,moisIdx,val){
 }
 
 function saisirAdherentLive(sid,year,moisIdx,val){
+  if(isViewer())return;
   // Mise a jour état immédiate
   if(!S.adherents[sid])S.adherents[sid]={};
   var key='y'+year+'_m'+moisIdx;
@@ -2567,6 +2590,7 @@ function saisirAdherentLive(sid,year,moisIdx,val){
 }
 
 async function uploadFichier(sid,input){
+  if(isViewer())return;
   var files=Array.from(input.files);if(!files.length)return;
   var prog=document.getElementById('uprog-'+sid);if(prog)prog.style.display='block';
   var ex=await sb.from('studios').select('data').eq('id',sid+'_files').maybeSingle();
@@ -2589,6 +2613,7 @@ async function uploadFichier(sid,input){
 }
 
 async function deleteFichier(sid,path){
+  if(isViewer())return;
   if(!confirm('Supprimer ?'))return;
   await sb.storage.from('studio-files').remove([path]);
   S.files[sid]=(S.files[sid]||[]).filter(function(f){return f.path!==path;});
@@ -3029,10 +3054,14 @@ function renderFloatingChat(){
     });
     h+='</div>';
     // Input
-    h+='<div style="padding:10px;border-top:1px solid #eee;background:#fff;display:flex;gap:6px;align-items:center">';
-    h+='<input id="global-chat-input" type="text" placeholder="Écrire un message…" style="flex:1;border:1px solid #dce1ea;border-radius:20px;padding:7px 12px;font-size:12px;outline:none;background:#f8f9fb" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();envoyerGlobalMessage();}">';
-    h+='<button onclick="envoyerGlobalMessage()" style="background:#0f1f3d;color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>';
-    h+='</div>';
+    if(isViewer()){
+      h+='<div style="padding:8px 12px;border-top:1px solid #eee;background:#f8f9fb;text-align:center;font-size:10px;color:#aaa">👁 Lecture seule</div>';
+    } else {
+      h+='<div style="padding:10px;border-top:1px solid #eee;background:#fff;display:flex;gap:6px;align-items:center">';
+      h+='<input id="global-chat-input" type="text" placeholder="Écrire un message…" style="flex:1;border:1px solid #dce1ea;border-radius:20px;padding:7px 12px;font-size:12px;outline:none;background:#f8f9fb" onkeydown="if(event.key===\'Enter\'&&!event.shiftKey){event.preventDefault();envoyerGlobalMessage();}">';
+      h+='<button onclick="envoyerGlobalMessage()" style="background:#0f1f3d;color:#fff;border:none;border-radius:50%;width:32px;height:32px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0">➤</button>';
+      h+='</div>';
+    }
     h+='</div>';
   }
   // Bouton bulle
@@ -3075,6 +3104,7 @@ function toggleChat(){
 }
 
 async function envoyerGlobalMessage(){
+  if(isViewer())return;
   var inp=document.getElementById('global-chat-input');
   var texte=inp&&inp.value&&inp.value.trim();
   if(!texte)return;
