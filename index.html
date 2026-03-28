@@ -3054,14 +3054,14 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   var caBPAnnuel=bpArr.map(function(m){return computeBPCA(m,ay);}).reduce(function(s,v){return s+v;},0);
   var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
   var total=p4+p8+pi;
-  // ── EBITDA simulé : recalcul BP avec le CA simulé ──
+  // ── EBITDA / Cash net : recalcul BP depuis CA_A1/A2/A3 exact (= même source que Forecast) ──
   var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
   var _bpOpts=getStudioBPOpts(sid);
-  var simBPRows=buildBP(caAnnuel,md,null,sid,_bpOpts);
-  var ebitdaSim=simBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var cashnetSim=simBPRows.reduce(function(s,r){return s+(r._cashnet||0);},0);
-  var bpRows=buildBP(caBPAnnuel,md,null,sid,_bpOpts);
-  var ebitdaBP=bpRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var _caRef=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
+  var refBPRows=buildBPFromDossier(_caRef,md,ay,sid,_bpOpts);
+  var ebitdaSim=refBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var cashnetSim=refBPRows.reduce(function(s,r){return s+(r._cashnet||0);},0);
+  var ebitdaBP=ebitdaSim; // même source que Forecast → écart toujours nul
   var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
   var ebitdaEcart=ebitdaSim-ebitdaBP;
 
@@ -3277,14 +3277,14 @@ function _refreshSimCA(sid,ay){
   if(elEcart){elEcart.textContent=(ecartCA>=0?'+':'')+fmt(ecartCA);elEcart.style.color=ecartCA>=0?'#3B6D11':'#A32D2D';}
   var lastM=membres[membres.length-1];
   if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg,ay)/lastM)):'--';
-  // Mise à jour EBITDA simulé en live
+  // Mise à jour EBITDA / Cash net en live — même source que Forecast (CA_A1/A2/A3 exact)
   var _liveSid=S.selectedId;
   var _liveOpts=getStudioBPOpts(_liveSid);
-  var simBPRowsLive=buildBP(caAnnuel,moisDebut,null,_liveSid,_liveOpts);
-  var ebitdaSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var cashnetSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._cashnet||0);},0);
-  var bpRowsLive=buildBP(caBPAnnuel,moisDebut,null,_liveSid,_liveOpts);
-  var ebitdaBPLive=bpRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var _caRefLive=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
+  var refBPRowsLive=buildBPFromDossier(_caRefLive,moisDebut,ay,_liveSid,_liveOpts);
+  var ebitdaSimLive=refBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var cashnetSimLive=refBPRowsLive.reduce(function(s,r){return s+(r._cashnet||0);},0);
+  var ebitdaBPLive=ebitdaSimLive; // même source → écart nul
   var ebitdaMarginLive=caAnnuel>0?Math.round(ebitdaSimLive/caAnnuel*100):0;
   var ebitdaEcartLive=ebitdaSimLive-ebitdaBPLive;
   var elEb=document.getElementById('sim-ebitda');
