@@ -394,6 +394,7 @@ function getStudioBPOpts(sid){
     var tots=computeCapexTotals(det);
     opts.capex=tots.capex;
     opts.leasing=tots.leasing;
+    opts.emprunt=Math.round(tots.capex*0.70); // 70% du CAPEX custom → emprunt bancaire
   }
   return opts;
 }
@@ -512,12 +513,18 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
   var ratio=annualCA/caRef; // = 1.0 pour les studios standard, autre si CA custom
   var ch=getStudioCharges(sid||'lattes',annee,opts.lm);
   // Régler amort proportionnellement au CAPEX custom (règle ii)
-  var CAPEX_REF=333500,LEASING_REF=121600;
+  var CAPEX_REF=333500,LEASING_REF=121600,EMPRUNT_REF=230000;
   if(opts.capex&&opts.capex>0&&Math.round(opts.capex)!==CAPEX_REF)
     ch.amort=Math.round(ch.amort*opts.capex/CAPEX_REF);
   // Régler creditbail proportionnellement au leasing custom
   if(opts.leasing&&opts.leasing>0&&Math.round(opts.leasing)!==LEASING_REF)
     ch.creditbail=Math.round(ch.creditbail*opts.leasing/LEASING_REF);
+  // Régler charges financières proportionnellement à l'emprunt custom
+  var empruntEffectif=opts.emprunt||EMPRUNT_REF;
+  if(opts.emprunt&&opts.emprunt>0&&Math.round(opts.emprunt)!==EMPRUNT_REF)
+    ch.charges_fin=Math.round(ch.charges_fin*opts.emprunt/EMPRUNT_REF);
+  // Remboursement capital mensuel (amortissement linéaire 7 ans)
+  var rembtMensuel=Math.round(empruntEffectif/7/12);
 
   // Royalties annuelles exactes du dossier (pas de recalcul approximatif)
   var royaltiesAnnuelles=annee===1?39204:annee===2?53303:66628;
@@ -576,6 +583,10 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
     row._ebitda=row._rex+row.amort;
     // CAF mensuelle = RN + Amort
     row._caf=row._result+row.amort;
+    // Remboursement capital mensuel (cash sortant hors P&L)
+    row._rembt=rembtMensuel;
+    // Cash net disponible = CAF − Remboursement capital
+    row._cashnet=row._caf-rembtMensuel;
     return row;
   });
 }
@@ -1162,14 +1173,14 @@ function renderBP3YInfographic(sid,s){
 
   // Annual aggregates (BP)
   var YR=[bp.a1,bp.a2,bp.a3].map(function(rows,yi){
-    var ca=0,ebitda=0,rex=0,rnet=0;
-    rows.forEach(function(r){ca+=r._ca;ebitda+=r._ebitda;rex+=r._rex;rnet+=r._result;});
+    var ca=0,ebitda=0,rex=0,rnet=0,cashnet=0;
+    rows.forEach(function(r){ca+=r._ca;ebitda+=r._ebitda;rex+=r._rex;rnet+=r._result;cashnet+=(r._cashnet||0);});
     var offset=yi*12,mbrs=0,lastMbrs=0;
     for(var i=0;i<12;i++){
       var v=offset+i<BP_ADHERENTS.length?BP_ADHERENTS[offset+i]:400;
       mbrs+=v; if(i===11)lastMbrs=v;
     }
-    return{ca:ca,ebitda:ebitda,rex:rex,rnet:rnet,avgMbrs:Math.round(mbrs/12),lastMbrs:lastMbrs,annee:annee0+yi};
+    return{ca:ca,ebitda:ebitda,rex:rex,rnet:rnet,cashnet:cashnet,avgMbrs:Math.round(mbrs/12),lastMbrs:lastMbrs,annee:annee0+yi};
   });
 
   // ── Simulation Adhérents — même logique exacte que l'onglet Adhérents ────────
@@ -1335,7 +1346,8 @@ function renderBP3YInfographic(sid,s){
     [{label:'CA annuel',value:fmt(yr.ca),sub:null,color:'#1a1a1a',sz:14,fw:700},
      {label:'EBITDA',value:fmt(yr.ebitda),sub:eMargin+'% du CA',color:yr.ebitda>0?'#854F0B':'#A32D2D',sz:12,fw:600},
      {label:'REX',value:fmt(yr.rex),sub:rexMargin+'% marge',color:yr.rex>0?'#0F6E56':'#A32D2D',sz:12,fw:600},
-     {label:'R\u00e9sultat net',value:fmt(yr.rnet),sub:null,color:yr.rnet>0?'#6a8a72':'#A32D2D',sz:12,fw:600}
+     {label:'R\u00e9sultat net',value:fmt(yr.rnet),sub:null,color:yr.rnet>0?'#6a8a72':'#A32D2D',sz:12,fw:600},
+     {label:'Cash net dispo.',value:fmt(yr.cashnet),sub:null,color:yr.cashnet>=0?'#1a3a6b':'#A32D2D',sz:12,fw:600}
     ].forEach(function(m,mi){
       var sep=mi<3?'padding-bottom:6px;margin-bottom:6px;border-bottom:0.5px solid #f2f2ed;':'';
       h+='<div style="display:flex;justify-content:space-between;align-items:center;'+sep+'">';
@@ -1565,7 +1577,7 @@ function renderForecast(sid,s){
     var aREX=hasReal?(aCA-CHARGES.filter(function(l){return l.id!=='charges_fin'&&l.id!=='is';}).reduce(function(sum,l){return sum+num(a[l.id]!=null?a[l.id]:r[l.id]);},0)):null;
     return{
       bpCA:r._ca,bpCharges:r._charges,bpResult:r._result,
-      bpEBITDA:r._ebitda,bpREX:r._rex,bpCAF:r._caf,
+      bpEBITDA:r._ebitda,bpREX:r._rex,bpCAF:r._caf,bpCashnet:r._cashnet||0,
       aCA:aCA,aCharges:aCharges,aResult:hasReal?aCA-aCharges:null,
       aEBITDA:aEBITDA,aREX:aREX,hasReal:hasReal
     };
@@ -1579,6 +1591,7 @@ function renderForecast(sid,s){
   var cumBPEBITDA=totals.reduce(function(s,t){return s+t.bpEBITDA;},0);
   var cumBPREX=totals.reduce(function(s,t){return s+t.bpREX;},0);
   var cumBPCAF=totals.reduce(function(s,t){return s+t.bpCAF;},0);
+  var cumBPCashnet=totals.reduce(function(s,t){return s+(t.bpCashnet||0);},0);
   var cumActEBITDA=rm.reduce(function(s,t){return s+t.aEBITDA;},0);
   var refCA=rm.reduce(function(s,t){return s+t.bpCA;},0);
   var ecartCA=refCA?Math.round((cumActCA/refCA-1)*100):0;
@@ -1625,6 +1638,7 @@ function renderForecast(sid,s){
   h+='<div class="kpi"><div class="kpi-label">EBITDA BP</div><div class="kpi-val" style="color:#854F0B">'+fmt(cumBPEBITDA)+'</div></div>';
   h+='<div class="kpi"><div class="kpi-label">RN BP (dossier : '+fmt(refDossier.rnet)+')</div><div class="kpi-val">'+fmt(cumBPRes)+'</div></div>';
   h+='<div class="kpi"><div class="kpi-label">CAF BP (dossier : '+fmt(refDossier.caf)+')</div><div class="kpi-val">'+fmt(cumBPCAF)+'</div></div>';
+  h+='<div class="kpi" style="border:1.5px solid #d0d9ec;background:#f0f4fc"><div class="kpi-label" style="color:#1a3a6b;font-weight:600">Cash net disponible</div><div class="kpi-val" style="color:'+(cumBPCashnet>=0?'#1a3a6b':'#A32D2D')+'">'+fmt(cumBPCashnet)+'</div></div>';
   h+='</div>';
 
   h+='<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">';
@@ -1643,6 +1657,7 @@ function renderForecast(sid,s){
       {l:'Charges BP',vals:totals.map(function(t){return t.bpCharges;}),tot:totals.reduce(function(s,t){return s+t.bpCharges;},0)},
       {l:'Resultat Net BP',vals:totals.map(function(t){return t.bpResult;}),tot:cumBPRes,bold:true},
       {l:'CAF BP',vals:totals.map(function(t){return t.bpCAF;}),tot:cumBPCAF,bold:true},
+      {l:'Cash net disponible',vals:totals.map(function(t){return t.bpCashnet||0;}),tot:cumBPCashnet,bold:true,blue:true},
       {l:'Resultat Net Reel',vals:totals.map(function(t){return t.aResult;}),tot:cumActRes,blue:true,res:true},
     ];
     h+='<div style="overflow-x:auto"><table>';
@@ -1758,7 +1773,10 @@ function renderForecast(sid,s){
     // CAF = RN + Amort (source dossier p.9)
     var sAM1=sumF(a1s,'amort'),sAM2=sumF(a2s,'amort'),sAM3=sumF(a3s,'amort');
     var sCAF1=sRN1+sAM1,sCAF2=sRN2+sAM2,sCAF3=sRN3+sAM3;
-    var rembt=Math.round(214340/7); // 35 711€/an (7 ans à 4%)
+    // Remboursement capital = emprunt effectif / 7 ans (dynamique selon CAPEX custom)
+    var _opts3y=getStudioBPOpts(sid);
+    var _emprunt3y=_opts3y.emprunt||(isLattesStudio(sid)?214340:230000);
+    var rembt=Math.round(_emprunt3y/7);
     var sTreso1=sCAF1-rembt,sTreso2=sCAF2-rembt,sTreso3=sCAF3-rembt;
     // Valeurs dossier pour comparaison
     var ref=getStudioResultats(sid);
@@ -1778,7 +1796,7 @@ function renderForecast(sid,s){
       {l:'Resultat net',v:[sRN1,sRN2,sRN3],ref:[ref[1].rnet,ref[2].rnet,ref[3].rnet],cur:true,bold:true},
       {l:'Marge nette',v:[Math.round(sRN1/sCA1*100),Math.round(sRN2/sCA2*100),Math.round(sRN3/sCA3*100)],ref:[Math.round(ref[1].marge_nette*100),Math.round(ref[2].marge_nette*100),Math.round(ref[3].marge_nette*100)],pct:true},
       {l:'CAF',v:[sCAF1,sCAF2,sCAF3],ref:[ref[1].caf,ref[2].caf,ref[3].caf],cur:true},
-      {l:'Tresorerie (apres rembt)',v:[sTreso1,sTreso2,sTreso3],ref:[ref[1].treso,ref[2].treso,ref[3].treso],cur:true,treso:true},
+      {l:'Cash net disponible',v:[sumF(a1s,'_cashnet'),sumF(a2s,'_cashnet'),sumF(a3s,'_cashnet')],ref:[ref[1].treso,ref[2].treso,ref[3].treso],cur:true,treso:true},
       {l:'Adherents fin annee',v:[BP_ADHERENTS[11],BP_ADHERENTS[23],BP_ADHERENTS[35]],adh:true},
     ];
     lines3.forEach(function(row){
@@ -3038,9 +3056,11 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   var total=p4+p8+pi;
   // ── EBITDA simulé : recalcul BP avec le CA simulé ──
   var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
-  var simBPRows=buildBP(caAnnuel,md,null,sid,getStudioBPOpts(sid));
+  var _bpOpts=getStudioBPOpts(sid);
+  var simBPRows=buildBP(caAnnuel,md,null,sid,_bpOpts);
   var ebitdaSim=simBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var bpRows=buildBP(caBPAnnuel,md,null,sid,getStudioBPOpts(sid));
+  var cashnetSim=simBPRows.reduce(function(s,r){return s+(r._cashnet||0);},0);
+  var bpRows=buildBP(caBPAnnuel,md,null,sid,_bpOpts);
   var ebitdaBP=bpRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
   var ebitdaEcart=ebitdaSim-ebitdaBP;
@@ -3129,6 +3149,10 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   h+='<div id="sim-ebitda-ecart" style="font-size:15px;font-weight:600;color:'+(ebitdaEcart>=0?'#3B6D11':'#A32D2D')+'">'+(ebitdaEcart>=0?'+':'')+fmt(ebitdaEcart)+'</div></div>';
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA BP ref.</div>';
   h+='<div style="font-size:15px;font-weight:600;color:#888">'+fmt(ebitdaBP)+'</div></div>';
+  h+='<div style="border-top:0.5px solid #e0e0d8;grid-column:1/-1;margin:4px 0 -4px"></div>';
+  h+='<div><div style="font-size:11px;color:#1a3a6b;font-weight:600;margin-bottom:3px">Cash net disponible</div>';
+  h+='<div id="sim-cashnet" style="font-size:18px;font-weight:700;color:'+(cashnetSim>=0?'#1a3a6b':'#A32D2D')+'">'+fmt(cashnetSim)+'</div>';
+  h+='<div style="font-size:10px;color:#888;margin-top:2px">EBITDA − intérêts − rembt. capital − IS</div></div>';
   h+='</div>';
   // Mini graphique CA mensuel simulé
   h+='<div style="margin-top:14px">'+buildSimCAChart(caArr,membres,realArr)+'</div>';
@@ -3255,18 +3279,22 @@ function _refreshSimCA(sid,ay){
   if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg,ay)/lastM)):'--';
   // Mise à jour EBITDA simulé en live
   var _liveSid=S.selectedId;
-  var simBPRowsLive=buildBP(caAnnuel,moisDebut,null,_liveSid,getStudioBPOpts(_liveSid));
+  var _liveOpts=getStudioBPOpts(_liveSid);
+  var simBPRowsLive=buildBP(caAnnuel,moisDebut,null,_liveSid,_liveOpts);
   var ebitdaSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var bpRowsLive=buildBP(caBPAnnuel,moisDebut,null,_liveSid,getStudioBPOpts(_liveSid));
+  var cashnetSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._cashnet||0);},0);
+  var bpRowsLive=buildBP(caBPAnnuel,moisDebut,null,_liveSid,_liveOpts);
   var ebitdaBPLive=bpRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMarginLive=caAnnuel>0?Math.round(ebitdaSimLive/caAnnuel*100):0;
   var ebitdaEcartLive=ebitdaSimLive-ebitdaBPLive;
   var elEb=document.getElementById('sim-ebitda');
   var elEbM=document.getElementById('sim-ebitda-margin');
   var elEbE=document.getElementById('sim-ebitda-ecart');
+  var elCN=document.getElementById('sim-cashnet');
   if(elEb){elEb.textContent=fmt(ebitdaSimLive);elEb.style.color=ebitdaSimLive>=0?'#854F0B':'#A32D2D';}
   if(elEbM){elEbM.textContent=ebitdaMarginLive+'%';elEbM.style.color=ebitdaMarginLive>=20?'#3B6D11':ebitdaMarginLive>=0?'#854F0B':'#A32D2D';}
   if(elEbE){elEbE.textContent=(ebitdaEcartLive>=0?'+':'')+fmt(ebitdaEcartLive);elEbE.style.color=ebitdaEcartLive>=0?'#3B6D11':'#A32D2D';}
+  if(elCN){elCN.textContent=fmt(cashnetSimLive);elCN.style.color=cashnetSimLive>=0?'#1a3a6b':'#A32D2D';}
 
   // Redessine graphique CA simulé
   var chartWrap=document.getElementById('sim-chart-svg');
