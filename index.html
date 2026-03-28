@@ -3213,55 +3213,53 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   h+='<div style="font-size:10px;color:#888;margin-top:2px">EBITDA − intérêts − rembt. capital − IS</div></div>';
   h+='</div>';
 
-  // ── Hypothèses vs BP — commentaires automatiques ──────────────────────────
+  // ── Hypothèses vs BP — zone commentaires (remplie immédiatement au 1er render) ──
+  h+='<div id="sim-comment-zone" style="transition:opacity 0.4s">'+buildSimCommentHTML(sid,cfg,_bpOpts)+'</div>';
+
+  // Mini graphique CA mensuel simulé
+  h+='<div style="margin-top:14px">'+buildSimCAChart(caArr,membres,realArr)+'</div>';
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+// ── Génération HTML des commentaires hypothèses vs BP ─────────────────────────
+function buildSimCommentHTML(sid,cfg,bpOpts){
+  var h='';
   var _hyp=[];
-  var _CAPEX_REF=333500,_LEASING_REF=121600,_EMPRUNT_REF=230000,_TAUX_REF=3.73;
-  var _LM_REF=4800; // loyer mensuel de référence
-  var _bpO=_bpOpts;
-  // Loyer mensuel
+  var _CAPEX_REF=333500,_LEASING_REF=121600,_EMPRUNT_REF=230000,_TAUX_REF=3.73,_LM_REF=4800;
+  var _bpO=bpOpts||{};
   if(_bpO.lm&&Math.round(_bpO.lm)!==_LM_REF){
     var _dlm=_bpO.lm-_LM_REF,_dlmpct=Math.round(_dlm/_LM_REF*100);
-    _hyp.push({icon:'🏠',color:'#1a3a6b',text:'Loyer mensuel <b>'+fmt(_bpO.lm)+'&nbsp;€/mois</b> (BP&nbsp;: '+fmt(_LM_REF)+'€) — '+(_dlm>0?'+':'')+fmt(_dlm)+'€/mois (' +(_dlmpct>0?'+':'')+_dlmpct+'%)'});
+    _hyp.push({icon:'🏠',text:'Loyer mensuel <b>'+fmt(_bpO.lm)+'&nbsp;€/mois</b> (BP&nbsp;: '+fmt(_LM_REF)+'€) — '+(_dlm>0?'+':'')+fmt(_dlm)+'€/mois ('+(_dlmpct>0?'+':'')+_dlmpct+'%)'});
   }
-  // CAPEX
   if(_bpO.capex&&Math.round(_bpO.capex)!==_CAPEX_REF){
     var _dcp=_bpO.capex-_CAPEX_REF,_dcpct=Math.round(_dcp/_CAPEX_REF*100);
-    _hyp.push({icon:'🏗️',color:'#854F0B',text:'CAPEX <b>'+fmt(_bpO.capex)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_CAPEX_REF)+'€) — '+(_dcp>0?'+':'')+fmt(_dcp)+'€ ('+(_dcpct>0?'+':'')+_dcpct+'%) → amortissements ajustés'});
+    _hyp.push({icon:'🏗️',text:'CAPEX <b>'+fmt(_bpO.capex)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_CAPEX_REF)+'€) — '+(_dcp>0?'+':'')+fmt(_dcp)+'€ ('+(_dcpct>0?'+':'')+_dcpct+'%) → amortissements ajustés'});
   }
-  // Leasing
   if(_bpO.leasing&&Math.round(_bpO.leasing)!==_LEASING_REF){
     var _dls=_bpO.leasing-_LEASING_REF,_dlspct=Math.round(_dls/_LEASING_REF*100);
-    _hyp.push({icon:'📦',color:'#92630a',text:'Leasing équipement <b>'+fmt(_bpO.leasing)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_LEASING_REF)+'€) — crédit-bail ajusté '+((_dlspct>0?'+':'')+_dlspct+'%)')});
+    _hyp.push({icon:'📦',text:'Leasing <b>'+fmt(_bpO.leasing)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_LEASING_REF)+'€) — crédit-bail '+(_dlspct>0?'+':'')+_dlspct+'%'});
   }
-  // Emprunt
   if(_bpO.emprunt&&Math.round(_bpO.emprunt)!==_EMPRUNT_REF){
     var _dem=_bpO.emprunt-_EMPRUNT_REF,_dempct=Math.round(_dem/_EMPRUNT_REF*100);
-    _hyp.push({icon:'🏦',color:'#1a3a6b',text:'Emprunt bancaire <b>'+fmt(_bpO.emprunt)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_EMPRUNT_REF)+'€) — '+(_dempct>0?'+':'')+_dempct+'% → charges fin. &amp; rembt. capital ajustés'});
+    _hyp.push({icon:'🏦',text:'Emprunt <b>'+fmt(_bpO.emprunt)+'&nbsp;€</b> (BP&nbsp;: '+fmt(_EMPRUNT_REF)+'€) — '+(_dempct>0?'+':'')+_dempct+'% → charges fin. ajustées'});
   }
-  // Taux d'intérêt
-  var _tauxStudio=S.studios[sid]&&S.studios[sid].tauxInteret!=null?S.studios[sid].tauxInteret:null;
-  if(_tauxStudio!=null&&Math.abs(_tauxStudio-_TAUX_REF/100)>0.0001){
-    var _tauxPctS=Math.round(_tauxStudio*10000)/100;
-    var _dtaux=_tauxPctS-_TAUX_REF;
-    _hyp.push({icon:'📈',color:'#A32D2D',text:'Taux d\'intérêt <b>'+_tauxPctS+'%</b> (BP&nbsp;: '+_TAUX_REF+'%) — '+(_dtaux>0?'+':'')+_dtaux.toFixed(2)+'pts → charges financières ajustées'});
+  var _ts=S.studios[sid]&&S.studios[sid].tauxInteret!=null?S.studios[sid].tauxInteret:null;
+  if(_ts!=null&&Math.abs(_ts-_TAUX_REF/100)>0.0001){
+    var _tp=Math.round(_ts*10000)/100,_dt=_tp-_TAUX_REF;
+    _hyp.push({icon:'📈',text:'Taux d\'intérêt <b>'+_tp+'%</b> (BP&nbsp;: '+_TAUX_REF+'%) — '+(_dt>0?'+':'')+_dt.toFixed(2)+'pts → charges financières ajustées'});
   }
-  // Répartition abonnés
-  var _defP4=47,_defP8=50,_defPi=3;
-  var _cfgP4=num(cfg.p4,47),_cfgP8=num(cfg.p8,50),_cfgPi=num(cfg.pi,3);
-  if(_cfgP4!==_defP4||_cfgP8!==_defP8||_cfgPi!==_defPi){
-    _hyp.push({icon:'👥',color:'#0F6E56',text:'Répartition personnalisée : <b>'+_cfgP4+'% Pack4 / '+_cfgP8+'% Pack8 / '+_cfgPi+'% Illimité</b> (BP&nbsp;: 47/50/3) → CA ajusté selon ARPU simulé'});
-  }
-  // Prix des forfaits
-  var _refPx4=110,_refPx8=193.33,_refPxi=276.67;
-  var _cPx4=num(cfg.prix4,110),_cPx8=num(cfg.prix8,193.33),_cPxi=num(cfg.prixi,276.67);
-  var _pxLines=[];
-  if(Math.abs(_cPx4-_refPx4)>0.5)_pxLines.push('Pack4&nbsp;: <b>'+_cPx4+'€</b> vs '+_refPx4+'€ ('+((_cPx4-_refPx4)>0?'+':'')+Math.round((_cPx4-_refPx4)/_refPx4*100)+'%)');
-  if(Math.abs(_cPx8-_refPx8)>0.5)_pxLines.push('Pack8&nbsp;: <b>'+_cPx8+'€</b> vs '+Math.round(_refPx8)+'€ ('+((_cPx8-_refPx8)>0?'+':'')+Math.round((_cPx8-_refPx8)/_refPx8*100)+'%)');
-  if(Math.abs(_cPxi-_refPxi)>0.5)_pxLines.push('Illimité&nbsp;: <b>'+_cPxi+'€</b> vs '+Math.round(_refPxi)+'€ ('+((_cPxi-_refPxi)>0?'+':'')+Math.round((_cPxi-_refPxi)/_refPxi*100)+'%)');
-  if(_pxLines.length>0){
-    _hyp.push({icon:'💶',color:'#185FA5',text:'Prix ajustés — '+_pxLines.join(' &nbsp;|&nbsp; ')+' → CA simulé modifié vs BP'});
-  }
-
+  var _c=cfg||{};
+  var _p4=num(_c.p4,47),_p8=num(_c.p8,50),_pi=num(_c.pi,3);
+  if(_p4!==47||_p8!==50||_pi!==3)
+    _hyp.push({icon:'👥',text:'Répartition <b>'+_p4+'% Pack4 / '+_p8+'% Pack8 / '+_pi+'% Illimité</b> (BP : 47/50/3)'});
+  var _px4=num(_c.prix4,110),_px8=num(_c.prix8,193.33),_pxi=num(_c.prixi,276.67);
+  var _pl=[];
+  if(Math.abs(_px4-110)>0.5)_pl.push('Pack4 <b>'+_px4+'€</b> vs 110€ ('+((_px4-110)>0?'+':'')+Math.round((_px4-110)/110*100)+'%)');
+  if(Math.abs(_px8-193.33)>0.5)_pl.push('Pack8 <b>'+_px8+'€</b> vs 193€ ('+((_px8-193.33)>0?'+':'')+Math.round((_px8-193.33)/193.33*100)+'%)');
+  if(Math.abs(_pxi-276.67)>0.5)_pl.push('Illimité <b>'+_pxi+'€</b> vs 277€ ('+((_pxi-276.67)>0?'+':'')+Math.round((_pxi-276.67)/276.67*100)+'%)');
+  if(_pl.length>0)_hyp.push({icon:'💶',text:'Prix ajustés — '+_pl.join(' &nbsp;|&nbsp; ')});
   if(_hyp.length>0){
     h+='<div style="background:#f8f9fb;border:0.5px solid #d8dde8;border-radius:10px;padding:12px 14px;margin-top:12px">';
     h+='<div style="font-size:10px;font-weight:700;color:#1a3a6b;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px">🔍 Hypothèses modifiées vs Business Plan</div>';
@@ -3271,7 +3269,7 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
       h+='<div style="font-size:10.5px;color:#444;line-height:1.45">'+n.text+'</div>';
       h+='</div>';
     });
-    h+='<div style="font-size:9.5px;color:#94a3b8;margin-top:2px">Ces variations expliquent l\'écart EBITDA &amp; Cash net par rapport au BP de référence.</div>';
+    h+='<div style="font-size:9.5px;color:#94a3b8;margin-top:2px">Ces variations expliquent l\'écart vs BP de référence.</div>';
     h+='</div>';
   } else {
     h+='<div style="background:#f0faf5;border:0.5px solid #b7e0d2;border-radius:10px;padding:10px 14px;margin-top:12px;display:flex;align-items:center;gap:8px">';
@@ -3279,12 +3277,33 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
     h+='<div style="font-size:10.5px;color:#0F6E56;font-weight:600">Toutes les hypothèses sont conformes au Business Plan de référence.</div>';
     h+='</div>';
   }
-
-  // Mini graphique CA mensuel simulé
-  h+='<div style="margin-top:14px">'+buildSimCAChart(caArr,membres,realArr)+'</div>';
-  h+='</div>';
-  h+='</div>';
   return h;
+}
+// Debounce commentaires : 5s après la dernière modif simulateur
+var _commentTimeout={};
+function _scheduleSimComment(sid,ay){
+  // Placeholder immédiat
+  var cz=document.getElementById('sim-comment-zone');
+  if(cz){
+    cz.style.opacity='0.35';
+    cz.innerHTML='<div style="background:#f8f9fb;border:0.5px solid #e0e4ed;border-radius:10px;padding:10px 14px;margin-top:12px;display:flex;align-items:center;gap:10px">'
+      +'<span style="font-size:16px">⏳</span>'
+      +'<div style="font-size:10.5px;color:#94a3b8">Analyse en cours… affichage dans quelques secondes.</div>'
+      +'</div>';
+    cz.style.opacity='1';
+  }
+  if(_commentTimeout[sid])clearTimeout(_commentTimeout[sid]);
+  _commentTimeout[sid]=setTimeout(function(){
+    var cz2=document.getElementById('sim-comment-zone');
+    if(!cz2)return;
+    var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+    var bpOpts=getStudioBPOpts(sid);
+    cz2.style.opacity='0';
+    setTimeout(function(){
+      cz2.innerHTML=buildSimCommentHTML(sid,cfg,bpOpts);
+      cz2.style.opacity='1';
+    },200);
+  },5000);
 }
 
 function buildSimCAChart(caArr,membres,realArr){
@@ -3427,6 +3446,8 @@ function _refreshSimCA(sid,ay){
   if(chartWrap&&chartWrap.parentNode){
     chartWrap.parentNode.innerHTML=buildSimCAChart(caArr,membres,realArr);
   }
+  // Commentaires : placeholder immédiat → contenu réel après 5s
+  _scheduleSimComment(sid,ay);
 }
 
 // ── Chat flottant global entre associés ───────────────────────────────────────
