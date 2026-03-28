@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Club Pilates ISSEO</title>
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:14px}
@@ -51,6 +53,8 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:130px}
 .yr-tab{padding:4px 14px;border-radius:6px;background:transparent;border:0.5px solid transparent;cursor:pointer;font-size:12px}
 .yr-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 @media(max-width:600px){.form-grid,.edit-grid{grid-template-columns:1fr}}
+@keyframes locPulse{0%{transform:scale(0.5);opacity:0.7}80%{transform:scale(2);opacity:0}100%{transform:scale(2);opacity:0}}
+.loc-pulse-ring{position:absolute;width:100%;height:100%;border-radius:50%;background:rgba(15,110,86,0.35);animation:locPulse 2.2s ease-out infinite}
 </style>
 </head>
 <body>
@@ -213,6 +217,15 @@ const LOCALISATION_DATA={
     synthese:'Toulouse représente un marché stratégique de premier plan — 3e aire urbaine française avec une croissance démographique soutenue (+1,5%/an) et un marché Pilates Reformer encore peu saturé. L\'emplacement précis reste à définir pour affiner l\'analyse trafic et démographique.',
   },
 };
+// ── Coordonnées des studios (pour la carte Leaflet interactive) ───────────────
+const STUDIO_COORDS={
+  garenne:{lat:48.9018,lon:2.2466},
+  lattes:{lat:43.5618,lon:3.9205},
+  levallois:{lat:48.8950,lon:2.2870},
+  issy:{lat:48.8244,lon:2.2708},
+  toulouse:{lat:43.6047,lon:1.4442},
+};
+
 const fmt=function(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);};
 const fmtN=function(n){return isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);};
 const num=function(v,fb){if(fb===undefined)fb=0;var n=parseFloat(v);return isNaN(n)?fb:n;};
@@ -640,6 +653,7 @@ var S={
   mapZoom:14,           // niveau de zoom carte (1-20)
   mapStreetView:false,  // mode street view
   mapCoords:{},         // coords geocodées par studio {sid: {lat,lon}}
+  mapShowZones:true,    // afficher les zones de chalandise sur la carte
   showCapexDetail:{},   // toggle détail CAPEX par studio
   globalChat:[],        // messages chat global entre associés
   chatOpen:false,       // panneau chat ouvert/fermé
@@ -2363,15 +2377,20 @@ function setMapFilter(f){S.mapFilter=f;render();}
 function setMapZoom(delta){S.mapZoom=Math.min(19,Math.max(10,S.mapZoom+delta));render();}
 async function toggleStreetView(){
   S.mapStreetView=!S.mapStreetView;
-  // Si on passe en Street View, géocoder l'adresse si pas encore fait
+  // Si on passe en Street View, utiliser STUDIO_COORDS en priorité puis Nominatim
   if(S.mapStreetView&&S.selectedId&&!S.mapCoords[S.selectedId]){
-    var addr=S.studios[S.selectedId]&&S.studios[S.selectedId].addr;
-    if(addr){
-      try{
-        var res=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr)+'&limit=1');
-        var data=await res.json();
-        if(data&&data[0])S.mapCoords[S.selectedId]={lat:parseFloat(data[0].lat),lon:parseFloat(data[0].lon)};
-      }catch(e){}
+    var sid=S.selectedId;
+    if(STUDIO_COORDS[sid]){
+      S.mapCoords[sid]={lat:STUDIO_COORDS[sid].lat,lon:STUDIO_COORDS[sid].lon};
+    } else {
+      var addr=S.studios[sid]&&S.studios[sid].addr;
+      if(addr){
+        try{
+          var res=await fetch('https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(addr)+'&limit=1');
+          var data=await res.json();
+          if(data&&data[0])S.mapCoords[sid]={lat:parseFloat(data[0].lat),lon:parseFloat(data[0].lon)};
+        }catch(e){}
+      }
     }
   }
   render();
@@ -2379,76 +2398,202 @@ async function toggleStreetView(){
 
 function renderLocalisation(s){
   var ae=encodeURIComponent(s.addr);
-  var mf=S.mapFilter||'default';
-  var filterObj=MAP_FILTERS.find(function(f){return f.id===mf;})||MAP_FILTERS[0];
-  var gmQ=filterObj.q?encodeURIComponent(filterObj.q+' near '+s.addr):ae;
-  var z=S.mapZoom||14;
   var sv=S.mapStreetView||false;
-  var coords=S.mapCoords&&S.selectedId&&S.mapCoords[S.selectedId];
-  var gmSrc='https://maps.google.com/maps?q='+gmQ+'&output=embed&hl=fr&z='+z;
+  var sid=S.selectedId;
+  var ld=LOCALISATION_DATA[sid];
+  var coords=STUDIO_COORDS[sid];
+  var zonesOn=S.mapShowZones!==false;
 
   var h='<div>';
 
-  // Toggle Carte / Street View
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+  // ── Toggle Carte interactive / Street View ──
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">';
   h+='<div style="display:flex;background:#f0f0ea;border-radius:10px;padding:3px;gap:2px">';
-  h+='<button onclick="if(S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'transparent':'#fff')+';color:'+(sv?'#888':'#1a1a1a')+';font-size:13px;cursor:pointer;font-weight:'+(sv?400:600)+';box-shadow:'+(sv?'none':'0 1px 3px rgba(0,0,0,0.1)')+'">🗺️ Carte</button>';
-  h+='<button onclick="if(!S.mapStreetView){toggleStreetView();}" style="padding:6px 16px;border-radius:8px;border:none;background:'+(sv?'#fff':'transparent')+';color:'+(sv?'#1a1a1a':'#888')+';font-size:13px;cursor:pointer;font-weight:'+(sv?600:400)+';box-shadow:'+(sv?'0 1px 3px rgba(0,0,0,0.1)':'none')+'">📸 Street View</button>';
+  h+='<button onclick="if(S.mapStreetView){S.mapStreetView=false;render();}" style="padding:6px 18px;border-radius:8px;border:none;background:'+(sv?'transparent':'#fff')+';color:'+(sv?'#888':'#1a1a1a')+';font-size:13px;cursor:pointer;font-weight:'+(sv?400:600)+';box-shadow:'+(sv?'none':'0 1px 3px rgba(0,0,0,0.1)')+'">🗺️ Carte interactive</button>';
+  h+='<button onclick="if(!S.mapStreetView){toggleStreetView();}" style="padding:6px 18px;border-radius:8px;border:none;background:'+(sv?'#fff':'transparent')+';color:'+(sv?'#1a1a1a':'#888')+';font-size:13px;cursor:pointer;font-weight:'+(sv?600:400)+';box-shadow:'+(sv?'0 1px 3px rgba(0,0,0,0.1)':'none')+'">📸 Street View</button>';
   h+='</div>';
-  if(!sv){
-    h+='<div style="display:flex;flex-wrap:wrap;gap:6px">';
-    MAP_FILTERS.forEach(function(f){
-      var active=mf===f.id;
-      h+='<button onclick="setMapFilter(\''+f.id+'\')" style="display:flex;align-items:center;gap:5px;padding:5px 12px;border-radius:20px;border:0.5px solid '+(active?'#1a1a1a':'#ddd')+';background:'+(active?'#1a1a1a':'#fff')+';color:'+(active?'#fff':'#555')+';font-size:12px;cursor:pointer;font-weight:'+(active?600:400)+'">';
-      h+='<span>'+f.icon+'</span><span>'+f.label+'</span></button>';
-    });
-    h+='</div>';
+  if(!sv&&coords){
+    h+='<button onclick="S.mapShowZones='+(zonesOn?'false':'true')+';render();" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:0.5px solid '+(zonesOn?'#1D9E75':'#ccc')+';background:'+(zonesOn?'#E1F5EE':'#fff')+';color:'+(zonesOn?'#0F6E56':'#666')+';font-size:12px;cursor:pointer;font-weight:'+(zonesOn?600:400)+'">⭕ Zones de chalandise</button>';
   }
   h+='</div>';
 
   if(!sv){
-    // ── Mode Carte ──
-    h+='<div style="position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06)">';
-    h+='<iframe src="'+gmSrc+'" width="100%" height="440" style="border:0;display:block" allowfullscreen="" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>';
-    h+='<div style="position:absolute;top:12px;right:12px;display:flex;flex-direction:column;gap:4px;z-index:10">';
-    h+='<button onclick="setMapZoom(1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600">+</button>';
-    h+='<div style="text-align:center;font-size:10px;color:#888;background:#fff;border-radius:6px;padding:2px 4px;border:0.5px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,0.1)">'+z+'</div>';
-    h+='<button onclick="setMapZoom(-1)" style="width:34px;height:34px;border-radius:8px;border:0.5px solid #ddd;background:#fff;font-size:18px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,0.15);font-weight:600">−</button>';
-    h+='</div></div>';
+    // ── Mode Carte Leaflet ──
+    h+='<div style="display:grid;grid-template-columns:1fr 290px;gap:14px;margin-bottom:16px;align-items:start">';
+
+    // Colonne gauche : carte
+    h+='<div>';
+    if(coords){
+      h+='<div style="border-radius:14px;overflow:hidden;border:0.5px solid #d0dbe8;box-shadow:0 4px 24px rgba(0,0,20,0.1)">';
+      h+='<div id="leaflet-map" style="height:430px;width:100%;background:#e8eff7"></div>';
+      h+='</div>';
+    } else {
+      h+='<div style="border-radius:14px;overflow:hidden;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06);height:430px;background:#f5f5f0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px">';
+      h+='<span style="font-size:36px">🗺️</span>';
+      h+='<div style="font-size:12px;color:#999;text-align:center">Carte non disponible pour ce studio<br>Coordonnées à définir</div>';
+      h+='</div>';
+    }
+    h+='</div>';
+
+    // Colonne droite : KPI panel
+    h+='<div style="display:flex;flex-direction:column;gap:10px">';
+    if(ld){
+      // Démographie : 3 cartes
+      (ld.demo||[]).slice(0,3).forEach(function(d){
+        h+='<div style="background:#fff;border:0.5px solid #e2e8f0;border-radius:12px;padding:13px 15px;border-left:3px solid '+d.col+'">';
+        h+='<div style="font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px">'+d.lbl+'</div>';
+        h+='<div style="font-size:'+(d.kpi.length>10?'14':'17')+'px;font-weight:700;color:#0f1f3d;line-height:1.2">'+d.kpi+'</div>';
+        h+='<div style="font-size:10px;color:#94a3b8;margin-top:3px;line-height:1.4">'+d.sub+'</div>';
+        h+='</div>';
+      });
+      // Transport principal
+      if(ld.transports&&ld.transports[0]){
+        var t0=ld.transports[0];
+        h+='<div style="background:#fff;border:0.5px solid #e2e8f0;border-radius:12px;padding:13px 15px;border-left:3px solid '+t0.col+'">';
+        h+='<div style="font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:4px">Transport principal</div>';
+        h+='<div style="font-size:13px;font-weight:700;color:#0f1f3d;line-height:1.3">'+t0.kpi+'</div>';
+        h+='<div style="font-size:10px;color:#94a3b8;margin-top:3px">'+t0.lbl+'</div>';
+        h+='</div>';
+      }
+      // Top 4 tags
+      var topTags=(ld.tags||[]).filter(function(t){return t.c==='tg';}).slice(0,4);
+      if(topTags.length){
+        h+='<div style="background:#f0f7f4;border:0.5px solid #b8d9c4;border-radius:12px;padding:12px 14px">';
+        h+='<div style="font-size:9.5px;color:#0F6E56;text-transform:uppercase;letter-spacing:0.06em;font-weight:700;margin-bottom:8px">✓ Atouts clés</div>';
+        h+=topTags.map(_locTag).join('');
+        h+='</div>';
+      }
+      // Nb transports
+      if(ld.transports&&ld.transports.length>1){
+        h+='<div style="background:#EEF4FB;border:0.5px solid #c5d8ef;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:10px">';
+        h+='<div style="font-size:24px;font-weight:700;color:#185FA5">'+ld.transports.length+'</div>';
+        h+='<div style="font-size:11px;color:#2d5a8e;line-height:1.4"><strong>lignes TC</strong><br>desservant le studio</div>';
+        h+='</div>';
+      }
+    } else {
+      h+='<div class="box" style="color:#999;font-size:12px;text-align:center;padding:24px">Données de localisation<br>non encore renseignées</div>';
+    }
+    h+='</div>';
+    h+='</div>';
   } else {
     // ── Mode Street View ──
-    var svUrl=coords
-      ?'https://maps.google.com/maps?q=&layer=c&cbll='+coords.lat+','+coords.lon+'&cbp=12,0,,0,0'
-      :'https://www.google.com/maps?q='+ae+'&layer=c';
-    var imgUrl=coords
-      ?'https://maps.googleapis.com/maps/api/streetview?size=900x440&location='+coords.lat+','+coords.lon+'&fov=90&pitch=0&return_error_code=true'
-      :'https://maps.googleapis.com/maps/api/streetview?size=900x440&location='+ae+'&fov=90&pitch=0&return_error_code=true';
-    h+='<div style="position:relative;border-radius:12px;overflow:hidden;margin-bottom:12px;border:0.5px solid #e0e0d8;box-shadow:0 2px 8px rgba(0,0,0,0.06);background:#1a1a1a">';
-    h+='<img src="'+imgUrl+'" style="width:100%;height:440px;object-fit:cover;display:block" '
-      +'onerror="this.style.display=\'none\';document.getElementById(\'sv-fallback\').style.display=\'flex\'" alt="Street View"/>';
+    var svCoords=S.mapCoords&&sid&&S.mapCoords[sid];
+    if(!svCoords&&STUDIO_COORDS[sid])svCoords={lat:STUDIO_COORDS[sid].lat,lon:STUDIO_COORDS[sid].lon};
+    var svUrl=svCoords?'https://maps.google.com/maps?q=&layer=c&cbll='+svCoords.lat+','+svCoords.lon+'&cbp=12,0,,0,0':'https://www.google.com/maps?q='+ae+'&layer=c';
+    var imgUrl=svCoords?'https://maps.googleapis.com/maps/api/streetview?size=900x440&location='+svCoords.lat+','+svCoords.lon+'&fov=90&pitch=0&return_error_code=true':'https://maps.googleapis.com/maps/api/streetview?size=900x440&location='+ae+'&fov=90&pitch=0&return_error_code=true';
+    h+='<div style="position:relative;border-radius:14px;overflow:hidden;margin-bottom:14px;border:0.5px solid #e0e0d8;box-shadow:0 4px 20px rgba(0,0,0,0.12);background:#1a1a1a">';
+    h+='<img src="'+imgUrl+'" style="width:100%;height:440px;object-fit:cover;display:block" onerror="this.style.display=\'none\';document.getElementById(\'sv-fallback\').style.display=\'flex\'" alt="Street View"/>';
     h+='<div id="sv-fallback" style="display:none;height:440px;flex-direction:column;align-items:center;justify-content:center;gap:16px;background:#1a1a1a;color:#fff">';
-    h+='<span style="font-size:48px">📸</span>';
-    h+='<div style="font-size:14px;color:#aaa;text-align:center">Aperçu Street View non disponible ici<br><span style="font-size:12px">Cliquez ci-dessous pour l\'ouvrir dans Google Maps</span></div>';
+    h+='<span style="font-size:48px">📸</span><div style="font-size:14px;color:#aaa;text-align:center">Aperçu Street View non disponible ici<br><span style="font-size:12px">Cliquez ci-dessous pour l\'ouvrir dans Google Maps</span></div>';
     h+='</div>';
-    // Overlay bouton "Ouvrir dans Google Maps"
-    h+='<a href="'+svUrl+'" target="_blank" style="position:absolute;bottom:14px;right:14px;text-decoration:none">';
-    h+='<div style="background:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#1a1a1a;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px">📍 Ouvrir Street View</div>';
-    h+='</a></div>';
+    h+='<a href="'+svUrl+'" target="_blank" style="position:absolute;bottom:14px;right:14px;text-decoration:none"><div style="background:#fff;border-radius:8px;padding:8px 14px;font-size:12px;font-weight:600;color:#1a1a1a;box-shadow:0 2px 8px rgba(0,0,0,0.3);display:flex;align-items:center;gap:6px">📍 Ouvrir Street View</div></a>';
+    h+='</div>';
   }
 
-  // Liens
+  // ── Liens ──
   h+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px">';
-  h+='<a href="https://www.google.com/maps/search/'+gmQ+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">📍</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Ouvrir dans Google Maps</div></div></div></a>';
+  h+='<a href="https://www.google.com/maps/search/'+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">📍</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">Google Maps</div><div style="font-size:11px;color:#888">Ouvrir dans Google Maps</div></div></div></a>';
   h+='<a href="https://www.openstreetmap.org/search?query='+ae+'" target="_blank" style="text-decoration:none"><div class="box" style="display:flex;align-items:center;gap:12px;margin-bottom:0"><span style="font-size:20px">🗺️</span><div><div style="font-weight:600;font-size:13px;color:#1a1a1a">OpenStreetMap</div><div style="font-size:11px;color:#888">Ouvrir dans OSM</div></div></div></a>';
   h+='</div>';
   h+='<div class="box" style="background:#f5f5f0"><div style="font-size:11px;color:#888;margin-bottom:4px">Adresse</div><div style="font-size:14px;font-weight:500">'+s.addr+'</div></div>';
 
-  // ── Données flux & démographie ─────────────────────────────────────────────
-  var sid=S.selectedId;
-  var ld=LOCALISATION_DATA[sid];
+  // ── Analyse de site ──
   if(ld){h+=renderLocalisationData(ld,s);}
   h+='</div>';
   return h;
+}
+
+// ── Carte Leaflet interactive ──────────────────────────────────────────────────
+var _leafletMapInst=null;
+
+function initLocalisationMap(sid){
+  var el=document.getElementById('leaflet-map');
+  if(!el||typeof L==='undefined')return;
+  var coords=STUDIO_COORDS[sid];
+  if(!coords)return;
+  var ld=LOCALISATION_DATA[sid];
+  var s=S.studios[sid];
+
+  // Détruire l'instance précédente
+  if(_leafletMapInst){try{_leafletMapInst.remove();}catch(e){} _leafletMapInst=null;}
+
+  // Initialisation
+  var map=L.map('leaflet-map',{center:[coords.lat,coords.lon],zoom:14,zoomControl:false,attributionControl:true});
+  _leafletMapInst=map;
+
+  // Tiles CartoDB Positron (libre, sans clé API)
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',{
+    attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains:'abcd',maxZoom:19,
+  }).addTo(map);
+
+  // Contrôle de zoom (bas droite)
+  L.control.zoom({position:'bottomright'}).addTo(map);
+
+  // ── Zones de chalandise ──
+  if(S.mapShowZones!==false){
+    [[500,'#1D9E75',0.75,0.07,null],[1000,'#378ADD',0.55,0.04,'6 4'],[2000,'#7F77DD',0.4,0.025,'4 3']].forEach(function(c){
+      L.circle([coords.lat,coords.lon],{radius:c[0],color:c[1],weight:2,opacity:c[2],fill:true,fillColor:c[1],fillOpacity:c[3],dashArray:c[4]}).addTo(map);
+    });
+  }
+
+  // ── Marqueurs transports ──
+  var bearings=[0,90,180,270,45,135,225,315];
+  if(ld&&ld.transports){
+    ld.transports.forEach(function(t,i){
+      // Chercher distance dans kpi ou sub
+      var txt=(t.kpi||'')+' '+(t.sub||'');
+      var dm=txt.match(/~?(\d+)\s*m\s+(du\s+studio|à\s+pied)/i);
+      var dist=dm?parseInt(dm[1]):null;
+      if(!dist||dist>2500)return;
+      var bearing=bearings[i%bearings.length]*Math.PI/180;
+      var dLat=(dist/111320)*Math.cos(bearing);
+      var dLon=(dist/(111320*Math.cos(coords.lat*Math.PI/180)))*Math.sin(bearing);
+      var em=/tramway|tram/i.test(t.lbl)?'🚋':/transilien|rer/i.test(t.lbl)?'🚆':/métro|metro/i.test(t.lbl)?'Ⓜ':/bus/i.test(t.lbl)?'🚌':'🚉';
+      var tc=t.col||'#378ADD';
+      var tIcon=L.divIcon({className:'',
+        html:'<div style="width:30px;height:30px;background:'+tc+';border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 10px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1">'+em+'</div>',
+        iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-18]});
+      L.marker([coords.lat+dLat,coords.lon+dLon],{icon:tIcon}).addTo(map)
+        .bindPopup('<div style="font-size:12px;font-weight:600;color:#0f1f3d;margin-bottom:3px">'+t.kpi+'</div><div style="font-size:11px;color:#475569">'+t.lbl+'</div><div style="font-size:10px;color:#94a3b8;margin-top:2px">~'+dist+'m du studio</div>',{maxWidth:220});
+    });
+  }
+
+  // ── Marqueur studio (pulse animé) ──
+  var studioIcon=L.divIcon({className:'',
+    html:'<div style="position:relative;width:32px;height:32px;display:flex;align-items:center;justify-content:center">'
+      +'<div class="loc-pulse-ring" style="width:32px;height:32px"></div>'
+      +'<div style="position:relative;z-index:1;width:14px;height:14px;background:#0F6E56;border-radius:50%;border:2.5px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,0.35)"></div>'
+      +'</div>',
+    iconSize:[32,32],iconAnchor:[16,16],popupAnchor:[0,-18]});
+  L.marker([coords.lat,coords.lon],{icon:studioIcon,zIndexOffset:1000}).addTo(map)
+    .bindPopup('<div style="font-size:13px;font-weight:700;color:#0f1f3d;margin-bottom:4px">'+(s&&s.name||sid)+'</div><div style="font-size:11px;color:#475569">'+(s&&s.addr||'')+'</div>',{maxWidth:240})
+    .openPopup();
+
+  // ── Légende (Leaflet Control bas gauche) ──
+  if(S.mapShowZones!==false){
+    var LegCtrl=L.Control.extend({options:{position:'bottomleft'},onAdd:function(){
+      var d=L.DomUtil.create('div');
+      d.style.cssText='background:rgba(255,255,255,0.94);border-radius:10px;padding:9px 13px;border:0.5px solid rgba(0,0,0,0.1);box-shadow:0 2px 10px rgba(0,0,0,0.12);font-family:-apple-system,BlinkMacSystemFont,sans-serif';
+      d.innerHTML='<div style="font-size:9px;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.08em;margin-bottom:7px">Zones de chalandise</div>'
+        +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:24px;height:2px;background:#1D9E75;border-radius:1px"></div><span style="font-size:10px;color:#475569">500 m — Marche</span></div>'
+        +'<div style="display:flex;align-items:center;gap:7px;margin-bottom:4px"><div style="width:24px;height:0;border-top:2px dashed #378ADD;opacity:0.7"></div><span style="font-size:10px;color:#475569">1 km — TC</span></div>'
+        +'<div style="display:flex;align-items:center;gap:7px"><div style="width:24px;height:0;border-top:2px dashed #7F77DD;opacity:0.5"></div><span style="font-size:10px;color:#475569">2 km — Vélo</span></div>';
+      L.DomEvent.disableClickPropagation(d);
+      return d;
+    }});
+    new LegCtrl().addTo(map);
+  }
+
+  // ── Badge nom du studio (haut gauche) ──
+  var NameCtrl=L.Control.extend({options:{position:'topleft'},onAdd:function(){
+    var d=L.DomUtil.create('div');
+    d.style.cssText='background:rgba(255,255,255,0.94);border-radius:10px;padding:7px 13px;border:0.5px solid rgba(0,0,0,0.1);box-shadow:0 2px 10px rgba(0,0,0,0.12);display:flex;align-items:center;gap:8px;font-family:-apple-system,BlinkMacSystemFont,sans-serif';
+    d.innerHTML='<div style="width:10px;height:10px;background:#0F6E56;border-radius:50%;border:2px solid #fff;flex-shrink:0;box-shadow:0 0 0 3px rgba(15,110,86,0.2)"></div><span style="font-size:12px;font-weight:600;color:#0f1f3d">'+(s&&s.name||sid)+'</span>';
+    L.DomEvent.disableClickPropagation(d);
+    return d;
+  }});
+  new NameCtrl().addTo(map);
 }
 
 function _locTag(tag){
@@ -3622,7 +3767,10 @@ function render(){
   if(!root)return;
   if(S.view==='auth')root.innerHTML=renderAuth();
   else if(S.view==='dashboard')root.innerHTML=renderDashboard();
-  else if(S.view==='detail')root.innerHTML=renderDetail();
+  else if(S.view==='detail'){
+    root.innerHTML=renderDetail();
+    if(S.detailTab==='localisation')setTimeout(function(){initLocalisationMap(S.selectedId);},60);
+  }
   renderChat();
 }
 
