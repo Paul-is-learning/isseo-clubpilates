@@ -1766,16 +1766,43 @@ async function supprimerAlerte(sid,idx){
 }
 
 function renderAI(s){
-  var ctx='Studio Club Pilates: '+s.name+', societe: '+s.societe+', statut: '+s.statut+'. ';
-  ctx+='BP adherents: 285 fin A1, 345 fin A2, 400 fin A3. ';
-  ctx+='Repartition: Pack4 47% a 110 HT, Pack8 50% a 193.33 HT, Illimite 3% a 276.67 HT. ';
-  ctx+='CA BP: A1='+fmt(s.forecast&&s.forecast.annualCA||CA_A1)+', A2='+fmt(s.forecast&&s.forecast.annualCA2||CA_A2)+', A3='+fmt(s.forecast&&s.forecast.annualCA3||CA_A3)+'.';
-  return '<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:4px">Analyste IA &mdash; '+s.name+'</div>'
-    +'<div style="font-size:11px;color:#888;margin-bottom:12px">Questions sur ce studio : performances, seuil de rentabilite, scenarios...</div>'
-    +'<div style="display:flex;gap:8px;margin-bottom:12px"><input id="aiq" type="text" placeholder="Ex: Quand atteindre le seuil de rentabilite ?" onkeydown="if(event.key===\'Enter\')askAI()" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>'
-    +'<button class="btn btn-primary" onclick="askAI()" '+(S.aiLoading?'disabled':'')+'>'+( S.aiLoading?'...':'Analyser')+'</button></div>'
-    +(S.aiResp?'<div style="font-size:13px;line-height:1.6;background:#f5f5f0;border-radius:8px;padding:10px 14px;white-space:pre-wrap">'+S.aiResp+'</div>':'')
-    +'</div>';
+  var suggestions=[
+    'Quand atteindre le seuil de rentabilité ?',
+    'Quel CA minimum pour couvrir le remboursement emprunt ?',
+    'Analyse des risques financiers principaux',
+    'Simulation à 300 adhérents en A1 : impact sur EBITDA ?',
+    'Quelle stratégie de pricing optimiser en priorité ?',
+  ];
+  var h='<div>';
+  // Header
+  h+='<div class="box" style="padding:0;overflow:hidden;margin-bottom:14px">';
+  h+='<div style="background:linear-gradient(135deg,#1a3a6b,#0f2348);padding:16px 20px;display:flex;align-items:center;gap:12px">';
+  h+='<div style="width:36px;height:36px;background:rgba(255,255,255,0.12);border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px">✦</div>';
+  h+='<div>';
+  h+='<div style="font-size:14px;font-weight:700;color:#fff">Analyste IA &mdash; '+s.name+'</div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px">Propuls&eacute; par Mistral AI &middot; Contexte financier int&eacute;gr&eacute;</div>';
+  h+='</div></div>';
+  // Zone saisie
+  h+='<div style="padding:16px 20px 20px">';
+  h+='<div style="display:flex;gap:8px;margin-bottom:12px">';
+  h+='<input id="aiq" type="text" placeholder="Ex: Quand atteindre le seuil de rentabilité ?" onkeydown="if(event.key===\'Enter\')askAI()" style="flex:1;padding:9px 13px;border:1px solid #d0d9ec;border-radius:8px;font-size:13px;outline:none;color:#0f1f3d"/>';
+  h+='<button onclick="askAI()" '+(S.aiLoading?'disabled':'')+' style="background:#1a3a6b;color:#fff;border:none;border-radius:8px;padding:9px 18px;font-size:13px;font-weight:600;cursor:'+(S.aiLoading?'wait':'pointer')+';white-space:nowrap;opacity:'+(S.aiLoading?'0.7':'1')+'">'+(S.aiLoading?'<span style="display:inline-flex;align-items:center;gap:6px"><span style="animation:spin 1s linear infinite;display:inline-block">⟳</span> Analyse...</span>':'Analyser →')+'</button>';
+  h+='</div>';
+  // Suggestions rapides
+  h+='<div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:14px">';
+  suggestions.forEach(function(sg){
+    h+='<button onclick="document.getElementById(\'aiq\').value=\''+sg.replace(/'/g,"\\'")+'\';" style="background:#f0f4fc;color:#1a3a6b;border:1px solid #d0d9ec;border-radius:20px;padding:4px 11px;font-size:11px;cursor:pointer;font-weight:500">'+sg+'</button>';
+  });
+  h+='</div>';
+  // Réponse
+  if(S.aiResp){
+    h+='<div style="background:#f8f9fb;border:1px solid #e2e8f0;border-radius:10px;padding:14px 16px">';
+    h+='<div style="font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#1a3a6b;font-weight:700;margin-bottom:8px">Analyse</div>';
+    h+='<div style="font-size:13px;line-height:1.7;color:#2d3748;white-space:pre-wrap">'+S.aiResp+'</div>';
+    h+='</div>';
+  }
+  h+='</div></div></div>';
+  return h;
 }
 
 function renderNewForm(){
@@ -2076,28 +2103,29 @@ async function createStudio(){
 }
 
 async function askAI(){
-  var q=document.getElementById('aiq');if(!q||!q.value)return;
+  var q=document.getElementById('aiq');if(!q||!q.value.trim())return;
   S.aiLoading=true;S.aiResp='';render();
   var s=S.studios[S.selectedId];
-  var ctx='Studio Club Pilates: '+s.name+', societe: '+s.societe+', statut: '+s.statut+'. ';
-  ctx+='BP adherents cible: 285 fin A1, 345 fin A2, 400 fin A3. ';
-  ctx+='Repartition: Pack4 47% a 110 EUR HT, Pack8 50% a 193.33 EUR HT, Illimite 3% a 276.67 EUR HT. ';
-  ctx+='CA BP: A1='+fmt(s.forecast&&s.forecast.annualCA||CA_A1)+', A2='+fmt(s.forecast&&s.forecast.annualCA2||CA_A2)+', A3='+fmt(s.forecast&&s.forecast.annualCA3||CA_A3)+'. ';
-  ctx+='CAPEX: '+fmt(s.capex||306200)+', emprunt: '+fmt(s.emprunt||214340)+'.';
+  var cfg=S.simConfig[S.selectedId]||{};
+  var ctx='Studio : '+s.name+', société : '+s.societe+', statut : '+s.statut+'. ';
+  ctx+='Adhérents cibles : 285 fin A1, 345 fin A2, 400 fin A3. ';
+  ctx+='Répartition : Pack4 ('+Math.round((cfg.p4||47))+'%) à '+(cfg.prix4||110)+' € HT, Pack8 ('+Math.round((cfg.p8||50))+'%) à '+(cfg.prix8||193.33)+' € HT, Illimité ('+Math.round((cfg.pi||3))+'%) à '+(cfg.prixi||276.67)+' € HT. ';
+  ctx+='CA BP : A1='+fmt(s.forecast&&s.forecast.annualCA||CA_A1)+', A2='+fmt(s.forecast&&s.forecast.annualCA2||CA_A2)+', A3='+fmt(s.forecast&&s.forecast.annualCA3||CA_A3)+'. ';
+  ctx+='CAPEX : '+fmt(s.capex||333500)+', Emprunt : '+fmt(s.emprunt||230000)+', Leasing équipement : '+fmt(s.leasing||121600)+'.';
   try{
-    var r=await fetch('https://api.anthropic.com/v1/messages',{
+    var r=await fetch(SURL+'/functions/v1/ask-ai',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1000,
-        system:'Tu es un expert financier Club Pilates France. '+ctx+' Reponds en francais, de maniere concise et chiffree.',
-        messages:[{role:'user',content:q.value}]
-      })
+      headers:{
+        'Content-Type':'application/json',
+        'apikey':SKEY,
+        'Authorization':'Bearer '+SKEY
+      },
+      body:JSON.stringify({question:q.value.trim(),context:ctx})
     });
     var d=await r.json();
-    S.aiResp=(d.content&&d.content[0]&&d.content[0].text)||'Pas de reponse.';
-  }catch(e){S.aiResp='Erreur de connexion.';}
+    if(d.error)S.aiResp='⚠️ '+d.error;
+    else S.aiResp=d.text||'Pas de réponse.';
+  }catch(e){S.aiResp='❌ Erreur de connexion : '+e.message;}
   S.aiLoading=false;render();
 }
 
