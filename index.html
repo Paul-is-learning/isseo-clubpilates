@@ -1309,6 +1309,12 @@ function renderBP3YInfographic(sid,s){
   });
   h+='</div></div></div>';
 
+  // ── Séparateur de section : Business Plan ─────────────────────────────────
+  h+='<div style="background:#f0f4fc;border-top:0.5px solid #d0d9ec;border-bottom:0.5px solid #d0d9ec;padding:6px 18px;display:flex;align-items:center;gap:8px">';
+  h+='<div style="width:6px;height:6px;border-radius:50%;background:#1a3a6b"></div>';
+  h+='<span style="font-size:8.5px;text-transform:uppercase;letter-spacing:2px;color:#1a3a6b;font-weight:700">Business Plan &nbsp;&middot;&nbsp; Donn&eacute;es de r&eacute;f&eacute;rence</span>';
+  h+='</div>';
+
   // Cartes 3 ans
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#fff">';
   YR.forEach(function(yr,i){
@@ -1366,11 +1372,16 @@ function renderBP3YInfographic(sid,s){
   });
   h+='</div>';
 
-  // ── Section Simulation Adhérents ──────────────────────────────────────────
+  // ── Section Simulation / Prévisionnel ajusté ──────────────────────────────
   var p4=num(simCfg.p4,47),p8=num(simCfg.p8,50),pi=num(simCfg.pi,3);
   var px4=num(simCfg.prix4,117),px8=num(simCfg.prix8,206),pxi=num(simCfg.prixi,294);
   var isDefault=(p4===47&&p8===50&&pi===3&&px4===117&&px8===206&&pxi===294);
-  h+='<div style="border-top:0.5px solid #e8e8e2;background:linear-gradient(180deg,#f2f5fb 0%,#f7f7f4 100%);padding:12px 16px 14px">';
+  // Bande de section : Prévisionnel ajusté
+  h+='<div style="background:#f2f7f3;border-top:0.5px solid #b8d9c4;border-bottom:0.5px solid #b8d9c4;padding:6px 18px;display:flex;align-items:center;gap:8px">';
+  h+='<div style="width:6px;height:6px;border-radius:50%;background:#0F6E56"></div>';
+  h+='<span style="font-size:8.5px;text-transform:uppercase;letter-spacing:2px;color:#0F6E56;font-weight:700">Pr&eacute;visionnel ajust&eacute; &nbsp;&middot;&nbsp; Simulation adh&eacute;rents</span>';
+  h+='</div>';
+  h+='<div style="background:linear-gradient(180deg,#f2f5fb 0%,#f7f7f4 100%);padding:12px 16px 14px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
   h+='<div style="display:flex;align-items:center;gap:8px">';
   h+='<div style="width:24px;height:24px;border-radius:7px;background:#3d5a3a;display:flex;align-items:center;justify-content:center;font-size:13px">&#127890;</div>';
