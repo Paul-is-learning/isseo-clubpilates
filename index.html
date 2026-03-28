@@ -3083,9 +3083,12 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
     {id:'prix8',label:'Pack 8',ref:193.33,color:'#1D9E75',val:num(cfg.prix8,193.33)},
     {id:'prixi',label:'Illimite',ref:276.67,color:'#854F0B',val:num(cfg.prixi,276.67)},
   ];
+  var _seances={prix4:4,prix8:8,prixi:null};
   prixCfg.forEach(function(px){
     var delta=Math.round((px.val-px.ref)/px.ref*100);
     var ttc=(Math.round(px.val*1.20*100)/100).toFixed(2).replace('.',',');
+    var nb=_seances[px.id];
+    var unitHT=nb?( (Math.round(px.val/nb*100)/100).toFixed(2).replace('.',',') ):null;
     h+='<div>';
     h+='<div style="font-size:11px;color:#888;margin-bottom:4px">'+px.label+' <span style="font-size:10px;color:#aaa">(BP: '+px.ref+' EUR)</span></div>';
     h+='<div style="display:flex;align-items:center;gap:6px">';
@@ -3095,6 +3098,9 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
     h+='<div id="sim-delta-'+px.id+'" style="font-size:10px;color:'+(delta>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+(delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP')+'</div>';
     h+='<div id="sim-ttc-'+px.id+'" style="font-size:10px;color:#64748b;font-weight:500">→ <b>'+ttc+' €</b> TTC</div>';
     h+='</div>';
+    if(unitHT){
+      h+='<div id="sim-unit-'+px.id+'" style="font-size:10px;color:#94a3b8;margin-top:1px">soit <b style="color:#555">'+unitHT+' €</b> HT/séance</div>';
+    }
     h+='</div>';
   });
   h+='</div>';
@@ -3188,11 +3194,14 @@ function updateSimPrix(sid,field,val,ay){
     el.textContent=delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP';
     el.style.color=delta>=0?'#3B6D11':'#A32D2D';
   }
-  // Mise à jour TTC live
+  // Mise à jour TTC + coût unitaire live
+  var _v=num(val);
   var elTtc=document.getElementById('sim-ttc-'+field);
-  if(elTtc){
-    var ttcVal=(Math.round(num(val)*1.20*100)/100).toFixed(2).replace('.',',');
-    elTtc.innerHTML='→ <b>'+ttcVal+' €</b> TTC';
+  if(elTtc){elTtc.innerHTML='→ <b>'+(Math.round(_v*1.20*100)/100).toFixed(2).replace('.',',')+'&nbsp;€</b> TTC';}
+  var _nbSeances={prix4:4,prix8:8};
+  var elUnit=document.getElementById('sim-unit-'+field);
+  if(elUnit&&_nbSeances[field]){
+    elUnit.innerHTML='soit <b style="color:#555">'+(Math.round(_v/_nbSeances[field]*100)/100).toFixed(2).replace('.',',')+'&nbsp;€</b> HT/séance';
   }
   _refreshSimCA(sid,ay);
 }
