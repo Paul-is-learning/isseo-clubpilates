@@ -2553,7 +2553,10 @@ function circleIntersectArea(d,r1,r2){
 // Estimation de population via geo.api.gouv.fr (données INSEE officielles)
 // Pour chaque commune intersectant le cercle, calcule la fraction de population pondérée
 async function calcPopZoneINSEE(lat,lon,radiusM){
-  var url='https://geo.api.gouv.fr/communes?lat='+lat+'&lon='+lon+'&distance='+radiusM+'&fields=nom,population,surface,centre&format=json&limit=50';
+  // L'API filtre par centroïde commune → buffer +8km pour capturer les communes
+  // dont le centroïde dépasse la zone mais qui l'intersectent partiellement
+  var fetchDist=radiusM+8000;
+  var url='https://geo.api.gouv.fr/communes?lat='+lat+'&lon='+lon+'&distance='+fetchDist+'&fields=nom,population,surface,centre&format=json&limit=100';
   try{
     var res=await fetch(url);
     if(!res.ok)return null;
@@ -2667,6 +2670,9 @@ async function initLocalisationMap(sid){
   if(!el||typeof L==='undefined')return;
   var ld=LOCALISATION_DATA[sid];
   var s=S.studios[sid];
+
+  // Vider le cache INSEE pour ce studio (évite les résultats périmés)
+  Object.keys(_inseePopCache).forEach(function(k){if(k.startsWith(sid+'_'))delete _inseePopCache[k];});
 
   // ── Géocodage de l'adresse réelle du studio ──
   if(!S.mapCoords[sid]&&s&&s.addr){
