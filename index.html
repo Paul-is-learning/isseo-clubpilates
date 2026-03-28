@@ -2141,9 +2141,44 @@ async function askAI(){
   ctx+='Résultat net         : '+r1.rnet+'€      '+r2.rnet+'€     '+r3.rnet+'€\n';
   ctx+='CAF                  : '+r1.caf+'€      '+r2.caf+'€     '+r3.caf+'€\n';
   ctx+='Tréso (après rembt)  : '+r1.treso+'€      '+r2.treso+'€     '+r3.treso+'€\n\n';
-  ctx+='--- ADHÉRENTS & PRICING ---\n';
-  ctx+='Adhérents cibles : 285 fin A1, 345 fin A2, 400 fin A3\n';
-  ctx+='Pack4 ('+Math.round(cfg.p4||47)+'%) : '+(cfg.prix4||110)+'€ HT/mois | Pack8 ('+Math.round(cfg.p8||50)+'%) : '+(cfg.prix8||193.33)+'€ HT/mois | Illimité ('+Math.round(cfg.pi||3)+'%) : '+(cfg.prixi||276.67)+'€ HT/mois\n';
+  // ── Données adhérents & simulateur en temps réel ──────────────────────────
+  ctx+='--- ADHÉRENTS & PRICING (SIMULATEUR EN DIRECT) ---\n';
+  ctx+='Configuration pricing simulateur :\n';
+  ctx+='  Pack4 ('+Math.round(cfg.p4||47)+'% des membres) : '+(cfg.prix4||110)+'€ HT/mois\n';
+  ctx+='  Pack8 ('+Math.round(cfg.p8||50)+'% des membres) : '+(cfg.prix8||193.33)+'€ HT/mois\n';
+  ctx+='  Illimité ('+Math.round(cfg.pi||3)+'% des membres) : '+(cfg.prixi||276.67)+'€ HT/mois\n\n';
+  // Adhérents réels saisis vs BP
+  var actuel=S.adherents[S.selectedId]||{};
+  var md=s.forecast&&s.forecast.moisDebut||0;
+  ctx+='Adhérents par mois (BP cible vs réel saisi) :\n';
+  var hasReal=false;
+  [1,2,3].forEach(function(ay){
+    var offset=(ay-1)*12;
+    var bpMois=[],realMois=[],simCaMois=[];
+    for(var m=0;m<12;m++){
+      var bpM=BP_ADHERENTS[offset+m]||0;
+      var key='y'+ay+'_m'+m;
+      var reel=actuel[key]!==undefined?actuel[key]:null;
+      var membres=reel!==null?reel:bpM;
+      bpMois.push(bpM);
+      realMois.push(reel);
+      simCaMois.push(computeSimCA(membres,cfg));
+      if(reel!==null)hasReal=true;
+    }
+    var simCaAn=simCaMois.reduce(function(s,v){return s+v;},0);
+    var simRows=buildBP(simCaAn,md);
+    var simEbitda=simRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+    var simRex=simRows.reduce(function(s,r){return s+(r._rex||0);},0);
+    var simRnet=simRows.reduce(function(s,r){return s+(r._result||0);},0);
+    var reelFin=realMois[11]!==null?realMois[11]+'(réel)':bpMois[11]+'(BP)';
+    ctx+='  A'+ay+' — Adhérents fin année : '+reelFin+' | CA simulé : '+simCaAn+'€ | EBITDA simulé : '+simEbitda+'€ | REX simulé : '+simRex+'€ | RN simulé : '+simRnet+'€\n';
+    // Mois avec saisie réelle
+    var reelsSaisis=[];
+    for(var m=0;m<12;m++){if(realMois[m]!==null)reelsSaisis.push('M'+(m+1)+':'+realMois[m]);}
+    if(reelsSaisis.length>0)ctx+='    Saisies réelles A'+ay+' : '+reelsSaisis.join(', ')+'\n';
+  });
+  if(!hasReal)ctx+='(Aucun adhérent réel saisi encore — projections basées sur BP)\n';
+  ctx+='\n';
   try{
     // Récupérer le vrai token JWT de session
     var sessRes=await sb.auth.getSession();
