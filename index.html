@@ -2259,7 +2259,19 @@ function renderCommentThread(p,globalIdx){
 // Calcule le CA annuel simulé pour un studio à partir du scénario actif
 function _getScenarioCA(sid,ay){
   var s=S.studios[sid];
-  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  var BP_CFG={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  // Si scénario actif = BP par défaut ou aucun scénario, utiliser la config BP de référence
+  // pour garantir le même résultat sur tous les appareils
+  var scId=S.activeScenarioId[sid]||'bp_default';
+  var cfg;
+  if(scId==='bp_default'){
+    cfg=BP_CFG;
+  } else {
+    // Scénario custom : chercher sa config enregistrée
+    var scList=S.scenarios[sid]||[];
+    var sc=scList.find(function(x){return x.id===scId;});
+    cfg=(sc&&sc.config)?sc.config:(S.simConfig[sid]||BP_CFG);
+  }
   var actuel=S.adherents[sid]||{};
   var offset=(ay-1)*12;
   var total=0;
