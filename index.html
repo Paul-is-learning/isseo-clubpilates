@@ -2233,6 +2233,15 @@ function renderBP3YInfographic(sid,s){
   var p4=num(simCfg.p4,47),p8=num(simCfg.p8,50),pi=num(simCfg.pi,3);
   var px4=num(simCfg.prix4,117),px8=num(simCfg.prix8,206),pxi=num(simCfg.prixi,294);
   var isDefault=(p4===47&&p8===50&&pi===3&&px4===117&&px8===206&&pxi===294);
+  // Infos scénario actif
+  var _wfScList=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+  var _wfActiveId=S.activeScenarioId[sid]||(_wfScList.length?_wfScList[0].id:null);
+  var _wfActiveSc=_wfActiveId&&_wfActiveId!=='bp_default'?_wfScList.find(function(s){return s.id===_wfActiveId;}):null;
+  var _wfScLabel=_wfActiveSc?(_wfActiveSc.auteur+' \u2014 '+_wfActiveSc.date):'BP de r\u00e9f\u00e9rence';
+  // Nombre de mois avec données adhérents réels
+  var _wfAdhCount=0;
+  var _wfAdh=S.adherents[sid]||{};
+  for(var _wk in _wfAdh){if(_wfAdh.hasOwnProperty(_wk)&&_wfAdh[_wk]!=null)_wfAdhCount++;}
   // Bande de section : Prévisionnel ajusté
   h+='<div style="background:#f2f7f3;border-top:0.5px solid #b8d9c4;border-bottom:0.5px solid #b8d9c4;padding:6px 18px;display:flex;align-items:center;gap:8px">';
   h+='<div style="width:6px;height:6px;border-radius:50%;background:#0F6E56"></div>';
@@ -2243,7 +2252,12 @@ function renderBP3YInfographic(sid,s){
   h+='<div style="display:flex;align-items:center;gap:8px">';
   h+='<div style="width:24px;height:24px;border-radius:7px;background:#3d5a3a;display:flex;align-items:center;justify-content:center;font-size:13px">&#127890;</div>';
   h+='<div><div style="font-size:11px;font-weight:700;color:#1a1a1a">Simulation personnalis\u00e9e \u2014 Adh\u00e9rents</div>';
-  h+='<div style="font-size:9.5px;color:#888;margin-top:1px">R\u00e9partition : <strong>'+p4+'%&nbsp;/&nbsp;'+p8+'%&nbsp;/&nbsp;'+pi+'%</strong> &nbsp;&middot;&nbsp; Prix&nbsp;: <strong>'+px4+'\u20ac&nbsp;/&nbsp;'+px8+'\u20ac&nbsp;/&nbsp;'+pxi+'\u20ac</strong>&nbsp;HT/mois'+(isDefault?'&nbsp;<span style="color:#bbb">(d\u00e9faut)</span>':'')+'</div>';
+  h+='<div style="font-size:9.5px;color:#888;margin-top:1px">R\u00e9partition : <strong>'+p4+'%&nbsp;/&nbsp;'+p8+'%&nbsp;/&nbsp;'+pi+'%</strong> &nbsp;&middot;&nbsp; Prix&nbsp;: <strong>'+px4+'\u20ac&nbsp;/&nbsp;'+px8+'\u20ac&nbsp;/&nbsp;'+pxi+'\u20ac</strong>&nbsp;HT/mois</div>';
+  h+='<div style="font-size:9px;color:#666;margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+  h+='<span style="background:'+(isDefault?'#f0f0ea':'linear-gradient(135deg,#e8f0fe,#f0e6ff)')+';padding:1px 7px;border-radius:4px;font-weight:600;font-size:8.5px;color:'+(isDefault?'#999':'#5a3d8a')+'">'+_wfScLabel+'</span>';
+  if(_wfAdhCount>0)h+='<span style="font-size:8.5px;color:#888">'+_wfAdhCount+' mois saisi'+(_wfAdhCount>1?'s':'')+'</span>';
+  else h+='<span style="font-size:8.5px;color:#bbb;font-style:italic">aucun adh\u00e9rent saisi</span>';
+  h+='</div>';
   h+='</div></div>';
   h+='<button onclick="setDetailTab(\'adherents\')" style="background:#3d5a3a;color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;cursor:pointer">Modifier &#8599;</button>';
   h+='</div>';
@@ -2253,10 +2267,15 @@ function renderBP3YInfographic(sid,s){
     var dCA=sy.ca-YR[i].ca,dEB=sy.ebitda-YR[i].ebitda;
     var dCApct=YR[i].ca>0?Math.round((sy.ca/YR[i].ca-1)*100):0;
     var eMargin=sy.ca>0?Math.round(sy.ebitda/sy.ca*100):0;
-    h+='<div style="background:#fff;border-radius:10px;padding:10px 12px;border:0.5px solid #e0e0da;box-shadow:0 1px 5px rgba(0,0,0,0.04)">';
+    var _hasVariation=dCA!==0||dEB!==0;
+    var _cardBorder=_hasVariation?(dCA>=0?'#b8d9c4':'#f0c0c0'):'#e0e0da';
+    var _cardShadow=_hasVariation?(dCA>=0?'0 2px 12px rgba(29,158,117,0.15)':'0 2px 12px rgba(163,45,45,0.12)'):'0 1px 5px rgba(0,0,0,0.04)';
+    var _cardBg=_hasVariation?(dCA>=0?'linear-gradient(180deg,#f6fdf9,#fff)':'linear-gradient(180deg,#fef8f8,#fff)'):'#fff';
+    h+='<div class="sim-card-wf" style="background:'+_cardBg+';border-radius:10px;padding:10px 12px;border:0.5px solid '+_cardBorder+';box-shadow:'+_cardShadow+';transition:transform .2s,box-shadow .2s;cursor:default" onmouseenter="this.style.transform=\'translateY(-3px) scale(1.02)\';this.style.boxShadow=\'0 6px 20px rgba(0,0,0,0.12)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\''+_cardShadow.replace(/'/g,"\\'")+'\'">';
     h+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">';
     h+='<div style="width:18px;height:18px;border-radius:5px;background:'+accent+';display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:800;color:#fff">A'+(i+1)+'</span></div>';
     h+='<span style="font-size:10px;font-weight:700;color:#555">Simul\u00e9</span>';
+    if(_hasVariation)h+='<span style="font-size:9px;margin-left:auto;font-weight:700;color:'+(dCA>=0?'#1D9E75':'#A32D2D')+'">'+(dCA>=0?'\u25B2':'\u25BC')+'</span>';
     h+='</div>';
     h+='<div style="margin-bottom:7px;padding-bottom:7px;border-bottom:0.5px solid #f0f0ea">';
     h+='<div style="font-size:9px;color:#aaa;margin-bottom:2px;text-transform:uppercase;letter-spacing:0.5px">CA annuel</div>';
