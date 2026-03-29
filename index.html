@@ -2890,7 +2890,7 @@ function renderEngagements(sid,s){
 
   // Bloc CAPEX (cliquable → détail)
   var capexOpen=!!(S.showCapexDetail&&S.showCapexDetail[sid]);
-  h+='<div style="border:1px solid #d0d9ec;border-radius:10px;padding:14px 16px;cursor:pointer;transition:box-shadow .15s" onclick="toggleCapexDetail(\''+sid+'\')" title="Cliquer pour voir le détail du budget">';
+  h+='<div style="border:1px solid #d0d9ec;border-radius:10px;padding:14px 16px;cursor:pointer;transition:box-shadow .2s,transform .2s,border-color .2s" onclick="toggleCapexDetail(\''+sid+'\')" title="Cliquer pour voir le d\u00e9tail du budget" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.15)\';this.style.transform=\'translateY(-2px)\';this.style.borderColor=\'#1a3a6b\'" onmouseleave="this.style.boxShadow=\'none\';this.style.transform=\'none\';this.style.borderColor=\'#d0d9ec\'">';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">';
   h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:#1a3a6b;font-weight:700">CAPEX</div>';
   h+='<div style="font-size:10px;color:#1a3a6b;font-weight:600;background:#e8eef8;padding:2px 8px;border-radius:20px">'+(capexOpen?'▲ Réduire':'▼ Détail')+'</div>';
