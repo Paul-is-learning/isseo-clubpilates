@@ -3813,23 +3813,23 @@ function renderBP3YInfographic(sid,s){
   var _wfAdh=S.adherents[sid]||{};
   for(var _wk in _wfAdh){if(_wfAdh.hasOwnProperty(_wk)&&_wfAdh[_wk]!=null)_wfAdhCount++;}
   // Bande de section : Prévisionnel ajusté
-  h+='<div style="background:#f2f7f3;border-top:0.5px solid #b8d9c4;border-bottom:0.5px solid #b8d9c4;padding:6px 18px;display:flex;align-items:center;gap:8px">';
-  h+='<div style="width:6px;height:6px;border-radius:50%;background:#0F6E56"></div>';
-  h+='<span style="font-size:8.5px;text-transform:uppercase;letter-spacing:2px;color:#0F6E56;font-weight:700">Pr&eacute;visionnel ajust&eacute; &nbsp;&middot;&nbsp; Simulation adh&eacute;rents</span>';
+  h+='<div style="background:#f2f7f3;border-top:1px solid #b8d9c4;border-bottom:1px solid #b8d9c4;padding:10px 20px;display:flex;align-items:center;gap:10px">';
+  h+='<div style="width:8px;height:8px;border-radius:50%;background:#0F6E56"></div>';
+  h+='<span style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:#0F6E56;font-weight:700">Pr&eacute;visionnel ajust&eacute; &nbsp;&middot;&nbsp; Simulation adh&eacute;rents</span>';
   h+='</div>';
-  h+='<div style="background:linear-gradient(180deg,#f2f5fb 0%,#f7f7f4 100%);padding:12px 16px 14px">';
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:10px">';
-  h+='<div style="display:flex;align-items:center;gap:8px">';
-  h+='<div style="width:24px;height:24px;border-radius:7px;background:#3d5a3a;display:flex;align-items:center;justify-content:center;font-size:13px">&#127890;</div>';
-  h+='<div><div style="font-size:11px;font-weight:700;color:#1a1a1a">Simulation personnalis\u00e9e \u2014 Adh\u00e9rents</div>';
-  h+='<div style="font-size:9.5px;color:#888;margin-top:1px">R\u00e9partition : <strong>'+p4+'%&nbsp;/&nbsp;'+p8+'%&nbsp;/&nbsp;'+pi+'%</strong> &nbsp;&middot;&nbsp; Prix&nbsp;: <strong>'+px4+'\u20ac&nbsp;/&nbsp;'+px8+'\u20ac&nbsp;/&nbsp;'+pxi+'\u20ac</strong>&nbsp;HT/mois</div>';
-  h+='<div style="font-size:9px;color:#666;margin-top:2px;display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
-  h+='<span style="background:'+(isDefault?'#f0f0ea':'linear-gradient(135deg,#e8f0fe,#f0e6ff)')+';padding:1px 7px;border-radius:4px;font-weight:600;font-size:8.5px;color:'+(isDefault?'#999':'#5a3d8a')+'">'+_wfScLabel+'</span>';
-  if(_wfAdhCount>0)h+='<span style="font-size:8.5px;color:#888">'+_wfAdhCount+' mois saisi'+(_wfAdhCount>1?'s':'')+'</span>';
-  else h+='<span style="font-size:8.5px;color:#bbb;font-style:italic">aucun adh\u00e9rent saisi</span>';
+  h+='<div style="background:linear-gradient(180deg,#f2f5fb 0%,#f7f7f4 100%);padding:18px 22px 20px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:14px">';
+  h+='<div style="display:flex;align-items:center;gap:12px">';
+  h+='<div style="width:36px;height:36px;border-radius:10px;background:#3d5a3a;display:flex;align-items:center;justify-content:center;font-size:18px">&#127890;</div>';
+  h+='<div><div style="font-size:15px;font-weight:700;color:#1a1a1a">Simulation personnalis\u00e9e \u2014 Adh\u00e9rents</div>';
+  h+='<div style="font-size:13px;color:#666;margin-top:3px">R\u00e9partition : <strong>'+p4+'%&nbsp;/&nbsp;'+p8+'%&nbsp;/&nbsp;'+pi+'%</strong> &nbsp;&middot;&nbsp; Prix&nbsp;: <strong>'+px4+'\u20ac&nbsp;/&nbsp;'+px8+'\u20ac&nbsp;/&nbsp;'+pxi+'\u20ac</strong>&nbsp;HT/mois</div>';
+  h+='<div style="font-size:11px;color:#666;margin-top:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  h+='<span style="background:'+(isDefault?'#f0f0ea':'linear-gradient(135deg,#e8f0fe,#f0e6ff)')+';padding:3px 10px;border-radius:6px;font-weight:600;font-size:11px;color:'+(isDefault?'#999':'#5a3d8a')+'">'+_wfScLabel+'</span>';
+  if(_wfAdhCount>0)h+='<span style="font-size:11px;color:#888">'+_wfAdhCount+' mois saisi'+(_wfAdhCount>1?'s':'')+'</span>';
+  else h+='<span style="font-size:11px;color:#bbb;font-style:italic">aucun adh\u00e9rent saisi</span>';
   h+='</div>';
   h+='</div></div>';
-  h+='<button onclick="setDetailTab(\'adherents\')" style="background:#3d5a3a;color:#fff;border:none;border-radius:7px;padding:5px 11px;font-size:10px;font-weight:600;cursor:pointer">Modifier &#8599;</button>';
+  h+='<button onclick="setDetailTab(\'adherents\')" style="background:#3d5a3a;color:#fff;border:none;border-radius:9px;padding:8px 16px;font-size:12px;font-weight:600;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\'#4a6e47\'" onmouseout="this.style.background=\'#3d5a3a\'">Modifier &#8599;</button>';
   h+='</div>';
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
   SIM_YR.forEach(function(sy,i){
