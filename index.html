@@ -4971,7 +4971,7 @@ async function doLogout(){
   render();
 }
 function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
-function retourAccueil(){console.log('retourAccueil called');S.view='dashboard';S.selectedId=null;saveNavState();render();}
+function retourAccueil(){try{S.view='dashboard';S.selectedId=null;saveNavState();render();}catch(e){console.error('retourAccueil error:',e);alert('Erreur: '+e.message);}}
 function setMainTab(t){S.mainTab=t;saveNavState();render();}
 var _msgPollInterval=null;
 
@@ -5927,16 +5927,22 @@ async function supprimerGlobalMessage(ts){
   await sb.from('studios').upsert({id:'global_chat',data:{messages:S.globalChat},updated_at:new Date().toISOString()});
 }
 
+var _rendering=false;
 function render(){
-  var root=document.getElementById('root');
-  if(!root)return;
-  if(S.view==='auth')root.innerHTML=renderAuth();
-  else if(S.view==='dashboard')root.innerHTML=renderDashboard();
-  else if(S.view==='detail'){
-    root.innerHTML=renderDetail();
-    if(S.detailTab==='localisation')setTimeout(function(){initLocalisationMap(S.selectedId);},60);
-  }
-  renderChat();
+  if(_rendering)return;
+  _rendering=true;
+  try{
+    var root=document.getElementById('root');
+    if(!root){_rendering=false;return;}
+    if(S.view==='auth')root.innerHTML=renderAuth();
+    else if(S.view==='dashboard')root.innerHTML=renderDashboard();
+    else if(S.view==='detail'){
+      root.innerHTML=renderDetail();
+      if(S.detailTab==='localisation')setTimeout(function(){initLocalisationMap(S.selectedId);},60);
+    }
+    renderChat();
+  }catch(e){console.error('render() error:',e);alert('Erreur render: '+e.message);}
+  _rendering=false;
 }
 
 // ── Sync temps réel : polling toutes les 15s ──────────────────────────────────
