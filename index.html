@@ -2450,7 +2450,20 @@ function renderLocalisation(s){
     h+='<div style="display:flex;justify-content:space-between;font-size:9.5px;color:#94a3b8;margin-top:4px;margin-bottom:12px"><span>500 m</span><span>1 km</span><span>2 km</span><span>3.5 km</span><span>5 km</span></div>';
     h+='<div id="map-pop-estimate" style="background:#f0f7f4;border-radius:10px;padding:12px;text-align:center;min-height:62px;display:flex;align-items:center;justify-content:center">';
     h+='<div style="font-size:11px;color:#94a3b8">Calcul en cours…</div>';
-    h+='</div></div>';
+    h+='</div>';
+    h+='<div id="map-adherent-pct" style="margin-top:10px;padding:10px 12px;background:#f8faff;border-radius:10px;border:0.5px solid #dde5f5">';
+    h+='<div style="font-size:9.5px;color:#5a6e99;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">🎯 Adhérents cibles vs zone de chalandise</div>';
+    h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center" id="map-adherent-grid">';
+    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A1</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+BP_ADHERENTS[11]+'</div><div id="map-adh-pct-a1" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
+    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A2</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+BP_ADHERENTS[23]+'</div><div id="map-adh-pct-a2" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
+    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A3</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+BP_ADHERENTS[35]+'</div><div id="map-adh-pct-a3" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
+    h+='</div>';
+    h+='</div>';
+    h+='<div id="map-age35-card" style="margin-top:10px;padding:11px 13px;background:#f5f3ff;border-radius:10px;border:0.5px solid #d8d0f5;display:flex;align-items:center;justify-content:space-between;gap:8px">';
+    h+='<div style="font-size:10px;color:#6555a0;font-weight:600;line-height:1.4">👥 Pop. cible 35+ ans<br><span style="font-size:9px;font-weight:400;color:#94a3b8">53.7% moy. nationale · INSEE</span></div>';
+    h+='<div style="text-align:right"><div id="map-age35-abs" style="font-size:9.5px;color:#94a3b8;margin-bottom:1px">—</div><div id="map-age35-pct" style="font-size:16px;font-weight:700;color:#94a3b8">—</div></div>';
+    h+='</div>';
+    h+='</div>';
 
     if(ld){
       // TMJA trafic routier
@@ -2551,34 +2564,53 @@ function circleIntersectArea(d,r1,r2){
 }
 
 // Estimation de population via geo.api.gouv.fr (données INSEE officielles)
-// Pour chaque commune intersectant le cercle, calcule la fraction de population pondérée
+// Approche : grille N×N de points dans le cercle → query API "quelle commune est ici ?"
+// → fraction exacte sans approximation géométrique, capte les communes adjacentes (Montpellier, etc.)
 async function calcPopZoneINSEE(lat,lon,radiusM){
-  // L'API filtre par centroïde commune → buffer +8km pour capturer les communes
-  // dont le centroïde dépasse la zone mais qui l'intersectent partiellement
-  var fetchDist=radiusM+8000;
-  var url='https://geo.api.gouv.fr/communes?lat='+lat+'&lon='+lon+'&distance='+fetchDist+'&fields=nom,population,surface,centre&format=json&limit=100';
-  try{
-    var res=await fetch(url);
-    if(!res.ok)return null;
-    var communes=await res.json();
-    if(!Array.isArray(communes)||!communes.length)return null;
-    var total=0,details=[];
-    communes.forEach(function(c){
-      if(!c.population||!c.surface)return;
-      var communeAreaM2=c.surface*10000;              // hectares → m²
-      var communeRadius=Math.sqrt(communeAreaM2/Math.PI); // rayon équivalent (m)
-      var centroid=c.centre&&c.centre.coordinates;
-      // Distance studio → centroïde commune
-      var d=centroid?haversineM(lat,lon,centroid[1],centroid[0]):0;
-      // Fraction de la commune dans la zone = aire intersection / aire commune
-      var intersect=circleIntersectArea(d,radiusM,communeRadius);
-      var fraction=Math.min(1,intersect/communeAreaM2);
-      var contrib=Math.round(c.population*fraction);
-      if(contrib>0){total+=contrib;details.push({nom:c.nom,population:c.population,fraction:Math.round(fraction*100),contrib:contrib});}
-    });
-    details.sort(function(a,b){return b.contrib-a.contrib;});
-    return total>0?{total:total,communes:details,nbCommunes:communes.length}:null;
-  }catch(e){return null;}
+  console.log('[INSEE] START lat='+lat.toFixed(4)+' lon='+lon.toFixed(4)+' r='+radiusM);
+  var N=8; // grille 8×8 = 64 pts max, ~50 dans le cercle
+  var latDeg=radiusM/111000;
+  var lonDeg=radiusM/(111000*Math.cos(lat*Math.PI/180));
+  // Générer les points de la grille qui tombent dans le cercle
+  var pts=[];
+  for(var i=0;i<N;i++){for(var j=0;j<N;j++){
+    var pLat=lat-latDeg+(2*latDeg*(i+0.5)/N);
+    var pLon=lon-lonDeg+(2*lonDeg*(j+0.5)/N);
+    if(haversineM(lat,lon,pLat,pLon)<=radiusM)pts.push({lat:pLat,lon:pLon});
+  }}
+  if(!pts.length)return null;
+  // Requêtes parallèles : pour chaque point, demander à l'API quelle commune l'englobe
+  var results=await Promise.all(pts.map(function(pt){
+    var url='https://geo.api.gouv.fr/communes?lat='+pt.lat.toFixed(6)+'&lon='+pt.lon.toFixed(6)
+           +'&fields=nom,population,surface&format=json';
+    return fetch(url)
+      .then(function(r){return r.ok?r.json():null;})
+      .then(function(d){return d&&d[0]&&d[0].population&&d[0].surface?d[0]:null;})
+      .catch(function(){return null;});
+  }));
+  // Agréger par commune : compter combien de points de la zone sont dans chaque commune
+  var communeMap={};
+  var validPts=results.filter(function(r){return r!==null;});
+  var totalPts=validPts.length;
+  if(!totalPts)return null;
+  validPts.forEach(function(c){
+    var k=c.nom;
+    if(!communeMap[k])communeMap[k]={nom:c.nom,population:c.population,surface:c.surface,count:0};
+    communeMap[k].count++;
+  });
+  // Calcul de la contribution : fraction de zone × surface zone / surface commune × population
+  var zoneArea=Math.PI*radiusM*radiusM;
+  var total=0,details=[];
+  Object.keys(communeMap).forEach(function(k){
+    var c=communeMap[k];
+    var frZone=c.count/totalPts;                         // fraction de la zone dans cette commune
+    var frCommune=Math.min(1,frZone*zoneArea/(c.surface*10000)); // fraction de la commune dans la zone
+    var contrib=Math.round(c.population*frCommune);
+    if(contrib>0){total+=contrib;details.push({nom:c.nom,population:c.population,fraction:Math.round(frCommune*100),contrib:contrib});}
+  });
+  details.sort(function(a,b){return b.contrib-a.contrib;});
+  console.log('[INSEE] END r='+radiusM+' validPts='+totalPts+'/'+pts.length+' communes='+JSON.stringify(Object.keys(communeMap))+' total='+total);
+  return total>0?{total:total,communes:details,nbCommunes:Object.keys(communeMap).length,nbPts:totalPts}:null;
 }
 
 // Parse une chaîne démographique type "~30 000" ou "16 700" → nombre entier
@@ -2614,23 +2646,28 @@ function updateZoneRadius(val){
   if(lbl)lbl.textContent=km;
   var sl=document.getElementById('map-zone-slider');
   if(sl){var pct=((r-500)/(5000-500)*100).toFixed(1);sl.style.setProperty('--pct',pct+'%');}
-  // Loader pendant le debounce
-  var popEl=document.getElementById('map-pop-estimate');
-  if(popEl)popEl.innerHTML='<div style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:7px">'
-    +'<div style="width:14px;height:14px;border:2px solid #e2e8f0;border-top-color:#0F6E56;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>'
-    +'Données INSEE en cours…</div>';
+  // Loader pendant le debounce (popEl re-fetché à chaque fois pour éviter référence obsolète)
+  (function(){var el=document.getElementById('map-pop-estimate');
+    if(el)el.innerHTML='<div style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:7px">'
+      +'<div style="width:14px;height:14px;border:2px solid #e2e8f0;border-top-color:#0F6E56;border-radius:50%;animation:spin 0.8s linear infinite;flex-shrink:0"></div>'
+      +'Données INSEE en cours…</div>';
+  })();
   // Debounce : appel API 500ms après arrêt du curseur
   if(_inseeDebounceTimer)clearTimeout(_inseeDebounceTimer);
   _inseeDebounceTimer=setTimeout(function(){
     var sid=S.selectedId;
     var coords=S.mapCoords[sid];
     var cacheKey=sid+'_'+r;
+    // Re-fetch popEl ici (évite référence obsolète si render() a été appelé entre-temps)
+    var popEl=document.getElementById('map-pop-estimate');
     if(_inseePopCache[cacheKey]){_renderINSEEPop(popEl,_inseePopCache[cacheKey],r);return;}
     if(!coords){_renderDensityPop(popEl,sid,r);return;}
     calcPopZoneINSEE(coords.lat,coords.lon,r).then(function(result){
-      if(result&&result.total>0){_inseePopCache[cacheKey]=result;_renderINSEEPop(popEl,result,r);}
-      else{_renderDensityPop(popEl,sid,r);}
-    });
+      // Re-fetch encore une fois après les appels async (peuvent prendre 1-3s)
+      var el=document.getElementById('map-pop-estimate');
+      if(result&&result.total>0){_inseePopCache[cacheKey]=result;_renderINSEEPop(el,result,r);}
+      else{_renderDensityPop(el,sid,r);}
+    }).catch(function(e){console.error('[INSEE] erreur:',e);});
   },500);
 }
 
@@ -2646,7 +2683,34 @@ function _renderINSEEPop(popEl,result,radiusM){
     +'<div style="font-size:10px;color:#64748b;font-weight:500">habitants dans un rayon de '+km+'</div>'
     +'<div style="font-size:9px;background:#E1F5EE;color:#0F6E56;border-radius:20px;padding:2px 9px;margin-top:4px;font-weight:600">📊 Source : INSEE 2021 · '+result.communes.length+' commune'+(result.communes.length>1?'s':'')+'</div>'
     +(top?'<div style="font-size:9px;color:#94a3b8;margin-top:5px;text-align:center;line-height:1.5">'+top+'</div>':'')
+    +(result.nbPts?'<div style="font-size:8px;color:#cbd5e1;margin-top:2px">'+result.nbPts+' pts · '+result.communes.length+' commune(s)</div>':'')
     +'</div>';
+  _updateAdherentPct(result.total);
+}
+
+// Met à jour les badges "Adhérents cibles A1/A2/A3 = X% de la pop cible 35+ zone"
+var _PCT_35PLUS=0.537; // 53.7% moyenne nationale INSEE RP2021
+function _updateAdherentPct(totalPop){
+  var fmt=new Intl.NumberFormat('fr-FR');
+  var pop35=totalPop?Math.round(totalPop*_PCT_35PLUS):0;
+  // Card pop cible 35+
+  var absEl=document.getElementById('map-age35-abs');
+  var pctEl=document.getElementById('map-age35-pct');
+  if(absEl)absEl.innerHTML=pop35?'<span style="color:#6555a0;font-weight:600">'+fmt.format(pop35)+'</span> hab.':'—';
+  if(pctEl){pctEl.style.color=pop35?'#6555a0':'#94a3b8';pctEl.textContent=pop35?'53.7%':'—';}
+  // Grille A1/A2/A3 : % adhérents cibles par rapport à pop 35+ de la zone
+  var ids=['map-adh-pct-a1','map-adh-pct-a2','map-adh-pct-a3'];
+  var cibles=[BP_ADHERENTS[11],BP_ADHERENTS[23],BP_ADHERENTS[35]];
+  for(var i=0;i<3;i++){
+    var el=document.getElementById(ids[i]);
+    if(!el)continue;
+    if(!pop35){el.style.color='#94a3b8';el.textContent='—';continue;}
+    var pct=cibles[i]/pop35*100;
+    var pctStr=pct>=1?pct.toFixed(1)+'%':pct.toFixed(2)+'%';
+    var col=pct<1?'#0F6E56':pct<3?'#E89B2A':'#D85A30';
+    el.style.color=col;
+    el.textContent=pctStr;
+  }
 }
 
 function _renderDensityPop(popEl,sid,radiusM){
@@ -2660,8 +2724,10 @@ function _renderDensityPop(popEl,sid,radiusM){
       +'<div style="font-size:10px;color:#64748b;font-weight:500">hab. estimés · rayon '+km+'</div>'
       +'<div style="font-size:9px;background:#f0f0ea;color:#888;border-radius:20px;padding:2px 9px;margin-top:4px">Estimation · densité communale</div>'
       +'</div>';
+    _updateAdherentPct(pop.estPop);
   } else {
     popEl.innerHTML='<div style="font-size:11px;color:#94a3b8;text-align:center">Données non disponibles</div>';
+    _updateAdherentPct(0);
   }
 }
 
