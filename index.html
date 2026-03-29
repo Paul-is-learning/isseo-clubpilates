@@ -1256,92 +1256,111 @@ function renderBP3YInfographic(sid,s){
     simEbtArr.push(ebtArr[sei]+(simMonthlyCA[sei]-(caArr[sei]||0)));
   }
 
-  // ── SVG Chart 36 mois ──────────────────────────────────────────────────────
-  var W=580,H=168,PL=52,PR=14,PT=14,PB=24;
+  // ── SVG Chart 36 mois (redesign) ────────────────────────────────────────────
+  var W=620,H=220,PL=52,PR=16,PT=18,PB=28;
   var cW=W-PL-PR,cH=H-PT-PB,N=36;
-  var maxV=Math.max(Math.max.apply(null,caArr),Math.max.apply(null,simMonthlyCA))*1.15||1;
+  var maxV=Math.max(Math.max.apply(null,caArr),Math.max.apply(null,simMonthlyCA))*1.12||1;
   function xp(i){return PL+i*(cW/(N-1));}
   function yv(v){return PT+cH-(Math.max(0,v)/maxV)*cH;}
 
   // Break-even dynamique (basé sur EBITDA simulé)
   var beM=-1;
   for(var k=1;k<N;k++){if(simEbtArr[k]>0&&simEbtArr[k-1]<=0){beM=k;break;}}
-  // Mois / année du break-even
   var beMoiLabel='';
   if(beM>=0){var beMoisIdx=(md+beM)%12;beMoiLabel=MOIS[beMoisIdx]+' '+(annee0+Math.floor(beM/12));}
 
   var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
 
-  // Zone EBITDA négatif (avant break-even) → fond rouge très pâle
-  if(beM>0){
-    svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(xp(beM)-PL)+'" height="'+cH+'" fill="rgba(163,45,45,0.04)" rx="0"/>';
-  } else if(beM<0){
-    // Tout le graphique est négatif
-    svg+='<rect x="'+PL+'" y="'+PT+'" width="'+cW+'" height="'+cH+'" fill="rgba(163,45,45,0.04)" rx="0"/>';
-  }
+  // Defs : gradients + ombre
+  svg+='<defs>';
+  svg+='<linearGradient id="caGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#1D9E75" stop-opacity="0.18"/><stop offset="100%" stop-color="#1D9E75" stop-opacity="0.02"/></linearGradient>';
+  svg+='<linearGradient id="ebtGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#B8860B" stop-opacity="0.16"/><stop offset="100%" stop-color="#B8860B" stop-opacity="0.02"/></linearGradient>';
+  svg+='<linearGradient id="beGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0F6E56" stop-opacity="0.12"/><stop offset="100%" stop-color="#0F6E56" stop-opacity="0"/></linearGradient>';
+  svg+='<filter id="glowCA"><feGaussianBlur stdDeviation="2.5" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg+='<filter id="glowBE"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  svg+='<filter id="badgeShadow"><feDropShadow dx="0" dy="1.5" stdDeviation="2.5" flood-color="#0F6E56" flood-opacity="0.35"/></filter>';
+  svg+='</defs>';
 
-  // Year bands + séparateurs + labels (en haut)
-  var bandBg=['rgba(77,122,92,0.055)','rgba(15,110,86,0.04)','rgba(138,90,14,0.04)'];
+  // Fond principal du chart
+  svg+='<rect x="'+PL+'" y="'+PT+'" width="'+cW+'" height="'+cH+'" rx="4" fill="#fafaf8"/>';
+
+  // Year bands + séparateurs
+  var bandBg=['rgba(29,158,117,0.04)','rgba(15,110,86,0.035)','rgba(184,134,11,0.035)'];
   for(var y=0;y<3;y++){
     var bx0=xp(y*12),bx1=y<2?xp((y+1)*12):W-PR;
     svg+='<rect x="'+bx0+'" y="'+PT+'" width="'+(bx1-bx0)+'" height="'+cH+'" fill="'+bandBg[y]+'"/>';
-    if(y>0)svg+='<line x1="'+bx0+'" y1="'+PT+'" x2="'+bx0+'" y2="'+(PT+cH)+'" stroke="#dde0da" stroke-width="1" stroke-dasharray="4,3"/>';
-    svg+='<text x="'+((bx0+bx1)/2)+'" y="'+(H-6)+'" text-anchor="middle" font-size="9" fill="#b8b8b0" font-weight="700">A'+(y+1)+' · '+(annee0+y)+'</text>';
+    if(y>0)svg+='<line x1="'+bx0+'" y1="'+(PT+2)+'" x2="'+bx0+'" y2="'+(PT+cH-2)+'" stroke="#d0d5cf" stroke-width="0.7" stroke-dasharray="3,4" opacity="0.6"/>';
+    svg+='<text x="'+((bx0+bx1)/2)+'" y="'+(H-7)+'" text-anchor="middle" font-size="10" fill="#a0a098" font-weight="600" letter-spacing="0.5">A'+(y+1)+' \u00b7 '+(annee0+y)+'</text>';
   }
 
-  // Grid lines (5 niveaux)
+  // Grid lines (4 niveaux + base)
   [0,0.25,0.5,0.75,1].forEach(function(t){
     var gv=Math.round(maxV*t);
     var gy=yv(gv);
     var isBase=t===0;
-    svg+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="'+(isBase?'#c8c8c0':'#e4e4dc')+'" stroke-width="'+(isBase?1:0.5)+'"'+(t>0?' stroke-dasharray="3,5"':'')+'/>';
-    svg+='<text x="'+(PL-5)+'" y="'+(gy+3)+'" text-anchor="end" font-size="8.5" fill="#bdbdb5">'+Math.round(gv/1000)+'k</text>';
+    svg+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="'+(isBase?'#c5c5be':'#ececea')+'" stroke-width="'+(isBase?0.8:0.5)+'"'+(t>0?' stroke-dasharray="2,4"':'')+'/>';
+    svg+='<text x="'+(PL-6)+'" y="'+(gy+3.5)+'" text-anchor="end" font-size="9" fill="#b5b5ad" font-weight="500">'+Math.round(gv/1000)+'k</text>';
   });
 
-  // CA BP — aire + ligne
+  // Zone rouge pâle avant break-even
+  if(beM>0){
+    svg+='<rect x="'+PL+'" y="'+PT+'" width="'+(xp(beM)-PL)+'" height="'+cH+'" fill="rgba(200,50,50,0.025)" rx="3"/>';
+  } else if(beM<0){
+    svg+='<rect x="'+PL+'" y="'+PT+'" width="'+cW+'" height="'+cH+'" fill="rgba(200,50,50,0.025)" rx="3"/>';
+  }
+
+  // ── CA BP — aire gradient + ligne lissée ──
   var caA='M'+xp(0)+' '+(PT+cH);
   caArr.forEach(function(v,i){caA+=' L'+xp(i)+' '+yv(v);});
   caA+=' L'+xp(N-1)+' '+(PT+cH)+' Z';
-  svg+='<path d="'+caA+'" fill="#1D9E75" opacity="0.1"/>';
+  svg+='<path d="'+caA+'" fill="url(#caGrad)"/>';
   var caL='';caArr.forEach(function(v,i){caL+=(i===0?'M':'L')+xp(i)+' '+yv(v)+' ';});
-  svg+='<path d="'+caL+'" fill="none" stroke="#1D9E75" stroke-width="2.2" stroke-linejoin="round"/>';
+  svg+='<path d="'+caL+'" fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glowCA)"/>';
 
-  // EBITDA simulé — aire positive (vert clair)
+  // ── EBITDA simulé — aire gradient positive ──
   var eseg=null;
   simEbtArr.forEach(function(v,i){
     if(v>0){if(!eseg)eseg='M'+xp(i)+' '+(PT+cH);eseg+=' L'+xp(i)+' '+yv(v);}
-    else{if(eseg){eseg+=' L'+xp(i-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="#854F0B" opacity="0.13"/>';eseg=null;}}
+    else{if(eseg){eseg+=' L'+xp(i-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="url(#ebtGrad)"/>';eseg=null;}}
   });
-  if(eseg){eseg+=' L'+xp(N-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="#854F0B" opacity="0.13"/>';}
+  if(eseg){eseg+=' L'+xp(N-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="url(#ebtGrad)"/>';}
 
-  // EBITDA simulé — ligne (segments positifs en marron, négatifs en rouge pointillé)
+  // EBITDA simulé — ligne (positif doré, négatif rouge)
   var eparts=[],ecur=null,eneg=[],ecurN=null;
   simEbtArr.forEach(function(v,i){
     if(v>=0){if(!ecur)ecur='M'+xp(i)+' '+yv(v);else ecur+=' L'+xp(i)+' '+yv(v);if(ecurN){eneg.push(ecurN);ecurN=null;}}
     else{if(!ecurN)ecurN='M'+xp(i)+' '+(PT+cH-2);else ecurN+=' L'+xp(i)+' '+(PT+cH-2);if(ecur){eparts.push(ecur);ecur=null;}}
   });
   if(ecur)eparts.push(ecur);if(ecurN)eneg.push(ecurN);
-  eparts.forEach(function(p){svg+='<path d="'+p+'" fill="none" stroke="#854F0B" stroke-width="2" stroke-linejoin="round"/>';});
-  eneg.forEach(function(p){svg+='<path d="'+p+'" fill="none" stroke="#A32D2D" stroke-width="2" stroke-dasharray="4,3" opacity="0.5"/>';});
+  eparts.forEach(function(p){svg+='<path d="'+p+'" fill="none" stroke="#B8860B" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>';});
+  eneg.forEach(function(p){svg+='<path d="'+p+'" fill="none" stroke="#c44040" stroke-width="1.8" stroke-dasharray="4,3" opacity="0.55"/>';});
 
-  // Ligne CA simulée (pointillé vert plus visible)
+  // ── CA simulée — ligne pointillée bleue ──
   var simL='';simMonthlyCA.forEach(function(v,i){simL+=(i===0?'M':'L')+xp(i)+' '+yv(v)+' ';});
-  svg+='<path d="'+simL+'" fill="none" stroke="#185FA5" stroke-width="1.8" stroke-dasharray="6,3" opacity="0.65"/>';
+  svg+='<path d="'+simL+'" fill="none" stroke="#3B6FB6" stroke-width="2" stroke-dasharray="7,4" stroke-linecap="round" opacity="0.7"/>';
 
-  // Break-even — ligne épaisse + badge dynamique avec mois
+  // ── Dots aux extrémités (M1, M12, M24, M36) ──
+  [0,11,23,35].forEach(function(di){
+    svg+='<circle cx="'+xp(di)+'" cy="'+yv(caArr[di])+'" r="3" fill="#1D9E75" stroke="#fff" stroke-width="1.2"/>';
+    if(simEbtArr[di]>0)svg+='<circle cx="'+xp(di)+'" cy="'+yv(simEbtArr[di])+'" r="2.5" fill="#B8860B" stroke="#fff" stroke-width="1"/>';
+  });
+
+  // ── Break-even — ligne glow + badge premium ──
   if(beM>=0){
     var bx=xp(beM);
-    // Ligne verticale épaisse verte
-    svg+='<line x1="'+bx+'" y1="'+PT+'" x2="'+bx+'" y2="'+(PT+cH)+'" stroke="#0F6E56" stroke-width="2" stroke-dasharray="5,3" opacity="0.85"/>';
-    // Triangle indicateur en bas
-    var tx=bx,ty=PT+cH+3;
-    svg+='<polygon points="'+(tx-4)+','+(ty)+' '+(tx+4)+','+(ty)+' '+tx+','+(ty-5)+'" fill="#0F6E56" opacity="0.85"/>';
-    // Badge label avec mois dynamique
-    var labelW=beMoiLabel.length*5.5+24;
+    // Gradient vertical derrière la ligne
+    svg+='<rect x="'+(bx-8)+'" y="'+PT+'" width="16" height="'+cH+'" fill="url(#beGrad)"/>';
+    // Ligne verticale avec glow
+    svg+='<line x1="'+bx+'" y1="'+(PT+2)+'" x2="'+bx+'" y2="'+(PT+cH)+'" stroke="#0F6E56" stroke-width="1.8" stroke-dasharray="6,3" opacity="0.75" filter="url(#glowBE)"/>';
+    // Cercle indicateur sur la baseline
+    svg+='<circle cx="'+bx+'" cy="'+(PT+cH)+'" r="4" fill="#0F6E56" stroke="#fff" stroke-width="1.5"/>';
+    // Badge premium avec ombre
+    var labelW=beMoiLabel.length*5.8+30;
     var labelX=Math.min(bx-labelW/2,W-PR-labelW);
     labelX=Math.max(PL,labelX);
-    svg+='<rect x="'+labelX+'" y="'+(PT+4)+'" width="'+labelW+'" height="16" rx="4" fill="#0F6E56" opacity="0.92"/>';
-    svg+='<text x="'+(labelX+labelW/2)+'" y="'+(PT+15)+'" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="700">BE · '+beMoiLabel+'</text>';
+    var labelY=PT+6;
+    svg+='<rect x="'+labelX+'" y="'+labelY+'" width="'+labelW+'" height="20" rx="10" fill="#0F6E56" filter="url(#badgeShadow)"/>';
+    svg+='<text x="'+(labelX+labelW/2)+'" y="'+(labelY+13.5)+'" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" letter-spacing="0.3">\u26A1 BE \u00b7 '+beMoiLabel+'</text>';
   }
   svg+='</svg>';
 
@@ -1479,14 +1498,14 @@ function renderBP3YInfographic(sid,s){
   h+='</div></div>';
 
   // ── Graphique 36 mois ──────────────────────────────────────────────────────
-  h+='<div style="background:#f7f7f4;border-top:0.5px solid #e8e8e2;padding:12px 16px 10px">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;flex-wrap:wrap;gap:6px">';
-  h+='<div style="font-size:11px;font-weight:600;color:#666">Trajectoire CA &amp; EBITDA \u2014 36 mois</div>';
-  h+='<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap">';
-  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#1D9E75;border-radius:1px"></div><span style="font-size:9px;color:#999">CA BP</span></div>';
-  h+='<div style="display:flex;align-items:center;gap:3px"><svg width="14" height="4"><line x1="0" y1="2" x2="14" y2="2" stroke="#185FA5" stroke-width="1.5" stroke-dasharray="4,2" opacity="0.7"/></svg><span style="font-size:9px;color:#999">CA Simul\u00e9</span></div>';
-  h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:14px;height:2px;background:#854F0B;border-radius:1px"></div><span style="font-size:9px;color:#999">EBITDA BP</span></div>';
-  if(beM>=0)h+='<div style="display:flex;align-items:center;gap:3px"><div style="width:1px;height:11px;background:#0F6E56;opacity:0.6"></div><span style="font-size:9px;color:#0F6E56;font-weight:600">Break-even</span></div>';
+  h+='<div style="background:linear-gradient(180deg,#f9f9f6 0%,#f3f3ef 100%);border-top:0.5px solid #e8e8e2;padding:16px 20px 14px">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
+  h+='<div style="font-size:12px;font-weight:700;color:#3a3a38;letter-spacing:-0.2px">Trajectoire CA &amp; EBITDA \u2014 <span style="color:#94a3b8;font-weight:400">36 mois</span></div>';
+  h+='<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#fff;border:0.5px solid #e8e8e4;border-radius:8px;padding:5px 12px">';
+  h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:2.5px;background:#1D9E75;border-radius:2px"></div><span style="font-size:8.5px;color:#777;font-weight:500">CA BP</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:4px"><svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="#3B6FB6" stroke-width="2" stroke-dasharray="5,3" stroke-linecap="round" opacity="0.7"/></svg><span style="font-size:8.5px;color:#777;font-weight:500">CA Simul\u00e9</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:2.5px;background:#B8860B;border-radius:2px"></div><span style="font-size:8.5px;color:#777;font-weight:500">EBITDA</span></div>';
+  if(beM>=0)h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:2px;height:12px;background:#0F6E56;border-radius:1px;opacity:0.7"></div><span style="font-size:8.5px;color:#0F6E56;font-weight:700">Break-even</span></div>';
   h+='</div></div>';
   h+=svg;
   h+='</div>';
