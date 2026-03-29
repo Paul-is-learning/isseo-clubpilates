@@ -1963,9 +1963,9 @@ function renderBPConsolide(){
     var cashnet2=bp2.reduce(function(s,r){return s+(r._cashnet||0);},0);
     var cashnet3=bp3.reduce(function(s,r){return s+(r._cashnet||0);},0);
 
-    // Membres fin d'année (dernier mois A1)
+    // Membres fin d'année 3
     var actuel=S.adherents[id]||{};
-    var membresFinA1=actuel['y1_m11']!=null?num(actuel['y1_m11']):(BP_ADHERENTS[11]||285);
+    var membresFinA3=actuel['y3_m11']!=null?num(actuel['y3_m11']):(BP_ADHERENTS[35]||400);
 
     totCapex+=s.capex||0;
     totCA1+=ca1;totCA2+=ca2;totCA3+=ca3;
@@ -1973,7 +1973,7 @@ function renderBPConsolide(){
     totRex1+=rex1;totRex2+=rex2;totRex3+=rex3;
     totRN1+=rn1;totRN2+=rn2;totRN3+=rn3;
     totCashNet1+=cashnet1;totCashNet2+=cashnet2;totCashNet3+=cashnet3;
-    totMembres+=membresFinA1;
+    totMembres+=membresFinA3;
 
     var scLabel=_getScenarioLabel(id);
     studioRows.push({
@@ -1983,7 +1983,7 @@ function renderBPConsolide(){
       rex1:rex1,rex2:rex2,rex3:rex3,
       rn1:rn1,rn2:rn2,rn3:rn3,
       cashnet1:cashnet1,cashnet2:cashnet2,cashnet3:cashnet3,
-      membres:membresFinA1,
+      membres:membresFinA3,
       margeEbitda1:ca1>0?Math.round(ebitda1/ca1*100):0,
       margeEbitda3:ca3>0?Math.round(ebitda3/ca3*100):0,
       scenario:scLabel
@@ -2012,7 +2012,7 @@ function renderBPConsolide(){
     {l:'Marge EBITDA A3',v:margeEbitda3Tot+'%',c:margeEbitda3Tot>=0?'#0F6E56':'#A32D2D',noFmt:true},
     {l:'REX conso A3',v:totRex3,c:totRex3>=0?'#0F6E56':'#A32D2D'},
     {l:'Cash net conso A3',v:totCashNet3,c:totCashNet3>=0?'#0F6E56':'#A32D2D'},
-    {l:'Membres fin A1',v:totMembres,c:'#854F0B',noFmt:true}
+    {l:'Membres fin A3',v:totMembres,c:'#854F0B',noFmt:true}
   ];
   rentaKpis.forEach(function(k){
     h+='<div style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:14px 16px;transition:all .2s" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.06)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
@@ -2051,27 +2051,39 @@ function renderBPConsolide(){
   });
   h+='</tbody></table></div></div>';
 
-  // ── Graphique barres empilées (SVG simple) ──
-  h+='<div class="box" style="margin-bottom:16px">';
+  // ── Graphique barres interactif ──
+  h+='<div class="box" style="margin-bottom:16px;position:relative">';
   h+='<div style="font-size:13px;font-weight:600;margin-bottom:12px">EBITDA par studio (A1 / A2 / A3)</div>';
+  h+='<div id="bp-chart-tooltip" style="display:none;position:absolute;background:#1a1a1a;color:#fff;padding:8px 12px;border-radius:8px;font-size:11px;pointer-events:none;z-index:10;box-shadow:0 4px 12px rgba(0,0,0,0.2);white-space:nowrap"></div>';
   var maxEbitda=studioRows.reduce(function(m,r){return Math.max(m,Math.abs(r.ebitda1)+Math.abs(r.ebitda2)+Math.abs(r.ebitda3));},1);
-  var barW=Math.max(30,Math.floor(600/studioRows.length)-8);
-  var svgW=studioRows.length*(barW+8)+40;
-  h+='<div style="overflow-x:auto"><svg width="'+svgW+'" height="220" viewBox="0 0 '+svgW+' 220">';
+  var barW=Math.max(60,Math.floor(700/studioRows.length)-12);
+  var svgW=studioRows.length*(barW+12)+40;
+  h+='<div style="overflow-x:auto"><svg width="'+svgW+'" height="240" viewBox="0 0 '+svgW+' 240" style="overflow:visible">';
   studioRows.forEach(function(r,i){
-    var x=20+i*(barW+8);
+    var x=24+i*(barW+12);
     var h1=Math.round(Math.max(0,r.ebitda1)/maxEbitda*150);
     var h2=Math.round(Math.max(0,r.ebitda2)/maxEbitda*150);
     var h3=Math.round(Math.max(0,r.ebitda3)/maxEbitda*150);
-    var yBase=180;
-    h+='<rect x="'+x+'" y="'+(yBase-h1)+'" width="'+barW+'" height="'+Math.max(h1,1)+'" rx="2" fill="#0F6E56" opacity="0.85"/>';
-    h+='<rect x="'+x+'" y="'+(yBase-h1-h2)+'" width="'+barW+'" height="'+Math.max(h2,1)+'" rx="2" fill="#185FA5" opacity="0.7"/>';
-    h+='<rect x="'+x+'" y="'+(yBase-h1-h2-h3)+'" width="'+barW+'" height="'+Math.max(h3,1)+'" rx="2" fill="#533AB7" opacity="0.6"/>';
-    h+='<text x="'+(x+barW/2)+'" y="198" text-anchor="middle" font-size="9" fill="#888">'+r.name.substring(0,8)+'</text>';
+    var yBase=190;
+    var totalEbitda=r.ebitda1+r.ebitda2+r.ebitda3;
+    // Groupe interactif avec hover
+    h+='<g class="bp-bar-group" style="cursor:pointer" onmouseenter="(function(e){var t=document.getElementById(\'bp-chart-tooltip\');t.innerHTML=\'<b>'+r.name.replace(/'/g,"\\&#39;")+'</b><br>A1: '+fmt(r.ebitda1)+' · A2: '+fmt(r.ebitda2)+' · A3: '+fmt(r.ebitda3)+'<br>Total: '+fmt(totalEbitda)+' · Marge A3: '+r.margeEbitda3+'%\';t.style.display=\'block\';t.style.left=(e.offsetX-60)+\'px\';t.style.top=(e.offsetY-70)+\'px\'})(event)" onmousemove="(function(e){var t=document.getElementById(\'bp-chart-tooltip\');t.style.left=(e.offsetX-60)+\'px\';t.style.top=(e.offsetY-70)+\'px\'})(event)" onmouseleave="document.getElementById(\'bp-chart-tooltip\').style.display=\'none\'">';
+    // Fond transparent pour hover zone
+    h+='<rect x="'+x+'" y="20" width="'+barW+'" height="'+(yBase-20)+'" fill="transparent"/>';
+    // Barres
+    h+='<rect x="'+x+'" y="'+(yBase-h1)+'" width="'+barW+'" height="'+Math.max(h1,2)+'" rx="3" fill="#0F6E56" opacity="0.85" style="transition:opacity .2s"/>';
+    h+='<rect x="'+x+'" y="'+(yBase-h1-h2)+'" width="'+barW+'" height="'+Math.max(h2,2)+'" rx="3" fill="#185FA5" opacity="0.7" style="transition:opacity .2s"/>';
+    h+='<rect x="'+x+'" y="'+(yBase-h1-h2-h3)+'" width="'+barW+'" height="'+Math.max(h3,2)+'" rx="3" fill="#533AB7" opacity="0.6" style="transition:opacity .2s"/>';
+    // Valeur totale au-dessus
+    h+='<text x="'+(x+barW/2)+'" y="'+(yBase-h1-h2-h3-6)+'" text-anchor="middle" font-size="9" font-weight="600" fill="#555">'+fmt(totalEbitda)+'</text>';
+    // Nom du studio
+    h+='<text x="'+(x+barW/2)+'" y="208" text-anchor="middle" font-size="10" fill="#555" font-weight="500">'+r.name.substring(0,10)+'</text>';
+    h+='</g>';
   });
-  h+='<rect x="20" y="208" width="10" height="10" rx="2" fill="#0F6E56" opacity="0.85"/><text x="34" y="217" font-size="9" fill="#888">A1</text>';
-  h+='<rect x="60" y="208" width="10" height="10" rx="2" fill="#185FA5" opacity="0.7"/><text x="74" y="217" font-size="9" fill="#888">A2</text>';
-  h+='<rect x="100" y="208" width="10" height="10" rx="2" fill="#533AB7" opacity="0.6"/><text x="114" y="217" font-size="9" fill="#888">A3</text>';
+  // Légende
+  h+='<rect x="24" y="224" width="12" height="12" rx="3" fill="#0F6E56" opacity="0.85"/><text x="40" y="234" font-size="10" fill="#666">A1</text>';
+  h+='<rect x="70" y="224" width="12" height="12" rx="3" fill="#185FA5" opacity="0.7"/><text x="86" y="234" font-size="10" fill="#666">A2</text>';
+  h+='<rect x="116" y="224" width="12" height="12" rx="3" fill="#533AB7" opacity="0.6"/><text x="132" y="234" font-size="10" fill="#666">A3</text>';
   h+='</svg></div></div>';
 
   // ── Tableau détaillé par studio ──
