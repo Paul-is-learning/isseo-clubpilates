@@ -1139,7 +1139,7 @@ async function supprimerScenario(sid,scenarioId){
 // ══════════════════════════════════════════════════════════════════════════════
 // ── NOTIFICATIONS ENGINE ────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-var NOTIF_TYPES={message:{icon:'\uD83D\uDCAC',label:'Message',color:'#3B6FB6'},document:{icon:'\uD83D\uDCC4',label:'Document',color:'#0F6E56'},depense:{icon:'\uD83D\uDCB3',label:'D\u00e9pense',color:'#B8860B'},statut:{icon:'\uD83D\uDD04',label:'Statut',color:'#7C3AED'},echeance:{icon:'\u23F0',label:'\u00c9ch\u00e9ance',color:'#DC2626'}};
+var NOTIF_TYPES={message:{icon:'\uD83D\uDCAC',label:'Message',color:'#3B6FB6'},document:{icon:'\uD83D\uDCC4',label:'Document',color:'#0F6E56'},depense:{icon:'\uD83D\uDCB3',label:'D\u00e9pense',color:'#B8860B'},statut:{icon:'\uD83D\uDD04',label:'Statut',color:'#7C3AED'},echeance:{icon:'\u23F0',label:'\u00c9ch\u00e9ance',color:'#DC2626'},prospect:{icon:'\uD83C\uDFE0',label:'Prospection',color:'#F59E0B'}};
 async function loadNotifications(){
   if(!S.user)return;
   var res=await sb.from('notifications').select('*').eq('user_id',S.user.id).order('created_at',{ascending:false}).limit(100);
@@ -2508,6 +2508,8 @@ function ajouterLienProspect(){
   S.prospects.push(item);
   saveProspects();render();toast('Lien ajouté — récupération des infos…');
   fetchLinkPreview(item);
+  var _tabLabel=(PROSPECT_TABS.filter(function(t){return t.id===S.prospectTab;})[0]||{}).label||S.prospectTab;
+  notifyAll({type:'prospect',title:prenom+' a partagé une annonce ('+_tabLabel+')',body:titre||url});
 }
 function _parseAmount(raw){
   if(!raw)return NaN;
@@ -2651,6 +2653,8 @@ function ajouterFicheProspect(){
   if(!S.prospects)S.prospects=[];
   S.prospects.push({type:'fiche',adresse:adresse,surface:surface,loyer:parseFloat(loyer)||0,notes:notes,statut:statut,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[]});
   saveProspects();render();toast('Fiche prospect ajoutée');
+  var _tabLabel=(PROSPECT_TABS.filter(function(t){return t.id===S.prospectTab;})[0]||{}).label||S.prospectTab;
+  notifyAll({type:'prospect',title:prenom+' a ajouté une fiche prospect ('+_tabLabel+')',body:adresse+(loyer?' — '+loyer+' €/mois':'')});
 }
 var _lienLoyerTimer=null;
 function updateLienLoyer(idx,val){
