@@ -78,6 +78,19 @@ input[type=range].zone-slider{-webkit-appearance:none;appearance:none;width:100%
 input[type=range].zone-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#0F6E56;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer}
 input[type=range].zone-slider::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#0F6E56;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer;border:none}
 .loc-pulse-ring{position:absolute;width:100%;height:100%;border-radius:50%;background:rgba(15,110,86,0.35);animation:locPulse 2.2s ease-out infinite}
+.prospect-tabs{display:flex;background:#f0f0ea;border-radius:14px;padding:4px;gap:4px;margin-bottom:20px}
+.prospect-tab{flex:1;padding:11px 16px;border-radius:11px;font-size:13px;font-weight:500;color:#888;background:transparent;border:none;cursor:pointer;transition:all .25s ease;display:flex;align-items:center;justify-content:center;gap:8px;position:relative}
+.prospect-tab:hover{background:rgba(255,255,255,0.5);color:#555}
+.prospect-tab.active{background:#fff;box-shadow:0 2px 10px rgba(0,0,0,0.07);font-weight:700;color:#1a1a1a}
+.prospect-tab .ptab-count{font-size:9px;font-weight:700;padding:1px 6px;border-radius:10px;background:rgba(0,0,0,0.06);color:#999;min-width:18px;text-align:center}
+.prospect-tab.active .ptab-count{background:currentColor;color:#fff}
+.prospect-card{background:#fff;border:1px solid #e8e8e0;border-radius:14px;padding:16px 18px;margin-bottom:10px;transition:all .2s ease;border-left:4px solid transparent;position:relative}
+.prospect-card:hover{box-shadow:0 4px 16px rgba(0,0,0,0.06);transform:translateY(-1px)}
+.star-btn{background:none;border:none;cursor:pointer;font-size:18px;padding:1px 2px;transition:transform .15s ease,filter .15s;filter:grayscale(0)}
+.star-btn:hover{transform:scale(1.3)}
+.star-btn.empty{filter:grayscale(1);opacity:0.3}
+.comment-thread{animation:fadeSlideIn .25s ease}
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
 </style>
 </head>
 <body>
@@ -657,6 +670,12 @@ function inferStatut(steps,sid){
   return 'pipeline';
 }
 
+var PROSPECT_TABS=[
+  {id:'pw',label:'P&W Studio',color:'#1a3a6b',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
+  {id:'cobe',label:'COBE Society',color:'#0F6E56',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'},
+  {id:'sacobe',label:'SACOBE Society',color:'#854F0B',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
+];
+
 const INIT={
   lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'Septembre 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Deadline franchise 30/06/2026'],cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Pacte associes COBE a finaliser'],cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
@@ -676,6 +695,8 @@ var S={
   page:'accueil',  // 'accueil'|'projets'|'prospection'|'bp'
   sidebarOpen:false,
   prospects:[],    // fiches prospection
+  prospectTab:'pw', // 'pw'|'cobe'|'sacobe'
+  prospectExpandedComments:{}, // {globalIdx: true}
   mainTab:'studios',detailTab:'workflow',
   forecastYear:1,forecastSection:'summary',
   editMoisIdx:null,editVals:{},
@@ -1819,29 +1840,87 @@ function renderDashboard(){
 // ── PAGE: Prospection ──────────────────────────────────────────────────
 function renderProspection(){
   var h='';
-  // Header
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">';
-  h+='<div><div style="font-size:20px;font-weight:700;color:#1a1a1a">Prospection</div><div style="font-size:12px;color:#888;margin-top:2px">Annonces immobilières & fiches prospects</div></div>';
+  var tab=S.prospectTab||'pw';
+  var tabInfo=PROSPECT_TABS.filter(function(t){return t.id===tab;})[0]||PROSPECT_TABS[0];
+  var accentColor=tabInfo.color;
+
+  // ── Header ──
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px">';
+  h+='<div><div style="font-size:20px;font-weight:700;color:#1a1a1a">Prospection</div><div style="font-size:12px;color:#888;margin-top:2px">Espace coopératif — annonces & prospects partagés entre associés</div></div>';
   h+='<div style="display:flex;align-items:center;gap:8px">'+renderSearchBar()+userAvatarWidget(S.profile)+'</div>';
   h+='</div>';
 
-  // ── Section: Liens rapides ──
-  h+='<div class="box" style="margin-bottom:16px">';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-  h+='<div style="font-size:14px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg> Liens d\'annonces partagés</div>';
-  if(!isViewer())h+='<button class="btn" onclick="ajouterLienProspect()" style="font-size:11px">+ Ajouter un lien</button>';
+  // ── Pill tab bar : 3 sociétés ──
+  h+='<div class="prospect-tabs">';
+  PROSPECT_TABS.forEach(function(t){
+    var items=(S.prospects||[]).filter(function(p){return p.societe===t.id;});
+    var isActive=tab===t.id;
+    h+='<button class="prospect-tab'+(isActive?' active':'')+'" onclick="setProspectTab(\''+t.id+'\')" style="'+(isActive?'color:'+t.color:'')+'">';
+    h+='<span style="display:flex;align-items:center;gap:6px">'+t.icon+' '+t.label+'</span>';
+    h+='<span class="ptab-count" style="'+(isActive?'background:'+t.color:'')+'">'+items.length+'</span>';
+    h+='</button>';
+  });
   h+='</div>';
 
-  var liens=(S.prospects||[]).filter(function(p){return p.type==='lien';});
+  // ── Items pour l'onglet actif ──
+  var allItems=(S.prospects||[]).filter(function(p){return p.societe===tab;});
+  var liens=allItems.filter(function(p){return p.type==='lien';});
+  var fiches=allItems.filter(function(p){return p.type==='fiche';});
+
+  // ── Mini KPIs ──
+  var avgAll=0,voterCount=0;
+  allItems.forEach(function(p){
+    var a=_prospectAvgRating(p);
+    if(a>0){avgAll+=a;voterCount++;}
+  });
+  var avgTotal=voterCount>0?(avgAll/voterCount).toFixed(1):'—';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px">';
+  var kpis=[
+    {label:'Liens partagés',val:liens.length,icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="'+accentColor+'" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>'},
+    {label:'Fiches prospect',val:fiches.length,icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="'+accentColor+'" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>'},
+    {label:'Note moyenne',val:avgTotal,icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'}
+  ];
+  kpis.forEach(function(k){
+    h+='<div style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:10px">';
+    h+='<div style="width:36px;height:36px;border-radius:10px;background:'+accentColor+'0D;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+k.icon+'</div>';
+    h+='<div><div style="font-size:18px;font-weight:700;color:#1a1a1a">'+k.val+'</div>';
+    h+='<div style="font-size:10px;color:#888;text-transform:uppercase;letter-spacing:0.5px;font-weight:500">'+k.label+'</div></div>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // ── Section: Liens d'annonces ──
+  h+='<div class="box" style="margin-bottom:16px;border-top:3px solid '+accentColor+'">';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+  h+='<div style="font-size:14px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px">';
+  h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+accentColor+'" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>';
+  h+=' Liens d\'annonces partagés</div>';
+  h+='<button class="btn" onclick="ajouterLienProspect()" style="font-size:11px;background:'+accentColor+';color:#fff;border-color:'+accentColor+'">+ Ajouter un lien</button>';
+  h+='</div>';
+
   if(!liens.length){
-    h+='<div style="text-align:center;color:#bbb;padding:20px;font-size:12px">Aucun lien partagé pour le moment</div>';
+    h+='<div style="text-align:center;color:#bbb;padding:28px;font-size:12px">';
+    h+='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" style="margin-bottom:8px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg><br>';
+    h+='Aucun lien partagé pour <b>'+tabInfo.label+'</b>.<br>Cliquez sur "+ Ajouter un lien" pour partager une annonce.</div>';
   } else {
-    liens.forEach(function(l,i){
-      h+='<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid #f0f0ea">';
-      h+='<div style="width:32px;height:32px;border-radius:8px;background:#E6F1FB;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#185FA5" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>';
-      h+='<div style="flex:1;min-width:0"><a href="'+l.url+'" target="_blank" style="font-size:12px;font-weight:600;color:#1a3a6b;text-decoration:none" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">'+(l.titre||l.url)+'</a>';
-      h+='<div style="font-size:10px;color:#888;margin-top:1px">Ajouté par '+(l.auteur||'—')+' · '+(l.date||'')+'</div></div>';
-      if(!isViewer())h+='<button onclick="supprimerProspect('+i+')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:16px;padding:4px" title="Supprimer">&times;</button>';
+    liens.forEach(function(l){
+      var gIdx=S.prospects.indexOf(l);
+      h+='<div class="prospect-card" style="border-left-color:'+accentColor+'">';
+      h+='<div style="display:flex;align-items:flex-start;gap:12px">';
+      // Icone lien
+      h+='<div style="width:38px;height:38px;border-radius:10px;background:'+accentColor+'0D;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">';
+      h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+accentColor+'" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>';
+      h+='<div style="flex:1;min-width:0">';
+      h+='<a href="'+l.url+'" target="_blank" style="font-size:13px;font-weight:600;color:'+accentColor+';text-decoration:none;display:block;margin-bottom:2px" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">'+(l.titre||l.url)+'</a>';
+      h+='<div style="font-size:10px;color:#888">Partagé par <b style="color:#555">'+(l.auteur||'—')+'</b> · '+(l.date||'')+'</div>';
+      // Stars
+      h+=renderStarRating(l,gIdx);
+      h+='</div>';
+      // Delete
+      h+='<button onclick="event.stopPropagation();supprimerProspect('+gIdx+')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;padding:4px;flex-shrink:0;transition:color .15s" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#ccc\'" title="Supprimer">&times;</button>';
+      h+='</div>';
+      // Comments
+      h+=renderCommentThread(l,gIdx);
       h+='</div>';
     });
   }
@@ -1849,28 +1928,47 @@ function renderProspection(){
 
   // ── Section: Fiches prospects ──
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">';
-  h+='<div style="font-size:14px;font-weight:600;color:#1a1a1a;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg> Fiches prospects</div>';
-  if(!isViewer())h+='<button class="btn" onclick="ajouterFicheProspect()" style="font-size:11px">+ Nouvelle fiche</button>';
+  h+='<div style="font-size:14px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px">';
+  h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+accentColor+'" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>';
+  h+=' Fiches prospects</div>';
+  h+='<button class="btn" onclick="ajouterFicheProspect()" style="font-size:11px;background:'+accentColor+';color:#fff;border-color:'+accentColor+'">+ Nouvelle fiche</button>';
   h+='</div>';
 
-  var fiches=(S.prospects||[]).filter(function(p){return p.type==='fiche';});
   if(!fiches.length){
-    h+='<div style="text-align:center;color:#bbb;padding:30px;font-size:12px;background:#fff;border:1px solid #e8e8e0;border-radius:12px">Aucune fiche prospect. Cliquez sur "+ Nouvelle fiche" pour commencer.</div>';
+    h+='<div style="text-align:center;color:#bbb;padding:36px;font-size:12px;background:#fff;border:1px solid #e8e8e0;border-radius:14px">';
+    h+='<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" style="margin-bottom:8px"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg><br>';
+    h+='Aucune fiche prospect pour <b>'+tabInfo.label+'</b>.<br>Cliquez sur "+ Nouvelle fiche" pour commencer.</div>';
   } else {
     h+='<div class="cards">';
-    fiches.forEach(function(f,i){
+    fiches.forEach(function(f){
+      var gIdx=S.prospects.indexOf(f);
       var statColor=f.statut==='chaud'?'#DC2626':f.statut==='tiede'?'#D97706':'#6B7280';
       var statLabel=f.statut==='chaud'?'Chaud':f.statut==='tiede'?'Tiède':'Froid';
-      h+='<div class="card" style="cursor:default">';
-      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">';
-      h+='<div style="font-weight:600;font-size:13px">'+(f.adresse||'Sans adresse')+'</div>';
-      h+='<span style="background:'+statColor+'18;color:'+statColor+';font-size:10px;font-weight:600;padding:2px 8px;border-radius:6px">'+statLabel+'</span>';
+      h+='<div class="prospect-card" style="border-left-color:'+accentColor+'">';
+      // Header: adresse + statut
+      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">';
+      h+='<div style="font-weight:700;font-size:13px;color:#1a1a1a">'+(f.adresse||'Sans adresse')+'</div>';
+      h+='<span style="background:'+statColor+'15;color:'+statColor+';font-size:10px;font-weight:600;padding:3px 10px;border-radius:8px;white-space:nowrap">'+statLabel+'</span>';
       h+='</div>';
-      if(f.surface)h+='<div style="font-size:11px;color:#888;margin-bottom:4px">📐 '+f.surface+' m²</div>';
-      if(f.loyer)h+='<div style="font-size:11px;color:#888;margin-bottom:4px">💰 '+fmt(f.loyer)+' /mois</div>';
-      if(f.notes)h+='<div style="font-size:11px;color:#555;margin-top:6px;padding:6px 8px;background:#f8f8f4;border-radius:6px">'+f.notes+'</div>';
-      h+='<div style="font-size:9px;color:#aaa;margin-top:8px">Par '+(f.auteur||'—')+' · '+(f.date||'')+'</div>';
-      if(!isViewer())h+='<div style="display:flex;gap:6px;margin-top:8px"><button class="btn" onclick="modifierFicheProspect('+i+')" style="font-size:10px;padding:4px 10px">Modifier</button><button onclick="supprimerProspect('+i+')" style="background:none;border:1px solid #fecaca;color:#DC2626;border-radius:6px;font-size:10px;padding:4px 10px;cursor:pointer">Supprimer</button></div>';
+      // Détails
+      if(f.surface||f.loyer){
+        h+='<div style="display:flex;gap:14px;margin-bottom:6px">';
+        if(f.surface)h+='<div style="font-size:11px;color:#888;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg> '+f.surface+' m²</div>';
+        if(f.loyer)h+='<div style="font-size:11px;color:#888;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> '+fmt(f.loyer)+' /mois</div>';
+        h+='</div>';
+      }
+      if(f.notes)h+='<div style="font-size:11px;color:#555;padding:8px 10px;background:#f8f8f4;border-radius:8px;margin-bottom:6px;line-height:1.4">'+f.notes+'</div>';
+      // Stars
+      h+=renderStarRating(f,gIdx);
+      // Auteur + actions
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">';
+      h+='<div style="font-size:9px;color:#aaa">Par <b>'+(f.auteur||'—')+'</b> · '+(f.date||'')+'</div>';
+      h+='<div style="display:flex;gap:6px">';
+      h+='<button class="btn" onclick="event.stopPropagation();modifierFicheProspect('+gIdx+')" style="font-size:10px;padding:4px 10px">Modifier</button>';
+      h+='<button onclick="event.stopPropagation();supprimerProspect('+gIdx+')" style="background:none;border:1px solid #fecaca;color:#DC2626;border-radius:6px;font-size:10px;padding:4px 10px;cursor:pointer;transition:all .15s" onmouseover="this.style.background=\'#fef2f2\'" onmouseout="this.style.background=\'none\'">Supprimer</button>';
+      h+='</div></div>';
+      // Comments
+      h+=renderCommentThread(f,gIdx);
       h+='</div>';
     });
     h+='</div>';
@@ -1884,7 +1982,7 @@ function ajouterLienProspect(){
   var titre=prompt('Titre (optionnel) :','')||'';
   var prenom=(S.profile&&S.profile.nom||'').split(' ')[0]||'';
   if(!S.prospects)S.prospects=[];
-  S.prospects.push({type:'lien',url:url,titre:titre,auteur:prenom,date:new Date().toLocaleDateString('fr-FR')});
+  S.prospects.push({type:'lien',url:url,titre:titre,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[]});
   saveProspects();render();toast('Lien ajouté');
 }
 function ajouterFicheProspect(){
@@ -1895,7 +1993,7 @@ function ajouterFicheProspect(){
   var statut=prompt('Statut (chaud/tiede/froid) :','froid')||'froid';
   var prenom=(S.profile&&S.profile.nom||'').split(' ')[0]||'';
   if(!S.prospects)S.prospects=[];
-  S.prospects.push({type:'fiche',adresse:adresse,surface:surface,loyer:parseFloat(loyer)||0,notes:notes,statut:statut,auteur:prenom,date:new Date().toLocaleDateString('fr-FR')});
+  S.prospects.push({type:'fiche',adresse:adresse,surface:surface,loyer:parseFloat(loyer)||0,notes:notes,statut:statut,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[]});
   saveProspects();render();toast('Fiche prospect ajoutée');
 }
 function modifierFicheProspect(idx){
@@ -1919,8 +2017,118 @@ async function saveProspects(){
 async function loadProspects(){
   try{
     var res=await sb.from('studios').select('data').eq('id','_prospects').single();
-    if(res.data&&res.data.data&&res.data.data.items)S.prospects=res.data.data.items;
+    if(res.data&&res.data.data&&res.data.data.items){S.prospects=res.data.data.items;migrateProspects();}
   }catch(e){}
+}
+
+// ── Prospection: helpers ───────────────────────────────────────────────
+function migrateProspects(){
+  (S.prospects||[]).forEach(function(p){
+    if(!p.societe)p.societe='pw';
+    if(!p.ratings)p.ratings={};
+    if(!p.comments)p.comments=[];
+  });
+}
+function setProspectTab(id){S.prospectTab=id;S.prospectExpandedComments={};render();}
+function _myProspectName(){return (S.profile&&S.profile.nom||'').split(' ')[0]||'Anon';}
+
+function rateProspect(idx,stars){
+  var p=S.prospects[idx];if(!p)return;
+  var me=_myProspectName();
+  if(p.ratings[me]===stars)delete p.ratings[me];// toggle off
+  else p.ratings[me]=stars;
+  saveProspects();render();
+}
+function toggleProspectComments(idx){
+  S.prospectExpandedComments[idx]=!S.prospectExpandedComments[idx];render();
+}
+function addProspectComment(idx){
+  var text=prompt('Votre commentaire :');if(!text)return;
+  var p=S.prospects[idx];if(!p)return;
+  p.comments.push({auteur:_myProspectName(),text:text,date:new Date().toLocaleDateString('fr-FR')});
+  S.prospectExpandedComments[idx]=true;
+  saveProspects();render();toast('Commentaire ajouté');
+}
+function deleteProspectComment(pIdx,cIdx){
+  var p=S.prospects[pIdx];if(!p||!p.comments[cIdx])return;
+  var c=p.comments[cIdx];var me=_myProspectName();
+  if(c.auteur!==me&&!isSuperAdmin()){toast('Seul l\'auteur peut supprimer');return;}
+  if(!confirm('Supprimer ce commentaire ?'))return;
+  p.comments.splice(cIdx,1);
+  saveProspects();render();toast('Commentaire supprimé');
+}
+
+function _prospectAvgRating(p){
+  var vals=Object.values(p.ratings||{});
+  if(!vals.length)return 0;
+  return vals.reduce(function(s,v){return s+v;},0)/vals.length;
+}
+
+function renderStarRating(p,globalIdx){
+  var me=_myProspectName();
+  var myRating=p.ratings&&p.ratings[me]||0;
+  var avg=_prospectAvgRating(p);
+  var voters=Object.keys(p.ratings||{}).length;
+  var h='<div style="display:flex;align-items:center;gap:6px;margin:6px 0">';
+  for(var s=1;s<=3;s++){
+    var filled=s<=myRating;
+    h+='<button class="star-btn'+(filled?'':' empty')+'" onclick="event.stopPropagation();rateProspect('+globalIdx+','+s+')" title="'+(filled?'Retirer ma note':'Noter '+s+'/3')+'">';
+    h+='★</button>';
+  }
+  if(voters>0){
+    h+='<span style="font-size:11px;color:#888;margin-left:4px">';
+    h+='<b style="color:#F59E0B">'+avg.toFixed(1)+'</b>';
+    h+=' <span style="color:#bbb">·</span> '+voters+' vote'+(voters>1?'s':'');
+    // Qui a voté — mini avatars
+    h+='</span>';
+    h+='<div style="display:flex;margin-left:6px">';
+    Object.keys(p.ratings).forEach(function(name,vi){
+      var color=['#1a3a6b','#0F6E56','#854F0B','#533AB7','#DC2626'][vi%5];
+      h+='<div title="'+name+' : '+p.ratings[name]+'★" style="width:20px;height:20px;border-radius:50%;background:'+color+';color:#fff;font-size:8px;font-weight:700;display:flex;align-items:center;justify-content:center;margin-left:'+(vi>0?'-4px':'0')+';border:2px solid #fff;cursor:default">'+name.charAt(0).toUpperCase()+'</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+function renderCommentThread(p,globalIdx){
+  var comments=p.comments||[];
+  var n=comments.length;
+  var expanded=!!S.prospectExpandedComments[globalIdx];
+  var h='<div style="margin-top:8px;padding-top:8px;border-top:1px solid #f0f0ea">';
+  // Toggle + add button
+  h+='<div style="display:flex;align-items:center;gap:8px">';
+  h+='<button onclick="event.stopPropagation();toggleProspectComments('+globalIdx+')" style="background:none;border:none;cursor:pointer;font-size:11px;color:#888;display:flex;align-items:center;gap:5px;padding:2px 0;transition:color .2s" onmouseover="this.style.color=\'#555\'" onmouseout="this.style.color=\'#888\'">';
+  h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+  h+=n>0?('<b>'+n+'</b> commentaire'+(n>1?'s':'')):'Commenter';
+  if(expanded)h+=' <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="18 15 12 9 6 15"/></svg>';
+  else h+=' <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="6 9 12 15 18 9"/></svg>';
+  h+='</button>';
+  h+='<button onclick="event.stopPropagation();addProspectComment('+globalIdx+')" style="background:none;border:1px solid #e0e0d8;border-radius:6px;cursor:pointer;font-size:10px;color:#888;padding:3px 8px;transition:all .15s" onmouseover="this.style.background=\'#f5f5f0\';this.style.color=\'#555\'" onmouseout="this.style.background=\'none\';this.style.color=\'#888\'">+ Ajouter</button>';
+  h+='</div>';
+  // Thread expanded
+  if(expanded&&n>0){
+    h+='<div class="comment-thread" style="margin-top:8px;display:flex;flex-direction:column;gap:6px">';
+    comments.forEach(function(c,ci){
+      var isMe=c.auteur===_myProspectName();
+      var initColor=['#1a3a6b','#0F6E56','#854F0B','#533AB7','#DC2626'][c.auteur.charCodeAt(0)%5];
+      h+='<div style="display:flex;gap:8px;align-items:flex-start;padding:8px 10px;background:'+(isMe?'#f0f4ff':'#fafaf8')+';border-radius:10px;position:relative">';
+      // Mini avatar
+      h+='<div style="width:24px;height:24px;border-radius:50%;background:'+initColor+';color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+c.auteur.charAt(0).toUpperCase()+'</div>';
+      h+='<div style="flex:1;min-width:0">';
+      h+='<div style="font-size:10px;margin-bottom:2px"><b style="color:#333">'+c.auteur+'</b> <span style="color:#bbb">· '+c.date+'</span></div>';
+      h+='<div style="font-size:12px;color:#444;line-height:1.4">'+c.text+'</div>';
+      h+='</div>';
+      if(isMe||isSuperAdmin()){
+        h+='<button onclick="event.stopPropagation();deleteProspectComment('+globalIdx+','+ci+')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:0 2px;position:absolute;top:6px;right:8px;transition:color .15s" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#ccc\'" title="Supprimer">&times;</button>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
 }
 
 // ── PAGE: BP Consolidé ─────────────────────────────────────────────────
