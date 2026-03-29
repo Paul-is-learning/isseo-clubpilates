@@ -5343,7 +5343,7 @@ async function doLogout(){
 function openDetail(id){S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
 function retourProjets(){S.view='dashboard';S.selectedId=null;S.page='projets';saveNavState();render();}
 function retourAccueil(){retourProjets();}
-function setPage(p){S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;saveNavState();render();}
+function setPage(p){S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';saveNavState();render();}
 function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;var sb=document.querySelector('.sidebar');var ov=document.getElementById('sidebar-overlay');if(sb)sb.classList.toggle('open',S.sidebarOpen);if(ov)ov.classList.toggle('show',S.sidebarOpen);}
 function ouvrirAlertesModal(){
   var allAlerts=[];
