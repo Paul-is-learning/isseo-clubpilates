@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "isseo-app (frontend)",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "/Users/paulbecaud/Desktop/isseo-app"],
+      "port": 8080
+    },
+    {
+      "name": "supabase-functions (ask-ai)",
+      "runtimeExecutable": "supabase",
+      "runtimeArgs": ["functions", "serve", "ask-ai"],
+      "port": 54321
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+-- ══════════════════════════════════════════════════════════════════════
+-- Migration: Support Prospection (stocké dans la table studios existante)
+-- Note : Les prospects sont stockés via upsert dans studios (id='_prospects')
+-- Aucune nouvelle table nécessaire pour l'instant.
+-- Ce fichier documente la structure des données prospects.
+-- ══════════════════════════════════════════════════════════════════════
+
+-- Structure des données prospects (stockées dans studios.data.items) :
+--
+-- Type "lien" (lien d'annonce partagé) :
+--   { type: 'lien', url: string, titre: string, auteur: string, date: string }
+--
+-- Type "fiche" (fiche prospect enrichie) :
+--   { type: 'fiche', adresse: string, surface: string, loyer: number,
+--     notes: string, statut: 'chaud'|'tiede'|'froid', auteur: string, date: string }
+--
+-- Stockage : sb.from('studios').upsert({ id: '_prospects', data: { items: [...] } })
