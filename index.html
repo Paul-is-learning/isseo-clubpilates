@@ -1012,8 +1012,9 @@ function userAvatarWidget(profile){
   h+='<div style="position:absolute;bottom:0;right:0;background:#276749;border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;border:1.5px solid #fff;line-height:1">✎</div>';
   h+='</div>';
   h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
-  // Nom
+  // Nom + bouton mdp
   h+='<span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px;font-weight:500">'+nom+'</span>';
+  h+='<button onclick="openChangePassword()" title="Modifier mot de passe" style="background:none;border:1px solid #e0e0da;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:#666;transition:all 0.2s" onmouseover="this.style.background=\'#f0f0ea\';this.style.borderColor=\'#ccc\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e0e0da\'">&#128274;</button>';
   h+='</div>';
   return h;
 }
@@ -1043,6 +1044,58 @@ async function uploadAvatar(input){
   render();renderChat();
   // Reset input pour permettre un re-upload du même fichier
   input.value='';
+}
+
+// ── Changement de mot de passe ──────────────────────────────────────────────
+function openChangePassword(){
+  var overlay=document.createElement('div');
+  overlay.id='pwd-modal-overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(3px)';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:380px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.2)">';
+  box+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">';
+  box+='<div style="font-size:16px;font-weight:700;color:#1a1a1a">Modifier le mot de passe</div>';
+  box+='<button onclick="document.getElementById(\'pwd-modal-overlay\').remove()" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;padding:0;line-height:1">&times;</button>';
+  box+='</div>';
+  box+='<div id="pwd-error" style="display:none;background:#fef2f2;border:1px solid #fca5a5;border-radius:8px;padding:8px 12px;font-size:11px;color:#b91c1c;margin-bottom:14px"></div>';
+  box+='<label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Mot de passe actuel</label>';
+  box+='<input id="pwd-old" type="password" autocomplete="current-password" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:14px;box-sizing:border-box;outline:none;transition:border 0.2s" onfocus="this.style.borderColor=\'#1D9E75\'" onblur="this.style.borderColor=\'#ddd\'">';
+  box+='<label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Nouveau mot de passe</label>';
+  box+='<input id="pwd-new" type="password" autocomplete="new-password" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:14px;box-sizing:border-box;outline:none;transition:border 0.2s" onfocus="this.style.borderColor=\'#1D9E75\'" onblur="this.style.borderColor=\'#ddd\'">';
+  box+='<label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Confirmer le nouveau mot de passe</label>';
+  box+='<input id="pwd-confirm" type="password" autocomplete="new-password" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:20px;box-sizing:border-box;outline:none;transition:border 0.2s" onfocus="this.style.borderColor=\'#1D9E75\'" onblur="this.style.borderColor=\'#ddd\'">';
+  box+='<button id="pwd-submit-btn" onclick="doChangePassword()" style="width:100%;padding:11px;background:#1a3a6b;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.2s" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">Enregistrer</button>';
+  box+='<div style="font-size:10px;color:#aaa;text-align:center;margin-top:10px">Minimum 8 caract\u00e8res</div>';
+  box+='</div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var el=document.getElementById('pwd-old');if(el)el.focus();},80);
+}
+
+async function doChangePassword(){
+  var errEl=document.getElementById('pwd-error');
+  var btn=document.getElementById('pwd-submit-btn');
+  var oldPwd=document.getElementById('pwd-old').value;
+  var newPwd=document.getElementById('pwd-new').value;
+  var confirmPwd=document.getElementById('pwd-confirm').value;
+  function showErr(msg){errEl.textContent=msg;errEl.style.display='block';}
+  errEl.style.display='none';
+  if(!oldPwd){showErr('Veuillez saisir votre mot de passe actuel.');return;}
+  if(newPwd.length<8){showErr('Le nouveau mot de passe doit contenir au moins 8 caract\u00e8res.');return;}
+  if(newPwd!==confirmPwd){showErr('Les deux mots de passe ne correspondent pas.');return;}
+  btn.textContent='V\u00e9rification...';btn.disabled=true;btn.style.opacity='0.6';
+  // Vérifier l'ancien mot de passe
+  var email=S.user&&S.user.email;
+  if(!email){showErr('Erreur : email utilisateur introuvable.');btn.textContent='Enregistrer';btn.disabled=false;btn.style.opacity='1';return;}
+  var check=await sb.auth.signInWithPassword({email:email,password:oldPwd});
+  if(check.error){showErr('Mot de passe actuel incorrect.');btn.textContent='Enregistrer';btn.disabled=false;btn.style.opacity='1';return;}
+  // Mettre à jour
+  btn.textContent='Mise \u00e0 jour...';
+  var upd=await sb.auth.updateUser({password:newPwd});
+  if(upd.error){showErr('Erreur : '+upd.error.message);btn.textContent='Enregistrer';btn.disabled=false;btn.style.opacity='1';return;}
+  var overlay=document.getElementById('pwd-modal-overlay');
+  if(overlay)overlay.remove();
+  toast('Mot de passe modifi\u00e9 avec succ\u00e8s \u2713');
 }
 
 async function toggleViewer(uid,enable){
