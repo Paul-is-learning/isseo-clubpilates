@@ -1405,8 +1405,9 @@ function globalSearch(query){
     if(fields.indexOf(q)>=0)results.push({type:'studio',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',title:s.name,subtitle:s.societe+' · '+s.ouverture,studioId:id,tab:null,color:'#1a3a6b'});
     // Alertes
     (s.alertes||[]).forEach(function(a){
-      var an=a.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-      if(an.indexOf(q)>=0)results.push({type:'alerte',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',title:a,subtitle:s.name,studioId:id,tab:'alertes',color:'#DC2626'});
+      var at=_alerteText(a);
+      var an=at.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(an.indexOf(q)>=0)results.push({type:'alerte',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',title:at,subtitle:s.name,studioId:id,tab:'alertes',color:'#DC2626'});
     });
     // Étapes workflow non complétées
     getStudioSteps(id).forEach(function(step){
@@ -1686,7 +1687,7 @@ function renderCard(id,s){
     '<div style="display:flex;align-items:center;gap:5px">'+badge(s.statut)+'<span style="background:#f0f4ff;color:#1a3a6b;font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px">C'+(s.cohorte||1)+'</span></div></div>'+
     '<div style="font-size:11px;color:#888;margin-bottom:10px">Ouverture : <strong>'+s.ouverture+'</strong></div>'+
     progBar(s.steps,id)+
-    (s.alertes.length>0?'<div style="margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+s.alertes[0]+'</div>':'')+
+    (s.alertes.length>0?'<div style="margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+_alerteText(s.alertes[0])+'</div>':'')+
     dirSection+
     '</div>';
 }
@@ -1722,7 +1723,7 @@ function renderActivityFeed(ids){
   var allAlerts=[];
   ids.forEach(function(id){
     (S.studios[id].alertes||[]).forEach(function(a){
-      allAlerts.push({studioId:id,studioName:S.studios[id].name,text:a});
+      allAlerts.push({studioId:id,studioName:S.studios[id].name,text:_alerteText(a)});
     });
   });
 
@@ -4401,29 +4402,53 @@ function renderFichiers(sid){
 }
 
 // ── Alertes (ajout + suppression) ─────────────────────────────────────────────
+function _alerteObj(a){
+  if(typeof a==='string')return{text:a,auteur:'',date:''};
+  return{text:a.text||'',auteur:a.auteur||'',date:a.date||''};
+}
+function _alerteText(a){return typeof a==='string'?a:(a&&a.text||'');}
 function renderAlertes(sid,s){
   var isAdmin=!!S.profile&&!isViewer();
   var h='<div>';
   if(isAdmin){
-    h+='<div class="box">';
-    h+='<div style="font-weight:600;font-size:14px;margin-bottom:12px">Ajouter une alerte</div>';
+    h+='<div class="box" style="border:1px dashed #d0d9ec;background:linear-gradient(180deg,#fafbff,#fff)">';
+    h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+    h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>';
+    h+='<span style="font-weight:700;font-size:14px;color:#1a3a6b">Nouvelle alerte</span>';
+    h+='</div>';
     h+='<div style="display:flex;gap:8px">';
-    h+='<input id="new-alerte" type="text" placeholder="Ex: Deadline signature bail 15/04/2026" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ajouterAlerte(\''+sid+'\');}" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none"/>';
-    h+='<button class="btn btn-primary" onclick="ajouterAlerte(\''+sid+'\')">Ajouter</button>';
+    h+='<input id="new-alerte" type="text" placeholder="Ex: Deadline signature bail 15/04/2026" onkeydown="if(event.key===\'Enter\'){event.preventDefault();ajouterAlerte(\''+sid+'\');}" style="flex:1;padding:10px 14px;border:1px solid #d0d9ec;border-radius:10px;font-size:13px;outline:none;transition:border-color .15s" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#d0d9ec\'"/>';
+    h+='<button class="btn btn-primary" onclick="ajouterAlerte(\''+sid+'\')" style="border-radius:10px;padding:10px 20px;font-weight:600">Ajouter</button>';
     h+='</div></div>';
   }
   h+='<div class="box">';
-  h+='<div style="font-weight:600;font-size:14px;margin-bottom:12px">Alertes actives ('+s.alertes.length+')</div>';
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  h+='<span style="font-weight:700;font-size:14px;color:#1a1a1a">Alertes actives</span>';
+  if(s.alertes.length)h+='<span style="background:#DC2626;color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:2px 8px">'+s.alertes.length+'</span>';
+  h+='</div>';
   if(s.alertes.length===0){
-    h+='<div style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune alerte</div>';
+    h+='<div style="text-align:center;padding:2rem;color:#bbb;font-size:13px">';
+    h+='<svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ddd" stroke-width="1.5" style="margin-bottom:8px"><circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>';
+    h+='<div>Aucune alerte \u2014 tout va bien !</div></div>';
   } else {
     s.alertes.forEach(function(a,i){
-      h+='<div style="display:flex;align-items:center;justify-content:space-between;background:#FAEEDA;color:#854F0B;border-radius:8px;padding:10px 14px;margin-bottom:8px">';
-      h+='<div style="display:flex;align-items:center;gap:8px;font-size:13px"><span style="font-weight:600">!</span> '+a+'</div>';
-      if(isAdmin){
-        h+='<button onclick="supprimerAlerte(\''+sid+'\','+i+')" style="background:none;border:none;cursor:pointer;font-size:16px;color:#A32D2D;padding:2px 6px;border-radius:4px" title="Supprimer">&times;</button>';
+      var obj=_alerteObj(a);
+      h+='<div style="background:#fff;border:1px solid #f0e6d0;border-left:3px solid #DC2626;border-radius:10px;padding:12px 14px;margin-bottom:8px;transition:box-shadow .15s" onmouseenter="this.style.boxShadow=\'0 2px 8px rgba(220,38,38,0.08)\'" onmouseleave="this.style.boxShadow=\'none\'">';
+      h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px">';
+      h+='<div style="flex:1;min-width:0">';
+      h+='<div style="font-size:13px;font-weight:600;color:#854F0B;margin-bottom:4px">'+obj.text+'</div>';
+      if(obj.auteur||obj.date){
+        h+='<div style="display:flex;align-items:center;gap:6px;font-size:10px;color:#999">';
+        if(obj.auteur)h+='<span style="display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>'+obj.auteur+'</span>';
+        if(obj.date)h+='<span style="display:flex;align-items:center;gap:3px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'+obj.date+'</span>';
+        h+='</div>';
       }
       h+='</div>';
+      if(isAdmin){
+        h+='<button onclick="supprimerAlerte(\''+sid+'\','+i+')" style="background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;padding:4px 6px;border-radius:6px;transition:all .15s;flex-shrink:0" onmouseenter="this.style.color=\'#DC2626\';this.style.background=\'#fef2f2\'" onmouseleave="this.style.color=\'#ccc\';this.style.background=\'none\'" title="Supprimer">&times;</button>';
+      }
+      h+='</div></div>';
     });
   }
   h+='</div></div>';
@@ -4435,11 +4460,18 @@ async function ajouterAlerte(sid){
   var input=document.getElementById('new-alerte');
   var texte=input&&input.value&&input.value.trim();
   if(!texte){toast('Saisissez une alerte');return;}
+  var now=new Date();
+  var alerte={
+    text:texte,
+    auteur:(S.profile&&S.profile.nom)||'Admin',
+    date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})
+  };
   var s=Object.assign({},S.studios[sid]);
   s.alertes=s.alertes.slice();
-  s.alertes.push(texte);
+  s.alertes.push(alerte);
   await saveStudio(sid,s);
-  toast('Alerte ajoutee');
+  notifyAll({type:'statut',studio_id:sid,title:'\u26A0\uFE0F Nouvelle alerte \u2014 '+(S.studios[sid].name||sid),body:texte});
+  toast('Alerte ajout\u00e9e');
 }
 
 async function supprimerAlerte(sid,idx){
@@ -4943,7 +4975,7 @@ function generateReport(sid){
   if(s.alertes&&s.alertes.length>0){
     h+='<div style="padding:0 40px;margin-top:-20px"><div style="background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:10px 14px">';
     h+='<div style="font-size:9px;font-weight:700;color:#92400e;margin-bottom:4px">ALERTES</div>';
-    s.alertes.forEach(function(a){h+='<div style="font-size:9.5px;color:#92400e;padding:2px 0">\u26a0 '+a+'</div>';});
+    s.alertes.forEach(function(a){h+='<div style="font-size:9.5px;color:#92400e;padding:2px 0">\u26a0 '+_alerteText(a)+'</div>';});
     h+='</div></div>';
   }
 
@@ -4976,7 +5008,7 @@ function ouvrirAlertesModal(){
   var allAlerts=[];
   Object.keys(S.studios).forEach(function(id){
     var s=S.studios[id];if(!s||!s.alertes)return;
-    s.alertes.forEach(function(a){allAlerts.push({studioId:id,studioName:s.name,text:a});});
+    s.alertes.forEach(function(a){allAlerts.push({studioId:id,studioName:s.name,text:_alerteText(a)});});
   });
   var overlay=document.createElement('div');
   overlay.id='alertes-modal';
