@@ -3040,7 +3040,7 @@ function renderBPConsolide(){
   synthRows.forEach(function(r,ri){
     var isLast=ri===synthRows.length-1;
     h+='<tr style="transition:background .15s" onmouseenter="this.style.background=\''+(S.darkMode?'#1c2128':'#f8fafc')+'\'" onmouseleave="this.style.background=\'transparent\'">';
-    h+='<td style="padding:12px 16px;font-weight:'+(r.bold?'700':'500')+';font-size:12px;color:#1e293b;display:flex;align-items:center;gap:8px;border-bottom:'+(isLast?'none':'1px solid #f1f5f9')+'">'+r.icon+r.l+'</td>';
+    h+='<td style="padding:12px 16px;font-weight:'+(r.bold?'700':'500')+';font-size:12px;color:#1e293b;border-bottom:'+(isLast?'none':'1px solid #f1f5f9')+'"><div style="display:flex;align-items:center;gap:8px">'+r.icon+r.l+'</div></td>';
     r.v.forEach(function(v,vi){
       var color=r.pct?(v>=0?_yearColors[vi]:'#dc2626'):(v>=0?'#1e293b':'#dc2626');
       var display=r.pct?(v+'%'):fmt(v);
