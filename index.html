@@ -4901,19 +4901,19 @@ function renderFloatingChat(){
   h+='<div style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;flex-direction:column;align-items:flex-end;gap:8px">';
   if(S.chatOpen){
     // Panneau ouvert
-    h+='<div style="width:300px;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);border:1px solid #e0e4ec;display:flex;flex-direction:column;overflow:hidden">';
+    h+='<div style="width:360px;background:#fff;border-radius:14px;box-shadow:0 8px 32px rgba(0,0,0,0.18);border:1px solid #e0e4ec;display:flex;flex-direction:column;overflow:hidden">';
     // Header
     h+='<div style="background:#0f1f3d;padding:12px 14px;display:flex;align-items:center;justify-content:space-between">';
     h+='<div style="display:flex;align-items:center;gap:8px">';
     h+='<div style="width:28px;height:28px;background:rgba(255,255,255,0.15);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px">💬</div>';
     h+='<div>';
-    h+='<div style="color:#fff;font-size:12px;font-weight:700;letter-spacing:0.3px">Discussion associés</div>';
+    h+='<div style="color:#fff;font-size:12px;font-weight:700;letter-spacing:0.3px">Chat</div>';
     h+='<div style="color:rgba(255,255,255,0.55);font-size:10px">'+msgs.length+' message'+(msgs.length>1?'s':'')+'</div>';
     h+='</div></div>';
     h+='<button onclick="toggleChat()" style="background:rgba(255,255,255,0.12);border:none;color:#fff;width:24px;height:24px;border-radius:50%;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;line-height:1">×</button>';
     h+='</div>';
     // Liste messages
-    h+='<div id="global-chat-msgs" style="flex:1;height:320px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:#f8f9fb">';
+    h+='<div id="global-chat-msgs" style="flex:1;height:400px;overflow-y:auto;padding:12px;display:flex;flex-direction:column;gap:10px;background:#f8f9fb">';
     if(msgs.length===0){
       h+='<div style="text-align:center;color:#aaa;font-size:12px;margin:auto;padding:20px 0">Aucun message pour l\'instant.<br>Commencez la discussion !</div>';
     }
@@ -4923,7 +4923,7 @@ function renderFloatingChat(){
       var ts=m.ts||'';
       h+='<div style="display:flex;gap:7px;align-items:flex-end;'+(isMe?'flex-direction:row-reverse':'')+'" class="chat-msg-row">';
       h+=avatarHTML(m.auteur||'?',26);
-      h+='<div style="max-width:200px;position:relative">';
+      h+='<div style="max-width:240px;position:relative">';
       if(!isMe)h+='<div style="font-size:9.5px;color:#888;margin-bottom:2px;font-weight:600">'+(m.auteur||'')+'</div>';
       h+='<div style="background:'+(isMe?'#0f1f3d':'#fff')+';color:'+(isMe?'#fff':'#2c3e50')+';border-radius:'+(isMe?'12px 12px 4px 12px':'12px 12px 12px 4px')+';padding:7px 10px;font-size:12px;line-height:1.45;box-shadow:0 1px 3px rgba(0,0,0,0.08);word-break:break-word">'+(m.texte||'')+'</div>';
       h+='<div style="font-size:9px;color:#bbb;margin-top:2px;text-align:'+(isMe?'right':'left')+'">'+(m.date||'')+(canDeleteMsg?'&nbsp;<button onclick="supprimerGlobalMessage(\''+ts.replace(/'/g,"\\'")+'\')" style="background:none;border:none;cursor:pointer;color:#ddd;font-size:10px;padding:0;line-height:1;margin-left:2px" title="Supprimer">🗑</button>':'')+'</div>';
