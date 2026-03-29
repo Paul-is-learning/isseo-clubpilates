@@ -1881,12 +1881,38 @@ async function loadProspects(){
 }
 
 // ── PAGE: BP Consolidé ─────────────────────────────────────────────────
+// Calcule le CA annuel simulé pour un studio à partir du scénario actif
+function _getScenarioCA(sid,ay){
+  var s=S.studios[sid];
+  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  var actuel=S.adherents[sid]||{};
+  var offset=(ay-1)*12;
+  var total=0;
+  for(var i=0;i<12;i++){
+    var k='y'+ay+'_m'+i;
+    var idx=offset+i;
+    var bpM=idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400;
+    var membres=actuel[k]!=null?num(actuel[k]):bpM;
+    total+=computeSimCA(membres,cfg,ay);
+  }
+  return total;
+}
+
+// Récupère le nom du scénario actif pour un studio
+function _getScenarioLabel(sid){
+  var scId=S.activeScenarioId[sid];
+  if(!scId||scId==='bp_default')return null;
+  var scList=S.scenarios[sid]||[];
+  var sc=scList.find(function(s){return s.id===scId;});
+  return sc?sc.auteur+' — '+sc.date:null;
+}
+
 function renderBPConsolide(){
   var allIds=_getStudioIds();
   var h='';
   // Header
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">';
-  h+='<div><div style="font-size:20px;font-weight:700;color:#1a1a1a">BP Consolidé</div><div style="font-size:12px;color:#888;margin-top:2px">Agrégation automatique des Business Plans de '+allIds.length+' studios</div></div>';
+  h+='<div><div style="font-size:20px;font-weight:700;color:#1a1a1a">BP Consolidé</div><div style="font-size:12px;color:#888;margin-top:2px">Agrégation automatique des Business Plans de '+allIds.length+' studios — basé sur les scénarios actifs</div></div>';
   h+='<div style="display:flex;align-items:center;gap:8px">'+renderSearchBar()+userAvatarWidget(S.profile)+'</div>';
   h+='</div>';
 
@@ -1895,99 +1921,194 @@ function renderBPConsolide(){
     return h;
   }
 
-  // Aggregate data
+  // Aggregate data from active scenarios
   var totCapex=0,totCA1=0,totCA2=0,totCA3=0,totMembres=0;
+  var totEbitda1=0,totEbitda2=0,totEbitda3=0;
+  var totRex1=0,totRex2=0,totRex3=0;
+  var totRN1=0,totRN2=0,totRN3=0;
+  var totCashNet1=0,totCashNet2=0,totCashNet3=0;
   var studioRows=[];
+
   allIds.forEach(function(id){
     var s=S.studios[id];
-    var ca1=s.forecast&&s.forecast.annualCA||0;
-    var ca2=0,ca3=0;
-    // Calculate CA A2/A3 from forecast if available
+    var md=(s.forecast&&s.forecast.moisDebut)||0;
+    var bpOpts=getStudioBPOpts(id);
+
+    // CA depuis le scénario actif (pas le BP initial)
+    var ca1=_getScenarioCA(id,1);
+    var ca2=_getScenarioCA(id,2);
+    var ca3=_getScenarioCA(id,3);
+
+    // Construire les BP détaillés avec le CA du scénario actif
+    var bp1,bp2,bp3;
     try{
-      var bp2=buildBPFromDossier(CA_A2,s.forecast&&s.forecast.moisDebut||0,2,id);
-      ca2=bp2.reduce(function(sum,m){return sum+(m.ca_cours||0)+(m.ca_prives||0)+(m.ca_boutique||0);},0);
-      var bp3=buildBPFromDossier(CA_A3,s.forecast&&s.forecast.moisDebut||0,3,id);
-      ca3=bp3.reduce(function(sum,m){return sum+(m.ca_cours||0)+(m.ca_prives||0)+(m.ca_boutique||0);},0);
-    }catch(e){ca2=Math.round(ca1*1.35);ca3=Math.round(ca1*1.6);}
-    var membres=0;
-    if(S.adherents&&S.adherents[id]){
-      var adh=S.adherents[id];
-      var keys=Object.keys(adh);
-      if(keys.length)membres=adh[keys[keys.length-1]]||0;
+      bp1=buildBPFromDossier(ca1,md,1,id,bpOpts);
+      bp2=buildBPFromDossier(ca2,md,2,id,bpOpts);
+      bp3=buildBPFromDossier(ca3,md,3,id,bpOpts);
+    }catch(e){
+      bp1=[];bp2=[];bp3=[];
     }
-    totCapex+=s.capex||0;totCA1+=ca1;totCA2+=ca2;totCA3+=ca3;totMembres+=membres;
-    studioRows.push({id:id,name:s.name,societe:s.societe,statut:s.statut,capex:s.capex||0,ca1:ca1,ca2:ca2,ca3:ca3,membres:membres});
+
+    // Agréger les indicateurs depuis les BP mensuels
+    var ebitda1=bp1.reduce(function(s,r){return s+(r._ebitda||0);},0);
+    var ebitda2=bp2.reduce(function(s,r){return s+(r._ebitda||0);},0);
+    var ebitda3=bp3.reduce(function(s,r){return s+(r._ebitda||0);},0);
+    var rex1=bp1.reduce(function(s,r){return s+(r._rex||0);},0);
+    var rex2=bp2.reduce(function(s,r){return s+(r._rex||0);},0);
+    var rex3=bp3.reduce(function(s,r){return s+(r._rex||0);},0);
+    var rn1=bp1.reduce(function(s,r){return s+(r._result||0);},0);
+    var rn2=bp2.reduce(function(s,r){return s+(r._result||0);},0);
+    var rn3=bp3.reduce(function(s,r){return s+(r._result||0);},0);
+    var cashnet1=bp1.reduce(function(s,r){return s+(r._cashnet||0);},0);
+    var cashnet2=bp2.reduce(function(s,r){return s+(r._cashnet||0);},0);
+    var cashnet3=bp3.reduce(function(s,r){return s+(r._cashnet||0);},0);
+
+    // Membres fin d'année (dernier mois A1)
+    var actuel=S.adherents[id]||{};
+    var membresFinA1=actuel['y1_m11']!=null?num(actuel['y1_m11']):(BP_ADHERENTS[11]||285);
+
+    totCapex+=s.capex||0;
+    totCA1+=ca1;totCA2+=ca2;totCA3+=ca3;
+    totEbitda1+=ebitda1;totEbitda2+=ebitda2;totEbitda3+=ebitda3;
+    totRex1+=rex1;totRex2+=rex2;totRex3+=rex3;
+    totRN1+=rn1;totRN2+=rn2;totRN3+=rn3;
+    totCashNet1+=cashnet1;totCashNet2+=cashnet2;totCashNet3+=cashnet3;
+    totMembres+=membresFinA1;
+
+    var scLabel=_getScenarioLabel(id);
+    studioRows.push({
+      id:id,name:s.name,societe:s.societe,statut:s.statut,capex:s.capex||0,
+      ca1:ca1,ca2:ca2,ca3:ca3,
+      ebitda1:ebitda1,ebitda2:ebitda2,ebitda3:ebitda3,
+      rex1:rex1,rex2:rex2,rex3:rex3,
+      rn1:rn1,rn2:rn2,rn3:rn3,
+      cashnet1:cashnet1,cashnet2:cashnet2,cashnet3:cashnet3,
+      membres:membresFinA1,
+      margeEbitda1:ca1>0?Math.round(ebitda1/ca1*100):0,
+      margeEbitda3:ca3>0?Math.round(ebitda3/ca3*100):0,
+      scenario:scLabel
+    });
   });
 
-  // ── KPI Summary ──
-  h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px">';
-  var bpKpis=[
-    {label:'CAPEX Total',val:fmt(totCapex),color:'#1a3a6b'},
-    {label:'CA A1',val:fmt(totCA1),color:'#0F6E56'},
-    {label:'CA A2',val:fmt(totCA2),color:'#185FA5'},
-    {label:'CA A3',val:fmt(totCA3),color:'#533AB7'},
-    {label:'Membres',val:totMembres,color:'#854F0B'}
-  ];
-  bpKpis.forEach(function(k){
+  var margeEbitda1Tot=totCA1>0?Math.round(totEbitda1/totCA1*100):0;
+  var margeEbitda3Tot=totCA3>0?Math.round(totEbitda3/totCA3*100):0;
+
+  // ── KPIs row 1 : CA ──
+  h+='<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Chiffre d\'affaires</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
+  [{l:'CA A1',v:totCA1,c:'#0F6E56'},{l:'CA A2',v:totCA2,c:'#185FA5'},{l:'CA A3',v:totCA3,c:'#533AB7'},{l:'CAPEX Total',v:totCapex,c:'#1a3a6b'}].forEach(function(k){
     h+='<div style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:14px 16px;transition:all .2s" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.06)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
-    h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:4px">'+k.label+'</div>';
-    h+='<div style="font-size:18px;font-weight:700;color:'+k.color+'">'+k.val+'</div>';
+    h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:4px">'+k.l+'</div>';
+    h+='<div style="font-size:18px;font-weight:700;color:'+k.c+'">'+fmt(k.v)+'</div>';
     h+='</div>';
   });
   h+='</div>';
 
+  // ── KPIs row 2 : Rentabilité ──
+  h+='<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Rentabilité consolidée</div>';
+  h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">';
+  var rentaKpis=[
+    {l:'EBITDA A1',v:totEbitda1,c:totEbitda1>=0?'#0F6E56':'#A32D2D'},
+    {l:'EBITDA A3',v:totEbitda3,c:totEbitda3>=0?'#0F6E56':'#A32D2D'},
+    {l:'Marge EBITDA A1',v:margeEbitda1Tot+'%',c:margeEbitda1Tot>=0?'#0F6E56':'#A32D2D',noFmt:true},
+    {l:'REX A3',v:totRex3,c:totRex3>=0?'#0F6E56':'#A32D2D'},
+    {l:'Membres fin A1',v:totMembres,c:'#854F0B',noFmt:true}
+  ];
+  rentaKpis.forEach(function(k){
+    h+='<div style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:14px 16px;transition:all .2s" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.06)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
+    h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:4px">'+k.l+'</div>';
+    h+='<div style="font-size:18px;font-weight:700;color:'+k.c+'">'+(k.noFmt?k.v:fmt(k.v))+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  // ── Tableau synthèse 3 ans ──
+  h+='<div class="box" style="margin-bottom:16px">';
+  h+='<div style="font-size:13px;font-weight:600;margin-bottom:10px">Synthèse P&L consolidée sur 3 ans</div>';
+  h+='<div style="overflow-x:auto"><table><thead><tr>';
+  h+='<th style="text-align:left;padding:8px 12px;font-size:10px;text-transform:uppercase;color:#666;font-weight:600">Indicateur</th>';
+  h+='<th style="padding:8px 16px;font-size:10px;text-transform:uppercase;color:#0F6E56;font-weight:600">Année 1</th>';
+  h+='<th style="padding:8px 16px;font-size:10px;text-transform:uppercase;color:#185FA5;font-weight:600">Année 2</th>';
+  h+='<th style="padding:8px 16px;font-size:10px;text-transform:uppercase;color:#533AB7;font-weight:600">Année 3</th>';
+  h+='</tr></thead><tbody>';
+  var synthRows=[
+    {l:'Chiffre d\'affaires',v:[totCA1,totCA2,totCA3],bold:true},
+    {l:'EBITDA',v:[totEbitda1,totEbitda2,totEbitda3],bold:true},
+    {l:'Marge EBITDA',v:[margeEbitda1Tot,totCA2>0?Math.round(totEbitda2/totCA2*100):0,margeEbitda3Tot],pct:true},
+    {l:'REX (Résultat d\'exploitation)',v:[totRex1,totRex2,totRex3]},
+    {l:'Résultat net',v:[totRN1,totRN2,totRN3]},
+    {l:'Cash net disponible',v:[totCashNet1,totCashNet2,totCashNet3],bold:true},
+  ];
+  synthRows.forEach(function(r){
+    h+='<tr style="border-bottom:1px solid #f0f0ea">';
+    h+='<td style="padding:8px 12px;font-weight:'+(r.bold?'700':'500')+';font-size:12px;color:#1a1a1a">'+r.l+'</td>';
+    r.v.forEach(function(v){
+      var color=r.pct?(v>=0?'#0F6E56':'#A32D2D'):(v>=0?'#1a1a1a':'#A32D2D');
+      var display=r.pct?(v+'%'):fmt(v);
+      h+='<td style="padding:8px 16px;font-weight:'+(r.bold?'700':'500')+';color:'+color+';text-align:center;font-size:13px">'+display+'</td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div></div>';
+
   // ── Graphique barres empilées (SVG simple) ──
   h+='<div class="box" style="margin-bottom:16px">';
-  h+='<div style="font-size:13px;font-weight:600;margin-bottom:12px">CA par studio (A1 / A2 / A3)</div>';
-  var maxCA=studioRows.reduce(function(m,r){return Math.max(m,r.ca1+r.ca2+r.ca3);},1);
+  h+='<div style="font-size:13px;font-weight:600;margin-bottom:12px">EBITDA par studio (A1 / A2 / A3)</div>';
+  var maxEbitda=studioRows.reduce(function(m,r){return Math.max(m,Math.abs(r.ebitda1)+Math.abs(r.ebitda2)+Math.abs(r.ebitda3));},1);
   var barW=Math.max(30,Math.floor(600/studioRows.length)-8);
   var svgW=studioRows.length*(barW+8)+40;
   h+='<div style="overflow-x:auto"><svg width="'+svgW+'" height="220" viewBox="0 0 '+svgW+' 220">';
   studioRows.forEach(function(r,i){
     var x=20+i*(barW+8);
-    var h1=Math.round(r.ca1/maxCA*150);
-    var h2=Math.round(r.ca2/maxCA*150);
-    var h3=Math.round(r.ca3/maxCA*150);
-    var total=h1+h2+h3;var yBase=180;
-    h+='<rect x="'+x+'" y="'+(yBase-h1)+'" width="'+barW+'" height="'+h1+'" rx="2" fill="#0F6E56" opacity="0.85"/>';
-    h+='<rect x="'+x+'" y="'+(yBase-h1-h2)+'" width="'+barW+'" height="'+h2+'" rx="2" fill="#185FA5" opacity="0.7"/>';
-    h+='<rect x="'+x+'" y="'+(yBase-h1-h2-h3)+'" width="'+barW+'" height="'+h3+'" rx="2" fill="#533AB7" opacity="0.6"/>';
+    var h1=Math.round(Math.max(0,r.ebitda1)/maxEbitda*150);
+    var h2=Math.round(Math.max(0,r.ebitda2)/maxEbitda*150);
+    var h3=Math.round(Math.max(0,r.ebitda3)/maxEbitda*150);
+    var yBase=180;
+    h+='<rect x="'+x+'" y="'+(yBase-h1)+'" width="'+barW+'" height="'+Math.max(h1,1)+'" rx="2" fill="#0F6E56" opacity="0.85"/>';
+    h+='<rect x="'+x+'" y="'+(yBase-h1-h2)+'" width="'+barW+'" height="'+Math.max(h2,1)+'" rx="2" fill="#185FA5" opacity="0.7"/>';
+    h+='<rect x="'+x+'" y="'+(yBase-h1-h2-h3)+'" width="'+barW+'" height="'+Math.max(h3,1)+'" rx="2" fill="#533AB7" opacity="0.6"/>';
     h+='<text x="'+(x+barW/2)+'" y="198" text-anchor="middle" font-size="9" fill="#888">'+r.name.substring(0,8)+'</text>';
   });
-  // Legend
   h+='<rect x="20" y="208" width="10" height="10" rx="2" fill="#0F6E56" opacity="0.85"/><text x="34" y="217" font-size="9" fill="#888">A1</text>';
   h+='<rect x="60" y="208" width="10" height="10" rx="2" fill="#185FA5" opacity="0.7"/><text x="74" y="217" font-size="9" fill="#888">A2</text>';
   h+='<rect x="100" y="208" width="10" height="10" rx="2" fill="#533AB7" opacity="0.6"/><text x="114" y="217" font-size="9" fill="#888">A3</text>';
   h+='</svg></div></div>';
 
-  // ── Tableau récap ──
+  // ── Tableau détaillé par studio ──
   h+='<div class="box">';
   h+='<div style="font-size:13px;font-weight:600;margin-bottom:10px">Détail par studio</div>';
   h+='<div style="overflow-x:auto"><table><thead><tr>';
-  ['Studio','Société','Statut','CAPEX','CA A1','CA A2','CA A3','Membres'].forEach(function(c){
-    h+='<th style="text-align:left;padding:8px 12px;font-size:10px;text-transform:uppercase;letter-spacing:0.5px;color:#666;font-weight:600">'+c+'</th>';
+  ['Studio','Scénario','CA A1','CA A3','EBITDA A1','EBITDA A3','Marge A3','REX A3','RN A3','Cash net A3','Membres'].forEach(function(c){
+    h+='<th style="text-align:left;padding:8px 10px;font-size:9px;text-transform:uppercase;letter-spacing:0.5px;color:#666;font-weight:600;white-space:nowrap">'+c+'</th>';
   });
   h+='</tr></thead><tbody>';
   studioRows.forEach(function(r){
     h+='<tr style="border-bottom:1px solid #f0f0ea;transition:background .1s" onmouseover="this.style.background=\'#fafaf6\'" onmouseout="this.style.background=\'transparent\'">';
-    h+='<td style="padding:8px 12px;font-weight:600;cursor:pointer;color:#1a3a6b" onclick="openDetail(\''+r.id+'\')">'+r.name+'</td>';
-    h+='<td style="padding:8px 12px;color:#666;font-size:12px">'+r.societe+'</td>';
-    h+='<td style="padding:8px 12px">'+badge(r.statut)+'</td>';
-    h+='<td style="padding:8px 12px;font-weight:500">'+fmt(r.capex)+'</td>';
-    h+='<td style="padding:8px 12px;color:#0F6E56;font-weight:500">'+fmt(r.ca1)+'</td>';
-    h+='<td style="padding:8px 12px;color:#185FA5;font-weight:500">'+fmt(r.ca2)+'</td>';
-    h+='<td style="padding:8px 12px;color:#533AB7;font-weight:500">'+fmt(r.ca3)+'</td>';
-    h+='<td style="padding:8px 12px;font-weight:500">'+r.membres+'</td>';
+    h+='<td style="padding:8px 10px;font-weight:600;cursor:pointer;color:#1a3a6b;white-space:nowrap" onclick="openDetail(\''+r.id+'\')">'+r.name+'</td>';
+    h+='<td style="padding:8px 10px;font-size:10px;color:'+(r.scenario?'#854F0B':'#aaa')+';max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r.scenario||'BP de référence')+'">'+(r.scenario||'BP réf.')+'</td>';
+    h+='<td style="padding:8px 10px;color:#0F6E56;font-weight:500">'+fmt(r.ca1)+'</td>';
+    h+='<td style="padding:8px 10px;color:#533AB7;font-weight:500">'+fmt(r.ca3)+'</td>';
+    h+='<td style="padding:8px 10px;font-weight:500;color:'+(r.ebitda1>=0?'#0F6E56':'#A32D2D')+'">'+fmt(r.ebitda1)+'</td>';
+    h+='<td style="padding:8px 10px;font-weight:500;color:'+(r.ebitda3>=0?'#0F6E56':'#A32D2D')+'">'+fmt(r.ebitda3)+'</td>';
+    h+='<td style="padding:8px 10px;font-weight:600;color:'+(r.margeEbitda3>=0?'#0F6E56':'#A32D2D')+'">'+r.margeEbitda3+'%</td>';
+    h+='<td style="padding:8px 10px;color:'+(r.rex3>=0?'#1a1a1a':'#A32D2D')+'">'+fmt(r.rex3)+'</td>';
+    h+='<td style="padding:8px 10px;color:'+(r.rn3>=0?'#1a1a1a':'#A32D2D')+'">'+fmt(r.rn3)+'</td>';
+    h+='<td style="padding:8px 10px;font-weight:600;color:'+(r.cashnet3>=0?'#0F6E56':'#A32D2D')+'">'+fmt(r.cashnet3)+'</td>';
+    h+='<td style="padding:8px 10px;font-weight:500">'+r.membres+'</td>';
     h+='</tr>';
   });
   // Total row
   h+='<tr style="background:#f0f0ea;font-weight:700">';
-  h+='<td style="padding:8px 12px" colspan="3">TOTAL</td>';
-  h+='<td style="padding:8px 12px">'+fmt(totCapex)+'</td>';
-  h+='<td style="padding:8px 12px;color:#0F6E56">'+fmt(totCA1)+'</td>';
-  h+='<td style="padding:8px 12px;color:#185FA5">'+fmt(totCA2)+'</td>';
-  h+='<td style="padding:8px 12px;color:#533AB7">'+fmt(totCA3)+'</td>';
-  h+='<td style="padding:8px 12px">'+totMembres+'</td>';
+  h+='<td style="padding:8px 10px" colspan="2">TOTAL</td>';
+  h+='<td style="padding:8px 10px;color:#0F6E56">'+fmt(totCA1)+'</td>';
+  h+='<td style="padding:8px 10px;color:#533AB7">'+fmt(totCA3)+'</td>';
+  h+='<td style="padding:8px 10px;color:'+(totEbitda1>=0?'#0F6E56':'#A32D2D')+'">'+fmt(totEbitda1)+'</td>';
+  h+='<td style="padding:8px 10px;color:'+(totEbitda3>=0?'#0F6E56':'#A32D2D')+'">'+fmt(totEbitda3)+'</td>';
+  h+='<td style="padding:8px 10px;color:'+(margeEbitda3Tot>=0?'#0F6E56':'#A32D2D')+'">'+margeEbitda3Tot+'%</td>';
+  h+='<td style="padding:8px 10px;color:'+(totRex3>=0?'#1a1a1a':'#A32D2D')+'">'+fmt(totRex3)+'</td>';
+  h+='<td style="padding:8px 10px;color:'+(totRN3>=0?'#1a1a1a':'#A32D2D')+'">'+fmt(totRN3)+'</td>';
+  h+='<td style="padding:8px 10px;color:'+(totCashNet3>=0?'#0F6E56':'#A32D2D')+'">'+fmt(totCashNet3)+'</td>';
+  h+='<td style="padding:8px 10px">'+totMembres+'</td>';
   h+='</tr>';
   h+='</tbody></table></div></div>';
   return h;
