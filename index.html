@@ -27,9 +27,13 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .hamburger{display:none;position:fixed;top:12px;left:12px;z-index:600;background:#0f1f3d;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;color:#fff}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:499}
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.hamburger{display:block}.sidebar-overlay.show{display:block}}
-.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center}
-.auth-box{background:#fff;border:0.5px solid #ddd;border-radius:16px;padding:2rem;width:400px}
-.auth-box input{width:100%;padding:10px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:14px;margin-bottom:12px;outline:none}
+.auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#000000 0%,#0a0a0a 30%,#111111 60%,#0a0a0a 100%);position:relative;overflow:hidden}
+.auth-wrap::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 20%,rgba(26,58,107,0.08) 0%,transparent 50%),radial-gradient(circle at 70% 80%,rgba(15,110,86,0.06) 0%,transparent 50%);animation:authBgShift 15s ease infinite alternate}
+@keyframes authBgShift{0%{transform:translate(0,0)}100%{transform:translate(2%,1%)}}
+.auth-box{background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.08);border-radius:24px;padding:40px 36px;width:420px;backdrop-filter:blur(40px);box-shadow:0 25px 80px rgba(0,0,0,0.5),0 0 0 1px rgba(255,255,255,0.05) inset}
+.auth-box input{width:100%;padding:13px 16px;border:1px solid rgba(255,255,255,0.1);border-radius:12px;font-size:14px;margin-bottom:14px;outline:none;background:rgba(255,255,255,0.05);color:#fff;transition:all .25s ease;box-sizing:border-box}
+.auth-box input::placeholder{color:rgba(255,255,255,0.3)}
+.auth-box input:focus{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);box-shadow:0 0 0 3px rgba(255,255,255,0.04)}
 .btn{padding:8px 16px;border:0.5px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}
 .btn:hover{background:#f0f0ea}
 .btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
@@ -1247,13 +1251,33 @@ function avatarHTMLForUser(u,size){
 var COLLAB_SEP_LOGIN='<span style="font-size:26px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
 
 function renderAuth(){
-  return '<div class="auth-wrap"><div class="auth-box">'
-    +'<div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:20px">'+LI_LOGIN+COLLAB_SEP_LOGIN+LC_LOGIN+'</div>'
-    +'<div style="text-align:center;font-size:12px;color:#888;margin-bottom:22px">Plateforme de suivi des projets</div>'
-    +'<input id="ae" type="email" placeholder="Email" autocomplete="email"/>'
-    +'<input id="ap" type="password" placeholder="Mot de passe" autocomplete="current-password"/>'
-    +'<div id="aerr" style="font-size:12px;color:#c00;margin-bottom:10px;display:none"></div>'
-    +'<button class="btn btn-primary btn-full" onclick="doLogin()">Se connecter</button>'
+  return '<div class="auth-wrap">'
+    // Particules décoratives
+    +'<div style="position:absolute;top:15%;left:10%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(26,58,107,0.07) 0%,transparent 70%);pointer-events:none"></div>'
+    +'<div style="position:absolute;bottom:10%;right:15%;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(15,110,86,0.05) 0%,transparent 70%);pointer-events:none"></div>'
+    +'<div style="position:absolute;top:50%;left:50%;width:600px;height:600px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.015) 0%,transparent 60%);pointer-events:none"></div>'
+    +'<div class="auth-box">'
+    // Logos en blanc
+    +'<div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:28px">'
+    +'<img src="logo-black.png" style="height:52px;width:auto;display:block;filter:brightness(0) invert(1)" alt="Isseo">'
+    +'<span style="font-size:22px;font-weight:200;color:rgba(255,255,255,0.15);user-select:none">&times;</span>'
+    +'<img src="logo-cp.webp" style="height:44px;width:auto;display:block;filter:brightness(0) invert(1)" alt="Club Pilates">'
+    +'</div>'
+    // Sous-titre
+    +'<div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:2px;text-transform:uppercase;font-weight:500">Plateforme de suivi</div>'
+    +'<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.2);margin-bottom:28px">Gestion de projets Club Pilates</div>'
+    // Séparateur subtil
+    +'<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin-bottom:28px"></div>'
+    // Champs
+    +'<label style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Email</label>'
+    +'<input id="ae" type="email" placeholder="votre@email.com" autocomplete="email"/>'
+    +'<label style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Mot de passe</label>'
+    +'<input id="ap" type="password" placeholder="••••••••" autocomplete="current-password"/>'
+    +'<div id="aerr" style="font-size:12px;color:#ef4444;margin-bottom:10px;display:none;background:rgba(239,68,68,0.1);padding:8px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2)"></div>'
+    // Bouton
+    +'<button onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#fff,#e8e8e8);color:#0a0a0a;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s ease;letter-spacing:0.5px;margin-top:4px" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 8px 25px rgba(255,255,255,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">Se connecter</button>'
+    // Footer
+    +'<div style="text-align:center;margin-top:24px;font-size:10px;color:rgba(255,255,255,0.15)">ISSEO × Club Pilates · Espace sécurisé</div>'
     +'</div></div>';
 }
 
