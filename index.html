@@ -1321,9 +1321,20 @@ function renderBP3YInfographic(sid,s){
   var simL='';simMonthlyCA.forEach(function(v,i){simL+=(i===0?'M':'L')+xp(i)+' '+yv(v)+' ';});
   svg+='<path d="'+simL+'" fill="none" stroke="#1D9E75" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" filter="url(#glowCA)"/>';
 
+  // ── EBITDA simulé — aire gradient + ligne dorée ──
+  var eseg=null;
+  simEbtArr.forEach(function(v,i){
+    if(v>0){if(!eseg)eseg='M'+xp(i)+' '+(PT+cH);eseg+=' L'+xp(i)+' '+yv(v);}
+    else{if(eseg){eseg+=' L'+xp(i-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="url(#ebtGrad)"/>';eseg=null;}}
+  });
+  if(eseg){eseg+=' L'+xp(N-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="url(#ebtGrad)"/>';}
+  var ebtL='';simEbtArr.forEach(function(v,i){ebtL+=(i===0?'M':'L')+xp(i)+' '+yv(Math.max(0,v))+' ';});
+  svg+='<path d="'+ebtL+'" fill="none" stroke="#B8860B" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>';
+
   // ── Dots aux jalons (M1, M12, M24, M36) ──
   [0,11,23,35].forEach(function(di){
     svg+='<circle cx="'+xp(di)+'" cy="'+yv(simMonthlyCA[di])+'" r="3" fill="#1D9E75" stroke="#fff" stroke-width="1.2"/>';
+    if(simEbtArr[di]>0)svg+='<circle cx="'+xp(di)+'" cy="'+yv(simEbtArr[di])+'" r="2.5" fill="#B8860B" stroke="#fff" stroke-width="1"/>';
   });
 
   // ── Break-even — ligne glow + badge premium ──
@@ -1336,12 +1347,13 @@ function renderBP3YInfographic(sid,s){
     // Cercle indicateur sur la baseline
     svg+='<circle cx="'+bx+'" cy="'+(PT+cH)+'" r="4" fill="#0F6E56" stroke="#fff" stroke-width="1.5"/>';
     // Badge premium avec ombre
-    var labelW=beMoiLabel.length*5.8+30;
+    var beLabelTxt='BREAK EVEN \u00b7 '+beMoiLabel;
+    var labelW=beLabelTxt.length*5.2+20;
     var labelX=Math.min(bx-labelW/2,W-PR-labelW);
     labelX=Math.max(PL,labelX);
     var labelY=PT+6;
     svg+='<rect x="'+labelX+'" y="'+labelY+'" width="'+labelW+'" height="20" rx="10" fill="#0F6E56" filter="url(#badgeShadow)"/>';
-    svg+='<text x="'+(labelX+labelW/2)+'" y="'+(labelY+13.5)+'" text-anchor="middle" font-size="9" fill="#fff" font-weight="700" letter-spacing="0.3">\u26A1 BE \u00b7 '+beMoiLabel+'</text>';
+    svg+='<text x="'+(labelX+labelW/2)+'" y="'+(labelY+13.5)+'" text-anchor="middle" font-size="8.5" fill="#fff" font-weight="700" letter-spacing="0.4">'+beLabelTxt+'</text>';
   }
   svg+='</svg>';
 
@@ -1485,6 +1497,7 @@ function renderBP3YInfographic(sid,s){
   h+='<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;background:#fff;border:0.5px solid #e8e8e4;border-radius:8px;padding:5px 12px">';
   h+='<div style="display:flex;align-items:center;gap:4px"><svg width="16" height="4"><line x1="0" y1="2" x2="16" y2="2" stroke="#3B6FB6" stroke-width="2" stroke-dasharray="5,3" stroke-linecap="round" opacity="0.6"/></svg><span style="font-size:8.5px;color:#777;font-weight:500">CA BP</span></div>';
   h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:2.5px;background:#1D9E75;border-radius:2px"></div><span style="font-size:8.5px;color:#777;font-weight:500">CA R\u00e9el</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:16px;height:2.5px;background:#B8860B;border-radius:2px"></div><span style="font-size:8.5px;color:#777;font-weight:500">EBITDA</span></div>';
   if(beM>=0)h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:2px;height:12px;background:#0F6E56;border-radius:1px;opacity:0.7"></div><span style="font-size:8.5px;color:#0F6E56;font-weight:700">Break-even</span></div>';
   h+='</div></div>';
   h+=svg;
