@@ -3600,8 +3600,14 @@ function renderBP3YInfographic(sid,s){
   // Break-even dynamique (basé sur EBITDA simulé)
   var beM=-1;
   for(var k=1;k<N;k++){if(simEbtArr[k]>0&&simEbtArr[k-1]<=0){beM=k;break;}}
-  var beMoiLabel='';
-  if(beM>=0){var beMoisIdx=(md+beM)%12;beMoiLabel=MOIS[beMoisIdx]+' '+(annee0+Math.floor(beM/12));}
+  var beMoiLabel='',beAdherents=0;
+  if(beM>=0){
+    var beMoisIdx=(md+beM)%12;
+    beMoiLabel=MOIS[beMoisIdx]+' '+(annee0+Math.floor(beM/12));
+    // Nombre d'adhérents au mois du break-even (réel saisi ou BP)
+    var _beAy=Math.floor(beM/12)+1,_beMo=beM%12,_beKey='y'+_beAy+'_m'+_beMo;
+    beAdherents=(actuelWF[_beKey]!==undefined)?num(actuelWF[_beKey]):(beM<BP_ADHERENTS.length?BP_ADHERENTS[beM]:400);
+  }
 
   var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
 
@@ -3711,7 +3717,7 @@ function renderBP3YInfographic(sid,s){
     // Cercle indicateur sur la baseline
     svg+='<circle cx="'+bx+'" cy="'+(PT+cH)+'" r="4" fill="#0F6E56" stroke="#fff" stroke-width="1.5"/>';
     // Badge premium avec ombre
-    var beLabelTxt='BREAK EVEN \u00b7 '+beMoiLabel;
+    var beLabelTxt='BREAK EVEN \u00b7 '+beMoiLabel+' \u00b7 '+beAdherents+' adh.';
     var labelW=beLabelTxt.length*5.2+20;
     var labelX=Math.min(bx-labelW/2,W-PR-labelW);
     labelX=Math.max(PL,labelX);
@@ -6234,7 +6240,8 @@ function generateReport(sid){
   });
   var beM=-1;
   for(var k=1;k<36;k++){if(ebtArr[k]>0&&ebtArr[k-1]<=0){beM=k;break;}}
-  var beMoiLabel=beM>=0?(MOIS[(md+beM)%12]+' '+(annee0+Math.floor(beM/12))):'N/A';
+  var beAdh2=beM>=0?(beM<BP_ADHERENTS.length?BP_ADHERENTS[beM]:400):0;
+  var beMoiLabel=beM>=0?(MOIS[(md+beM)%12]+' '+(annee0+Math.floor(beM/12))+' \u00b7 '+beAdh2+' adh.'):'N/A';
   var capexDet=getCapexDetailForStudio(sid);
   var capexTots=computeCapexTotals(capexDet);
   var emprunt=opts.emprunt||s.emprunt||230000;
