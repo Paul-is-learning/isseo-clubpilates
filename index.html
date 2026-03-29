@@ -1714,7 +1714,7 @@ function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
   var isAdmin=!!S.profile&&!isViewer();
-  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Échanges'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   var content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
   else if(S.detailTab==='adherents')content=renderAdherents(S.selectedId,s);
