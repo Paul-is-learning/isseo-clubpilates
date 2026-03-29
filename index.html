@@ -3109,7 +3109,7 @@ function renderTopicThread(sid,topicId){
     h+='<div style="position:relative">';
     h+='<div style="background:'+(isMe?'#1a3a6b':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
     var within5min=m.ts&&(Date.now()-new Date(m.ts).getTime()<5*60*1000);
-    if(canEdit&&!topic.closed&&within5min){
+    if(canEdit&&!topic.closed&&(within5min||isSuperAdmin())){
       h+='<div class="msg-actions" style="opacity:0;transition:opacity 0.15s;position:absolute;'+(isMe?'left:-60px':'right:-60px')+';top:50%;transform:translateY(-50%);display:flex;gap:2px">';
       h+='<button onclick="event.stopPropagation();modifierMsgTopic(\''+sid+'\',\''+topicId+'\','+mi+')" title="Modifier" style="background:#fff;border:1px solid #e0e0da;border-radius:6px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;transition:all 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor=\'#1a3a6b\';this.style.color=\'#1a3a6b\'" onmouseout="this.style.borderColor=\'#e0e0da\';this.style.color=\'#888\'">✎</button>';
       h+='<button onclick="event.stopPropagation();supprimerMsgTopic(\''+sid+'\',\''+topicId+'\','+mi+')" title="Supprimer" style="background:#fff;border:1px solid #e0e0da;border-radius:6px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;transition:all 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor=\'#A32D2D\';this.style.color=\'#A32D2D\'" onmouseout="this.style.borderColor=\'#e0e0da\';this.style.color=\'#888\'">×</button>';
