@@ -3099,14 +3099,23 @@ function renderTopicThread(sid,topicId){
   h+='<div class="box" style="padding:0;overflow:hidden">';
   h+='<div id="topic-msgs" style="height:380px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">';
   if(!msgs.length)h+='<div style="text-align:center;color:#aaa;font-size:12px;padding:20px">Aucune réponse pour le moment</div>';
-  msgs.forEach(function(m){
+  msgs.forEach(function(m,mi){
     var isMe=m.auteur===me;
-    h+='<div style="display:flex;flex-direction:'+(isMe?'row-reverse':'row')+';align-items:flex-end;gap:8px">';
+    var canEdit=isMe||isSuperAdmin();
+    h+='<div style="display:flex;flex-direction:'+(isMe?'row-reverse':'row')+';align-items:flex-end;gap:8px" class="topic-msg-row" onmouseover="var a=this.querySelector(\'.msg-actions\');if(a)a.style.opacity=\'1\'" onmouseout="var a=this.querySelector(\'.msg-actions\');if(a)a.style.opacity=\'0\'">';
     h+=avatarHTML(m.auteur,32);
     h+='<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';max-width:72%">';
-    h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' &mdash; '+m.date+'</div>';
+    h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' &mdash; '+m.date+(m.edited?' <span style="font-style:italic;color:#bbb">(modifié)</span>':'')+'</div>';
+    h+='<div style="position:relative">';
     h+='<div style="background:'+(isMe?'#1a3a6b':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
-    h+='</div></div>';
+    var within5min=m.ts&&(Date.now()-new Date(m.ts).getTime()<5*60*1000);
+    if(canEdit&&!topic.closed&&within5min){
+      h+='<div class="msg-actions" style="opacity:0;transition:opacity 0.15s;position:absolute;'+(isMe?'left:-60px':'right:-60px')+';top:50%;transform:translateY(-50%);display:flex;gap:2px">';
+      h+='<button onclick="event.stopPropagation();modifierMsgTopic(\''+sid+'\',\''+topicId+'\','+mi+')" title="Modifier" style="background:#fff;border:1px solid #e0e0da;border-radius:6px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;transition:all 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor=\'#1a3a6b\';this.style.color=\'#1a3a6b\'" onmouseout="this.style.borderColor=\'#e0e0da\';this.style.color=\'#888\'">✎</button>';
+      h+='<button onclick="event.stopPropagation();supprimerMsgTopic(\''+sid+'\',\''+topicId+'\','+mi+')" title="Supprimer" style="background:#fff;border:1px solid #e0e0da;border-radius:6px;width:26px;height:26px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:11px;color:#888;transition:all 0.15s;box-shadow:0 1px 3px rgba(0,0,0,0.06)" onmouseover="this.style.borderColor=\'#A32D2D\';this.style.color=\'#A32D2D\'" onmouseout="this.style.borderColor=\'#e0e0da\';this.style.color=\'#888\'">×</button>';
+      h+='</div>';
+    }
+    h+='</div></div></div>';
   });
   h+='</div>';
   // Input
@@ -3197,6 +3206,51 @@ async function fermerTopic(sid,topicId){
   topic.closed=true;
   await saveTopics(sid);
   toast('Sujet clôturé');
+  render();
+}
+
+function modifierMsgTopic(sid,topicId,msgIdx){
+  var topics=S.topics[sid]||[];
+  var topic=topics.find(function(t){return t.id===topicId;});
+  if(!topic||!topic.messages[msgIdx])return;
+  var m=topic.messages[msgIdx];
+  var overlay=document.createElement('div');
+  overlay.id='edit-msg-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var box='<div style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  box+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px"><span style="font-size:15px;font-weight:700;color:#1a1a1a">Modifier le message</span><button onclick="document.getElementById(\'edit-msg-modal\').remove()" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;padding:0;line-height:1">&times;</button></div>';
+  box+='<textarea id="edit-msg-text" rows="4" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:16px;box-sizing:border-box;outline:none;resize:vertical;font-family:inherit" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#ddd\'">'+m.texte.replace(/</g,'&lt;').replace(/>/g,'&gt;')+'</textarea>';
+  box+='<button onclick="confirmerModifMsg(\''+sid+'\',\''+topicId+'\','+msgIdx+')" style="width:100%;padding:11px;background:#1a3a6b;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer">Enregistrer</button>';
+  box+='</div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var el=document.getElementById('edit-msg-text');if(el){el.focus();el.setSelectionRange(el.value.length,el.value.length);}},80);
+}
+
+async function confirmerModifMsg(sid,topicId,msgIdx){
+  var el=document.getElementById('edit-msg-text');
+  var texte=el&&el.value&&el.value.trim();
+  if(!texte){toast('Le message ne peut pas être vide');return;}
+  var topics=S.topics[sid]||[];
+  var topic=topics.find(function(t){return t.id===topicId;});
+  if(!topic||!topic.messages[msgIdx])return;
+  topic.messages[msgIdx].texte=texte;
+  topic.messages[msgIdx].edited=true;
+  await saveTopics(sid);
+  var modal=document.getElementById('edit-msg-modal');if(modal)modal.remove();
+  toast('Message modifié');
+  render();
+}
+
+async function supprimerMsgTopic(sid,topicId,msgIdx){
+  if(!confirm('Supprimer ce message ?'))return;
+  var topics=S.topics[sid]||[];
+  var topic=topics.find(function(t){return t.id===topicId;});
+  if(!topic||!topic.messages[msgIdx])return;
+  topic.messages.splice(msgIdx,1);
+  await saveTopics(sid);
+  toast('Message supprimé');
   render();
 }
 
