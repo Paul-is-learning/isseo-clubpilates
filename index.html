@@ -1009,7 +1009,7 @@ function renderNotifPanel(){
   // Filtre studio
   h+='<select onchange="setNotifFilter(\'studio\',this.value)" style="font-size:9px;padding:3px 6px;border:1px solid #e2e8f0;border-radius:6px;color:#64748b;background:#fff;cursor:pointer">';
   h+='<option value="all"'+(f.studio==='all'?' selected':'')+'>Tous studios</option>';
-  Object.keys(S.studios).forEach(function(sid){h+='<option value="'+sid+'"'+(f.studio===sid?' selected':'')+'>'+S.studios[sid].name+'</option>';});
+  Object.keys(S.studios).forEach(function(sid){if(!S.studios[sid]||!S.studios[sid].name)return;h+='<option value="'+sid+'"'+(f.studio===sid?' selected':'')+'>'+S.studios[sid].name+'</option>';});
   h+='</select>';
   // Filtre période
   h+='<select onchange="setNotifFilter(\'period\',this.value)" style="font-size:9px;padding:3px 6px;border:1px solid #e2e8f0;border-radius:6px;color:#64748b;background:#fff;cursor:pointer">';
@@ -1397,7 +1397,7 @@ function globalSearch(query){
   var q=query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   var results=[];
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
-  var ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
+  var ids=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&(!filter||filter(st));});
   ids.forEach(function(id){
     var s=S.studios[id];
     // Studios
@@ -1584,7 +1584,7 @@ async function setUserRole(uid,role){
 
 function renderDashboard(){
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
-  var allIds=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
+  var allIds=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&st.alertes&&(!filter||filter(st));});
   var isAdmin=!!S.profile&&!isViewer();
 
   // Apply status filter
@@ -4971,7 +4971,7 @@ async function doLogout(){
   render();
 }
 function openDetail(id){S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
-function retourAccueil(){try{S.view='dashboard';S.selectedId=null;saveNavState();render();}catch(e){console.error('retourAccueil error:',e);alert('Erreur: '+e.message);}}
+function retourAccueil(){S.view='dashboard';S.selectedId=null;saveNavState();render();}
 function setMainTab(t){S.mainTab=t;saveNavState();render();}
 var _msgPollInterval=null;
 
@@ -5941,7 +5941,7 @@ function render(){
       if(S.detailTab==='localisation')setTimeout(function(){initLocalisationMap(S.selectedId);},60);
     }
     renderChat();
-  }catch(e){console.error('render() error:',e);alert('Erreur render: '+e.message);}
+  }catch(e){console.error('render() error:',e);}
   _rendering=false;
 }
 
