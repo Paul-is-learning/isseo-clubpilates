@@ -1750,8 +1750,8 @@ function renderAccueil(){
   var _caTotal=allIds.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0);
   var _kpis=[
     {label:'Studios',val:allIds.length,icon:'🏢',click:'setPage(\'projets\')'},
-    {label:'CAPEX total',val:fmt(_capexTotal),icon:'💰'},
-    {label:'CA BP A1',val:fmt(_caTotal),icon:'📈'},
+    {label:'CAPEX total',val:fmt(_capexTotal),icon:'💰',click:'setPage(\'bp\')'},
+    {label:'CA BP A1',val:fmt(_caTotal),icon:'📈',click:'setPage(\'bp\')'},
     {label:'Alertes',val:alertCount,icon:'⚠️',alert:alertCount>0,click:'ouvrirAlertesModal()'}
   ];
   _kpis.forEach(function(k){
