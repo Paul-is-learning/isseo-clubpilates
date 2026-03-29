@@ -658,6 +658,7 @@ var S={
   aiResp:'',aiLoading:false,
   simConfig:{},  // config simulateur par studio : {p4,p8,pi,prix4,prix8,prixi}
   scenarios:{},  // scénarios enregistrés par studio : [{id,auteur,date,ts,config}]
+  activeScenarioId:{}, // ID du scénario actif par studio
   mapFilter:'default',  // filtre carte localisation
   mapZoom:14,           // niveau de zoom carte (1-20)
   mapStreetView:false,  // mode street view
@@ -817,6 +818,7 @@ async function _confirmerScenario(sid){
   };
   if(!S.scenarios[sid])S.scenarios[sid]=[];
   S.scenarios[sid].push(sc);
+  S.activeScenarioId[sid]=sc.id;
   await saveScenarios(sid);
   saveSimConfig(sid);
   var modal=document.getElementById('scenario-modal');
@@ -828,6 +830,7 @@ async function _confirmerScenario(sid){
 function chargerScenario(sid,scenarioId){
   if(scenarioId==='bp_default'){
     S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+    S.activeScenarioId[sid]='bp_default';
     saveSimConfig(sid);
     toast('Valeurs BP par défaut restaurées');
     render();
@@ -837,6 +840,7 @@ function chargerScenario(sid,scenarioId){
   var sc=scenarios.find(function(s){return s.id===scenarioId;});
   if(!sc)return;
   S.simConfig[sid]=JSON.parse(JSON.stringify(sc.config));
+  S.activeScenarioId[sid]=scenarioId;
   saveSimConfig(sid);
   toast('Scénario de '+sc.auteur+' chargé');
   render();
@@ -845,6 +849,18 @@ function chargerScenario(sid,scenarioId){
 async function supprimerScenario(sid,scenarioId){
   if(!confirm('Supprimer ce scénario ?'))return;
   S.scenarios[sid]=(S.scenarios[sid]||[]).filter(function(s){return s.id!==scenarioId;});
+  // Si c'était le scénario actif, revenir au dernier restant ou BP par défaut
+  if(S.activeScenarioId[sid]===scenarioId){
+    var remaining=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+    if(remaining.length){
+      S.activeScenarioId[sid]=remaining[0].id;
+      S.simConfig[sid]=JSON.parse(JSON.stringify(remaining[0].config));
+    } else {
+      S.activeScenarioId[sid]='bp_default';
+      S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+    }
+    saveSimConfig(sid);
+  }
   await saveScenarios(sid);
   toast('Scénario supprimé');
   render();
@@ -5264,15 +5280,10 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
 
   // ── Scénarios enregistrés ──
   var scenarios=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
-  var activeScId=scenarios.length?scenarios[0].id:null;
-  // Déterminer si la config actuelle correspond au dernier scénario ou au BP
-  var cfgStr=JSON.stringify({p4:p4,p8:p8,pi:pi,prix4:num(cfg.prix4,110),prix8:num(cfg.prix8,193.33),prixi:num(cfg.prixi,276.67)});
-  var bpStr=JSON.stringify({p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67});
-  var matchedSc=null;
-  scenarios.forEach(function(sc){
-    if(JSON.stringify({p4:num(sc.config.p4,47),p8:num(sc.config.p8,50),pi:num(sc.config.pi,3),prix4:num(sc.config.prix4,110),prix8:num(sc.config.prix8,193.33),prixi:num(sc.config.prixi,276.67)})===cfgStr)matchedSc=sc.id;
-  });
-  if(cfgStr===bpStr)matchedSc='bp_default';
+  // Déterminer le scénario actif : soit explicitement choisi, soit le dernier enregistré
+  var matchedSc=S.activeScenarioId[sid]||null;
+  if(!matchedSc&&scenarios.length)matchedSc=scenarios[0].id;
+  if(!matchedSc)matchedSc='bp_default';
 
   var h='<div class="box" id="sim-ca-box" style="transition:box-shadow 0.2s,border-color 0.2s" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,0.06)\';this.style.borderColor=\'#c8cdd8\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'\'">';
   // Header avec titre + dropdown scénarios + bouton enregistrer
@@ -5294,9 +5305,9 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   if(!isViewer()){
     h+='<button onclick="enregistrerScenario(\''+sid+'\')" style="display:flex;align-items:center;gap:4px;padding:6px 12px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer</button>';
   }
-  // Bouton supprimer le scénario actif (super admin uniquement)
-  if(isSuperAdmin()&&matchedSc&&matchedSc!=='bp_default'){
-    h+='<button onclick="supprimerScenario(\''+sid+'\',\''+matchedSc+'\')" style="padding:6px 8px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor=\'#A32D2D\'" onmouseout="this.style.borderColor=\'#e0e0da\'" title="Supprimer ce sc&eacute;nario">×</button>';
+  // Bouton supprimer le scénario actif
+  if(!isViewer()&&matchedSc&&matchedSc!=='bp_default'){
+    h+='<button onclick="supprimerScenario(\''+sid+'\',\''+matchedSc+'\')" style="padding:6px 8px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor=\'#A32D2D\'" onmouseout="this.style.borderColor=\'#e0e0da\'" title="Supprimer ce sc&eacute;nario"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
   }
   h+='</div></div>';
 
