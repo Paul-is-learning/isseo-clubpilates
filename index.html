@@ -646,6 +646,9 @@ var S={
   user:null,profile:null,
   studios:JSON.parse(JSON.stringify(INIT)),
   files:{},depenses:{},messages:{},adherents:{},
+  topics:{},todos:{},         // forum topics + todo par studio
+  msgSubTab:'discussions',    // 'discussions' | 'taches'
+  openTopicId:null,           // topic ouvert (vue fil)
   view:'auth',selectedId:null,
   mainTab:'studios',detailTab:'workflow',
   forecastYear:1,forecastSection:'summary',
@@ -684,7 +687,7 @@ async function loadAll(){
   var res=await sb.from('studios').select('id,data');
   var data=res.data||[];
   var studios={};
-  S.files={};S.depenses={};S.messages={};S.adherents={};
+  S.files={};S.depenses={};S.messages={};S.adherents={};S.topics={};S.todos={};
   data.forEach(function(r){
     var id=r.id;
     if(id.endsWith('_files')){S.files[id.slice(0,-6)]=r.data&&r.data.files||[];}
@@ -693,6 +696,8 @@ async function loadAll(){
     else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{},viewers:[]},r.data&&r.data.settings||{});}
     else if(id==='_avatars'){S.avatarUrls=r.data&&r.data.avatars||{};}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
+    else if(id.endsWith('_topics')){S.topics[id.slice(0,-7)]=r.data&&r.data.topics||[];}
+    else if(id.endsWith('_todos')){S.todos[id.slice(0,-6)]=r.data&&r.data.todos||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
     else if(id.endsWith('_simconfig')){
       var sc=r.data&&r.data.config||{};
@@ -948,7 +953,7 @@ function handleNotifClick(notifId,studioId,type){
   S.notifOpen=false;
   if(S.studios[studioId]){
     S.selectedId=studioId;S.view='detail';
-    if(type==='message')S.detailTab='messages';
+    if(type==='message')S.detailTab='echanges';
     else if(type==='document')S.detailTab='fichiers';
     else if(type==='depense')S.detailTab='engagements';
     else if(type==='statut')S.detailTab='workflow';
@@ -1295,7 +1300,7 @@ function globalSearch(query){
     // Messages
     (S.messages[id]||[]).forEach(function(m){
       var mt=(m.text||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-      if(mt.indexOf(q)>=0)results.push({type:'message',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',title:(m.text||'').substring(0,60)+(m.text&&m.text.length>60?'…':''),subtitle:s.name+' · '+(m.user||''),studioId:id,tab:'messages',color:'#3B6FB6'});
+      if(mt.indexOf(q)>=0)results.push({type:'message',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',title:(m.text||'').substring(0,60)+(m.text&&m.text.length>60?'…':''),subtitle:s.name+' · '+(m.user||''),studioId:id,tab:'echanges',color:'#3B6FB6'});
     });
     // Documents
     (S.files[id]||[]).forEach(function(f){
@@ -1575,7 +1580,7 @@ function renderActivityFeed(ids){
     h+='<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucun message</div>';
   } else {
     allMsgs.forEach(function(m){
-      h+='<div onclick="openDetail(\''+m.studioId+'\');setTimeout(function(){setDetailTab(\'messages\')},50)" style="display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #f5f5f0;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=\'#fafaf6\'" onmouseout="this.style.background=\'transparent\'">';
+      h+='<div onclick="openDetail(\''+m.studioId+'\');setTimeout(function(){setDetailTab(\'echanges\')},50)" style="display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #f5f5f0;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=\'#fafaf6\'" onmouseout="this.style.background=\'transparent\'">';
       h+='<div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:'+_aC(m.auteur)+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">'+_ini(m.auteur)+'</div>';
       h+='<div style="min-width:0;flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:600;color:#333">'+m.auteur+'</span><span style="font-size:10px;color:#bbb">'+m.date+'</span></div>';
       h+='<div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">'+((m.texte||'').substring(0,55)+(m.texte.length>55?'…':''))+'</div>';
@@ -1709,13 +1714,13 @@ function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
   var isAdmin=!!S.profile&&!isViewer();
-  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['messages','Messages'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Échanges'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   var content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
   else if(S.detailTab==='adherents')content=renderAdherents(S.selectedId,s);
   else if(S.detailTab==='forecast')content=renderForecast(S.selectedId,s);
   else if(S.detailTab==='engagements')content=renderEngagements(S.selectedId,s);
-  else if(S.detailTab==='messages')content=renderMessages(S.selectedId);
+  else if(S.detailTab==='echanges')content=renderEchanges(S.selectedId);
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
   else if(S.detailTab==='alertes')content=renderAlertes(S.selectedId,s);
@@ -2999,6 +3004,343 @@ async function rechargerMessages(sid){
   }
 }
 
+// ══════════════════════════════════════════════════════════════════════
+// ── Échanges : Forum Topics + Tâches ──────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════
+
+function renderEchanges(sid){
+  var h='<div>';
+  // Sous-onglets
+  h+='<div style="display:flex;gap:0;margin-bottom:16px;border-bottom:2px solid #f0f0ea">';
+  var subTabs=[{id:'discussions',label:'Discussions',icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'},{id:'taches',label:'Tâches',icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'}];
+  subTabs.forEach(function(st){
+    var active=S.msgSubTab===st.id;
+    h+='<button onclick="S.msgSubTab=\''+st.id+'\';S.openTopicId=null;render()" style="display:flex;align-items:center;gap:6px;padding:10px 20px;border:none;background:transparent;cursor:pointer;font-size:13px;font-weight:'+(active?'600':'400')+';color:'+(active?'#1a3a6b':'#888')+';border-bottom:2px solid '+(active?'#1a3a6b':'transparent')+';margin-bottom:-2px;transition:all 0.15s">'+st.icon+' '+st.label;
+    // Badge count
+    if(st.id==='discussions'){var tc=(S.topics[sid]||[]).length;if(tc>0)h+='<span style="background:#f0f4ff;color:#1a3a6b;font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;margin-left:2px">'+tc+'</span>';}
+    if(st.id==='taches'){var pending=(S.todos[sid]||[]).filter(function(t){return t.statut!=='done';}).length;if(pending>0)h+='<span style="background:#FEF3C7;color:#854F0B;font-size:10px;font-weight:600;padding:1px 6px;border-radius:8px;margin-left:2px">'+pending+'</span>';}
+    h+='</button>';
+  });
+  h+='</div>';
+  if(S.msgSubTab==='discussions')h+=renderDiscussions(sid);
+  else h+=renderTaches(sid);
+  h+='</div>';
+  return h;
+}
+
+// ── DISCUSSIONS (Forum Topics) ──────────────────────────────────────────
+
+function renderDiscussions(sid){
+  if(S.openTopicId)return renderTopicThread(sid,S.openTopicId);
+  return renderTopicList(sid);
+}
+
+function renderTopicList(sid){
+  var topics=(S.topics[sid]||[]).slice().sort(function(a,b){
+    // Non-closed first, then by latest activity
+    if(a.closed!==b.closed)return a.closed?1:-1;
+    var aLast=a.messages&&a.messages.length?a.messages[a.messages.length-1].ts:a.ts;
+    var bLast=b.messages&&b.messages.length?b.messages[b.messages.length-1].ts:b.ts;
+    return (bLast||'').localeCompare(aLast||'');
+  });
+  var h='';
+  if(!isViewer()){
+    h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px">';
+    h+='<button onclick="ouvrirFormTopic(\''+sid+'\')" style="display:flex;align-items:center;gap:5px;padding:8px 16px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.15s" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouveau sujet</button>';
+    h+='</div>';
+  }
+  if(!topics.length){
+    h+='<div class="box" style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:8px">💬</div><div style="color:#888;font-size:13px">Aucune discussion pour le moment</div><div style="color:#bbb;font-size:11px;margin-top:4px">Créez un sujet pour lancer la conversation</div></div>';
+    return h;
+  }
+  h+='<div style="display:flex;flex-direction:column;gap:8px">';
+  topics.forEach(function(t){
+    var msgCount=t.messages?t.messages.length:0;
+    var lastMsg=msgCount?t.messages[msgCount-1]:null;
+    var lastDate=lastMsg?lastMsg.date:t.date;
+    var lastAuteur=lastMsg?lastMsg.auteur:t.auteur;
+    h+='<div onclick="S.openTopicId=\''+t.id+'\';render()" style="background:#fff;border:0.5px solid '+(t.closed?'#e8e8e3':'#e0e0d8')+';border-radius:10px;padding:14px 18px;cursor:pointer;transition:all 0.15s;opacity:'+(t.closed?'0.6':'1')+'" onmouseover="this.style.borderColor=\'#bbb\';this.style.boxShadow=\'0 2px 8px rgba(0,0,0,0.04)\'" onmouseout="this.style.borderColor=\''+(t.closed?'#e8e8e3':'#e0e0d8')+'\';this.style.boxShadow=\'none\'">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">';
+    h+='<div style="min-width:0;flex:1">';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px"><span style="font-size:13px;font-weight:600;color:#1a1a1a">'+t.titre+'</span>';
+    if(t.closed)h+='<span style="font-size:9px;background:#f0f0ea;color:#888;padding:1px 6px;border-radius:6px">Clôturé</span>';
+    h+='</div>';
+    h+='<div style="font-size:11px;color:#888">Créé par <span style="font-weight:500;color:#555">'+t.auteur+'</span> · '+t.date+'</div>';
+    h+='</div>';
+    h+='<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">';
+    h+='<div style="display:flex;align-items:center;gap:4px;font-size:11px;color:#888"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg> '+msgCount+'</div>';
+    h+='<div style="text-align:right"><div style="font-size:10px;color:#bbb">Dernière activité</div><div style="font-size:10px;color:#666;font-weight:500">'+lastDate+'</div></div>';
+    h+='</div></div></div>';
+  });
+  h+='</div>';
+  return h;
+}
+
+function renderTopicThread(sid,topicId){
+  var topics=S.topics[sid]||[];
+  var topic=topics.find(function(t){return t.id===topicId;});
+  if(!topic)return '<div class="box">Topic introuvable</div>';
+  var msgs=topic.messages||[];
+  var me=(S.profile&&S.profile.nom)||'';
+  var h='';
+  // Header
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+  h+='<div style="display:flex;align-items:center;gap:10px">';
+  h+='<button onclick="S.openTopicId=null;render()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0">← Retour</button>';
+  h+='<span style="font-size:15px;font-weight:700;color:#1a1a1a">'+topic.titre+'</span>';
+  if(topic.closed)h+='<span style="font-size:9px;background:#f0f0ea;color:#888;padding:2px 8px;border-radius:6px">Clôturé</span>';
+  h+='</div>';
+  if(!topic.closed&&!isViewer()&&(topic.auteur===me||isSuperAdmin())){
+    h+='<button onclick="fermerTopic(\''+sid+'\',\''+topicId+'\')" style="font-size:11px;color:#888;background:none;border:1px solid #e0e0da;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor=\'#bbb\'" onmouseout="this.style.borderColor=\'#e0e0da\'">Clôturer</button>';
+  }
+  h+='</div>';
+  h+='<div style="font-size:11px;color:#888;margin-bottom:14px">Par '+topic.auteur+' · '+topic.date+'</div>';
+  // Messages
+  h+='<div class="box" style="padding:0;overflow:hidden">';
+  h+='<div id="topic-msgs" style="height:380px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">';
+  if(!msgs.length)h+='<div style="text-align:center;color:#aaa;font-size:12px;padding:20px">Aucune réponse pour le moment</div>';
+  msgs.forEach(function(m){
+    var isMe=m.auteur===me;
+    h+='<div style="display:flex;flex-direction:'+(isMe?'row-reverse':'row')+';align-items:flex-end;gap:8px">';
+    h+=avatarHTML(m.auteur,32);
+    h+='<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';max-width:72%">';
+    h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' &mdash; '+m.date+'</div>';
+    h+='<div style="background:'+(isMe?'#1a3a6b':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
+    h+='</div></div>';
+  });
+  h+='</div>';
+  // Input
+  if(!topic.closed&&!isViewer()){
+    h+='<div style="border-top:0.5px solid #e0e0d8;padding:12px 16px;display:flex;gap:8px;background:#fff">';
+    h+='<input id="topic-reply-input" type="text" placeholder="Votre réponse..." onkeydown="if(event.key===\'Enter\'){event.preventDefault();repondreTopic(\''+sid+'\',\''+topicId+'\');}" style="flex:1;padding:8px 12px;border:0.5px solid #ddd;border-radius:8px;font-size:13px;outline:none" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#ddd\'">';
+    h+='<button onclick="repondreTopic(\''+sid+'\',\''+topicId+'\')" style="padding:8px 16px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">Envoyer</button>';
+    h+='</div>';
+  } else if(topic.closed){
+    h+='<div style="border-top:0.5px solid #e0e0d8;padding:10px 16px;background:#f8f9fb;text-align:center;font-size:11px;color:#aaa">Ce sujet est clôturé</div>';
+  }
+  h+='</div>';
+  setTimeout(function(){var el=document.getElementById('topic-msgs');if(el)el.scrollTop=el.scrollHeight;},50);
+  return h;
+}
+
+function ouvrirFormTopic(sid){
+  var overlay=document.createElement('div');
+  overlay.id='topic-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var box='<div style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  box+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><span style="font-size:15px;font-weight:700;color:#1a1a1a">Nouveau sujet</span><button onclick="document.getElementById(\'topic-modal\').remove()" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;padding:0;line-height:1">&times;</button></div>';
+  box+='<label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Titre du sujet</label>';
+  box+='<input id="new-topic-title" type="text" placeholder="Ex: Négociation bail commercial" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:14px;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#ddd\'">';
+  box+='<label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Premier message</label>';
+  box+='<textarea id="new-topic-body" rows="3" placeholder="Décrivez le sujet..." style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:18px;box-sizing:border-box;outline:none;resize:vertical;font-family:inherit" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#ddd\'"></textarea>';
+  box+='<button onclick="creerTopic(\''+sid+'\')" style="width:100%;padding:11px;background:#1a3a6b;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.15s" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">Créer le sujet</button>';
+  box+='</div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var el=document.getElementById('new-topic-title');if(el)el.focus();},80);
+}
+
+async function creerTopic(sid){
+  var titre=(document.getElementById('new-topic-title')||{}).value;
+  var body=(document.getElementById('new-topic-body')||{}).value;
+  if(!titre||!titre.trim()){toast('Saisissez un titre');return;}
+  var now=new Date();
+  var me=(S.profile&&S.profile.nom)||'';
+  var topic={
+    id:'topic_'+Date.now(),
+    titre:titre.trim(),
+    auteur:me,
+    date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    ts:now.toISOString(),
+    closed:false,
+    messages:[]
+  };
+  if(body&&body.trim()){
+    topic.messages.push({auteur:me,texte:body.trim(),date:topic.date,ts:now.toISOString()});
+  }
+  if(!S.topics[sid])S.topics[sid]=[];
+  S.topics[sid].push(topic);
+  await saveTopics(sid);
+  var modal=document.getElementById('topic-modal');if(modal)modal.remove();
+  S.openTopicId=topic.id;
+  notifyAll({type:'message',studio_id:sid,title:'Nouveau sujet — '+(S.studios[sid]?S.studios[sid].name:sid),body:titre.trim()});
+  render();
+  toast('Sujet créé');
+}
+
+async function repondreTopic(sid,topicId){
+  var input=document.getElementById('topic-reply-input');
+  var texte=input&&input.value&&input.value.trim();
+  if(!texte)return;
+  if(input)input.value='';
+  var topics=S.topics[sid]||[];
+  var topic=topics.find(function(t){return t.id===topicId;});
+  if(!topic)return;
+  var now=new Date();
+  topic.messages.push({
+    auteur:(S.profile&&S.profile.nom)||'',
+    texte:texte,
+    date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    ts:now.toISOString()
+  });
+  await saveTopics(sid);
+  notifyAll({type:'message',studio_id:sid,title:'Réponse — '+topic.titre,body:texte.length>80?texte.slice(0,80)+'…':texte});
+  render();
+  setTimeout(function(){var el=document.getElementById('topic-msgs');if(el)el.scrollTop=el.scrollHeight;},50);
+}
+
+async function fermerTopic(sid,topicId){
+  var topics=S.topics[sid]||[];
+  var topic=topics.find(function(t){return t.id===topicId;});
+  if(!topic)return;
+  topic.closed=true;
+  await saveTopics(sid);
+  toast('Sujet clôturé');
+  render();
+}
+
+async function saveTopics(sid){
+  await sb.from('studios').upsert({id:sid+'_topics',data:{topics:S.topics[sid]||[]},updated_at:new Date().toISOString()});
+}
+
+// ── TÂCHES (Todo List) ──────────────────────────────────────────────────
+
+var TACHE_STATUTS={todo:{label:'À faire',bg:'#FEF3C7',text:'#854F0B',icon:'○'},doing:{label:'En cours',bg:'#DBEAFE',text:'#1D4ED8',icon:'◐'},done:{label:'Terminé',bg:'#D1FAE5',text:'#065F46',icon:'✓'}};
+
+function renderTaches(sid){
+  var todos=(S.todos[sid]||[]).slice();
+  // Sort: doing first, then todo, then done
+  var order={doing:0,todo:1,done:2};
+  todos.sort(function(a,b){return (order[a.statut]||1)-(order[b.statut]||1)||((b.ts||'').localeCompare(a.ts||''));});
+  var h='';
+  if(!isViewer()){
+    h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px">';
+    h+='<button onclick="ouvrirFormTache(\''+sid+'\')" style="display:flex;align-items:center;gap:5px;padding:8px 16px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;transition:opacity 0.15s" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouvelle tâche</button>';
+    h+='</div>';
+  }
+  if(!todos.length){
+    h+='<div class="box" style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:8px">✅</div><div style="color:#888;font-size:13px">Aucune tâche pour le moment</div><div style="color:#bbb;font-size:11px;margin-top:4px">Créez une tâche pour organiser le projet</div></div>';
+    return h;
+  }
+  h+='<div style="display:flex;flex-direction:column;gap:6px">';
+  todos.forEach(function(t,i){
+    var st=TACHE_STATUTS[t.statut]||TACHE_STATUTS.todo;
+    var isDone=t.statut==='done';
+    var today=new Date().toISOString().slice(0,10);
+    var overdue=t.deadline&&t.deadline<today&&!isDone;
+    var soon=t.deadline&&!overdue&&!isDone&&t.deadline<=new Date(Date.now()+7*86400000).toISOString().slice(0,10);
+    h+='<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:12px 16px;transition:all 0.15s;opacity:'+(isDone?'0.55':'1')+'">';
+    h+='<div style="display:flex;align-items:center;gap:12px">';
+    // Status toggle
+    if(!isViewer()){
+      h+='<button onclick="event.stopPropagation();toggleTacheStatut(\''+sid+'\',\''+t.id+'\')" title="'+st.label+'" style="width:26px;height:26px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;line-height:1">'+st.icon+'</button>';
+    } else {
+      h+='<div style="width:26px;height:26px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">'+st.icon+'</div>';
+    }
+    // Content
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-size:13px;font-weight:600;color:#1a1a1a;'+(isDone?'text-decoration:line-through;':'')+'">'+t.titre+'</div>';
+    if(t.description)h+='<div style="font-size:11px;color:#888;margin-top:2px;'+(isDone?'text-decoration:line-through;':'')+'">'+t.description+'</div>';
+    h+='</div>';
+    // Right side: responsable + deadline
+    h+='<div style="display:flex;align-items:center;gap:10px;flex-shrink:0">';
+    if(t.responsable){
+      h+='<div style="display:flex;align-items:center;gap:5px" title="Responsable">'+avatarHTML(t.responsable,22)+'<span style="font-size:11px;color:#555;font-weight:500;white-space:nowrap">'+t.responsable+'</span></div>';
+    }
+    if(t.deadline){
+      var dlabel=new Date(t.deadline+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+      h+='<span style="font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px;white-space:nowrap;';
+      if(overdue)h+='background:#FEE2E2;color:#991B1B" title="En retard">⚠ '+dlabel;
+      else if(soon)h+='background:#FEF3C7;color:#854F0B" title="Bientôt">'+dlabel;
+      else h+='background:#f0f0ea;color:#666">'+dlabel;
+      h+='</span>';
+    }
+    if(!isViewer())h+='<button onclick="event.stopPropagation();supprimerTache(\''+sid+'\',\''+t.id+'\')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color=\'#A32D2D\'" onmouseout="this.style.color=\'#ccc\'" title="Supprimer">×</button>';
+    h+='</div></div></div>';
+  });
+  h+='</div>';
+  // Summary bar
+  var doneCount=todos.filter(function(t){return t.statut==='done';}).length;
+  var total=todos.length;
+  var pct=total?Math.round(doneCount/total*100):0;
+  h+='<div style="margin-top:12px;display:flex;align-items:center;gap:10px;font-size:11px;color:#888"><div style="flex:1;background:#e8e8e0;border-radius:4px;height:5px"><div style="width:'+pct+'%;background:#1D9E75;border-radius:4px;height:5px;transition:width 0.3s"></div></div><span>'+doneCount+'/'+total+' terminées</span></div>';
+  return h;
+}
+
+function ouvrirFormTache(sid){
+  var profiles=S._allProfiles||[];
+  var overlay=document.createElement('div');
+  overlay.id='tache-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var box='<div style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  box+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px"><span style="font-size:15px;font-weight:700;color:#1a1a1a">Nouvelle tâche</span><button onclick="document.getElementById(\'tache-modal\').remove()" style="background:none;border:none;font-size:20px;color:#999;cursor:pointer;padding:0;line-height:1">&times;</button></div>';
+  box+='<label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Titre</label>';
+  box+='<input id="new-tache-titre" type="text" placeholder="Ex: Finaliser le bail" style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:12px;box-sizing:border-box;outline:none" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#ddd\'">';
+  box+='<label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Description (optionnel)</label>';
+  box+='<textarea id="new-tache-desc" rows="2" placeholder="Détails..." style="width:100%;padding:10px 12px;border:1px solid #ddd;border-radius:8px;font-size:13px;margin-bottom:12px;box-sizing:border-box;outline:none;resize:vertical;font-family:inherit" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#ddd\'"></textarea>';
+  box+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:18px">';
+  box+='<div><label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Responsable</label>';
+  box+='<select id="new-tache-resp" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;background:#fff;outline:none;cursor:pointer"><option value="">— Choisir —</option>';
+  profiles.forEach(function(p){box+='<option value="'+((p.nom||'').replace(/"/g,'&quot;'))+'">'+p.nom+'</option>';});
+  box+='</select></div>';
+  box+='<div><label style="font-size:11px;font-weight:600;color:#666;display:block;margin-bottom:4px">Deadline</label>';
+  box+='<input id="new-tache-deadline" type="date" style="width:100%;padding:9px 10px;border:1px solid #ddd;border-radius:8px;font-size:12px;outline:none;box-sizing:border-box"></div>';
+  box+='</div>';
+  box+='<button onclick="creerTache(\''+sid+'\')" style="width:100%;padding:11px;background:#1a3a6b;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:700;cursor:pointer;transition:opacity 0.15s" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">Créer la tâche</button>';
+  box+='</div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var el=document.getElementById('new-tache-titre');if(el)el.focus();},80);
+}
+
+async function creerTache(sid){
+  var titre=(document.getElementById('new-tache-titre')||{}).value;
+  var desc=(document.getElementById('new-tache-desc')||{}).value;
+  var resp=(document.getElementById('new-tache-resp')||{}).value;
+  var deadline=(document.getElementById('new-tache-deadline')||{}).value;
+  if(!titre||!titre.trim()){toast('Saisissez un titre');return;}
+  var now=new Date();
+  if(!S.todos[sid])S.todos[sid]=[];
+  S.todos[sid].push({
+    id:'todo_'+Date.now(),
+    titre:titre.trim(),
+    description:(desc||'').trim(),
+    responsable:resp||'',
+    deadline:deadline||'',
+    statut:'todo',
+    auteur:(S.profile&&S.profile.nom)||'',
+    ts:now.toISOString()
+  });
+  await saveTodos(sid);
+  var modal=document.getElementById('tache-modal');if(modal)modal.remove();
+  toast('Tâche créée');
+  render();
+}
+
+async function toggleTacheStatut(sid,todoId){
+  var todos=S.todos[sid]||[];
+  var t=todos.find(function(x){return x.id===todoId;});
+  if(!t)return;
+  var cycle={todo:'doing',doing:'done',done:'todo'};
+  t.statut=cycle[t.statut]||'todo';
+  await saveTodos(sid);
+  render();
+}
+
+async function supprimerTache(sid,todoId){
+  if(!confirm('Supprimer cette tâche ?'))return;
+  S.todos[sid]=(S.todos[sid]||[]).filter(function(t){return t.id!==todoId;});
+  await saveTodos(sid);
+  toast('Tâche supprimée');
+  render();
+}
+
+async function saveTodos(sid){
+  await sb.from('studios').upsert({id:sid+'_todos',data:{todos:S.todos[sid]||[]},updated_at:new Date().toISOString()});
+}
+
 var MAP_FILTERS=[
   {id:'default',  label:'Vue générale',    icon:'🗺️', q:null},
   {id:'commerces',label:'Commerces',       icon:'🛍️', q:'commerces restaurants cafés boutiques'},
@@ -4194,10 +4536,11 @@ function setDetailTab(t){
   // Arrêter le polling précédent
   if(_msgPollInterval){clearInterval(_msgPollInterval);_msgPollInterval=null;}
   // Démarrer le polling si on est sur l'onglet messages
-  if(t==='messages'&&S.selectedId){
+  if(t==='echanges'){S.openTopicId=null;}
+  if(t==='echanges'&&S.selectedId){
     rechargerMessages(S.selectedId);
     _msgPollInterval=setInterval(function(){
-      if(S.detailTab==='messages'&&S.selectedId){rechargerMessages(S.selectedId);}
+      if(S.detailTab==='echanges'&&S.selectedId){rechargerMessages(S.selectedId);}
       else{clearInterval(_msgPollInterval);_msgPollInterval=null;}
     },8000); // toutes les 8 secondes
   }
