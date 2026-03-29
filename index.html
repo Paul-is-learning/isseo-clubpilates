@@ -1202,22 +1202,27 @@ function userAvatarWidget(profile){
   if(!profile)return '';
   var nom=profile.nom||'';
   var unread=S.notifications.filter(function(n){return!n.read;}).length;
-  var h='<div style="display:flex;align-items:center;gap:9px">';
-  // Cloche notifications
+  var h='<div style="display:flex;align-items:center;gap:6px">';
+  // 1. Cloche notifications (SVG moderne)
   h+='<div style="position:relative" onclick="event.stopPropagation();toggleNotifPanel()">';
-  h+='<button title="Notifications" style="background:none;border:1px solid #e0e0da;border-radius:50%;width:34px;height:34px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:16px;color:#555;transition:all 0.2s;position:relative" onmouseover="this.style.background=\'#f0f4ff\';this.style.borderColor=\'#3B6FB6\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e0e0da\'">\uD83D\uDD14</button>';
-  h+='<div id="notif-badge" style="display:'+(unread>0?'flex':'none')+';position:absolute;top:-3px;right:-3px;background:#dc2626;color:#fff;font-size:9px;font-weight:700;min-width:17px;height:17px;border-radius:9px;align-items:center;justify-content:center;padding:0 4px;border:2px solid #fff;line-height:1">'+(unread>99?'99+':unread)+'</div>';
+  h+='<button title="Notifications" style="background:none;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative" onmouseover="this.style.background=\'rgba(26,58,107,0.08)\'" onmouseout="this.style.background=\'none\'">';
+  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+  h+='</button>';
+  h+='<div id="notif-badge" style="display:'+(unread>0?'flex':'none')+';position:absolute;top:1px;right:1px;background:#ef4444;color:#fff;font-size:8px;font-weight:700;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 4px;border:2px solid #faf9f6;line-height:1;box-shadow:0 1px 3px rgba(239,68,68,0.4)">'+(unread>99?'99+':unread)+'</div>';
   if(S.notifOpen)h+=renderNotifPanel();
   h+='</div>';
-  // Avatar cliquable
+  // 2. Cadenas mot de passe (SVG moderne)
+  h+='<button onclick="openChangePassword()" title="Modifier mot de passe" style="background:none;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background=\'rgba(26,58,107,0.08)\'" onmouseout="this.style.background=\'none\'">';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16.5" r="1.5"/></svg>';
+  h+='</button>';
+  // 3. Avatar cliquable (sans nom)
   h+='<div style="position:relative;cursor:pointer;flex-shrink:0" onclick="document.getElementById(\'avatar-upload-input\').click()" title="Changer ma photo de profil">';
-  h+=avatarHTML(nom,38);
-  h+='<div style="position:absolute;bottom:0;right:0;background:#276749;border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;font-size:8px;color:#fff;border:1.5px solid #fff;line-height:1">\u270E</div>';
+  h+=avatarHTML(nom,36);
+  h+='<div style="position:absolute;bottom:-1px;right:-1px;background:#1a3a6b;border-radius:50%;width:14px;height:14px;display:flex;align-items:center;justify-content:center;border:1.5px solid #faf9f6">';
+  h+='<svg width="7" height="7" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+  h+='</div>';
   h+='</div>';
   h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
-  // Nom + bouton mdp
-  h+='<span style="font-size:12px;background:#f0f0ea;padding:4px 12px;border-radius:20px;font-weight:500">'+nom+'</span>';
-  h+='<button onclick="openChangePassword()" title="Modifier mot de passe" style="background:none;border:1px solid #e0e0da;border-radius:50%;width:32px;height:32px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;color:#666;transition:all 0.2s" onmouseover="this.style.background=\'#f0f0ea\';this.style.borderColor=\'#ccc\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e0e0da\'">&#128274;</button>';
   h+='</div>';
   return h;
 }
@@ -1330,7 +1335,7 @@ function renderDashboard(){
   h+='<div style="display:flex;align-items:center;gap:12px">'+LI+COLLAB_SEP+LC+'</div>';
   h+='<div style="display:flex;align-items:center;gap:10px">';
   h+=userAvatarWidget(S.profile);
-  h+='<button class="btn" onclick="doLogout()">Deconnexion</button></div></div>';
+  h+='<button onclick="doLogout()" title="Déconnexion" style="background:none;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background=\'rgba(220,38,38,0.08)\'" onmouseout="this.style.background=\'none\'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></div></div>';
   h+='<div class="kpis">';
   h+='<div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">'+ids.length+'</div></div>';
   h+='<div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+S.studios[id].capex;},0))+'</div></div>';
