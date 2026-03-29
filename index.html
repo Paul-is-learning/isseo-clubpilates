@@ -842,18 +842,17 @@ function chargerScenario(sid,scenarioId){
   if(scenarioId==='bp_default'){
     S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
     S.activeScenarioId[sid]='bp_default';
-    saveSimConfig(sid);
-    toast('Valeurs BP par défaut restaurées');
-    render();
-    return;
+  } else {
+    var scenarios=S.scenarios[sid]||[];
+    var sc=scenarios.find(function(s){return s.id===scenarioId;});
+    if(!sc)return;
+    S.simConfig[sid]=JSON.parse(JSON.stringify(sc.config));
+    S.activeScenarioId[sid]=scenarioId;
   }
-  var scenarios=S.scenarios[sid]||[];
-  var sc=scenarios.find(function(s){return s.id===scenarioId;});
-  if(!sc)return;
-  S.simConfig[sid]=JSON.parse(JSON.stringify(sc.config));
-  S.activeScenarioId[sid]=scenarioId;
-  saveSimConfig(sid);
-  toast('Scénario de '+sc.auteur+' chargé');
+  // Sauvegarder immédiatement (pas de debounce) pour éviter les conflits
+  try{localStorage.setItem('isseo_sim_'+sid,JSON.stringify(S.simConfig[sid]));}catch(e){}
+  sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
+  toast(scenarioId==='bp_default'?'Valeurs BP par défaut restaurées':'Scénario chargé');
   render();
 }
 
@@ -2363,7 +2362,8 @@ function renderAdherents(sid,s){
 
   // ── Scénario actif — bandeau informatif ──
   var _scList=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
-  var _lastSc=_scList.length?_scList[0]:null;
+  var _activeId=S.activeScenarioId[sid]||(_scList.length?_scList[0].id:null);
+  var _lastSc=_activeId&&_activeId!=='bp_default'?_scList.find(function(s){return s.id===_activeId;}):null;
   if(_lastSc){
     h+='<div style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #d0dffa;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;cursor:default;transition:all 0.2s;position:relative" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.12)\';this.style.borderColor=\'#a0bfef\';var t=this.querySelector(\'.sc-tooltip\');if(t)t.style.opacity=\'1\';t.style.transform=\'translateY(0)\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'#d0dffa\';var t=this.querySelector(\'.sc-tooltip\');if(t)t.style.opacity=\'0\';t.style.transform=\'translateY(4px)\'">';
     h+='<div style="width:32px;height:32px;border-radius:50%;background:#1a3a6b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div>';
