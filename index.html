@@ -1991,19 +1991,33 @@ function renderProspection(){
   } else {
     liens.forEach(function(l){
       var gIdx=S.prospects.indexOf(l);
+      var pv=l.preview||{};
       h+='<div class="prospect-card" style="border-left-color:'+accentColor+'">';
+      // Image preview en haut si disponible
+      if(pv.image){
+        h+='<div style="margin:-14px -16px 12px;border-radius:10px 10px 0 0;overflow:hidden;max-height:160px">';
+        h+='<a href="'+l.url+'" target="_blank"><img src="'+pv.image+'" style="width:100%;height:160px;object-fit:cover;display:block" onerror="this.parentNode.parentNode.style.display=\'none\'"></a>';
+        h+='</div>';
+      }
       h+='<div style="display:flex;align-items:flex-start;gap:12px">';
       // Icone lien
       h+='<div style="width:38px;height:38px;border-radius:10px;background:'+accentColor+'0D;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px">';
       h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+accentColor+'" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></div>';
       h+='<div style="flex:1;min-width:0">';
       h+='<a href="'+l.url+'" target="_blank" style="font-size:13px;font-weight:600;color:'+accentColor+';text-decoration:none;display:block;margin-bottom:2px" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">'+(l.titre||l.url)+'</a>';
-      h+='<div style="font-size:10px;color:#888">Partagé par <b style="color:#555">'+(l.auteur||'—')+'</b> · '+(l.date||'')+'</div>';
+      if(pv.description)h+='<div style="font-size:11px;color:#666;line-height:1.4;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+pv.description+'</div>';
+      h+='<div style="font-size:10px;color:#888;display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+      h+='<span>Partagé par <b style="color:#555">'+(l.auteur||'—')+'</b> · '+(l.date||'')+'</span>';
+      if(pv.publisher)h+='<span style="background:#f0f0ea;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600;color:#666">'+pv.publisher+'</span>';
+      h+='</div>';
       // Stars
       h+=renderStarRating(l,gIdx);
       h+='</div>';
-      // Delete
-      h+='<button onclick="event.stopPropagation();supprimerProspect('+gIdx+')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;padding:4px;flex-shrink:0;transition:color .15s" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#ccc\'" title="Supprimer">&times;</button>';
+      // Actions (refresh + delete)
+      h+='<div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0">';
+      h+='<button onclick="event.stopPropagation();refreshLinkPreview('+gIdx+')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:4px;transition:color .15s" onmouseover="this.style.color=\''+accentColor+'\'" onmouseout="this.style.color=\'#ccc\'" title="Actualiser les infos">↻</button>';
+      h+='<button onclick="event.stopPropagation();supprimerProspect('+gIdx+')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:18px;padding:4px;transition:color .15s" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#ccc\'" title="Supprimer">&times;</button>';
+      h+='</div>';
       h+='</div>';
       // Comments
       h+=renderCommentThread(l,gIdx);
@@ -2068,8 +2082,32 @@ function ajouterLienProspect(){
   var titre=prompt('Titre (optionnel) :','')||'';
   var prenom=(S.profile&&S.profile.nom||'').split(' ')[0]||'';
   if(!S.prospects)S.prospects=[];
-  S.prospects.push({type:'lien',url:url,titre:titre,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[]});
-  saveProspects();render();toast('Lien ajouté');
+  var item={type:'lien',url:url,titre:titre,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[],preview:null};
+  S.prospects.push(item);
+  saveProspects();render();toast('Lien ajouté — récupération des infos…');
+  fetchLinkPreview(item);
+}
+function fetchLinkPreview(item){
+  fetch('https://api.microlink.io?url='+encodeURIComponent(item.url))
+    .then(function(r){return r.json();})
+    .then(function(data){
+      if(data.status==='success'&&data.data){
+        var d=data.data;
+        item.preview={
+          title:d.title||'',
+          description:d.description||'',
+          image:d.image&&d.image.url||'',
+          publisher:d.publisher||''
+        };
+        if(!item.titre&&d.title)item.titre=d.title;
+        saveProspects();render();
+      }
+    })
+    .catch(function(e){console.warn('LinkPreview error:',e);});
+}
+function refreshLinkPreview(idx){
+  var p=S.prospects[idx];if(!p||p.type!=='lien')return;
+  toast('Actualisation…');fetchLinkPreview(p);
 }
 function ajouterFicheProspect(){
   var adresse=prompt('Adresse du local :');if(!adresse)return;
@@ -2103,8 +2141,13 @@ async function saveProspects(){
 async function loadProspects(){
   try{
     var res=await sb.from('studios').select('data').eq('id','_prospects').single();
-    if(res.data&&res.data.data&&res.data.data.items){S.prospects=res.data.data.items;migrateProspects();}
+    if(res.data&&res.data.data&&res.data.data.items){S.prospects=res.data.data.items;migrateProspects();fetchMissingPreviews();}
   }catch(e){}
+}
+function fetchMissingPreviews(){
+  (S.prospects||[]).forEach(function(p){
+    if(p.type==='lien'&&!p.preview&&p.url)fetchLinkPreview(p);
+  });
 }
 
 // ── Prospection: helpers ───────────────────────────────────────────────
