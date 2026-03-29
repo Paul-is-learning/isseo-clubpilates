@@ -2182,7 +2182,7 @@ function _extractLoyerAdresse(text){
     if(m){
       var v=m[1].replace(/\s/g,'').replace(',','.');
       var n=parseFloat(v);
-      if(n>0&&n<500000){result.loyer=n;break;}
+      if(n>=3000&&n<=8000){result.loyer=n;break;}
     }
   }
   // Adresse : chercher code postal + ville, ou rue/avenue/boulevard + ville
@@ -2274,6 +2274,10 @@ function fetchMissingPreviews(){
       var extracted=_extractLoyerAdresse(fullText);
       if(extracted.loyer){p.loyer_extrait=extracted.loyer;changed=true;}
       if(extracted.adresse){p.adresse_extraite=extracted.adresse;changed=true;}
+    }
+    // Nettoyer loyers hors plage 3000-8000
+    if(p.type==='lien'&&p.loyer_extrait&&(p.loyer_extrait<3000||p.loyer_extrait>8000)){
+      delete p.loyer_extrait;changed=true;
     }
   });
   if(changed){saveProspects();render();}
