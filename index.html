@@ -2086,7 +2086,7 @@ function renderProspection(){
       // Badges loyer & adresse extraits
       if(l.loyer_extrait||l.adresse_extraite){
         h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0">';
-        if(l.loyer_extrait)h+='<span style="display:inline-flex;align-items:center;gap:3px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">'+l.loyer_extrait.toLocaleString('fr-FR')+' €</span>';
+        if(l.loyer_extrait)h+='<span style="display:inline-flex;align-items:center;gap:3px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">'+l.loyer_extrait.toLocaleString('fr-FR')+' €/mois'+(l.loyer_type==='annuel'?' <span style="font-weight:400;font-size:8px;opacity:0.7">(conv. annuel)</span>':'')+'</span>';
         if(l.adresse_extraite)h+='<span style="display:inline-flex;align-items:center;gap:3px;background:#EDE9FE;color:#5B21B6;font-size:9px;font-weight:500;padding:2px 7px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+l.adresse_extraite+'</span>';
         h+='</div>';
       }
@@ -2168,59 +2168,108 @@ function ajouterLienProspect(){
   saveProspects();render();toast('Lien ajouté — récupération des infos…');
   fetchLinkPreview(item);
 }
-function _extractLoyerAdresse(text){
-  var result={loyer:null,adresse:null};
-  if(!text)return result;
-  // Loyer : collecter TOUS les montants € trouvés, puis filtrer 3000-8000
-  var allAmounts=[];
-  // Pattern 1 : montant suivi de €/EUR avec contexte loyer/mois/HC/HT (prioritaire)
-  var p1=/(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)\s*(?:\/\s*(?:mois|m(?:ens)?|an)|par\s+mois|mensuel|HC|HT|CC|charges?\s*comprises?|hors\s+(?:charges|taxes))?/gi;
-  var m;while((m=p1.exec(text))!==null){
-    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
-    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:1});
+function _parseAmount(raw){
+  if(!raw)return NaN;
+  return parseFloat(raw.replace(/[\s\u00a0\u202f]/g,'').replace(',','.'));
+}
+function _extractLoyerAdresse(text,extraData){
+  var result={loyer:null,loyer_type:null,adresse:null};
+  if(!text&&!extraData)return result;
+  var t=(text||'').replace(/\u00a0/g,' ');
+
+  // ─── LOYER ─────────────────────────────────────────────────────────
+  var candidates=[];
+  // (A) Données structurées Microlink (priorité maximale)
+  if(extraData){
+    ['prix','price','loyer','rent'].forEach(function(k){
+      if(extraData[k]){
+        var n=_parseAmount(extraData[k]);
+        if(!isNaN(n)&&n>0)candidates.push({v:n,annual:false,pri:0,src:'microlink_'+k});
+      }
+    });
   }
-  // Pattern 2 : "loyer : XXXX" ou "loyer mensuel XXXX"
-  var p2=/loyer\s*(?:mensuel|annuel|commercial)?\s*[:=]?\s*(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)?/gi;
-  while((m=p2.exec(text))!==null){
-    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
-    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:0});
+  // (B) Loyer annuel explicite → diviser par 12
+  var pAn=/(\d[\d\s\u00a0.,]*)\s*(?:€|eur(?:os?)?)\s*(?:\/\s*an|par\s+an|annuel|\/an)/gi;
+  var m;while((m=pAn.exec(t))!==null){
+    var n=_parseAmount(m[1]);
+    if(n>=20000&&n<=120000)candidates.push({v:Math.round(n/12),annual:true,pri:1,src:'annuel'});
   }
-  // Pattern 3 : tout nombre entre 3000-8000 suivi de € (sans contexte spécifique)
-  var p3=/(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)/gi;
-  while((m=p3.exec(text))!==null){
-    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
-    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:2});
+  var pAn2=/loyer\s*annuel\s*[:=]?\s*(\d[\d\s\u00a0.,]*)\s*(?:€|eur(?:os?)?)?/gi;
+  while((m=pAn2.exec(t))!==null){
+    var n=_parseAmount(m[1]);
+    if(n>=20000&&n<=120000)candidates.push({v:Math.round(n/12),annual:true,pri:0,src:'loyer_annuel'});
   }
-  // Pattern 4 : nombre seul entre 3000-8000 précédé de contexte prix/loyer
-  var p4=/(?:prix|loyer|mensualit|co[uû]t)\D{0,15}(\d[\d\s.,]*)/gi;
-  while((m=p4.exec(text))!==null){
-    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
-    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:3});
+  // (C) "loyer" / "loyer mensuel" + montant (très fiable)
+  var pLoy=/loyer\s*(?:mensuel|commercial|hc|ht)?\s*[:=\-]?\s*(\d[\d\s\u00a0.,]*)\s*(?:€|eur(?:os?)?)/gi;
+  while((m=pLoy.exec(t))!==null){
+    var n=_parseAmount(m[1]);
+    if(n>=3000&&n<=8000)candidates.push({v:n,annual:false,pri:1,src:'loyer_kw'});
   }
-  // Prendre le meilleur (priorité la plus basse = le plus fiable)
-  if(allAmounts.length){
-    allAmounts.sort(function(a,b){return a.pri-b.pri;});
-    result.loyer=allAmounts[0].v;
+  // (D) Montant + €/mois ou €HC/HT
+  var pMois=/(\d[\d\s\u00a0.,]*)\s*(?:€|eur(?:os?)?)\s*(?:\/\s*mois|par\s+mois|mensuel|HC|HT|hors\s+charges|hors\s+taxes|charges\s+comprises|CC)/gi;
+  while((m=pMois.exec(t))!==null){
+    var n=_parseAmount(m[1]);
+    if(n>=3000&&n<=8000)candidates.push({v:n,annual:false,pri:2,src:'mois_hc'});
   }
-  // Adresse : chercher code postal + ville, ou rue/avenue/boulevard + ville
-  var addrPatterns=[
-    /(\d{1,4}\s*(?:,\s*)?(?:rue|avenue|av\.|boulevard|bd|place|pl\.|impasse|allée|chemin|ch\.|cours|passage|quai)\s+[A-ZÀ-Ü][a-zà-ü\-']+(?:\s+[A-ZÀ-Ü][a-zà-ü\-']+){0,4})/i,
-    /((?:\d{1,4}\s+)?(?:rue|avenue|av\.|boulevard|bd|place|pl\.|impasse|allée|chemin)\s+[^\d,]{3,40})/i,
-    /(\d{5})\s+([A-ZÀ-Ü][a-zà-ü\-']+(?:\s+[A-ZÀ-Ü][a-zà-ü\-']+){0,3})/i,
-    /(?:à|a)\s+((?:Paris|Lyon|Marseille|Toulouse|Nice|Nantes|Strasbourg|Montpellier|Bordeaux|Lille|Versailles|Montreuil|Boulogne|Levallois|Neuilly|Saint[\s-][A-ZÀ-Ü][a-zà-ü\-']+)(?:\s+\d{1,2}(?:e|er|ème))?)/i
-  ];
-  for(var i=0;i<addrPatterns.length;i++){
-    var m=addrPatterns[i].exec(text);
-    if(m){
-      result.adresse=m[0].trim().substring(0,60);
-      break;
+  // (E) Tout montant €  dans la plage 3000-8000
+  var pEur=/(\d[\d\s\u00a0.,]*)\s*(?:€|eur(?:os?)?)/gi;
+  while((m=pEur.exec(t))!==null){
+    var n=_parseAmount(m[1]);
+    if(n>=3000&&n<=8000)candidates.push({v:n,annual:false,pri:3,src:'euro_gen'});
+  }
+  // (F) Montant annuel € dans 36000-96000 sans mot-clé annuel explicite
+  var pEurAn=/(\d[\d\s\u00a0.,]*)\s*(?:€|eur(?:os?)?)/gi;
+  while((m=pEurAn.exec(t))!==null){
+    var n=_parseAmount(m[1]);
+    if(n>=36000&&n<=96000)candidates.push({v:Math.round(n/12),annual:true,pri:4,src:'euro_annuel_guess'});
+  }
+  // (G) Nombre seul 3000-8000 précédé de contexte prix/loyer/coût
+  var pCtx=/(?:prix|loyer|co[uû]t|mensualit[eé]|budget)\D{0,20}(\d[\d\s\u00a0.,]*)/gi;
+  while((m=pCtx.exec(t))!==null){
+    var n=_parseAmount(m[1]);
+    if(n>=3000&&n<=8000)candidates.push({v:n,annual:false,pri:5,src:'ctx_kw'});
+  }
+  // Dédupliquer et prendre le meilleur
+  if(candidates.length){
+    candidates.sort(function(a,b){return a.pri-b.pri;});
+    result.loyer=candidates[0].v;
+    result.loyer_type=candidates[0].annual?'annuel':'mensuel';
+    console.log('[Loyer extract]',candidates[0].src,candidates[0].v,'€/mois','(from',candidates.length,'candidates)');
+  }
+
+  // ─── ADRESSE ───────────────────────────────────────────────────────
+  // (A) Données structurées
+  if(extraData){
+    ['adresse','address','location','lieu'].forEach(function(k){
+      if(extraData[k]&&!result.adresse)result.adresse=extraData[k].substring(0,60);
+    });
+  }
+  if(!result.adresse){
+    var addrPatterns=[
+      // Numéro + type voie + nom
+      /(\d{1,4}\s*,?\s*(?:rue|avenue|av\.?|boulevard|boul\.?|bd\.?|place|pl\.?|impasse|imp\.?|allée|all\.?|chemin|ch\.?|cours|passage|quai|route|rte\.?|square|sq\.?|parvis|esplanade|galerie|résidence|r[eé]s\.?)\s+[A-ZÀ-Üa-zà-ü\-']+(?:\s+[A-ZÀ-Üa-zà-ü\-']+){0,5})/i,
+      // Type voie sans numéro
+      /((?:rue|avenue|boulevard|place|impasse|allée|chemin|cours|passage|quai)\s+(?:du|de\s+la|de\s+l'|des|de|d')\s*[A-ZÀ-Üa-zà-ü\-']+(?:\s+[A-ZÀ-Üa-zà-ü\-']+){0,4})/i,
+      // Code postal + ville
+      /(\d{5})\s+([A-ZÀ-Ü][a-zà-ü\-']+(?:[\s-]+[A-ZÀ-Üa-zà-ü\-']+){0,3})/i,
+      // Ville connue (IDF + grandes villes)
+      /((?:Paris|Lyon|Marseille|Toulouse|Nice|Nantes|Strasbourg|Montpellier|Bordeaux|Lille|Versailles|Montreuil|Boulogne[\s-]Billancourt|Levallois[\s-]Perret|Neuilly[\s-]sur[\s-]Seine|Issy[\s-]les[\s-]Moulineaux|Saint[\s-][A-ZÀ-Ü][a-zà-ü\-']+|Rueil[\s-]Malmaison|Courbevoie|Puteaux|Suresnes|Clichy|Vincennes|Fontenay|Nogent|Charenton|Ivry|Vitry|Créteil|Colombes|Asnières|Gennevilliers|Nanterre|Argenteuil|Cergy|Pontoise|Massy|Orly|Rungis|Antony|Clamart|Meudon|Sèvres|Chatou|Maisons[\s-]Laffitte|Le\s+Chesnay|Vélizy)(?:\s+\d{1,2}(?:e|er|[eè]me))?)/i
+    ];
+    for(var i=0;i<addrPatterns.length;i++){
+      var m=addrPatterns[i].exec(t);
+      if(m){result.adresse=m[0].trim().replace(/\s+/g,' ').substring(0,60);break;}
     }
   }
   return result;
 }
 
 function fetchLinkPreview(item){
-  fetch('https://api.microlink.io?url='+encodeURIComponent(item.url))
+  // Appel Microlink avec data selectors pour extraire prix/adresse du DOM
+  var apiUrl='https://api.microlink.io?url='+encodeURIComponent(item.url);
+  // Sélecteurs CSS courants pour les sites immobiliers
+  apiUrl+='&data.prix.selector=.price,.prix,.Price,.amount,.listing-price,[class*=price],[class*=Price],[class*=loyer],[class*=Loyer],[data-price],span.red,.value-price,.detail-price,.offer-price,h2.price&data.prix.attr=text';
+  apiUrl+='&data.adresse.selector=.address,.adresse,.location,.ville,.city,.listing-address,[class*=address],[class*=Address],[class*=location],[class*=localisation],[data-address],.detail-address,.offer-address&data.adresse.attr=text';
+  fetch(apiUrl)
     .then(function(r){return r.json();})
     .then(function(data){
       if(data.status==='success'&&data.data){
@@ -2232,10 +2281,15 @@ function fetchLinkPreview(item){
           publisher:d.publisher||''
         };
         if(!item.titre&&d.title)item.titre=d.title;
-        // Extraction loyer & adresse depuis titre + description + URL
+        // Données structurées extraites par Microlink
+        var extraData={};
+        if(d.prix)extraData.prix=d.prix;
+        if(d.adresse)extraData.adresse=d.adresse;
+        console.log('[LinkPreview]',item.url,'\n  title:',d.title,'\n  desc:',d.description,'\n  prix(DOM):',d.prix,'\n  adresse(DOM):',d.adresse);
+        // Extraction loyer & adresse (DOM + regex fallback)
         var fullText=(d.title||'')+' '+(d.description||'')+' '+(item.url||'');
-        var extracted=_extractLoyerAdresse(fullText);
-        if(extracted.loyer)item.loyer_extrait=extracted.loyer;
+        var extracted=_extractLoyerAdresse(fullText,extraData);
+        if(extracted.loyer){item.loyer_extrait=extracted.loyer;item.loyer_type=extracted.loyer_type;}
         if(extracted.adresse)item.adresse_extraite=extracted.adresse;
         saveProspects();render();
       }
@@ -2284,13 +2338,13 @@ async function loadProspects(){
 function fetchMissingPreviews(){
   var changed=false;
   (S.prospects||[]).forEach(function(p){
-    if(p.type==='lien'&&!p.preview&&p.url)fetchLinkPreview(p);
-    // Re-extraire loyer/adresse depuis preview (toujours ré-essayer avec la regex améliorée)
+    if(p.type==='lien'&&!p.preview&&p.url){fetchLinkPreview(p);return;}
+    // Re-extraire loyer/adresse avec regex améliorée
     if(p.type==='lien'&&p.preview){
       var fullText=(p.preview.title||'')+' '+(p.preview.description||'')+' '+(p.url||'');
-      var extracted=_extractLoyerAdresse(fullText);
-      if(extracted.loyer&&extracted.loyer!==p.loyer_extrait){p.loyer_extrait=extracted.loyer;changed=true;}
-      else if(!extracted.loyer&&p.loyer_extrait){delete p.loyer_extrait;changed=true;}
+      var extracted=_extractLoyerAdresse(fullText,null);
+      if(extracted.loyer&&extracted.loyer!==p.loyer_extrait){p.loyer_extrait=extracted.loyer;p.loyer_type=extracted.loyer_type;changed=true;}
+      else if(!extracted.loyer&&p.loyer_extrait){delete p.loyer_extrait;delete p.loyer_type;changed=true;}
       if(extracted.adresse&&extracted.adresse!==p.adresse_extraite){p.adresse_extraite=extracted.adresse;changed=true;}
     }
   });
