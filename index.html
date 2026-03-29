@@ -3464,6 +3464,8 @@ async function creerTache(sid){
   });
   await saveTodos(sid);
   var modal=document.getElementById('tache-modal');if(modal)modal.remove();
+  var bodyTxt=titre.trim()+(resp?' → '+resp:'')+(deadline?' ('+deadline+')':'');
+  notifyAll({type:'statut',studio_id:sid,title:'Nouvelle tâche — '+(S.studios[sid]?S.studios[sid].name:sid),body:bodyTxt});
   toast('Tâche créée');
   render();
 }
@@ -3475,6 +3477,7 @@ async function toggleTacheStatut(sid,todoId){
   var cycle={todo:'doing',doing:'done',done:'todo'};
   t.statut=cycle[t.statut]||'todo';
   await saveTodos(sid);
+  if(t.statut==='done')notifyAll({type:'statut',studio_id:sid,title:'Tâche terminée — '+(S.studios[sid]?S.studios[sid].name:sid),body:t.titre});
   render();
 }
 
