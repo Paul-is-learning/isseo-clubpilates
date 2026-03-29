@@ -3192,7 +3192,13 @@ function renderTopicThread(sid,topicId){
   h+='<div style="display:flex;align-items:center;gap:10px">';
   h+='<button onclick="S.openTopicId=null;render()" style="background:none;border:none;cursor:pointer;font-size:13px;color:#888;padding:0">← Retour</button>';
   h+='<span style="font-size:15px;font-weight:700;color:#1a1a1a">'+topic.titre+'</span>';
-  if(topic.closed)h+='<span style="font-size:9px;background:#f0f0ea;color:#888;padding:2px 8px;border-radius:6px">Clôturé</span>';
+  if(topic.closed){
+    if(isSuperAdmin()){
+      h+='<span onclick="rouvrirTopic(\''+sid+'\',\''+topicId+'\')" style="font-size:9px;background:#f0f0ea;color:#888;padding:2px 8px;border-radius:6px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.background=\'#DBEAFE\';this.style.color=\'#1D4ED8\'" onmouseout="this.style.background=\'#f0f0ea\';this.style.color=\'#888\'" title="Cliquer pour rouvrir">Clôturé ↺</span>';
+    } else {
+      h+='<span style="font-size:9px;background:#f0f0ea;color:#888;padding:2px 8px;border-radius:6px">Clôturé</span>';
+    }
+  }
   h+='</div>';
   if(!topic.closed&&!isViewer()&&(topic.auteur===me||isSuperAdmin())){
     h+='<button onclick="fermerTopic(\''+sid+'\',\''+topicId+'\')" style="font-size:11px;color:#888;background:none;border:1px solid #e0e0da;border-radius:6px;padding:4px 10px;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor=\'#bbb\'" onmouseout="this.style.borderColor=\'#e0e0da\'">Clôturer</button>';
@@ -3313,6 +3319,17 @@ async function fermerTopic(sid,topicId){
   render();
 }
 
+async function rouvrirTopic(sid,topicId){
+  if(!isSuperAdmin())return;
+  var topics=S.topics[sid]||[];
+  var topic=topics.find(function(t){return t.id===topicId;});
+  if(!topic)return;
+  topic.closed=false;
+  await saveTopics(sid);
+  toast('Sujet rouvert');
+  render();
+}
+
 function modifierMsgTopic(sid,topicId,msgIdx){
   var topics=S.topics[sid]||[];
   var topic=topics.find(function(t){return t.id===topicId;});
@@ -3352,8 +3369,12 @@ async function supprimerMsgTopic(sid,topicId,msgIdx){
   var topics=S.topics[sid]||[];
   var topic=topics.find(function(t){return t.id===topicId;});
   if(!topic||!topic.messages[msgIdx])return;
+  var msgBody=topic.messages[msgIdx].texte||'';
   topic.messages.splice(msgIdx,1);
   await saveTopics(sid);
+  // Supprimer les notifications liées
+  if(msgBody)await sb.from('notifications').delete().eq('studio_id',sid).eq('type','message').ilike('body','%'+msgBody.slice(0,60)+'%');
+  S.notifications=S.notifications.filter(function(n){return !(n.studio_id===sid&&n.type==='message'&&n.body&&n.body.indexOf(msgBody.slice(0,60))>=0);});
   toast('Message supprimé');
   render();
 }
@@ -3500,8 +3521,15 @@ async function toggleTacheStatut(sid,todoId){
 
 async function supprimerTache(sid,todoId){
   if(!confirm('Supprimer cette tâche ?'))return;
+  var tache=(S.todos[sid]||[]).find(function(t){return t.id===todoId;});
+  var titreTache=tache?tache.titre:'';
   S.todos[sid]=(S.todos[sid]||[]).filter(function(t){return t.id!==todoId;});
   await saveTodos(sid);
+  // Supprimer les notifications liées à cette tâche
+  if(titreTache){
+    await sb.from('notifications').delete().eq('studio_id',sid).eq('type','statut').ilike('body','%'+titreTache.slice(0,60)+'%');
+    S.notifications=S.notifications.filter(function(n){return !(n.studio_id===sid&&n.type==='statut'&&n.body&&n.body.indexOf(titreTache.slice(0,60))>=0);});
+  }
   toast('Tâche supprimée');
   render();
 }
