@@ -2271,7 +2271,7 @@ function renderBP3YInfographic(sid,s){
     var _cardBorder=_hasVariation?(dCA>=0?'#b8d9c4':'#f0c0c0'):'#e0e0da';
     var _cardShadow=_hasVariation?(dCA>=0?'0 2px 12px rgba(29,158,117,0.15)':'0 2px 12px rgba(163,45,45,0.12)'):'0 1px 5px rgba(0,0,0,0.04)';
     var _cardBg=_hasVariation?(dCA>=0?'linear-gradient(180deg,#f6fdf9,#fff)':'linear-gradient(180deg,#fef8f8,#fff)'):'#fff';
-    h+='<div class="sim-card-wf" style="background:'+_cardBg+';border-radius:10px;padding:10px 12px;border:0.5px solid '+_cardBorder+';box-shadow:'+_cardShadow+';transition:transform .2s,box-shadow .2s;cursor:default" onmouseenter="this.style.transform=\'translateY(-3px) scale(1.02)\';this.style.boxShadow=\'0 6px 20px rgba(0,0,0,0.12)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\''+_cardShadow.replace(/'/g,"\\'")+'\'">';
+    h+='<div class="sim-card-wf" onclick="S.adherentYear='+(i+1)+';setDetailTab(\'adherents\')" style="background:'+_cardBg+';border-radius:10px;padding:10px 12px;border:0.5px solid '+_cardBorder+';box-shadow:'+_cardShadow+';transition:transform .2s,box-shadow .2s;cursor:pointer" onmouseenter="this.style.transform=\'translateY(-3px) scale(1.02)\';this.style.boxShadow=\'0 6px 20px rgba(0,0,0,0.12)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\''+_cardShadow.replace(/'/g,"\\'")+'\'">';
     h+='<div style="display:flex;align-items:center;gap:5px;margin-bottom:8px">';
     h+='<div style="width:18px;height:18px;border-radius:5px;background:'+accent+';display:flex;align-items:center;justify-content:center"><span style="font-size:9px;font-weight:800;color:#fff">A'+(i+1)+'</span></div>';
     h+='<span style="font-size:10px;font-weight:700;color:#555">Simul\u00e9</span>';
