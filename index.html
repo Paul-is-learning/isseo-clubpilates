@@ -1993,8 +1993,8 @@ function renderBPConsolide(){
   var margeEbitda1Tot=totCA1>0?Math.round(totEbitda1/totCA1*100):0;
   var margeEbitda3Tot=totCA3>0?Math.round(totEbitda3/totCA3*100):0;
 
-  // ── KPIs row 1 : CA ──
-  h+='<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Chiffre d\'affaires</div>';
+  // ── KPIs row 1 : CA + CAPEX ──
+  h+='<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Chiffre d\'affaires consolidé</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px">';
   [{l:'CA A1',v:totCA1,c:'#0F6E56'},{l:'CA A2',v:totCA2,c:'#185FA5'},{l:'CA A3',v:totCA3,c:'#533AB7'},{l:'CAPEX Total',v:totCapex,c:'#1a3a6b'}].forEach(function(k){
     h+='<div style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:14px 16px;transition:all .2s" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 4px 12px rgba(0,0,0,0.06)\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
@@ -2004,14 +2004,14 @@ function renderBPConsolide(){
   });
   h+='</div>';
 
-  // ── KPIs row 2 : Rentabilité ──
-  h+='<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Rentabilité consolidée</div>';
+  // ── KPIs row 2 : Rentabilité — focus A3 ──
+  h+='<div style="font-size:11px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">Rentabilité consolidée — Année 3 (croisière)</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:16px">';
   var rentaKpis=[
-    {l:'EBITDA A1',v:totEbitda1,c:totEbitda1>=0?'#0F6E56':'#A32D2D'},
-    {l:'EBITDA A3',v:totEbitda3,c:totEbitda3>=0?'#0F6E56':'#A32D2D'},
-    {l:'Marge EBITDA A1',v:margeEbitda1Tot+'%',c:margeEbitda1Tot>=0?'#0F6E56':'#A32D2D',noFmt:true},
-    {l:'REX A3',v:totRex3,c:totRex3>=0?'#0F6E56':'#A32D2D'},
+    {l:'EBITDA conso A3',v:totEbitda3,c:totEbitda3>=0?'#0F6E56':'#A32D2D'},
+    {l:'Marge EBITDA A3',v:margeEbitda3Tot+'%',c:margeEbitda3Tot>=0?'#0F6E56':'#A32D2D',noFmt:true},
+    {l:'REX conso A3',v:totRex3,c:totRex3>=0?'#0F6E56':'#A32D2D'},
+    {l:'Cash net conso A3',v:totCashNet3,c:totCashNet3>=0?'#0F6E56':'#A32D2D'},
     {l:'Membres fin A1',v:totMembres,c:'#854F0B',noFmt:true}
   ];
   rentaKpis.forEach(function(k){
