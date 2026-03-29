@@ -12,7 +12,7 @@
 body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:14px}
 .app{max-width:1100px;margin:0 auto;padding:1.5rem}
 .app-layout{display:flex;min-height:100vh}
-.sidebar{width:220px;background:linear-gradient(180deg,#0a1628 0%,#0f1f3d 40%,#162d54 100%);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:500;transition:transform .3s ease}
+.sidebar{width:220px;background:linear-gradient(180deg,#000000 0%,#050505 40%,#0a0a0a 100%);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:500;transition:transform .3s ease}
 .sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:8px}
 .sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
 .sidebar-link{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);transition:all .2s;text-decoration:none;border:none;background:none;width:100%;text-align:left}
@@ -24,7 +24,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .sidebar-bottom .sb-name{font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);line-height:1.2}
 .sidebar-bottom .sb-role{font-size:10px;color:rgba(255,255,255,0.4)}
 .main-content{margin-left:220px;flex:1;min-height:100vh;overflow-y:auto}
-.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:600;background:#0f1f3d;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;color:#fff}
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:600;background:#0a0a0a;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;color:#fff}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:499}
 @media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.hamburger{display:block}.sidebar-overlay.show{display:block}}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#000000 0%,#0a0a0a 30%,#111111 60%,#0a0a0a 100%);position:relative;overflow:hidden}
@@ -1818,7 +1818,7 @@ function renderAccueil(){
   h+='</div>';
 
   // ── Welcome banner ──
-  h+='<div style="background:linear-gradient(135deg,#0f1f3d 0%,#1a3a6b 50%,#2d5a8e 100%);border-radius:16px;padding:22px 28px;margin-bottom:18px;color:#fff;position:relative;overflow:hidden">';
+  h+='<div style="background:linear-gradient(135deg,#000000 0%,#0a0a0a 50%,#111111 100%);border-radius:16px;padding:22px 28px;margin-bottom:18px;color:#fff;position:relative;overflow:hidden;border:1px solid rgba(255,255,255,0.06)">';
   h+='<div style="position:absolute;top:-30px;right:-20px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,0.06) 0%,transparent 70%);border-radius:50%"></div>';
   h+='<div style="position:absolute;bottom:-40px;right:80px;width:150px;height:150px;background:radial-gradient(circle,rgba(29,158,117,0.15) 0%,transparent 70%);border-radius:50%"></div>';
   h+='<div style="position:relative;z-index:1">';
