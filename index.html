@@ -2083,6 +2083,13 @@ function renderProspection(){
       h+='<a href="'+l.url+'" target="_blank" style="font-size:12px;font-weight:600;color:'+accentColor+';text-decoration:none;display:block;margin-bottom:4px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" onmouseover="this.style.textDecoration=\'underline\'" onmouseout="this.style.textDecoration=\'none\'">'+(l.titre||l.url)+'</a>';
       if(pv.description)h+='<div style="font-size:10px;color:#888;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+pv.description+'</div>';
       if(pv.publisher)h+='<div style="font-size:9px;color:#999;margin-bottom:3px">'+pv.publisher+'</div>';
+      // Badges loyer & adresse extraits
+      if(l.loyer_extrait||l.adresse_extraite){
+        h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0">';
+        if(l.loyer_extrait)h+='<span style="display:inline-flex;align-items:center;gap:3px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">'+l.loyer_extrait.toLocaleString('fr-FR')+' €</span>';
+        if(l.adresse_extraite)h+='<span style="display:inline-flex;align-items:center;gap:3px;background:#EDE9FE;color:#5B21B6;font-size:9px;font-weight:500;padding:2px 7px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+l.adresse_extraite+'</span>';
+        h+='</div>';
+      }
       h+='<div style="font-size:9px;color:#aaa">'+((l.auteur||''))+' · '+(l.date||'')+'</div>';
       // Stars
       h+=renderStarRating(l,gIdx);
@@ -2161,6 +2168,40 @@ function ajouterLienProspect(){
   saveProspects();render();toast('Lien ajouté — récupération des infos…');
   fetchLinkPreview(item);
 }
+function _extractLoyerAdresse(text){
+  var result={loyer:null,adresse:null};
+  if(!text)return result;
+  // Loyer : chercher montants suivis de €, EUR, euros, /mois, /an, HC, HT, CC
+  var loyerPatterns=[
+    /(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)\s*(?:\/\s*(?:mois|m(?:ens)?)|(HC|HT|CC|charges?\s*comprises?))?/gi,
+    /loyer\s*(?:mensuel|annuel)?\s*:?\s*(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)?/gi,
+    /(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)\s*(?:par\s+mois|\/mois|mensuel)/gi
+  ];
+  for(var i=0;i<loyerPatterns.length;i++){
+    var m=loyerPatterns[i].exec(text);
+    if(m){
+      var v=m[1].replace(/\s/g,'').replace(',','.');
+      var n=parseFloat(v);
+      if(n>0&&n<500000){result.loyer=n;break;}
+    }
+  }
+  // Adresse : chercher code postal + ville, ou rue/avenue/boulevard + ville
+  var addrPatterns=[
+    /(\d{1,4}\s*(?:,\s*)?(?:rue|avenue|av\.|boulevard|bd|place|pl\.|impasse|allée|chemin|ch\.|cours|passage|quai)\s+[A-ZÀ-Ü][a-zà-ü\-']+(?:\s+[A-ZÀ-Ü][a-zà-ü\-']+){0,4})/i,
+    /((?:\d{1,4}\s+)?(?:rue|avenue|av\.|boulevard|bd|place|pl\.|impasse|allée|chemin)\s+[^\d,]{3,40})/i,
+    /(\d{5})\s+([A-ZÀ-Ü][a-zà-ü\-']+(?:\s+[A-ZÀ-Ü][a-zà-ü\-']+){0,3})/i,
+    /(?:à|a)\s+((?:Paris|Lyon|Marseille|Toulouse|Nice|Nantes|Strasbourg|Montpellier|Bordeaux|Lille|Versailles|Montreuil|Boulogne|Levallois|Neuilly|Saint[\s-][A-ZÀ-Ü][a-zà-ü\-']+)(?:\s+\d{1,2}(?:e|er|ème))?)/i
+  ];
+  for(var i=0;i<addrPatterns.length;i++){
+    var m=addrPatterns[i].exec(text);
+    if(m){
+      result.adresse=m[0].trim().substring(0,60);
+      break;
+    }
+  }
+  return result;
+}
+
 function fetchLinkPreview(item){
   fetch('https://api.microlink.io?url='+encodeURIComponent(item.url))
     .then(function(r){return r.json();})
@@ -2174,6 +2215,11 @@ function fetchLinkPreview(item){
           publisher:d.publisher||''
         };
         if(!item.titre&&d.title)item.titre=d.title;
+        // Extraction loyer & adresse depuis titre + description
+        var fullText=(d.title||'')+' '+(d.description||'');
+        var extracted=_extractLoyerAdresse(fullText);
+        if(extracted.loyer)item.loyer_extrait=extracted.loyer;
+        if(extracted.adresse)item.adresse_extraite=extracted.adresse;
         saveProspects();render();
       }
     })
@@ -2219,9 +2265,18 @@ async function loadProspects(){
   }catch(e){}
 }
 function fetchMissingPreviews(){
+  var changed=false;
   (S.prospects||[]).forEach(function(p){
     if(p.type==='lien'&&!p.preview&&p.url)fetchLinkPreview(p);
+    // Re-extraire loyer/adresse si preview existe mais pas encore extrait
+    if(p.type==='lien'&&p.preview&&!p.loyer_extrait&&!p.adresse_extraite){
+      var fullText=(p.preview.title||'')+' '+(p.preview.description||'');
+      var extracted=_extractLoyerAdresse(fullText);
+      if(extracted.loyer){p.loyer_extrait=extracted.loyer;changed=true;}
+      if(extracted.adresse){p.adresse_extraite=extracted.adresse;changed=true;}
+    }
   });
+  if(changed){saveProspects();render();}
 }
 
 // ── Prospection: helpers ───────────────────────────────────────────────
