@@ -2171,19 +2171,36 @@ function ajouterLienProspect(){
 function _extractLoyerAdresse(text){
   var result={loyer:null,adresse:null};
   if(!text)return result;
-  // Loyer : chercher montants suivis de €, EUR, euros, /mois, /an, HC, HT, CC
-  var loyerPatterns=[
-    /(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)\s*(?:\/\s*(?:mois|m(?:ens)?)|(HC|HT|CC|charges?\s*comprises?))?/gi,
-    /loyer\s*(?:mensuel|annuel)?\s*:?\s*(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)?/gi,
-    /(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)\s*(?:par\s+mois|\/mois|mensuel)/gi
-  ];
-  for(var i=0;i<loyerPatterns.length;i++){
-    var m=loyerPatterns[i].exec(text);
-    if(m){
-      var v=m[1].replace(/\s/g,'').replace(',','.');
-      var n=parseFloat(v);
-      if(n>=3000&&n<=8000){result.loyer=n;break;}
-    }
+  // Loyer : collecter TOUS les montants € trouvés, puis filtrer 3000-8000
+  var allAmounts=[];
+  // Pattern 1 : montant suivi de €/EUR avec contexte loyer/mois/HC/HT (prioritaire)
+  var p1=/(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)\s*(?:\/\s*(?:mois|m(?:ens)?|an)|par\s+mois|mensuel|HC|HT|CC|charges?\s*comprises?|hors\s+(?:charges|taxes))?/gi;
+  var m;while((m=p1.exec(text))!==null){
+    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
+    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:1});
+  }
+  // Pattern 2 : "loyer : XXXX" ou "loyer mensuel XXXX"
+  var p2=/loyer\s*(?:mensuel|annuel|commercial)?\s*[:=]?\s*(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)?/gi;
+  while((m=p2.exec(text))!==null){
+    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
+    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:0});
+  }
+  // Pattern 3 : tout nombre entre 3000-8000 suivi de € (sans contexte spécifique)
+  var p3=/(\d[\d\s.,]*)\s*(?:€|eur(?:os?)?)/gi;
+  while((m=p3.exec(text))!==null){
+    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
+    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:2});
+  }
+  // Pattern 4 : nombre seul entre 3000-8000 précédé de contexte prix/loyer
+  var p4=/(?:prix|loyer|mensualit|co[uû]t)\D{0,15}(\d[\d\s.,]*)/gi;
+  while((m=p4.exec(text))!==null){
+    var v=m[1].replace(/[\s\u00a0]/g,'').replace(',','.');
+    var n=parseFloat(v);if(n>=3000&&n<=8000)allAmounts.push({v:n,pri:3});
+  }
+  // Prendre le meilleur (priorité la plus basse = le plus fiable)
+  if(allAmounts.length){
+    allAmounts.sort(function(a,b){return a.pri-b.pri;});
+    result.loyer=allAmounts[0].v;
   }
   // Adresse : chercher code postal + ville, ou rue/avenue/boulevard + ville
   var addrPatterns=[
@@ -2215,8 +2232,8 @@ function fetchLinkPreview(item){
           publisher:d.publisher||''
         };
         if(!item.titre&&d.title)item.titre=d.title;
-        // Extraction loyer & adresse depuis titre + description
-        var fullText=(d.title||'')+' '+(d.description||'');
+        // Extraction loyer & adresse depuis titre + description + URL
+        var fullText=(d.title||'')+' '+(d.description||'')+' '+(item.url||'');
         var extracted=_extractLoyerAdresse(fullText);
         if(extracted.loyer)item.loyer_extrait=extracted.loyer;
         if(extracted.adresse)item.adresse_extraite=extracted.adresse;
@@ -2268,16 +2285,13 @@ function fetchMissingPreviews(){
   var changed=false;
   (S.prospects||[]).forEach(function(p){
     if(p.type==='lien'&&!p.preview&&p.url)fetchLinkPreview(p);
-    // Re-extraire loyer/adresse si preview existe mais pas encore extrait
-    if(p.type==='lien'&&p.preview&&!p.loyer_extrait&&!p.adresse_extraite){
-      var fullText=(p.preview.title||'')+' '+(p.preview.description||'');
+    // Re-extraire loyer/adresse depuis preview (toujours ré-essayer avec la regex améliorée)
+    if(p.type==='lien'&&p.preview){
+      var fullText=(p.preview.title||'')+' '+(p.preview.description||'')+' '+(p.url||'');
       var extracted=_extractLoyerAdresse(fullText);
-      if(extracted.loyer){p.loyer_extrait=extracted.loyer;changed=true;}
-      if(extracted.adresse){p.adresse_extraite=extracted.adresse;changed=true;}
-    }
-    // Nettoyer loyers hors plage 3000-8000
-    if(p.type==='lien'&&p.loyer_extrait&&(p.loyer_extrait<3000||p.loyer_extrait>8000)){
-      delete p.loyer_extrait;changed=true;
+      if(extracted.loyer&&extracted.loyer!==p.loyer_extrait){p.loyer_extrait=extracted.loyer;changed=true;}
+      else if(!extracted.loyer&&p.loyer_extrait){delete p.loyer_extrait;changed=true;}
+      if(extracted.adresse&&extracted.adresse!==p.adresse_extraite){p.adresse_extraite=extracted.adresse;changed=true;}
     }
   });
   if(changed){saveProspects();render();}
