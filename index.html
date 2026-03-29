@@ -1250,6 +1250,12 @@ function renderBP3YInfographic(sid,s){
     return{ca:caAn,ebitda:eb};
   });
 
+  // ── EBITDA simulé mensuel (delta CA → delta EBITDA, charges fixes) ────────
+  var simEbtArr=[];
+  for(var sei=0;sei<36;sei++){
+    simEbtArr.push(ebtArr[sei]+(simMonthlyCA[sei]-(caArr[sei]||0)));
+  }
+
   // ── SVG Chart 36 mois ──────────────────────────────────────────────────────
   var W=580,H=168,PL=52,PR=14,PT=14,PB=24;
   var cW=W-PL-PR,cH=H-PT-PB,N=36;
@@ -1257,9 +1263,9 @@ function renderBP3YInfographic(sid,s){
   function xp(i){return PL+i*(cW/(N-1));}
   function yv(v){return PT+cH-(Math.max(0,v)/maxV)*cH;}
 
-  // Break-even (première transition neg→pos EBITDA)
+  // Break-even dynamique (basé sur EBITDA simulé)
   var beM=-1;
-  for(var k=1;k<N;k++){if(ebtArr[k]>0&&ebtArr[k-1]<=0){beM=k;break;}}
+  for(var k=1;k<N;k++){if(simEbtArr[k]>0&&simEbtArr[k-1]<=0){beM=k;break;}}
   // Mois / année du break-even
   var beMoiLabel='';
   if(beM>=0){var beMoisIdx=(md+beM)%12;beMoiLabel=MOIS[beMoisIdx]+' '+(annee0+Math.floor(beM/12));}
@@ -1300,17 +1306,17 @@ function renderBP3YInfographic(sid,s){
   var caL='';caArr.forEach(function(v,i){caL+=(i===0?'M':'L')+xp(i)+' '+yv(v)+' ';});
   svg+='<path d="'+caL+'" fill="none" stroke="#1D9E75" stroke-width="2.2" stroke-linejoin="round"/>';
 
-  // EBITDA — aire positive (vert clair)
+  // EBITDA simulé — aire positive (vert clair)
   var eseg=null;
-  ebtArr.forEach(function(v,i){
+  simEbtArr.forEach(function(v,i){
     if(v>0){if(!eseg)eseg='M'+xp(i)+' '+(PT+cH);eseg+=' L'+xp(i)+' '+yv(v);}
     else{if(eseg){eseg+=' L'+xp(i-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="#854F0B" opacity="0.13"/>';eseg=null;}}
   });
   if(eseg){eseg+=' L'+xp(N-1)+' '+(PT+cH)+' Z';svg+='<path d="'+eseg+'" fill="#854F0B" opacity="0.13"/>';}
 
-  // EBITDA — ligne (segments positifs en marron, négatifs en rouge pointillé)
+  // EBITDA simulé — ligne (segments positifs en marron, négatifs en rouge pointillé)
   var eparts=[],ecur=null,eneg=[],ecurN=null;
-  ebtArr.forEach(function(v,i){
+  simEbtArr.forEach(function(v,i){
     if(v>=0){if(!ecur)ecur='M'+xp(i)+' '+yv(v);else ecur+=' L'+xp(i)+' '+yv(v);if(ecurN){eneg.push(ecurN);ecurN=null;}}
     else{if(!ecurN)ecurN='M'+xp(i)+' '+(PT+cH-2);else ecurN+=' L'+xp(i)+' '+(PT+cH-2);if(ecur){eparts.push(ecur);ecur=null;}}
   });
