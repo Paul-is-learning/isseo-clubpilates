@@ -657,6 +657,7 @@ var S={
   showNewForm:false,newForm:{},
   aiResp:'',aiLoading:false,
   simConfig:{},  // config simulateur par studio : {p4,p8,pi,prix4,prix8,prixi}
+  scenarios:{},  // scénarios enregistrés par studio : [{id,auteur,date,ts,config}]
   mapFilter:'default',  // filtre carte localisation
   mapZoom:14,           // niveau de zoom carte (1-20)
   mapStreetView:false,  // mode street view
@@ -699,6 +700,7 @@ async function loadAll(){
     else if(id.endsWith('_topics')){S.topics[id.slice(0,-7)]=r.data&&r.data.topics||[];}
     else if(id.endsWith('_todos')){S.todos[id.slice(0,-6)]=r.data&&r.data.todos||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
+    else if(id.endsWith('_scenarios')){S.scenarios[id.slice(0,-10)]=r.data&&r.data.scenarios||[];}
     else if(id.endsWith('_simconfig')){
       var sc=r.data&&r.data.config||{};
       if(Object.keys(sc).length>0){
@@ -771,6 +773,54 @@ function saveSimConfig(sid){
     sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
   },500);
 }
+// ── SCÉNARIOS SIMULATEUR ─────────────────────────────────────────────────────
+async function saveScenarios(sid){
+  await sb.from('studios').upsert({id:sid+'_scenarios',data:{scenarios:S.scenarios[sid]||[]},updated_at:new Date().toISOString()});
+}
+
+async function enregistrerScenario(sid){
+  var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  var now=new Date();
+  var sc={
+    id:'sc_'+Date.now(),
+    auteur:(S.profile&&S.profile.nom)||'Admin',
+    date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
+    ts:now.toISOString(),
+    config:JSON.parse(JSON.stringify(cfg))
+  };
+  if(!S.scenarios[sid])S.scenarios[sid]=[];
+  S.scenarios[sid].push(sc);
+  await saveScenarios(sid);
+  saveSimConfig(sid);
+  toast('Scénario enregistré par '+sc.auteur);
+  render();
+}
+
+function chargerScenario(sid,scenarioId){
+  if(scenarioId==='bp_default'){
+    S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+    saveSimConfig(sid);
+    toast('Valeurs BP par défaut restaurées');
+    render();
+    return;
+  }
+  var scenarios=S.scenarios[sid]||[];
+  var sc=scenarios.find(function(s){return s.id===scenarioId;});
+  if(!sc)return;
+  S.simConfig[sid]=JSON.parse(JSON.stringify(sc.config));
+  saveSimConfig(sid);
+  toast('Scénario de '+sc.auteur+' chargé');
+  render();
+}
+
+async function supprimerScenario(sid,scenarioId){
+  if(!confirm('Supprimer ce scénario ?'))return;
+  S.scenarios[sid]=(S.scenarios[sid]||[]).filter(function(s){return s.id!==scenarioId;});
+  await saveScenarios(sid);
+  toast('Scénario supprimé');
+  render();
+}
+
 // ══════════════════════════════════════════════════════════════════════════════
 // ── NOTIFICATIONS ENGINE ────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
@@ -5161,9 +5211,43 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
   var ebitdaEcart=ebitdaSim-ebitdaBP;
 
+  // ── Scénarios enregistrés ──
+  var scenarios=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+  var activeScId=scenarios.length?scenarios[0].id:null;
+  // Déterminer si la config actuelle correspond au dernier scénario ou au BP
+  var cfgStr=JSON.stringify({p4:p4,p8:p8,pi:pi,prix4:num(cfg.prix4,110),prix8:num(cfg.prix8,193.33),prixi:num(cfg.prixi,276.67)});
+  var bpStr=JSON.stringify({p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67});
+  var matchedSc=null;
+  scenarios.forEach(function(sc){
+    if(JSON.stringify({p4:num(sc.config.p4,47),p8:num(sc.config.p8,50),pi:num(sc.config.pi,3),prix4:num(sc.config.prix4,110),prix8:num(sc.config.prix8,193.33),prixi:num(sc.config.prixi,276.67)})===cfgStr)matchedSc=sc.id;
+  });
+  if(cfgStr===bpStr)matchedSc='bp_default';
+
   var h='<div class="box" id="sim-ca-box">';
+  // Header avec titre + dropdown scénarios + bouton enregistrer
+  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px">';
+  h+='<div>';
   h+='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Simulateur CA &mdash; pr&eacute;visionnel vs BP</div>';
-  h+='<div style="font-size:11px;color:#888;margin-bottom:14px">Ajuste la repartition et les prix &mdash; le CA et l\'EBITDA se recalculent en direct</div>';
+  h+='<div style="font-size:11px;color:#888">Ajuste la repartition et les prix &mdash; le CA et l\'EBITDA se recalculent en direct</div>';
+  h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
+  // Dropdown scénarios
+  h+='<select onchange="chargerScenario(\''+sid+'\',this.value)" style="padding:6px 10px;border:1px solid #dde;border-radius:8px;font-size:11px;font-weight:500;color:#1a3a6b;background:#f8f9fb;cursor:pointer;max-width:220px">';
+  h+='<option value="bp_default"'+(matchedSc==='bp_default'?' selected':'')+'>📊 BP de r&eacute;f&eacute;rence</option>';
+  scenarios.forEach(function(sc){
+    var lbl=sc.auteur.split(' ')[0]+' — '+sc.date;
+    h+='<option value="'+sc.id+'"'+(matchedSc===sc.id?' selected':'')+'>'+lbl+'</option>';
+  });
+  h+='</select>';
+  // Bouton enregistrer
+  if(!isViewer()){
+    h+='<button onclick="enregistrerScenario(\''+sid+'\')" style="display:flex;align-items:center;gap:4px;padding:6px 12px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer</button>';
+  }
+  // Bouton supprimer le scénario actif (super admin uniquement)
+  if(isSuperAdmin()&&matchedSc&&matchedSc!=='bp_default'){
+    h+='<button onclick="supprimerScenario(\''+sid+'\',\''+matchedSc+'\')" style="padding:6px 8px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor=\'#A32D2D\'" onmouseout="this.style.borderColor=\'#e0e0da\'" title="Supprimer ce sc&eacute;nario">×</button>';
+  }
+  h+='</div></div>';
 
   // ── Répartition ──
   h+='<div style="font-weight:500;font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Repartition des abonnes</div>';
@@ -5680,6 +5764,9 @@ async function syncData(){
     } else if(id.endsWith('_adherents')){
       var nv=r.data&&r.data.actuel||{};
       if(JSON.stringify(nv)!==JSON.stringify(S.adherents[id.slice(0,-10)]||{})){S.adherents[id.slice(0,-10)]=nv;changed=true;}
+    } else if(id.endsWith('_scenarios')){
+      var nv=r.data&&r.data.scenarios||[];
+      if(JSON.stringify(nv)!==JSON.stringify(S.scenarios[id.slice(0,-10)]||[])){S.scenarios[id.slice(0,-10)]=nv;changed=true;}
     } else if(id.endsWith('_simconfig')){
       var nv=r.data&&r.data.config||{};
       if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[id.slice(0,-10)]||{})){
