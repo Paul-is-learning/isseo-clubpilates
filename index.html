@@ -77,6 +77,8 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:130px}
 @media(max-width:640px){.activity-grid{grid-template-columns:1fr!important}.echanges-grid{grid-template-columns:1fr!important}}
 @keyframes locPulse{0%{transform:scale(0.5);opacity:0.7}80%{transform:scale(2);opacity:0}100%{transform:scale(2);opacity:0}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-15px,20px) scale(1.1)}}
+@keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,-15px) scale(1.05)}}
 @keyframes spin{to{transform:rotate(360deg)}}
 input[type=range].zone-slider{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;background:linear-gradient(to right,#1D9E75 0%,#1D9E75 var(--pct,40%),#e2e8f0 var(--pct,40%),#e2e8f0 100%);outline:none;cursor:pointer}
 input[type=range].zone-slider::-webkit-slider-thumb{-webkit-appearance:none;width:18px;height:18px;border-radius:50%;background:#0F6E56;border:2.5px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,0.25);cursor:pointer}
@@ -1894,48 +1896,65 @@ function renderAccueil(){
   h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
   h+='</div>';
 
-  // ── Welcome banner ──
-  h+='<div style="background:linear-gradient(135deg,#0f1f3d 0%,#1a3a6b 50%,#2d5a8e 100%);border-radius:16px;padding:22px 28px;margin-bottom:18px;color:#fff;position:relative;overflow:hidden">';
-  h+='<div style="position:absolute;top:-30px;right:-20px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,0.06) 0%,transparent 70%);border-radius:50%"></div>';
-  h+='<div style="position:absolute;bottom:-40px;right:80px;width:150px;height:150px;background:radial-gradient(circle,rgba(29,158,117,0.15) 0%,transparent 70%);border-radius:50%"></div>';
-  h+='<div style="position:relative;z-index:1">';
-  h+='<div style="font-size:15px;font-weight:600;margin-bottom:2px;color:rgba(255,255,255,0.85)">Tableau de bord ISSEO × Club Pilates</div>';
-  h+='<div style="font-size:12px;color:rgba(255,255,255,0.5)">Vue d\'ensemble de vos projets et activités</div>';
-  h+='</div>';
-  // KPIs intégrés dans le banner
-  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;position:relative;z-index:1">';
+  // ── Welcome banner — effet wahou ──
   var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
   var _caTotal=allIds.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0);
+  h+='<div style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);border-radius:20px;padding:32px 34px 28px;margin-bottom:22px;color:#fff;position:relative;overflow:hidden">';
+  // Éléments décoratifs — orbes lumineuses
+  h+='<div style="position:absolute;top:-60px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(45,90,142,0.4) 0%,transparent 70%);border-radius:50%;animation:float1 8s ease-in-out infinite"></div>';
+  h+='<div style="position:absolute;bottom:-80px;left:20%;width:220px;height:220px;background:radial-gradient(circle,rgba(29,158,117,0.2) 0%,transparent 70%);border-radius:50%;animation:float2 10s ease-in-out infinite"></div>';
+  h+='<div style="position:absolute;top:20px;left:60%;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,0.04) 0%,transparent 70%);border-radius:50%;animation:float1 6s ease-in-out infinite reverse"></div>';
+  // Grille subtile en fond
+  h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px"></div>';
+  // Contenu
+  h+='<div style="position:relative;z-index:1">';
+  // Titre
+  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">';
+  h+='<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>';
+  h+='<div>';
+  h+='<div style="font-size:18px;font-weight:700;letter-spacing:-0.3px">Tableau de bord ISSEO × Club Pilates</div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px">Vue d\'ensemble de vos projets et activités</div>';
+  h+='</div></div>';
+  // KPIs
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px">';
   var _kpis=[
-    {label:'Studios',val:allIds.length,icon:'🏢',click:'setPage(\'projets\')'},
-    {label:'CAPEX total',val:fmt(_capexTotal),icon:'💰',click:'setPage(\'bp\')'},
-    {label:'CA BP A1',val:fmt(_caTotal),icon:'📈',click:'setPage(\'bp\')'},
-    {label:'Alertes',val:alertCount,icon:'⚠️',alert:alertCount>0,click:'ouvrirAlertesModal()'}
+    {label:'Studios',val:allIds.length,click:'setPage(\'projets\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA'},
+    {label:'CAPEX total',val:fmt(_capexTotal),click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399'},
+    {label:'CA BP A1',val:fmt(_caTotal),click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24'},
+    {label:'Alertes',val:alertCount,alert:alertCount>0,click:'ouvrirAlertesModal()',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',color:'#F87171'}
   ];
   _kpis.forEach(function(k){
-    h+='<div style="background:rgba(255,255,255,0.08);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:10px;padding:10px 12px;transition:background .2s;cursor:'+(k.click?'pointer':'default')+'"'+(k.click?' onclick="'+k.click+'"':'')+' onmouseenter="this.style.background=\'rgba(255,255,255,0.15)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.08)\'">';
-    h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.5);font-weight:600;margin-bottom:4px">'+k.label+'</div>';
-    h+='<div style="font-size:18px;font-weight:700;display:flex;align-items:center;gap:6px">'+k.val;
-    if(k.alert)h+='<span style="width:8px;height:8px;border-radius:50%;background:#EF4444;display:inline-block;animation:pulse 2s infinite"></span>';
+    h+='<div onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
+    // Glow d'accent
+    h+='<div style="position:absolute;top:-10px;right:-10px;width:60px;height:60px;background:radial-gradient(circle,'+k.color+'20,transparent 70%);border-radius:50%"></div>';
+    h+='<div style="position:relative;z-index:1">';
+    // Icône
+    h+='<div style="color:'+k.color+';margin-bottom:10px;opacity:0.9">'+k.icon+'</div>';
+    // Valeur
+    h+='<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1;margin-bottom:5px;display:flex;align-items:center;gap:8px">'+k.val;
+    if(k.alert)h+='<span style="width:9px;height:9px;border-radius:50%;background:#EF4444;display:inline-block;animation:pulse 2s infinite;box-shadow:0 0 8px rgba(239,68,68,0.6)"></span>';
+    h+='</div>';
+    // Label
+    h+='<div style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);font-weight:600">'+k.label+'</div>';
     h+='</div></div>';
   });
-  h+='</div></div>';
+  h+='</div></div></div>';
 
   // ── Activité récente ──
   h+=renderActivityFeed(allIds);
 
   // ── Raccourcis rapides ──
-  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:8px">';
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px">';
   var shortcuts=[
-    {label:'Voir les projets',desc:allIds.length+' studios en cours',page:'projets',color:'#1a3a6b',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
-    {label:'Prospection',desc:'Annonces & prospects',page:'prospection',color:'#0F6E56',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
-    {label:'BP Consolidé',desc:'Vue financière globale',page:'bp',color:'#854F0B',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'}
+    {label:'Voir les projets',desc:allIds.length+' studios en cours',page:'projets',color:'#1a3a6b',gradient:'linear-gradient(135deg,#1a3a6b,#2d5a8e)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
+    {label:'Prospection',desc:'Annonces & prospects',page:'prospection',color:'#0F6E56',gradient:'linear-gradient(135deg,#0F6E56,#1a9e7a)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
+    {label:'BP Consolidé',desc:'Vue financière globale',page:'bp',color:'#854F0B',gradient:'linear-gradient(135deg,#854F0B,#b8860b)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'}
   ];
   shortcuts.forEach(function(sc){
-    h+='<div onclick="setPage(\''+sc.page+'\')" style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:16px;cursor:pointer;transition:all .2s;display:flex;align-items:center;gap:12px" onmouseenter="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 6px 20px rgba(0,0,0,0.08)\';this.style.borderColor=\''+sc.color+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\';this.style.borderColor=\'#e8e8e0\'">';
-    h+='<div style="width:40px;height:40px;border-radius:10px;background:'+sc.color+'12;display:flex;align-items:center;justify-content:center;color:'+sc.color+'">'+sc.icon+'</div>';
-    h+='<div><div style="font-size:13px;font-weight:600;color:#1a1a1a">'+sc.label+'</div><div style="font-size:11px;color:#888;margin-top:2px">'+sc.desc+'</div></div>';
-    h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" style="margin-left:auto"><polyline points="9 18 15 12 9 6"/></svg>';
+    h+='<div onclick="setPage(\''+sc.page+'\')" style="background:#fff;border:1px solid #e8e8e0;border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:14px;position:relative;overflow:hidden" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 25px rgba(0,0,0,0.1)\';this.style.borderColor=\''+sc.color+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\';this.style.borderColor=\'#e8e8e0\'">';
+    h+='<div style="width:44px;height:44px;border-radius:12px;background:'+sc.gradient+';display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 4px 12px '+sc.color+'30">'+sc.icon+'</div>';
+    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#1a1a1a">'+sc.label+'</div><div style="font-size:11px;color:#999;margin-top:2px">'+sc.desc+'</div></div>';
+    h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" style="flex-shrink:0;transition:transform .2s"><polyline points="9 18 15 12 9 6"/></svg>';
     h+='</div>';
   });
   h+='</div>';
