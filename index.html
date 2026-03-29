@@ -95,11 +95,22 @@ input[type=range].zone-slider::-moz-range-thumb{width:16px;height:16px;border-ra
 .star-btn.empty{filter:grayscale(1);opacity:0.3}
 .comment-thread{animation:fadeSlideIn .25s ease}
 @keyframes fadeSlideIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+#dirty-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #e74c3c;box-shadow:0 -4px 20px rgba(0,0,0,0.12);z-index:9999;display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
+#dirty-bar .dirty-msg{color:#e74c3c;font-weight:600;font-size:14px}
+#dirty-bar .dirty-save{background:#27ae60;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px;transition:background .15s}
+#dirty-bar .dirty-save:hover{background:#219a52}
+#dirty-bar .dirty-cancel{background:#95a5a6;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px;transition:background .15s}
+#dirty-bar .dirty-cancel:hover{background:#7f8c8d}
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div class="toast" id="toast"></div>
+<div id="dirty-bar">
+  <span class="dirty-msg">⚠ Modifications non enregistrées</span>
+  <button class="dirty-save" onclick="saveAllDirty()">Enregistrer</button>
+  <button class="dirty-cancel" onclick="discardAllDirty()">Annuler</button>
+</div>
 <div id="chat-root"></div>
 <button class="hamburger" id="hamburger-btn" onclick="toggleSidebar()">☰</button>
 <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
@@ -710,6 +721,8 @@ var S={
   simConfig:{},  // config simulateur par studio : {p4,p8,pi,prix4,prix8,prixi}
   scenarios:{},  // scénarios enregistrés par studio : [{id,auteur,date,ts,config}]
   activeScenarioId:{}, // ID du scénario actif par studio
+  dirty:{},  // tracking modifications non sauvegardées {adherents:sid, sim:sid, capex:sid, taux:sid, loyer:sid}
+  _dirtyBackup:{},  // backup données avant modification pour annulation
   mapFilter:'default',  // filtre carte localisation
   mapZoom:14,           // niveau de zoom carte (1-20)
   mapStreetView:false,  // mode street view
@@ -837,6 +850,77 @@ function saveSimConfig(sid){
     sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
   },500);
 }
+// ── DIRTY STATE : modifications non sauvegardées ─────────────────────────────
+function markDirty(type,sid){
+  var key=type+'_'+sid;
+  if(!S.dirty[key]){
+    // Backup avant première modification
+    if(type==='adherents'&&!S._dirtyBackup[key])S._dirtyBackup[key]=JSON.parse(JSON.stringify(S.adherents[sid]||{}));
+    if(type==='sim'&&!S._dirtyBackup[key])S._dirtyBackup[key]=JSON.parse(JSON.stringify(S.simConfig[sid]||{}));
+    if(type==='taux'&&!S._dirtyBackup[key])S._dirtyBackup[key]=S.studios[sid]?S.studios[sid].tauxInteret:null;
+    if(type==='loyer'&&!S._dirtyBackup[key])S._dirtyBackup[key]=S.studios[sid]?S.studios[sid].loyer_mensuel:null;
+    if(type==='capex'&&!S._dirtyBackup[key])S._dirtyBackup[key]=S.studios[sid]?JSON.parse(JSON.stringify(S.studios[sid].capexDetail||{})):{};
+    S.dirty[key]=true;
+    _showDirtyBar();
+  }
+}
+function clearDirty(type,sid){
+  var key=type+'_'+sid;
+  delete S.dirty[key];
+  delete S._dirtyBackup[key];
+  if(!hasDirty())_hideDirtyBar();
+}
+function hasDirty(){return Object.keys(S.dirty).some(function(k){return S.dirty[k];});}
+
+async function saveAllDirty(){
+  var keys=Object.keys(S.dirty).filter(function(k){return S.dirty[k];});
+  for(var i=0;i<keys.length;i++){
+    var parts=keys[i].split('_');var type=parts[0];var sid=parts.slice(1).join('_');
+    if(type==='adherents')await saveAdherents(sid);
+    if(type==='sim'){saveSimConfig(sid);}
+    if(type==='taux'){_tauxPending[sid]=false;await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});}
+    if(type==='loyer'){var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d=Object.assign({},ex.data&&ex.data.data||{});d.loyer_mensuel=S.studios[sid].loyer_mensuel;await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});}
+    if(type==='capex'){var ex2=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d2=Object.assign({},ex2.data&&ex2.data.data||{});d2.capexDetail=S.studios[sid].capexDetail;await sb.from('studios').upsert({id:sid,data:d2,updated_at:new Date().toISOString()});}
+  }
+  S.dirty={};S._dirtyBackup={};
+  _hideDirtyBar();
+  toast('Modifications enregistrées ✓');
+  render();
+}
+
+function discardAllDirty(){
+  var keys=Object.keys(S.dirty).filter(function(k){return S.dirty[k];});
+  keys.forEach(function(key){
+    var parts=key.split('_');var type=parts[0];var sid=parts.slice(1).join('_');
+    if(type==='adherents'&&S._dirtyBackup[key])S.adherents[sid]=S._dirtyBackup[key];
+    if(type==='sim'&&S._dirtyBackup[key])S.simConfig[sid]=S._dirtyBackup[key];
+    if(type==='taux'&&S._dirtyBackup[key]!==undefined&&S.studios[sid])S.studios[sid].tauxInteret=S._dirtyBackup[key];
+    if(type==='loyer'&&S._dirtyBackup[key]!==undefined&&S.studios[sid])S.studios[sid].loyer_mensuel=S._dirtyBackup[key];
+    if(type==='capex'&&S._dirtyBackup[key]&&S.studios[sid])S.studios[sid].capexDetail=S._dirtyBackup[key];
+  });
+  // Cancel pending debounce timers
+  Object.keys(_simSaveTimeout).forEach(function(k){clearTimeout(_simSaveTimeout[k]);});
+  Object.keys(_tauxTimeout).forEach(function(k){clearTimeout(_tauxTimeout[k]);});
+  S.dirty={};S._dirtyBackup={};
+  _hideDirtyBar();
+  toast('Modifications annulées');
+  render();
+}
+
+function _showDirtyBar(){
+  var el=document.getElementById('dirty-bar');
+  if(el)el.style.transform='translateY(0)';
+}
+function _hideDirtyBar(){
+  var el=document.getElementById('dirty-bar');
+  if(el)el.style.transform='translateY(100%)';
+}
+
+function _checkDirtyBeforeNav(){
+  if(!hasDirty())return true;
+  return confirm('⚠ Vous avez des modifications non enregistrées.\n\nQuitter sans sauvegarder ?');
+}
+
 // ── SCÉNARIOS SIMULATEUR ─────────────────────────────────────────────────────
 async function saveScenarios(sid){
   await sb.from('studios').upsert({id:sid+'_scenarios',data:{scenarios:S.scenarios[sid]||[]},updated_at:new Date().toISOString()});
@@ -1146,20 +1230,13 @@ async function saveAdherents(sid){
 var _tauxTimeout={};
 var _tauxPending={}; // bloque l'écrasement par syncData pendant le debounce
 function saveTauxInteret(sid,valPct){
-  // Ignorer les valeurs vides, nulles ou hors plage raisonnable
   if(!valPct||isNaN(valPct)||valPct<1||valPct>15)return;
   var taux=valPct/100;
   if(!S.studios[sid])return;
-  // Mise à jour locale immédiate
   S.studios[sid].tauxInteret=taux;
-  // Marquer comme "en attente d'écriture" → syncData ne doit pas écraser
   _tauxPending[sid]=true;
-  if(_tauxTimeout[sid])clearTimeout(_tauxTimeout[sid]);
-  _tauxTimeout[sid]=setTimeout(function(){
-    _tauxPending[sid]=false;
-    sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});
-    render();
-  },1200);
+  markDirty('taux',sid);
+  render();
 }
 
 function toast(msg){
@@ -3290,6 +3367,21 @@ function renderAdherents(sid,s){
     h+='<div style="font-size:12px;font-weight:600;color:'+(c<0?'#A32D2D':'#888')+'">'+c+'</div></div>';
   }
   h+='</div></div>';
+  // ── Scénario actif — bandeau informatif (au-dessus de saisie mensuelle) ──
+  var _scList=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+  var _activeId=S.activeScenarioId[sid]||(_scList.length?_scList[0].id:null);
+  var _lastSc=_activeId&&_activeId!=='bp_default'?_scList.find(function(s){return s.id===_activeId;}):null;
+  if(_lastSc){
+    h+='<div style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #d0dffa;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;cursor:default;transition:all 0.2s" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.12)\';this.style.borderColor=\'#a0bfef\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'#d0dffa\'">';
+    h+='<div style="width:32px;height:32px;border-radius:50%;background:#1a3a6b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-size:11px;font-weight:700;color:#1a3a6b">Sc\u00e9nario actif \u2014 '+_lastSc.auteur+'</div>';
+    h+='<div style="font-size:10px;color:#5b7fa6;margin-top:1px">Enregistr\u00e9 le '+_lastSc.date+'</div>';
+    h+='</div>';
+    h+='<div style="font-size:10px;color:#1a3a6b;font-weight:500;text-align:right;flex-shrink:0">P4 '+num(_lastSc.config.p4,47)+'% \u00b7 P8 '+num(_lastSc.config.p8,50)+'% \u00b7 Ill. '+num(_lastSc.config.pi,3)+'%</div>';
+    h+='</div>';
+  }
+
   h+='<div class="box">';
   h+='<div style="font-weight:600;font-size:14px;margin-bottom:12px">Saisie mensuelle &mdash; Annee '+ay+' ('+annee+')</div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px">';
@@ -3308,21 +3400,6 @@ function renderAdherents(sid,s){
     h+='</div>';
   }
   h+='</div></div>';
-
-  // ── Scénario actif — bandeau informatif ──
-  var _scList=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
-  var _activeId=S.activeScenarioId[sid]||(_scList.length?_scList[0].id:null);
-  var _lastSc=_activeId&&_activeId!=='bp_default'?_scList.find(function(s){return s.id===_activeId;}):null;
-  if(_lastSc){
-    h+='<div style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #d0dffa;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;cursor:default;transition:all 0.2s" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.12)\';this.style.borderColor=\'#a0bfef\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'#d0dffa\'">';
-    h+='<div style="width:32px;height:32px;border-radius:50%;background:#1a3a6b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div>';
-    h+='<div style="flex:1;min-width:0">';
-    h+='<div style="font-size:11px;font-weight:700;color:#1a3a6b">Sc\u00e9nario actif \u2014 '+_lastSc.auteur+'</div>';
-    h+='<div style="font-size:10px;color:#5b7fa6;margin-top:1px">Enregistr\u00e9 le '+_lastSc.date+'</div>';
-    h+='</div>';
-    h+='<div style="font-size:10px;color:#1a3a6b;font-weight:500;text-align:right;flex-shrink:0">P4 '+num(_lastSc.config.p4,47)+'% \u00b7 P8 '+num(_lastSc.config.p8,50)+'% \u00b7 Ill. '+num(_lastSc.config.pi,3)+'%</div>';
-    h+='</div>';
-  }
 
   // ── Simulateur CA prévisionnel ───────────────────────────────────────────
   // Lire config sauvegardée ou valeurs BP par défaut
@@ -5904,10 +5981,10 @@ async function doLogout(){
   try{localStorage.removeItem('isseo_nav');}catch(e){}
   render();
 }
-function openDetail(id){S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
-function retourProjets(){S.view='dashboard';S.selectedId=null;S.page='projets';saveNavState();render();}
+function openDetail(id){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
+function retourProjets(){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.view='dashboard';S.selectedId=null;S.page='projets';saveNavState();render();}
 function retourAccueil(){retourProjets();}
-function setPage(p){S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';saveNavState();render();}
+function setPage(p){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';saveNavState();render();}
 function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;var sb=document.querySelector('.sidebar');var ov=document.getElementById('sidebar-overlay');if(sb)sb.classList.toggle('open',S.sidebarOpen);if(ov)ov.classList.toggle('show',S.sidebarOpen);}
 
 // ── Animation barres EBITDA au hover par studio ──
@@ -6051,6 +6128,7 @@ function setMainTab(t){S.mainTab=t;saveNavState();render();}
 var _msgPollInterval=null;
 
 function setDetailTab(t){
+  if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();
   S.detailTab=t;S.aiResp='';S.editMoisIdx=null;saveNavState();
   // Arrêter le polling précédent
   if(_msgPollInterval){clearInterval(_msgPollInterval);_msgPollInterval=null;}
@@ -6247,8 +6325,8 @@ function saisirAdherentLive(sid,year,moisIdx,val){
   // Mise à jour simulateur CA en live
   _refreshSimCA(sid,ay);
 
-  // Sauvegarde async sans bloquer
-  saveAdherents(sid);
+  // Marquer dirty au lieu de sauvegarder automatiquement
+  markDirty('adherents',sid);
 }
 
 async function uploadFichier(sid,input){
@@ -6735,17 +6813,16 @@ function buildSimCAChart(caArr,membres,realArr){
 function updateSimRep(sid,field,val,ay){
   if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.simConfig[sid][field]=num(val);
-  // Sync libellé slider
   var lbl=document.getElementById('sim-lbl-'+field);
   if(lbl)lbl.textContent=Math.round(num(val))+'%';
-  saveSimConfig(sid);
+  markDirty('sim',sid);
   _refreshSimCA(sid,ay);
 }
 
 function updateSimPrix(sid,field,val,ay){
   if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.simConfig[sid][field]=num(val);
-  saveSimConfig(sid);
+  markDirty('sim',sid);
   // Mettre à jour delta vs BP
   var refs={prix4:110,prix8:193.33,prixi:276.67};
   var ref=refs[field];
@@ -6908,31 +6985,23 @@ function renderFloatingChat(){
   return h;
 }
 
-async function saveLoyerMensuel(sid,lm){
+function saveLoyerMensuel(sid,lm){
   if(isViewer())return;
   if(!S.studios[sid])S.studios[sid]={};
   S.studios[sid].loyer_mensuel=lm>0?lm:0;
+  markDirty('loyer',sid);
   render();
-  var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();
-  var d=Object.assign({},ex.data&&ex.data.data||{});
-  d.loyer_mensuel=lm>0?lm:0;
-  await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});
-  toast('Loyer mis à jour ✓');
 }
 
-async function saveCapexLine(sid,idx,val){
+function saveCapexLine(sid,idx,val){
   if(isViewer())return;
   if(!S.studios[sid])S.studios[sid]={};
   if(!S.studios[sid].capexDetail)S.studios[sid].capexDetail={};
   var key='l'+idx;
   val=Math.max(0,Math.round(+val)||0);
   S.studios[sid].capexDetail[key]=val;
+  markDirty('capex',sid);
   render();
-  // Persist capexDetail only (capex/leasing derived at render time via getCapexDetailForStudio)
-  var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();
-  var d=Object.assign({},ex.data&&ex.data.data||{});
-  d.capexDetail=S.studios[sid].capexDetail;
-  await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});
   toast('CAPEX mis à jour ✓');
 }
 
