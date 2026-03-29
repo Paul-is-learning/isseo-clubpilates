@@ -2084,12 +2084,22 @@ function renderProspection(){
       if(pv.description)h+='<div style="font-size:10px;color:#888;line-height:1.3;margin-bottom:4px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">'+pv.description+'</div>';
       if(pv.publisher)h+='<div style="font-size:9px;color:#999;margin-bottom:3px">'+pv.publisher+'</div>';
       // Badges loyer & adresse extraits
-      if(l.loyer_extrait||l.adresse_extraite){
-        h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin:4px 0">';
-        if(l.loyer_extrait)h+='<span style="display:inline-flex;align-items:center;gap:3px;background:#FEF3C7;color:#92400E;font-size:10px;font-weight:600;padding:2px 7px;border-radius:6px">'+l.loyer_extrait.toLocaleString('fr-FR')+' €/mois'+(l.loyer_type==='annuel'?' <span style="font-weight:400;font-size:8px;opacity:0.7">(conv. annuel)</span>':'')+'</span>';
-        if(l.adresse_extraite)h+='<span style="display:inline-flex;align-items:center;gap:3px;background:#EDE9FE;color:#5B21B6;font-size:9px;font-weight:500;padding:2px 7px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+l.adresse_extraite+'</span>';
-        h+='</div>';
+      // Adresse extraite
+      if(l.adresse_extraite){
+        h+='<div style="margin:3px 0"><span style="display:inline-flex;align-items:center;gap:3px;background:#EDE9FE;color:#5B21B6;font-size:9px;font-weight:500;padding:2px 7px;border-radius:6px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>'+l.adresse_extraite+'</span></div>';
       }
+      // Loyer mensuel HT — éditable + conversion annuelle
+      var _lienLoyer=l.loyer_extrait||l.loyer_manuel||'';
+      h+='<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:6px;padding:5px 8px;margin:4px 0">';
+      h+='<div style="display:flex;align-items:center;gap:4px">';
+      h+='<span style="font-size:9px;color:#92400E;font-weight:600;white-space:nowrap">Loyer HT</span>';
+      h+='<input type="number" value="'+(_lienLoyer)+'" placeholder="—" onclick="event.stopPropagation()" oninput="updateLienLoyer('+gIdx+',this.value)" style="width:70px;padding:2px 5px;border:1px solid #FDE68A;border-radius:4px;font-size:11px;font-weight:700;color:#92400E;background:#fff;outline:none;text-align:right"/>';
+      h+='<span style="font-size:9px;color:#B45309">€/mois</span>';
+      h+='</div>';
+      if(_lienLoyer){
+        h+='<div style="font-size:9px;color:#B45309;margin-top:2px">→ '+(parseFloat(_lienLoyer)*12).toLocaleString('fr-FR')+' €/an HT</div>';
+      }
+      h+='</div>';
       h+='<div style="font-size:9px;color:#aaa">'+((l.auteur||''))+' · '+(l.date||'')+'</div>';
       // Stars
       h+=renderStarRating(l,gIdx);
@@ -2133,11 +2143,25 @@ function renderProspection(){
       h+='</div>';
       // Détails
       if(f.surface||f.loyer){
-        h+='<div style="display:flex;gap:14px;margin-bottom:6px">';
+        h+='<div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px">';
         if(f.surface)h+='<div style="font-size:11px;color:#888;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/></svg> '+f.surface+' m²</div>';
-        if(f.loyer)h+='<div style="font-size:11px;color:#888;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#aaa" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg> '+fmt(f.loyer)+' /mois</div>';
         h+='</div>';
       }
+      // Loyer mensuel HT + conversion annuelle
+      h+='<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;padding:8px 10px;margin-bottom:8px">';
+      h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px">';
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#92400E" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+      h+='<span style="font-size:10px;font-weight:600;color:#92400E">Loyer mensuel HT</span>';
+      h+='</div>';
+      h+='<div style="display:flex;align-items:baseline;gap:6px">';
+      h+='<input type="number" value="'+(f.loyer||'')+'" placeholder="— €" oninput="updateFicheLoyer('+gIdx+',this.value)" style="width:100px;padding:4px 7px;border:1px solid #FDE68A;border-radius:6px;font-size:13px;font-weight:700;color:#92400E;background:#fff;outline:none"/>';
+      h+='<span style="font-size:11px;color:#92400E">€/mois</span>';
+      h+='</div>';
+      if(f.loyer){
+        var annuel=f.loyer*12;
+        h+='<div style="font-size:10px;color:#B45309;margin-top:4px">→ '+annuel.toLocaleString('fr-FR')+' €/an HT</div>';
+      }
+      h+='</div>';
       if(f.notes)h+='<div style="font-size:11px;color:#555;padding:8px 10px;background:#f8f8f4;border-radius:8px;margin-bottom:6px;line-height:1.4">'+f.notes+'</div>';
       // Stars
       h+=renderStarRating(f,gIdx);
@@ -2310,6 +2334,23 @@ function ajouterFicheProspect(){
   if(!S.prospects)S.prospects=[];
   S.prospects.push({type:'fiche',adresse:adresse,surface:surface,loyer:parseFloat(loyer)||0,notes:notes,statut:statut,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[]});
   saveProspects();render();toast('Fiche prospect ajoutée');
+}
+var _lienLoyerTimer=null;
+function updateLienLoyer(idx,val){
+  var p=S.prospects[idx];if(!p)return;
+  p.loyer_manuel=parseFloat(val)||0;
+  if(!p.loyer_manuel)delete p.loyer_manuel;
+  clearTimeout(_lienLoyerTimer);
+  _lienLoyerTimer=setTimeout(function(){saveProspects();render();},800);
+}
+var _ficheLoyerTimer=null;
+function updateFicheLoyer(idx,val){
+  var f=S.prospects[idx];if(!f)return;
+  f.loyer=parseFloat(val)||0;
+  // Update annuel display sans re-render complet
+  var card=document.querySelectorAll('.prospect-card')[0];
+  clearTimeout(_ficheLoyerTimer);
+  _ficheLoyerTimer=setTimeout(function(){saveProspects();render();},800);
 }
 function modifierFicheProspect(idx){
   var f=S.prospects[idx];if(!f)return;
