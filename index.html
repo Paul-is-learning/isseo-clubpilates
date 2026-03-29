@@ -1212,7 +1212,10 @@ function _ini(n){return (n||'').split(' ').map(function(w){return w[0]||'';}).jo
 function avatarHTML(nom,size){
   size=size||32;
   var key=(nom||'').toLowerCase().trim();
-  var photo=(S.avatarUrls&&S.avatarUrls[key])||PHOTO_MAP[key]||PHOTO_MAP[key.split(' ')[0]]||null;
+  // Chercher par nom complet, puis prénom, puis clé nettoyée (sans suffixe parenthèses)
+  var cleanKey=key.replace(/\s*\(.*\)\s*$/,'').trim();
+  var firstName=key.split(' ')[0];
+  var photo=(S.avatarUrls&&(S.avatarUrls[key]||S.avatarUrls[cleanKey]||S.avatarUrls[firstName]))||PHOTO_MAP[key]||PHOTO_MAP[cleanKey]||PHOTO_MAP[firstName]||null;
   var bg=_aC(nom||'?');var txt=_ini(nom||'?');
   var fs=Math.round(size*0.34);
   // Style commun — pas de position:relative ici pour éviter tout conflit de stacking
@@ -1670,7 +1673,9 @@ function renderSidebar(){
 function getUserPhoto(profile){
   if(!profile)return null;
   var key=(profile.nom||'').toLowerCase().trim();
-  return (S.avatarUrls&&S.avatarUrls[key])||PHOTO_MAP[key]||PHOTO_MAP[key.split(' ')[0]]||(EMAIL_PHOTO_MAP[(profile.email||'').toLowerCase()])||null;
+  var cleanKey=key.replace(/\s*\(.*\)\s*$/,'').trim();
+  var firstName=key.split(' ')[0];
+  return (S.avatarUrls&&(S.avatarUrls[key]||S.avatarUrls[cleanKey]||S.avatarUrls[firstName]))||PHOTO_MAP[key]||PHOTO_MAP[cleanKey]||PHOTO_MAP[firstName]||(EMAIL_PHOTO_MAP[(profile.email||'').toLowerCase()])||null;
 }
 
 // Helper: get all filtered studio IDs
