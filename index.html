@@ -733,6 +733,17 @@ async function loadAll(){
       }catch(e){}
     }
   });
+  // Initialiser activeScenarioId au dernier scénario enregistré pour chaque studio
+  Object.keys(S.scenarios).forEach(function(sid){
+    var scList=S.scenarios[sid]||[];
+    if(scList.length&&!S.activeScenarioId[sid]){
+      var sorted=scList.slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+      S.activeScenarioId[sid]=sorted[0].id;
+      // Charger la config du dernier scénario si elle diffère de la config actuelle
+      var lastCfg=sorted[0].config;
+      if(lastCfg)S.simConfig[sid]=JSON.parse(JSON.stringify(lastCfg));
+    }
+  });
   // Patch config fields from INIT — source of truth is the code
   Object.keys(INIT).forEach(function(k){
     if(!S.studios[k])return;
