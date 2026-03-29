@@ -3490,7 +3490,27 @@ function renderDetail(){
   h+='</div>';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
   h+='<div style="font-size:13px;color:#888"><a href="javascript:void(0)" onclick="setDetailTab(\'localisation\')" style="color:#888;text-decoration:none;border-bottom:1px dashed #ccc;cursor:pointer;transition:color 0.15s,border-color 0.15s" onmouseover="this.style.color=\'#1a3a6b\';this.style.borderColor=\'#1a3a6b\'" onmouseout="this.style.color=\'#888\';this.style.borderColor=\'#ccc\'">'+s.addr+'</a> &middot; '+s.societe+' &middot; '+s.ouverture+'</div>';
-  h+='<button onclick="generateReport(\''+S.selectedId+'\')" style="background:#1a3a6b;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">&#128196; Exporter PDF</button>';
+  h+='<div style="position:relative;display:inline-block">';
+  h+='<button onclick="toggleExportMenu(event)" style="background:#1a3a6b;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap;transition:background .15s" onmouseover="this.style.background=\'#254d8a\'" onmouseout="this.style.background=\'#1a3a6b\'">&#128196; Exporter <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="6 9 12 15 18 9"/></svg></button>';
+  h+='<div id="export-menu" style="display:none;position:absolute;right:0;top:100%;margin-top:4px;background:#fff;border:1px solid #e2e8f0;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.15);min-width:220px;z-index:999;overflow:hidden;animation:fadeIn .15s ease">';
+  h+='<div style="padding:6px 12px;font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px;border-bottom:1px solid #f1f5f9">PDF</div>';
+  var _sid=S.selectedId;
+  var _pdfItems=[
+    {l:'Rapport complet',icon:'&#128196;',act:'generateReport(\''+_sid+'\')'},
+    {l:'Synth\u00e8se financi\u00e8re',icon:'&#128202;',act:'generateReport(\''+_sid+'\',[\'synthese\'])'},
+    {l:'BP d\u00e9taill\u00e9',icon:'&#128203;',act:'generateReport(\''+_sid+'\',[\'bp\'])'},
+    {l:'CAPEX & Financement',icon:'&#128176;',act:'generateReport(\''+_sid+'\',[\'capex\'])'},
+    {l:'Adh\u00e9rents',icon:'&#128101;',act:'generateReport(\''+_sid+'\',[\'adherents\'])'},
+    {l:'Localisation',icon:'&#128205;',act:'generateReport(\''+_sid+'\',[\'localisation\'])'}
+  ];
+  _pdfItems.forEach(function(it){
+    h+='<button onclick="'+it.act+';closeExportMenu()" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:500;color:#1e293b;text-align:left;transition:background .1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'none\'">'+it.icon+' '+it.l+'</button>';
+  });
+  h+='<div style="height:1px;background:#e2e8f0;margin:2px 0"></div>';
+  h+='<div style="padding:6px 12px;font-size:9px;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:1px">Donn\u00e9es</div>';
+  h+='<button onclick="exportStudioCSV(\''+_sid+'\');closeExportMenu()" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:500;color:#1e293b;text-align:left;transition:background .1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'none\'">&#128229; Export CSV</button>';
+  h+='<button onclick="exportStudioExcel(\''+_sid+'\');closeExportMenu()" style="display:flex;align-items:center;gap:8px;width:100%;padding:8px 14px;border:none;background:none;cursor:pointer;font-size:11px;font-weight:500;color:#1e293b;text-align:left;transition:background .1s" onmouseover="this.style.background=\'#f8fafc\'" onmouseout="this.style.background=\'none\'">&#128229; Export Excel</button>';
+  h+='</div></div>';
   h+='</div>';
   if(isSuperAdmin()){
     h+='<div style="display:flex;gap:8px;margin-bottom:14px">';
@@ -6222,7 +6242,22 @@ async function doLogin(){
 // ══════════════════════════════════════════════════════════════════════════════
 // ── EXPORT PDF — Rapport studio consulting-grade ────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-function generateReport(sid){
+function toggleExportMenu(e){
+  if(e)e.stopPropagation();
+  var m=document.getElementById('export-menu');
+  if(!m)return;
+  var show=m.style.display==='none';
+  m.style.display=show?'block':'none';
+  if(show){setTimeout(function(){document.addEventListener('click',closeExportMenu,{once:true});},10);}
+}
+function closeExportMenu(){
+  var m=document.getElementById('export-menu');
+  if(m)m.style.display='none';
+}
+
+function generateReport(sid,sections){
+  var _allSections=!sections||!sections.length;
+  function _incl(id){return _allSections||sections.indexOf(id)>=0;}
   var s=S.studios[sid];if(!s)return;
   var f=s.forecast||{};
   var md=f.moisDebut||0;
@@ -6372,6 +6407,7 @@ function generateReport(sid){
   h+=pageFooter()+'</div>';
 
   // ═══ SLIDE 2 : SYNTHESE FINANCIERE ═══
+  if(_incl('synthese')){
   h+='<div class="slide"><div class="top-bar"></div>';
   h+='<div class="sec-hdr"><h2>Synth\u00e8se financi\u00e8re</h2><div class="sub">Business Plan \u2014 Projection 3 ans</div></div>';
   h+='<div class="content">';
@@ -6408,8 +6444,10 @@ function generateReport(sid){
   h+='<span><span style="display:inline-block;width:1px;height:10px;background:#0F6E56;vertical-align:middle;margin-right:4px"></span>Break-even</span>';
   h+='</div></div>';
   h+='</div>'+pageFooter()+'</div>';
+  }
 
   // ═══ SLIDE 3 : BP DETAILLE ═══
+  if(_incl('bp')){
   h+='<div class="slide"><div class="top-bar"></div>';
   h+='<div class="sec-hdr"><h2>Business Plan d\u00e9taill\u00e9</h2><div class="sub">Charges & Revenus mensuels</div></div>';
   h+='<div class="content">';
@@ -6430,8 +6468,10 @@ function generateReport(sid){
     if(yi<2)h+='<div style="height:6px"></div>';
   }
   h+='</div>'+pageFooter()+'</div>';
+  }
 
   // ═══ SLIDE 4 : CAPEX + FINANCEMENT ═══
+  if(_incl('capex')){
   h+='<div class="slide"><div class="top-bar"></div>';
   h+='<div class="sec-hdr"><h2>Plan d\'investissement</h2><div class="sub">CAPEX & Structure de financement</div></div>';
   h+='<div class="content">';
@@ -6472,8 +6512,10 @@ function generateReport(sid){
     h+='</div>';
   }
   h+='</div>'+pageFooter()+'</div>';
+  }
 
   // ═══ SLIDE 5 : ADHERENTS ═══
+  if(_incl('adherents')){
   h+='<div class="slide"><div class="top-bar"></div>';
   h+='<div class="sec-hdr"><h2>Strat\u00e9gie adh\u00e9rents</h2><div class="sub">Objectifs, progression & simulation</div></div>';
   h+='<div class="content">';
@@ -6508,9 +6550,10 @@ function generateReport(sid){
   });
   h+='</div>';
   h+='</div>'+pageFooter()+'</div>';
+  }
 
   // ═══ SLIDE 6 : LOCALISATION ═══
-  if(ld){
+  if(_incl('localisation')&&ld){
     h+='<div class="slide"><div class="top-bar"></div>';
     h+='<div class="sec-hdr"><h2>Analyse de march\u00e9</h2><div class="sub">Localisation, accessibilit\u00e9 & d\u00e9mographie</div></div>';
     h+='<div class="content">';
@@ -6567,6 +6610,178 @@ function generateReport(sid){
   var blob=new Blob([h],{type:'text/html;charset=utf-8'});
   var url=URL.createObjectURL(blob);
   window.open(url,'_blank');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── EXPORT CSV ──────────────────────────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+function exportStudioCSV(sid){
+  var s=S.studios[sid];if(!s)return;
+  var f=s.forecast||{};
+  var md=f.moisDebut||0;
+  var annee0=f.annee||2026;
+  var opts=getStudioBPOpts(sid);
+  var bp=build3YearBP(f,sid,opts);
+  var actuelWF=S.adherents&&S.adherents[sid]||{};
+  var capexDet=getCapexDetailForStudio(sid);
+  var sep=';'; // Excel-friendly separator
+
+  function esc(v){var str=String(v==null?'':v);if(str.indexOf(sep)>=0||str.indexOf('"')>=0||str.indexOf('\n')>=0)return '"'+str.replace(/"/g,'""')+'"';return str;}
+  var lines=[];
+  function row(){lines.push(Array.prototype.slice.call(arguments).map(esc).join(sep));}
+
+  // ── Synthèse 3 ans ──
+  row('=== SYNTHESE FINANCIERE 3 ANS ===');
+  row('','Ann\u00e9e 1 ('+annee0+')','Ann\u00e9e 2 ('+(annee0+1)+')','Ann\u00e9e 3 ('+(annee0+2)+')');
+  var YR=[bp.a1,bp.a2,bp.a3].map(function(rows){
+    return{ca:rows.reduce(function(s,r){return s+r._ca;},0),charges:rows.reduce(function(s,r){return s+r._charges;},0),ebitda:rows.reduce(function(s,r){return s+r._ebitda;},0),rex:rows.reduce(function(s,r){return s+r._rex;},0),rnet:rows.reduce(function(s,r){return s+r._result;},0),caf:rows.reduce(function(s,r){return s+r._caf;},0)};
+  });
+  [{l:'Chiffre d\'affaires',k:'ca'},{l:'Charges totales',k:'charges'},{l:'EBITDA',k:'ebitda'},{l:'REX',k:'rex'},{l:'R\u00e9sultat net',k:'rnet'},{l:'CAF',k:'caf'}].forEach(function(r){
+    row(r.l,Math.round(YR[0][r.k]),Math.round(YR[1][r.k]),Math.round(YR[2][r.k]));
+  });
+  [{l:'Marge EBITDA',fn:function(yr){return yr.ca>0?Math.round(yr.ebitda/yr.ca*100)+'%':'0%';}},{l:'Marge nette',fn:function(yr){return yr.ca>0?Math.round(yr.rnet/yr.ca*100)+'%':'0%';}}].forEach(function(r){
+    row(r.l,r.fn(YR[0]),r.fn(YR[1]),r.fn(YR[2]));
+  });
+
+  // ── BP mensuel détaillé ──
+  row('');row('=== BP MENSUEL DETAILLE ===');
+  [0,1,2].forEach(function(yi){
+    var rows=yi===0?bp.a1:yi===1?bp.a2:bp.a3;
+    row('');row('Ann\u00e9e '+(yi+1)+' ('+( annee0+yi)+')');
+    var hdr=[''];for(var mi=0;mi<12;mi++){hdr.push(MOIS[(md+mi)%12]);}hdr.push('TOTAL');
+    row.apply(null,hdr);
+    [{l:'CA',k:'_ca'},{l:'Charges',k:'_charges'},{l:'EBITDA',k:'_ebitda'},{l:'R\u00e9sultat',k:'_result'}].forEach(function(r){
+      var vals=[r.l];var total=0;
+      rows.forEach(function(m){var v=Math.round(m[r.k]||0);vals.push(v);total+=v;});
+      vals.push(total);
+      row.apply(null,vals);
+    });
+  });
+
+  // ── Adhérents ──
+  row('');row('=== ADHERENTS ===');
+  [0,1,2].forEach(function(yi){
+    row('');row('Ann\u00e9e '+(yi+1));
+    var hdr=[''];for(var mi=0;mi<12;mi++){hdr.push(MOIS[(md+mi)%12]);}
+    row.apply(null,hdr);
+    var bpRow=['BP'];for(var mi=0;mi<12;mi++){bpRow.push(BP_ADHERENTS[yi*12+mi]);}
+    row.apply(null,bpRow);
+    var realRow=['R\u00e9el'];for(var mi=0;mi<12;mi++){var key='y'+(yi+1)+'_m'+mi;var val=actuelWF[key];realRow.push(val!==undefined?val:'');}
+    row.apply(null,realRow);
+  });
+
+  // ── CAPEX ──
+  row('');row('=== CAPEX ===');
+  row('Poste','Montant','Source');
+  capexDet.forEach(function(c){row(c.label,Math.round(c.montant),c.fin||'');});
+
+  // Télécharger
+  var csv='\uFEFF'+lines.join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(s.name||'studio').replace(/\s+/g,'_')+'_export.csv';
+  a.click();
+  toast('Export CSV t\u00e9l\u00e9charg\u00e9');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── EXPORT EXCEL (SpreadsheetML XML) ────────────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+function exportStudioExcel(sid){
+  var s=S.studios[sid];if(!s)return;
+  var f=s.forecast||{};
+  var md=f.moisDebut||0;
+  var annee0=f.annee||2026;
+  var opts=getStudioBPOpts(sid);
+  var bp=build3YearBP(f,sid,opts);
+  var actuelWF=S.adherents&&S.adherents[sid]||{};
+  var capexDet=getCapexDetailForStudio(sid);
+
+  function esc(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function numCell(v){return '<Cell><Data ss:Type="Number">'+Math.round(v)+'</Data></Cell>';}
+  function strCell(v){return '<Cell><Data ss:Type="String">'+esc(v)+'</Data></Cell>';}
+  function pctCell(v){return '<Cell><Data ss:Type="String">'+v+'%</Data></Cell>';}
+
+  var xml='<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml+='<?mso-application progid="Excel.Sheet"?>\n';
+  xml+='<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">\n';
+  xml+='<Styles><Style ss:ID="hdr"><Font ss:Bold="1"/><Interior ss:Color="#F1F5F9" ss:Pattern="Solid"/></Style>';
+  xml+='<Style ss:ID="bold"><Font ss:Bold="1"/></Style>';
+  xml+='<Style ss:ID="neg"><Font ss:Bold="1" ss:Color="#DC2626"/></Style></Styles>\n';
+
+  var YR=[bp.a1,bp.a2,bp.a3].map(function(rows){
+    return{ca:rows.reduce(function(s,r){return s+r._ca;},0),charges:rows.reduce(function(s,r){return s+r._charges;},0),ebitda:rows.reduce(function(s,r){return s+r._ebitda;},0),rex:rows.reduce(function(s,r){return s+r._rex;},0),rnet:rows.reduce(function(s,r){return s+r._result;},0),caf:rows.reduce(function(s,r){return s+r._caf;},0)};
+  });
+
+  // ── Onglet 1 : Synthèse ──
+  xml+='<Worksheet ss:Name="Synth\u00e8se"><Table>\n';
+  xml+='<Row ss:StyleID="hdr">'+strCell('')+strCell('Ann\u00e9e 1 ('+annee0+')')+strCell('Ann\u00e9e 2 ('+(annee0+1)+')')+strCell('Ann\u00e9e 3 ('+(annee0+2)+')')+'</Row>\n';
+  [{l:'Chiffre d\'affaires',k:'ca'},{l:'Charges totales',k:'charges'},{l:'EBITDA',k:'ebitda'},{l:'REX',k:'rex'},{l:'R\u00e9sultat net',k:'rnet'},{l:'CAF',k:'caf'}].forEach(function(r){
+    xml+='<Row>'+strCell(r.l)+numCell(YR[0][r.k])+numCell(YR[1][r.k])+numCell(YR[2][r.k])+'</Row>\n';
+  });
+  xml+='<Row>'+strCell('Marge EBITDA');
+  YR.forEach(function(yr){xml+=pctCell(yr.ca>0?Math.round(yr.ebitda/yr.ca*100):0);});
+  xml+='</Row>\n';
+  xml+='<Row>'+strCell('Marge nette');
+  YR.forEach(function(yr){xml+=pctCell(yr.ca>0?Math.round(yr.rnet/yr.ca*100):0);});
+  xml+='</Row>\n';
+  xml+='</Table></Worksheet>\n';
+
+  // ── Onglet 2 : BP Détaillé ──
+  xml+='<Worksheet ss:Name="BP D\u00e9taill\u00e9"><Table>\n';
+  [0,1,2].forEach(function(yi){
+    var rows=yi===0?bp.a1:yi===1?bp.a2:bp.a3;
+    xml+='<Row ss:StyleID="bold">'+strCell('Ann\u00e9e '+(yi+1)+' ('+(annee0+yi)+')');for(var z=0;z<13;z++)xml+=strCell('');xml+='</Row>\n';
+    xml+='<Row ss:StyleID="hdr">'+strCell('');
+    for(var mi=0;mi<12;mi++){xml+=strCell(MOIS[(md+mi)%12]);}
+    xml+=strCell('TOTAL')+'</Row>\n';
+    [{l:'CA',k:'_ca'},{l:'Charges',k:'_charges'},{l:'EBITDA',k:'_ebitda'},{l:'R\u00e9sultat',k:'_result'}].forEach(function(r){
+      xml+='<Row>'+strCell(r.l);
+      var total=0;
+      rows.forEach(function(m){var v=Math.round(m[r.k]||0);xml+=numCell(v);total+=v;});
+      xml+=numCell(total)+'</Row>\n';
+    });
+    xml+='<Row></Row>\n'; // empty row separator
+  });
+  xml+='</Table></Worksheet>\n';
+
+  // ── Onglet 3 : Adhérents ──
+  xml+='<Worksheet ss:Name="Adh\u00e9rents"><Table>\n';
+  [0,1,2].forEach(function(yi){
+    xml+='<Row ss:StyleID="bold">'+strCell('Ann\u00e9e '+(yi+1));for(var z=0;z<12;z++)xml+=strCell('');xml+='</Row>\n';
+    xml+='<Row ss:StyleID="hdr">'+strCell('');
+    for(var mi=0;mi<12;mi++){xml+=strCell(MOIS[(md+mi)%12]);}
+    xml+='</Row>\n';
+    xml+='<Row>'+strCell('BP');
+    for(var mi=0;mi<12;mi++){xml+=numCell(BP_ADHERENTS[yi*12+mi]);}
+    xml+='</Row>\n';
+    xml+='<Row>'+strCell('R\u00e9el');
+    for(var mi=0;mi<12;mi++){var key='y'+(yi+1)+'_m'+mi;var val=actuelWF[key];xml+=(val!==undefined?numCell(val):strCell('\u2014'));}
+    xml+='</Row>\n';
+    xml+='<Row></Row>\n';
+  });
+  xml+='</Table></Worksheet>\n';
+
+  // ── Onglet 4 : CAPEX ──
+  xml+='<Worksheet ss:Name="CAPEX"><Table>\n';
+  xml+='<Row ss:StyleID="hdr">'+strCell('Poste')+strCell('Montant')+strCell('Source')+'</Row>\n';
+  var capexTotal=0;
+  capexDet.forEach(function(c){
+    xml+='<Row>'+strCell(c.label)+numCell(c.montant)+strCell(c.fin||'\u2014')+'</Row>\n';
+    capexTotal+=c.montant;
+  });
+  xml+='<Row ss:StyleID="bold">'+strCell('TOTAL')+numCell(capexTotal)+strCell('')+'</Row>\n';
+  xml+='</Table></Worksheet>\n';
+
+  xml+='</Workbook>';
+
+  var blob=new Blob([xml],{type:'application/vnd.ms-excel;charset=utf-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download=(s.name||'studio').replace(/\s+/g,'_')+'_export.xls';
+  a.click();
+  toast('Export Excel t\u00e9l\u00e9charg\u00e9');
 }
 
 async function doLogout(){
