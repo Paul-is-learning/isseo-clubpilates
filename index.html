@@ -2405,21 +2405,13 @@ function renderAdherents(sid,s){
   var _activeId=S.activeScenarioId[sid]||(_scList.length?_scList[0].id:null);
   var _lastSc=_activeId&&_activeId!=='bp_default'?_scList.find(function(s){return s.id===_activeId;}):null;
   if(_lastSc){
-    h+='<div style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #d0dffa;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;cursor:default;transition:all 0.2s;position:relative" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.12)\';this.style.borderColor=\'#a0bfef\';var t=this.querySelector(\'.sc-tooltip\');if(t)t.style.opacity=\'1\';t.style.transform=\'translateY(0)\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'#d0dffa\';var t=this.querySelector(\'.sc-tooltip\');if(t)t.style.opacity=\'0\';t.style.transform=\'translateY(4px)\'">';
+    h+='<div style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #d0dffa;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;cursor:default;transition:all 0.2s" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.12)\';this.style.borderColor=\'#a0bfef\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'#d0dffa\'">';
     h+='<div style="width:32px;height:32px;border-radius:50%;background:#1a3a6b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div>';
     h+='<div style="flex:1;min-width:0">';
-    h+='<div style="font-size:11px;font-weight:700;color:#1a3a6b">Scénario actif — '+_lastSc.auteur+'</div>';
-    h+='<div style="font-size:10px;color:#5b7fa6;margin-top:1px">Enregistré le '+_lastSc.date+'</div>';
+    h+='<div style="font-size:11px;font-weight:700;color:#1a3a6b">Sc\u00e9nario actif \u2014 '+_lastSc.auteur+'</div>';
+    h+='<div style="font-size:10px;color:#5b7fa6;margin-top:1px">Enregistr\u00e9 le '+_lastSc.date+'</div>';
     h+='</div>';
-    h+='<div style="font-size:10px;color:#1a3a6b;font-weight:500;text-align:right;flex-shrink:0">P4 '+num(_lastSc.config.p4,47)+'% · P8 '+num(_lastSc.config.p8,50)+'% · Ill. '+num(_lastSc.config.pi,3)+'%</div>';
-    // Tooltip au hover
-    if(_lastSc.comment){
-      h+='<div class="sc-tooltip" style="position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%) translateY(4px);background:#0f1f3d;color:#fff;padding:10px 14px;border-radius:10px;font-size:11px;line-height:1.5;max-width:360px;box-shadow:0 8px 24px rgba(0,0,0,0.2);opacity:0;transition:all 0.2s;pointer-events:none;z-index:100;white-space:normal">';
-      h+='<div style="font-weight:600;margin-bottom:4px">💬 '+_lastSc.auteur+'</div>';
-      h+=_lastSc.comment;
-      h+='<div style="position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);width:12px;height:12px;background:#0f1f3d;rotate:45deg;border-radius:2px"></div>';
-      h+='</div>';
-    }
+    h+='<div style="font-size:10px;color:#1a3a6b;font-weight:500;text-align:right;flex-shrink:0">P4 '+num(_lastSc.config.p4,47)+'% \u00b7 P8 '+num(_lastSc.config.p8,50)+'% \u00b7 Ill. '+num(_lastSc.config.pi,3)+'%</div>';
     h+='</div>';
   }
 
