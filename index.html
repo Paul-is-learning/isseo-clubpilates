@@ -1664,16 +1664,59 @@ function renderAccueil(){
   var alertCount=allIds.reduce(function(s,id){return s+S.studios[id].alertes.length;},0);
 
   var h='';
-  // ── Welcome banner ──
   var _prenom=(S.profile&&S.profile.nom||'').split(' ')[0]||'';
+  var _fullNom=S.profile&&S.profile.nom||'';
+  var _role=S.profile&&S.profile.role||'';
+  var _roleLabel=_role==='admin'?'Administrateur':_role==='viewer'?'Lecteur':_role;
   var _heure=new Date().getHours();
   var _salut=_heure<12?'Bonjour':_heure<18?'Bon après-midi':'Bonsoir';
-  h+='<div style="background:linear-gradient(135deg,#0f1f3d 0%,#1a3a6b 50%,#2d5a8e 100%);border-radius:16px;padding:24px 28px;margin-bottom:18px;color:#fff;position:relative;overflow:hidden">';
+  var _uPhoto=getUserPhoto(S.profile);
+  var _unread=S.notifications.filter(function(n){return!n.read;}).length;
+
+  // ── Top bar : photo + salut + icônes ──
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:0 2px">';
+  // Left: photo + greeting
+  h+='<div style="display:flex;align-items:center;gap:14px">';
+  // Photo utilisateur classe
+  h+='<div style="position:relative;flex-shrink:0">';
+  h+='<div style="width:52px;height:52px;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#1a3a6b,#2d5a8e);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(26,58,107,0.25);border:2.5px solid #fff;cursor:pointer" onclick="document.getElementById(\'avatar-upload-input\').click()" title="Changer ma photo">';
+  if(_uPhoto)h+='<img src="'+_uPhoto+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML=\'<span style=color:#fff;font-size:18px;font-weight:700>'+_ini(_prenom)+'</span>\'">';
+  else h+='<span style="color:#fff;font-size:18px;font-weight:700">'+_ini(_prenom)+'</span>';
+  h+='</div>';
+  // Online indicator
+  h+='<div style="position:absolute;bottom:1px;right:1px;width:13px;height:13px;border-radius:50%;background:#22c55e;border:2.5px solid #faf9f6;box-shadow:0 0 0 1px rgba(34,197,94,0.3)"></div>';
+  h+='</div>';
+  // Greeting text
+  h+='<div>';
+  h+='<div style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.2">'+_salut+(_prenom?', '+_prenom:'')+'</div>';
+  h+='<div style="font-size:12px;color:#888;margin-top:2px">'+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>';
+  h+='</div>';
+  h+='</div>';
+  // Right: notif + cadenas
+  h+='<div style="display:flex;align-items:center;gap:4px">';
+  // Cloche notifications
+  h+='<div style="position:relative" onclick="event.stopPropagation();toggleNotifPanel()">';
+  h+='<button title="Notifications" style="background:none;border:1px solid #e8e8e0;border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative" onmouseover="this.style.background=\'#f5f5f0\';this.style.borderColor=\'#d0d0c8\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e8e8e0\'">';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
+  h+='</button>';
+  h+='<div id="notif-badge-accueil" style="display:'+(_unread>0?'flex':'none')+';position:absolute;top:-3px;right:-3px;background:#ef4444;color:#fff;font-size:8px;font-weight:700;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 4px;border:2px solid #faf9f6;line-height:1;box-shadow:0 1px 4px rgba(239,68,68,0.4)">'+(_unread>99?'99+':_unread)+'</div>';
+  if(S.notifOpen)h+=renderNotifPanel();
+  h+='</div>';
+  // Cadenas mot de passe
+  h+='<button onclick="openChangePassword()" title="Modifier mot de passe" style="background:none;border:1px solid #e8e8e0;border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f0\';this.style.borderColor=\'#d0d0c8\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e8e8e0\'">';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16.5" r="1.5"/></svg>';
+  h+='</button>';
+  h+='</div>';
+  h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
+  h+='</div>';
+
+  // ── Welcome banner ──
+  h+='<div style="background:linear-gradient(135deg,#0f1f3d 0%,#1a3a6b 50%,#2d5a8e 100%);border-radius:16px;padding:22px 28px;margin-bottom:18px;color:#fff;position:relative;overflow:hidden">';
   h+='<div style="position:absolute;top:-30px;right:-20px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,0.06) 0%,transparent 70%);border-radius:50%"></div>';
   h+='<div style="position:absolute;bottom:-40px;right:80px;width:150px;height:150px;background:radial-gradient(circle,rgba(29,158,117,0.15) 0%,transparent 70%);border-radius:50%"></div>';
   h+='<div style="position:relative;z-index:1">';
-  h+='<div style="font-size:20px;font-weight:700;margin-bottom:4px">'+_salut+(_prenom?', '+_prenom:'')+'</div>';
-  h+='<div style="font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:16px">Tableau de bord ISSEO × Club Pilates — '+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>';
+  h+='<div style="font-size:15px;font-weight:600;margin-bottom:2px;color:rgba(255,255,255,0.85)">Tableau de bord ISSEO × Club Pilates</div>';
+  h+='<div style="font-size:12px;color:rgba(255,255,255,0.5)">Vue d\'ensemble de vos projets et activités</div>';
   h+='</div>';
   // KPIs intégrés dans le banner
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;position:relative;z-index:1">';
