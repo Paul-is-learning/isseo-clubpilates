@@ -4445,9 +4445,12 @@ function renderAlertes(sid,s){
         h+='</div>';
       }
       h+='</div>';
+      h+='<div style="display:flex;align-items:center;gap:4px;flex-shrink:0">';
+      h+='<button onclick="acquitterAlerte(\''+sid+'\','+i+')" style="background:#f0fdf4;border:1px solid #bbf7d0;cursor:pointer;font-size:10px;color:#166534;padding:4px 10px;border-radius:6px;font-weight:600;transition:all .15s;display:flex;align-items:center;gap:4px" onmouseenter="this.style.background=\'#dcfce7\';this.style.borderColor=\'#86efac\'" onmouseleave="this.style.background=\'#f0fdf4\';this.style.borderColor=\'#bbf7d0\'">\u2713 Vu</button>';
       if(isAdmin){
-        h+='<button onclick="supprimerAlerte(\''+sid+'\','+i+')" style="background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;padding:4px 6px;border-radius:6px;transition:all .15s;flex-shrink:0" onmouseenter="this.style.color=\'#DC2626\';this.style.background=\'#fef2f2\'" onmouseleave="this.style.color=\'#ccc\';this.style.background=\'none\'" title="Supprimer">&times;</button>';
+        h+='<button onclick="supprimerAlerte(\''+sid+'\','+i+')" style="background:none;border:none;cursor:pointer;font-size:14px;color:#ccc;padding:4px 6px;border-radius:6px;transition:all .15s" onmouseenter="this.style.color=\'#DC2626\';this.style.background=\'#fef2f2\'" onmouseleave="this.style.color=\'#ccc\';this.style.background=\'none\'" title="Supprimer">&times;</button>';
       }
+      h+='</div>';
       h+='</div></div>';
     });
   }
@@ -4472,6 +4475,16 @@ async function ajouterAlerte(sid){
   await saveStudio(sid,s);
   notifyAll({type:'statut',studio_id:sid,title:'\u26A0\uFE0F Nouvelle alerte \u2014 '+(S.studios[sid].name||sid),body:texte});
   toast('Alerte ajout\u00e9e');
+}
+
+async function acquitterAlerte(sid,idx){
+  var s=Object.assign({},S.studios[sid]);
+  s.alertes=s.alertes.slice();
+  var alerte=s.alertes[idx];
+  var texte=_alerteText(alerte);
+  s.alertes.splice(idx,1);
+  await saveStudio(sid,s);
+  toast('\u2713 Alerte acquitt\u00e9e : '+texte);
 }
 
 async function supprimerAlerte(sid,idx){
