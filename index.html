@@ -778,12 +778,39 @@ async function saveScenarios(sid){
   await sb.from('studios').upsert({id:sid+'_scenarios',data:{scenarios:S.scenarios[sid]||[]},updated_at:new Date().toISOString()});
 }
 
-async function enregistrerScenario(sid){
+function enregistrerScenario(sid){
+  // Modale pour saisir un commentaire obligatoire
+  var overlay=document.createElement('div');
+  overlay.id='scenario-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var box='<div style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  box+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span style="font-size:15px;font-weight:700;color:#1a1a1a">Enregistrer le scénario</span></div>';
+  box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Commentaire <span style="color:#A32D2D">*</span></label>';
+  box+='<textarea id="scenario-comment" rows="3" placeholder="Décrivez les hypothèses de ce scénario…" style="width:100%;padding:10px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box"></textarea>';
+  box+='<div id="scenario-err" style="font-size:11px;color:#A32D2D;margin-top:4px;min-height:16px"></div>';
+  box+='<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">';
+  box+='<button onclick="document.getElementById(\'scenario-modal\').remove()" style="padding:8px 16px;border:1px solid #dde;border-radius:8px;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer">Annuler</button>';
+  box+='<button onclick="_confirmerScenario(\''+sid+'\')" style="padding:8px 16px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer">Enregistrer</button>';
+  box+='</div></div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var ta=document.getElementById('scenario-comment');if(ta)ta.focus();},100);
+}
+
+async function _confirmerScenario(sid){
+  var comment=(document.getElementById('scenario-comment')||{}).value||'';
+  if(!comment.trim()){
+    var err=document.getElementById('scenario-err');
+    if(err)err.textContent='Le commentaire est obligatoire pour enregistrer.';
+    return;
+  }
   var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   var now=new Date();
   var sc={
     id:'sc_'+Date.now(),
     auteur:(S.profile&&S.profile.nom)||'Admin',
+    comment:comment.trim(),
     date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
     ts:now.toISOString(),
     config:JSON.parse(JSON.stringify(cfg))
@@ -792,6 +819,8 @@ async function enregistrerScenario(sid){
   S.scenarios[sid].push(sc);
   await saveScenarios(sid);
   saveSimConfig(sid);
+  var modal=document.getElementById('scenario-modal');
+  if(modal)modal.remove();
   toast('Scénario enregistré par '+sc.auteur);
   render();
 }
@@ -5235,7 +5264,7 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
   h+='<select onchange="chargerScenario(\''+sid+'\',this.value)" style="padding:6px 10px;border:1px solid #dde;border-radius:8px;font-size:11px;font-weight:500;color:#1a3a6b;background:#f8f9fb;cursor:pointer;max-width:220px">';
   h+='<option value="bp_default"'+(matchedSc==='bp_default'?' selected':'')+'>📊 BP de r&eacute;f&eacute;rence</option>';
   scenarios.forEach(function(sc){
-    var lbl=sc.auteur.split(' ')[0]+' — '+sc.date;
+    var lbl=sc.auteur.split(' ')[0]+' — '+sc.date+(sc.comment?' · '+(sc.comment.length>30?sc.comment.slice(0,30)+'…':sc.comment):'');
     h+='<option value="'+sc.id+'"'+(matchedSc===sc.id?' selected':'')+'>'+lbl+'</option>';
   });
   h+='</select>';
@@ -5248,6 +5277,16 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
     h+='<button onclick="supprimerScenario(\''+sid+'\',\''+matchedSc+'\')" style="padding:6px 8px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor=\'#A32D2D\'" onmouseout="this.style.borderColor=\'#e0e0da\'" title="Supprimer ce sc&eacute;nario">×</button>';
   }
   h+='</div></div>';
+
+  // ── Commentaire du scénario actif ──
+  var activeSc=matchedSc&&matchedSc!=='bp_default'?scenarios.find(function(s){return s.id===matchedSc;}):null;
+  if(activeSc&&activeSc.comment){
+    h+='<div style="background:#f0f4ff;border:1px solid #d0dffa;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">';
+    h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
+    h+='<div><div style="font-size:10px;color:#1a3a6b;font-weight:600;margin-bottom:2px">'+activeSc.auteur+' — '+activeSc.date+'</div>';
+    h+='<div style="font-size:11px;color:#444;line-height:1.45">'+activeSc.comment+'</div></div>';
+    h+='</div>';
+  }
 
   // ── Répartition ──
   h+='<div style="font-weight:500;font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Repartition des abonnes</div>';
