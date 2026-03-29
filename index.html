@@ -1295,6 +1295,7 @@ function renderAdminPanel(){
     h+='<thead><tr style="background:#f8f9fb;border-bottom:1px solid #e8eaf0">';
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Utilisateur</th>';
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Rôle / Périmètre</th>';
+    h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Mot de passe</th>';
     h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Lecture seule</th>';
     h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Accès</th>';
     h+='</tr></thead><tbody>';
@@ -1324,6 +1325,32 @@ function renderAdminPanel(){
           h+='<option value="'+r+'"'+(roleOverride===r?' selected':'')+'>'+r+' — '+(ROLE_LABELS[r]||r)+'</option>';
         });
         h+='</select>';
+      }
+      h+='</td>';
+      // Mot de passe
+      var _pwds=S.adminSettings.passwords||{};
+      var _curPwd=_pwds[uid]||'';
+      h+='<td style="padding:12px 16px">';
+      if(isMe){
+        h+='<span style="font-size:11px;color:#aaa">—</span>';
+      } else {
+        h+='<div style="display:flex;align-items:center;gap:6px">';
+        h+='<div id="pwd-display-'+uid+'" style="font-size:12px;font-family:monospace;color:#555;background:#f8f9fb;padding:4px 8px;border-radius:6px;border:1px solid #e8eaf0;min-width:80px">';
+        if(_curPwd){
+          h+='<span id="pwd-text-'+uid+'" style="letter-spacing:1px">••••••</span>';
+        } else {
+          h+='<span style="color:#ccc;font-style:italic;font-family:inherit">Non défini</span>';
+        }
+        h+='</div>';
+        if(_curPwd){
+          h+='<button onclick="toggleShowPwd(\''+uid+'\')" title="Voir/cacher" style="background:none;border:none;cursor:pointer;padding:2px;color:#888;transition:color .15s" onmouseover="this.style.color=\'#333\'" onmouseout="this.style.color=\'#888\'">';
+          h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+          h+='</button>';
+        }
+        h+='<button onclick="editUserPassword(\''+uid+'\',\''+(u.nom||'').replace(/'/g,"\\'")+'\')" title="Modifier le mot de passe" style="background:none;border:none;cursor:pointer;padding:2px;color:#888;transition:color .15s" onmouseover="this.style.color=\'#1a3a6b\'" onmouseout="this.style.color=\'#888\'">';
+        h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+        h+='</button>';
+        h+='</div>';
       }
       h+='</td>';
       // Toggle lecture seule (viewer)
@@ -1378,6 +1405,36 @@ async function toggleUserAccess(uid,block){
   var ok=await saveAdminSettings();
   if(ok)toast(block?'Accès suspendu.':'Accès réactivé.');
   render();
+}
+
+// ── Admin: gestion mots de passe ─────────────────────────────────────────────
+function toggleShowPwd(uid){
+  var el=document.getElementById('pwd-text-'+uid);
+  if(!el)return;
+  var pwds=S.adminSettings.passwords||{};
+  var pwd=pwds[uid]||'';
+  if(el.dataset.visible==='1'){
+    el.textContent='••••••';
+    el.style.letterSpacing='1px';
+    el.dataset.visible='0';
+  } else {
+    el.textContent=pwd;
+    el.style.letterSpacing='0';
+    el.dataset.visible='1';
+  }
+}
+
+function editUserPassword(uid,nom){
+  var pwds=S.adminSettings.passwords||{};
+  var current=pwds[uid]||'';
+  var newPwd=prompt('Nouveau mot de passe pour '+nom+' :'+(current?'\n(actuel : '+current+')':''),current);
+  if(newPwd===null)return;
+  if(!newPwd.trim()){toast('Mot de passe vide non autorisé');return;}
+  if(!S.adminSettings.passwords)S.adminSettings.passwords={};
+  S.adminSettings.passwords[uid]=newPwd.trim();
+  saveAdminSettings().then(function(ok){
+    if(ok){toast('Mot de passe enregistré pour '+nom);render();}
+  });
 }
 
 // ── Avatar utilisateur connecté ──────────────────────────────────────────────
