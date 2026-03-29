@@ -2464,13 +2464,19 @@ function renderLocalisation(s){
     h+='<div style="text-align:right"><div id="map-age35-abs" style="font-size:9.5px;color:#94a3b8;margin-bottom:1px">—</div><div id="map-age35-pct" style="font-size:16px;font-weight:700;color:#94a3b8">—</div></div>';
     h+='</div>';
     h+='</div>';
+    h+='</div>'; // fin colonne droite KPI
+    h+='</div>'; // fin grille 2 colonnes carte+KPI
 
+    // ── Cards sous la carte (pleine largeur) ──
     if(ld){
-      // ── Grille Trafic + Revenu côte à côte ──
       var hasTrafic=ld.trafic&&ld.trafic[0];
       var revItem=(ld.demo||[]).find(function(d){return /revenu/i.test(d.lbl);});
-      if(hasTrafic||revItem){
-        h+='<div style="display:grid;grid-template-columns:'+(hasTrafic&&revItem?'1fr 1fr':'1fr')+';gap:8px">';
+      var topTags=(ld.tags||[]).filter(function(t){return t.c==='tg';}).slice(0,3);
+      var hasTC=ld.transports&&ld.transports.length>0;
+      // Grille : Trafic | Revenu | TC+tags
+      var cols=[];if(hasTrafic)cols.push('trafic');if(revItem)cols.push('revenu');if(hasTC||topTags.length)cols.push('tc');
+      if(cols.length){
+        h+='<div style="display:grid;grid-template-columns:repeat('+cols.length+',1fr);gap:10px;margin-bottom:16px">';
         if(hasTrafic){
           var tf=ld.trafic[0];
           var tmjaStr2=tf.kpi;
@@ -2479,39 +2485,35 @@ function renderLocalisation(s){
           else{var tx2=tmjaStr2.match(/~?(\d[\d ]+)/);if(tx2)tmjaV=parseDemographicNum(tx2[1]);}
           var tC2=tmjaV>25000?'#D85A30':tmjaV>15000?'#E89B2A':'#4BA874';
           var tBg2=tmjaV>25000?'#FEF3EF':tmjaV>15000?'#FEF9EF':'#EDF7F2';
-          h+='<div style="background:'+tBg2+';border:0.5px solid '+tC2+'44;border-radius:12px;padding:13px 15px;border-left:3px solid '+tC2+'">';
-          h+='<div style="font-size:9px;color:'+tC2+';text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:4px">🚗 Trafic · TMJA</div>';
-          h+='<div style="font-size:20px;font-weight:700;color:'+tC2+';line-height:1">'+tmjaStr2+'</div>';
-          h+='<div style="font-size:9px;color:#94a3b8;margin-top:3px">véh/jour · '+tf.lbl+'</div>';
+          h+='<div style="background:'+tBg2+';border:0.5px solid '+tC2+'44;border-radius:12px;padding:14px 16px;border-left:3px solid '+tC2+'">';
+          h+='<div style="font-size:9.5px;color:'+tC2+';text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:6px">🚗 Trafic routier · TMJA</div>';
+          h+='<div style="font-size:22px;font-weight:700;color:'+tC2+';line-height:1">'+tmjaStr2+'</div>';
+          h+='<div style="font-size:10px;color:#94a3b8;margin-top:4px">véh/jour · '+tf.lbl+'</div>';
           h+='</div>';
         }
         if(revItem){
-          h+='<div style="background:#fff;border:0.5px solid #e2e8f0;border-radius:12px;padding:13px 15px;border-left:3px solid '+revItem.col+'">';
-          h+='<div style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:4px">💰 '+revItem.lbl+'</div>';
-          h+='<div style="font-size:17px;font-weight:700;color:#0f1f3d;line-height:1.2">'+revItem.kpi+'</div>';
-          h+='<div style="font-size:9px;color:#94a3b8;margin-top:3px;line-height:1.4">'+revItem.sub+'</div>';
+          h+='<div style="background:#fff;border:0.5px solid #e2e8f0;border-radius:12px;padding:14px 16px;border-left:3px solid '+revItem.col+'">';
+          h+='<div style="font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:0.05em;font-weight:700;margin-bottom:6px">💰 '+revItem.lbl+'</div>';
+          h+='<div style="font-size:20px;font-weight:700;color:#0f1f3d;line-height:1.2">'+revItem.kpi+'</div>';
+          h+='<div style="font-size:10px;color:#94a3b8;margin-top:4px;line-height:1.4">'+revItem.sub+'</div>';
           h+='</div>';
         }
-        h+='</div>';
-      }
-      // ── Lignes TC + tags (pleine largeur) ──
-      var topTags=(ld.tags||[]).filter(function(t){return t.c==='tg';}).slice(0,3);
-      if(ld.transports&&ld.transports.length>0||topTags.length){
-        h+='<div style="background:#EEF4FB;border:0.5px solid #c5d8ef;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
-        if(ld.transports&&ld.transports.length>0){
-          h+='<div style="display:flex;align-items:center;gap:8px">';
-          h+='<div style="font-size:22px;font-weight:700;color:#185FA5;line-height:1">'+ld.transports.length+'</div>';
-          h+='<div style="font-size:11px;color:#2d5a8e;line-height:1.3"><strong>lignes TC</strong><br>desservant le studio</div>';
+        if(hasTC||topTags.length){
+          h+='<div style="background:#EEF4FB;border:0.5px solid #c5d8ef;border-radius:12px;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:8px">';
+          if(hasTC){
+            h+='<div style="display:flex;align-items:center;gap:8px">';
+            h+='<div style="font-size:24px;font-weight:700;color:#185FA5;line-height:1">'+ld.transports.length+'</div>';
+            h+='<div style="font-size:11px;color:#2d5a8e;line-height:1.3"><strong>lignes TC</strong><br>desservant le studio</div>';
+            h+='</div>';
+          }
+          if(topTags.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';h+=topTags.map(_locTag).join('');h+='</div>';}
           h+='</div>';
         }
-        if(topTags.length){h+='<div style="display:flex;gap:6px;flex-wrap:wrap">';h+=topTags.map(_locTag).join('');h+='</div>';}
         h+='</div>';
       }
     } else {
-      h+='<div class="box" style="color:#999;font-size:12px;text-align:center;padding:24px">Données de localisation<br>non encore renseignées</div>';
+      h+='<div class="box" style="color:#999;font-size:12px;text-align:center;padding:24px;margin-bottom:16px">Données de localisation<br>non encore renseignées</div>';
     }
-    h+='</div>';
-    h+='</div>';
   } else {
     // ── Mode Street View ──
     var svCoords=S.mapCoords&&sid&&S.mapCoords[sid];
