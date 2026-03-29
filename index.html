@@ -53,6 +53,7 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:130px}
 .yr-tab{padding:4px 14px;border-radius:6px;background:transparent;border:0.5px solid transparent;cursor:pointer;font-size:12px}
 .yr-tab.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
 @media(max-width:600px){.form-grid,.edit-grid{grid-template-columns:1fr}}
+@media(max-width:640px){.activity-grid{grid-template-columns:1fr!important}}
 @keyframes locPulse{0%{transform:scale(0.5);opacity:0.7}80%{transform:scale(2);opacity:0}100%{transform:scale(2);opacity:0}}
 @keyframes spin{to{transform:rotate(360deg)}}
 input[type=range].zone-slider{-webkit-appearance:none;appearance:none;width:100%;height:5px;border-radius:3px;background:linear-gradient(to right,#1D9E75 0%,#1D9E75 var(--pct,40%),#e2e8f0 var(--pct,40%),#e2e8f0 100%);outline:none;cursor:pointer}
@@ -634,11 +635,11 @@ function inferStatut(steps){
 }
 
 const INIT={
-  lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'Septembre 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Deadline franchise 30/06/2026'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
-  garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Pacte associes COBE a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
-  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Bail commercial a finaliser'],steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
-  issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Credit-bail equipements a mettre en place'],steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
-  toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:333500,emprunt:230000,leasing:121600,alertes:['Deadline franchise 30/06/2027'],steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
+  lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'Septembre 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Deadline franchise 30/06/2026'],cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Pacte associes COBE a finaliser'],cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Bail commercial a finaliser'],cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Credit-bail equipements a mettre en place'],cohorte:1,steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:333500,emprunt:230000,leasing:121600,alertes:['Deadline franchise 30/06/2027'],cohorte:2,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
 };
 
 var S={
@@ -670,6 +671,9 @@ var S={
   notifOpen:false,      // panneau notif ouvert/fermé
   notifFilter:{studio:'all',type:'all',emetteur:'all',period:'all'},
   notifSub:null,        // Supabase Realtime subscription
+  // ── Dashboard ──
+  dashView:'grid',        // 'grid' | 'cohorte' | 'list'
+  dashFilter:'all',       // 'all' | 'preparation' | 'pipeline' | 'debloque' | 'abandonne'
   // ── Recherche globale ──
   searchQuery:'',
   searchOpen:false,
@@ -957,6 +961,12 @@ async function saveStudio(id,studio){
   S.studios[id]=studio;
   await sb.from('studios').upsert({id:id,data:studio,updated_at:new Date().toISOString()});
   render();
+}
+async function setStudioCohorte(sid,val){
+  if(!S.studios[sid])return;
+  S.studios[sid].cohorte=val;
+  await saveStudio(sid,S.studios[sid]);
+  toast('Cohorte mise à jour : C'+val);
 }
 async function saveDepenses(sid){
   await sb.from('studios').upsert({id:sid+'_depenses',data:{depenses:S.depenses[sid]},updated_at:new Date().toISOString()});
@@ -1451,38 +1461,63 @@ async function setUserRole(uid,role){
 
 function renderDashboard(){
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
-  var ids=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
+  var allIds=Object.keys(S.studios).filter(function(id){return !filter||filter(S.studios[id]);});
   var isAdmin=!!S.profile&&!isViewer();
+
+  // Apply status filter
+  var ids=allIds;
+  if(S.dashFilter!=='all')ids=allIds.filter(function(id){return S.studios[id].statut===S.dashFilter;});
+
+  var alertCount=allIds.reduce(function(s,id){return s+S.studios[id].alertes.length;},0);
+
   var h='<div class="app">';
+  // ── Navbar ──
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px">';
   h+='<div style="display:flex;align-items:center;gap:12px">'+LI+COLLAB_SEP+LC+'</div>';
   h+=renderSearchBar();
   h+='<div style="display:flex;align-items:center;gap:4px">';
   h+=userAvatarWidget(S.profile);
   h+='<button onclick="doLogout()" title="Déconnexion" style="background:none;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background=\'rgba(220,38,38,0.08)\'" onmouseout="this.style.background=\'none\'"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button></div></div>';
+
+  // ── KPIs ──
   h+='<div class="kpis">';
-  h+='<div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">'+ids.length+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+S.studios[id].capex;},0))+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">CA BP A1 total</div><div class="kpi-val">'+fmt(ids.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0))+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Alertes</div><div class="kpi-val">'+ids.reduce(function(s,id){return s+S.studios[id].alertes.length;},0)+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Studios</div><div class="kpi-val">'+allIds.length+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">CAPEX total</div><div class="kpi-val">'+fmt(allIds.reduce(function(s,id){return s+S.studios[id].capex;},0))+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">CA BP A1 total</div><div class="kpi-val">'+fmt(allIds.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0))+'</div></div>';
+  h+='<div class="kpi"><div class="kpi-label">Alertes</div><div class="kpi-val" style="display:flex;align-items:center;gap:6px">'+alertCount+(alertCount>0?'<span style="width:8px;height:8px;border-radius:50%;background:#DC2626;display:inline-block"></span>':'')+'</div></div>';
   h+='</div>';
-  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px">';
-  h+='<div style="display:flex;gap:6px">';
-  h+='<button class="tab '+(S.mainTab==='studios'?'active':'')+'" onclick="setMainTab(\'studios\')">Studios</button>';
-  h+='<button class="tab '+(S.mainTab==='pipeline'?'active':'')+'" onclick="setMainTab(\'pipeline\')">Pipeline</button>';
-  if(isSuperAdmin())h+='<button class="tab '+(S.mainTab==='admin'?'active':'')+'" onclick="setMainTab(\'admin\')" style="color:'+(S.mainTab==='admin'?'':'#854F0B')+'">⚙ Admin</button>';
+
+  // ── Activité récente ──
+  if(S.mainTab!=='admin')h+=renderActivityFeed(allIds);
+
+  // ── Toolbar : vue toggle + filtres + admin + actions ──
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px">';
+  h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+  if(S.mainTab!=='admin'){
+    h+=renderViewToggle();
+    h+=renderStatusFilters(allIds);
+  }
   h+='</div>';
-  if(isAdmin&&S.mainTab!=='admin')h+='<button class="btn" onclick="toggleNewForm()">'+(S.showNewForm?'Annuler':'+ Nouveau studio')+'</button>';
-  h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:6px">';
+  if(isSuperAdmin())h+='<button class="tab '+(S.mainTab==='admin'?'active':'')+'" onclick="setMainTab(\'admin\')" style="font-size:11px;color:'+(S.mainTab==='admin'?'':'#854F0B')+'">⚙ Admin</button>';
+  if(S.mainTab==='admin')h+='<button class="tab" onclick="setMainTab(\'studios\')" style="font-size:11px">← Studios</button>';
+  if(isAdmin&&S.mainTab!=='admin')h+='<button class="btn" onclick="toggleNewForm()" style="font-size:11px">'+(S.showNewForm?'Annuler':'+ Nouveau studio')+'</button>';
+  h+='</div></div>';
+
   if(S.showNewForm&&S.mainTab!=='admin')h+=renderNewForm();
-  if(S.mainTab==='studios'){
+
+  // ── Content area ──
+  if(S.mainTab==='admin'){
+    h+=renderAdminPanel();
+  } else if(S.dashView==='grid'){
     h+='<div class="cards">';
     ids.forEach(function(id){h+=renderCard(id,S.studios[id]);});
     h+='</div>';
-  } else if(S.mainTab==='pipeline'){
-    h+=renderPipeline(ids);
-  } else if(S.mainTab==='admin'){
-    h+=renderAdminPanel();
+    if(!ids.length)h+='<div style="text-align:center;color:#bbb;padding:30px;font-size:13px">Aucun studio avec ce filtre</div>';
+  } else if(S.dashView==='cohorte'){
+    h+=renderCohorteView(ids);
+  } else if(S.dashView==='list'){
+    h+=renderListView(ids);
   }
   h+='</div>';
   return h;
@@ -1503,7 +1538,7 @@ function renderCard(id,s){
   return '<div class="card" onclick="openDetail(\''+id+'\')">'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
     '<div><div style="font-weight:600;font-size:14px">'+s.name+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+s.societe+'</div></div>'+
-    badge(s.statut)+'</div>'+
+    '<div style="display:flex;align-items:center;gap:5px">'+badge(s.statut)+'<span style="background:#f0f4ff;color:#1a3a6b;font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px">C'+(s.cohorte||1)+'</span></div></div>'+
     '<div style="font-size:11px;color:#888;margin-bottom:10px">Ouverture : <strong>'+s.ouverture+'</strong></div>'+
     progBar(s.steps)+
     (s.alertes.length>0?'<div style="margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+s.alertes[0]+'</div>':'')+
@@ -1511,18 +1546,162 @@ function renderCard(id,s){
     '</div>';
 }
 
-function renderPipeline(ids){
-  var h='';
-  [{label:'Cohorte 1 - 2026',ids:['lattes','garenne','levallois','issy'],note:'4 studios'},
-   {label:'Cohorte 2 - 2027',ids:['toulouse'],note:'5 studios'},
-   {label:'Cohorte 3 - 2028',ids:[],note:'5 studios'},
-   {label:'Cohorte 4 - 2029',ids:[],note:'2 studios'}].forEach(function(c){
-    h+='<div class="box"><div style="display:flex;justify-content:space-between"><span style="font-weight:600">'+c.label+'</span><span style="font-size:11px;color:#888">'+c.note+'</span></div>';
-    c.ids.filter(function(id){return S.studios[id];}).forEach(function(id){
-      h+='<span class="chip" onclick="openDetail(\''+id+'\')">'+S.studios[id].name+'</span>';
+// ── Activité récente ──────────────────────────────────────────────────────
+function renderActivityFeed(ids){
+  // Collect recent messages across all visible studios
+  var allMsgs=[];
+  ids.forEach(function(id){
+    (S.messages[id]||[]).forEach(function(m){
+      allMsgs.push({studioId:id,studioName:S.studios[id].name,auteur:m.auteur||m.user||'',texte:m.texte||m.text||'',ts:m.ts||'',date:m.date||''});
     });
-    h+='</div>';
   });
+  allMsgs.sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
+  allMsgs=allMsgs.slice(0,5);
+
+  // Collect all alerts
+  var allAlerts=[];
+  ids.forEach(function(id){
+    (S.studios[id].alertes||[]).forEach(function(a){
+      allAlerts.push({studioId:id,studioName:S.studios[id].name,text:a});
+    });
+  });
+
+  var h='<div class="activity-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">';
+
+  // Messages panel
+  h+='<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:16px 18px;min-height:80px">';
+  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#3B6FB6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span style="font-size:12px;font-weight:700;color:#1a1a1a">Messages récents</span></div>';
+  if(!allMsgs.length){
+    h+='<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucun message</div>';
+  } else {
+    allMsgs.forEach(function(m){
+      h+='<div onclick="openDetail(\''+m.studioId+'\');setTimeout(function(){setDetailTab(\'messages\')},50)" style="display:flex;gap:9px;padding:7px 0;border-bottom:1px solid #f5f5f0;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=\'#fafaf6\'" onmouseout="this.style.background=\'transparent\'">';
+      h+='<div style="flex-shrink:0;width:28px;height:28px;border-radius:50%;background:'+_aC(m.auteur)+';display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:#fff">'+_ini(m.auteur)+'</div>';
+      h+='<div style="min-width:0;flex:1"><div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:11px;font-weight:600;color:#333">'+m.auteur+'</span><span style="font-size:10px;color:#bbb">'+m.date+'</span></div>';
+      h+='<div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">'+((m.texte||'').substring(0,55)+(m.texte.length>55?'…':''))+'</div>';
+      h+='<div style="font-size:10px;color:#3B6FB6;margin-top:2px">'+m.studioName+'</div>';
+      h+='</div></div>';
+    });
+  }
+  h+='</div>';
+
+  // Alerts panel
+  h+='<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:16px 18px;min-height:80px">';
+  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span style="font-size:12px;font-weight:700;color:#1a1a1a">Alertes actives</span><span style="background:#DC2626;color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 6px;min-width:14px;text-align:center">'+allAlerts.length+'</span></div>';
+  if(!allAlerts.length){
+    h+='<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucune alerte</div>';
+  } else {
+    allAlerts.forEach(function(a){
+      h+='<div onclick="openDetail(\''+a.studioId+'\');setTimeout(function(){setDetailTab(\'alertes\')},50)" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f5f5f0;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=\'#fef6f6\'" onmouseout="this.style.background=\'transparent\'">';
+      h+='<div style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:#DC2626"></div>';
+      h+='<div style="min-width:0;flex:1"><div style="font-size:11px;color:#854F0B;font-weight:500">'+a.text+'</div>';
+      h+='<div style="font-size:10px;color:#999;margin-top:1px">'+a.studioName+'</div>';
+      h+='</div></div>';
+    });
+  }
+  h+='</div>';
+  h+='</div>';
+  return h;
+}
+
+// ── Vue toggle (grid/cohorte/list) ──────────────────────────────────────────
+function renderViewToggle(){
+  var views=[
+    {id:'grid',label:'Grille',svg:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>'},
+    {id:'cohorte',label:'Cohortes',svg:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>'},
+    {id:'list',label:'Liste',svg:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="10" x2="20" y2="10"/><line x1="4" y1="14" x2="20" y2="14"/><line x1="4" y1="18" x2="20" y2="18"/></svg>'}
+  ];
+  var h='<div style="display:flex;background:#f0f0ea;border-radius:8px;padding:2px;gap:1px">';
+  views.forEach(function(v){
+    var active=S.dashView===v.id;
+    h+='<button onclick="setDashView(\''+v.id+'\')" title="'+v.label+'" style="display:flex;align-items:center;gap:4px;padding:5px 10px;border:none;border-radius:6px;font-size:11px;font-weight:'+(active?'600':'400')+';cursor:pointer;transition:all 0.15s;background:'+(active?'#fff':'transparent')+';color:'+(active?'#1a1a1a':'#888')+';box-shadow:'+(active?'0 1px 3px rgba(0,0,0,0.08)':'none')+'">'+v.svg+'<span>'+v.label+'</span></button>';
+  });
+  h+='</div>';
+  return h;
+}
+
+// ── Filtres statut ──────────────────────────────────────────────────────────
+function renderStatusFilters(ids){
+  var counts={all:ids.length};
+  Object.keys(STATUT_CFG).forEach(function(k){counts[k]=0;});
+  ids.forEach(function(id){var st=S.studios[id].statut;if(counts[st]!==undefined)counts[st]++;});
+  var filters=[{id:'all',label:'Tous'}];
+  Object.keys(STATUT_CFG).forEach(function(k){if(counts[k]>0)filters.push({id:k,label:STATUT_CFG[k].label});});
+  var h='<div style="display:flex;gap:5px;flex-wrap:wrap">';
+  filters.forEach(function(f){
+    var active=S.dashFilter===f.id;
+    var cfg=STATUT_CFG[f.id];
+    h+='<button onclick="setDashFilter(\''+f.id+'\')" style="padding:4px 12px;border-radius:20px;font-size:11px;font-weight:'+(active?'600':'400')+';cursor:pointer;transition:all 0.15s;border:1px solid '+(active?(cfg?cfg.text:'#1a3a6b'):'#e0e0da')+';background:'+(active?(cfg?cfg.bg:'#f0f4ff'):'transparent')+';color:'+(active?(cfg?cfg.text:'#1a3a6b'):'#888')+'">'+f.label+' <span style="font-size:10px;opacity:0.7">'+counts[f.id]+'</span></button>';
+  });
+  h+='</div>';
+  return h;
+}
+
+function setDashView(v){S.dashView=v;render();}
+function setDashFilter(f){S.dashFilter=f;render();}
+
+// ── Vue Cohorte ─────────────────────────────────────────────────────────────
+function renderCohorteView(ids){
+  // Group studios by cohorte value
+  var groups={};
+  ids.forEach(function(id){
+    var c=S.studios[id].cohorte||1;
+    if(!groups[c])groups[c]=[];
+    groups[c].push(id);
+  });
+  var cohortNums=Object.keys(groups).map(Number).sort();
+  var h='';
+  cohortNums.forEach(function(cn){
+    var cIds=groups[cn];
+    // Compute cohort-level stats
+    var totalCapex=cIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
+    var totalCA=cIds.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0);
+    var avgProgress=Math.round(cIds.reduce(function(s,id){
+      var done=STEPS.filter(function(st){return S.studios[id].steps[st.id];}).length;
+      return s+(done/STEPS.length*100);
+    },0)/cIds.length);
+
+    h+='<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:18px 20px;margin-bottom:14px">';
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">';
+    h+='<div style="display:flex;align-items:center;gap:10px"><span style="font-size:14px;font-weight:700;color:#1a1a1a">Cohorte '+cn+'</span><span style="font-size:11px;color:#888;background:#f0f0ea;padding:2px 8px;border-radius:10px">'+cIds.length+' studio'+(cIds.length>1?'s':'')+'</span></div>';
+    h+='<div style="display:flex;gap:14px;font-size:11px;color:#888"><span>CAPEX '+fmt(totalCapex)+'</span><span>CA BP '+fmt(totalCA)+'</span><span>Avancement '+avgProgress+'%</span></div>';
+    h+='</div>';
+    h+='<div class="cards">';
+    cIds.forEach(function(id){h+=renderCard(id,S.studios[id]);});
+    h+='</div></div>';
+  });
+  if(!cohortNums.length)h+='<div style="text-align:center;color:#bbb;padding:30px;font-size:13px">Aucun studio dans cette vue</div>';
+  return h;
+}
+
+// ── Vue Liste ───────────────────────────────────────────────────────────────
+function renderListView(ids){
+  var h='<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;overflow:hidden">';
+  h+='<table style="width:100%;border-collapse:collapse;font-size:12px">';
+  h+='<thead><tr style="background:#f8f8f4;border-bottom:1px solid #e0e0d8">';
+  h+='<th style="text-align:left;padding:10px 14px;font-weight:600;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Studio</th>';
+  h+='<th style="text-align:left;padding:10px 14px;font-weight:600;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Société</th>';
+  h+='<th style="text-align:left;padding:10px 14px;font-weight:600;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Statut</th>';
+  h+='<th style="text-align:left;padding:10px 14px;font-weight:600;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Cohorte</th>';
+  h+='<th style="text-align:left;padding:10px 14px;font-weight:600;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Ouverture</th>';
+  h+='<th style="text-align:left;padding:10px 14px;font-weight:600;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">CAPEX</th>';
+  h+='<th style="text-align:left;padding:10px 14px;font-weight:600;color:#666;font-size:10px;text-transform:uppercase;letter-spacing:0.5px">Avancement</th>';
+  h+='</tr></thead><tbody>';
+  ids.forEach(function(id){
+    var s=S.studios[id];
+    var done=STEPS.filter(function(st){return s.steps[st.id];}).length;
+    var p=Math.round(done/STEPS.length*100);
+    h+='<tr onclick="openDetail(\''+id+'\')" style="border-bottom:1px solid #f0f0ea;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=\'#fafaf6\'" onmouseout="this.style.background=\'transparent\'">';
+    h+='<td style="padding:10px 14px;font-weight:600;color:#1a1a1a">'+s.name+'</td>';
+    h+='<td style="padding:10px 14px;color:#666">'+s.societe+'</td>';
+    h+='<td style="padding:10px 14px">'+badge(s.statut)+'</td>';
+    h+='<td style="padding:10px 14px"><span style="background:#f0f4ff;color:#1a3a6b;font-size:10px;font-weight:600;padding:2px 8px;border-radius:10px">C'+(s.cohorte||1)+'</span></td>';
+    h+='<td style="padding:10px 14px;color:#666">'+s.ouverture+'</td>';
+    h+='<td style="padding:10px 14px;font-weight:500">'+fmt(s.capex)+'</td>';
+    h+='<td style="padding:10px 14px"><div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:#e8e8e0;border-radius:4px;height:5px;min-width:60px"><div style="width:'+p+'%;background:#1D9E75;border-radius:4px;height:5px"></div></div><span style="font-size:10px;color:#888;white-space:nowrap">'+p+'%</span></div></td>';
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
   return h;
 }
 
@@ -1549,7 +1728,12 @@ function renderDetail(){
   h+='</div>';
   if(isViewer())h+='<div style="display:inline-flex;align-items:center;gap:5px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:4px 10px;font-size:11px;color:#1D4ED8;font-weight:600;margin-bottom:10px">👁 Mode lecture seule — consultation uniquement</div>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">'+LI+COLLAB_SEP+LC+'</div>';
-  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut)+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut);
+  if(isAdmin)h+='<select onchange="setStudioCohorte(\''+S.selectedId+'\',parseInt(this.value))" style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:8px;border:1px solid #dde;background:#f0f4ff;color:#1a3a6b;cursor:pointer">';
+  if(isAdmin)for(var ci=1;ci<=10;ci++)h+='<option value="'+ci+'"'+((s.cohorte||1)===ci?' selected':'')+'>Cohorte '+ci+'</option>';
+  if(isAdmin)h+='</select>';
+  if(!isAdmin)h+='<span style="background:#f0f4ff;color:#1a3a6b;font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px">C'+(s.cohorte||1)+'</span>';
+  h+='</div>';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
   h+='<div style="font-size:13px;color:#888">'+s.addr+' &middot; '+s.societe+' &middot; '+s.ouverture+'</div>';
   h+='<button onclick="generateReport(\''+S.selectedId+'\')" style="background:#1a3a6b;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">&#128196; Exporter PDF</button>';
@@ -3536,6 +3720,9 @@ function renderNewForm(){
   h+='<div class="fg"><label>Mois ouverture</label><select onchange="setNF(\'moisDebut\',this.value)">';
   MOIS.forEach(function(m,i){h+='<option value="'+i+'" '+((f.moisDebut||0)==i?'selected':'')+'>'+m+'</option>';});
   h+='</select></div>';
+  h+='<div class="fg"><label>Cohorte</label><select onchange="setNF(\'cohorte\',+this.value)">';
+  for(var nci=1;nci<=10;nci++)h+='<option value="'+nci+'"'+((f.cohorte||1)===nci?' selected':'')+'>Cohorte '+nci+'</option>';
+  h+='</select></div>';
   h+='<div class="fg"><label>Loyer mensuel HT (€)</label><input type="number" min="0" step="100" value="'+(f.loyerMensuel||4800)+'" oninput="setNF(\'loyerMensuel\',+this.value)" placeholder="4800"/></div>';
   h+='<div class="fg"><div style="font-size:11px;color:#64748b;padding-top:22px">→ Loyer annuel BP : <b style="color:#1a3a6b">'+fmt((f.loyerMensuel||4800)*12)+'</b> &nbsp;•&nbsp; Impact direct sur EBITDA / REX / Résultat net</div></div>';
   h+='</div>';
@@ -4205,7 +4392,7 @@ async function createStudio(){
   var lm=num(f.loyerMensuel,4800);
   await saveStudio(id,{
     name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,
-    statut:'pipeline',capex:306200,emprunt:214340,alertes:['Nouveau projet'],steps:steps,
+    statut:'pipeline',capex:306200,emprunt:214340,alertes:['Nouveau projet'],cohorte:num(f.cohorte,1),steps:steps,
     loyer_mensuel:lm,
     forecast:{annualCA:ca1,annualCA2:Math.round(ca1*1.10),annualCA3:Math.round(ca1*1.21),
       moisDebut:num(f.moisDebut,0),annee:num(f.annee||2026),actuel:{},actuel2:{},actuel3:{}}
