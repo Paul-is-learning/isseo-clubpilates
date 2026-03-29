@@ -3053,7 +3053,7 @@ function renderTopicListInline(sid){
     var bLast=b.messages&&b.messages.length?b.messages[b.messages.length-1].ts:b.ts;
     return (bLast||'').localeCompare(aLast||'');
   });
-  if(!topics.length)return '<div style="text-align:center;padding:30px 16px"><div style="font-size:28px;margin-bottom:6px">💬</div><div style="color:#888;font-size:12px">Aucune discussion</div><div style="color:#bbb;font-size:11px;margin-top:3px">Lancez un sujet pour collaborer</div></div>';
+  if(!topics.length)return '<div style="text-align:center;padding:36px 16px"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:linear-gradient(135deg,#E8F0FE,#D0DFFA);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#3B6FB6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div style="color:#555;font-size:12px;font-weight:600">Aucune discussion</div><div style="color:#bbb;font-size:11px;margin-top:3px">Lancez un sujet pour collaborer</div></div>';
   var h='';
   topics.forEach(function(t){
     var msgCount=t.messages?t.messages.length:0;
@@ -3077,7 +3077,7 @@ function renderTachesInline(sid){
   var todos=(S.todos[sid]||[]).slice();
   var order={doing:0,todo:1,done:2};
   todos.sort(function(a,b){return (order[a.statut]||1)-(order[b.statut]||1)||((b.ts||'').localeCompare(a.ts||''));});
-  if(!todos.length)return '<div style="text-align:center;padding:30px 16px"><div style="font-size:28px;margin-bottom:6px">✅</div><div style="color:#888;font-size:12px">Aucune tâche</div><div style="color:#bbb;font-size:11px;margin-top:3px">Organisez le projet avec des tâches</div></div>';
+  if(!todos.length)return '<div style="text-align:center;padding:36px 16px"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:linear-gradient(135deg,#FEF9EE,#FDF0D5);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div style="color:#555;font-size:12px;font-weight:600">Aucune tâche</div><div style="color:#bbb;font-size:11px;margin-top:3px">Organisez le projet avec des tâches</div></div>';
   var h='';
   todos.forEach(function(t){
     var st=TACHE_STATUTS[t.statut]||TACHE_STATUTS.todo;
@@ -3145,7 +3145,7 @@ function renderTopicList(sid){
     h+='</div>';
   }
   if(!topics.length){
-    h+='<div class="box" style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:8px">💬</div><div style="color:#888;font-size:13px">Aucune discussion pour le moment</div><div style="color:#bbb;font-size:11px;margin-top:4px">Créez un sujet pour lancer la conversation</div></div>';
+    h+='<div class="box" style="text-align:center;padding:40px 20px"><div style="width:48px;height:48px;margin:0 auto 10px;border-radius:14px;background:linear-gradient(135deg,#E8F0FE,#D0DFFA);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#3B6FB6" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><div style="color:#555;font-size:13px;font-weight:600">Aucune discussion pour le moment</div><div style="color:#bbb;font-size:11px;margin-top:4px">Créez un sujet pour lancer la conversation</div></div>';
     return h;
   }
   h+='<div style="display:flex;flex-direction:column;gap:8px">';
@@ -3369,7 +3369,7 @@ function renderTaches(sid){
     h+='</div>';
   }
   if(!todos.length){
-    h+='<div class="box" style="text-align:center;padding:40px 20px"><div style="font-size:32px;margin-bottom:8px">✅</div><div style="color:#888;font-size:13px">Aucune tâche pour le moment</div><div style="color:#bbb;font-size:11px;margin-top:4px">Créez une tâche pour organiser le projet</div></div>';
+    h+='<div class="box" style="text-align:center;padding:40px 20px"><div style="width:48px;height:48px;margin:0 auto 10px;border-radius:14px;background:linear-gradient(135deg,#FEF9EE,#FDF0D5);display:flex;align-items:center;justify-content:center"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div style="color:#555;font-size:13px;font-weight:600">Aucune tâche pour le moment</div><div style="color:#bbb;font-size:11px;margin-top:4px">Créez une tâche pour organiser le projet</div></div>';
     return h;
   }
   h+='<div style="display:flex;flex-direction:column;gap:6px">';
