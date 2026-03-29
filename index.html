@@ -825,7 +825,8 @@ async function _confirmerScenario(sid){
     comment:comment.trim(),
     date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
     ts:now.toISOString(),
-    config:JSON.parse(JSON.stringify(cfg))
+    config:JSON.parse(JSON.stringify(cfg)),
+    adherents:JSON.parse(JSON.stringify(S.adherents[sid]||{}))
   };
   if(!S.scenarios[sid])S.scenarios[sid]=[];
   S.scenarios[sid].push(sc);
@@ -842,16 +843,19 @@ function chargerScenario(sid,scenarioId){
   if(scenarioId==='bp_default'){
     S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
     S.activeScenarioId[sid]='bp_default';
+    S.adherents[sid]={};
   } else {
     var scenarios=S.scenarios[sid]||[];
     var sc=scenarios.find(function(s){return s.id===scenarioId;});
     if(!sc)return;
     S.simConfig[sid]=JSON.parse(JSON.stringify(sc.config));
     S.activeScenarioId[sid]=scenarioId;
+    S.adherents[sid]=sc.adherents?JSON.parse(JSON.stringify(sc.adherents)):{};
   }
   // Sauvegarder immédiatement (pas de debounce) pour éviter les conflits
   try{localStorage.setItem('isseo_sim_'+sid,JSON.stringify(S.simConfig[sid]));}catch(e){}
   sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
+  saveAdherents(sid);
   toast(scenarioId==='bp_default'?'Valeurs BP par défaut restaurées':'Scénario chargé');
   render();
 }
@@ -865,11 +869,14 @@ async function supprimerScenario(sid,scenarioId){
     if(remaining.length){
       S.activeScenarioId[sid]=remaining[0].id;
       S.simConfig[sid]=JSON.parse(JSON.stringify(remaining[0].config));
+      S.adherents[sid]=remaining[0].adherents?JSON.parse(JSON.stringify(remaining[0].adherents)):{};
     } else {
       S.activeScenarioId[sid]='bp_default';
       S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+      S.adherents[sid]={};
     }
     saveSimConfig(sid);
+    saveAdherents(sid);
   }
   await saveScenarios(sid);
   toast('Scénario supprimé');
