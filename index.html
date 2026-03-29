@@ -1609,10 +1609,18 @@ function renderDashboard(){
   h+='<div style="background:linear-gradient(135deg,#0f1f3d 0%,#1a3a6b 50%,#2d5a8e 100%);border-radius:16px;padding:24px 28px;margin-bottom:18px;color:#fff;position:relative;overflow:hidden">';
   h+='<div style="position:absolute;top:-30px;right:-20px;width:200px;height:200px;background:radial-gradient(circle,rgba(255,255,255,0.06) 0%,transparent 70%);border-radius:50%"></div>';
   h+='<div style="position:absolute;bottom:-40px;right:80px;width:150px;height:150px;background:radial-gradient(circle,rgba(29,158,117,0.15) 0%,transparent 70%);border-radius:50%"></div>';
-  h+='<div style="position:relative;z-index:1">';
-  h+='<div style="font-size:20px;font-weight:700;margin-bottom:4px">'+_salut+(_prenom?', '+_prenom:'')+'</div>';
-  h+='<div style="font-size:12px;color:rgba(255,255,255,0.65);margin-bottom:16px">Tableau de bord ISSEO \u00d7 Club Pilates \u2014 '+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>';
+  h+='<div style="position:relative;z-index:1;display:flex;align-items:center;gap:14px">';
+  var _photo=S.profile&&S.profile.photo||'';
+  var _nom=S.profile&&S.profile.nom||'';
+  var _ini=_nom.split(' ').map(function(w){return w[0]||'';}).join('').toUpperCase().slice(0,2);
+  h+='<div style="width:48px;height:48px;border-radius:50%;overflow:hidden;flex-shrink:0;border:2.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff">';
+  if(_photo)h+='<img src="'+_photo+'" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display=\'none\';this.parentElement.textContent=\''+_ini+'\'">';
+  else h+=_ini;
   h+='</div>';
+  h+='<div>';
+  h+='<div style="font-size:20px;font-weight:700;margin-bottom:4px">'+_salut+(_prenom?', '+_prenom:'')+'</div>';
+  h+='<div style="font-size:12px;color:rgba(255,255,255,0.65)">Tableau de bord ISSEO \u00d7 Club Pilates \u2014 '+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>';
+  h+='</div></div>';
   // KPIs intégrés dans le banner
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;position:relative;z-index:1">';
   var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
