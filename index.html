@@ -1740,7 +1740,7 @@ function renderDetail(){
   if(!isAdmin)h+='<span style="background:#f0f4ff;color:#1a3a6b;font-size:10px;font-weight:600;padding:2px 8px;border-radius:8px">C'+(s.cohorte||1)+'</span>';
   h+='</div>';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
-  h+='<div style="font-size:13px;color:#888">'+s.addr+' &middot; '+s.societe+' &middot; '+s.ouverture+'</div>';
+  h+='<div style="font-size:13px;color:#888"><a href="javascript:void(0)" onclick="setDetailTab(\'localisation\')" style="color:#888;text-decoration:none;border-bottom:1px dashed #ccc;cursor:pointer;transition:color 0.15s,border-color 0.15s" onmouseover="this.style.color=\'#1a3a6b\';this.style.borderColor=\'#1a3a6b\'" onmouseout="this.style.color=\'#888\';this.style.borderColor=\'#ccc\'">'+s.addr+'</a> &middot; '+s.societe+' &middot; '+s.ouverture+'</div>';
   h+='<button onclick="generateReport(\''+S.selectedId+'\')" style="background:#1a3a6b;color:#fff;border:none;border-radius:8px;padding:7px 14px;font-size:11px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:5px;white-space:nowrap" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'">&#128196; Exporter PDF</button>';
   h+='</div>';
   if(isSuperAdmin()){
@@ -3075,8 +3075,8 @@ function renderTopicListInline(sid){
 // Inline tasks list (no outer buttons, compact for side panel)
 function renderTachesInline(sid){
   var todos=(S.todos[sid]||[]).slice();
-  var order={doing:0,todo:1,done:2};
-  todos.sort(function(a,b){return (order[a.statut]||1)-(order[b.statut]||1)||((b.ts||'').localeCompare(a.ts||''));});
+  var order={doing:0,vu:1,todo:2,done:3};
+  todos.sort(function(a,b){return (order[a.statut]!=null?order[a.statut]:2)-(order[b.statut]!=null?order[b.statut]:2)||((b.ts||'').localeCompare(a.ts||''));});
   if(!todos.length)return '<div style="text-align:center;padding:36px 16px"><div style="width:44px;height:44px;margin:0 auto 10px;border-radius:12px;background:linear-gradient(135deg,#FEF9EE,#FDF0D5);display:flex;align-items:center;justify-content:center"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#854F0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><div style="color:#555;font-size:12px;font-weight:600">Aucune tâche</div><div style="color:#bbb;font-size:11px;margin-top:3px">Organisez le projet avec des tâches</div></div>';
   var h='';
   todos.forEach(function(t){
@@ -3085,15 +3085,19 @@ function renderTachesInline(sid){
     var today=new Date().toISOString().slice(0,10);
     var overdue=t.deadline&&t.deadline<today&&!isDone;
     var soon=t.deadline&&!overdue&&!isDone&&t.deadline<=new Date(Date.now()+7*86400000).toISOString().slice(0,10);
-    h+='<div style="padding:10px 12px;border-radius:8px;border-bottom:1px solid #f8f8f4;opacity:'+(isDone?'0.5':'1')+';transition:background 0.12s" onmouseover="this.style.background=\'#f8f9fb\'" onmouseout="this.style.background=\'transparent\'">';
-    // Row 1: toggle + titre + supprimer
+    // Progress per task: todo=0%, vu=33%, doing=66%, done=100%
+    var taskPct={todo:0,vu:33,doing:66,done:100}[t.statut]||0;
+    var taskBarColor={todo:'#e8e8e0',vu:'#7C3AED',doing:'#1D4ED8',done:'#1D9E75'}[t.statut]||'#e8e8e0';
+    h+='<div style="background:#fff;border:0.5px solid #eee;border-radius:10px;padding:10px 12px;margin-bottom:6px;opacity:'+(isDone?'0.5':'1')+';transition:all 0.12s">';
+    // Row 1: toggle + titre + badge + supprimer
     h+='<div style="display:flex;align-items:center;gap:10px">';
     if(!isViewer()){
-      h+='<button onclick="event.stopPropagation();toggleTacheStatut(\''+sid+'\',\''+t.id+'\')" title="'+st.label+'" style="width:22px;height:22px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">'+st.icon+'</button>';
+      h+='<button onclick="event.stopPropagation();toggleTacheStatut(\''+sid+'\',\''+t.id+'\')" title="Cliquer pour avancer : '+st.label+'" style="width:22px;height:22px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:11px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">'+st.icon+'</button>';
     } else {
       h+='<div style="width:22px;height:22px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">'+st.icon+'</div>';
     }
     h+='<div style="flex:1;min-width:0;font-size:12px;font-weight:600;color:#1a1a1a;'+(isDone?'text-decoration:line-through;':'')+'">'+t.titre+'</div>';
+    h+='<span style="font-size:9px;font-weight:600;padding:2px 6px;border-radius:5px;background:'+st.bg+';color:'+st.text+';white-space:nowrap">'+st.label+'</span>';
     if(!isViewer())h+='<button onclick="event.stopPropagation();supprimerTache(\''+sid+'\',\''+t.id+'\')" style="background:none;border:none;color:#ddd;cursor:pointer;font-size:13px;padding:0;line-height:1;flex-shrink:0;transition:color 0.15s" onmouseover="this.style.color=\'#A32D2D\'" onmouseout="this.style.color=\'#ddd\'" title="Supprimer">×</button>';
     h+='</div>';
     // Row 2: description si présente
@@ -3113,13 +3117,18 @@ function renderTachesInline(sid){
       }
       h+='</div>';
     }
+    // Task progress bar
+    h+='<div style="margin:8px 0 2px 32px;display:flex;align-items:center;gap:6px">';
+    h+='<div style="flex:1;background:#e8e8e0;border-radius:3px;height:4px;overflow:hidden"><div style="width:'+taskPct+'%;background:'+taskBarColor+';border-radius:3px;height:4px;transition:width 0.3s"></div></div>';
+    h+='<span style="font-size:9px;color:'+st.text+';font-weight:600;white-space:nowrap">'+taskPct+'%</span>';
+    h+='</div>';
     h+='</div>';
   });
-  // Progress bar
+  // Global progress bar
   var doneCount=todos.filter(function(t){return t.statut==='done';}).length;
   var total=todos.length;
   var pct=total?Math.round(doneCount/total*100):0;
-  h+='<div style="padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:10px;color:#999"><div style="flex:1;background:#e8e8e0;border-radius:3px;height:4px"><div style="width:'+pct+'%;background:#1D9E75;border-radius:3px;height:4px;transition:width 0.3s"></div></div>'+doneCount+'/'+total+'</div>';
+  h+='<div style="padding:8px 10px;display:flex;align-items:center;gap:8px;font-size:10px;color:#999"><div style="flex:1;background:#e8e8e0;border-radius:3px;height:4px"><div style="width:'+pct+'%;background:#1D9E75;border-radius:3px;height:4px;transition:width 0.3s"></div></div>'+doneCount+'/'+total+' terminées</div>';
   return h;
 }
 
@@ -3355,13 +3364,13 @@ async function saveTopics(sid){
 
 // ── TÂCHES (Todo List) ──────────────────────────────────────────────────
 
-var TACHE_STATUTS={todo:{label:'À faire',bg:'#FEF3C7',text:'#854F0B',icon:'○'},doing:{label:'En cours',bg:'#DBEAFE',text:'#1D4ED8',icon:'◐'},done:{label:'Terminé',bg:'#D1FAE5',text:'#065F46',icon:'✓'}};
+var TACHE_STATUTS={todo:{label:'À faire',bg:'#FEF3C7',text:'#854F0B',icon:'○'},vu:{label:'Vu',bg:'#F3E8FF',text:'#7C3AED',icon:'◉'},doing:{label:'En cours',bg:'#DBEAFE',text:'#1D4ED8',icon:'◐'},done:{label:'Terminé',bg:'#D1FAE5',text:'#065F46',icon:'✓'}};
 
 function renderTaches(sid){
   var todos=(S.todos[sid]||[]).slice();
   // Sort: doing first, then todo, then done
-  var order={doing:0,todo:1,done:2};
-  todos.sort(function(a,b){return (order[a.statut]||1)-(order[b.statut]||1)||((b.ts||'').localeCompare(a.ts||''));});
+  var order={doing:0,vu:1,todo:2,done:3};
+  todos.sort(function(a,b){return (order[a.statut]!=null?order[a.statut]:2)-(order[b.statut]!=null?order[b.statut]:2)||((b.ts||'').localeCompare(a.ts||''));});
   var h='';
   if(!isViewer()){
     h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px">';
@@ -3379,17 +3388,19 @@ function renderTaches(sid){
     var today=new Date().toISOString().slice(0,10);
     var overdue=t.deadline&&t.deadline<today&&!isDone;
     var soon=t.deadline&&!overdue&&!isDone&&t.deadline<=new Date(Date.now()+7*86400000).toISOString().slice(0,10);
-    h+='<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:12px 16px;transition:all 0.15s;opacity:'+(isDone?'0.55':'1')+'">';
+    var taskPct={todo:0,vu:33,doing:66,done:100}[t.statut]||0;
+    var taskBarColor={todo:'#e8e8e0',vu:'#7C3AED',doing:'#1D4ED8',done:'#1D9E75'}[t.statut]||'#e8e8e0';
+    h+='<div style="background:#fff;border:0.5px solid #e0e0d8;border-radius:10px;padding:12px 16px;transition:all 0.15s;opacity:'+(isDone?'0.55':'1')+';overflow:hidden">';
     h+='<div style="display:flex;align-items:center;gap:12px">';
     // Status toggle
     if(!isViewer()){
-      h+='<button onclick="event.stopPropagation();toggleTacheStatut(\''+sid+'\',\''+t.id+'\')" title="'+st.label+'" style="width:26px;height:26px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;line-height:1">'+st.icon+'</button>';
+      h+='<button onclick="event.stopPropagation();toggleTacheStatut(\''+sid+'\',\''+t.id+'\')" title="Cliquer pour avancer : '+st.label+'" style="width:26px;height:26px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all 0.15s;line-height:1">'+st.icon+'</button>';
     } else {
       h+='<div style="width:26px;height:26px;border-radius:50%;border:2px solid '+st.text+';background:'+st.bg+';color:'+st.text+';font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1">'+st.icon+'</div>';
     }
     // Content
     h+='<div style="flex:1;min-width:0">';
-    h+='<div style="font-size:13px;font-weight:600;color:#1a1a1a;'+(isDone?'text-decoration:line-through;':'')+'">'+t.titre+'</div>';
+    h+='<div style="display:flex;align-items:center;gap:8px"><span style="font-size:13px;font-weight:600;color:#1a1a1a;'+(isDone?'text-decoration:line-through;':'')+'">'+t.titre+'</span><span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:5px;background:'+st.bg+';color:'+st.text+'">'+st.label+'</span></div>';
     if(t.description)h+='<div style="font-size:11px;color:#888;margin-top:2px;'+(isDone?'text-decoration:line-through;':'')+'">'+t.description+'</div>';
     h+='</div>';
     // Right side: responsable + deadline
@@ -3406,7 +3417,13 @@ function renderTaches(sid){
       h+='</span>';
     }
     if(!isViewer())h+='<button onclick="event.stopPropagation();supprimerTache(\''+sid+'\',\''+t.id+'\')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:0;line-height:1;transition:color 0.15s" onmouseover="this.style.color=\'#A32D2D\'" onmouseout="this.style.color=\'#ccc\'" title="Supprimer">×</button>';
-    h+='</div></div></div>';
+    h+='</div></div>';
+    // Task progress bar
+    h+='<div style="margin:10px 0 2px 38px;display:flex;align-items:center;gap:8px">';
+    h+='<div style="flex:1;background:#e8e8e0;border-radius:3px;height:4px;overflow:hidden"><div style="width:'+taskPct+'%;background:'+taskBarColor+';border-radius:3px;height:4px;transition:width 0.3s"></div></div>';
+    h+='<span style="font-size:9px;color:'+st.text+';font-weight:600;white-space:nowrap">'+taskPct+'%</span>';
+    h+='</div>';
+    h+='</div>';
   });
   h+='</div>';
   // Summary bar
@@ -3474,7 +3491,7 @@ async function toggleTacheStatut(sid,todoId){
   var todos=S.todos[sid]||[];
   var t=todos.find(function(x){return x.id===todoId;});
   if(!t)return;
-  var cycle={todo:'doing',doing:'done',done:'todo'};
+  var cycle={todo:'vu',vu:'doing',doing:'done',done:'todo'};
   t.statut=cycle[t.statut]||'todo';
   await saveTodos(sid);
   if(t.statut==='done')notifyAll({type:'statut',studio_id:sid,title:'Tâche terminée — '+(S.studios[sid]?S.studios[sid].name:sid),body:t.titre});
