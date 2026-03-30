@@ -592,7 +592,7 @@ const DEPENSE_CATS=[
 ];
 const DEPENSE_FINS=['Emprunt bancaire','Crédit-bail (leasing)','Fonds propres'];
 const DEPENSE_CONTRIBUTORS=[
-  'SAS Isséo','SAS P&W Studios','Holding Coquel Immo','Pilatine','Holding Sabourin',
+  'SAS Isséo','SAS P&W Studios','Moovi-moov','Pilatine','Holding Sabourin',
   'Paul Bécaud','Pascal Bécaud','Tom Bécaud','Paul Sabourin','Caroline Coquel','Clément Coquel',
 ];
 
@@ -842,6 +842,8 @@ var S={
   mapZoneRadius:2000,   // rayon de la zone ajustable (m) — curseur
   showCapexDetail:{},   // toggle détail CAPEX par studio
   globalChat:[],        // messages chat global entre associés
+  engView:'societes',   // vue récap engagements : 'societes' | 'actionnaires'
+  engExpanded:{},       // sections dépliées récap engagements {nomGroupe: true}
   chatOpen:false,       // panneau chat ouvert/fermé
   chatLastSeen:localStorage.getItem('chatLastSeen')||'', // ts du dernier message lu
   adminSettings:{blocked:[],roles:{},viewers:[]}, // contrôle accès utilisateurs
@@ -2139,20 +2141,26 @@ function renderAccueil(){
   h+=renderActivityFeed(allIds);
 
   // ── Raccourcis rapides ──
-  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:10px">';
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:10px">';
   var shortcuts=[
     {label:'Voir les projets',desc:allIds.length+' studios en cours',page:'projets',color:'#1a3a6b',gradient:'linear-gradient(135deg,#1a3a6b,#2d5a8e)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
     {label:'Prospection',desc:'Annonces & prospects',page:'prospection',color:'#0F6E56',gradient:'linear-gradient(135deg,#0F6E56,#1a9e7a)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
-    {label:'BP Consolidé',desc:'Vue financière globale',page:'bp',color:'#854F0B',gradient:'linear-gradient(135deg,#854F0B,#b8860b)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'}
+    {label:'BP Consolidé',desc:'Vue financière globale',page:'bp',color:'#854F0B',gradient:'linear-gradient(135deg,#854F0B,#b8860b)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
+    {label:'Engagements',desc:'Suivi consolidé',page:null,scroll:'engagements-consolide',color:'#92630a',gradient:'linear-gradient(135deg,#92630a,#d4a843)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
   ];
   shortcuts.forEach(function(sc){
-    h+='<div onclick="setPage(\''+sc.page+'\')" style="background:'+(S.darkMode?'#161b22':'#fff')+';border:1px solid '+(S.darkMode?'#30363d':'#e8e8e0')+';border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:14px;position:relative;overflow:hidden" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 25px rgba(0,0,0,\'+(S.darkMode?\'0.3\':\'0.1\')+\')\';this.style.borderColor=\''+sc.color+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\';this.style.borderColor=\''+(S.darkMode?'#30363d':'#e8e8e0')+'\'">';
+    var clickAction=sc.page?'setPage(\''+sc.page+'\')':'document.getElementById(\''+sc.scroll+'\').scrollIntoView({behavior:\'smooth\'})';
+    h+='<div onclick="'+clickAction+'" style="background:'+(S.darkMode?'#161b22':'#fff')+';border:1px solid '+(S.darkMode?'#30363d':'#e8e8e0')+';border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:14px;position:relative;overflow:hidden" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 25px rgba(0,0,0,\'+(S.darkMode?\'0.3\':\'0.1\')+\')\';this.style.borderColor=\''+sc.color+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\';this.style.borderColor=\''+(S.darkMode?'#30363d':'#e8e8e0')+'\'">';
     h+='<div style="width:44px;height:44px;border-radius:12px;background:'+sc.gradient+';display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;box-shadow:0 4px 12px '+sc.color+'30">'+sc.icon+'</div>';
-    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:#1a1a1a">'+sc.label+'</div><div style="font-size:11px;color:#999;margin-top:2px">'+sc.desc+'</div></div>';
+    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+(S.darkMode?'#e6edf3':'#1a1a1a')+'">'+sc.label+'</div><div style="font-size:11px;color:#999;margin-top:2px">'+sc.desc+'</div></div>';
     h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2" style="flex-shrink:0;transition:transform .2s"><polyline points="9 18 15 12 9 6"/></svg>';
     h+='</div>';
   });
   h+='</div>';
+
+  // ── Récapitulatif des engagements ──
+  h+=renderEngagementsConsolide();
+
   return h;
 }
 
@@ -2910,6 +2918,254 @@ function _getScenarioLabel(sid){
   var scList=S.scenarios[sid]||[];
   var sc=scList.find(function(s){return s.id===scId;});
   return sc?sc.auteur+' — '+sc.date:null;
+}
+
+// ── Récapitulatif des engagements consolidé ──────────────────────────────────
+function toggleEngView(v){S.engView=v;render();}
+function toggleEngExpand(k){S.engExpanded[k]=!S.engExpanded[k];render();}
+
+function renderEngagementsConsolide(){
+  var allIds=_getStudioIds();
+  var dm=S.darkMode;
+  var cardBg=dm?'#161b22':'#fff';
+  var borderC=dm?'#30363d':'#e8e8e0';
+  var txtMain=dm?'#e6edf3':'#1a1a1a';
+  var txtSub=dm?'#8b949e':'#888';
+  var subtleBg=dm?'#21262d':'#f8f9fb';
+
+  // ── Mapping données ──
+  var SOCIETES=[
+    {nom:'SAS P&W Studios',short:'P&W Studios',color:'#1a3a6b',desc:'Holding Tom Bécaud'},
+    {nom:'SAS Isséo',short:'ISSEO',color:'#0F6E56',desc:'Paul Bécaud & Tom Bécaud'},
+    {nom:'Moovi-moov',short:'Moovi-moov',color:'#854F0B',desc:'Holding Clément Coquel'},
+    {nom:'Pilatine',short:'Pilatine',color:'#7C3AED',desc:'Holding Caroline Coquel'},
+    {nom:'Holding Sabourin',short:'H. Sabourin',color:'#B45309',desc:'Holding Paul Sabourin'},
+  ];
+  var ACTIONNAIRES=[
+    {nom:'Tom Bécaud',contributors:['Tom Bécaud'],holdings:['SAS P&W Studios'],holdingLabel:'P&W Studios',color:'#1a3a6b'},
+    {nom:'Paul Bécaud',contributors:['Paul Bécaud'],holdings:['SAS Isséo'],holdingLabel:'ISSEO',color:'#0F6E56'},
+    {nom:'Paul Sabourin',contributors:['Paul Sabourin'],holdings:['Holding Sabourin'],holdingLabel:'H. Sabourin',color:'#B45309'},
+    {nom:'Caroline Coquel',contributors:['Caroline Coquel'],holdings:['Pilatine'],holdingLabel:'Pilatine',color:'#7C3AED'},
+    {nom:'Clément Coquel',contributors:['Clément Coquel'],holdings:['Moovi-moov'],holdingLabel:'Moovi-moov',color:'#854F0B'},
+    {nom:'Pascal Bécaud',contributors:['Pascal Bécaud'],holdings:[],holdingLabel:null,color:'#DC2626'},
+  ];
+
+  // ── Agrégation ──
+  var allDeps=[];
+  allIds.forEach(function(id){
+    (S.depenses[id]||[]).forEach(function(d){
+      allDeps.push({dep:d,studioId:id,studioName:(S.studios[id]||{}).name||id});
+    });
+  });
+  var totalEngage=0,totalDebloque=0,totalAttente=0;
+  allDeps.forEach(function(e){
+    var v=num(e.dep.ttc);
+    totalEngage+=v;
+    if(e.dep.deblocage==='debloque')totalDebloque+=v;
+    else if(e.dep.deblocage==='demande')totalAttente+=v;
+  });
+  var nbProjets=allIds.filter(function(id){return (S.depenses[id]||[]).length>0;}).length;
+
+  var h='';
+  h+='<div id="engagements-consolide" style="margin-top:24px">';
+
+  // ── Header avec gradient ──
+  h+='<div style="background:linear-gradient(135deg,#92630a 0%,#b8860b 50%,#d4a843 100%);border-radius:16px;padding:24px 28px;margin-bottom:16px;position:relative;overflow:hidden">';
+  h+='<div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>';
+  h+='<div style="position:absolute;bottom:-30px;left:40%;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">';
+  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>';
+  h+='<span style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.3px">Récapitulatif des engagements</span></div>';
+  h+='<div style="font-size:12px;color:rgba(255,255,255,0.75);margin-bottom:18px">Vision consolidée des dépenses engagées par société et par actionnaire — '+allIds.length+' studios</div>';
+
+  // KPIs
+  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">';
+  var kpis=[
+    {label:'Total engagé',val:fmt(totalEngage),sub:'TTC'},
+    {label:'Débloqué',val:fmt(totalDebloque),sub:totalEngage?Math.round(totalDebloque/totalEngage*100)+'%':'0%'},
+    {label:'En attente',val:fmt(totalAttente),sub:'demandes'},
+    {label:'Projets',val:nbProjets+'',sub:'studios concernés'}
+  ];
+  kpis.forEach(function(k){
+    h+='<div style="background:rgba(255,255,255,0.12);backdrop-filter:blur(8px);border-radius:10px;padding:12px 14px;text-align:center">';
+    h+='<div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px">'+k.label+'</div>';
+    h+='<div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px">'+k.val+'</div>';
+    h+='<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px">'+k.sub+'</div>';
+    h+='</div>';
+  });
+  h+='</div></div>';
+
+  // ── Toggle Sociétés / Actionnaires ──
+  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:14px">';
+  var tabs=[{id:'societes',label:'Par société'},{id:'actionnaires',label:'Par actionnaire'}];
+  tabs.forEach(function(tab){
+    var active=S.engView===tab.id;
+    h+='<button onclick="toggleEngView(\''+tab.id+'\')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:'+(active?'700':'500')+';cursor:pointer;transition:all .2s;border:'+(active?'none':'1px solid '+borderC)+';background:'+(active?(dm?'#e6edf3':'#1a3a6b'):(dm?'#21262d':'#fff'))+';color:'+(active?'#fff':(dm?'#8b949e':'#666'))+'" onmouseover="if(!'+active+')this.style.background=\''+(dm?'#30363d':'#f0f0ea')+'\'" onmouseout="if(!'+active+')this.style.background=\''+(dm?'#21262d':'#fff')+'\'">'+tab.label+'</button>';
+  });
+  h+='<div style="flex:1"></div>';
+  h+='<div style="font-size:11px;color:'+txtSub+'">Cliquez sur une carte pour voir le détail par projet</div>';
+  h+='</div>';
+
+  if(S.engView==='societes'){
+    // ════ VUE SOCIÉTÉS ════
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+    SOCIETES.forEach(function(soc){
+      var socDeps=allDeps.filter(function(e){return e.dep.engage_par===soc.nom;});
+      var socTotal=socDeps.reduce(function(s,e){return s+num(e.dep.ttc);},0);
+      var socDebloque=socDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
+      var socAttente=socDeps.filter(function(e){return e.dep.deblocage==='demande';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
+      var pctDeb=socTotal?Math.round(socDebloque/socTotal*100):0;
+      var expanded=S.engExpanded['soc_'+soc.nom];
+
+      // Grouper par studio
+      var byStudio={};
+      socDeps.forEach(function(e){
+        if(!byStudio[e.studioId])byStudio[e.studioId]={name:e.studioName,total:0,debloque:0,deps:[]};
+        byStudio[e.studioId].total+=num(e.dep.ttc);
+        if(e.dep.deblocage==='debloque')byStudio[e.studioId].debloque+=num(e.dep.ttc);
+        byStudio[e.studioId].deps.push(e.dep);
+      });
+
+      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;padding:0;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+soc.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
+
+      // Card header (cliquable)
+      h+='<div onclick="toggleEngExpand(\'soc_'+soc.nom+'\')" style="padding:16px 18px;cursor:pointer">';
+      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
+      h+='<div style="width:36px;height:36px;border-radius:10px;background:'+soc.color+'15;color:'+soc.color+';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800">'+soc.short.charAt(0)+'</div>';
+      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+soc.nom+'</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+';margin-top:1px">'+soc.desc+'</div></div>';
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
+      h+='</div>';
+
+      // Montants
+      h+='<div style="font-size:20px;font-weight:800;color:'+soc.color+';letter-spacing:-0.5px">'+fmt(socTotal)+'</div>';
+      h+='<div style="display:flex;gap:12px;margin-top:4px">';
+      h+='<span style="font-size:10px;color:#0F6E56;font-weight:600">'+fmt(socDebloque)+' débloqué</span>';
+      if(socAttente>0)h+='<span style="font-size:10px;color:#854F0B;font-weight:600">'+fmt(socAttente)+' en attente</span>';
+      h+='</div>';
+
+      // Progress bar
+      h+='<div style="margin-top:8px;height:4px;background:'+(dm?'#30363d':'#f0f0ea')+';border-radius:4px;overflow:hidden">';
+      h+='<div style="width:'+pctDeb+'%;height:100%;background:'+soc.color+';border-radius:4px;transition:width .3s"></div></div>';
+      h+='<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:'+txtSub+'">'+pctDeb+'% débloqué</span><span style="font-size:9px;color:'+txtSub+'">'+Object.keys(byStudio).length+' projet(s)</span></div>';
+      h+='</div>';
+
+      // Section dépliable : détail par studio
+      if(expanded){
+        h+='<div style="border-top:1px solid '+borderC+';padding:0">';
+        var stIds=Object.keys(byStudio);
+        if(!stIds.length){
+          h+='<div style="padding:14px;text-align:center;font-size:11px;color:'+txtSub+'">Aucune dépense</div>';
+        } else {
+          stIds.forEach(function(sid,idx){
+            var st=byStudio[sid];
+            var pctSt=st.total?Math.round(st.debloque/st.total*100):0;
+            h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:10px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s;border-bottom:'+(idx<stIds.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+soc.color+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+            h+='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:'+txtMain+'">'+st.name+'</div>';
+            h+='<div style="font-size:10px;color:'+txtSub+'">'+st.deps.length+' dépense(s) · '+pctSt+'% débloqué</div></div>';
+            h+='<div style="text-align:right"><div style="font-size:12px;font-weight:700;color:'+soc.color+'">'+fmt(st.total)+'</div>';
+            h+='<div style="font-size:9px;color:#0F6E56">'+fmt(st.debloque)+' débl.</div></div>';
+            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+            h+='</div>';
+          });
+        }
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+
+  } else {
+    // ════ VUE ACTIONNAIRES ════
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+    ACTIONNAIRES.forEach(function(act){
+      var persoNames=act.contributors;
+      var holdNames=act.holdings;
+      var persoDeps=allDeps.filter(function(e){return persoNames.indexOf(e.dep.engage_par)>=0;});
+      var holdDeps=allDeps.filter(function(e){return holdNames.indexOf(e.dep.engage_par)>=0;});
+      var persoTotal=persoDeps.reduce(function(s,e){return s+num(e.dep.ttc);},0);
+      var holdTotal=holdDeps.reduce(function(s,e){return s+num(e.dep.ttc);},0);
+      var grandTotal=persoTotal+holdTotal;
+      var allActDeps=persoDeps.concat(holdDeps);
+      var debTotal=allActDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
+      var pctDeb=grandTotal?Math.round(debTotal/grandTotal*100):0;
+      var expanded=S.engExpanded['act_'+act.nom];
+
+      // Grouper par studio
+      var byStudio={};
+      allActDeps.forEach(function(e){
+        if(!byStudio[e.studioId])byStudio[e.studioId]={name:e.studioName,perso:0,holding:0,debloque:0};
+        if(persoNames.indexOf(e.dep.engage_par)>=0)byStudio[e.studioId].perso+=num(e.dep.ttc);
+        else byStudio[e.studioId].holding+=num(e.dep.ttc);
+        if(e.dep.deblocage==='debloque')byStudio[e.studioId].debloque+=num(e.dep.ttc);
+      });
+
+      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+act.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
+
+      // Card header
+      h+='<div onclick="toggleEngExpand(\'act_'+act.nom+'\')" style="padding:16px 18px;cursor:pointer">';
+      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+      h+=avatarHTML(act.nom,36);
+      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+act.nom+'</div>';
+      if(act.holdingLabel)h+='<div style="font-size:10px;color:'+txtSub+'">via '+act.holdingLabel+'</div>';
+      else h+='<div style="font-size:10px;color:'+txtSub+'">Nom propre</div>';
+      h+='</div>';
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
+      h+='</div>';
+
+      // Montant total
+      h+='<div style="font-size:20px;font-weight:800;color:'+act.color+';letter-spacing:-0.5px">'+fmt(grandTotal)+'</div>';
+
+      // Breakdown perso vs holding
+      h+='<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap">';
+      if(persoTotal>0)h+='<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:'+act.color+'12;color:'+act.color+';font-weight:600">Nom propre : '+fmt(persoTotal)+'</span>';
+      if(holdTotal>0&&act.holdingLabel)h+='<span style="font-size:10px;padding:2px 8px;border-radius:6px;background:'+act.color+'12;color:'+act.color+';font-weight:600">'+act.holdingLabel+' : '+fmt(holdTotal)+'</span>';
+      h+='</div>';
+
+      // Progress bar
+      h+='<div style="margin-top:8px;height:4px;background:'+(dm?'#30363d':'#f0f0ea')+';border-radius:4px;overflow:hidden">';
+      h+='<div style="width:'+pctDeb+'%;height:100%;background:'+act.color+';border-radius:4px;transition:width .3s"></div></div>';
+      h+='<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:'+txtSub+'">'+pctDeb+'% débloqué</span><span style="font-size:9px;color:'+txtSub+'">'+Object.keys(byStudio).length+' projet(s)</span></div>';
+      h+='</div>';
+
+      // Section dépliable
+      if(expanded){
+        h+='<div style="border-top:1px solid '+borderC+'">';
+        var stIds=Object.keys(byStudio);
+        if(!stIds.length){
+          h+='<div style="padding:14px;text-align:center;font-size:11px;color:'+txtSub+'">Aucun engagement</div>';
+        } else {
+          stIds.forEach(function(sid,idx){
+            var st=byStudio[sid];
+            var stTotal=st.perso+st.holding;
+            h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:10px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s;border-bottom:'+(idx<stIds.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+act.color+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+            h+='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:'+txtMain+'">'+st.name+'</div>';
+            var parts=[];
+            if(st.perso>0)parts.push('Perso: '+fmt(st.perso));
+            if(st.holding>0&&act.holdingLabel)parts.push(act.holdingLabel+': '+fmt(st.holding));
+            h+='<div style="font-size:10px;color:'+txtSub+'">'+parts.join(' · ')+'</div></div>';
+            h+='<div style="text-align:right"><div style="font-size:12px;font-weight:700;color:'+act.color+'">'+fmt(stTotal)+'</div>';
+            h+='<div style="font-size:9px;color:#0F6E56">'+fmt(st.debloque)+' débl.</div></div>';
+            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+            h+='</div>';
+          });
+        }
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+
+  // Lien vers les pages engagements individuelles
+  h+='<div style="text-align:center;margin-top:14px;font-size:11px;color:'+txtSub+'">';
+  h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+  h+='Pour saisir ou modifier les dépenses, rendez-vous dans l\'onglet <b>Engagements</b> de chaque studio</div>';
+
+  h+='</div>';
+  return h;
 }
 
 function renderBPConsolide(){
