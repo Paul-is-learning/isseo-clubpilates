@@ -4,7 +4,7 @@
     {
       "name": "isseo-app (frontend)",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["-m", "http.server", "8080", "--directory", "/Users/paulbecaud/Desktop/isseo-app"],
+      "runtimeArgs": ["/Users/paulbecaud/Desktop/isseo-app/.claude/serve.py"],
       "port": 8080
     },
     {

@@ -1758,8 +1758,45 @@ function globalSearch(query){
       var dl=(d.label||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
       if(dl.indexOf(q)>=0)results.push({type:'depense',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',title:d.label,subtitle:s.name+' · '+fmt(d.montant||0),studioId:id,tab:'engagements',color:'#B8860B'});
     });
+    // Tâches
+    (S.todos[id]||[]).forEach(function(t){
+      if(t.statut==='done')return;
+      var tt=(t.titre||'').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(tt.indexOf(q)>=0){
+        var _st=TACHE_STATUTS[t.statut]||TACHE_STATUTS.todo;
+        results.push({type:'tache',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>',title:t.titre,subtitle:s.name+' · '+_st.label,studioId:id,tab:'workflow',color:'#3B6D11'});
+      }
+    });
+    // Scénarios BP
+    (S.scenarios[id]||[]).forEach(function(sc){
+      var st=(sc.auteur+' '+(sc.comment||'')).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+      if(st.indexOf(q)>=0)results.push({type:'scenario',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>',title:(sc.comment||'').substring(0,50)+((sc.comment||'').length>50?'…':''),subtitle:s.name+' · '+sc.auteur+' — '+sc.date,studioId:id,tab:'adherents',color:'#854F0B',scenarioId:sc.id});
+    });
   });
-  return results.slice(0,8);
+  // Prospects (liens + fiches)
+  (S.prospects||[]).forEach(function(p){
+    var txt='';
+    if(p.type==='lien')txt=(p.titre||'')+' '+(p.url||'');
+    else if(p.type==='fiche')txt=(p.adresse||'')+' '+(p.notes||'');
+    var pn=txt.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(pn.indexOf(q)>=0){
+      var _tl=p.type==='lien'?(p.titre||p.url||'Lien'):(p.adresse||'Fiche');
+      var _ts2=p.type==='lien'?'Annonce · '+(p.societe||''):'Prospect · '+(p.societe||'');
+      results.push({type:'prospect',icon:p.type==='lien'?'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>':'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',title:_tl.substring(0,55)+(_tl.length>55?'…':''),subtitle:_ts2,tab:null,color:'#F59E0B',prospectSociete:p.societe});
+    }
+  });
+  // Pages de navigation rapide
+  var _pages=[
+    {label:'Accueil',pageId:'accueil',desc:'Page d\'accueil'},
+    {label:'Projets',pageId:'projets',desc:'Tous les studios'},
+    {label:'Prospection',pageId:'prospection',desc:'Recherche de locaux'},
+    {label:'BP Consolide',pageId:'bp',desc:'Business plan consolidé'},
+  ];
+  _pages.forEach(function(pg){
+    var pn=pg.label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+    if(pn.indexOf(q)>=0)results.push({type:'page',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',title:pg.label,subtitle:pg.desc,tab:null,color:'#555',pageId:pg.pageId});
+  });
+  return results.slice(0,12);
 }
 
 function handleSearchNav(idx){
@@ -1767,7 +1804,14 @@ function handleSearchNav(idx){
   var r=results[idx];
   if(!r)return;
   S.searchQuery='';S.searchOpen=false;S.searchIdx=-1;
-  if(r.tab){
+  if(r.type==='page'){
+    setPage(r.pageId);
+  }else if(r.type==='prospect'){
+    setPage('prospection');
+  }else if(r.type==='scenario'){
+    S.view='detail';S.selectedId=r.studioId;S.detailTab='adherents';
+    if(r.scenarioId)chargerScenario(r.studioId,r.scenarioId);
+  }else if(r.tab){
     S.view='detail';S.selectedId=r.studioId;S.detailTab=r.tab;
   }else{
     openDetail(r.studioId);
@@ -1801,7 +1845,7 @@ function renderSearchResultsInner(){
   if(!results.length)return '<div style="padding:16px 20px;text-align:center;color:#999;font-size:12px">Aucun résultat pour « '+S.searchQuery+' »</div>';
   var h='';
   var lastType='';
-  var TYPE_LABELS={studio:'Studios',alerte:'Alertes',workflow:'Workflow',message:'Messages',document:'Documents',depense:'Dépenses'};
+  var TYPE_LABELS={studio:'Studios',alerte:'Alertes',workflow:'Workflow',message:'Messages',document:'Documents',depense:'Dépenses',tache:'Tâches',scenario:'Scénarios',prospect:'Prospection',page:'Navigation'};
   results.forEach(function(r,i){
     if(r.type!==lastType){
       lastType=r.type;
