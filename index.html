@@ -3999,23 +3999,42 @@ function renderAdherents(sid,s){
   var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
 
   // ── A. Ligne sélecteur de scénarios ──
+  var _lastSc=_scList.length?_scList[0]:null; // dernier enregistré = référence active
   h+='<div class="box" style="background:#f8f9fb;padding:14px 16px;margin-bottom:12px">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">';
-  h+='<div style="display:flex;align-items:center;gap:10px">';
+  h+='<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
   h+='<span style="font-size:11px;font-weight:600;color:#555">Sc\u00e9nario actif :</span>';
-  h+='<select onchange="chargerScenario(\''+sid+'\',this.value)" style="padding:7px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;font-weight:500;color:#1a3a6b;background:#fff;cursor:pointer;max-width:260px">';
+  h+='<select onchange="chargerScenario(\''+sid+'\',this.value)" style="padding:7px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;font-weight:500;color:#1a3a6b;background:#fff;cursor:pointer;max-width:280px">';
   h+='<option value="bp_default"'+(_activeId==='bp_default'?' selected':'')+'>📊 BP de r\u00e9f\u00e9rence (lecture seule)</option>';
-  _scList.forEach(function(sc){
-    var lbl=sc.auteur.split(' ')[0]+' — '+sc.date+(sc.comment?' · '+(sc.comment.length>30?sc.comment.slice(0,30)+'…':sc.comment):'');
+  _scList.forEach(function(sc,idx){
+    var isLast=idx===0;
+    var lbl=(isLast?'⭐ ':'')+ sc.auteur.split(' ')[0]+' — '+sc.date+(sc.comment?' · '+(sc.comment.length>28?sc.comment.slice(0,28)+'…':sc.comment):'');
     h+='<option value="'+sc.id+'"'+(_activeId===sc.id?' selected':'')+'>'+lbl+'</option>';
   });
   h+='</select>';
+  if(_scList.length>0){
+    h+='<span style="font-size:10px;color:#888">'+_scList.length+' sc\u00e9nario'+(_scList.length>1?'s':'')+'</span>';
+  }
   h+='</div>';
+  h+='<div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">';
+  // Bouton nouveau scénario (toujours visible si pas viewer et si déjà un scénario chargé)
+  if(!isViewer()&&!_isDefault){
+    h+='<button onclick="nouveauScenario(\''+sid+'\')" style="padding:6px 12px;background:#fff;border:1px solid #1a3a6b;border-radius:8px;font-size:11px;color:#1a3a6b;cursor:pointer;display:flex;align-items:center;gap:4px;font-weight:600;transition:all 0.15s" onmouseover="this.style.background=\'#1a3a6b\';this.style.color=\'#fff\'" onmouseout="this.style.background=\'#fff\';this.style.color=\'#1a3a6b\'" title="Cr\u00e9er un nouveau sc\u00e9nario"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Nouveau</button>';
+  }
   // Bouton supprimer (si scénario non-BP actif)
   if(!isViewer()&&!_isDefault){
-    h+='<button onclick="supprimerScenario(\''+sid+'\',\''+_activeId+'\')" style="padding:6px 10px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;display:flex;align-items:center;gap:4px" title="Supprimer ce sc\u00e9nario"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Supprimer</button>';
+    h+='<button onclick="supprimerScenario(\''+sid+'\',\''+_activeId+'\')" style="padding:6px 10px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;display:flex;align-items:center;gap:4px" title="Supprimer ce sc\u00e9nario"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
   }
-  h+='</div></div>';
+  h+='</div>';
+  h+='</div>';
+  // Indicateur dernier scénario = référence
+  if(_lastSc&&_activeId!==_lastSc.id){
+    h+='<div style="background:#f0f7ff;border:1px solid #d0dffa;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:8px;font-size:11px;color:#1a3a6b">';
+    h+='<span>⭐</span><span>Derni\u00e8re version de r\u00e9f\u00e9rence : <b>'+_lastSc.auteur+'</b> — '+_lastSc.date+'</span>';
+    h+='<button onclick="chargerScenario(\''+sid+'\',\''+_lastSc.id+'\')" style="padding:3px 10px;background:#1a3a6b;color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;margin-left:auto">Charger</button>';
+    h+='</div>';
+  }
+  h+='</div>';
 
   // ── B. Toggle CTA — Créer un nouveau scénario ──
   if(_isDefault&&!_editMode&&!isViewer()){
@@ -7585,7 +7604,8 @@ function buildSimCommentHTML(sid,cfg,bpOpts){
     var _dem=_bpO.emprunt-_EMPRUNT_REF,_dempct=Math.round(_dem/_EMPRUNT_REF*100);
     _hyp.push({icon:'🏦',text:'Emprunt <b>'+fmt(_bpO.emprunt)+'</b> (BP&nbsp;: '+fmt(_EMPRUNT_REF)+') — '+(_dempct>0?'+':'')+_dempct+'% → charges fin. ajustées'});
   }
-  var _ts=S.studios[sid]&&S.studios[sid].tauxInteret!=null?S.studios[sid].tauxInteret:null;
+  var _tsRaw=S.studios[sid]&&S.studios[sid].tauxInteret!=null?S.studios[sid].tauxInteret:null;
+  var _ts=(_tsRaw!=null&&_tsRaw>=0.01)?_tsRaw:null; // ignorer valeurs corrompues (<1%)
   if(_ts!=null&&Math.abs(_ts-_TAUX_REF/100)>0.0001){
     var _tp=Math.round(_ts*10000)/100,_dt=_tp-_TAUX_REF;
     _hyp.push({icon:'📈',text:'Taux d\'intérêt <b>'+_tp+'%</b> (BP&nbsp;: '+_TAUX_REF+'%) — '+(_dt>0?'+':'')+_dt.toFixed(2)+'pts → charges financières ajustées'});
@@ -7687,6 +7707,15 @@ function toggleScenarioEditMode(sid){
   if(S.scenarioEditMode[sid]&&!S.simConfig[sid]){
     S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   }
+  render();
+}
+function nouveauScenario(sid){
+  // Créer un nouveau scénario vierge (valeurs BP par défaut) sans toucher aux existants
+  S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  S.adherents[sid]={};
+  S.activeScenarioId[sid]='bp_default';
+  S.scenarioEditMode[sid]=true;
+  toast('Nouveau scénario — configurez vos hypothèses');
   render();
 }
 function updateSimRep(sid,field,val,ay){
