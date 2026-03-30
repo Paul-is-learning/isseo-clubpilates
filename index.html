@@ -864,6 +864,8 @@ var S={
   engView:'societes',   // vue récap engagements : 'societes' | 'actionnaires'
   engSection:'recap',   // volet récap engagements : 'recap' | 'fondspropres' | 'comptescourants'
   engExpanded:{},       // sections dépliées récap engagements {nomGroupe: true}
+  fpSimActiveCohorte:'1', // cohorte active dans le volet fonds propres
+  fpSimCohortes:{2:{'P&W Occitanie':0,'COBE Society':0,'SACOBE Society':0},3:{'P&W Occitanie':0,'COBE Society':0,'SACOBE Society':0},4:{'P&W Occitanie':0,'COBE Society':0,'SACOBE Society':0}},
   chatOpen:false,       // panneau chat ouvert/fermé
   chatLastSeen:localStorage.getItem('chatLastSeen')||'', // ts du dernier message lu
   adminSettings:{blocked:[],roles:{},viewers:[]}, // contrôle accès utilisateurs
@@ -2949,6 +2951,8 @@ function _getScenarioLabel(sid){
 // ── Récapitulatif des engagements consolidé ──────────────────────────────────
 function toggleEngView(v){S.engView=v;render();}
 function toggleEngSection(v){S.engSection=v;render();}
+function toggleFpCohorte(v){S.fpSimActiveCohorte=v;render();}
+function setFpSimCohorte(cohorte,societe,nb){S.fpSimCohortes[cohorte][societe]=parseInt(nb)||0;render();}
 function toggleEngExpand(k){S.engExpanded[k]=!S.engExpanded[k];render();}
 
 function renderPageEngagements(){
@@ -3081,7 +3085,7 @@ function renderPageEngagements(){
       var socDebloque=socDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
       var socAttente=socDeps.filter(function(e){return e.dep.deblocage==='demande';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
       var pctDeb=socTotal?Math.round(socDebloque/socTotal*100):0;
-      var expanded=S.engExpanded['soc_'+soc.societe];
+      var expanded=true;
 
       // Grouper par studio
       var byStudio={};
@@ -3097,12 +3101,11 @@ function renderPageEngagements(){
       h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;padding:0;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+soc.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
 
       // Card header
-      h+='<div onclick="toggleEngExpand(\'soc_'+soc.societe+'\')" style="padding:16px 18px;cursor:pointer">';
+      h+='<div style="padding:16px 18px">';
       h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
       h+='<div style="width:36px;height:36px;border-radius:10px;background:'+soc.color+'15;color:'+soc.color+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;letter-spacing:-0.5px">'+soc.short.split(' ').map(function(w){return w.charAt(0);}).join('')+'</div>';
       h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+';text-transform:uppercase;letter-spacing:0.3px">'+soc.short+'</div>';
       h+='<div style="font-size:10px;color:'+txtSub+';margin-top:1px">'+soc.desc+'</div></div>';
-      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
       h+='</div>';
 
       // Montants
@@ -3175,7 +3178,7 @@ function renderPageEngagements(){
       var actDebloque=actDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
       var actAttente=actDeps.filter(function(e){return e.dep.deblocage==='demande';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
       var pctDeb=actTotal?Math.round(actDebloque/actTotal*100):0;
-      var expanded=S.engExpanded['act_'+act.nom];
+      var expanded=true;
 
       // Grouper par studio
       var byStudio={};
@@ -3189,12 +3192,11 @@ function renderPageEngagements(){
       h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+act.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
 
       // Card header
-      h+='<div onclick="toggleEngExpand(\'act_'+act.nom+'\')" style="padding:16px 18px;cursor:pointer">';
+      h+='<div style="padding:16px 18px">';
       h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
       h+=avatarHTML(act.avatarNom||act.nom,36);
       h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+act.nom+'</div>';
       h+='<div style="font-size:10px;color:'+txtSub+';margin-top:1px">'+act.desc+'</div></div>';
-      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
       h+='</div>';
 
       // Montant total
@@ -3251,7 +3253,10 @@ function renderPageEngagements(){
 
   var OWNERSHIP=OWNERSHIP_MAP;
 
-  // Calculer les fonds propres par studio
+  // FP par défaut par studio (capex standard - emprunt standard)
+  var FP_DEFAUT=333500-230000; // 103 500 €
+
+  // ── Cohorte 1 : données réelles ──
   var fpByStudio={};
   allIds.forEach(function(id){
     var s=S.studios[id];
@@ -3262,78 +3267,176 @@ function renderPageEngagements(){
     var _hasCustomCapex=s.capexDetail&&Object.keys(s.capexDetail||{}).length>0;
     var emprunt=_hasCustomCapex?Math.round(capex*0.70):(s.emprunt||230000);
     var fp=capex-emprunt;
-    fpByStudio[id]={name:s.name,societe:s.societe,capex:capex,emprunt:emprunt,fp:fp};
+    fpByStudio[id]={name:s.name,societe:s.societe,capex:capex,emprunt:emprunt,fp:fp,cohorte:s.cohorte||1};
   });
 
-  // Agréger par actionnaire : pour chaque entrée OWNERSHIP, calculer la part de fonds propres
-  var actionnaireFP={};
-  allIds.forEach(function(id){
-    var info=fpByStudio[id];
-    if(!info)return;
-    var owners=OWNERSHIP[info.societe]||[];
-    owners.forEach(function(o){
-      if(!actionnaireFP[o.nom])actionnaireFP[o.nom]={nom:o.nom,desc:o.desc,color:o.color,avatarNom:o.avatarNom,total:0,details:[]};
-      var share=Math.round(info.fp*o.pct/100);
-      actionnaireFP[o.nom].total+=share;
-      actionnaireFP[o.nom].details.push({studio:info.name,studioId:id,societe:info.societe,pct:o.pct,type:o.type,fpStudio:info.fp,share:share});
+  // ── Calcul FP par cohorte ──
+  // Fonction pour agréger par actionnaire pour une cohorte donnée
+  function computeFPForCohorte(coh){
+    var result={};
+    if(coh===1){
+      // Données réelles
+      allIds.forEach(function(id){
+        var info=fpByStudio[id];
+        if(!info||info.cohorte!==1)return;
+        var owners=OWNERSHIP[info.societe]||[];
+        owners.forEach(function(o){
+          if(!result[o.nom])result[o.nom]={nom:o.nom,desc:o.desc,color:o.color,avatarNom:o.avatarNom,total:0,details:[]};
+          var share=Math.round(info.fp*o.pct/100);
+          result[o.nom].total+=share;
+          result[o.nom].details.push({studio:info.name,studioId:id,societe:info.societe,pct:o.pct,type:o.type,fpStudio:info.fp,share:share});
+        });
+      });
+    } else {
+      // Simulation : nb studios × FP_DEFAUT × ownership%
+      var simData=S.fpSimCohortes[coh]||{};
+      SOCIETES_PORTEUSES.forEach(function(soc){
+        var nb=simData[soc.societe]||0;
+        if(nb<=0)return;
+        var owners=OWNERSHIP[soc.societe]||[];
+        owners.forEach(function(o){
+          if(!result[o.nom])result[o.nom]={nom:o.nom,desc:o.desc,color:o.color,avatarNom:o.avatarNom,total:0,details:[]};
+          var share=Math.round(FP_DEFAUT*o.pct/100*nb);
+          result[o.nom].total+=share;
+          result[o.nom].details.push({studio:nb+' studio(s) '+soc.short,studioId:null,societe:soc.societe,pct:o.pct,type:o.type,fpStudio:FP_DEFAUT*nb,share:share});
+        });
+      });
+    }
+    return result;
+  }
+
+  // Calcul pour chaque cohorte
+  var fpParCohorte={};
+  var totalFPGlobal=0;
+  [1,2,3,4].forEach(function(c){
+    fpParCohorte[c]=computeFPForCohorte(c);
+    var tot=Object.keys(fpParCohorte[c]).reduce(function(s,k){return s+fpParCohorte[c][k].total;},0);
+    fpParCohorte[c]._total=tot;
+    totalFPGlobal+=tot;
+  });
+
+  // Agréger tous les actionnaires (toutes cohortes)
+  var actionnaireFPGlobal={};
+  [1,2,3,4].forEach(function(c){
+    Object.keys(fpParCohorte[c]).forEach(function(k){
+      if(k==='_total')return;
+      if(!actionnaireFPGlobal[k])actionnaireFPGlobal[k]={nom:fpParCohorte[c][k].nom,total:0};
+      actionnaireFPGlobal[k].total+=fpParCohorte[c][k].total;
     });
   });
 
-  var totalFPGlobal=Object.keys(actionnaireFP).reduce(function(s,k){return s+actionnaireFP[k].total;},0);
-
-  // Render section
+  // ── Header gradient bleu avec KPIs globaux ──
   h+='<div style="background:linear-gradient(135deg,#1a3a6b 0%,#2d5a8e 50%,#3b7dd8 100%);border-radius:16px;padding:22px 28px;margin-bottom:16px;position:relative;overflow:hidden">';
   h+='<div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">';
   h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
-  h+='<span style="font-size:16px;font-weight:700;color:#fff">Fonds propres à injecter</span><span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);margin-left:8px;background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:6px">Cohorte 1</span></div>';
-  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">Quote-part de chaque actionnaire selon sa détention dans les sociétés porteuses — Cohorte 1</div>';
-  h+='<div style="display:flex;gap:16px;align-items:center">';
-  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Total fonds propres</div><div style="font-size:22px;font-weight:800;color:#fff">'+fmt(totalFPGlobal)+'</div></div>';
-  h+='<div style="flex:1;display:flex;gap:8px;flex-wrap:wrap">';
-  Object.keys(actionnaireFP).forEach(function(k){
-    var a=actionnaireFP[k];
+  h+='<span style="font-size:16px;font-weight:700;color:#fff">Fonds propres à injecter</span><span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);margin-left:8px;background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:6px">Toutes cohortes</span></div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">Quote-part de chaque actionnaire selon sa détention — FP par défaut : '+fmt(FP_DEFAUT)+' / studio</div>';
+  h+='<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap">';
+  h+='<div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Total global</div><div style="font-size:22px;font-weight:800;color:#fff">'+fmt(totalFPGlobal)+'</div></div>';
+  // KPI par cohorte
+  [1,2,3,4].forEach(function(c){
+    if(fpParCohorte[c]._total>0||c===1){
+      h+='<div style="background:rgba(255,255,255,0.08);border-radius:8px;padding:6px 14px;text-align:center">';
+      h+='<div style="font-size:9px;color:rgba(255,255,255,0.5)">Cohorte '+c+'</div>';
+      h+='<div style="font-size:14px;font-weight:700;color:#fff">'+fmt(fpParCohorte[c]._total)+'</div>';
+      h+='</div>';
+    }
+  });
+  // KPI par actionnaire
+  h+='</div>';
+  h+='<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:12px">';
+  Object.keys(actionnaireFPGlobal).forEach(function(k){
+    var a=actionnaireFPGlobal[k];
     var pctOfTotal=totalFPGlobal?Math.round(a.total/totalFPGlobal*100):0;
-    h+='<div style="background:rgba(255,255,255,0.08);border-radius:8px;padding:6px 12px;text-align:center;min-width:80px">';
+    h+='<div style="background:rgba(255,255,255,0.08);border-radius:8px;padding:5px 10px;text-align:center">';
     h+='<div style="font-size:9px;color:rgba(255,255,255,0.6)">'+a.nom+'</div>';
-    h+='<div style="font-size:14px;font-weight:700;color:#fff">'+fmt(a.total)+'</div>';
-    h+='<div style="font-size:9px;color:rgba(255,255,255,0.5)">'+pctOfTotal+'% du total</div>';
+    h+='<div style="font-size:13px;font-weight:700;color:#fff">'+fmt(a.total)+'</div>';
+    h+='<div style="font-size:9px;color:rgba(255,255,255,0.5)">'+pctOfTotal+'%</div>';
     h+='</div>';
   });
-  h+='</div></div></div>';
+  h+='</div></div>';
 
-  // Cards détaillées par actionnaire
-  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
-  Object.keys(actionnaireFP).forEach(function(k){
-    var a=actionnaireFP[k];
-    var expanded=S.engExpanded['fp_'+a.nom];
+  // ── Onglets cohortes ──
+  h+='<div style="display:flex;gap:6px;margin-bottom:14px">';
+  [1,2,3,4].forEach(function(c){
+    var active=S.fpSimActiveCohorte===(''+c);
+    var hasData=fpParCohorte[c]._total>0||c===1;
+    h+='<button onclick="toggleFpCohorte(\''+c+'\')" style="padding:8px 18px;border-radius:8px;font-size:12px;font-weight:'+(active?'700':'500')+';cursor:pointer;transition:all .2s;border:'+(active?'none':'1px solid '+borderC)+';background:'+(active?(dm?'#3b7dd8':'#1a3a6b'):(dm?'#21262d':'#fff'))+';color:'+(active?'#fff':(dm?'#8b949e':'#666'))+'">';
+    h+='Cohorte '+c;
+    if(hasData&&!active)h+=' <span style="font-size:9px;opacity:0.7">'+fmt(fpParCohorte[c]._total)+'</span>';
+    h+='</button>';
+  });
+  h+='</div>';
 
-    h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+a.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
-    h+='<div onclick="toggleEngExpand(\'fp_'+a.nom+'\')" style="padding:16px 18px;cursor:pointer">';
-    h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-    h+=avatarHTML(a.avatarNom||a.nom,36);
-    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+a.nom+'</div>';
-    h+='<div style="font-size:10px;color:'+txtSub+'">'+a.desc+'</div></div>';
-    h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
-    h+='</div>';
+  // ── Contenu de la cohorte sélectionnée ──
+  var activeCoh=parseInt(S.fpSimActiveCohorte)||1;
+  var actionnaireFP=fpParCohorte[activeCoh];
+  var totalFPCohorte=actionnaireFP._total||0;
 
-    // Montant total
-    h+='<div style="font-size:22px;font-weight:800;color:'+a.color+';letter-spacing:-0.5px">'+fmt(a.total)+'</div>';
-    h+='<div style="font-size:10px;color:'+txtSub+';margin-top:2px">à injecter en fonds propres</div>';
-
-    // Mini-barres par société
-    h+='<div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">';
-    a.details.forEach(function(d){
-      h+='<span style="font-size:9px;padding:2px 7px;border-radius:5px;background:'+(dm?'#21262d':'#f0f0ea')+';color:'+txtSub+';font-weight:500">'+d.societe+' · '+d.pct+'% · '+fmt(d.share)+'</span>';
+  // Pour cohortes 2-4 : tableau de simulation
+  if(activeCoh>=2){
+    var simData=S.fpSimCohortes[activeCoh]||{};
+    h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;padding:20px;margin-bottom:16px">';
+    h+='<div style="font-size:13px;font-weight:700;color:'+txtMain+';margin-bottom:12px">Simulation — Nombre d\'ouvertures Cohorte '+activeCoh+'</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+    SOCIETES_PORTEUSES.forEach(function(soc){
+      var nb=simData[soc.societe]||0;
+      var fpSoc=FP_DEFAUT*nb;
+      h+='<div style="background:'+(dm?'#21262d':'#f8f9fb')+';border-radius:10px;padding:14px;text-align:center">';
+      h+='<div style="font-size:11px;font-weight:600;color:'+soc.color+';margin-bottom:8px">'+soc.short+'</div>';
+      h+='<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px">';
+      h+='<button onclick="setFpSimCohorte('+activeCoh+',\''+soc.societe+'\',Math.max(0,'+(nb-1)+'))" style="width:28px;height:28px;border-radius:6px;border:1px solid '+borderC+';background:'+cardBg+';color:'+txtMain+';font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">-</button>';
+      h+='<span style="font-size:22px;font-weight:800;color:'+txtMain+';min-width:30px">'+nb+'</span>';
+      h+='<button onclick="setFpSimCohorte('+activeCoh+',\''+soc.societe+'\','+(nb+1)+')" style="width:28px;height:28px;border-radius:6px;border:1px solid '+borderC+';background:'+cardBg+';color:'+txtMain+';font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center">+</button>';
+      h+='</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+'">studio(s)</div>';
+      if(nb>0)h+='<div style="font-size:12px;font-weight:700;color:'+soc.color+';margin-top:6px">FP : '+fmt(fpSoc)+'</div>';
+      h+='</div>';
     });
-    h+='</div>';
-    h+='</div>';
+    h+='</div></div>';
+  }
 
-    // Section dépliable
-    if(expanded){
+  // Cards détaillées par actionnaire (même design pour toutes les cohortes)
+  var fpActifs=Object.keys(actionnaireFP).filter(function(k){return k!=='_total'&&actionnaireFP[k].total>0;});
+
+  if(fpActifs.length===0){
+    h+='<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">';
+    if(activeCoh===1)h+='Aucun studio en cohorte 1';
+    else h+='Ajustez le nombre d\'ouvertures ci-dessus pour simuler les fonds propres nécessaires.';
+    h+='</div>';
+  } else {
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+    fpActifs.forEach(function(k){
+      var a=actionnaireFP[k];
+      var pctOfCoh=totalFPCohorte?Math.round(a.total/totalFPCohorte*100):0;
+
+      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+a.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
+      h+='<div style="padding:16px 18px">';
+      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+      h+=avatarHTML(a.avatarNom||a.nom,36);
+      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+a.nom+'</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+'">'+a.desc+'</div></div>';
+      h+='<span style="background:'+(dm?'#1a3a6b33':'#dbeafe')+';color:#1a3a6b;padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600">'+pctOfCoh+'%</span>';
+      h+='</div>';
+
+      // Montant total
+      h+='<div style="font-size:22px;font-weight:800;color:'+a.color+';letter-spacing:-0.5px">'+fmt(a.total)+'</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+';margin-top:2px">à injecter en fonds propres</div>';
+
+      // Mini-barres par société
+      h+='<div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">';
+      a.details.forEach(function(d){
+        h+='<span style="font-size:9px;padding:2px 7px;border-radius:5px;background:'+(dm?'#21262d':'#f0f0ea')+';color:'+txtSub+';font-weight:500">'+d.societe+' · '+d.pct+'% · '+fmt(d.share)+'</span>';
+      });
+      h+='</div>';
+      h+='</div>';
+
+      // Détail toujours visible
       h+='<div style="border-top:1px solid '+borderC+'">';
       a.details.forEach(function(d,idx){
-        h+='<div onclick="openDetail(\''+d.studioId+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:10px 18px;cursor:pointer;transition:background .15s;border-bottom:'+(idx<a.details.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+        var clickable=d.studioId?'onclick="openDetail(\''+d.studioId+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:10px 18px;cursor:pointer;transition:background .15s;border-bottom:'+(idx<a.details.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'"':'style="padding:10px 18px;border-bottom:'+(idx<a.details.length-1?'1px solid '+borderC:'none')+'"';
+        h+='<div '+clickable+'>';
         h+='<div style="display:flex;align-items:center;gap:10px">';
         h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+a.color+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
         h+='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:'+txtMain+'">'+d.studio+'</div>';
@@ -3342,14 +3445,14 @@ function renderPageEngagements(){
         h+='<div style="font-size:12px;font-weight:700;color:'+a.color+'">'+fmt(d.share)+'</div>';
         h+='<div style="font-size:9px;color:'+txtSub+'">'+d.pct+'% de '+fmt(d.fpStudio)+'</div>';
         h+='</div>';
-        h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+        if(d.studioId)h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
         h+='</div></div>';
       });
       h+='</div>';
-    }
+      h+='</div>';
+    });
     h+='</div>';
-  });
-  h+='</div>';
+  }
 
   } // fin volet fondspropres
 
