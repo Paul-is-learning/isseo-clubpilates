@@ -5050,10 +5050,12 @@ function renderEngagements(sid,s){
     h+='<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune d&eacute;pense saisie</div>';
   } else {
     h+='<div style="overflow-x:auto"><table style="min-width:700px">';
-    h+='<tr><th style="text-align:left;padding-left:8px">Cat&eacute;gorie</th><th style="text-align:left">Description</th><th>TTC</th><th>Financement</th><th>Par</th><th>Date</th><th>D&eacute;blocage</th><th>Justif</th>'+(isAdmin?'<th></th>':'')+'</tr>';
+    h+='<tr><th style="text-align:left;padding-left:8px">Cat&eacute;gorie</th><th style="text-align:left">Description</th><th>TTC</th><th>Financement</th><th>Par</th><th>Date</th><th>D&eacute;blocage</th><th>Justif</th><th></th></tr>';
+    var _currentUser=(S.profile&&S.profile.nom)||'';
     deps.forEach(function(d,i){
       var st=DEBLOCAGE[d.deblocage]||DEBLOCAGE.attente;
       var isLeas=d.financement==='Credit-bail';
+      var canEdit=isAdmin||(d.saisi_par&&d.saisi_par===_currentUser);
       h+='<tr'+(isLeas?' style="background:#fffdf0"':'')+'>';
       h+='<td style="padding:8px;font-size:12px;font-weight:500;text-align:left">'+d.categorie+'</td>';
       h+='<td style="padding:8px;font-size:12px;color:#555;text-align:left">'+(d.description||'--')+'</td>';
@@ -5068,9 +5070,14 @@ function renderEngagements(sid,s){
       h+='</td>';
       h+='<td style="padding:8px;text-align:center">';
       if(d.fichierUrl)h+='<a href="'+d.fichierUrl+'" target="_blank" style="font-size:11px;color:#1a3a6b;text-decoration:none">doc</a> ';
-      if(isAdmin)h+='<label style="cursor:pointer;font-size:13px">+<input type="file" style="display:none" onchange="uploadJustif(\''+sid+'\','+i+',this)"/></label>';
+      if(canEdit)h+='<label style="cursor:pointer;font-size:13px">+<input type="file" style="display:none" onchange="uploadJustif(\''+sid+'\','+i+',this)"/></label>';
       h+='</td>';
-      if(isAdmin)h+='<td style="padding:8px"><button class="btn" style="font-size:11px;padding:3px 8px;color:#A32D2D" onclick="supprimerDepense(\''+sid+'\','+i+')">&times;</button></td>';
+      if(isAdmin||canEdit){
+        h+='<td style="padding:8px;white-space:nowrap">';
+        if(canEdit)h+='<button class="btn" style="font-size:11px;padding:3px 8px;color:#1a3a6b" onclick="modifierDepense(\''+sid+'\','+i+')" title="Modifier"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+        if(isAdmin)h+='<button class="btn" style="font-size:11px;padding:3px 8px;color:#A32D2D" onclick="supprimerDepense(\''+sid+'\','+i+')">&times;</button>';
+        h+='</td>';
+      }
       h+='</tr>';
     });
     h+='</table></div>';
@@ -5108,6 +5115,51 @@ function ouvrirFormDepense(sid){
   div.innerHTML=h;
 }
 
+function modifierDepense(sid,idx){
+  var d=(S.depenses[sid]||[])[idx];
+  if(!d)return;
+  var _currentUser=(S.profile&&S.profile.nom)||'';
+  var isAdmin=!!S.profile&&!isViewer();
+  if(!isAdmin&&d.saisi_par!==_currentUser){toast('Seul l\'auteur de la dépense peut la modifier');return;}
+  var div=document.getElementById('form-depense-'+sid);
+  if(!div)return;
+  var h='<div class="box"><div style="font-weight:600;font-size:14px;margin-bottom:12px;display:flex;align-items:center;gap:8px"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>Modifier la d&eacute;pense</div><div class="form-grid">';
+  h+='<div class="fg"><label>Categorie</label><select id="dep-cat"><option value="">Selectionner...</option>';
+  DEPENSE_CATS.forEach(function(c){h+='<option'+(c===d.categorie?' selected':'')+'>'+c+'</option>';});
+  h+='</select></div><div class="fg"><label>Description</label><input id="dep-desc" value="'+(d.description||'').replace(/"/g,'&quot;')+'"/></div>';
+  h+='<div class="fg"><label>Montant HT</label><input id="dep-ht" type="number" value="'+(d.ht||0)+'" oninput="calcTTC()"/></div>';
+  h+='<div class="fg"><label>TVA</label><select id="dep-tva" onchange="calcTTC()"><option value="20"'+(num(d.tva)===20?' selected':'')+'>20%</option><option value="10"'+(num(d.tva)===10?' selected':'')+'>10%</option><option value="0"'+(num(d.tva)===0?' selected':'')+'>0%</option></select></div>';
+  h+='<div class="fg"><label>Montant TTC</label><input id="dep-ttc" type="number" value="'+(d.ttc||0)+'"/></div>';
+  h+='<div class="fg"><label>Financement</label><select id="dep-fin">';
+  DEPENSE_FINS.forEach(function(f){h+='<option'+(f===d.financement?' selected':'')+'>'+f+'</option>';});
+  h+='</select></div>';
+  h+='<div class="fg"><label>Engag&eacute; par</label><select id="dep-par"><option value="">Sélectionner...</option>';
+  DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option'+(c===d.engage_par?' selected':'')+'>'+c+'</option>';});
+  h+='</select></div>';
+  h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+(d.date||'')+'"/></div>';
+  h+='</div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderModifDepense(\''+sid+'\','+idx+')">Enregistrer</button>';
+  h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
+  div.innerHTML=h;
+  div.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+async function sauvegarderModifDepense(sid,idx){
+  var d=(S.depenses[sid]||[])[idx];
+  if(!d){toast('Dépense introuvable');return;}
+  var cat=document.getElementById('dep-cat')&&document.getElementById('dep-cat').value;
+  if(!cat){toast('Selectionnez une categorie');return;}
+  d.categorie=cat;
+  d.description=(document.getElementById('dep-desc')&&document.getElementById('dep-desc').value)||'';
+  d.ht=num(document.getElementById('dep-ht')&&document.getElementById('dep-ht').value);
+  d.tva=num(document.getElementById('dep-tva')&&document.getElementById('dep-tva').value,20);
+  d.ttc=num(document.getElementById('dep-ttc')&&document.getElementById('dep-ttc').value);
+  d.financement=(document.getElementById('dep-fin')&&document.getElementById('dep-fin').value)||'Emprunt bancaire';
+  d.engage_par=(document.getElementById('dep-par')&&document.getElementById('dep-par').value)||'';
+  d.date=(document.getElementById('dep-date')&&document.getElementById('dep-date').value)||'';
+  await saveDepenses(sid);
+  toast('Dépense modifiée');render();
+}
+
 function calcTTC(){
   var ht=num(document.getElementById('dep-ht')&&document.getElementById('dep-ht').value);
   var tva=num(document.getElementById('dep-tva')&&document.getElementById('dep-tva').value,20);
@@ -5129,6 +5181,7 @@ async function sauvegarderDepense(sid){
     engage_par:(document.getElementById('dep-par')&&document.getElementById('dep-par').value)||'',
     date:(document.getElementById('dep-date')&&document.getElementById('dep-date').value)||'',
     deblocage:'attente',fichierUrl:null,fichierPath:null,date_demande:null,date_deblocage:null,
+    saisi_par:(S.profile&&S.profile.nom)||'',
   });
   await saveDepenses(sid);
   var depTTC=num(document.getElementById('dep-ttc')&&document.getElementById('dep-ttc').value);
