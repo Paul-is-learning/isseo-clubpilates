@@ -3033,205 +3033,232 @@ function renderPageEngagements(){
   // ════════════════════════════════════════════════════════════════════════════
   if(S.engSection==='recap'){
 
-  // ── Hero KPIs avec gradient ──
-  h+='<div style="background:linear-gradient(135deg,#92630a 0%,#b8860b 50%,#d4a843 100%);border-radius:16px;padding:24px 28px;margin-bottom:16px;position:relative;overflow:hidden">';
+  // ── Pré-calcul données par société ──
+  var socData=[];
+  SOCIETES_PORTEUSES.forEach(function(soc){
+    var socStudioIds=allIds.filter(function(id){return S.studios[id]&&S.studios[id].societe===soc.societe;});
+    var socDeps=[];
+    socStudioIds.forEach(function(id){
+      (S.depenses[id]||[]).forEach(function(d){socDeps.push({dep:d,studioId:id,studioName:(S.studios[id]||{}).name||id});});
+    });
+    var socTotal=socDeps.reduce(function(s,e){return s+num(e.dep.ttc);},0);
+    var socDebloque=socDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
+    var socAttente=socDeps.filter(function(e){return e.dep.deblocage==='demande';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
+    var byStudio={};
+    socDeps.forEach(function(e){
+      if(!byStudio[e.studioId])byStudio[e.studioId]={name:e.studioName,total:0,debloque:0,deps:[],bySource:{}};
+      byStudio[e.studioId].total+=num(e.dep.ttc);
+      if(e.dep.deblocage==='debloque')byStudio[e.studioId].debloque+=num(e.dep.ttc);
+      byStudio[e.studioId].deps.push(e.dep);
+      var src=e.dep.engage_par||'Non renseign\u00e9';
+      byStudio[e.studioId].bySource[src]=(byStudio[e.studioId].bySource[src]||0)+num(e.dep.ttc);
+    });
+    socData.push({soc:soc,studioIds:socStudioIds,deps:socDeps,total:socTotal,debloque:socDebloque,attente:socAttente,byStudio:byStudio});
+  });
+
+  // Pré-calcul données par actionnaire
+  var actData=[];
+  ACTIONNAIRES.forEach(function(act){
+    var actDeps=allDeps.filter(function(e){return act.contributors.indexOf(e.dep.engage_par)>=0;});
+    var actTotal=actDeps.reduce(function(s,e){return s+num(e.dep.ttc);},0);
+    var actDebloque=actDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
+    var byStudio={};
+    actDeps.forEach(function(e){
+      if(!byStudio[e.studioId])byStudio[e.studioId]={name:e.studioName,total:0,debloque:0,deps:[]};
+      byStudio[e.studioId].total+=num(e.dep.ttc);
+      if(e.dep.deblocage==='debloque')byStudio[e.studioId].debloque+=num(e.dep.ttc);
+      byStudio[e.studioId].deps.push(e.dep);
+    });
+    actData.push({act:act,deps:actDeps,total:actTotal,debloque:actDebloque,byStudio:byStudio});
+  });
+  var maxActTotal=Math.max.apply(null,actData.map(function(a){return a.total;}));
+
+  // ── Header gradient gold ──
+  h+='<div style="background:linear-gradient(135deg,#92630a 0%,#b8860b 50%,#d4a843 100%);border-radius:16px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden">';
   h+='<div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>';
   h+='<div style="position:absolute;bottom:-30px;left:40%;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.05)"></div>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">';
-  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>';
-  h+='<span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.3px">Synthèse financière</span></div>';
-  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">Agrégation automatique de '+allIds.length+' studios — tous modes de financement</div>';
+  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>';
+  h+='<span style="font-size:16px;font-weight:700;color:#fff;letter-spacing:-0.3px">Synth\u00e8se des engagements</span></div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">O\u00f9 en sont les d\u00e9penses engag\u00e9es ? Vue consolid\u00e9e de '+allIds.length+' studios</div>';
 
-  // KPIs
-  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px">';
-  var kpis=[
-    {label:'Total engagé',val:fmt(totalEngage),sub:'TTC'},
-    {label:'Débloqué',val:fmt(totalDebloque),sub:totalEngage?Math.round(totalDebloque/totalEngage*100)+'%':'0%'},
-    {label:'En attente',val:fmt(totalAttente),sub:'demandes'},
-    {label:'Projets',val:nbProjets+'',sub:'studios concernés'}
-  ];
-  kpis.forEach(function(k){
-    h+='<div style="background:rgba(255,255,255,0.12);backdrop-filter:blur(8px);border-radius:10px;padding:12px 14px;text-align:center">';
-    h+='<div style="font-size:10px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:4px">'+k.label+'</div>';
-    h+='<div style="font-size:18px;font-weight:800;color:#fff;letter-spacing:-0.5px">'+k.val+'</div>';
-    h+='<div style="font-size:10px;color:rgba(255,255,255,0.6);margin-top:2px">'+k.sub+'</div>';
+  // KPIs en ligne
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Total engag\u00e9</div><div style="font-size:22px;font-weight:800;color:#fff">'+fmt(totalEngage)+'</div><div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px">'+nbProjets+' projet(s) actif(s)</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">D\u00e9bloqu\u00e9</div><div style="font-size:22px;font-weight:800;color:#d1fae5">'+fmt(totalDebloque)+'</div><div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px">'+(totalEngage?Math.round(totalDebloque/totalEngage*100):0)+'% du total</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:12px 14px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">En attente</div><div style="font-size:22px;font-weight:800;color:#fef3c7">'+fmt(totalAttente)+'</div><div style="font-size:10px;color:rgba(255,255,255,0.5);margin-top:2px">demandes de d\u00e9blocage</div></div>';
+  h+='</div>';
+
+  // Barre de répartition par société (stacked bar)
+  if(totalEngage>0){
+    h+='<div>';
+    h+='<div style="font-size:9px;color:rgba(255,255,255,0.5);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.5px">R\u00e9partition par soci\u00e9t\u00e9</div>';
+    h+='<div style="height:10px;border-radius:5px;overflow:hidden;display:flex;gap:2px">';
+    socData.forEach(function(sd){
+      var pct=Math.max(1,Math.round(sd.total/totalEngage*100));
+      h+='<div title="'+sd.soc.short+' : '+fmt(sd.total)+'" style="width:'+pct+'%;background:'+sd.soc.color+';border-radius:3px;transition:width .3s"></div>';
+    });
     h+='</div>';
-  });
-  h+='</div></div>';
+    h+='<div style="display:flex;gap:12px;margin-top:6px">';
+    socData.forEach(function(sd){
+      h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:2px;background:'+sd.soc.color+'"></div><span style="font-size:9px;color:rgba(255,255,255,0.7)">'+sd.soc.short+' '+fmt(sd.total)+'</span></div>';
+    });
+    h+='</div></div>';
+  }
+  h+='</div>';
 
-  // ── Toggle Sociétés / Actionnaires ──
+  // ── Toggle Soci\u00e9t\u00e9s / Actionnaires ──
   h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:14px">';
-  var tabs=[{id:'societes',label:'Sociétés porteuses'},{id:'actionnaires',label:'Actionnaires'}];
+  var tabs=[
+    {id:'societes',label:'Par soci\u00e9t\u00e9',icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'},
+    {id:'actionnaires',label:'Par actionnaire',icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'}
+  ];
   tabs.forEach(function(tab){
     var active=S.engView===tab.id;
-    h+='<button onclick="toggleEngView(\''+tab.id+'\')" style="padding:7px 16px;border-radius:8px;font-size:12px;font-weight:'+(active?'700':'500')+';cursor:pointer;transition:all .2s;border:'+(active?'none':'1px solid '+borderC)+';background:'+(active?(dm?'#e6edf3':'#1a3a6b'):(dm?'#21262d':'#fff'))+';color:'+(active?'#fff':(dm?'#8b949e':'#666'))+'" onmouseover="if(!'+active+')this.style.background=\''+(dm?'#30363d':'#f0f0ea')+'\'" onmouseout="if(!'+active+')this.style.background=\''+(dm?'#21262d':'#fff')+'\'">'+tab.label+'</button>';
+    h+='<button onclick="toggleEngView(\''+tab.id+'\')" style="display:flex;align-items:center;gap:6px;padding:8px 16px;border-radius:8px;font-size:12px;font-weight:'+(active?'700':'500')+';cursor:pointer;transition:all .2s;border:'+(active?'none':'1px solid '+borderC)+';background:'+(active?(dm?'#e6edf3':'#92630a'):(dm?'#21262d':'#fff'))+';color:'+(active?'#fff':(dm?'#8b949e':'#666'))+'">';
+    h+=tab.icon+'<span>'+tab.label+'</span></button>';
   });
   h+='<div style="flex:1"></div>';
-  h+='<div style="font-size:11px;color:'+txtSub+'">Cliquez sur une carte pour voir le détail par projet</div>';
+  h+='<div style="font-size:11px;color:'+txtSub+'">Cliquez pour acc\u00e9der au d\u00e9tail</div>';
   h+='</div>';
 
   if(S.engView==='societes'){
-    // ════ VUE SOCIÉTÉS PORTEUSES ════
-    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
-    SOCIETES_PORTEUSES.forEach(function(soc){
-      // Studios de cette société
-      var socStudioIds=allIds.filter(function(id){return S.studios[id]&&S.studios[id].societe===soc.societe;});
-      // Toutes les dépenses de ces studios (toutes sources confondues)
-      var socDeps=[];
-      socStudioIds.forEach(function(id){
-        (S.depenses[id]||[]).forEach(function(d){socDeps.push({dep:d,studioId:id,studioName:(S.studios[id]||{}).name||id});});
+    // ═══ VUE SOCIÉTÉS : tableau consolidé ═══
+    socData.forEach(function(sd,socIdx){
+      var soc=sd.soc;
+      var pctDeb=sd.total?Math.round(sd.debloque/sd.total*100):0;
+      var pctOfTotal=totalEngage?Math.round(sd.total/totalEngage*100):0;
+
+      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;margin-bottom:12px;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\'" onmouseleave="this.style.boxShadow=\'none\'">';
+
+      // En-tête société avec bande couleur
+      h+='<div style="border-left:4px solid '+soc.color+';padding:16px 20px">';
+      h+='<div style="display:flex;align-items:center;gap:12px">';
+      h+='<div style="width:40px;height:40px;border-radius:10px;background:'+soc.color+'15;color:'+soc.color+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px">'+soc.short.split(' ').map(function(w){return w.charAt(0);}).join('')+'</div>';
+      h+='<div style="flex:1"><div style="font-size:14px;font-weight:700;color:'+txtMain+'">'+soc.short+'</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+'">'+soc.desc+' \u00b7 '+sd.studioIds.length+' studio(s)</div></div>';
+      h+='<div style="text-align:right"><div style="font-size:22px;font-weight:800;color:'+soc.color+'">'+fmt(sd.total)+'</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+'">'+pctOfTotal+'% du total</div></div>';
+      h+='</div>';
+
+      // Barre de progression + statuts
+      h+='<div style="margin-top:12px">';
+      h+='<div style="height:6px;border-radius:3px;background:'+(dm?'#30363d':'#f0f0ea')+';overflow:hidden;display:flex;gap:1px">';
+      var pctDeb2=sd.total?Math.round(sd.debloque/sd.total*100):0;
+      var pctAtt=sd.total?Math.round(sd.attente/sd.total*100):0;
+      if(pctDeb2>0)h+='<div style="width:'+pctDeb2+'%;background:#0F6E56;border-radius:3px"></div>';
+      if(pctAtt>0)h+='<div style="width:'+pctAtt+'%;background:#d4a843;border-radius:3px"></div>';
+      h+='</div>';
+      h+='<div style="display:flex;gap:16px;margin-top:6px">';
+      h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:#0F6E56"></div><span style="font-size:10px;color:'+txtSub+'">D\u00e9bloqu\u00e9 '+fmt(sd.debloque)+'</span></div>';
+      if(sd.attente>0)h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:#d4a843"></div><span style="font-size:10px;color:'+txtSub+'">En attente '+fmt(sd.attente)+'</span></div>';
+      var nonDebloque=sd.total-sd.debloque-sd.attente;
+      if(nonDebloque>0)h+='<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:'+(dm?'#30363d':'#e0e0d8')+'"></div><span style="font-size:10px;color:'+txtSub+'">\u00c0 venir '+fmt(nonDebloque)+'</span></div>';
+      h+='</div></div>';
+      h+='</div>';
+
+      // Détail par studio
+      h+='<div style="border-top:1px solid '+borderC+'">';
+      var stIds=Object.keys(sd.byStudio);
+      if(!stIds.length){
+        h+='<div style="padding:14px 20px;text-align:center;font-size:11px;color:'+txtSub+'">Aucune d\u00e9pense enregistr\u00e9e</div>';
+      } else {
+        stIds.forEach(function(sid,idx){
+          var st=sd.byStudio[sid];
+          var pctSt=sd.total?Math.round(st.total/sd.total*100):0;
+          h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:12px 20px;cursor:pointer;transition:background .15s;border-bottom:'+(idx<stIds.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+          h+='<div style="display:flex;align-items:center;gap:12px">';
+          h+='<div style="width:32px;height:32px;border-radius:8px;background:'+(dm?'#21262d':'#f0f0ea')+';display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+soc.color+'" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>';
+          h+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:'+txtMain+'">'+st.name+'</div>';
+          h+='<div style="font-size:10px;color:'+txtSub+'">'+st.deps.length+' d\u00e9pense(s)</div></div>';
+          // Barre proportionnelle
+          h+='<div style="width:100px">';
+          h+='<div style="height:4px;border-radius:2px;background:'+(dm?'#30363d':'#f0f0ea')+';overflow:hidden"><div style="width:'+pctSt+'%;height:100%;background:'+soc.color+';border-radius:2px"></div></div>';
+          h+='<div style="font-size:9px;color:'+txtSub+';text-align:right;margin-top:2px">'+pctSt+'%</div>';
+          h+='</div>';
+          h+='<div style="text-align:right;min-width:90px"><div style="font-size:13px;font-weight:700;color:'+soc.color+'">'+fmt(st.total)+'</div></div>';
+          h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+          h+='</div>';
+          // Breakdown par source
+          var sources=Object.keys(st.bySource);
+          if(sources.length>0){
+            h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding-left:44px">';
+            sources.forEach(function(src){
+              h+='<span style="font-size:9px;padding:2px 8px;border-radius:4px;background:'+(dm?'#21262d':'#f0f0ea')+';color:'+txtSub+';font-weight:500">'+src+' : '+fmt(st.bySource[src])+'</span>';
+            });
+            h+='</div>';
+          }
+          h+='</div>';
+        });
+      }
+      // Studios sans dépenses
+      var emptyStudios=sd.studioIds.filter(function(id){return !sd.byStudio[id];});
+      emptyStudios.forEach(function(sid){
+        h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:8px 20px;cursor:pointer;display:flex;align-items:center;gap:12px;opacity:0.4;border-top:1px solid '+borderC+'" onmouseover="this.style.opacity=\'0.7\'" onmouseout="this.style.opacity=\'0.4\'">';
+        h+='<div style="width:32px;height:32px;border-radius:8px;background:'+(dm?'#21262d':'#f0f0ea')+';display:flex;align-items:center;justify-content:center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>';
+        h+='<span style="font-size:11px;color:'+txtSub+'">'+(S.studios[sid]?S.studios[sid].name:sid)+'</span>';
+        h+='<span style="font-size:9px;color:'+txtSub+';margin-left:auto">Aucune d\u00e9pense</span>';
+        h+='</div>';
       });
-      var socTotal=socDeps.reduce(function(s,e){return s+num(e.dep.ttc);},0);
-      var socDebloque=socDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
-      var socAttente=socDeps.filter(function(e){return e.dep.deblocage==='demande';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
-      var pctDeb=socTotal?Math.round(socDebloque/socTotal*100):0;
-      var expanded=true;
-
-      // Grouper par studio
-      var byStudio={};
-      socDeps.forEach(function(e){
-        if(!byStudio[e.studioId])byStudio[e.studioId]={name:e.studioName,total:0,debloque:0,deps:[],bySource:{}};
-        byStudio[e.studioId].total+=num(e.dep.ttc);
-        if(e.dep.deblocage==='debloque')byStudio[e.studioId].debloque+=num(e.dep.ttc);
-        byStudio[e.studioId].deps.push(e.dep);
-        var src=e.dep.engage_par||'Non renseigné';
-        byStudio[e.studioId].bySource[src]=(byStudio[e.studioId].bySource[src]||0)+num(e.dep.ttc);
-      });
-
-      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;padding:0;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+soc.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
-
-      // Card header
-      h+='<div style="padding:16px 18px">';
-      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">';
-      h+='<div style="width:36px;height:36px;border-radius:10px;background:'+soc.color+'15;color:'+soc.color+';display:flex;align-items:center;justify-content:center;font-weight:800;font-size:13px;letter-spacing:-0.5px">'+soc.short.split(' ').map(function(w){return w.charAt(0);}).join('')+'</div>';
-      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+';text-transform:uppercase;letter-spacing:0.3px">'+soc.short+'</div>';
-      h+='<div style="font-size:10px;color:'+txtSub+';margin-top:1px">'+soc.desc+'</div></div>';
       h+='</div>';
-
-      // Montants
-      h+='<div style="font-size:20px;font-weight:800;color:'+soc.color+';letter-spacing:-0.5px">'+fmt(socTotal)+'</div>';
-      h+='<div style="display:flex;gap:12px;margin-top:4px">';
-      h+='<span style="font-size:10px;color:#0F6E56;font-weight:600">'+fmt(socDebloque)+' débloqué</span>';
-      if(socAttente>0)h+='<span style="font-size:10px;color:#854F0B;font-weight:600">'+fmt(socAttente)+' en attente</span>';
       h+='</div>';
+    });
 
-      // Progress bar
-      h+='<div style="margin-top:8px;height:4px;background:'+(dm?'#30363d':'#f0f0ea')+';border-radius:4px;overflow:hidden">';
-      h+='<div style="width:'+pctDeb+'%;height:100%;background:'+soc.color+';border-radius:4px;transition:width .3s"></div></div>';
-      h+='<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:'+txtSub+'">'+pctDeb+'% débloqué</span><span style="font-size:9px;color:'+txtSub+'">'+socStudioIds.length+' studio(s)</span></div>';
+  } else {
+    // ═══ VUE ACTIONNAIRES : barres proportionnelles ═══
+    h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden">';
+    h+='<div style="padding:16px 20px;border-bottom:1px solid '+borderC+';display:flex;align-items:center;gap:8px">';
+    h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#92630a" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>';
+    h+='<span style="font-size:14px;font-weight:700;color:'+txtMain+'">Engagements par actionnaire</span>';
+    h+='</div>';
+
+    actData.forEach(function(ad,idx){
+      var act=ad.act;
+      var pctDeb=ad.total?Math.round(ad.debloque/ad.total*100):0;
+      var barPct=maxActTotal>0?Math.max(3,Math.round(ad.total/maxActTotal*100)):0;
+      var expanded=S.engExpanded['act_'+act.nom];
+
+      h+='<div style="border-bottom:'+(idx<actData.length-1?'1px solid '+borderC:'none')+'">';
+
+      // Ligne principale
+      h+='<div onclick="toggleEngExpand(\'act_'+act.nom+'\')" style="padding:14px 20px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+      h+='<div style="display:flex;align-items:center;gap:12px">';
+      h+=avatarHTML(act.avatarNom||act.nom,40);
+      h+='<div style="min-width:120px"><div style="font-size:13px;font-weight:600;color:'+txtMain+'">'+act.nom+'</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+'">'+act.desc+'</div></div>';
+
+      // Barre proportionnelle
+      h+='<div style="flex:1;display:flex;flex-direction:column;gap:2px">';
+      h+='<div style="height:8px;border-radius:4px;background:'+(dm?'#21262d':'#f0f0ea')+';overflow:hidden">';
+      h+='<div style="width:'+barPct+'%;height:100%;background:linear-gradient(90deg,'+act.color+'cc,'+act.color+');border-radius:4px;transition:width .3s"></div>';
       h+='</div>';
-
-      // Section dépliable : détail par studio + par contributeur
-      if(expanded){
-        h+='<div style="border-top:1px solid '+borderC+';padding:0">';
-        var stIds=Object.keys(byStudio);
-        if(!stIds.length){
-          h+='<div style="padding:14px;text-align:center;font-size:11px;color:'+txtSub+'">Aucune dépense enregistrée</div>';
-        } else {
-          stIds.forEach(function(sid,idx){
-            var st=byStudio[sid];
-            var pctSt=st.total?Math.round(st.debloque/st.total*100):0;
-            h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:10px 18px;cursor:pointer;transition:background .15s;border-bottom:'+(idx<stIds.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
-            h+='<div style="display:flex;align-items:center;gap:10px">';
-            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+soc.color+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
-            h+='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:'+txtMain+'">'+st.name+'</div>';
-            h+='<div style="font-size:10px;color:'+txtSub+'">'+st.deps.length+' dépense(s) · '+pctSt+'% débloqué</div></div>';
-            h+='<div style="text-align:right"><div style="font-size:12px;font-weight:700;color:'+soc.color+'">'+fmt(st.total)+'</div>';
-            h+='<div style="font-size:9px;color:#0F6E56">'+fmt(st.debloque)+' débl.</div></div>';
-            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-            h+='</div>';
-            // Breakdown par source (qui a payé)
-            var sources=Object.keys(st.bySource);
-            if(sources.length>0){
-              h+='<div style="display:flex;flex-wrap:wrap;gap:4px;margin-top:6px;padding-left:22px">';
-              sources.forEach(function(src){
-                h+='<span style="font-size:9px;padding:1px 6px;border-radius:4px;background:'+(dm?'#21262d':'#f0f0ea')+';color:'+txtSub+'">'+src+' : '+fmt(st.bySource[src])+'</span>';
-              });
-              h+='</div>';
-            }
-            h+='</div>';
-          });
-        }
-        // Studios sans dépenses
-        var emptyStudios=socStudioIds.filter(function(id){return !byStudio[id];});
-        if(emptyStudios.length>0){
-          emptyStudios.forEach(function(sid){
-            h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:8px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;opacity:0.5;border-top:1px solid '+borderC+'" onmouseover="this.style.opacity=\'0.8\'" onmouseout="this.style.opacity=\'0.5\'">';
-            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
-            h+='<span style="font-size:11px;color:'+txtSub+'">'+(S.studios[sid]?S.studios[sid].name:sid)+'</span>';
-            h+='<span style="font-size:9px;color:'+txtSub+';margin-left:auto">Aucune dépense</span>';
-            h+='</div>';
-          });
-        }
+      if(ad.total>0){
+        h+='<div style="display:flex;gap:8px;font-size:9px">';
+        h+='<span style="color:#0F6E56">'+pctDeb+'% d\u00e9bloqu\u00e9</span>';
+        h+='<span style="color:'+txtSub+'">'+Object.keys(ad.byStudio).length+' projet(s)</span>';
         h+='</div>';
       }
       h+='</div>';
-    });
-    h+='</div>';
 
-  } else {
-    // ════ VUE ACTIONNAIRES ════
-    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
-    ACTIONNAIRES.forEach(function(act){
-      var actDeps=allDeps.filter(function(e){return act.contributors.indexOf(e.dep.engage_par)>=0;});
-      var actTotal=actDeps.reduce(function(s,e){return s+num(e.dep.ttc);},0);
-      var actDebloque=actDeps.filter(function(e){return e.dep.deblocage==='debloque';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
-      var actAttente=actDeps.filter(function(e){return e.dep.deblocage==='demande';}).reduce(function(s,e){return s+num(e.dep.ttc);},0);
-      var pctDeb=actTotal?Math.round(actDebloque/actTotal*100):0;
-      var expanded=true;
+      // Montant
+      h+='<div style="text-align:right;min-width:100px"><div style="font-size:18px;font-weight:800;color:'+act.color+'">'+fmt(ad.total)+'</div></div>';
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>';
+      h+='</div></div>';
 
-      // Grouper par studio
-      var byStudio={};
-      actDeps.forEach(function(e){
-        if(!byStudio[e.studioId])byStudio[e.studioId]={name:e.studioName,total:0,debloque:0,deps:[]};
-        byStudio[e.studioId].total+=num(e.dep.ttc);
-        if(e.dep.deblocage==='debloque')byStudio[e.studioId].debloque+=num(e.dep.ttc);
-        byStudio[e.studioId].deps.push(e.dep);
-      });
-
-      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+act.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
-
-      // Card header
-      h+='<div style="padding:16px 18px">';
-      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-      h+=avatarHTML(act.avatarNom||act.nom,36);
-      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+act.nom+'</div>';
-      h+='<div style="font-size:10px;color:'+txtSub+';margin-top:1px">'+act.desc+'</div></div>';
-      h+='</div>';
-
-      // Montant total
-      h+='<div style="font-size:20px;font-weight:800;color:'+act.color+';letter-spacing:-0.5px">'+fmt(actTotal)+'</div>';
-      h+='<div style="display:flex;gap:12px;margin-top:4px">';
-      h+='<span style="font-size:10px;color:#0F6E56;font-weight:600">'+fmt(actDebloque)+' débloqué</span>';
-      if(actAttente>0)h+='<span style="font-size:10px;color:#854F0B;font-weight:600">'+fmt(actAttente)+' en attente</span>';
-      h+='</div>';
-
-      // Progress bar
-      h+='<div style="margin-top:8px;height:4px;background:'+(dm?'#30363d':'#f0f0ea')+';border-radius:4px;overflow:hidden">';
-      h+='<div style="width:'+pctDeb+'%;height:100%;background:'+act.color+';border-radius:4px;transition:width .3s"></div></div>';
-      h+='<div style="display:flex;justify-content:space-between;margin-top:3px"><span style="font-size:9px;color:'+txtSub+'">'+pctDeb+'% débloqué</span><span style="font-size:9px;color:'+txtSub+'">'+Object.keys(byStudio).length+' projet(s)</span></div>';
-      h+='</div>';
-
-      // Section dépliable
+      // Détail accordion
       if(expanded){
-        h+='<div style="border-top:1px solid '+borderC+'">';
-        var stIds=Object.keys(byStudio);
-        if(!stIds.length){
-          h+='<div style="padding:14px;text-align:center;font-size:11px;color:'+txtSub+'">Aucun engagement</div>';
-        } else {
-          stIds.forEach(function(sid,idx){
-            var st=byStudio[sid];
-            var pctSt=st.total?Math.round(st.debloque/st.total*100):0;
-            h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:10px 18px;cursor:pointer;display:flex;align-items:center;gap:10px;transition:background .15s;border-bottom:'+(idx<stIds.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
-            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+act.color+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
-            h+='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:'+txtMain+'">'+st.name+'</div>';
-            h+='<div style="font-size:10px;color:'+txtSub+'">'+st.deps.length+' dépense(s) · '+pctSt+'% débloqué</div></div>';
-            h+='<div style="text-align:right"><div style="font-size:12px;font-weight:700;color:'+act.color+'">'+fmt(st.total)+'</div>';
-            h+='<div style="font-size:9px;color:#0F6E56">'+fmt(st.debloque)+' débl.</div></div>';
-            h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
-            h+='</div>';
-          });
-        }
+        h+='<div style="padding:0 20px 14px;background:'+(dm?'#0d1117':'#fafbfc')+'">';
+        var stIds=Object.keys(ad.byStudio);
+        stIds.forEach(function(sid){
+          var st=ad.byStudio[sid];
+          h+='<div onclick="openDetail(\''+sid+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:8px 0;cursor:pointer;display:flex;align-items:center;gap:10px;font-size:11px">';
+          h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+act.color+'" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>';
+          h+='<span style="font-weight:600;color:'+txtMain+'">'+st.name+'</span>';
+          h+='<span style="color:'+txtSub+'">'+st.deps.length+' d\u00e9p.</span>';
+          h+='<span style="margin-left:auto;font-weight:700;color:'+act.color+'">'+fmt(st.total)+'</span>';
+          h+='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+          h+='</div>';
+        });
         h+='</div>';
       }
       h+='</div>';
@@ -3239,10 +3266,9 @@ function renderPageEngagements(){
     h+='</div>';
   }
 
-  // Lien vers les pages engagements individuelles
   h+='<div style="text-align:center;margin-top:14px;font-size:11px;color:'+txtSub+'">';
   h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
-  h+='Pour saisir ou modifier les dépenses, rendez-vous dans l\'onglet <b>Engagements</b> de chaque studio</div>';
+  h+='Pour saisir ou modifier les d\u00e9penses, rendez-vous dans l\'onglet <b>Engagements</b> de chaque studio</div>';
 
   } // fin volet recap
 
