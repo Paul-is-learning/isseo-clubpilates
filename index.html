@@ -1793,7 +1793,7 @@ function globalSearch(query){
     {label:'Projets',pageId:'projets',desc:'Tous les studios'},
     {label:'Prospection',pageId:'prospection',desc:'Recherche de locaux'},
     {label:'BP Consolide',pageId:'bp',desc:'Business plan consolidé'},
-    {label:'Engagements',pageId:'engagements',desc:'Récapitulatif des engagements'},
+    {label:'Recap engagements',pageId:'engagements',desc:'Récapitulatif des engagements'},
   ];
   _pages.forEach(function(pg){
     var pn=pg.label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
@@ -1972,7 +1972,7 @@ function renderSidebar(){
     {id:'projets',label:'Projets',badge:_alertCount,badgeColor:'#EF4444',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
     {id:'prospection',label:'Prospection',badge:_prospectCount,badgeColor:'#F59E0B',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
     {id:'bp',label:'BP Consolidé',badge:0,icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
-    {id:'engagements',label:'Engagements',badge:0,badgeColor:'#92630a',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
+    {id:'engagements',label:"R\u00e9cap' engagements",badge:0,badgeColor:'#92630a',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
   ];
   var h='<div class="sidebar" id="app-sidebar">';
   // Logo
@@ -2148,7 +2148,7 @@ function renderAccueil(){
     {label:'Voir les projets',desc:allIds.length+' studios en cours',page:'projets',color:'#1a3a6b',gradient:'linear-gradient(135deg,#1a3a6b,#2d5a8e)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
     {label:'Prospection',desc:'Annonces & prospects',page:'prospection',color:'#0F6E56',gradient:'linear-gradient(135deg,#0F6E56,#1a9e7a)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
     {label:'BP Consolidé',desc:'Vue financière globale',page:'bp',color:'#854F0B',gradient:'linear-gradient(135deg,#854F0B,#b8860b)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
-    {label:'Engagements',desc:'Suivi consolidé',page:'engagements',color:'#92630a',gradient:'linear-gradient(135deg,#92630a,#d4a843)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
+    {label:"R\u00e9cap' engagements",desc:'Suivi consolidé',page:'engagements',color:'#92630a',gradient:'linear-gradient(135deg,#92630a,#d4a843)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
   ];
   shortcuts.forEach(function(sc){
     h+='<div onclick="setPage(\''+sc.page+'\')" style="background:'+(S.darkMode?'#161b22':'#fff')+';border:1px solid '+(S.darkMode?'#30363d':'#e8e8e0')+';border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:14px;position:relative;overflow:hidden" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 25px rgba(0,0,0,\'+(S.darkMode?\'0.3\':\'0.1\')+\')\';this.style.borderColor=\''+sc.color+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\';this.style.borderColor=\''+(S.darkMode?'#30363d':'#e8e8e0')+'\'">';
@@ -3184,12 +3184,140 @@ function renderPageEngagements(){
     h+='</div>';
   }
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // SECTION 3 : Fonds propres à injecter par actionnaire
+  // ════════════════════════════════════════════════════════════════════════════
+
+  // Structure capitalistique : quote-part par société porteuse
+  var OWNERSHIP={
+    'P&W Occitanie':[
+      {nom:'SAS P&W Studios',pct:50,type:'AO',desc:'Holding Tom Bécaud',color:'#1a3a6b',isHolding:true},
+      {nom:'SAS Isséo',pct:50,type:'AO',desc:'Holding famille Bécaud',color:'#0F6E56',isHolding:true},
+    ],
+    'COBE Society':[
+      {nom:'Pilatine',pct:20,type:'AO',desc:'Holding Caroline',color:'#7C3AED',isHolding:true},
+      {nom:'Moovi-moov',pct:40,type:'AO',desc:'Holding Clément',color:'#854F0B',isHolding:true},
+      {nom:'Paul Bécaud',pct:20,type:'ADP',desc:'Nom propre',color:'#1a3a6b',isHolding:false},
+      {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',isHolding:true},
+    ],
+    'SACOBE Society':[
+      {nom:'Paul Sabourin',pct:60,type:'AO',desc:'Nom propre',color:'#B45309',isHolding:false},
+      {nom:'Moovi-moov',pct:20,type:'ADP',desc:'Holding Clément',color:'#854F0B',isHolding:true},
+      {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',isHolding:true},
+    ]
+  };
+
+  // Calculer les fonds propres par studio
+  var fpByStudio={};
+  allIds.forEach(function(id){
+    var s=S.studios[id];
+    if(!s)return;
+    var _capexDet=getCapexDetailForStudio(id);
+    var _capexTots=computeCapexTotals(_capexDet);
+    var capex=_capexTots.capex||s.capex||333500;
+    var _hasCustomCapex=s.capexDetail&&Object.keys(s.capexDetail||{}).length>0;
+    var emprunt=_hasCustomCapex?Math.round(capex*0.70):(s.emprunt||230000);
+    var fp=capex-emprunt;
+    fpByStudio[id]={name:s.name,societe:s.societe,capex:capex,emprunt:emprunt,fp:fp};
+  });
+
+  // Agréger par actionnaire : pour chaque entrée OWNERSHIP, calculer la part de fonds propres
+  var actionnaireFP={};
+  allIds.forEach(function(id){
+    var info=fpByStudio[id];
+    if(!info)return;
+    var owners=OWNERSHIP[info.societe]||[];
+    owners.forEach(function(o){
+      if(!actionnaireFP[o.nom])actionnaireFP[o.nom]={nom:o.nom,desc:o.desc,color:o.color,isHolding:o.isHolding,total:0,details:[]};
+      var share=Math.round(info.fp*o.pct/100);
+      actionnaireFP[o.nom].total+=share;
+      actionnaireFP[o.nom].details.push({studio:info.name,studioId:id,societe:info.societe,pct:o.pct,type:o.type,fpStudio:info.fp,share:share});
+    });
+  });
+
+  var totalFPGlobal=Object.keys(actionnaireFP).reduce(function(s,k){return s+actionnaireFP[k].total;},0);
+
+  // Render section
+  h+='<div style="margin-top:28px">';
+  h+='<div style="background:linear-gradient(135deg,#1a3a6b 0%,#2d5a8e 50%,#3b7dd8 100%);border-radius:16px;padding:22px 28px;margin-bottom:16px;position:relative;overflow:hidden">';
+  h+='<div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">';
+  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>';
+  h+='<span style="font-size:16px;font-weight:700;color:#fff">Fonds propres à injecter</span></div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">Quote-part de chaque actionnaire selon sa détention dans les sociétés porteuses</div>';
+  h+='<div style="display:flex;gap:16px;align-items:center">';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Total fonds propres</div><div style="font-size:22px;font-weight:800;color:#fff">'+fmt(totalFPGlobal)+'</div></div>';
+  h+='<div style="flex:1;display:flex;gap:8px;flex-wrap:wrap">';
+  Object.keys(actionnaireFP).forEach(function(k){
+    var a=actionnaireFP[k];
+    var pctOfTotal=totalFPGlobal?Math.round(a.total/totalFPGlobal*100):0;
+    h+='<div style="background:rgba(255,255,255,0.08);border-radius:8px;padding:6px 12px;text-align:center;min-width:80px">';
+    h+='<div style="font-size:9px;color:rgba(255,255,255,0.6)">'+a.nom+'</div>';
+    h+='<div style="font-size:14px;font-weight:700;color:#fff">'+fmt(a.total)+'</div>';
+    h+='<div style="font-size:9px;color:rgba(255,255,255,0.5)">'+pctOfTotal+'% du total</div>';
+    h+='</div>';
+  });
+  h+='</div></div></div>';
+
+  // Cards détaillées par actionnaire
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+  Object.keys(actionnaireFP).forEach(function(k){
+    var a=actionnaireFP[k];
+    var expanded=S.engExpanded['fp_'+a.nom];
+
+    h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+a.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
+    h+='<div onclick="toggleEngExpand(\'fp_'+a.nom+'\')" style="padding:16px 18px;cursor:pointer">';
+    h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+    if(a.isHolding){
+      h+='<div style="width:36px;height:36px;border-radius:10px;background:'+a.color+'15;color:'+a.color+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800">'+a.nom.charAt(0)+'</div>';
+    } else {
+      h+=avatarHTML(a.nom,36);
+    }
+    h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+a.nom+'</div>';
+    h+='<div style="font-size:10px;color:'+txtSub+'">'+a.desc+'</div></div>';
+    h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
+    h+='</div>';
+
+    // Montant total
+    h+='<div style="font-size:22px;font-weight:800;color:'+a.color+';letter-spacing:-0.5px">'+fmt(a.total)+'</div>';
+    h+='<div style="font-size:10px;color:'+txtSub+';margin-top:2px">à injecter en fonds propres</div>';
+
+    // Mini-barres par société
+    h+='<div style="display:flex;gap:4px;margin-top:8px;flex-wrap:wrap">';
+    a.details.forEach(function(d){
+      h+='<span style="font-size:9px;padding:2px 7px;border-radius:5px;background:'+(dm?'#21262d':'#f0f0ea')+';color:'+txtSub+';font-weight:500">'+d.societe+' · '+d.pct+'% · '+fmt(d.share)+'</span>';
+    });
+    h+='</div>';
+    h+='</div>';
+
+    // Section dépliable
+    if(expanded){
+      h+='<div style="border-top:1px solid '+borderC+'">';
+      a.details.forEach(function(d,idx){
+        h+='<div onclick="openDetail(\''+d.studioId+'\');setTimeout(function(){setDetailTab(\'engagements\')},50)" style="padding:10px 18px;cursor:pointer;transition:background .15s;border-bottom:'+(idx<a.details.length-1?'1px solid '+borderC:'none')+'" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+        h+='<div style="display:flex;align-items:center;gap:10px">';
+        h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="'+a.color+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+        h+='<div style="flex:1;min-width:0"><div style="font-size:11px;font-weight:600;color:'+txtMain+'">'+d.studio+'</div>';
+        h+='<div style="font-size:10px;color:'+txtSub+'">'+d.societe+' · '+d.type+'</div></div>';
+        h+='<div style="text-align:right">';
+        h+='<div style="font-size:12px;font-weight:700;color:'+a.color+'">'+fmt(d.share)+'</div>';
+        h+='<div style="font-size:9px;color:'+txtSub+'">'+d.pct+'% de '+fmt(d.fpStudio)+'</div>';
+        h+='</div>';
+        h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#ccc" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+        h+='</div></div>';
+      });
+      h+='</div>';
+    }
+    h+='</div>';
+  });
+  h+='</div>';
+  h+='</div>';
+
   // Lien vers les pages engagements individuelles
   h+='<div style="text-align:center;margin-top:14px;font-size:11px;color:'+txtSub+'">';
   h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
   h+='Pour saisir ou modifier les dépenses, rendez-vous dans l\'onglet <b>Engagements</b> de chaque studio</div>';
 
-  h+='</div>';
   return h;
 }
 
