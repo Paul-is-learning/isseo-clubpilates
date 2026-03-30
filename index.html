@@ -2939,13 +2939,14 @@ function renderPageEngagements(){
     {societe:'SACOBE Society',short:'SACOBE Society',color:'#854F0B',desc:'Issy-les-Moulineaux'},
   ];
   // Bloc 2 : Actionnaires des sociétés porteuses (groupement par engage_par)
+  // avatarNom = nom utilisé pour chercher la photo dans PHOTO_MAP
   var ACTIONNAIRES=[
-    {nom:'Moovi-moov',contributors:['Moovi-moov'],isHolding:true,desc:'Holding Clément Coquel',color:'#854F0B'},
-    {nom:'Pilatine',contributors:['Pilatine'],isHolding:true,desc:'Holding Caroline Coquel',color:'#7C3AED'},
-    {nom:'SAS Isséo',contributors:['SAS Isséo'],isHolding:true,desc:'Holding famille Bécaud',color:'#0F6E56'},
-    {nom:'Paul Bécaud',contributors:['Paul Bécaud'],isHolding:false,desc:'À titre personnel',color:'#1a3a6b'},
-    {nom:'SAS P&W Studios',contributors:['SAS P&W Studios'],isHolding:true,desc:'Holding Tom Bécaud',color:'#1a3a6b'},
-    {nom:'Paul Sabourin',contributors:['Paul Sabourin'],isHolding:false,desc:'À titre personnel',color:'#B45309'},
+    {nom:'Moovi-moov',contributors:['Moovi-moov'],avatarNom:'Clément Coquel',desc:'Holding Clément Coquel',color:'#854F0B'},
+    {nom:'Pilatine',contributors:['Pilatine'],avatarNom:'Caroline Coquel',desc:'Holding Caroline Coquel',color:'#7C3AED'},
+    {nom:'SAS Isséo',contributors:['SAS Isséo'],avatarNom:'Pascal Bécaud',desc:'Holding famille Bécaud',color:'#0F6E56'},
+    {nom:'Paul Bécaud',contributors:['Paul Bécaud'],avatarNom:'Paul Bécaud',desc:'À titre personnel',color:'#1a3a6b'},
+    {nom:'SAS P&W Studios',contributors:['SAS P&W Studios'],avatarNom:'Tom Bécaud',desc:'Holding Tom Bécaud',color:'#1a3a6b'},
+    {nom:'Paul Sabourin',contributors:['Paul Sabourin'],avatarNom:'Paul Sabourin',desc:'À titre personnel',color:'#B45309'},
   ];
 
   // ── Agrégation ──
@@ -3134,11 +3135,7 @@ function renderPageEngagements(){
       // Card header
       h+='<div onclick="toggleEngExpand(\'act_'+act.nom+'\')" style="padding:16px 18px;cursor:pointer">';
       h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-      if(act.isHolding){
-        h+='<div style="width:36px;height:36px;border-radius:10px;background:'+act.color+'15;color:'+act.color+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800">'+act.nom.charAt(0)+'</div>';
-      } else {
-        h+=avatarHTML(act.nom,36);
-      }
+      h+=avatarHTML(act.avatarNom||act.nom,36);
       h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+act.nom+'</div>';
       h+='<div style="font-size:10px;color:'+txtSub+';margin-top:1px">'+act.desc+'</div></div>';
       h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
@@ -3191,19 +3188,19 @@ function renderPageEngagements(){
   // Structure capitalistique : quote-part par société porteuse
   var OWNERSHIP={
     'P&W Occitanie':[
-      {nom:'SAS P&W Studios',pct:50,type:'AO',desc:'Holding Tom Bécaud',color:'#1a3a6b',isHolding:true},
-      {nom:'SAS Isséo',pct:50,type:'AO',desc:'Holding famille Bécaud',color:'#0F6E56',isHolding:true},
+      {nom:'SAS P&W Studios',pct:50,type:'AO',desc:'Holding Tom Bécaud',color:'#1a3a6b',avatarNom:'Tom Bécaud'},
+      {nom:'SAS Isséo',pct:50,type:'AO',desc:'Holding famille Bécaud',color:'#0F6E56',avatarNom:'Pascal Bécaud'},
     ],
     'COBE Society':[
-      {nom:'Pilatine',pct:20,type:'AO',desc:'Holding Caroline',color:'#7C3AED',isHolding:true},
-      {nom:'Moovi-moov',pct:40,type:'AO',desc:'Holding Clément',color:'#854F0B',isHolding:true},
-      {nom:'Paul Bécaud',pct:20,type:'ADP',desc:'Nom propre',color:'#1a3a6b',isHolding:false},
-      {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',isHolding:true},
+      {nom:'Pilatine',pct:20,type:'AO',desc:'Holding Caroline',color:'#7C3AED',avatarNom:'Caroline Coquel'},
+      {nom:'Moovi-moov',pct:40,type:'AO',desc:'Holding Clément',color:'#854F0B',avatarNom:'Clément Coquel'},
+      {nom:'Paul Bécaud',pct:20,type:'ADP',desc:'Nom propre',color:'#1a3a6b',avatarNom:'Paul Bécaud'},
+      {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',avatarNom:'Pascal Bécaud'},
     ],
     'SACOBE Society':[
-      {nom:'Paul Sabourin',pct:60,type:'AO',desc:'Nom propre',color:'#B45309',isHolding:false},
-      {nom:'Moovi-moov',pct:20,type:'ADP',desc:'Holding Clément',color:'#854F0B',isHolding:true},
-      {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',isHolding:true},
+      {nom:'Paul Sabourin',pct:60,type:'AO',desc:'Nom propre',color:'#B45309',avatarNom:'Paul Sabourin'},
+      {nom:'Moovi-moov',pct:20,type:'ADP',desc:'Holding Clément',color:'#854F0B',avatarNom:'Clément Coquel'},
+      {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',avatarNom:'Pascal Bécaud'},
     ]
   };
 
@@ -3228,7 +3225,7 @@ function renderPageEngagements(){
     if(!info)return;
     var owners=OWNERSHIP[info.societe]||[];
     owners.forEach(function(o){
-      if(!actionnaireFP[o.nom])actionnaireFP[o.nom]={nom:o.nom,desc:o.desc,color:o.color,isHolding:o.isHolding,total:0,details:[]};
+      if(!actionnaireFP[o.nom])actionnaireFP[o.nom]={nom:o.nom,desc:o.desc,color:o.color,avatarNom:o.avatarNom,total:0,details:[]};
       var share=Math.round(info.fp*o.pct/100);
       actionnaireFP[o.nom].total+=share;
       actionnaireFP[o.nom].details.push({studio:info.name,studioId:id,societe:info.societe,pct:o.pct,type:o.type,fpStudio:info.fp,share:share});
@@ -3268,11 +3265,7 @@ function renderPageEngagements(){
     h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+a.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
     h+='<div onclick="toggleEngExpand(\'fp_'+a.nom+'\')" style="padding:16px 18px;cursor:pointer">';
     h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-    if(a.isHolding){
-      h+='<div style="width:36px;height:36px;border-radius:10px;background:'+a.color+'15;color:'+a.color+';display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800">'+a.nom.charAt(0)+'</div>';
-    } else {
-      h+=avatarHTML(a.nom,36);
-    }
+    h+=avatarHTML(a.avatarNom||a.nom,36);
     h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+a.nom+'</div>';
     h+='<div style="font-size:10px;color:'+txtSub+'">'+a.desc+'</div></div>';
     h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
