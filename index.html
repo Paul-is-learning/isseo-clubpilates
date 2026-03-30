@@ -3319,6 +3319,151 @@ function renderPageEngagements(){
   h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
   h+='Pour saisir ou modifier les dépenses, rendez-vous dans l\'onglet <b>Engagements</b> de chaque studio</div>';
 
+  // ════════════════════════════════════════════════════════════════════════════
+  // SECTION 4 : Comptes courants d'associés
+  // ════════════════════════════════════════════════════════════════════════════
+
+  // Collecter toutes les avances inter-associés depuis les dépenses
+  var ccDettes={}; // ccDettes[débiteur][créancier] = montant total
+  var ccAvancesParCreancier={}; // totalAvancé par chaque créancier
+  var ccAvancesPourDebiteur={}; // totalAvancé pour chaque débiteur
+  var ccDetails=[]; // liste détaillée des flux
+
+  allIds.forEach(function(id){
+    var deps=S.depenses[id]||[];
+    var sName=S.studios[id]?S.studios[id].name:id;
+    var sSociete=S.studios[id]?S.studios[id].societe:'';
+    deps.forEach(function(d){
+      if(!d.avance||!d.avance_pour||!d.engage_par)return;
+      var creancier=d.engage_par;
+      var debiteur=d.avance_pour;
+      var montant=num(d.ttc);
+      if(montant<=0)return;
+
+      if(!ccDettes[debiteur])ccDettes[debiteur]={};
+      if(!ccDettes[debiteur][creancier])ccDettes[debiteur][creancier]=0;
+      ccDettes[debiteur][creancier]+=montant;
+
+      if(!ccAvancesParCreancier[creancier])ccAvancesParCreancier[creancier]=0;
+      ccAvancesParCreancier[creancier]+=montant;
+
+      if(!ccAvancesPourDebiteur[debiteur])ccAvancesPourDebiteur[debiteur]=0;
+      ccAvancesPourDebiteur[debiteur]+=montant;
+
+      ccDetails.push({creancier:creancier,debiteur:debiteur,montant:montant,studio:sName,societe:sSociete,desc:d.description||d.categorie,date:d.date||''});
+    });
+  });
+
+  var totalAvances=Object.keys(ccAvancesParCreancier).reduce(function(s,k){return s+ccAvancesParCreancier[k];},0);
+  var totalCreancesNettes=0;
+  var totalDettesNettes=0;
+
+  // Calculer solde net par associé
+  var ccAssocies={};
+  // Initialiser tous les actionnaires
+  ACTIONNAIRES.forEach(function(a){
+    ccAssocies[a.nom]={nom:a.nom,avatarNom:a.avatarNom||a.nom,desc:a.desc,color:a.color,avancePar:0,avancePour:0,solde:0,detailsCreances:[],detailsDettes:[]};
+  });
+  // Aussi ajouter les contributors qui ne sont pas dans ACTIONNAIRES
+  DEPENSE_CONTRIBUTORS.forEach(function(c){
+    if(!ccAssocies[c])ccAssocies[c]={nom:c,avatarNom:c,desc:'',color:'#64748b',avancePar:0,avancePour:0,solde:0,detailsCreances:[],detailsDettes:[]};
+  });
+
+  ccDetails.forEach(function(f){
+    if(ccAssocies[f.creancier]){
+      ccAssocies[f.creancier].avancePar+=f.montant;
+      ccAssocies[f.creancier].detailsCreances.push(f);
+    }
+    if(ccAssocies[f.debiteur]){
+      ccAssocies[f.debiteur].avancePour+=f.montant;
+      ccAssocies[f.debiteur].detailsDettes.push(f);
+    }
+  });
+
+  Object.keys(ccAssocies).forEach(function(k){
+    var a=ccAssocies[k];
+    a.solde=a.avancePar-a.avancePour;
+    if(a.solde>0)totalCreancesNettes+=a.solde;
+    if(a.solde<0)totalDettesNettes+=Math.abs(a.solde);
+  });
+
+  // Filtrer pour n'afficher que ceux qui ont des avances
+  var ccActifs=Object.keys(ccAssocies).filter(function(k){
+    return ccAssocies[k].avancePar>0||ccAssocies[k].avancePour>0;
+  }).map(function(k){return ccAssocies[k];});
+
+  h+='<div style="margin-top:28px">';
+  h+='<div style="background:linear-gradient(135deg,#0F6E56 0%,#1a9e7a 50%,#22c55e 100%);border-radius:16px;padding:22px 28px;margin-bottom:16px;position:relative;overflow:hidden">';
+  h+='<div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">';
+  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
+  h+='<span style="font-size:16px;font-weight:700;color:#fff">Comptes courants d\'associ&eacute;s</span><span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);margin-left:8px;background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:6px">Cohorte 1</span></div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">Suivi des avances entre associ&eacute;s — cr&eacute;ances et dettes inter-soci&eacute;t&eacute;s</div>';
+  h+='<div style="display:flex;gap:16px;flex-wrap:wrap">';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Total avances</div><div style="font-size:22px;font-weight:800;color:#fff">'+fmt(totalAvances)+'</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Cr&eacute;ances nettes</div><div style="font-size:22px;font-weight:800;color:#d1fae5">'+fmt(totalCreancesNettes)+'</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Dettes nettes</div><div style="font-size:22px;font-weight:800;color:#fef3c7">'+fmt(totalDettesNettes)+'</div></div>';
+  h+='</div></div>';
+
+  if(ccActifs.length===0){
+    h+='<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune avance inter-associ&eacute;s enregistr&eacute;e.<br><span style="font-size:11px">Pour enregistrer une avance, cochez &laquo; Avance pour le compte d\'un autre associ&eacute; &raquo; lors de la saisie d\'une d&eacute;pense.</span></div>';
+  } else {
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
+    ccActifs.forEach(function(a){
+      var expanded=S.engExpanded['cc_'+a.nom];
+      var soldeColor=a.solde>0?'#0F6E56':a.solde<0?'#B45309':'#64748b';
+      var soldeLabel=a.solde>0?'Cr\u00e9ancier net':a.solde<0?'D\u00e9biteur net':'\u00c9quilibr\u00e9';
+      var soldeBg=a.solde>0?(dm?'#052e16':'#d1fae5'):a.solde<0?(dm?'#451a03':'#fef3c7'):(dm?'#21262d':'#f0f0ea');
+
+      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+a.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
+      h+='<div onclick="toggleEngExpand(\'cc_'+a.nom+'\')" style="padding:16px 18px;cursor:pointer">';
+      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+      h+=avatarHTML(a.avatarNom,36);
+      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+a.nom+'</div>';
+      h+='<div style="font-size:10px;color:'+txtSub+'">'+a.desc+'</div></div>';
+      h+='<span style="background:'+soldeBg+';color:'+soldeColor+';padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600">'+soldeLabel+'</span>';
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
+      h+='</div>';
+
+      // KPIs
+      h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
+      h+='<div style="text-align:center;padding:6px;background:'+(dm?'#21262d':'#f8f9fb')+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+';font-weight:500">Avanc&eacute; par lui</div><div style="font-size:14px;font-weight:700;color:#0F6E56">'+fmt(a.avancePar)+'</div></div>';
+      h+='<div style="text-align:center;padding:6px;background:'+(dm?'#21262d':'#f8f9fb')+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+';font-weight:500">Avanc&eacute; pour lui</div><div style="font-size:14px;font-weight:700;color:#B45309">'+fmt(a.avancePour)+'</div></div>';
+      h+='<div style="text-align:center;padding:6px;background:'+soldeBg+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+';font-weight:500">Solde net</div><div style="font-size:14px;font-weight:700;color:'+soldeColor+'">'+fmt(Math.abs(a.solde))+'</div></div>';
+      h+='</div>';
+      h+='</div>';
+
+      // Section dépliable
+      if(expanded){
+        h+='<div style="border-top:1px solid '+borderC+';padding:12px 18px">';
+        if(a.detailsCreances.length>0){
+          h+='<div style="font-size:10px;font-weight:600;color:#0F6E56;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Avances effectu&eacute;es</div>';
+          a.detailsCreances.forEach(function(f){
+            h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid '+(dm?'#21262d':'#f5f5f0')+';font-size:11px">';
+            h+='<span style="color:#0F6E56;font-size:13px">&#8593;</span>';
+            h+='<div style="flex:1"><span style="font-weight:600;color:'+txtMain+'">'+fmt(f.montant)+'</span> pour <span style="font-weight:500;color:'+txtMain+'">'+f.debiteur+'</span>';
+            h+='<div style="font-size:10px;color:'+txtSub+'">'+f.societe+' — '+f.studio+(f.date?' · '+f.date:'')+'</div></div>';
+            h+='</div>';
+          });
+        }
+        if(a.detailsDettes.length>0){
+          h+='<div style="font-size:10px;font-weight:600;color:#B45309;text-transform:uppercase;letter-spacing:0.5px;margin:'+(a.detailsCreances.length>0?'10px':'0')+' 0 6px">Avances re&ccedil;ues</div>';
+          a.detailsDettes.forEach(function(f){
+            h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid '+(dm?'#21262d':'#f5f5f0')+';font-size:11px">';
+            h+='<span style="color:#B45309;font-size:13px">&#8595;</span>';
+            h+='<div style="flex:1"><span style="font-weight:600;color:'+txtMain+'">'+fmt(f.montant)+'</span> de la part de <span style="font-weight:500;color:'+txtMain+'">'+f.creancier+'</span>';
+            h+='<div style="font-size:10px;color:'+txtSub+'">'+f.societe+' — '+f.studio+(f.date?' · '+f.date:'')+'</div></div>';
+            h+='</div>';
+          });
+        }
+        h+='</div>';
+      }
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+
   return h;
 }
 
@@ -5191,7 +5336,9 @@ function renderEngagements(sid,s){
       h+='<td style="padding:8px;font-size:12px;font-weight:600">'+fmt(num(d.ttc))+'</td>';
       var fbc=isLeas?'background:#fef3c7;color:#92630a':d.financement==='Emprunt bancaire'?'background:#dbeafe;color:#1a3a6b':'background:#d1fae5;color:#065f46';
       h+='<td style="padding:8px"><span style="'+fbc+';padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600">'+d.financement+'</span></td>';
-      h+='<td style="padding:8px;font-size:11px">'+(d.engage_par||'--')+'</td>';
+      h+='<td style="padding:8px;font-size:11px">'+(d.engage_par||'--');
+      if(d.avance&&d.avance_pour)h+='<div style="margin-top:2px"><span style="background:#fef3c7;color:#92630a;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600">Avance &rarr; '+d.avance_pour+'</span></div>';
+      h+='</td>';
       h+='<td style="padding:8px;font-size:11px;color:#888">'+(d.date||'--')+'</td>';
       h+='<td style="padding:8px"><span style="background:'+st.bg+';color:'+st.color+';padding:2px 7px;border-radius:5px;font-size:11px;cursor:'+(isAdmin?'pointer':'default')+'" '+(isAdmin?'onclick="changerDeblocage(\''+sid+'\','+i+')"':'')+'>'+st.label+'</span>';
       if(d.deblocage==='demande')h+='<div style="font-size:10px;color:#888">'+(d.date_demande||'')+'</div>';
@@ -5239,7 +5386,14 @@ function ouvrirFormDepense(sid){
   DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option>'+c+'</option>';});
   h+='</select></div>';
   h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div>';
-  h+='</div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderDepense(\''+sid+'\')">Enregistrer</button>';
+  h+='</div>';
+  // Avance pour un autre associé
+  h+='<div style="margin:12px 0;padding:12px 16px;background:#f8f9fb;border-radius:10px;border:1px solid #e5e7eb">';
+  h+='<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#333"><input type="checkbox" id="dep-avance" onchange="document.getElementById(\'dep-avance-pour-wrap\').style.display=this.checked?\'block\':\'none\'"/> Avance pour le compte d\'un autre associé</label>';
+  h+='<div id="dep-avance-pour-wrap" style="display:none;margin-top:8px"><label style="font-size:11px;color:#888;margin-bottom:4px;display:block">Pour le compte de</label><select id="dep-avance-pour" style="width:100%"><option value="">Sélectionner le bénéficiaire...</option>';
+  DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option>'+c+'</option>';});
+  h+='</select></div></div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderDepense(\''+sid+'\')">Enregistrer</button>';
   h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
   div.innerHTML=h;
 }
@@ -5266,7 +5420,15 @@ function modifierDepense(sid,idx){
   DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option'+(c===d.engage_par?' selected':'')+'>'+c+'</option>';});
   h+='</select></div>';
   h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+(d.date||'')+'"/></div>';
-  h+='</div><div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderModifDepense(\''+sid+'\','+idx+')">Enregistrer</button>';
+  h+='</div>';
+  // Avance pour un autre associé
+  var _isAvance=!!d.avance;
+  h+='<div style="margin:12px 0;padding:12px 16px;background:#f8f9fb;border-radius:10px;border:1px solid #e5e7eb">';
+  h+='<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#333"><input type="checkbox" id="dep-avance"'+(_isAvance?' checked':'')+' onchange="document.getElementById(\'dep-avance-pour-wrap\').style.display=this.checked?\'block\':\'none\'"/> Avance pour le compte d\'un autre associé</label>';
+  h+='<div id="dep-avance-pour-wrap" style="display:'+(_isAvance?'block':'none')+';margin-top:8px"><label style="font-size:11px;color:#888;margin-bottom:4px;display:block">Pour le compte de</label><select id="dep-avance-pour" style="width:100%"><option value="">Sélectionner le bénéficiaire...</option>';
+  DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option'+(c===(d.avance_pour||'')?' selected':'')+'>'+c+'</option>';});
+  h+='</select></div></div>';
+  h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderModifDepense(\''+sid+'\','+idx+')">Enregistrer</button>';
   h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
   div.innerHTML=h;
   div.scrollIntoView({behavior:'smooth',block:'nearest'});
@@ -5285,6 +5447,8 @@ async function sauvegarderModifDepense(sid,idx){
   d.financement=(document.getElementById('dep-fin')&&document.getElementById('dep-fin').value)||'Emprunt bancaire';
   d.engage_par=(document.getElementById('dep-par')&&document.getElementById('dep-par').value)||'';
   d.date=(document.getElementById('dep-date')&&document.getElementById('dep-date').value)||'';
+  d.avance=!!(document.getElementById('dep-avance')&&document.getElementById('dep-avance').checked);
+  d.avance_pour=(d.avance&&document.getElementById('dep-avance-pour'))?document.getElementById('dep-avance-pour').value:'';
   await saveDepenses(sid);
   toast('Dépense modifiée');render();
 }
@@ -5311,6 +5475,8 @@ async function sauvegarderDepense(sid){
     date:(document.getElementById('dep-date')&&document.getElementById('dep-date').value)||'',
     deblocage:'attente',fichierUrl:null,fichierPath:null,date_demande:null,date_deblocage:null,
     saisi_par:(S.profile&&S.profile.nom)||'',
+    avance:!!(document.getElementById('dep-avance')&&document.getElementById('dep-avance').checked),
+    avance_pour:(document.getElementById('dep-avance')&&document.getElementById('dep-avance').checked&&document.getElementById('dep-avance-pour'))?document.getElementById('dep-avance-pour').value:'',
   });
   await saveDepenses(sid);
   var depTTC=num(document.getElementById('dep-ttc')&&document.getElementById('dep-ttc').value);
