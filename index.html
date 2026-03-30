@@ -1167,7 +1167,7 @@ async function supprimerScenario(sid,scenarioId){
 // ══════════════════════════════════════════════════════════════════════════════
 // ── NOTIFICATIONS ENGINE ────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
-var NOTIF_TYPES={message:{icon:'\uD83D\uDCAC',label:'Message',color:'#3B6FB6'},document:{icon:'\uD83D\uDCC4',label:'Document',color:'#0F6E56'},depense:{icon:'\uD83D\uDCB3',label:'D\u00e9pense',color:'#B8860B'},statut:{icon:'\uD83D\uDD04',label:'Statut',color:'#7C3AED'},echeance:{icon:'\u23F0',label:'\u00c9ch\u00e9ance',color:'#DC2626'},prospect:{icon:'\uD83C\uDFE0',label:'Prospection',color:'#F59E0B'}};
+var NOTIF_TYPES={message:{icon:'\uD83D\uDCAC',label:'Message',color:'#3B6FB6'},document:{icon:'\uD83D\uDCC4',label:'Document',color:'#0F6E56'},depense:{icon:'\uD83D\uDCB3',label:'D\u00e9pense',color:'#B8860B'},statut:{icon:'\uD83D\uDD04',label:'Statut',color:'#7C3AED'},echeance:{icon:'\u23F0',label:'\u00c9ch\u00e9ance',color:'#DC2626'},prospect:{icon:'\uD83C\uDFE0',label:'Prospection',color:'#F59E0B'},rapport:{icon:'\uD83D\uDCCB',label:'Rapport',color:'#0E7490'}};
 async function loadNotifications(){
   if(!S.user)return;
   var res=await sb.from('notifications').select('*').eq('user_id',S.user.id).order('created_at',{ascending:false}).limit(100);
@@ -1231,6 +1231,111 @@ async function notifyAll(opts){
   opts.target_user_ids=S._allProfiles.map(function(p){return p.id;});
   await createNotification(opts);
 }
+// ── Rapport hebdomadaire du lundi matin ─────────────────────────────────────
+async function checkMondayReport(){
+  if(!S.user)return;
+  var now=new Date();
+  if(now.getDay()!==1)return; // lundi uniquement
+  var todayStr=now.toISOString().slice(0,10);
+  var reportKey='isseo_monday_report_'+todayStr;
+  if(localStorage.getItem(reportKey))return; // déjà envoyé aujourd'hui
+  localStorage.setItem(reportKey,'1');
+
+  // ── 1. Tâches en cours ──
+  var ids=Object.keys(S.studios);
+  var tasksDoing=[],tasksTodo=[],tasksVu=[];
+  var todayISO=now.toISOString().slice(0,10);
+  var overdueTasks=[];
+  ids.forEach(function(sid){
+    (S.todos[sid]||[]).forEach(function(t){
+      if(t.statut==='done')return;
+      var sName=S.studios[sid]?S.studios[sid].name:sid;
+      var entry=t.titre+' ('+sName+(t.responsable?' — '+t.responsable:'')+')';
+      if(t.statut==='doing')tasksDoing.push(entry);
+      else if(t.statut==='vu')tasksVu.push(entry);
+      else tasksTodo.push(entry);
+      if(t.deadline&&t.deadline<todayISO)overdueTasks.push(entry);
+    });
+  });
+
+  // ── 2. Activité de la semaine passée ──
+  var weekAgo=new Date(now.getTime()-7*24*60*60*1000);
+  var weekNotifs=S.notifications.filter(function(n){return new Date(n.created_at)>=weekAgo;});
+  var countByType={};
+  weekNotifs.forEach(function(n){
+    var label=(NOTIF_TYPES[n.type]||{}).label||n.type;
+    countByType[label]=(countByType[label]||0)+1;
+  });
+  var activityLines=Object.keys(countByType).map(function(k){return countByType[k]+' '+k.toLowerCase()+'(s)';});
+
+  // ── 3. Échéances à venir (14 jours) ──
+  var upcomingDeadlines=[];
+  ids.forEach(function(sid){
+    (S.todos[sid]||[]).forEach(function(t){
+      if(t.statut==='done'||!t.deadline)return;
+      var dl=new Date(t.deadline+'T00:00:00');
+      var diff=Math.ceil((dl-now)/(1000*60*60*24));
+      if(diff>=0&&diff<=14){
+        var sName=S.studios[sid]?S.studios[sid].name:sid;
+        upcomingDeadlines.push(t.titre+' — '+sName+' (dans '+diff+'j)');
+      }
+    });
+  });
+
+  // ── 4. Prospects récents ──
+  var newProspects=(S.prospects||[]).filter(function(p){
+    if(!p.date)return false;
+    var parts=p.date.split('/');
+    if(parts.length<3)return false;
+    var d=new Date(parts[2],parts[1]-1,parts[0]);
+    return d>=weekAgo;
+  }).length;
+
+  // ── Construire le body du rapport ──
+  var body='';
+  if(tasksDoing.length){
+    body+='🔵 EN COURS ('+tasksDoing.length+') : '+tasksDoing.slice(0,5).join(' · ');
+    if(tasksDoing.length>5)body+=' (+' +(tasksDoing.length-5)+')';
+    body+='\n';
+  }
+  if(tasksVu.length){
+    body+='🟣 VU ('+tasksVu.length+') : '+tasksVu.slice(0,3).join(' · ');
+    if(tasksVu.length>3)body+=' (+' +(tasksVu.length-3)+')';
+    body+='\n';
+  }
+  if(tasksTodo.length){
+    body+='🟡 À FAIRE ('+tasksTodo.length+') : '+tasksTodo.slice(0,3).join(' · ');
+    if(tasksTodo.length>3)body+=' (+' +(tasksTodo.length-3)+')';
+    body+='\n';
+  }
+  if(overdueTasks.length){
+    body+='🔴 EN RETARD ('+overdueTasks.length+') : '+overdueTasks.slice(0,3).join(' · ')+'\n';
+  }
+  if(activityLines.length){
+    body+='📊 Semaine passée : '+activityLines.join(', ')+'\n';
+  }
+  if(upcomingDeadlines.length){
+    body+='⏰ Échéances à venir : '+upcomingDeadlines.slice(0,3).join(' · ')+'\n';
+  }
+  if(newProspects>0){
+    body+='🏠 '+newProspects+' nouveau(x) prospect(s) cette semaine';
+  }
+  if(!body)body='Aucune activité notable cette semaine. Bon lundi !';
+
+  // Créer la notif pour l'utilisateur courant
+  await sb.from('notifications').insert({
+    type:'rapport',
+    user_id:S.user.id,
+    source_user_id:S.user.id,
+    title:'📋 Rapport hebdo — semaine du '+now.toLocaleDateString('fr-FR',{day:'numeric',month:'long'}),
+    body:body.trim(),
+    read:false
+  });
+  // Recharger les notifs pour l'afficher
+  await loadNotifications();
+  render();
+}
+
 // Vérification échéances (appelée au login)
 async function checkEcheances(){
   if(!S.user)return;
@@ -1327,7 +1432,7 @@ function renderNotifPanel(){
         h+='<div style="font-size:11px;font-weight:'+(n.read?'500':'700')+';color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+n.title+'</div>';
         h+='<span style="font-size:8px;color:#94a3b8;white-space:nowrap">'+time+'</span>';
         h+='</div>';
-        if(n.body)h+='<div style="font-size:10px;color:#64748b;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+n.body+'</div>';
+        if(n.body){var _multiline=n.body.indexOf('\n')>=0;h+='<div style="font-size:10px;color:#64748b;margin-top:2px;'+(_multiline?'white-space:pre-line;line-height:1.5':'white-space:nowrap;overflow:hidden;text-overflow:ellipsis')+'">'+n.body+'</div>';}
         h+='<div style="display:flex;gap:6px;margin-top:3px;align-items:center">';
         h+='<span style="font-size:8px;padding:1px 6px;border-radius:4px;background:'+nt.color+'15;color:'+nt.color+';font-weight:600">'+nt.label+'</span>';
         h+='<span style="font-size:8px;color:#94a3b8">'+sName+'</span>';
@@ -1346,6 +1451,13 @@ function renderNotifPanel(){
 function handleNotifClick(notifId,studioId,type){
   markNotifRead(notifId);
   S.notifOpen=false;
+  if(type==='prospect'){
+    S.page='prospection';render();return;
+  }
+  if(!studioId&&type==='message'){
+    // Chat global
+    toggleChat();render();return;
+  }
   if(S.studios[studioId]){
     S.selectedId=studioId;S.view='detail';
     if(type==='message')S.detailTab='echanges';
@@ -2768,6 +2880,8 @@ function modifierFicheProspect(idx){
   f.notes=prompt('Notes :',f.notes||'')||f.notes;
   f.statut=prompt('Statut (chaud/tiede/froid) :',f.statut||'froid')||f.statut;
   saveProspects();render();toast('Fiche mise à jour');
+  var _tabLabel=(PROSPECT_TABS.filter(function(t){return t.id===f.societe;})[0]||{}).label||f.societe;
+  notifyAll({type:'prospect',title:_myProspectName()+' a modifié une fiche ('+_tabLabel+')',body:f.adresse||'Fiche prospect'});
 }
 function supprimerProspect(idx){
   if(!confirm('Supprimer cet élément ?'))return;
@@ -2816,6 +2930,9 @@ function rateProspect(idx,stars){
   if(p.ratings[me]===stars)delete p.ratings[me];// toggle off
   else p.ratings[me]=stars;
   saveProspects();render();
+  var _tabLabel=(PROSPECT_TABS.filter(function(t){return t.id===p.societe;})[0]||{}).label||p.societe;
+  var _pLabel=p.type==='lien'?(p.titre||p.url||'Annonce'):(p.adresse||'Fiche');
+  notifyAll({type:'prospect',title:_myProspectName()+' a noté '+stars+'★ ('+_tabLabel+')',body:_pLabel});
 }
 function toggleProspectComments(idx){
   S.prospectExpandedComments[idx]=!S.prospectExpandedComments[idx];render();
@@ -2826,6 +2943,9 @@ function addProspectComment(idx){
   p.comments.push({auteur:_myProspectName(),text:text,date:new Date().toLocaleDateString('fr-FR')});
   S.prospectExpandedComments[idx]=true;
   saveProspects();render();toast('Commentaire ajouté');
+  var _tabLabel=(PROSPECT_TABS.filter(function(t){return t.id===p.societe;})[0]||{}).label||p.societe;
+  var _pLabel=p.type==='lien'?(p.titre||p.url||'Annonce'):(p.adresse||'Fiche');
+  notifyAll({type:'prospect',title:_myProspectName()+' a commenté un prospect ('+_tabLabel+')',body:_pLabel+' — '+text.slice(0,60)});
 }
 function deleteProspectComment(pIdx,cIdx){
   var p=S.prospects[pIdx];if(!p||!p.comments[cIdx])return;
@@ -7363,7 +7483,7 @@ async function doLogin(){
   _startSessionWatcher();
   // Notifications
   _loadAllProfiles();
-  loadNotifications().then(function(){checkEcheances();render();});
+  loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});
   subscribeNotifications();
 }
 // ══════════════════════════════════════════════════════════════════════════════
@@ -9005,6 +9125,7 @@ async function envoyerGlobalMessage(){
   if(!tsSet.has(msg.ts))existing.push(msg);
   existing.sort(function(a,b){return a.ts>b.ts?1:-1;});
   await sb.from('studios').upsert({id:'global_chat',data:{messages:existing},updated_at:new Date().toISOString()});
+  notifyAll({type:'message',title:'Chat — '+(msg.auteur||'Associé'),body:texte.length>80?texte.slice(0,80)+'…':texte});
   // Refocus l'input après sauvegarde
   setTimeout(function(){var i=document.getElementById('global-chat-input');if(i)i.focus();},50);
 }
@@ -9158,7 +9279,7 @@ sb.auth.getSession().then(function(res){
           sb.auth.signOut();S.user=null;S.profile=null;render();return;
         }
         restoreNavState();render();startSync();_startSessionWatcher();
-        _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();render();});subscribeNotifications();
+        _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
       });
     });
   } else {render();}
