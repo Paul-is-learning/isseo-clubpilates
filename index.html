@@ -831,6 +831,7 @@ var S={
   simConfig:{},  // config simulateur par studio : {p4,p8,pi,prix4,prix8,prixi}
   scenarios:{},  // scénarios enregistrés par studio : [{id,auteur,date,ts,config}]
   activeScenarioId:{}, // ID du scénario actif par studio
+  scenarioEditMode:{}, // true si l'utilisateur a activé le mode création de scénario
   dirty:{},  // tracking modifications non sauvegardées {adherents:sid, sim:sid, capex:sid, taux:sid, loyer:sid}
   _dirtyBackup:{},  // backup données avant modification pour annulation
   mapFilter:'default',  // filtre carte localisation
@@ -1097,6 +1098,7 @@ function chargerScenario(sid,scenarioId){
     S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
     S.activeScenarioId[sid]='bp_default';
     S.adherents[sid]={};
+    S.scenarioEditMode[sid]=false;
   } else {
     var scenarios=S.scenarios[sid]||[];
     var sc=scenarios.find(function(s){return s.id===scenarioId;});
@@ -1104,6 +1106,7 @@ function chargerScenario(sid,scenarioId){
     S.simConfig[sid]=JSON.parse(JSON.stringify(sc.config));
     S.activeScenarioId[sid]=scenarioId;
     S.adherents[sid]=sc.adherents?JSON.parse(JSON.stringify(sc.adherents)):{};
+    S.scenarioEditMode[sid]=true;
   }
   // Sauvegarder immédiatement (pas de debounce) pour éviter les conflits
   try{localStorage.setItem('isseo_sim_'+sid,JSON.stringify(S.simConfig[sid]));}catch(e){}
@@ -1127,6 +1130,7 @@ async function supprimerScenario(sid,scenarioId){
       S.activeScenarioId[sid]='bp_default';
       S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
       S.adherents[sid]={};
+      S.scenarioEditMode[sid]=false;
     }
     saveSimConfig(sid);
     saveAdherents(sid);
@@ -3985,51 +3989,111 @@ function renderAdherents(sid,s){
     h+='<div style="font-size:12px;font-weight:600;color:'+(c<0?'#A32D2D':'#888')+'">'+c+'</div></div>';
   }
   h+='</div></div>';
-  // ── Scénario actif — bandeau informatif (au-dessus de saisie mensuelle) ──
+  // ── Wizard Scénario ──────────────────────────────────────────────────────
   var _scList=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
-  var _activeId=S.activeScenarioId[sid]||(_scList.length?_scList[0].id:null);
-  var _lastSc=_activeId&&_activeId!=='bp_default'?_scList.find(function(s){return s.id===_activeId;}):null;
-  if(_lastSc){
-    h+='<div style="background:linear-gradient(135deg,#f0f4ff,#e8f0fe);border:1px solid #d0dffa;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:12px;cursor:default;transition:all 0.2s" onmouseover="this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.12)\';this.style.borderColor=\'#a0bfef\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'#d0dffa\'">';
-    h+='<div style="width:32px;height:32px;border-radius:50%;background:#1a3a6b;display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg></div>';
-    h+='<div style="flex:1;min-width:0">';
-    h+='<div style="font-size:11px;font-weight:700;color:#1a3a6b">Sc\u00e9nario actif \u2014 '+_lastSc.auteur+'</div>';
-    h+='<div style="font-size:10px;color:#5b7fa6;margin-top:1px">Enregistr\u00e9 le '+_lastSc.date+'</div>';
-    h+='</div>';
-    h+='<div style="font-size:10px;color:#1a3a6b;font-weight:500;text-align:right;flex-shrink:0">P4 '+num(_lastSc.config.p4,47)+'% \u00b7 P8 '+num(_lastSc.config.p8,50)+'% \u00b7 Ill. '+num(_lastSc.config.pi,3)+'%</div>';
-    h+='</div>';
-  }
+  var _activeId=S.activeScenarioId[sid]||'bp_default';
+  var _isDefault=_isBPDefault(sid);
+  var _editMode=!!S.scenarioEditMode[sid];
+  var _wizardOpen=_editMode||!_isDefault;
+  var _locked=_isDefault&&!_editMode;
+  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
 
-  var _bpLocked=_isBPDefault(sid);
-  h+='<div class="box">';
-  h+='<div style="font-weight:600;font-size:14px;margin-bottom:12px">Saisie mensuelle &mdash; Annee '+ay+' ('+annee+')</div>';
-  if(_bpLocked){
-    h+='<div style="background:linear-gradient(135deg,#fef9e7,#fef3c7);border:1px solid #f5d87a;border-radius:10px;padding:10px 16px;margin-bottom:12px;display:flex;align-items:center;gap:10px">';
-    h+='<span style="font-size:18px">🔒</span>';
-    h+='<div><div style="font-size:11px;font-weight:700;color:#854F0B">BP de r\u00e9f\u00e9rence — Lecture seule</div>';
-    h+='<div style="font-size:10px;color:#a67c00;margin-top:1px">Cr\u00e9ez ou s\u00e9lectionnez un sc\u00e9nario pour modifier les valeurs</div></div></div>';
-  }
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px">';
-  for(var i=0;i<12;i++){
-    var key='y'+ay+'_m'+i;
-    var rVal=actuel[key]!=null?actuel[key]:'';
-    var bp=bpArr[i];
-    var diff=rVal!==''?num(rVal)-bp:null;
-    var diffColor=diff!==null?(diff>=0?'#3B6D11':'#A32D2D'):'#888';
-    h+='<div style="background:'+(_bpLocked?'#eee':'#f5f5f0')+';border-radius:8px;padding:8px;'+(_bpLocked?'opacity:0.7;':'')+'">';
-    h+='<div style="font-size:11px;font-weight:600;margin-bottom:2px">'+moisLabels[i]+'</div>';
-    h+='<div style="font-size:10px;color:#888;margin-bottom:3px">BP: '+bp+' (churn '+churnArr[i]+')</div>';
-    h+='<input type="number" value="'+rVal+'" placeholder="--" '+(_bpLocked?'disabled ':'')+'oninput="saisirAdherentLive(\''+sid+'\','+ay+','+i+',this.value)" style="width:100%;padding:5px 7px;border:0.5px solid #ddd;border-radius:6px;font-size:12px;outline:none;background:'+(_bpLocked?'#e8e8e8':'#fff')+';'+(_bpLocked?'cursor:not-allowed;color:#999;':'')+'"/>';
-    if(diff!==null)h+='<div id="adh-diff-'+i+'" style="font-size:10px;color:'+diffColor+';margin-top:3px;font-weight:600">'+(diff>=0?'+':'')+diff+'</div>';
-    else h+='<div id="adh-diff-'+i+'" style="font-size:10px;margin-top:3px;font-weight:600"></div>';
-    h+='</div>';
+  // ── A. Ligne sélecteur de scénarios ──
+  h+='<div class="box" style="background:#f8f9fb;padding:14px 16px;margin-bottom:12px">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">';
+  h+='<div style="display:flex;align-items:center;gap:10px">';
+  h+='<span style="font-size:11px;font-weight:600;color:#555">Sc\u00e9nario actif :</span>';
+  h+='<select onchange="chargerScenario(\''+sid+'\',this.value)" style="padding:7px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;font-weight:500;color:#1a3a6b;background:#fff;cursor:pointer;max-width:260px">';
+  h+='<option value="bp_default"'+(_activeId==='bp_default'?' selected':'')+'>📊 BP de r\u00e9f\u00e9rence (lecture seule)</option>';
+  _scList.forEach(function(sc){
+    var lbl=sc.auteur.split(' ')[0]+' — '+sc.date+(sc.comment?' · '+(sc.comment.length>30?sc.comment.slice(0,30)+'…':sc.comment):'');
+    h+='<option value="'+sc.id+'"'+(_activeId===sc.id?' selected':'')+'>'+lbl+'</option>';
+  });
+  h+='</select>';
+  h+='</div>';
+  // Bouton supprimer (si scénario non-BP actif)
+  if(!isViewer()&&!_isDefault){
+    h+='<button onclick="supprimerScenario(\''+sid+'\',\''+_activeId+'\')" style="padding:6px 10px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;display:flex;align-items:center;gap:4px" title="Supprimer ce sc\u00e9nario"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg> Supprimer</button>';
   }
   h+='</div></div>';
 
-  // ── Simulateur CA prévisionnel ───────────────────────────────────────────
-  // Lire config sauvegardée ou valeurs BP par défaut
-  var simCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
-  h+=renderSimCA(sid,ay,bpArr,realArr,simCfg);
+  // ── B. Toggle CTA — Créer un nouveau scénario ──
+  if(_isDefault&&!_editMode&&!isViewer()){
+    h+='<div onclick="toggleScenarioEditMode(\''+sid+'\')" style="background:linear-gradient(135deg,#f0f7ff,#e6f0fd);border:2px dashed #a0c4f0;border-radius:14px;padding:24px 20px;margin-bottom:16px;cursor:pointer;transition:all 0.25s;text-align:center" onmouseover="this.style.borderColor=\'#1a3a6b\';this.style.background=\'linear-gradient(135deg,#e6f0fd,#dbe8fa)\';this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 24px rgba(26,58,107,0.12)\'" onmouseout="this.style.borderColor=\'#a0c4f0\';this.style.background=\'linear-gradient(135deg,#f0f7ff,#e6f0fd)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
+    h+='<div style="font-size:28px;margin-bottom:8px">✨</div>';
+    h+='<div style="font-size:15px;font-weight:700;color:#1a3a6b;margin-bottom:6px">Cr\u00e9er un nouveau sc\u00e9nario</div>';
+    h+='<div style="font-size:12px;color:#5b7fa6;max-width:460px;margin:0 auto;line-height:1.5">Personnalisez votre business plan en 3 \u00e9tapes : nombre d\'adh\u00e9rents r\u00e9els, r\u00e9partition des forfaits, puis prix des abonnements.</div>';
+    h+='<div style="display:inline-flex;align-items:center;gap:6px;margin-top:14px;padding:10px 24px;background:#1a3a6b;color:#fff;border-radius:10px;font-size:13px;font-weight:600"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Commencer</div>';
+    h+='</div>';
+  }
+
+  // ── C. Wizard 3 étapes ──
+  if(_wizardOpen){
+    // Compteur mois remplis
+    var _nbRemplis=0;
+    for(var _ri=0;_ri<12;_ri++){var _rk='y'+ay+'_m'+_ri;if(actuel[_rk]!=null&&actuel[_rk]!=='')_nbRemplis++;}
+
+    // ─── Étape 1 : Adhérents réels ───
+    h+='<div class="box" style="border-left:4px solid #185FA5;margin-bottom:12px">';
+    h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+    h+='<div style="width:28px;height:28px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">1</div>';
+    h+='<div>';
+    h+='<div style="font-weight:700;font-size:14px;color:#1a1a1a">\u00c9tape 1 — Adh\u00e9rents r\u00e9els</div>';
+    h+='<div style="font-size:11px;color:#888;margin-top:2px">Ann\u00e9e '+ay+' ('+annee+')</div>';
+    h+='</div></div>';
+    h+='<div style="background:#f0f7ff;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#1a3a6b;line-height:1.55">';
+    h+='<b>💡 Comment \u00e7a marche ?</b> Renseignez vos adh\u00e9rents r\u00e9els mois par mois. Les mois non remplis restent cal\u00e9s sur le budget BP.';
+    if(_nbRemplis>0&&_nbRemplis<12){
+      h+='<br><span style="font-weight:600;color:#185FA5">→ Actuellement : '+_nbRemplis+' mois r\u00e9el'+ (_nbRemplis>1?'s':'') +' + '+(12-_nbRemplis)+' mois budget BP</span>';
+    } else if(_nbRemplis===12){
+      h+='<br><span style="font-weight:600;color:#3B6D11">→ 12 mois r\u00e9els renseign\u00e9s ✓</span>';
+    } else {
+      h+='<br><span style="color:#888">Ex : 4 mois saisis = 4 mois r\u00e9els + 8 mois budget.</span>';
+    }
+    h+='</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px">';
+    for(var i=0;i<12;i++){
+      var key='y'+ay+'_m'+i;
+      var rVal=actuel[key]!=null?actuel[key]:'';
+      var bp=bpArr[i];
+      var diff=rVal!==''?num(rVal)-bp:null;
+      var diffColor=diff!==null?(diff>=0?'#3B6D11':'#A32D2D'):'#888';
+      var _hasVal=rVal!=='';
+      h+='<div style="background:'+(_hasVal?'#eef6ff':'#f5f5f0')+';border-radius:8px;padding:8px;border:1px solid '+(_hasVal?'#b8d4f0':'transparent')+';transition:all 0.15s">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:2px">';
+      h+='<span style="font-size:11px;font-weight:600">'+moisLabels[i]+'</span>';
+      if(_hasVal)h+='<span style="font-size:8px;background:#185FA5;color:#fff;padding:1px 5px;border-radius:4px;font-weight:600">R\u00c9EL</span>';
+      else h+='<span style="font-size:8px;background:#ddd;color:#888;padding:1px 5px;border-radius:4px;font-weight:500">BP</span>';
+      h+='</div>';
+      h+='<div style="font-size:10px;color:#888;margin-bottom:3px">BP: '+bp+' (churn '+churnArr[i]+')</div>';
+      h+='<input type="number" value="'+rVal+'" placeholder="'+bp+'" oninput="saisirAdherentLive(\''+sid+'\','+ay+','+i+',this.value)" style="width:100%;padding:5px 7px;border:0.5px solid '+(_hasVal?'#185FA5':'#ddd')+';border-radius:6px;font-size:12px;outline:none;background:#fff;font-weight:'+(_hasVal?'600':'400')+'"/>';
+      if(diff!==null)h+='<div id="adh-diff-'+i+'" style="font-size:10px;color:'+diffColor+';margin-top:3px;font-weight:600">'+(diff>=0?'+':'')+diff+'</div>';
+      else h+='<div id="adh-diff-'+i+'" style="font-size:10px;margin-top:3px;font-weight:600"></div>';
+      h+='</div>';
+    }
+    h+='</div></div>';
+
+    // ─── Étape 2 : Répartition des forfaits ───
+    h+=renderStepRepartition(sid,ay,simCfg);
+
+    // ─── Étape 3 : Prix des abonnements ───
+    h+=renderStepPrix(sid,ay,simCfg);
+
+    // ─── Bouton Enregistrer ───
+    if(!isViewer()){
+      h+='<div style="text-align:center;margin:16px 0">';
+      h+='<button onclick="enregistrerScenario(\''+sid+'\')" style="display:inline-flex;align-items:center;gap:8px;padding:12px 32px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);color:#fff;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all 0.2s;box-shadow:0 4px 16px rgba(26,58,107,0.25)" onmouseover="this.style.transform=\'translateY(-2px)\';this.style.boxShadow=\'0 8px 24px rgba(26,58,107,0.35)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'0 4px 16px rgba(26,58,107,0.25)\'">';
+      h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>';
+      h+='Enregistrer le sc\u00e9nario</button>';
+      if(_isDefault&&_editMode){
+        h+='<div style="margin-top:8px"><button onclick="toggleScenarioEditMode(\''+sid+'\')" style="padding:6px 16px;background:none;border:1px solid #dde;border-radius:8px;font-size:11px;color:#888;cursor:pointer">Annuler</button></div>';
+      }
+      h+='</div>';
+    }
+  }
+
+  // ── D. Résultats (toujours visibles) ──
+  h+=renderSimResults(sid,ay,bpArr,realArr,simCfg);
   h+='</div>';
   return h;
 }
@@ -7076,7 +7140,7 @@ async function clearMois(){
 
 async function saisirAdherent(sid,year,moisIdx,val){
   if(isViewer())return;
-  if(_isBPDefault(sid))return;
+  if(_isScenarioLocked(sid))return;
   if(!S.adherents[sid])S.adherents[sid]={};
   var key='y'+year+'_m'+moisIdx;
   if(val===''||val===null){delete S.adherents[sid][key];}
@@ -7087,7 +7151,7 @@ async function saisirAdherent(sid,year,moisIdx,val){
 
 function saisirAdherentLive(sid,year,moisIdx,val){
   if(isViewer())return;
-  if(_isBPDefault(sid)){toast('Le BP de référence n\'est pas modifiable. Sélectionnez ou créez un scénario.','warn');return;}
+  if(_isScenarioLocked(sid)){toast('Activez le mode scénario pour modifier les adhérents.','warn');return;}
   // Mise a jour état immédiate
   if(!S.adherents[sid])S.adherents[sid]={};
   var key='y'+year+'_m'+moisIdx;
@@ -7359,76 +7423,25 @@ function computeSimCA(membres,cfg,ay){
   return Math.round(membres*computeSimARPU(cfg)*f);
 }
 
-function renderSimCA(sid,ay,bpArr,realArr,cfg){
-  var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
-  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay);});
-  var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
-  // CA BP référence = somme directe des CA mensuels dossier (écart 0 avec ARPU_BP)
-  var caBPAnnuel=bpArr.map(function(m){return computeBPCA(m,ay);}).reduce(function(s,v){return s+v;},0);
+// ── Étape 2 : Répartition des forfaits ──
+function renderStepRepartition(sid,ay,cfg){
   var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
   var total=p4+p8+pi;
-  // ── EBITDA / Cash net : recalcul BP depuis CA_A1/A2/A3 exact (= même source que Forecast) ──
-  var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
-  var _bpOpts=getStudioBPOpts(sid);
-  var _caRef=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
-  var refBPRows=buildBPFromDossier(_caRef,md,ay,sid,_bpOpts);
-  var ebitdaSim=refBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var cashnetSim=refBPRows.reduce(function(s,r){return s+(r._cashnet||0);},0);
-  var ebitdaBP=ebitdaSim; // même source que Forecast → écart toujours nul
-  var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
-  var ebitdaEcart=ebitdaSim-ebitdaBP;
-
-  // ── Scénarios enregistrés ──
-  var scenarios=(S.scenarios[sid]||[]).slice().sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');});
-  // Déterminer le scénario actif : soit explicitement choisi, soit le dernier enregistré
-  var matchedSc=S.activeScenarioId[sid]||null;
-  if(!matchedSc&&scenarios.length)matchedSc=scenarios[0].id;
-  if(!matchedSc)matchedSc='bp_default';
-
-  var _simLocked=_isBPDefault(sid);
-  var h='<div class="box" id="sim-ca-box" style="transition:box-shadow 0.2s,border-color 0.2s" onmouseover="this.style.boxShadow=\'0 4px 20px rgba(0,0,0,0.06)\';this.style.borderColor=\'#c8cdd8\'" onmouseout="this.style.boxShadow=\'none\';this.style.borderColor=\'\'">';
-  // Header avec titre + dropdown scénarios + bouton enregistrer
-  h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:10px;margin-bottom:14px">';
+  var h='<div class="box" style="border-left:4px solid #1D9E75;margin-bottom:12px">';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+  h+='<div style="width:28px;height:28px;border-radius:50%;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">2</div>';
   h+='<div>';
-  h+='<div style="font-weight:600;font-size:14px;margin-bottom:4px">Simulateur CA &mdash; pr&eacute;visionnel vs BP</div>';
-  h+='<div style="font-size:11px;color:#888">'+(_simLocked?'🔒 BP de r\u00e9f\u00e9rence (lecture seule) — s\u00e9lectionnez un sc\u00e9nario pour modifier':'Ajuste la repartition et les prix &mdash; le CA et l\'EBITDA se recalculent en direct')+'</div>';
-  h+='</div>';
-  h+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">';
-  // Dropdown scénarios
-  h+='<select onchange="chargerScenario(\''+sid+'\',this.value)" style="padding:6px 10px;border:1px solid #dde;border-radius:8px;font-size:11px;font-weight:500;color:#1a3a6b;background:#f8f9fb;cursor:pointer;max-width:220px">';
-  h+='<option value="bp_default"'+(matchedSc==='bp_default'?' selected':'')+'>📊 BP de r&eacute;f&eacute;rence</option>';
-  scenarios.forEach(function(sc){
-    var lbl=sc.auteur.split(' ')[0]+' — '+sc.date+(sc.comment?' · '+(sc.comment.length>30?sc.comment.slice(0,30)+'…':sc.comment):'');
-    h+='<option value="'+sc.id+'"'+(matchedSc===sc.id?' selected':'')+'>'+lbl+'</option>';
-  });
-  h+='</select>';
-  // Bouton enregistrer (masqué si BP de référence)
-  if(!isViewer()&&!_simLocked){
-    h+='<button onclick="enregistrerScenario(\''+sid+'\')" style="display:flex;align-items:center;gap:4px;padding:6px 12px;background:#1a3a6b;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:opacity 0.15s;white-space:nowrap" onmouseover="this.style.opacity=\'0.9\'" onmouseout="this.style.opacity=\'1\'"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Enregistrer</button>';
-  }
-  // Bouton supprimer le scénario actif
-  if(!isViewer()&&matchedSc&&matchedSc!=='bp_default'){
-    h+='<button onclick="supprimerScenario(\''+sid+'\',\''+matchedSc+'\')" style="padding:6px 8px;background:none;border:1px solid #e0e0da;border-radius:8px;font-size:11px;color:#A32D2D;cursor:pointer;transition:all 0.15s" onmouseover="this.style.borderColor=\'#A32D2D\'" onmouseout="this.style.borderColor=\'#e0e0da\'" title="Supprimer ce sc&eacute;nario"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
-  }
+  h+='<div style="font-weight:700;font-size:14px;color:#1a1a1a">\u00c9tape 2 — R\u00e9partition des forfaits</div>';
+  h+='<div style="font-size:11px;color:#888;margin-top:2px">Quel mix d\'abonnements pr\u00e9voyez-vous ?</div>';
   h+='</div></div>';
-
-  // ── Commentaire du scénario actif ──
-  var activeSc=matchedSc&&matchedSc!=='bp_default'?scenarios.find(function(s){return s.id===matchedSc;}):null;
-  if(activeSc&&activeSc.comment){
-    h+='<div style="background:#f0f4ff;border:1px solid #d0dffa;border-radius:8px;padding:10px 14px;margin-bottom:14px;display:flex;align-items:flex-start;gap:10px">';
-    h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2" style="flex-shrink:0;margin-top:1px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>';
-    h+='<div><div style="font-size:10px;color:#1a3a6b;font-weight:600;margin-bottom:2px">'+activeSc.auteur+' — '+activeSc.date+'</div>';
-    h+='<div style="font-size:11px;color:#444;line-height:1.45">'+activeSc.comment+'</div></div>';
-    h+='</div>';
-  }
-
-  // ── Répartition ──
-  h+='<div style="font-weight:500;font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Repartition des abonnes</div>';
+  h+='<div style="background:#f0faf5;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#0F6E56;line-height:1.55">';
+  h+='<b>💡 Astuce</b> D\u00e9placez les curseurs pour ajuster la r\u00e9partition entre Pack 4, Pack 8 et Illimit\u00e9. Le total doit faire 100%. Les valeurs BP de r\u00e9f\u00e9rence sont 47% / 50% / 3%.';
+  h+='</div>';
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:6px">';
   var packs=[
-    {id:'p4',label:'Pack 4 seances',color:'#5b7fa6',val:p4},
-    {id:'p8',label:'Pack 8 seances',color:'#1D9E75',val:p8},
-    {id:'pi',label:'Illimite',color:'#854F0B',val:pi},
+    {id:'p4',label:'Pack 4 s\u00e9ances',color:'#5b7fa6',val:p4},
+    {id:'p8',label:'Pack 8 s\u00e9ances',color:'#1D9E75',val:p8},
+    {id:'pi',label:'Illimit\u00e9',color:'#854F0B',val:pi},
   ];
   packs.forEach(function(pk){
     h+='<div>';
@@ -7436,25 +7449,37 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
     h+='<span style="font-size:12px;font-weight:500;color:'+pk.color+'">'+pk.label+'</span>';
     h+='<span id="sim-lbl-'+pk.id+'" style="font-size:13px;font-weight:700;color:'+pk.color+'">'+pk.val+'%</span>';
     h+='</div>';
-    h+='<input type="range" min="0" max="100" value="'+pk.val+'" id="sim-rng-'+pk.id+'" '+(_simLocked?'disabled ':'')+'oninput="updateSimRep(\''+sid+'\',\''+pk.id+'\',this.value,'+ay+')" style="width:100%;accent-color:'+pk.color+';'+(_simLocked?'opacity:0.5;cursor:not-allowed;':'')+'"/>';
+    h+='<input type="range" min="0" max="100" value="'+pk.val+'" id="sim-rng-'+pk.id+'" oninput="updateSimRep(\''+sid+'\',\''+pk.id+'\',this.value,'+ay+')" style="width:100%;accent-color:'+pk.color+'"/>';
     h+='</div>';
   });
   h+='</div>';
-  // Barre de répartition visuelle
   h+='<div style="display:flex;height:8px;border-radius:6px;overflow:hidden;margin-bottom:4px">';
   h+='<div id="sim-bar-p4" style="width:'+Math.round(p4/total*100)+'%;background:#5b7fa6;transition:width 0.2s"></div>';
   h+='<div id="sim-bar-p8" style="width:'+Math.round(p8/total*100)+'%;background:#1D9E75;transition:width 0.2s"></div>';
   h+='<div id="sim-bar-pi" style="flex:1;background:#854F0B;transition:width 0.2s"></div>';
   h+='</div>';
-  h+='<div id="sim-warn" style="font-size:11px;color:#A32D2D;margin-bottom:10px;min-height:16px">'+(total!==100?'Total = '+total+'% (doit etre 100%)':'')+'</div>';
+  h+='<div id="sim-warn" style="font-size:11px;color:#A32D2D;margin-bottom:4px;min-height:16px">'+(total!==100?'⚠️ Total = '+total+'% (doit \u00eatre 100%)':'✅ Total = 100%')+'</div>';
+  h+='</div>';
+  return h;
+}
 
-  // ── Prix ──
-  h+='<div style="font-weight:500;font-size:12px;color:#555;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.4px">Prix abonnements (HT/mois)</div>';
-  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px">';
+// ── Étape 3 : Prix des abonnements ──
+function renderStepPrix(sid,ay,cfg){
+  var h='<div class="box" style="border-left:4px solid #854F0B;margin-bottom:12px">';
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+  h+='<div style="width:28px;height:28px;border-radius:50%;background:#854F0B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">3</div>';
+  h+='<div>';
+  h+='<div style="font-weight:700;font-size:14px;color:#1a1a1a">\u00c9tape 3 — Prix des abonnements</div>';
+  h+='<div style="font-size:11px;color:#888;margin-top:2px">Ajustez vos tarifs HT mensuels</div>';
+  h+='</div></div>';
+  h+='<div style="background:#fef9e7;border-radius:8px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#854F0B;line-height:1.55">';
+  h+='<b>💡 Conseil</b> Modifiez les prix pour simuler l\'impact sur votre CA. Les prix BP de r\u00e9f\u00e9rence sont : Pack 4 = 110 €, Pack 8 = 193,33 €, Illimit\u00e9 = 276,67 €.';
+  h+='</div>';
+  h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:8px">';
   var prixCfg=[
     {id:'prix4',label:'Pack 4',ref:110,color:'#5b7fa6',val:num(cfg.prix4,110)},
     {id:'prix8',label:'Pack 8',ref:193.33,color:'#1D9E75',val:num(cfg.prix8,193.33)},
-    {id:'prixi',label:'Illimite',ref:276.67,color:'#854F0B',val:num(cfg.prixi,276.67)},
+    {id:'prixi',label:'Illimit\u00e9',ref:276.67,color:'#854F0B',val:num(cfg.prixi,276.67)},
   ];
   var _seances={prix4:4,prix8:8,prixi:null};
   prixCfg.forEach(function(px){
@@ -7463,59 +7488,79 @@ function renderSimCA(sid,ay,bpArr,realArr,cfg){
     var nb=_seances[px.id];
     var unitTTC=nb?( (Math.round(px.val*1.20/nb*100)/100).toFixed(2).replace('.',',') ):null;
     h+='<div>';
-    h+='<div style="font-size:11px;color:#888;margin-bottom:4px">'+px.label+' <span style="font-size:10px;color:#aaa">(BP: '+px.ref+' EUR)</span></div>';
+    h+='<div style="font-size:11px;color:#888;margin-bottom:4px">'+px.label+' <span style="font-size:10px;color:#aaa">(BP: '+px.ref+' €)</span></div>';
     h+='<div style="display:flex;align-items:center;gap:6px">';
-    h+='<input type="number" value="'+px.val+'" step="0.5" id="sim-'+px.id+'" '+(_simLocked?'disabled ':'')+'oninput="updateSimPrix(\''+sid+'\',\''+px.id+'\',this.value,'+ay+')" style="width:100%;padding:6px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-weight:600;color:'+(_simLocked?'#999':px.color)+';outline:none;'+(_simLocked?'background:#e8e8e8;cursor:not-allowed;':'')+'"/>';
+    h+='<input type="number" value="'+px.val+'" step="0.5" id="sim-'+px.id+'" oninput="updateSimPrix(\''+sid+'\',\''+px.id+'\',this.value,'+ay+')" style="width:100%;padding:6px 8px;border:0.5px solid #ddd;border-radius:7px;font-size:13px;font-weight:600;color:'+px.color+';outline:none"/>';
     h+='</div>';
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-top:3px">';
     h+='<div id="sim-delta-'+px.id+'" style="font-size:10px;color:'+(delta>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+(delta!==0?(delta>0?'+':'')+delta+'% vs BP':'= BP')+'</div>';
-    if(unitTTC){h+='<div id="sim-unit-'+px.id+'" style="font-size:10px;color:#94a3b8;text-align:right">soit <b style="color:#555">'+unitTTC+'&nbsp;€</b> TTC/séance</div>';}
+    if(unitTTC){h+='<div id="sim-unit-'+px.id+'" style="font-size:10px;color:#94a3b8;text-align:right">soit <b style="color:#555">'+unitTTC+'&nbsp;€</b> TTC/s\u00e9ance</div>';}
     h+='</div>';
     h+='<div style="text-align:right;margin-top:1px">';
     h+='<div id="sim-ttc-'+px.id+'" style="font-size:10px;color:#64748b;font-weight:500">→ <b>'+ttc+'&nbsp;€</b> TTC/mois</div>';
     h+='</div>';
     h+='</div>';
   });
-  h+='</div>';
+  h+='</div></div>';
+  return h;
+}
 
-  // ── Résultats ──
-  h+='<div style="background:#f5f5f0;border-radius:10px;padding:14px 16px">';
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
-  // CA mensuel moyen simulé
+// ── Résultats simulateur (toujours visible) ──
+function renderSimResults(sid,ay,bpArr,realArr,cfg){
+  var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
+  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay);});
+  var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
+  var caBPAnnuel=bpArr.map(function(m){return computeBPCA(m,ay);}).reduce(function(s,v){return s+v;},0);
+  var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
+  var _bpOpts=getStudioBPOpts(sid);
+  var _caRef=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
+  var refBPRows=buildBPFromDossier(_caRef,md,ay,sid,_bpOpts);
+  var ebitdaSim=refBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var cashnetSim=refBPRows.reduce(function(s,r){return s+(r._cashnet||0);},0);
+  var ebitdaBP=ebitdaSim;
+  var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
+  var ebitdaEcart=ebitdaSim-ebitdaBP;
   var caMoyMensuel=Math.round(caAnnuel/12);
   var ecartCA=caAnnuel-caBPAnnuel;
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA annuel simul&eacute;</div><div id="sim-ca-annuel" style="font-size:18px;font-weight:700;color:#1a1a1a">'+fmt(caAnnuel)+'</div></div>';
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA moyen/mois</div><div id="sim-ca-moy" style="font-size:15px;font-weight:600;color:#185FA5">'+fmt(caMoyMensuel)+'</div></div>';
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Ecart CA vs BP</div>';
-  h+='<div id="sim-ca-ecart" style="font-size:15px;font-weight:600;color:'+(ecartCA>=0?'#3B6D11':'#A32D2D')+'">'+(ecartCA>=0?'+':'')+fmt(ecartCA)+'</div></div>';
-  // ARPU simulé
   var lastMembres=membres[membres.length-1];
+
+  var h='<div class="box" id="sim-ca-box" style="margin-top:4px">';
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:12px">';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>';
+  h+='<div style="font-weight:700;font-size:14px;color:#1a3a6b">R\u00e9sultats pr\u00e9visionnels — Ann\u00e9e '+ay+'</div>';
+  h+='</div>';
+  h+='<div style="background:#f5f5f0;border-radius:10px;padding:14px 16px">';
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px">';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA annuel simul\u00e9</div><div id="sim-ca-annuel" style="font-size:18px;font-weight:700;color:#1a1a1a">'+fmt(caAnnuel)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">CA moyen/mois</div><div id="sim-ca-moy" style="font-size:15px;font-weight:600;color:#185FA5">'+fmt(caMoyMensuel)+'</div></div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">\u00c9cart CA vs BP</div>';
+  h+='<div id="sim-ca-ecart" style="font-size:15px;font-weight:600;color:'+(ecartCA>=0?'#3B6D11':'#A32D2D')+'">'+(ecartCA>=0?'+':'')+fmt(ecartCA)+'</div></div>';
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">ARPU moyen/mois</div>';
   h+='<div id="sim-arpu" style="font-size:15px;font-weight:600;color:#854F0B">'+(lastMembres>0?fmt(Math.round(computeSimCA(lastMembres,cfg,ay)/lastMembres)):'--')+'</div></div>';
-  // ── EBITDA simulé ──
   h+='<div style="border-top:0.5px solid #e0e0d8;grid-column:1/-1;margin:4px 0 -4px"></div>';
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA simul&eacute;</div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA simul\u00e9</div>';
   h+='<div id="sim-ebitda" style="font-size:18px;font-weight:700;color:'+(ebitdaSim>=0?'#854F0B':'#A32D2D')+'">'+fmt(ebitdaSim)+'</div></div>';
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Marge EBITDA</div>';
   h+='<div id="sim-ebitda-margin" style="font-size:15px;font-weight:600;color:'+(ebitdaMargin>=20?'#3B6D11':ebitdaMargin>=0?'#854F0B':'#A32D2D')+'">'+ebitdaMargin+'%</div></div>';
-  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">Ecart EBITDA vs BP</div>';
+  h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">\u00c9cart EBITDA vs BP</div>';
   h+='<div id="sim-ebitda-ecart" style="font-size:15px;font-weight:600;color:'+(ebitdaEcart>=0?'#3B6D11':'#A32D2D')+'">'+(ebitdaEcart>=0?'+':'')+fmt(ebitdaEcart)+'</div></div>';
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA BP ref.</div>';
   h+='<div style="font-size:15px;font-weight:600;color:#888">'+fmt(ebitdaBP)+'</div></div>';
   h+='<div style="border-top:0.5px solid #e0e0d8;grid-column:1/-1;margin:4px 0 -4px"></div>';
   h+='<div><div style="font-size:11px;color:#1a3a6b;font-weight:600;margin-bottom:3px">Cash net disponible</div>';
   h+='<div id="sim-cashnet" style="font-size:18px;font-weight:700;color:'+(cashnetSim>=0?'#1a3a6b':'#A32D2D')+'">'+fmt(cashnetSim)+'</div>';
-  h+='<div style="font-size:10px;color:#888;margin-top:2px">EBITDA − intérêts − rembt. capital − IS</div></div>';
+  h+='<div style="font-size:10px;color:#888;margin-top:2px">EBITDA − int\u00e9r\u00eats − rembt. capital − IS</div></div>';
   h+='</div>';
-
-  // ── Hypothèses vs BP — zone commentaires (remplie immédiatement au 1er render) ──
   h+='<div id="sim-comment-zone" style="transition:opacity 0.4s">'+buildSimCommentHTML(sid,cfg,_bpOpts)+'</div>';
-
-  // Mini graphique CA mensuel simulé
   h+='<div style="margin-top:14px">'+buildSimCAChart(caArr,membres,realArr)+'</div>';
   h+='</div>';
   h+='</div>';
   return h;
+}
+
+// Legacy wrapper — kept for compatibility
+function renderSimCA(sid,ay,bpArr,realArr,cfg){
+  return renderStepRepartition(sid,ay,cfg)+renderStepPrix(sid,ay,cfg)+renderSimResults(sid,ay,bpArr,realArr,cfg);
 }
 
 // ── Génération HTML des commentaires hypothèses vs BP ─────────────────────────
@@ -7636,8 +7681,16 @@ function buildSimCAChart(caArr,membres,realArr){
 }
 
 function _isBPDefault(sid){return (S.activeScenarioId[sid]||'bp_default')==='bp_default';}
+function _isScenarioLocked(sid){return _isBPDefault(sid)&&!S.scenarioEditMode[sid];}
+function toggleScenarioEditMode(sid){
+  S.scenarioEditMode[sid]=!S.scenarioEditMode[sid];
+  if(S.scenarioEditMode[sid]&&!S.simConfig[sid]){
+    S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
+  }
+  render();
+}
 function updateSimRep(sid,field,val,ay){
-  if(_isBPDefault(sid)){toast('Le BP de référence n\'est pas modifiable','warn');return;}
+  if(_isScenarioLocked(sid)){toast('Activez le mode scénario pour modifier','warn');return;}
   if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.simConfig[sid][field]=num(val);
   var lbl=document.getElementById('sim-lbl-'+field);
@@ -7647,7 +7700,7 @@ function updateSimRep(sid,field,val,ay){
 }
 
 function updateSimPrix(sid,field,val,ay){
-  if(_isBPDefault(sid)){toast('Le BP de référence n\'est pas modifiable','warn');return;}
+  if(_isScenarioLocked(sid)){toast('Activez le mode scénario pour modifier','warn');return;}
   if(!S.simConfig[sid])S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.simConfig[sid][field]=num(val);
   markDirty('sim',sid);
