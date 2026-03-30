@@ -3532,66 +3532,178 @@ function renderPageEngagements(){
     return ccAssocies[k].avancePar>0||ccAssocies[k].avancePour>0;
   }).map(function(k){return ccAssocies[k];});
 
-  h+='<div style="background:linear-gradient(135deg,#0F6E56 0%,#1a9e7a 50%,#22c55e 100%);border-radius:16px;padding:22px 28px;margin-bottom:16px;position:relative;overflow:hidden">';
+  // ── Header gradient vert avec KPIs + barre d'équilibre ──
+  h+='<div style="background:linear-gradient(135deg,#0F6E56 0%,#1a9e7a 50%,#22c55e 100%);border-radius:16px;padding:22px 28px;margin-bottom:20px;position:relative;overflow:hidden">';
   h+='<div style="position:absolute;top:-20px;right:-20px;width:100px;height:100px;border-radius:50%;background:rgba(255,255,255,0.06)"></div>';
+  h+='<div style="position:absolute;bottom:-30px;left:30%;width:80px;height:80px;border-radius:50%;background:rgba(255,255,255,0.04)"></div>';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px">';
   h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 23l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>';
-  h+='<span style="font-size:16px;font-weight:700;color:#fff">Comptes courants d\'associ&eacute;s</span><span style="font-size:11px;font-weight:600;color:rgba(255,255,255,0.5);margin-left:8px;background:rgba(255,255,255,0.12);padding:2px 8px;border-radius:6px">Cohorte 1</span></div>';
-  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">Suivi des avances entre associ&eacute;s — r&eacute;partition automatique selon les quotes-parts de d&eacute;tention</div>';
-  h+='<div style="display:flex;gap:16px;flex-wrap:wrap">';
-  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Total avances</div><div style="font-size:22px;font-weight:800;color:#fff">'+fmt(totalAvances)+'</div></div>';
-  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Cr&eacute;ances nettes</div><div style="font-size:22px;font-weight:800;color:#d1fae5">'+fmt(totalCreancesNettes)+'</div></div>';
-  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 18px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Dettes nettes</div><div style="font-size:22px;font-weight:800;color:#fef3c7">'+fmt(totalDettesNettes)+'</div></div>';
-  h+='</div></div>';
+  h+='<span style="font-size:16px;font-weight:700;color:#fff">Comptes courants d\'associ\u00e9s</span></div>';
+  h+='<div style="font-size:11px;color:rgba(255,255,255,0.7);margin-bottom:14px">Qui doit quoi \u00e0 qui ? R\u00e9partition automatique selon les quotes-parts de d\u00e9tention</div>';
+  // KPIs
+  h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Total avanc\u00e9</div><div style="font-size:22px;font-weight:800;color:#fff">'+fmt(totalAvances)+'</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Cr\u00e9ances</div><div style="font-size:22px;font-weight:800;color:#d1fae5">'+fmt(totalCreancesNettes)+'</div></div>';
+  h+='<div style="background:rgba(255,255,255,0.12);border-radius:10px;padding:10px 14px;text-align:center"><div style="font-size:10px;color:rgba(255,255,255,0.6);text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Dettes</div><div style="font-size:22px;font-weight:800;color:#fef3c7">'+fmt(totalDettesNettes)+'</div></div>';
+  h+='</div>';
+  // Barre d'équilibre créanciers/débiteurs
+  if(totalCreancesNettes>0||totalDettesNettes>0){
+    var barTotal=totalCreancesNettes+totalDettesNettes;
+    var pctCreances=Math.round(totalCreancesNettes/barTotal*100);
+    h+='<div style="margin-top:4px">';
+    h+='<div style="display:flex;justify-content:space-between;font-size:9px;color:rgba(255,255,255,0.6);margin-bottom:4px"><span>Cr\u00e9anciers</span><span>D\u00e9biteurs</span></div>';
+    h+='<div style="height:8px;border-radius:4px;background:rgba(255,255,255,0.1);overflow:hidden;display:flex">';
+    h+='<div style="width:'+pctCreances+'%;background:#d1fae5;border-radius:4px 0 0 4px;transition:width .3s"></div>';
+    h+='<div style="width:'+(100-pctCreances)+'%;background:#fbbf24;border-radius:0 4px 4px 0;transition:width .3s"></div>';
+    h+='</div></div>';
+  }
+  h+='</div>';
 
   if(ccActifs.length===0){
-    h+='<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune avance inter-associ&eacute;s enregistr&eacute;e.<br><span style="font-size:11px">Pour enregistrer une avance, cochez &laquo; R&eacute;partir entre associ&eacute;s &raquo; lors de la saisie d\'une d&eacute;pense.</span></div>';
+    h+='<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune avance inter-associ\u00e9s enregistr\u00e9e.<br><span style="font-size:11px">Pour enregistrer une avance, cochez \u00ab R\u00e9partir entre associ\u00e9s \u00bb lors de la saisie d\'une d\u00e9pense.</span></div>';
   } else {
-    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px">';
-    ccActifs.forEach(function(a){
-      var expanded=S.engExpanded['cc_'+a.nom];
+
+    // ═══ SECTION 1 : Tableau de flux — Qui doit quoi à qui ? ═══
+    h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;margin-bottom:20px">';
+    h+='<div style="padding:16px 20px;border-bottom:1px solid '+borderC+';display:flex;align-items:center;gap:8px">';
+    h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M17 1l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/></svg>';
+    h+='<span style="font-size:14px;font-weight:700;color:'+txtMain+'">Flux de dettes</span>';
+    h+='<span style="font-size:11px;color:'+txtSub+';margin-left:4px">'+ccDetails.length+' op\u00e9ration(s)</span>';
+    h+='</div>';
+
+    // Trouver le max montant pour proportionnalité des barres
+    var maxFlux=Math.max.apply(null,ccDetails.map(function(f){return f.montant;}));
+
+    ccDetails.forEach(function(f,idx){
+      var pctBar=maxFlux>0?Math.max(10,Math.round(f.montant/maxFlux*100)):50;
+      // Trouver couleur et avatarNom pour débiteur et créancier
+      var debInfo=ccAssocies[f.debiteur]||{};
+      var creInfo=ccAssocies[f.creancier]||{};
+
+      h+='<div style="padding:14px 20px;border-bottom:'+(idx<ccDetails.length-1?'1px solid '+borderC:'none')+';transition:background .15s" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+
+      // Ligne principale : débiteur → montant → créancier
+      h+='<div style="display:flex;align-items:center;gap:12px">';
+
+      // Débiteur (à gauche)
+      h+='<div style="display:flex;align-items:center;gap:8px;min-width:130px">';
+      h+=avatarHTML(debInfo.avatarNom||f.debiteur,32);
+      h+='<div><div style="font-size:12px;font-weight:600;color:'+txtMain+'">'+f.debiteur+'</div>';
+      h+='<div style="font-size:9px;color:#B45309;font-weight:500">doit</div></div>';
+      h+='</div>';
+
+      // Flèche + montant (centre)
+      h+='<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">';
+      h+='<div style="font-size:15px;font-weight:800;color:'+txtMain+'">'+fmt(f.montant)+'</div>';
+      // Barre animée
+      h+='<div style="width:100%;height:4px;background:'+(dm?'#21262d':'#f0f0ea')+';border-radius:2px;position:relative;overflow:hidden">';
+      h+='<div style="position:absolute;left:0;top:0;height:100%;width:'+pctBar+'%;background:linear-gradient(90deg,#B45309,#0F6E56);border-radius:2px"></div>';
+      h+='</div>';
+      // Flèche
+      h+='<svg width="20" height="10" viewBox="0 0 20 10" style="color:'+txtSub+'"><path d="M0 5h16M13 1l4 4-4 4" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>';
+      h+='</div>';
+
+      // Créancier (à droite)
+      h+='<div style="display:flex;align-items:center;gap:8px;min-width:130px;justify-content:flex-end">';
+      h+='<div style="text-align:right"><div style="font-size:12px;font-weight:600;color:'+txtMain+'">'+f.creancier+'</div>';
+      h+='<div style="font-size:9px;color:#0F6E56;font-weight:500">cr\u00e9ancier</div></div>';
+      h+=avatarHTML(creInfo.avatarNom||f.creancier,32);
+      h+='</div>';
+
+      h+='</div>';
+
+      // Sous-texte : description + société + studio
+      h+='<div style="text-align:center;margin-top:4px;font-size:10px;color:'+txtSub+'">';
+      h+=(f.desc||'')+' \u00b7 '+f.societe+' \u2014 '+f.studio;
+      if(f.date)h+=' \u00b7 '+f.date;
+      h+='</div>';
+
+      h+='</div>';
+    });
+    h+='</div>';
+
+    // ═══ SECTION 2 : Soldes nets par associé (barres horizontales) ═══
+    h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden">';
+    h+='<div style="padding:16px 20px;border-bottom:1px solid '+borderC+';display:flex;align-items:center;gap:8px">';
+    h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>';
+    h+='<span style="font-size:14px;font-weight:700;color:'+txtMain+'">Soldes nets par associ\u00e9</span>';
+    h+='</div>';
+
+    // Trier : créanciers d'abord (solde décroissant), puis débiteurs
+    var ccSorted=ccActifs.slice().sort(function(a,b){return b.solde-a.solde;});
+    var maxSolde=Math.max.apply(null,ccSorted.map(function(a){return Math.abs(a.solde);}));
+
+    ccSorted.forEach(function(a,idx){
       var soldeColor=a.solde>0?'#0F6E56':a.solde<0?'#B45309':'#64748b';
-      var soldeLabel=a.solde>0?'Cr\u00e9ancier net':a.solde<0?'D\u00e9biteur net':'\u00c9quilibr\u00e9';
+      var soldeLabel=a.solde>0?'Cr\u00e9ancier':a.solde<0?'D\u00e9biteur':'\u00c9quilibr\u00e9';
       var soldeBg=a.solde>0?(dm?'#052e16':'#d1fae5'):a.solde<0?(dm?'#451a03':'#fef3c7'):(dm?'#21262d':'#f0f0ea');
+      var barPct=maxSolde>0?Math.max(5,Math.round(Math.abs(a.solde)/maxSolde*100)):0;
+      var expanded=S.engExpanded['cc_'+a.nom];
 
-      h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;overflow:hidden;transition:all .3s" onmouseenter="this.style.boxShadow=\'0 4px 16px rgba(0,0,0,'+(dm?'0.3':'0.08')+')\';this.style.borderColor=\''+a.color+'\'" onmouseleave="this.style.boxShadow=\'none\';this.style.borderColor=\''+borderC+'\'">';
-      h+='<div onclick="toggleEngExpand(\'cc_'+a.nom+'\')" style="padding:16px 18px;cursor:pointer">';
-      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
+      h+='<div style="border-bottom:'+(idx<ccSorted.length-1?'1px solid '+borderC:'none')+'">';
+
+      // Ligne principale cliquable
+      h+='<div onclick="toggleEngExpand(\'cc_'+a.nom+'\')" style="padding:14px 20px;cursor:pointer;transition:background .15s" onmouseover="this.style.background=\''+(dm?'#1c2128':'#f8f9fb')+'\'" onmouseout="this.style.background=\'transparent\'">';
+      h+='<div style="display:flex;align-items:center;gap:12px">';
+
+      // Avatar + nom
       h+=avatarHTML(a.avatarNom,36);
-      h+='<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:'+txtMain+'">'+a.nom+'</div>';
+      h+='<div style="min-width:120px"><div style="font-size:13px;font-weight:600;color:'+txtMain+'">'+a.nom+'</div>';
       h+='<div style="font-size:10px;color:'+txtSub+'">'+a.desc+'</div></div>';
-      h+='<span style="background:'+soldeBg+';color:'+soldeColor+';padding:3px 8px;border-radius:6px;font-size:10px;font-weight:600">'+soldeLabel+'</span>';
-      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s"><polyline points="6 9 12 15 18 9"/></svg>';
+
+      // Barre de solde (centrée sur zéro)
+      h+='<div style="flex:1;display:flex;align-items:center;gap:0">';
+      if(a.solde<0){
+        // Débiteur : barre orange à gauche
+        h+='<div style="flex:1;display:flex;justify-content:flex-end"><div style="width:'+barPct+'%;height:10px;background:linear-gradient(90deg,#fbbf2440,#B45309);border-radius:5px;transition:width .3s"></div></div>';
+        h+='<div style="width:2px;height:16px;background:'+borderC+';margin:0 4px;flex-shrink:0"></div>';
+        h+='<div style="flex:1"></div>';
+      } else if(a.solde>0){
+        // Créancier : barre verte à droite
+        h+='<div style="flex:1"></div>';
+        h+='<div style="width:2px;height:16px;background:'+borderC+';margin:0 4px;flex-shrink:0"></div>';
+        h+='<div style="flex:1"><div style="width:'+barPct+'%;height:10px;background:linear-gradient(90deg,#0F6E56,#22c55e80);border-radius:5px;transition:width .3s"></div></div>';
+      } else {
+        h+='<div style="flex:1"></div><div style="width:2px;height:16px;background:'+borderC+';margin:0 4px"></div><div style="flex:1"></div>';
+      }
       h+='</div>';
 
-      // KPIs
-      h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">';
-      h+='<div style="text-align:center;padding:6px;background:'+(dm?'#21262d':'#f8f9fb')+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+';font-weight:500">Avanc&eacute; par lui</div><div style="font-size:14px;font-weight:700;color:#0F6E56">'+fmt(a.avancePar)+'</div></div>';
-      h+='<div style="text-align:center;padding:6px;background:'+(dm?'#21262d':'#f8f9fb')+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+';font-weight:500">Avanc&eacute; pour lui</div><div style="font-size:14px;font-weight:700;color:#B45309">'+fmt(a.avancePour)+'</div></div>';
-      h+='<div style="text-align:center;padding:6px;background:'+soldeBg+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+';font-weight:500">Solde net</div><div style="font-size:14px;font-weight:700;color:'+soldeColor+'">'+fmt(Math.abs(a.solde))+'</div></div>';
-      h+='</div>';
+      // Montant + badge
+      h+='<div style="text-align:right;min-width:110px">';
+      h+='<div style="font-size:16px;font-weight:800;color:'+soldeColor+'">'+fmt(Math.abs(a.solde))+'</div>';
+      h+='<span style="background:'+soldeBg+';color:'+soldeColor+';padding:2px 8px;border-radius:4px;font-size:9px;font-weight:600">'+soldeLabel+'</span>';
       h+='</div>';
 
-      // Section dépliable
+      // Chevron
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="'+txtSub+'" stroke-width="2" style="transform:rotate('+(expanded?'180':'0')+'deg);transition:transform .2s;flex-shrink:0"><polyline points="6 9 12 15 18 9"/></svg>';
+
+      h+='</div></div>';
+
+      // Détail accordion
       if(expanded){
-        h+='<div style="border-top:1px solid '+borderC+';padding:12px 18px">';
+        h+='<div style="padding:0 20px 14px;background:'+(dm?'#0d1117':'#fafbfc')+'">';
+        h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:10px">';
+        h+='<div style="text-align:center;padding:6px;background:'+(dm?'#21262d':'#f0f0ea')+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+'">Avanc\u00e9 par lui</div><div style="font-size:13px;font-weight:700;color:#0F6E56">'+fmt(a.avancePar)+'</div></div>';
+        h+='<div style="text-align:center;padding:6px;background:'+(dm?'#21262d':'#f0f0ea')+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+'">Avanc\u00e9 pour lui</div><div style="font-size:13px;font-weight:700;color:#B45309">'+fmt(a.avancePour)+'</div></div>';
+        h+='<div style="text-align:center;padding:6px;background:'+soldeBg+';border-radius:8px"><div style="font-size:9px;color:'+txtSub+'">Solde net</div><div style="font-size:13px;font-weight:700;color:'+soldeColor+'">'+fmt(Math.abs(a.solde))+'</div></div>';
+        h+='</div>';
         if(a.detailsCreances.length>0){
-          h+='<div style="font-size:10px;font-weight:600;color:#0F6E56;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:6px">Avances effectu&eacute;es</div>';
+          h+='<div style="font-size:10px;font-weight:600;color:#0F6E56;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px">Avances effectu\u00e9es</div>';
           a.detailsCreances.forEach(function(f){
-            h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid '+(dm?'#21262d':'#f5f5f0')+';font-size:11px">';
-            h+='<span style="color:#0F6E56;font-size:13px">&#8593;</span>';
-            h+='<div style="flex:1"><span style="font-weight:600;color:'+txtMain+'">'+fmt(f.montant)+'</span> pour <span style="font-weight:500;color:'+txtMain+'">'+f.debiteur+'</span>';
-            h+='<div style="font-size:10px;color:'+txtSub+'">'+f.societe+' — '+f.studio+' · '+(f.desc||'')+(f.date?' · '+f.date:'')+'</div></div>';
+            h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px">';
+            h+='<span style="color:#0F6E56;font-size:12px">\u2191</span>';
+            h+='<span style="font-weight:600;color:'+txtMain+'">'+fmt(f.montant)+'</span> <span style="color:'+txtSub+'">pour</span> <span style="font-weight:500;color:'+txtMain+'">'+f.debiteur+'</span>';
+            h+='<span style="margin-left:auto;font-size:10px;color:'+txtSub+'">'+f.societe+' \u2014 '+f.studio+'</span>';
             h+='</div>';
           });
         }
         if(a.detailsDettes.length>0){
-          h+='<div style="font-size:10px;font-weight:600;color:#B45309;text-transform:uppercase;letter-spacing:0.5px;margin:'+(a.detailsCreances.length>0?'10px':'0')+' 0 6px">Dettes (avanc&eacute; pour vous)</div>';
+          h+='<div style="font-size:10px;font-weight:600;color:#B45309;text-transform:uppercase;letter-spacing:0.5px;margin:'+(a.detailsCreances.length>0?'8px':'0')+' 0 4px">Dettes</div>';
           a.detailsDettes.forEach(function(f){
-            h+='<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid '+(dm?'#21262d':'#f5f5f0')+';font-size:11px">';
-            h+='<span style="color:#B45309;font-size:13px">&#8595;</span>';
-            h+='<div style="flex:1"><span style="font-weight:600;color:'+txtMain+'">'+fmt(f.montant)+'</span> de la part de <span style="font-weight:500;color:'+txtMain+'">'+f.creancier+'</span>';
-            h+='<div style="font-size:10px;color:'+txtSub+'">'+f.societe+' — '+f.studio+' · '+(f.desc||'')+(f.date?' · '+f.date:'')+'</div></div>';
+            h+='<div style="display:flex;align-items:center;gap:8px;padding:5px 0;font-size:11px">';
+            h+='<span style="color:#B45309;font-size:12px">\u2193</span>';
+            h+='<span style="font-weight:600;color:'+txtMain+'">'+fmt(f.montant)+'</span> <span style="color:'+txtSub+'">de</span> <span style="font-weight:500;color:'+txtMain+'">'+f.creancier+'</span>';
+            h+='<span style="margin-left:auto;font-size:10px;color:'+txtSub+'">'+f.societe+' \u2014 '+f.studio+'</span>';
             h+='</div>';
           });
         }
