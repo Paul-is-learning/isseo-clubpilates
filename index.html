@@ -3325,8 +3325,11 @@ function renderPageEngagements(){
   // SECTION 4 : Comptes courants d'associés (auto-split via OWNERSHIP)
   // ════════════════════════════════════════════════════════════════════════════
 
-  // Pour chaque dépense marquée "avance", on split selon les quotes-parts
-  // Le payeur (engage_par) a avancé pour les autres associés concernés
+  // Pour chaque dépense marquée "avance", le montant est ventilé entre les
+  // associés concernés proportionnellement à leurs quotes-parts de détention.
+  // Le payeur est toujours inclus dans le dénominateur pour normaliser.
+  // Ex COBE : MM(40%)+Pilatine(20%) → Pilatine doit 21600×20/60 = 7200 €
+  // Ex COBE tous : 21600×20/100 = 4320 € par associé à 20%
   var ccDetails=[]; // {creancier, debiteur, montant, studio, societe, desc, date, depTTC}
 
   allIds.forEach(function(id){
@@ -3339,24 +3342,21 @@ function renderPageEngagements(){
       var montantTotal=num(d.ttc);
       if(montantTotal<=0)return;
       var payeur=d.engage_par;
-      // Déterminer les associés concernés
-      var concernes=d.avance_concernes&&d.avance_concernes.length>0?d.avance_concernes:owners.map(function(o){return o.nom;});
-      // Récupérer les quotes-parts des concernés
-      var partsMap={};
+      // Déterminer les autres associés concernés (hors payeur)
+      var concernes=d.avance_concernes&&d.avance_concernes.length>0?d.avance_concernes:owners.filter(function(o){return o.nom!==payeur;}).map(function(o){return o.nom;});
+      // Calculer totalPct : somme des % du payeur + des concernés
       var totalPct=0;
       owners.forEach(function(o){
-        if(concernes.indexOf(o.nom)>=0){
-          partsMap[o.nom]=o.pct;
-          totalPct+=o.pct;
-        }
+        if(o.nom===payeur||concernes.indexOf(o.nom)>=0)totalPct+=o.pct;
       });
       if(totalPct<=0)return;
-      // Calculer la part de chaque concerné
-      Object.keys(partsMap).forEach(function(nom){
-        if(nom===payeur)return; // pas d'avance à soi-même
-        var share=Math.round(montantTotal*partsMap[nom]/totalPct);
+      // Chaque concerné (hors payeur) doit : montant × son_pct / totalPct
+      owners.forEach(function(o){
+        if(o.nom===payeur)return;
+        if(concernes.indexOf(o.nom)<0)return;
+        var share=Math.round(montantTotal*o.pct/totalPct);
         if(share<=0)return;
-        ccDetails.push({creancier:payeur,debiteur:nom,montant:share,studio:sName,societe:sSociete,desc:d.description||d.categorie,date:d.date||'',depTTC:montantTotal});
+        ccDetails.push({creancier:payeur,debiteur:o.nom,montant:share,studio:sName,societe:sSociete,desc:d.description||d.categorie,date:d.date||'',depTTC:montantTotal});
       });
     });
   });
@@ -5342,8 +5342,8 @@ function renderEngagements(sid,s){
       h+='<td style="padding:8px"><span style="'+fbc+';padding:2px 7px;border-radius:5px;font-size:10px;font-weight:600">'+d.financement+'</span></td>';
       h+='<td style="padding:8px;font-size:11px">'+(d.engage_par||'--');
       if(d.avance&&d.avance_concernes&&d.avance_concernes.length>0){
-        var _nbConc=d.avance_concernes.length;
-        h+='<div style="margin-top:2px"><span style="background:#fef3c7;color:#92630a;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600" title="'+d.avance_concernes.join(', ')+'">R&eacute;partie ('+_nbConc+' assoc.)</span></div>';
+        var _concList=d.avance_concernes.filter(function(c){return c!==(d.engage_par||'');});
+        if(_concList.length>0)h+='<div style="margin-top:2px"><span style="background:#fef3c7;color:#92630a;padding:1px 6px;border-radius:4px;font-size:9px;font-weight:600" title="'+_concList.join(', ')+'">Avance &rarr; '+(_concList.length===1?_concList[0]:_concList.length+' assoc.')+'</span></div>';
       }
       h+='</td>';
       h+='<td style="padding:8px;font-size:11px;color:#888">'+(d.date||'--')+'</td>';
@@ -5375,6 +5375,27 @@ function toggleCapexDetail(sid){
   render();
 }
 
+function _rebuildConcernes(sid,existingConcernes){
+  var inner=document.getElementById('dep-concernes-inner');
+  if(!inner)return;
+  var payeur=(document.getElementById('dep-par')||{}).value||'';
+  var soc=S.studios[sid]?S.studios[sid].societe:'';
+  var owners=OWNERSHIP_MAP[soc]||[];
+  var h='<div style="font-size:11px;color:#555;font-weight:500;margin-bottom:6px">Autres associ&eacute;s concern&eacute;s (hors payeur) :</div>';
+  var hasAny=false;
+  owners.forEach(function(o){
+    if(o.nom===payeur)return;
+    hasAny=true;
+    var chk=!existingConcernes||existingConcernes.length===0||existingConcernes.indexOf(o.nom)>=0;
+    h+='<label style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:12px;color:#333">';
+    h+='<input type="checkbox" class="dep-concerne-cb" value="'+o.nom+'"'+(chk?' checked':'')+'/>';
+    h+='<span style="font-weight:500">'+o.nom+'</span><span style="color:#888;font-size:10px">('+o.pct+'%)</span>';
+    h+='</label>';
+  });
+  if(!hasAny)h+='<div style="font-size:11px;color:#aaa">Sélectionnez d\'abord le payeur ci-dessus</div>';
+  inner.innerHTML=h;
+}
+
 function ouvrirFormDepense(sid){
   if(isViewer())return;
   var div=document.getElementById('form-depense-'+sid);
@@ -5389,7 +5410,7 @@ function ouvrirFormDepense(sid){
   h+='<div class="fg"><label>Financement</label><select id="dep-fin">';
   DEPENSE_FINS.forEach(function(f){h+='<option>'+f+'</option>';});
   h+='</select></div>';
-  h+='<div class="fg"><label>Engag&eacute; par</label><select id="dep-par"><option value="">Sélectionner...</option>';
+  h+='<div class="fg"><label>Engag&eacute; par</label><select id="dep-par" onchange="_rebuildConcernes(\''+sid+'\')"><option value="">Sélectionner...</option>';
   DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option>'+c+'</option>';});
   h+='</select></div>';
   h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+new Date().toISOString().split('T')[0]+'"/></div>';
@@ -5400,20 +5421,15 @@ function ouvrirFormDepense(sid){
   if(_owners.length>1){
     h+='<div style="margin:12px 0;padding:12px 16px;background:#f8f9fb;border-radius:10px;border:1px solid #e5e7eb">';
     h+='<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#333"><input type="checkbox" id="dep-avance" onchange="document.getElementById(\'dep-concernes-wrap\').style.display=this.checked?\'block\':\'none\'"/> R&eacute;partir entre associ&eacute;s (avance)</label>';
-    h+='<div style="font-size:10px;color:#888;margin-top:4px;margin-left:24px">Le montant sera split&eacute; selon les quotes-parts de d&eacute;tention dans <b>'+_soc+'</b></div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:4px;margin-left:24px">Chaque associ&eacute; concern&eacute; devra sa quote-part (% de d&eacute;tention) &mdash; <b>'+_soc+'</b></div>';
     h+='<div id="dep-concernes-wrap" style="display:none;margin-top:10px">';
-    h+='<div style="font-size:11px;color:#555;font-weight:500;margin-bottom:6px">Associ&eacute;s concern&eacute;s par cette d&eacute;pense :</div>';
-    _owners.forEach(function(o){
-      h+='<label style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:12px;color:#333">';
-      h+='<input type="checkbox" class="dep-concerne-cb" value="'+o.nom+'" checked/>';
-      h+='<span style="font-weight:500">'+o.nom+'</span><span style="color:#888;font-size:10px">('+o.pct+'% — '+o.type+')</span>';
-      h+='</label>';
-    });
+    h+='<div id="dep-concernes-inner"></div>';
     h+='</div></div>';
   }
   h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderDepense(\''+sid+'\')">Enregistrer</button>';
   h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
   div.innerHTML=h;
+  _rebuildConcernes(sid);
 }
 
 function modifierDepense(sid,idx){
@@ -5434,7 +5450,7 @@ function modifierDepense(sid,idx){
   h+='<div class="fg"><label>Financement</label><select id="dep-fin">';
   DEPENSE_FINS.forEach(function(f){h+='<option'+(f===d.financement?' selected':'')+'>'+f+'</option>';});
   h+='</select></div>';
-  h+='<div class="fg"><label>Engag&eacute; par</label><select id="dep-par"><option value="">Sélectionner...</option>';
+  h+='<div class="fg"><label>Engag&eacute; par</label><select id="dep-par" onchange="_rebuildConcernes(\''+sid+'\',window._depEditConcernes)"><option value="">Sélectionner...</option>';
   DEPENSE_CONTRIBUTORS.forEach(function(c){h+='<option'+(c===d.engage_par?' selected':'')+'>'+c+'</option>';});
   h+='</select></div>';
   h+='<div class="fg"><label>Date</label><input id="dep-date" type="date" value="'+(d.date||'')+'"/></div>';
@@ -5442,26 +5458,21 @@ function modifierDepense(sid,idx){
   // Répartition entre associés
   var _isAvance=!!d.avance;
   var _concernes=d.avance_concernes||[];
+  window._depEditConcernes=_concernes;
   var _soc=S.studios[sid]?S.studios[sid].societe:'';
   var _owners=OWNERSHIP_MAP[_soc]||[];
   if(_owners.length>1){
     h+='<div style="margin:12px 0;padding:12px 16px;background:#f8f9fb;border-radius:10px;border:1px solid #e5e7eb">';
     h+='<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;font-weight:500;color:#333"><input type="checkbox" id="dep-avance"'+(_isAvance?' checked':'')+' onchange="document.getElementById(\'dep-concernes-wrap\').style.display=this.checked?\'block\':\'none\'"/> R&eacute;partir entre associ&eacute;s (avance)</label>';
-    h+='<div style="font-size:10px;color:#888;margin-top:4px;margin-left:24px">Le montant sera split&eacute; selon les quotes-parts de d&eacute;tention dans <b>'+_soc+'</b></div>';
+    h+='<div style="font-size:10px;color:#888;margin-top:4px;margin-left:24px">Chaque associ&eacute; concern&eacute; devra sa quote-part (% de d&eacute;tention) &mdash; <b>'+_soc+'</b></div>';
     h+='<div id="dep-concernes-wrap" style="display:'+(_isAvance?'block':'none')+';margin-top:10px">';
-    h+='<div style="font-size:11px;color:#555;font-weight:500;margin-bottom:6px">Associ&eacute;s concern&eacute;s par cette d&eacute;pense :</div>';
-    _owners.forEach(function(o){
-      var _checked=_concernes.length===0||_concernes.indexOf(o.nom)>=0;
-      h+='<label style="display:flex;align-items:center;gap:6px;padding:4px 0;cursor:pointer;font-size:12px;color:#333">';
-      h+='<input type="checkbox" class="dep-concerne-cb" value="'+o.nom+'"'+(_checked?' checked':'')+'/>';
-      h+='<span style="font-weight:500">'+o.nom+'</span><span style="color:#888;font-size:10px">('+o.pct+'% — '+o.type+')</span>';
-      h+='</label>';
-    });
+    h+='<div id="dep-concernes-inner"></div>';
     h+='</div></div>';
   }
   h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="sauvegarderModifDepense(\''+sid+'\','+idx+')">Enregistrer</button>';
   h+='<button class="btn" onclick="document.getElementById(\'form-depense-'+sid+'\').innerHTML=\'\'">Annuler</button></div></div>';
   div.innerHTML=h;
+  _rebuildConcernes(sid,_concernes);
   div.scrollIntoView({behavior:'smooth',block:'nearest'});
 }
 
