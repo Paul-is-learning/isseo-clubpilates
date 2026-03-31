@@ -77,6 +77,7 @@ td.lbl{text-align:left;padding-left:8px;color:#555;min-width:130px}
 @media(max-width:640px){.activity-grid{grid-template-columns:1fr!important}.echanges-grid{grid-template-columns:1fr!important}}
 @keyframes locPulse{0%{transform:scale(0.5);opacity:0.7}80%{transform:scale(2);opacity:0}100%{transform:scale(2);opacity:0}}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+@keyframes pulse-dot{0%,100%{box-shadow:0 0 0 0 currentColor}50%{box-shadow:0 0 0 4px transparent}}
 @keyframes float1{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(-15px,20px) scale(1.1)}}
 @keyframes float2{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(20px,-15px) scale(1.05)}}
 @keyframes spin{to{transform:rotate(360deg)}}
@@ -869,6 +870,8 @@ var S={
   chatOpen:false,       // panneau chat ouvert/fermé
   chatLastSeen:localStorage.getItem('chatLastSeen')||'', // ts du dernier message lu
   adminSettings:{blocked:[],roles:{},viewers:[]}, // contrôle accès utilisateurs
+  userPresence:{},      // {userId: {ts:'ISO', nom:'...'}} dernière activité
+  _presenceInterval:null, // timer heartbeat présence
   avatarUrls:{}, // URLs photos uploadées par chaque utilisateur {nom: url}
   // ── Notifications ──
   notifications:[],     // tableau de notifications chargées depuis Supabase
@@ -903,6 +906,7 @@ async function loadAll(){
     else if(id==='global_chat'){S.globalChat=r.data&&r.data.messages||[];}
     else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{},viewers:[]},r.data&&r.data.settings||{});}
     else if(id==='_avatars'){S.avatarUrls=r.data&&r.data.avatars||{};}
+    else if(id==='_user_presence'){S.userPresence=r.data&&r.data.presence||{};}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
     else if(id.endsWith('_topics')){S.topics[id.slice(0,-7)]=r.data&&r.data.topics||[];}
     else if(id.endsWith('_todos')){S.todos[id.slice(0,-6)]=r.data&&r.data.todos||[];}
@@ -1630,6 +1634,7 @@ var _adminUsers=[];// cache liste utilisateurs chargée async
 async function loadAdminUsers(){
   var res=await sb.from('profiles').select('*');
   _adminUsers=(res.data||[]).sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');});
+  await loadPresence();
   render();
 }
 
@@ -1650,7 +1655,7 @@ function renderAdminPanel(){
   h+='<div style="background:#fff;border-bottom:1px solid #e8eaf0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
   h+='<div><div style="color:#0f1f3d;font-weight:700;font-size:14px">⚙ Gestion des accès utilisateurs</div>';
   h+='<div style="color:#888;font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
-  h+='<button onclick="loadAdminUsers()" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
+  h+='<button onclick="loadAdminUsers();loadPresence()" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
   h+='</div>';
   if(_adminUsers.length===0){
     h+='<div style="padding:40px;text-align:center;color:#aaa">';
@@ -1662,6 +1667,7 @@ function renderAdminPanel(){
     h+='<table style="width:100%;border-collapse:collapse">';
     h+='<thead><tr style="background:#f8f9fb;border-bottom:1px solid #e8eaf0">';
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Utilisateur</th>';
+    h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Statut</th>';
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Rôle / Périmètre</th>';
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Mot de passe</th>';
     h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Lecture seule</th>';
@@ -1682,6 +1688,14 @@ function renderAdminPanel(){
       h+=avatarHTMLForUser(u,34);
       h+='<div><div style="font-weight:600;font-size:13px">'+(u.nom||'—')+(isMe?' <span style="font-size:10px;color:#854F0B;font-weight:400">(vous)</span>':'')+'</div>';
       h+='<div style="font-size:11px;color:#999">'+(u.email||u.id||'')+'</div></div>';
+      h+='</div></td>';
+      // Statut connexion
+      var _pres=S.userPresence[uid];
+      var _pl=_presenceLabel(_pres&&_pres.ts);
+      h+='<td style="padding:12px 16px;text-align:center">';
+      h+='<div style="display:flex;align-items:center;justify-content:center;gap:5px">';
+      h+='<div style="width:8px;height:8px;border-radius:50%;background:'+_pl.color+';flex-shrink:0'+(_pl.online?';box-shadow:0 0 0 3px '+_pl.color+'33;animation:pulse-dot 2s infinite':'')+'"></div>';
+      h+='<span style="font-size:10px;font-weight:600;color:'+_pl.color+'">'+_pl.text+'</span>';
       h+='</div></td>';
       // Rôle
       h+='<td style="padding:12px 16px">';
@@ -7443,6 +7457,44 @@ function _resetInactivityTimer(){
     doLogout();
   },_INACTIVITY_MS);
 }
+// ── Présence utilisateur (heartbeat) ─────────────────────────────────────────
+async function updatePresence(){
+  if(!S.user)return;
+  var now=new Date().toISOString();
+  var nom=(S.profile&&S.profile.nom)||'';
+  // Charger la présence existante pour merge
+  var ex=await sb.from('studios').select('data').eq('id','_user_presence').maybeSingle();
+  var presence=(ex.data&&ex.data.data&&ex.data.data.presence)||{};
+  presence[S.user.id]={ts:now,nom:nom};
+  S.userPresence=presence;
+  await sb.from('studios').upsert({id:'_user_presence',data:{presence:presence},updated_at:now});
+}
+async function loadPresence(){
+  var res=await sb.from('studios').select('data').eq('id','_user_presence').maybeSingle();
+  S.userPresence=(res.data&&res.data.data&&res.data.data.presence)||{};
+}
+function startPresenceHeartbeat(){
+  if(S._presenceInterval)clearInterval(S._presenceInterval);
+  updatePresence();
+  S._presenceInterval=setInterval(updatePresence,3*60*1000); // toutes les 3 min
+}
+function stopPresenceHeartbeat(){
+  if(S._presenceInterval){clearInterval(S._presenceInterval);S._presenceInterval=null;}
+}
+function _presenceLabel(ts){
+  if(!ts)return{text:'Jamais connecté',color:'#ccc',online:false};
+  var diff=Date.now()-new Date(ts).getTime();
+  var mins=Math.floor(diff/60000);
+  if(mins<5)return{text:'En ligne',color:'#16A34A',online:true};
+  if(mins<60)return{text:'Il y a '+mins+' min',color:'#F59E0B',online:false};
+  var hrs=Math.floor(mins/60);
+  if(hrs<24)return{text:'Il y a '+hrs+'h',color:'#F59E0B',online:false};
+  var days=Math.floor(hrs/24);
+  if(days===1)return{text:'Hier',color:'#94A3B8',online:false};
+  if(days<7)return{text:'Il y a '+days+'j',color:'#94A3B8',online:false};
+  return{text:new Date(ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),color:'#94A3B8',online:false};
+}
+
 function _startSessionWatcher(){
   ['mousemove','keydown','mousedown','click','scroll','touchstart'].forEach(function(ev){
     document.addEventListener(ev,_resetInactivityTimer,{passive:true});
@@ -7487,6 +7539,7 @@ async function doLogin(){
   }
   restoreNavState();render();
   _startSessionWatcher();
+  startPresenceHeartbeat();
   // Notifications
   _loadAllProfiles();
   loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});
@@ -8039,7 +8092,7 @@ function exportStudioExcel(sid){
 
 async function doLogout(){
   _clearInactivityTimers();_removeInactivityWarn();
-  unsubscribeNotifications();
+  unsubscribeNotifications();stopPresenceHeartbeat();
   try{localStorage.removeItem('isseo_hidden_at');}catch(e){}
   await sb.auth.signOut();
   S.user=null;S.profile=null;S.view='auth';S.selectedId=null;S.notifications=[];S.notifOpen=false;
@@ -9284,7 +9337,7 @@ sb.auth.getSession().then(function(res){
         if(S.adminSettings.blocked&&S.adminSettings.blocked.indexOf(session.user.id)>=0){
           sb.auth.signOut();S.user=null;S.profile=null;render();return;
         }
-        restoreNavState();render();startSync();_startSessionWatcher();
+        restoreNavState();render();startSync();_startSessionWatcher();startPresenceHeartbeat();
         _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
       });
     });
