@@ -1949,19 +1949,25 @@ function handleSearchNav(idx){
   var r=results[idx];
   if(!r)return;
   S.searchQuery='';S.searchOpen=false;S.searchIdx=-1;
+  var _sInp=document.getElementById('global-search-input');if(_sInp)_sInp.value='';
+  var _sDd=document.getElementById('search-dropdown');if(_sDd)_sDd.style.display='none';
   if(r.type==='page'){
     setPage(r.pageId);
   }else if(r.type==='prospect'){
-    setPage('prospection');
+    S.page='prospection';S.view='dashboard';
+    if(r.prospectSociete){S.prospectTab=r.prospectSociete;}
+    saveNavState();render();
   }else if(r.type==='scenario'){
-    S.view='detail';S.selectedId=r.studioId;S.detailTab='adherents';
+    S.page='projets';S.view='detail';S.selectedId=r.studioId;S.detailTab='adherents';
+    saveNavState();
     if(r.scenarioId)chargerScenario(r.studioId,r.scenarioId);
+    render();
   }else if(r.tab){
-    S.view='detail';S.selectedId=r.studioId;S.detailTab=r.tab;
+    S.page='projets';S.view='detail';S.selectedId=r.studioId;S.detailTab=r.tab;
+    saveNavState();render();
   }else{
     openDetail(r.studioId);
   }
-  render();
 }
 
 function onSearchInput(el){
