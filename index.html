@@ -2910,23 +2910,7 @@ function supprimerProspect(idx){
 }
 async function saveProspects(){
   try{
-    // Read-merge-write pour éviter les conflits entre utilisateurs
-    var ex=await sb.from('studios').select('data').eq('id','_prospects').maybeSingle();
-    var remote=(ex.data&&ex.data.data&&ex.data.data.items)||[];
-    // Construire un index des prospects locaux par ID
-    var localById={};
-    (S.prospects||[]).forEach(function(p){if(p.id)localById[p.id]=p;});
-    // Merger : garder les locaux + ajouter les remote qu'on n'a pas
-    var remoteById={};
-    remote.forEach(function(p){if(p.id)remoteById[p.id]=p;});
-    // Ajouter les prospects remote qui n'existent pas localement (ajoutés par d'autres)
-    remote.forEach(function(p){
-      if(p.id&&!localById[p.id]){
-        // Vérifier si c'est un prospect qu'on a supprimé localement — ne pas le ré-ajouter
-        // On ne peut pas le savoir facilement, on le garde (worst case: un prospect supprimé revient)
-        S.prospects.push(p);
-      }
-    });
+    migrateProspects(); // assure IDs + déduplique
     var res=await sb.from('studios').upsert({id:'_prospects',data:{items:S.prospects},updated_at:new Date().toISOString()});
     if(res.error){console.error('saveProspects error:',res.error);toast('⚠ Erreur sauvegarde prospects : '+res.error.message);return false;}
     return true;
@@ -2935,7 +2919,14 @@ async function saveProspects(){
 async function loadProspects(){
   try{
     var res=await sb.from('studios').select('data').eq('id','_prospects').single();
-    if(res.data&&res.data.data&&res.data.data.items){S.prospects=res.data.data.items;migrateProspects();fetchMissingPreviews();}
+    if(res.data&&res.data.data&&res.data.data.items){
+      S.prospects=res.data.data.items;
+      var before=S.prospects.length;
+      migrateProspects();
+      // Si des doublons ont été supprimés, sauvegarder le nettoyage
+      if(S.prospects.length<before){saveProspects();console.log('[Prospects] Dédupliqué : '+before+' → '+S.prospects.length);}
+      fetchMissingPreviews();
+    }
   }catch(e){}
 }
 function fetchMissingPreviews(){
@@ -2956,11 +2947,28 @@ function fetchMissingPreviews(){
 
 // ── Prospection: helpers ───────────────────────────────────────────────
 function migrateProspects(){
-  (S.prospects||[]).forEach(function(p,i){
+  (S.prospects||[]).forEach(function(p){
     if(!p.societe)p.societe='pw';
     if(!p.ratings)p.ratings={};
     if(!p.comments)p.comments=[];
-    if(!p.id)p.id='p_legacy_'+i+'_'+((p.url||p.adresse||'').slice(0,8).replace(/\W/g,''));
+    if(!p.id)p.id='p_'+((p.date||'').replace(/\//g,''))+'_'+((p.url||p.adresse||'').slice(0,20).replace(/\W/g,''))+'_'+(p.auteur||'').slice(0,5).replace(/\W/g,'');
+  });
+  // Dédupliquer par ID
+  var seen={};
+  S.prospects=(S.prospects||[]).filter(function(p){
+    if(!p.id)return true;
+    if(seen[p.id])return false;
+    seen[p.id]=true;
+    return true;
+  });
+  // Dédupliquer par contenu (même url ou même adresse+auteur+date)
+  var sigSeen={};
+  S.prospects=S.prospects.filter(function(p){
+    var sig=p.type==='lien'?(p.url||''):(p.adresse||'');
+    sig+=':'+(p.auteur||'')+':'+(p.date||'')+':'+(p.societe||'');
+    if(sigSeen[sig])return false;
+    sigSeen[sig]=true;
+    return true;
   });
 }
 function setProspectTab(id){S.prospectTab=id;S.prospectExpandedComments={};render();}
@@ -9304,10 +9312,7 @@ async function syncData(){
     } else if(id==='_prospects'){
       var nv=r.data&&r.data.items||[];
       if(JSON.stringify(nv)!==JSON.stringify(S.prospects||[])){
-        // Merge au lieu d'écraser : garder les prospects locaux non encore sauvés
-        var remoteIds=new Set(nv.map(function(p){return p.id;}));
-        var localOnly=(S.prospects||[]).filter(function(p){return p.id&&!remoteIds.has(p.id);});
-        S.prospects=nv.concat(localOnly);
+        S.prospects=nv;
         migrateProspects();changed=true;
       }
     } else if(id==='_user_presence'){
