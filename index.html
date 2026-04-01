@@ -7591,6 +7591,13 @@ async function doLogin(){
   var prof=await sb.from('profiles').select('*').eq('id',res.data.user.id).single();
   S.profile=prof.data;
   await loadAll();
+  // Auto-mapping email→rôle pour utilisateurs recréés
+  var _emailRoleMap={'clementcoquel@yahoo.fr':'coquel','paul@isseo.fr':'admin'};
+  if(S.adminSettings.roles&&!S.adminSettings.roles[S.user.id]&&S.user.email&&_emailRoleMap[S.user.email]){
+    S.adminSettings.roles=S.adminSettings.roles||{};
+    S.adminSettings.roles[S.user.id]=_emailRoleMap[S.user.email];
+    sb.from('studios').upsert({id:'_admin_settings',data:S.adminSettings,updated_at:new Date().toISOString()});
+  }
   // Appliquer override de rôle si défini par l'admin
   if(S.adminSettings.roles&&S.adminSettings.roles[S.user.id]){
     S.profile=Object.assign({},S.profile,{role:S.adminSettings.roles[S.user.id]});
