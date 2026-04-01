@@ -1458,6 +1458,10 @@ function handleNotifClick(notifId,studioId,type){
   if(type==='prospect'){
     S.page='prospection';render();return;
   }
+  if(type==='rapport'){
+    // Le rapport hebdo n'a pas de page dédiée, juste marquer comme lu
+    render();return;
+  }
   if(!studioId&&type==='message'){
     // Chat global
     toggleChat();render();return;
@@ -1635,6 +1639,33 @@ async function loadAdminUsers(){
   var res=await sb.from('profiles').select('*');
   _adminUsers=(res.data||[]).sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');});
   await loadPresence();
+  // Nettoyer les IDs orphelins dans adminSettings (utilisateurs supprimés/recréés)
+  var validIds=new Set(_adminUsers.map(function(u){return u.id;}));
+  var dirty=false;
+  ['blocked','viewers'].forEach(function(key){
+    if(S.adminSettings[key]&&S.adminSettings[key].length){
+      var clean=S.adminSettings[key].filter(function(uid){return validIds.has(uid);});
+      if(clean.length!==S.adminSettings[key].length){S.adminSettings[key]=clean;dirty=true;}
+    }
+  });
+  ['roles','passwords'].forEach(function(key){
+    if(S.adminSettings[key]){
+      Object.keys(S.adminSettings[key]).forEach(function(uid){
+        if(!validIds.has(uid)){delete S.adminSettings[key][uid];dirty=true;}
+      });
+    }
+  });
+  // Nettoyer la présence orpheline
+  if(S.userPresence){
+    Object.keys(S.userPresence).forEach(function(uid){
+      if(!validIds.has(uid)){delete S.userPresence[uid];dirty=true;}
+    });
+  }
+  if(dirty){
+    saveAdminSettings();
+    sb.from('studios').upsert({id:'_user_presence',data:{presence:S.userPresence},updated_at:new Date().toISOString()});
+    console.log('[Admin] IDs orphelins nettoyés');
+  }
   render();
 }
 
