@@ -2722,7 +2722,7 @@ function ajouterLienProspect(){
   var titre=prompt('Titre (optionnel) :','')||'';
   var prenom=(S.profile&&S.profile.nom||'').split(' ')[0]||'';
   if(!S.prospects)S.prospects=[];
-  var item={type:'lien',url:url,titre:titre,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[],preview:null};
+  var item={id:'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),type:'lien',url:url,titre:titre,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[],preview:null};
   S.prospects.push(item);
   saveProspects();render();toast('Lien ajouté — récupération des infos…');
   fetchLinkPreview(item);
@@ -2869,7 +2869,7 @@ function ajouterFicheProspect(){
   var statut=prompt('Statut (chaud/tiede/froid) :','froid')||'froid';
   var prenom=(S.profile&&S.profile.nom||'').split(' ')[0]||'';
   if(!S.prospects)S.prospects=[];
-  S.prospects.push({type:'fiche',adresse:adresse,surface:surface,loyer:parseFloat(loyer)||0,notes:notes,statut:statut,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[]});
+  S.prospects.push({id:'p_'+Date.now()+'_'+Math.random().toString(36).slice(2,6),type:'fiche',adresse:adresse,surface:surface,loyer:parseFloat(loyer)||0,notes:notes,statut:statut,auteur:prenom,date:new Date().toLocaleDateString('fr-FR'),societe:S.prospectTab,ratings:{},comments:[]});
   saveProspects();render();toast('Fiche prospect ajoutée');
   var _tabLabel=(PROSPECT_TABS.filter(function(t){return t.id===S.prospectTab;})[0]||{}).label||S.prospectTab;
   notifyAll({type:'prospect',title:prenom+' a ajouté une fiche prospect ('+_tabLabel+')',body:adresse+(loyer?' — '+loyer+' €/mois':'')});
@@ -2910,6 +2910,23 @@ function supprimerProspect(idx){
 }
 async function saveProspects(){
   try{
+    // Read-merge-write pour éviter les conflits entre utilisateurs
+    var ex=await sb.from('studios').select('data').eq('id','_prospects').maybeSingle();
+    var remote=(ex.data&&ex.data.data&&ex.data.data.items)||[];
+    // Construire un index des prospects locaux par ID
+    var localById={};
+    (S.prospects||[]).forEach(function(p){if(p.id)localById[p.id]=p;});
+    // Merger : garder les locaux + ajouter les remote qu'on n'a pas
+    var remoteById={};
+    remote.forEach(function(p){if(p.id)remoteById[p.id]=p;});
+    // Ajouter les prospects remote qui n'existent pas localement (ajoutés par d'autres)
+    remote.forEach(function(p){
+      if(p.id&&!localById[p.id]){
+        // Vérifier si c'est un prospect qu'on a supprimé localement — ne pas le ré-ajouter
+        // On ne peut pas le savoir facilement, on le garde (worst case: un prospect supprimé revient)
+        S.prospects.push(p);
+      }
+    });
     var res=await sb.from('studios').upsert({id:'_prospects',data:{items:S.prospects},updated_at:new Date().toISOString()});
     if(res.error){console.error('saveProspects error:',res.error);toast('⚠ Erreur sauvegarde prospects : '+res.error.message);return false;}
     return true;
@@ -2939,10 +2956,11 @@ function fetchMissingPreviews(){
 
 // ── Prospection: helpers ───────────────────────────────────────────────
 function migrateProspects(){
-  (S.prospects||[]).forEach(function(p){
+  (S.prospects||[]).forEach(function(p,i){
     if(!p.societe)p.societe='pw';
     if(!p.ratings)p.ratings={};
     if(!p.comments)p.comments=[];
+    if(!p.id)p.id='p_legacy_'+i+'_'+((p.url||p.adresse||'').slice(0,8).replace(/\W/g,''));
   });
 }
 function setProspectTab(id){S.prospectTab=id;S.prospectExpandedComments={};render();}
@@ -9285,7 +9303,13 @@ async function syncData(){
       }
     } else if(id==='_prospects'){
       var nv=r.data&&r.data.items||[];
-      if(JSON.stringify(nv)!==JSON.stringify(S.prospects||[])){S.prospects=nv;migrateProspects();changed=true;}
+      if(JSON.stringify(nv)!==JSON.stringify(S.prospects||[])){
+        // Merge au lieu d'écraser : garder les prospects locaux non encore sauvés
+        var remoteIds=new Set(nv.map(function(p){return p.id;}));
+        var localOnly=(S.prospects||[]).filter(function(p){return p.id&&!remoteIds.has(p.id);});
+        S.prospects=nv.concat(localOnly);
+        migrateProspects();changed=true;
+      }
     } else if(id==='_user_presence'){
       var nv=r.data&&r.data.presence||{};
       if(JSON.stringify(nv)!==JSON.stringify(S.userPresence)){S.userPresence=nv;changed=true;}
