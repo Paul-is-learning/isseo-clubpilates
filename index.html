@@ -8564,9 +8564,9 @@ async function askAI(){
   var _aiRef=getStudioResultats(_aiSid);
   var r1=_aiRef[1],r2=_aiRef[2],r3=_aiRef[3];
   var c1=getStudioCharges(_aiSid,1),c2=getStudioCharges(_aiSid,2),c3=getStudioCharges(_aiSid,3);
-  var ebitda1=Math.round(r1.rex+c1.amort+c1.charges_fin);
-  var ebitda2=Math.round(r2.rex+c2.amort+c2.charges_fin);
-  var ebitda3=Math.round(r3.rex+c3.amort+c3.charges_fin);
+  var ebitda1=Math.round(r1.rex+c1.amort);
+  var ebitda2=Math.round(r2.rex+c2.amort);
+  var ebitda3=Math.round(r3.rex+c3.amort);
   // Construction du contexte P&L complet
   var ctx='=== CONTEXTE FINANCIER CLUB PILATES — '+s.name.toUpperCase()+' ===\n';
   ctx+='Société : '+s.societe+' | Ouverture : '+s.ouverture+'\n\n';
@@ -8781,10 +8781,13 @@ function renderSimResults(sid,ay,bpArr,realArr,cfg){
   var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
   var _bpOpts=getStudioBPOpts(sid);
   var _caRef=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
+  // EBITDA simulé = basé sur le CA simulé (pas le CA BP de référence)
+  var simBPRows=buildBPFromDossier(caAnnuel,md,ay,sid,_bpOpts);
+  var ebitdaSim=simBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var cashnetSim=simBPRows.reduce(function(s,r){return s+(r._cashnet||0);},0);
+  // EBITDA BP de référence
   var refBPRows=buildBPFromDossier(_caRef,md,ay,sid,_bpOpts);
-  var ebitdaSim=refBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var cashnetSim=refBPRows.reduce(function(s,r){return s+(r._cashnet||0);},0);
-  var ebitdaBP=ebitdaSim;
+  var ebitdaBP=refBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMargin=caAnnuel>0?Math.round(ebitdaSim/caAnnuel*100):0;
   var ebitdaEcart=ebitdaSim-ebitdaBP;
   var caMoyMensuel=Math.round(caAnnuel/12);
@@ -9049,14 +9052,17 @@ function _refreshSimCA(sid,ay){
   if(elEcart){elEcart.textContent=(ecartCA>=0?'+':'')+fmt(ecartCA);elEcart.style.color=ecartCA>=0?'#3B6D11':'#A32D2D';}
   var lastM=membres[membres.length-1];
   if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg,ay)/lastM)):'--';
-  // Mise à jour EBITDA / Cash net en live — même source que Forecast (CA_A1/A2/A3 exact)
+  // Mise à jour EBITDA / Cash net en live — basé sur le CA simulé
   var _liveSid=S.selectedId;
   var _liveOpts=getStudioBPOpts(_liveSid);
   var _caRefLive=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
+  // EBITDA simulé = CA simulé
+  var simBPRowsLive=buildBPFromDossier(caAnnuel,moisDebut,ay,_liveSid,_liveOpts);
+  var ebitdaSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
+  var cashnetSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._cashnet||0);},0);
+  // EBITDA BP ref
   var refBPRowsLive=buildBPFromDossier(_caRefLive,moisDebut,ay,_liveSid,_liveOpts);
-  var ebitdaSimLive=refBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
-  var cashnetSimLive=refBPRowsLive.reduce(function(s,r){return s+(r._cashnet||0);},0);
-  var ebitdaBPLive=ebitdaSimLive; // même source → écart nul
+  var ebitdaBPLive=refBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
   var ebitdaMarginLive=caAnnuel>0?Math.round(ebitdaSimLive/caAnnuel*100):0;
   var ebitdaEcartLive=ebitdaSimLive-ebitdaBPLive;
   var elEb=document.getElementById('sim-ebitda');
