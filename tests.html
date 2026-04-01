@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8"/>
+<title>Tests ISSEO</title>
+<style>
+body{font-family:-apple-system,sans-serif;max-width:800px;margin:40px auto;padding:0 20px;background:#f8f9fb}
+h1{color:#0f1f3d;margin-bottom:20px}
+.suite{background:#fff;border-radius:8px;padding:16px 20px;margin-bottom:16px;border:1px solid #e8eaf0}
+.suite h2{font-size:14px;color:#555;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.5px}
+.test{padding:6px 0;font-size:13px;border-bottom:1px solid #f0f0ea}
+.test:last-child{border-bottom:none}
+.pass{color:#16A34A}.pass::before{content:'OK '}
+.fail{color:#c53030;font-weight:600}.fail::before{content:'FAIL '}
+.summary{background:#0f1f3d;color:#fff;border-radius:8px;padding:16px 20px;font-size:15px;font-weight:600}
+.summary.has-fail{background:#c53030}
+</style>
+</head>
+<body>
+<h1>Tests ISSEO Platform</h1>
+<div id="results"></div>
+<div id="summary"></div>
+
+<!-- Charger Supabase (nécessaire pour que les modules ne plantent pas) -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<!-- Stub minimal pour éviter les erreurs au chargement -->
+<script>
+const SURL='https://wfqtpcujujqxgfsgbpvp.supabase.co';
+const SKEY='sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv';
+const sb=supabase.createClient(SURL,SKEY);
+</script>
+
+<!-- Charger les modules à tester -->
+<script src="js/constants.js"></script>
+<script src="js/state.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/pages.js"></script>
+
+<!-- Tests -->
+<script>
+var _passed=0,_failed=0,_results='';
+var _currentSuite='';
+
+function suite(name){
+  if(_currentSuite)_results+='</div>';
+  _currentSuite=name;
+  _results+='<div class="suite"><h2>'+name+'</h2>';
+}
+
+function assert(name,condition,detail){
+  if(condition){
+    _passed++;
+    _results+='<div class="test pass">'+name+'</div>';
+  } else {
+    _failed++;
+    _results+='<div class="test fail">'+name+(detail?' — '+detail:'')+'</div>';
+  }
+}
+
+function assertEqual(name,actual,expected){
+  assert(name,actual===expected,'attendu: '+expected+', obtenu: '+actual);
+}
+
+function assertClose(name,actual,expected,tolerance){
+  tolerance=tolerance||1;
+  assert(name,Math.abs(actual-expected)<=tolerance,'attendu: ~'+expected+', obtenu: '+actual);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE 1 : buildBPFromDossier — calculs financiers
+// ═══════════════════════════════════════════════════════════════════════════
+suite('buildBPFromDossier — BP Année 1');
+
+var bp1=buildBPFromDossier(CA_A1,0,1,'lattes');
+var totalCA=bp1.reduce(function(s,r){return s+r._ca;},0);
+var totalEBITDA=bp1.reduce(function(s,r){return s+r._ebitda;},0);
+var totalREX=bp1.reduce(function(s,r){return s+r._rex;},0);
+var totalResult=bp1.reduce(function(s,r){return s+r._result;},0);
+
+assertEqual('BP A1 retourne 12 mois',bp1.length,12);
+assertClose('CA total A1 = '+CA_A1,totalCA,CA_A1,100);
+assert('EBITDA A1 > 0',totalEBITDA>0,'EBITDA='+totalEBITDA);
+assert('REX A1 cohérent (< CA)',totalREX<totalCA);
+assert('Résultat net A1 < REX',totalResult<=totalREX);
+
+// Vérifier que EBITDA = REX + Amort pour chaque mois
+var ebitdaOK=bp1.every(function(r){return r._ebitda===r._rex+r.amort;});
+assert('EBITDA = REX + Amort (chaque mois)',ebitdaOK);
+
+// Vérifier que _charges = somme des postes de charges
+var chargesOK=bp1.every(function(r){
+  var sum=CHARGES.reduce(function(s,l){return s+(r[l.id]||0);},0);
+  return Math.abs(r._charges-sum)<=1;
+});
+assert('_charges = somme des postes (chaque mois)',chargesOK);
+
+// ═══════════════════════════════════════════════════════════════════════════
+suite('buildBPFromDossier — BP Année 2 et 3');
+
+var bp2=buildBPFromDossier(CA_A2,0,2,'lattes');
+var bp3=buildBPFromDossier(CA_A3,0,3,'lattes');
+var caA2=bp2.reduce(function(s,r){return s+r._ca;},0);
+var caA3=bp3.reduce(function(s,r){return s+r._ca;},0);
+
+assertClose('CA total A2 = '+CA_A2,caA2,CA_A2,100);
+assertClose('CA total A3 = '+CA_A3,caA3,CA_A3,100);
+assert('CA croissant A1 < A2 < A3',CA_A1<CA_A2 && CA_A2<CA_A3);
+
+// ═══════════════════════════════════════════════════════════════════════════
+suite('buildBPFromDossier — Custom CAPEX/Emprunt/Loyer');
+
+var bpCustom=buildBPFromDossier(CA_A1,0,1,'lattes',{capex:400000,emprunt:300000,leasing:150000});
+var amortCustom=bpCustom[0].amort;
+var amortStd=bp1[0].amort;
+assert('CAPEX custom → amort ajusté',amortCustom!==amortStd,'amortCustom='+amortCustom+' vs std='+amortStd);
+
+var finCustom=bpCustom[0].charges_fin;
+var finStd=bp1[0].charges_fin;
+assert('Emprunt custom → charges_fin ajustées',finCustom!==finStd,'finCustom='+finCustom+' vs std='+finStd);
+
+// ═══════════════════════════════════════════════════════════════════════════
+suite('buildBPFromDossier — Cohérence EBITDA multi-studios');
+
+['garenne','lattes','montpellier'].forEach(function(sid){
+  if(!INIT[sid])return;
+  var studio=INIT[sid];
+  var bp=buildBPFromDossier(CA_A1,studio.forecast?studio.forecast.moisDebut||0:0,1,sid,{
+    capex:studio.capex,emprunt:studio.emprunt,leasing:studio.leasing,
+    lm:studio.loyer_mensuel
+  });
+  var ebitda=bp.reduce(function(s,r){return s+r._ebitda;},0);
+  var rex=bp.reduce(function(s,r){return s+r._rex;},0);
+  var amort=bp.reduce(function(s,r){return s+r.amort;},0);
+  assert(sid+': EBITDA = REX + Amort (annuel)',Math.abs(ebitda-(rex+amort))<=12);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE 2 : migrateProspects — déduplication
+// ═══════════════════════════════════════════════════════════════════════════
+suite('migrateProspects — génération ID et dédup');
+
+// Simuler des prospects
+S.prospects=[
+  {date:'01/03/2025',url:'https://test.com/1',auteur:'Paul',societe:'pw',type:'lien'},
+  {date:'01/03/2025',url:'https://test.com/1',auteur:'Paul',societe:'pw',type:'lien'}, // doublon exact
+  {date:'02/03/2025',adresse:'123 Rue Test',auteur:'Clement',societe:'cobe',type:'local'},
+  {date:'02/03/2025',adresse:'123 Rue Test',auteur:'Clement',societe:'cobe',type:'local'}, // doublon exact
+  {date:'03/03/2025',url:'https://test.com/2',auteur:'Paul',societe:'pw',type:'lien'},
+];
+migrateProspects();
+
+assertEqual('5 prospects → 3 après dédup',S.prospects.length,3);
+assert('Tous ont un ID',S.prospects.every(function(p){return !!p.id;}));
+assert('Tous ont societe',S.prospects.every(function(p){return !!p.societe;}));
+assert('Tous ont ratings',S.prospects.every(function(p){return !!p.ratings;}));
+assert('Tous ont comments',S.prospects.every(function(p){return !!p.comments;}));
+
+// Test avec IDs identiques
+S.prospects=[
+  {id:'p_1',date:'01/03/2025',url:'https://a.com',auteur:'Paul',societe:'pw',type:'lien'},
+  {id:'p_1',date:'01/03/2025',url:'https://b.com',auteur:'Paul',societe:'pw',type:'lien'}, // même ID
+];
+migrateProspects();
+assertEqual('Même ID → dédupliqué à 1',S.prospects.length,1);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE 3 : Obfuscation mots de passe
+// ═══════════════════════════════════════════════════════════════════════════
+suite('Obfuscation mots de passe (encodePwd / decodePwd)');
+
+var testPwds=['ilovepilates','P@ssw0rd!','abc123','éàü特殊',''];
+testPwds.forEach(function(pwd){
+  if(!pwd)return;
+  var encoded=encodePwd(pwd);
+  var decoded=decodePwd(encoded);
+  assert('encode/decode "'+pwd+'"',decoded===pwd,'decoded='+decoded);
+  assert('"'+pwd+'" encodé ≠ original',encoded!==pwd);
+});
+
+// Vérifier que decodePwd gère un mot de passe en clair (fallback migration)
+var plainPwd='ilovepilates';
+var decodedPlain=decodePwd(plainPwd);
+// Si le mdp en clair est valide base64 par hasard, le décodage pourrait donner autre chose
+// Mais on teste quand même que ça ne plante pas
+assert('decodePwd ne plante pas sur une entrée en clair',typeof decodedPlain==='string');
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE 4 : isSuperAdmin
+// ═══════════════════════════════════════════════════════════════════════════
+suite('isSuperAdmin — vérification accès');
+
+// Sauvegarder l'état
+var _savedProfile=S.profile;
+var _savedUser=S.user;
+
+S.profile={nom:'Paul Becaud'};S.user={email:'paulbecaud@isseo-dev.com'};
+assert('Paul = super admin',isSuperAdmin());
+
+S.profile={nom:'Tom Becaud'};S.user={email:'tombecaud@isseo-dev.com'};
+assert('Tom = super admin',isSuperAdmin());
+
+S.profile={nom:'Clement Coquel'};S.user={email:'clementcoquel@yahoo.fr'};
+assert('Clement ≠ super admin',!isSuperAdmin());
+
+S.profile={nom:'Random User'};S.user={email:'random@test.com'};
+assert('Random ≠ super admin',!isSuperAdmin());
+
+// Restaurer
+S.profile=_savedProfile;
+S.user=_savedUser;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE 5 : ROLE_LABELS cohérence
+// ═══════════════════════════════════════════════════════════════════════════
+suite('ROLE_LABELS — cohérence');
+
+assert('admin a un label',!!ROLE_LABELS.admin);
+assert('coquel a un label',!!ROLE_LABELS.coquel);
+assert('sabourin a un label',!!ROLE_LABELS.sabourin);
+assert('caroline a un label',!!ROLE_LABELS.caroline);
+assert('viewer a un label',!!ROLE_LABELS.viewer);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUITE 6 : Constantes de référence
+// ═══════════════════════════════════════════════════════════════════════════
+suite('Constantes BP de référence');
+
+assertEqual('CA_A1 = 448800',CA_A1,448800);
+assertEqual('CA_A2 = 610190',CA_A2,610190);
+assertEqual('CA_A3 = 761841',CA_A3,761841);
+assertEqual('12 mois de CA mensuel A1',CA_MENSUEL_A1.length,12);
+assertEqual('12 mois de CA mensuel A2',CA_MENSUEL_A2.length,12);
+assertEqual('12 mois de CA mensuel A3',CA_MENSUEL_A3.length,12);
+
+var sumA1=CA_MENSUEL_A1.reduce(function(s,v){return s+v;},0);
+assertClose('Somme CA mensuel A1 = CA_A1',sumA1,CA_A1,10);
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RÉSUMÉ
+// ═══════════════════════════════════════════════════════════════════════════
+if(_currentSuite)_results+='</div>';
+document.getElementById('results').innerHTML=_results;
+document.getElementById('summary').className='summary'+(_failed>0?' has-fail':'');
+document.getElementById('summary').innerHTML=_passed+' OK, '+_failed+' FAIL sur '+(_passed+_failed)+' tests';
+</script>
+</body>
+</html>
