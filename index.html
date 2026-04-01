@@ -1686,7 +1686,10 @@ function renderAdminPanel(){
   h+='<div style="background:#fff;border-bottom:1px solid #e8eaf0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
   h+='<div><div style="color:#0f1f3d;font-weight:700;font-size:14px">⚙ Gestion des accès utilisateurs</div>';
   h+='<div style="color:#888;font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
+  h+='<div style="display:flex;gap:8px">';
+  h+='<button onclick="showCreateUserModal()" style="background:#0f1f3d;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:600">+ Nouveau compte</button>';
   h+='<button onclick="loadAdminUsers();loadPresence()" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
+  h+='</div>';
   h+='</div>';
   if(_adminUsers.length===0){
     h+='<div style="padding:40px;text-align:center;color:#aaa">';
@@ -1703,6 +1706,7 @@ function renderAdminPanel(){
     h+='<th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Mot de passe</th>';
     h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Lecture seule</th>';
     h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px">Accès</th>';
+    h+='<th style="padding:10px 16px;text-align:center;font-size:11px;font-weight:700;color:#666;text-transform:uppercase;letter-spacing:0.5px"></th>';
     h+='</tr></thead><tbody>';
     var viewers=S.adminSettings.viewers||[];
     _adminUsers.forEach(function(u,i){
@@ -1794,6 +1798,16 @@ function renderAdminPanel(){
         h+='<span style="font-size:10px;color:#276749;font-weight:600;background:#c6f6d5;padding:2px 7px;border-radius:10px">Actif</span>';
         h+='<button onclick="toggleUserAccess(\''+uid+'\',true)" style="background:#c53030;color:#fff;border:none;border-radius:5px;padding:4px 10px;font-size:11px;cursor:pointer;margin-top:2px">⊘ Suspendre</button>';
         h+='</div>';
+      }
+      h+='</td>';
+      // Bouton supprimer
+      h+='<td style="padding:12px 16px;text-align:center">';
+      if(isMe){
+        h+='';
+      } else {
+        h+='<button onclick="confirmDeleteUser(\''+uid+'\',\''+(u.nom||'').replace(/'/g,"\\'")+'\')" title="Supprimer le compte" style="background:none;border:none;cursor:pointer;padding:6px;color:#ccc;transition:color .15s;border-radius:6px" onmouseover="this.style.color=\'#c53030\';this.style.background=\'#fff5f5\'" onmouseout="this.style.color=\'#ccc\';this.style.background=\'none\'">';
+        h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/></svg>';
+        h+='</button>';
       }
       h+='</td></tr>';
     });
@@ -2148,6 +2162,124 @@ async function setUserRole(uid,role){
   var ok=await saveAdminSettings();
   var label=ROLE_LABELS[role]||role;
   if(ok)toast('Rôle mis à jour : '+label+'. Effectif sous 5s pour l\'utilisateur.');
+}
+
+// ── Admin: création de compte ───────────────────────────────────────────────
+function showCreateUserModal(){
+  if(!isSuperAdmin())return;
+  var overlay=document.createElement('div');
+  overlay.id='create-user-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:12px;padding:28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    +'<div style="font-weight:700;font-size:16px;color:#0f1f3d;margin-bottom:4px">Créer un compte utilisateur</div>'
+    +'<div style="color:#888;font-size:12px;margin-bottom:20px">Le nouvel utilisateur pourra se connecter avec ces identifiants</div>'
+    +'<div style="display:flex;flex-direction:column;gap:14px">'
+    +'<div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Nom complet</label>'
+    +'<input id="cu-nom" type="text" placeholder="Ex: Jean Dupont" style="width:100%;padding:9px 12px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;box-sizing:border-box"></div>'
+    +'<div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Email</label>'
+    +'<input id="cu-email" type="email" placeholder="jean@example.com" style="width:100%;padding:9px 12px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;box-sizing:border-box"></div>'
+    +'<div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Mot de passe</label>'
+    +'<input id="cu-pwd" type="text" placeholder="Mot de passe initial" style="width:100%;padding:9px 12px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;box-sizing:border-box"></div>'
+    +'<div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Rôle</label>'
+    +'<select id="cu-role" style="width:100%;padding:9px 12px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;box-sizing:border-box;background:#fff">'
+    +'<option value="admin">admin — Admin complet</option>'
+    +'<option value="coquel">coquel — COBE + SACOBE</option>'
+    +'<option value="sabourin">sabourin — SACOBE uniquement</option>'
+    +'<option value="caroline">caroline — COBE uniquement</option>'
+    +'<option value="viewer">viewer — Lecture seule</option>'
+    +'</select></div>'
+    +'<div id="cu-error" style="display:none;color:#c53030;font-size:12px;background:#fff5f5;padding:8px 12px;border-radius:6px"></div>'
+    +'<div style="display:flex;gap:10px;margin-top:6px">'
+    +'<button onclick="document.getElementById(\'create-user-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #dce1ea;background:#f8f9fb;color:#555;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Annuler</button>'
+    +'<button id="cu-submit" onclick="submitCreateUser()" style="flex:1;padding:10px;border:none;background:#0f1f3d;color:#fff;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Créer le compte</button>'
+    +'</div></div></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  document.getElementById('cu-nom').focus();
+}
+
+async function submitCreateUser(){
+  if(!isSuperAdmin())return;
+  var nom=document.getElementById('cu-nom').value.trim();
+  var email=document.getElementById('cu-email').value.trim().toLowerCase();
+  var pwd=document.getElementById('cu-pwd').value.trim();
+  var role=document.getElementById('cu-role').value;
+  var errEl=document.getElementById('cu-error');
+  var btn=document.getElementById('cu-submit');
+  if(!nom||!email||!pwd){errEl.textContent='Tous les champs sont requis.';errEl.style.display='block';return;}
+  if(pwd.length<6){errEl.textContent='Le mot de passe doit contenir au moins 6 caractères.';errEl.style.display='block';return;}
+  btn.textContent='Création en cours...';btn.disabled=true;
+  // Sauvegarder la session actuelle
+  var currentSession=await sb.auth.getSession();
+  // Créer le compte via signUp
+  var res=await sb.auth.signUp({email:email,password:pwd,options:{data:{nom:nom}}});
+  if(res.error){errEl.textContent='Erreur: '+res.error.message;errEl.style.display='block';btn.textContent='Créer le compte';btn.disabled=false;return;}
+  var newUid=res.data.user&&res.data.user.id;
+  if(!newUid){errEl.textContent='Erreur: impossible de récupérer l\'ID utilisateur.';errEl.style.display='block';btn.textContent='Créer le compte';btn.disabled=false;return;}
+  // Restaurer la session admin (signUp peut changer la session)
+  if(currentSession.data&&currentSession.data.session){
+    await sb.auth.setSession({access_token:currentSession.data.session.access_token,refresh_token:currentSession.data.session.refresh_token});
+  }
+  // Insérer le profil
+  await sb.from('profiles').upsert({id:newUid,nom:nom,email:email,role:role});
+  // Sauvegarder le rôle et le mot de passe dans adminSettings
+  if(!S.adminSettings.roles)S.adminSettings.roles={};
+  if(!S.adminSettings.passwords)S.adminSettings.passwords={};
+  S.adminSettings.roles[newUid]=role;
+  S.adminSettings.passwords[newUid]=pwd;
+  await saveAdminSettings();
+  // Fermer la modale et rafraîchir
+  var overlay=document.getElementById('create-user-overlay');
+  if(overlay)overlay.remove();
+  toast('Compte créé pour '+nom+' ('+email+')');
+  await loadAdminUsers();
+  render();
+}
+
+// ── Admin: suppression de compte ────────────────────────────────────────────
+function confirmDeleteUser(uid,nom){
+  if(!isSuperAdmin())return;
+  if(S.user&&S.user.id===uid){toast('Vous ne pouvez pas supprimer votre propre compte.');return;}
+  var overlay=document.createElement('div');
+  overlay.id='delete-user-overlay';
+  overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
+  overlay.innerHTML='<div style="background:#fff;border-radius:12px;padding:28px;width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+    +'<div style="font-weight:700;font-size:16px;color:#c53030;margin-bottom:8px">Supprimer le compte</div>'
+    +'<div style="color:#555;font-size:13px;margin-bottom:20px">Voulez-vous vraiment supprimer le compte de <strong>'+nom+'</strong> ? Cette action est irréversible.</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button onclick="document.getElementById(\'delete-user-overlay\').remove()" style="flex:1;padding:10px;border:1px solid #dce1ea;background:#f8f9fb;color:#555;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Annuler</button>'
+    +'<button onclick="executeDeleteUser(\''+uid+'\')" style="flex:1;padding:10px;border:none;background:#c53030;color:#fff;border-radius:8px;font-size:13px;cursor:pointer;font-weight:600">Supprimer</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+}
+
+async function executeDeleteUser(uid){
+  if(!isSuperAdmin())return;
+  // 1. Bloquer l'accès
+  var blocked=S.adminSettings.blocked||[];
+  if(blocked.indexOf(uid)<0)blocked.push(uid);
+  S.adminSettings.blocked=blocked;
+  // 2. Nettoyer adminSettings
+  if(S.adminSettings.roles)delete S.adminSettings.roles[uid];
+  if(S.adminSettings.passwords)delete S.adminSettings.passwords[uid];
+  if(S.adminSettings.viewers){
+    S.adminSettings.viewers=S.adminSettings.viewers.filter(function(id){return id!==uid;});
+  }
+  await saveAdminSettings();
+  // 3. Supprimer le profil
+  await sb.from('profiles').delete().eq('id',uid);
+  // 4. Supprimer la présence
+  if(S.userPresence&&S.userPresence[uid]){
+    delete S.userPresence[uid];
+    await sb.from('studios').upsert({id:'_user_presence',data:{presence:S.userPresence},updated_at:new Date().toISOString()});
+  }
+  // Fermer la modale et rafraîchir
+  var overlay=document.getElementById('delete-user-overlay');
+  if(overlay)overlay.remove();
+  toast('Compte supprimé.');
+  await loadAdminUsers();
+  render();
 }
 
 function renderSidebar(){
