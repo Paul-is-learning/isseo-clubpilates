@@ -859,7 +859,7 @@ function renderCommentThread(p,globalIdx){
       h+='<div style="width:24px;height:24px;border-radius:50%;background:'+initColor+';color:#fff;font-size:9px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+c.auteur.charAt(0).toUpperCase()+'</div>';
       h+='<div style="flex:1;min-width:0">';
       h+='<div style="font-size:10px;margin-bottom:2px"><b style="color:#333">'+c.auteur+'</b> <span style="color:#bbb">· '+c.date+'</span></div>';
-      h+='<div style="font-size:12px;color:#444;line-height:1.4">'+c.text+'</div>';
+      h+='<div style="font-size:12px;color:#444;line-height:1.4">'+htmlEscape(c.text)+'</div>';
       h+='</div>';
       if(isMe||isSuperAdmin()){
         h+='<button onclick="event.stopPropagation();deleteProspectComment('+globalIdx+','+ci+')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:14px;padding:0 2px;position:absolute;top:6px;right:8px;transition:color .15s" onmouseover="this.style.color=\'#ef4444\'" onmouseout="this.style.color=\'#ccc\'" title="Supprimer">&times;</button>';
@@ -876,6 +876,7 @@ function renderCommentThread(p,globalIdx){
 // Calcule le CA annuel simulé pour un studio à partir du scénario actif
 function _getScenarioCA(sid,ay){
   var s=S.studios[sid];
+  if(!s)return 0;
   var BP_CFG={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   // Si scénario actif = BP par défaut ou aucun scénario, utiliser la config BP de référence
   // pour garantir le même résultat sur tous les appareils
@@ -1778,6 +1779,7 @@ function renderBPConsolide(){
 
   allIds.forEach(function(id){
     var s=S.studios[id];
+    if(!s)return;
     var md=(s.forecast&&s.forecast.moisDebut)||0;
     var bpOpts=getStudioBPOpts(id);
 
@@ -2220,7 +2222,7 @@ function renderActivityFeed(ids){
       h+=avatarHTML(m.auteur||'?',22);
       h+='<div style="min-width:0;flex:1">';
       h+='<div style="display:flex;justify-content:space-between;align-items:center"><span style="font-size:10px;font-weight:600;color:#333">'+((m.auteur||'').split(' ')[0])+'</span><span style="font-size:9px;color:#ccc">'+(m.date||'')+'</span></div>';
-      h+='<div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">'+((m.texte||'').substring(0,50)+(m.texte&&m.texte.length>50?'…':''))+'</div>';
+      h+='<div style="font-size:11px;color:#666;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px">'+htmlEscape((m.texte||'').substring(0,50))+(m.texte&&m.texte.length>50?'…':'')+'</div>';
       h+='</div></div>';
     });
     h+='</div>';
@@ -2267,7 +2269,7 @@ function renderViewToggle(){
 function renderStatusFilters(ids){
   var counts={all:ids.length};
   Object.keys(STATUT_CFG).forEach(function(k){counts[k]=0;});
-  ids.forEach(function(id){var st=S.studios[id].statut;if(counts[st]!==undefined)counts[st]++;});
+  ids.forEach(function(id){var st=S.studios[id]&&S.studios[id].statut;if(st&&counts[st]!==undefined)counts[st]++;});
   var filters=[{id:'all',label:'Tous'}];
   Object.keys(STATUT_CFG).forEach(function(k){if(counts[k]>0)filters.push({id:k,label:STATUT_CFG[k].label});});
   var h='<div style="display:flex;gap:5px;flex-wrap:wrap">';
@@ -2288,7 +2290,7 @@ function renderCohorteView(ids){
   // Group studios by cohorte value
   var groups={};
   ids.forEach(function(id){
-    var c=S.studios[id].cohorte||1;
+    var c=(S.studios[id]&&S.studios[id].cohorte)||1;
     if(!groups[c])groups[c]=[];
     groups[c].push(id);
   });
@@ -2333,8 +2335,9 @@ function renderListView(ids){
   h+='</tr></thead><tbody>';
   ids.forEach(function(id){
     var s=S.studios[id];
+    if(!s)return;
     var _ST2=getStudioSteps(id);
-    var done=_ST2.filter(function(st){return s.steps[st.id];}).length;
+    var done=_ST2.filter(function(st){return s.steps&&s.steps[st.id];}).length;
     var p=Math.round(done/_ST2.length*100);
     h+='<tr onclick="openDetail(\''+id+'\')" style="border-bottom:1px solid #f0f0ea;cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=S.darkMode?\'#1c2128\':\'#fafaf6\'" onmouseout="this.style.background=\'transparent\'">';
     h+='<td style="padding:10px 14px;font-weight:600;color:#1a1a1a">'+s.name+'</td>';
@@ -2421,10 +2424,11 @@ function renderWorkflow(s){
   var WF_STEPS=getStudioSteps(sid);
   // Infographie en tête de page
   var h=renderBP3YInfographic(sid,s);
-  h+='<div class="box" style="margin-top:16px">'+progBar(s.steps,sid)+'<div style="margin-top:16px">';
+  var _steps=s.steps||{};
+  h+='<div class="box" style="margin-top:16px">'+progBar(_steps,sid)+'<div style="margin-top:16px">';
   WF_STEPS.forEach(function(step,i){
-    var done=s.steps[step.id];
-    var unlocked=i===0||s.steps[WF_STEPS[i-1].id];
+    var done=_steps[step.id];
+    var unlocked=i===0||_steps[WF_STEPS[i-1].id];
     var bg=done?'#1D9E75':'transparent';
     var border=done?'#1D9E75':unlocked?'#aaa':'#ddd';
     var cursor=unlocked&&canEdit?'pointer':'default';
@@ -3855,7 +3859,7 @@ function renderMessages(sid){
       h+=avatarHTML(m.auteur,32);
       h+='<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';max-width:72%">';
       h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' &mdash; '+m.date+'</div>';
-      h+='<div style="background:'+(isMe?'#1a1a1a':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
+      h+='<div style="background:'+(isMe?'#1a1a1a':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+htmlEscape(m.texte)+'</div>';
       h+='</div></div>';
     });
   }
@@ -4135,7 +4139,7 @@ function renderTopicThread(sid,topicId){
     h+='<div style="display:flex;flex-direction:column;align-items:'+(isMe?'flex-end':'flex-start')+';max-width:72%">';
     h+='<div style="font-size:11px;color:#888;margin-bottom:3px;font-weight:500">'+m.auteur+' &mdash; '+m.date+(m.edited?' <span style="font-style:italic;color:#bbb">(modifié)</span>':'')+'</div>';
     h+='<div style="position:relative">';
-    h+='<div style="background:'+(isMe?'#1a3a6b':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+m.texte+'</div>';
+    h+='<div style="background:'+(isMe?'#1a3a6b':'#f0f0ea')+';color:'+(isMe?'#fff':'#1a1a1a')+';padding:10px 14px;border-radius:'+(isMe?'12px 12px 2px 12px':'12px 12px 12px 2px')+';font-size:13px;line-height:1.5">'+htmlEscape(m.texte)+'</div>';
     var within5min=m.ts&&(Date.now()-new Date(m.ts).getTime()<5*60*1000);
     if(canEdit&&!topic.closed&&(within5min||isSuperAdmin())){
       h+='<div class="msg-actions" style="opacity:0;transition:opacity 0.15s;position:absolute;'+(isMe?'left:-60px':'right:-60px')+';top:50%;transform:translateY(-50%);display:flex;gap:2px">';

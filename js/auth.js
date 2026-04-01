@@ -1,3 +1,11 @@
+// ── Sécurité : échappement HTML pour prévenir XSS ───────────────────────────
+function htmlEscape(text){
+  if(!text)return '';
+  var d=document.createElement('div');
+  d.textContent=text;
+  return d.innerHTML;
+}
+
 // ── Obfuscation mots de passe (XOR + base64) ───────────────────────────────
 var _PWD_KEY='iss30_s3cur3';
 function _xorEncode(str,key){
@@ -385,7 +393,7 @@ function userAvatarWidget(profile){
   var h='<div style="display:flex;align-items:center;gap:6px">';
   // 1. Cloche notifications (SVG moderne)
   h+='<div style="position:relative" onclick="event.stopPropagation();toggleNotifPanel()">';
-  h+='<button title="Notifications" style="background:none;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative" onmouseover="this.style.background=\'rgba(26,58,107,0.08)\'" onmouseout="this.style.background=\'none\'">';
+  h+='<button title="Notifications" aria-label="Notifications" role="button" style="background:none;border:none;border-radius:50%;width:36px;height:36px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative" onmouseover="this.style.background=\'rgba(26,58,107,0.08)\'" onmouseout="this.style.background=\'none\'">';
   h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
   h+='</button>';
   h+='<div id="notif-badge" style="display:'+(unread>0?'flex':'none')+';position:absolute;top:1px;right:1px;background:#ef4444;color:#fff;font-size:8px;font-weight:700;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 4px;border:2px solid #faf9f6;line-height:1;box-shadow:0 1px 3px rgba(239,68,68,0.4)">'+(unread>99?'99+':unread)+'</div>';
@@ -683,7 +691,7 @@ function showCreateUserModal(){
   var overlay=document.createElement('div');
   overlay.id='create-user-overlay';
   overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
-  overlay.innerHTML='<div style="background:#fff;border-radius:12px;padding:28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+  overlay.innerHTML='<div role="dialog" aria-label="Créer un compte" style="background:#fff;border-radius:12px;padding:28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
     +'<div style="font-weight:700;font-size:16px;color:#0f1f3d;margin-bottom:4px">Créer un compte utilisateur</div>'
     +'<div style="color:#888;font-size:12px;margin-bottom:20px">Le nouvel utilisateur pourra se connecter avec ces identifiants</div>'
     +'<div style="display:flex;flex-direction:column;gap:14px">'
@@ -756,7 +764,7 @@ function confirmDeleteUser(uid,nom){
   var overlay=document.createElement('div');
   overlay.id='delete-user-overlay';
   overlay.style.cssText='position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.5);z-index:10000;display:flex;align-items:center;justify-content:center';
-  overlay.innerHTML='<div style="background:#fff;border-radius:12px;padding:28px;width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
+  overlay.innerHTML='<div role="dialog" aria-label="Supprimer le compte" style="background:#fff;border-radius:12px;padding:28px;width:400px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.3)">'
     +'<div style="font-weight:700;font-size:16px;color:#c53030;margin-bottom:8px">Supprimer le compte</div>'
     +'<div style="color:#555;font-size:13px;margin-bottom:20px">Voulez-vous vraiment supprimer le compte de <strong>'+nom+'</strong> ? Cette action est irréversible.</div>'
     +'<div style="display:flex;gap:10px">'

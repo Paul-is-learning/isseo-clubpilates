@@ -65,6 +65,7 @@ var S={
 
 async function loadAll(){
   var res=await sb.from('studios').select('id,data');
+  if(res.error){console.error('loadAll error:',res.error);toast('Erreur chargement données: '+res.error.message);return;}
   var data=res.data||[];
   var studios={};
   S.files={};S.depenses={};S.messages={};S.adherents={};S.topics={};S.todos={};
@@ -165,6 +166,25 @@ function restoreNavState(){
   }catch(e){S.view='dashboard';S.page='accueil';}
 }
 
+// ── Save avec détection de conflit ────────────────────────────────────────────
+var _lastKnownTimestamps={};
+async function safeSave(id,data){
+  var now=new Date().toISOString();
+  // Vérifier si les données ont été modifiées par un autre utilisateur
+  if(_lastKnownTimestamps[id]){
+    var check=await sb.from('studios').select('updated_at').eq('id',id).maybeSingle();
+    if(check.data&&check.data.updated_at&&check.data.updated_at>_lastKnownTimestamps[id]){
+      toast('Données modifiées par un autre utilisateur — rechargement...');
+      await syncDataFallback();
+      return false;
+    }
+  }
+  var res=await sb.from('studios').upsert({id:id,data:data,updated_at:now});
+  if(res.error){toast('Erreur sauvegarde: '+res.error.message);return false;}
+  _lastKnownTimestamps[id]=now;
+  return true;
+}
+
 // ── SimConfig persistence ──────────────────────────────────────────────────────
 var _simSaveTimeout={};
 function saveSimConfig(sid){
@@ -199,19 +219,21 @@ function clearDirty(type,sid){
 function hasDirty(){return Object.keys(S.dirty).some(function(k){return S.dirty[k];});}
 
 async function saveAllDirty(){
-  var keys=Object.keys(S.dirty).filter(function(k){return S.dirty[k];});
-  for(var i=0;i<keys.length;i++){
-    var parts=keys[i].split('_');var type=parts[0];var sid=parts.slice(1).join('_');
-    if(type==='adherents')await saveAdherents(sid);
-    if(type==='sim'){saveSimConfig(sid);}
-    if(type==='taux'){_tauxPending[sid]=false;await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});}
-    if(type==='loyer'){var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d=Object.assign({},ex.data&&ex.data.data||{});d.loyer_mensuel=S.studios[sid].loyer_mensuel;await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});}
-    if(type==='capex'){var ex2=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d2=Object.assign({},ex2.data&&ex2.data.data||{});d2.capexDetail=S.studios[sid].capexDetail;await sb.from('studios').upsert({id:sid,data:d2,updated_at:new Date().toISOString()});}
-  }
-  S.dirty={};S._dirtyBackup={};
-  _hideDirtyBar();
-  toast('Modifications enregistrées ✓');
-  render();
+  try{
+    var keys=Object.keys(S.dirty).filter(function(k){return S.dirty[k];});
+    for(var i=0;i<keys.length;i++){
+      var parts=keys[i].split('_');var type=parts[0];var sid=parts.slice(1).join('_');
+      if(type==='adherents')await saveAdherents(sid);
+      if(type==='sim'){saveSimConfig(sid);}
+      if(type==='taux'){_tauxPending[sid]=false;await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});}
+      if(type==='loyer'){var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d=Object.assign({},ex.data&&ex.data.data||{});d.loyer_mensuel=S.studios[sid].loyer_mensuel;await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});}
+      if(type==='capex'){var ex2=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d2=Object.assign({},ex2.data&&ex2.data.data||{});d2.capexDetail=S.studios[sid].capexDetail;await sb.from('studios').upsert({id:sid,data:d2,updated_at:new Date().toISOString()});}
+    }
+    S.dirty={};S._dirtyBackup={};
+    _hideDirtyBar();
+    toast('Modifications enregistrées ✓');
+    render();
+  }catch(e){console.error('saveAllDirty error:',e);toast('Erreur sauvegarde: '+e.message);}
 }
 
 function discardAllDirty(){

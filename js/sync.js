@@ -1,10 +1,14 @@
 // ── Sync temps réel : Supabase Realtime + fallback polling 60s ─────────────
 var _syncInterval=null;
 var _realtimeSub=null;
+var _syncTimestamps={}; // {id: updated_at} pour éviter les JSON.stringify inutiles
 
 function _handleRowChange(r){
   if(S.editMoisIdx!==null||S.showNewForm)return false;
   var id=r.id;
+  // Optimisation : skip si updated_at identique (évite JSON.stringify coûteux)
+  if(r.updated_at&&_syncTimestamps[id]===r.updated_at)return false;
+  if(r.updated_at)_syncTimestamps[id]=r.updated_at;
   var changed=false;
   if(id.endsWith('_files')){
     var nv=r.data&&r.data.files||[];
@@ -120,13 +124,16 @@ function subscribeDataChanges(){
 // Fallback : polling complet toutes les 60s (en cas de déconnexion Realtime)
 async function syncDataFallback(){
   if(S.editMoisIdx!==null||S.showNewForm)return;
-  var res=await sb.from('studios').select('id,data,updated_at');
-  var rows=res.data||[];
-  var changed=false;
-  rows.forEach(function(r){
-    if(_handleRowChange(r))changed=true;
-  });
-  if(changed)_tryRender();
+  try{
+    var res=await sb.from('studios').select('id,data,updated_at');
+    if(res.error){console.warn('Sync fallback error:',res.error.message);return;}
+    var rows=res.data||[];
+    var changed=false;
+    rows.forEach(function(r){
+      if(_handleRowChange(r))changed=true;
+    });
+    if(changed)_tryRender();
+  }catch(e){console.warn('Sync fallback exception:',e.message);}
 }
 
 function startSync(){

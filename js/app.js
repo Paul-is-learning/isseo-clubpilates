@@ -1,3 +1,27 @@
+// ── Détection réseau offline/online ──────────────────────────────────────────
+var _isOffline=!navigator.onLine;
+function _showOfflineBanner(offline){
+  _isOffline=offline;
+  var existing=document.getElementById('offline-banner');
+  if(offline){
+    if(!existing){
+      var b=document.createElement('div');
+      b.id='offline-banner';
+      b.style.cssText='position:fixed;top:0;left:0;width:100%;background:#c53030;color:#fff;text-align:center;padding:8px;font-size:13px;font-weight:600;z-index:99999;box-shadow:0 2px 8px rgba(0,0,0,0.2)';
+      b.textContent='Hors ligne — Les modifications ne seront pas synchronisées';
+      document.body.appendChild(b);
+    }
+  } else {
+    if(existing)existing.remove();
+    // Resync au retour en ligne
+    if(typeof syncDataFallback==='function')syncDataFallback();
+  }
+}
+window.addEventListener('offline',function(){_showOfflineBanner(true);});
+window.addEventListener('online',function(){_showOfflineBanner(false);toast('Connexion rétablie ✓');});
+if(_isOffline)_showOfflineBanner(true);
+
+// ── Render principal ────────────────────────────────────────────────────────
 var _rendering=false;
 function render(){
   if(_rendering)return;
@@ -8,11 +32,9 @@ function render(){
     document.body.classList.toggle('dark',!!S.darkMode);
     if(S.view==='auth'){
       root.innerHTML=renderAuth();
-      // Masquer sidebar en mode auth
       var _sb=document.getElementById('app-sidebar');if(_sb)_sb.style.display='none';
       var _hb=document.getElementById('hamburger-btn');if(_hb)_hb.style.display='none';
     } else {
-      // Layout avec sidebar
       var pageContent='';
       if(S.page==='accueil')pageContent=renderAccueil();
       else if(S.page==='projets'){
@@ -32,10 +54,10 @@ function render(){
   _rendering=false;
 }
 
+// ── Init session ────────────────────────────────────────────────────────────
 sb.auth.getSession().then(function(res){
   var session=res.data&&res.data.session;
   if(session){
-    // Vérifier si la session était inactive depuis plus de 10 min (fermeture onglet)
     var hiddenAt=0;
     try{hiddenAt=parseInt(localStorage.getItem('isseo_hidden_at')||'0');}catch(e){}
     if(hiddenAt&&Date.now()-hiddenAt>_INACTIVITY_MS){
@@ -58,7 +80,8 @@ sb.auth.getSession().then(function(res){
     });
   } else {render();}
 });
-// Fermer le panneau notif au clic extérieur
+
+// ── Events globaux ──────────────────────────────────────────────────────────
 document.addEventListener('click',function(e){
   if(S.notifOpen&&!e.target.closest('#notif-dropdown')&&!e.target.closest('[title="Notifications"]')){
     S.notifOpen=false;

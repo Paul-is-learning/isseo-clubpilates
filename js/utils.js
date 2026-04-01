@@ -265,9 +265,16 @@ function _startSessionWatcher(){
 }
 
 async function doLogin(){
-  var email=document.getElementById('ae').value;
-  var pwd=document.getElementById('ap').value;
+  var email=(document.getElementById('ae').value||'').trim().toLowerCase();
+  var pwd=document.getElementById('ap').value||'';
   var err=document.getElementById('aerr');
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){err.style.display='block';err.textContent='Veuillez saisir un email valide.';return;}
+  if(!pwd){err.style.display='block';err.textContent='Veuillez saisir votre mot de passe.';return;}
+  // Loading state sur le bouton
+  var btn=document.querySelector('#auth-form button[type="submit"],#auth-form button[onclick]');
+  var btnOrig=btn?btn.textContent:'';
+  if(btn){btn.textContent='Connexion...';btn.disabled=true;}
+  try{
   var res=await sb.auth.signInWithPassword({email:email,password:pwd});
   if(res.error){err.style.display='block';err.textContent=res.error.message;return;}
   S.user=res.data.user;
@@ -299,5 +306,7 @@ async function doLogin(){
   _loadAllProfiles();
   loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});
   subscribeNotifications();
+  }catch(e){console.error('Login error:',e);if(err){err.style.display='block';err.textContent='Erreur de connexion: '+e.message;}}
+  finally{if(btn){btn.textContent=btnOrig;btn.disabled=false;}}
 }
 // ══════════════════════════════════════════════════════════════════════════════

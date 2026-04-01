@@ -37,7 +37,7 @@ function renderFloatingChat(){
       h+=avatarHTML(m.auteur||'?',26);
       h+='<div style="max-width:240px;position:relative">';
       if(!isMe)h+='<div style="font-size:9.5px;color:#888;margin-bottom:2px;font-weight:600">'+(m.auteur||'')+'</div>';
-      h+='<div style="background:'+(isMe?'#0f1f3d':'#fff')+';color:'+(isMe?'#fff':'#2c3e50')+';border-radius:'+(isMe?'12px 12px 4px 12px':'12px 12px 12px 4px')+';padding:7px 10px;font-size:12px;line-height:1.45;box-shadow:0 1px 3px rgba(0,0,0,0.08);word-break:break-word">'+(m.texte||'')+'</div>';
+      h+='<div style="background:'+(isMe?'#0f1f3d':'#fff')+';color:'+(isMe?'#fff':'#2c3e50')+';border-radius:'+(isMe?'12px 12px 4px 12px':'12px 12px 12px 4px')+';padding:7px 10px;font-size:12px;line-height:1.45;box-shadow:0 1px 3px rgba(0,0,0,0.08);word-break:break-word">'+htmlEscape(m.texte||'')+'</div>';
       h+='<div style="font-size:9px;color:#bbb;margin-top:2px;text-align:'+(isMe?'right':'left')+'">'+(m.date||'')+(canDeleteMsg?'&nbsp;<button onclick="supprimerGlobalMessage(\''+ts.replace(/'/g,"\\'")+'\')" style="background:none;border:none;cursor:pointer;color:#ddd;font-size:10px;padding:0;line-height:1;margin-left:2px" title="Supprimer">🗑</button>':'')+'</div>';
       h+='</div></div>';
     });
@@ -117,6 +117,7 @@ async function envoyerGlobalMessage(){
   var inp=document.getElementById('global-chat-input');
   var texte=inp&&inp.value&&inp.value.trim();
   if(!texte)return;
+  if(texte.length>2000){toast('Message trop long (max 2000 caractères)');return;}
   inp.value='';
   var now=new Date();
   var msg={
@@ -133,13 +134,16 @@ async function envoyerGlobalMessage(){
   var list=document.getElementById('global-chat-msgs');
   if(list)list.scrollTop=list.scrollHeight;
   // Merge + save Supabase
-  var ex=await sb.from('studios').select('data').eq('id','global_chat').maybeSingle();
-  var existing=(ex.data&&ex.data.data&&ex.data.data.messages)||[];
-  var tsSet=new Set(existing.map(function(m){return m.ts;}));
-  if(!tsSet.has(msg.ts))existing.push(msg);
-  existing.sort(function(a,b){return a.ts>b.ts?1:-1;});
-  await sb.from('studios').upsert({id:'global_chat',data:{messages:existing},updated_at:new Date().toISOString()});
-  notifyAll({type:'message',title:'Chat — '+(msg.auteur||'Associé'),body:texte.length>80?texte.slice(0,80)+'…':texte});
+  try{
+    var ex=await sb.from('studios').select('data').eq('id','global_chat').maybeSingle();
+    var existing=(ex.data&&ex.data.data&&ex.data.data.messages)||[];
+    var tsSet=new Set(existing.map(function(m){return m.ts;}));
+    if(!tsSet.has(msg.ts))existing.push(msg);
+    existing.sort(function(a,b){return a.ts>b.ts?1:-1;});
+    var res=await sb.from('studios').upsert({id:'global_chat',data:{messages:existing},updated_at:new Date().toISOString()});
+    if(res.error)throw res.error;
+    notifyAll({type:'message',title:'Chat — '+(msg.auteur||'Associé'),body:texte.length>80?texte.slice(0,80)+'…':texte});
+  }catch(e){console.error('Chat save error:',e);toast('Erreur envoi message');}
   // Refocus l'input après sauvegarde
   setTimeout(function(){var i=document.getElementById('global-chat-input');if(i)i.focus();},50);
 }
