@@ -135,9 +135,14 @@ async function loadAll(){
       if(lastCfg)S.simConfig[sid]=JSON.parse(JSON.stringify(lastCfg));
     }
   });
-  // Patch config fields from INIT — source of truth is the code
+  // Inject INIT studios missing from Supabase + patch config fields
   Object.keys(INIT).forEach(function(k){
-    if(!S.studios[k])return;
+    if(!S.studios[k]){
+      // Studio défini dans INIT mais absent de Supabase → l'injecter
+      S.studios[k]=JSON.parse(JSON.stringify(INIT[k]));
+      sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()});
+      return;
+    }
     var changed=false;
     ['ouverture','capex','emprunt','leasing'].forEach(function(f){
       if(INIT[k][f]!==undefined&&S.studios[k][f]!==INIT[k][f]){S.studios[k][f]=INIT[k][f];changed=true;}
