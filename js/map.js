@@ -30,7 +30,7 @@ function circleIntersectArea(d,r1,r2){
 // → fraction exacte sans approximation géométrique, capte les communes adjacentes (Montpellier, etc.)
 async function calcPopZoneINSEE(lat,lon,radiusM){
   console.log('[INSEE] START lat='+lat.toFixed(4)+' lon='+lon.toFixed(4)+' r='+radiusM);
-  var N=8; // grille 8×8 = 64 pts max, ~50 dans le cercle
+  var N=radiusM>5000?12:8; // grille 12×12 pour grands rayons (>5km), 8×8 sinon
   var latDeg=radiusM/111000;
   var lonDeg=radiusM/(111000*Math.cos(lat*Math.PI/180));
   // Générer les points de la grille qui tombent dans le cercle
