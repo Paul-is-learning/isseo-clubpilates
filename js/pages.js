@@ -160,11 +160,24 @@ function renderProjets(){
 }
 
 // ── PAGE: Projets Admin ────────────────────────────────────────────────
+var _adminPresenceInterval=null;
+function _startAdminPresenceRefresh(){
+  _stopAdminPresenceRefresh();
+  _adminPresenceInterval=setInterval(async function(){
+    if(S.mainTab!=='admin'){_stopAdminPresenceRefresh();return;}
+    await loadPresence();
+    render();
+  },30000);
+}
+function _stopAdminPresenceRefresh(){
+  if(_adminPresenceInterval){clearInterval(_adminPresenceInterval);_adminPresenceInterval=null;}
+}
 function renderProjetsAdmin(){
+  if(!_adminPresenceInterval)_startAdminPresenceRefresh();
   var h='';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">';
   h+='<div><div style="font-size:20px;font-weight:700;color:#1a1a1a">Administration</div><div style="font-size:12px;color:#888;margin-top:2px">Gestion des utilisateurs et paramètres</div></div>';
-  h+='<button class="btn" onclick="S.mainTab=\'studios\';render()" style="font-size:11px">← Retour aux projets</button>';
+  h+='<button class="btn" onclick="S.mainTab=\'studios\';_stopAdminPresenceRefresh();render()" style="font-size:11px">← Retour aux projets</button>';
   h+='</div>';
   h+=renderAdminPanel();
   return h;
