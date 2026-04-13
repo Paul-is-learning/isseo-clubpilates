@@ -331,17 +331,44 @@ const BP_RESULTATS_OTHER={
   3:{ca:761841,charges:503502,rex:258339,rnet:193235,caf:239267,treso:203556,marge_rex:0.339,marge_nette:0.254},
 };
 
+// ── BP GOLD GYM — données spécifiques (source : BP GOLD 130426 Maurepas.xlsx) ──
+// CA annuels Gold Gym (Abonnements + Frais d'inscription + Ventes additionnelles - Impayés)
+const CA_GG_A1=746581,CA_GG_A2=1432159,CA_GG_A3=1654427;
+
+// CA mensuel Gold Gym A1 (dérivé des adhérents mensuels × 34€ HT moyen + FI + ventes)
+const CA_MENSUEL_GG_A1=[19204,32436,55792,74580,88236,93498,98542,104320,118660,124814,131161,132919];
+const CA_MENSUEL_GG_A2=[115240,121038,127090,129641,132243,134888,137586,140338,143144,146007,148927,145857];
+const CA_MENSUEL_GG_A3=[152049,153416,154798,156195,157607,159034,160478,161938,141436,142563,143706,144806];
+
+// Charges annuelles Gold Gym (source : Income Statement xlsx)
+const BP_CHARGES_ANNUELLES_GG={
+  1:{fournitures:0,loyer:100005,charges_loc:0,coachs:118755,royalties_pct:0.08,pub:0,software:0,assurance:0,mutuelle:0,nettoyage:0,compta:0,entretien:0,missions:0,telecom:0,social:0,creditbail:189429,salaries:0,impots_taxes:0,amort:283371,charges_fin:63941,
+    _maintenance:29863,_energie:29863,_autres:109001},
+  2:{fournitures:0,loyer:260012,charges_loc:0,coachs:204000,royalties_pct:0.08,pub:0,software:0,assurance:0,mutuelle:0,nettoyage:0,compta:0,entretien:0,missions:0,telecom:0,social:0,creditbail:189429,salaries:0,impots_taxes:0,amort:283371,charges_fin:55722,
+    _maintenance:28022,_energie:57286,_autres:109001},
+  3:{fournitures:0,loyer:290012,charges_loc:0,coachs:204000,royalties_pct:0.08,pub:0,software:0,assurance:0,mutuelle:0,nettoyage:0,compta:0,entretien:0,missions:0,telecom:0,social:0,creditbail:189429,salaries:0,impots_taxes:0,amort:283371,charges_fin:47215,
+    _maintenance:66177,_energie:66177,_autres:109001},
+};
+
+// Résultats annuels Gold Gym (source : xlsx Income Statement)
+const BP_RESULTATS_GG={
+  1:{ca:746581,charges:636642,rex:109939,rnet:-237374,caf:45997,treso:0,marge_rex:0.147,marge_nette:-0.318},
+  2:{ca:1432159,charges:962322,rex:469837,rnet:98058,caf:381429,treso:0,marge_rex:0.328,marge_nette:0.068},
+  3:{ca:1654427,charges:1057150,rex:597277,rnet:200019,caf:483390,treso:0,marge_rex:0.361,marge_nette:0.121},
+};
+
 // Helper : renvoie les bonnes charges/résultats selon le studio
 function isLattesStudio(sid){return sid==='lattes';}
+function isGoldGymStudio(sid){return sid==='goldgym';}
 function getStudioCharges(sid,annee,lm){
-  var tbl=isLattesStudio(sid)?BP_CHARGES_ANNUELLES:BP_CHARGES_ANNUELLES_OTHER;
+  var tbl=isGoldGymStudio(sid)?BP_CHARGES_ANNUELLES_GG:isLattesStudio(sid)?BP_CHARGES_ANNUELLES:BP_CHARGES_ANNUELLES_OTHER;
   var ch=Object.assign({},tbl[annee]||tbl[3]);
   // Loyer mensuel custom (règle i) : remplace la ligne loyer dans les charges
-  if(lm!=null&&lm>0)ch.loyer=Math.round(lm*12);
+  if(lm!=null&&lm>0&&!isGoldGymStudio(sid))ch.loyer=Math.round(lm*12);
   return ch;
 }
 function getStudioResultats(sid){
-  return isLattesStudio(sid)?BP_RESULTATS:BP_RESULTATS_OTHER;
+  return isGoldGymStudio(sid)?BP_RESULTATS_GG:isLattesStudio(sid)?BP_RESULTATS:BP_RESULTATS_OTHER;
 }
 
 // ── Helpers CAPEX custom & loyer ─────────────────────────────────────────────
@@ -509,14 +536,14 @@ const CHARGES_NO_AMORT=BP_LINES.filter(function(l){return l.cat==='c'&&l.id!=='a
 // Utilise les CA mensuels absolus calculés depuis les adhérents BP
 function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
   opts=opts||{};
-  // Sélectionner la table de CA mensuel de référence selon l'année
-  // Si le CA passé diffère du CA de référence (studio custom), on scale proportionnellement
-  var caRef=annee===1?CA_A1:annee===2?CA_A2:CA_A3;
-  var caMensuelRef=annee===1?CA_MENSUEL_A1:annee===2?CA_MENSUEL_A2:CA_MENSUEL_A3;
-  var ratio=annualCA/caRef; // = 1.0 pour les studios standard, autre si CA custom
+  // Gold Gym : utiliser les tables CA mensuelles spécifiques
+  var _isGG=isGoldGymStudio(sid);
+  var caRef=_isGG?(annee===1?CA_GG_A1:annee===2?CA_GG_A2:CA_GG_A3):(annee===1?CA_A1:annee===2?CA_A2:CA_A3);
+  var caMensuelRef=_isGG?(annee===1?CA_MENSUEL_GG_A1:annee===2?CA_MENSUEL_GG_A2:CA_MENSUEL_GG_A3):(annee===1?CA_MENSUEL_A1:annee===2?CA_MENSUEL_A2:CA_MENSUEL_A3);
+  var ratio=annualCA/caRef;
   var ch=getStudioCharges(sid||'lattes',annee,opts.lm);
   // Régler amort proportionnellement au CAPEX custom (règle ii)
-  var CAPEX_REF=333500,LEASING_REF=121600,EMPRUNT_REF=230000,TAUX_REF=0.0373;
+  var CAPEX_REF=_isGG?2283600:333500,LEASING_REF=_isGG?1326000:121600,EMPRUNT_REF=_isGG?1826880:230000,TAUX_REF=_isGG?0.035:0.0373;
   if(opts.capex&&opts.capex>0&&Math.round(opts.capex)!==CAPEX_REF)
     ch.amort=Math.round(ch.amort*opts.capex/CAPEX_REF);
   // Régler creditbail proportionnellement au leasing custom
@@ -531,9 +558,10 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
   var rembtMensuel=Math.round(empruntEffectif/7/12);
 
   // Royalties annuelles exactes du dossier (pas de recalcul approximatif)
-  var royaltiesAnnuelles=annee===1?39204:annee===2?53303:66628;
+  // Gold Gym : redevances CA+Marketing = 8% du CA (source xlsx)
+  var royaltiesAnnuelles=_isGG?Math.round(annualCA*0.08):(annee===1?39204:annee===2?53303:66628);
   // Ratio royalties mensuel = proportionnel au CA mensuel
-  var royaltiesRatio=royaltiesAnnuelles/(annee===1?CA_A1:annee===2?CA_A2:CA_A3);
+  var royaltiesRatio=royaltiesAnnuelles/caRef;
 
   // IS annuel calculé sur le résultat exact du dossier
   var totalChargesHorsFinIS=ch.fournitures+ch.loyer+ch.charges_loc+ch.coachs+royaltiesAnnuelles
@@ -554,6 +582,7 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
     row.ca_prives=Math.round(ca*(annee===1?6600/448800:annee===2?9200/610190:11500/761841));
     row.ca_boutique=Math.round(ca*(annee===1?13200/448800:annee===2?17940/610190:21528/761841));
     // Charges fixes mensualisées
+    // Gold Gym : _maintenance→entretien, _energie→nettoyage, _autres→missions
     row.fournitures=Math.round(ch.fournitures/12);
     row.loyer=Math.round(ch.loyer/12);
     row.charges_loc=Math.round(ch.charges_loc/12);
@@ -563,10 +592,10 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
     row.software=Math.round(ch.software/12);
     row.assurance=Math.round(ch.assurance/12);
     row.mutuelle=Math.round(ch.mutuelle/12);
-    row.nettoyage=Math.round(ch.nettoyage/12);
+    row.nettoyage=Math.round((ch._energie||ch.nettoyage)/12);
     row.compta=Math.round(ch.compta/12);
-    row.entretien=Math.round(ch.entretien/12);
-    row.missions=Math.round(ch.missions/12);
+    row.entretien=Math.round((ch._maintenance||ch.entretien)/12);
+    row.missions=Math.round((ch._autres||ch.missions)/12);
     row.telecom=Math.round(ch.telecom/12);
     row.social=Math.round(ch.social/12);
     row.creditbail=Math.round(ch.creditbail/12);
@@ -602,6 +631,14 @@ function buildBP(annualCA,moisDebut,ramp,sid,opts){
 
 function build3YearBP(forecast,sid,opts){
   var md=forecast.moisDebut||0;
+  // Gold Gym : utiliser les CA spécifiques du BP xlsx
+  if(isGoldGymStudio(sid)){
+    return {
+      a1:buildBPFromDossier(CA_GG_A1,md,1,sid,opts),
+      a2:buildBPFromDossier(CA_GG_A2,md,2,sid,opts),
+      a3:buildBPFromDossier(CA_GG_A3,md,3,sid,opts),
+    };
+  }
   // On utilise TOUJOURS les CA du dossier de financement — les valeurs Supabase sont ignorées
   return {
     a1:buildBPFromDossier(CA_A1,md,1,sid,opts),
@@ -631,6 +668,6 @@ const INIT={
   levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Bail commercial a finaliser'],cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Credit-bail equipements a mettre en place'],cohorte:1,steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:333500,emprunt:230000,leasing:121600,alertes:['Deadline franchise 30/06/2027'],cohorte:2,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
-  goldgym:{name:'Maurepas Pariwest (Gold Gym)',addr:'Centre Commercial Pariwest, Rdpt Laurent Schwartz, 78310 Maurepas',societe:'COBE Society',ouverture:'2027',statut:'pipeline',capex:333500,emprunt:230000,leasing:121600,alertes:['Identification local en cours'],cohorte:1,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
+  goldgym:{name:'Maurepas Pariwest (Gold Gym)',addr:'Centre Commercial Pariwest, Rdpt Laurent Schwartz, 78310 Maurepas',societe:'COBE Society',ouverture:'2027',statut:'pipeline',capex:2283600,emprunt:1826880,leasing:1326000,tauxInteret:0.035,loyer_mensuel:16834,alertes:['Identification local en cours'],cohorte:1,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_GG_A1,annualCA2:CA_GG_A2,annualCA3:CA_GG_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
 };
 
