@@ -148,6 +148,41 @@ const LOCALISATION_DATA={
     ],
     synthese:'Toulouse représente un marché stratégique de premier plan — 3e aire urbaine française avec une croissance démographique soutenue (+1,5%/an) et un marché Pilates Reformer encore peu saturé. L\'emplacement précis reste à définir pour affiner l\'analyse trafic et démographique.',
   },
+  goldgym:{
+    trafic:[
+      {lbl:'TMJA estimé RD13 (accès Pariwest)',kpi:'~12 000',sub:'véh/jour · Axe principal zone commerciale Pariwest',col:'#D85A30'},
+      {lbl:'Fréquentation CC Pariwest',kpi:'4 M visiteurs/an',sub:'Centre commercial Auchan + galerie · Zone de chalandise 335 000 hab (130 000 ménages)',col:'#D85A30'},
+      {lbl:'Nature du trafic',kpi:'Courses + loisirs',sub:'Flux dominants : familles périurbaines · Pic samedi + mercredi · Forte rotation parking',col:'#D85A30'},
+    ],
+    transports:[
+      {lbl:'Transilien N — Paris-Montparnasse',kpi:'Gare La Verrière',sub:'~2 km du studio (5 min voiture, 25 min à pied) · Montparnasse en ~35 min',tags:[{t:'Connexion Paris directe',c:'tb'}],col:'#378ADD'},
+      {lbl:'Transilien U — La Défense',kpi:'Gare La Verrière',sub:'Correspondance directe La Défense · Dessert le corridor ouest francilien',tags:[{t:'Accès La Défense sans changement',c:'tb'}],col:'#378ADD'},
+      {lbl:'Bus réseau SQY (4 lignes)',kpi:'401 · 415 · 419 · Express',sub:'Réseau Saint-Quentin-en-Yvelines · Correspondances gare + centre-ville',tags:[{t:'Maillage local correct',c:'tb'}],col:'#1D9E75'},
+      {lbl:'Accessibilité voiture',kpi:'Parking 3 000+ places',sub:'Accès direct RD13 + RN10 · Parking gratuit illimité · Visibilité signalétique CC',tags:[{t:'Accessibilité voiture excellente',c:'tg'}],col:'#1D9E75'},
+    ],
+    demo:[
+      {lbl:'Population Maurepas (2022)',kpi:'~19 810',sub:'hab sur 8 km² · Ville résidentielle Yvelines',col:'#7F77DD'},
+      {lbl:'Densité',kpi:'2 475',sub:'hab/km² — moyenne pour zone périurbaine · Habitat pavillonnaire dominant',col:'#7F77DD'},
+      {lbl:'Revenu médian ménage',kpi:'40 340 €',sub:'/ an — supérieur à la moyenne nationale (20 590 €) · Cible fitness premium',col:'#7F77DD'},
+      {lbl:'Zone de chalandise élargie',kpi:'335 000 hab',sub:'130 000 ménages · Communes : Maurepas, Coignières, Élancourt, Trappes, Montigny',col:'#7F77DD'},
+    ],
+    comparaison:[
+      {lbl:'Trafic routier',pct:50,col:'#378ADD',note:'Maurepas ~12K véh/j vs Lattes ~28K — inférieur mais flux CC compensent'},
+      {lbl:'Fréquentation commerciale',pct:90,col:'#1D9E75',note:'4M visiteurs/an Pariwest — flux captif élevé'},
+      {lbl:'Densité pop.',pct:40,col:'#7F77DD',note:'Maurepas : 2 475/km² vs Lattes : ~600/km² — supérieur'},
+      {lbl:'Revenu médian',pct:100,col:'#BA7517',note:'Maurepas : 40 340€ vs Lattes : 26K€ — +55%'},
+      {lbl:'Accessibilité voiture',pct:100,col:'#D85A30',note:'Parking gratuit 3 000+ places vs Lattes — équivalent'},
+      {lbl:'Transports en commun',pct:30,col:'#888780',note:'Gare La Verrière à 2 km — dépendance voiture'},
+    ],
+    tags:[
+      {t:'Centre commercial majeur (4M visiteurs/an)',c:'tg'},{t:'Parking gratuit 3 000+ places',c:'tg'},
+      {t:'Revenu médian élevé (40 340€)',c:'tg'},{t:'Zone chalandise 335 000 hab',c:'tg'},
+      {t:'Familles CSP+ périurbaines',c:'tg'},{t:'Visibilité galerie commerciale',c:'tb'},
+      {t:'Dépendance voiture — peu de TC directs',c:'ta'},{t:'Gare La Verrière à 2 km (non piéton)',c:'ta'},
+      {t:'Concurrence fitness zone commerciale',c:'tr'},{t:'Flux courses → conversion fitness à travailler',c:'tb'},
+    ],
+    synthese:'Maurepas Pariwest offre un profil <b>périurbain haut de gamme</b> : zone de chalandise massive (335 000 hab, 130 000 ménages), revenus supérieurs (+55% vs Lattes), et flux captif de 4M visiteurs/an au CC. Le studio doit capitaliser sur la <b>visibilité en galerie commerciale</b> et le parking gratuit pour convertir le flux courses en abonnements fitness. Point de vigilance : la clientèle est quasi-exclusivement motorisée — les créneaux forts seront le samedi et les sorties de bureau (18h-20h).',
+  },
 };
 // ── Coordonnées des studios (pour la carte Leaflet interactive) ───────────────
 const STUDIO_COORDS={
@@ -156,6 +191,7 @@ const STUDIO_COORDS={
   levallois:{lat:48.8950,lon:2.2870},
   issy:{lat:48.8244,lon:2.2708},
   toulouse:{lat:43.6047,lon:1.4442},
+  goldgym:{lat:48.7645,lon:1.9350},
 };
 
 const fmt=function(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);};
@@ -595,5 +631,6 @@ const INIT={
   levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Bail commercial a finaliser'],cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,alertes:['Credit-bail equipements a mettre en place'],cohorte:1,steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:333500,emprunt:230000,leasing:121600,alertes:['Deadline franchise 30/06/2027'],cohorte:2,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
+  goldgym:{name:'Maurepas Pariwest (Gold Gym)',addr:'Centre Commercial Pariwest, Rdpt Laurent Schwartz, 78310 Maurepas',societe:'COBE Society',ouverture:'2027',statut:'pipeline',capex:333500,emprunt:230000,leasing:121600,alertes:['Identification local en cours'],cohorte:1,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
 };
 
