@@ -912,7 +912,7 @@ function _getScenarioCA(sid,ay){
     var _bpA2=getBPAdherents(sid);
     var bpM=idx<_bpA2.length?_bpA2[idx]:400;
     var membres=actuel[k]!=null?num(actuel[k]):bpM;
-    total+=computeSimCA(membres,cfg,ay);
+    total+=computeSimCA(membres,cfg,ay,sid);
   }
   return total;
 }
@@ -4539,9 +4539,10 @@ function renderLocalisation(s){
     h+='</div>';
 
     // Colonne droite : KPI panel
+    var _zrMax=isGoldGymStudio(S.selectedId)?10000:5000;
     var zr=S.mapZoneRadius||2000;
     var zrKm=zr>=1000?(zr/1000).toFixed(1)+' km':zr+' m';
-    var zrPct=((zr-500)/(5000-500)*100).toFixed(1);
+    var zrPct=((zr-500)/(_zrMax-500)*100).toFixed(1);
     h+='<div style="display:flex;flex-direction:column;gap:10px">';
 
     // ── Curseur zone + Population ──
@@ -4550,9 +4551,13 @@ function renderLocalisation(s){
     h+='<div style="font-size:9.5px;color:#0F6E56;text-transform:uppercase;letter-spacing:0.06em;font-weight:700">⭕ Zone de chalandise</div>';
     h+='<div style="font-size:13px;font-weight:700;color:#0f1f3d">Rayon : <span id="map-radius-label">'+zrKm+'</span></div>';
     h+='</div>';
-    h+='<input type="range" id="map-zone-slider" class="zone-slider" min="500" max="5000" step="250" value="'+zr+'" '
+    h+='<input type="range" id="map-zone-slider" class="zone-slider" min="500" max="'+_zrMax+'" step="250" value="'+zr+'" '
       +'style="--pct:'+zrPct+'%" oninput="updateZoneRadius(this.value)"/>';
-    h+='<div style="display:flex;justify-content:space-between;font-size:9.5px;color:#94a3b8;margin-top:4px;margin-bottom:12px"><span>500 m</span><span>1 km</span><span>2 km</span><span>3.5 km</span><span>5 km</span></div>';
+    if(_zrMax>5000){
+      h+='<div style="display:flex;justify-content:space-between;font-size:9.5px;color:#94a3b8;margin-top:4px;margin-bottom:12px"><span>500 m</span><span>2 km</span><span>4 km</span><span>7 km</span><span>10 km</span></div>';
+    } else {
+      h+='<div style="display:flex;justify-content:space-between;font-size:9.5px;color:#94a3b8;margin-top:4px;margin-bottom:12px"><span>500 m</span><span>1 km</span><span>2 km</span><span>3.5 km</span><span>5 km</span></div>';
+    }
     h+='<div id="map-pop-estimate" style="background:#f0f7f4;border-radius:10px;padding:12px;text-align:center;min-height:62px;display:flex;align-items:center;justify-content:center">';
     h+='<div style="font-size:11px;color:#94a3b8">Calcul en cours…</div>';
     h+='</div>';

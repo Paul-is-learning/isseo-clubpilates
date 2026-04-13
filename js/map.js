@@ -99,7 +99,8 @@ function calcPopZone(sid,radiusM){
 
 // Met à jour le cercle + déclenche le calcul INSEE (debounce 500ms)
 function updateZoneRadius(val){
-  var r=Math.max(500,Math.min(5000,parseInt(val)||2000));
+  var _maxR=isGoldGymStudio(S.selectedId)?10000:5000;
+  var r=Math.max(500,Math.min(_maxR,parseInt(val)||2000));
   S.mapZoneRadius=r;
   // Mise à jour immédiate cercle + UI
   if(_leafletMapInst&&_leafletCircles[2])_leafletCircles[2].setRadius(r);
@@ -107,7 +108,7 @@ function updateZoneRadius(val){
   var lbl=document.getElementById('map-radius-label');
   if(lbl)lbl.textContent=km;
   var sl=document.getElementById('map-zone-slider');
-  if(sl){var pct=((r-500)/(5000-500)*100).toFixed(1);sl.style.setProperty('--pct',pct+'%');}
+  if(sl){var pct=((r-500)/(_maxR-500)*100).toFixed(1);sl.style.setProperty('--pct',pct+'%');}
   // Loader pendant le debounce (popEl re-fetché à chaque fois pour éviter référence obsolète)
   (function(){var el=document.getElementById('map-pop-estimate');
     if(el)el.innerHTML='<div style="font-size:11px;color:#94a3b8;display:flex;align-items:center;gap:7px">'

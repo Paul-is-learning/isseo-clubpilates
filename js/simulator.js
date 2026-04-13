@@ -468,7 +468,7 @@ async function askAI(){
       var membres=reel!==null?reel:bpM;
       bpMois.push(bpM);
       realMois.push(reel);
-      simCaMois.push(computeSimCA(membres,cfg,ay));
+      simCaMois.push(computeSimCA(membres,cfg,ay,sid));
       if(reel!==null)hasReal=true;
     }
     var simCaAn=simCaMois.reduce(function(s,v){return s+v;},0);
@@ -543,7 +543,17 @@ function computeSimARPU(cfg){
 
 // CA simulé mensuel = membres × ARPU_packs × facteur_boutique(année)
 // Cohérence garantie : au défaut BP, CA_sim = CA_BP exact
-function computeSimCA(membres,cfg,ay){
+// Pour Gold Gym : CA basé sur le tarif GG (34€ HT/mois) ajusté proportionnellement
+function computeSimCA(membres,cfg,ay,sid){
+  if(sid&&isGoldGymStudio(sid)){
+    // Gold Gym : ARPU ≈ CA_annuel / somme_membres
+    var _ggCA=ay===1?CA_GG_A1:ay===2?CA_GG_A2:CA_GG_A3;
+    var _ggAdh=getBPAdherents(sid);
+    var offset=(ay-1)*12,sumBP=0;
+    for(var i=0;i<12;i++){sumBP+=(_ggAdh[offset+i]||0);}
+    var ggArpuMensuel=sumBP>0?_ggCA/sumBP:34;
+    return Math.round(membres*ggArpuMensuel);
+  }
   var f=SIM_BOUTIQUE_FACTOR[ay]||SIM_BOUTIQUE_FACTOR[1];
   return Math.round(membres*computeSimARPU(cfg)*f);
 }
@@ -633,12 +643,13 @@ function renderStepPrix(sid,ay,cfg){
 // ── Résultats simulateur (toujours visible) ──
 function renderSimResults(sid,ay,bpArr,realArr,cfg){
   var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
-  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay);});
+  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay,sid);});
   var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
-  var caBPAnnuel=bpArr.map(function(m){return computeBPCA(m,ay);}).reduce(function(s,v){return s+v;},0);
+  var caBPAnnuel=bpArr.map(function(m){return computeSimCA(m,{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67},ay,sid);}).reduce(function(s,v){return s+v;},0);
   var md=(S.studios[sid]&&S.studios[sid].forecast&&S.studios[sid].forecast.moisDebut)||0;
   var _bpOpts=getStudioBPOpts(sid);
-  var _caRef=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
+  var _isGG=isGoldGymStudio(sid);
+  var _caRef=_isGG?(ay===1?CA_GG_A1:ay===2?CA_GG_A2:CA_GG_A3):(ay===1?CA_A1:ay===2?CA_A2:CA_A3);
   // EBITDA simulé = basé sur le CA simulé (pas le CA BP de référence)
   var simBPRows=buildBPFromDossier(caAnnuel,md,ay,sid,_bpOpts);
   var ebitdaSim=simBPRows.reduce(function(s,r){return s+(r._ebitda||0);},0);
@@ -664,7 +675,7 @@ function renderSimResults(sid,ay,bpArr,realArr,cfg){
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">\u00c9cart CA vs BP</div>';
   h+='<div id="sim-ca-ecart" style="font-size:15px;font-weight:600;color:'+(ecartCA>=0?'#3B6D11':'#A32D2D')+'">'+(ecartCA>=0?'+':'')+fmt(ecartCA)+'</div></div>';
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">ARPU moyen/mois</div>';
-  h+='<div id="sim-arpu" style="font-size:15px;font-weight:600;color:#854F0B">'+(lastMembres>0?fmt(Math.round(computeSimCA(lastMembres,cfg,ay)/lastMembres)):'--')+'</div></div>';
+  h+='<div id="sim-arpu" style="font-size:15px;font-weight:600;color:#854F0B">'+(lastMembres>0?fmt(Math.round(computeSimCA(lastMembres,cfg,ay,sid)/lastMembres)):'--')+'</div></div>';
   h+='<div style="border-top:0.5px solid #e0e0d8;grid-column:1/-1;margin:4px 0 -4px"></div>';
   h+='<div><div style="font-size:11px;color:#888;margin-bottom:3px">EBITDA simul\u00e9</div>';
   h+='<div id="sim-ebitda" style="font-size:18px;font-weight:700;color:'+(ebitdaSim>=0?'#854F0B':'#A32D2D')+'">'+fmt(ebitdaSim)+'</div></div>';
@@ -894,9 +905,10 @@ function _refreshSimCA(sid,ay){
     realArr.push(actuel[k]!=null?num(actuel[k]):null);
   }
   var membres=bpArr.map(function(bp,i){return realArr[i]!==null?realArr[i]:bp;});
-  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay);});
+  var caArr=membres.map(function(m){return computeSimCA(m,cfg,ay,_liveSid);});
   var caAnnuel=caArr.reduce(function(s,v){return s+v;},0);
-  var caMensuelRef=ay===1?CA_MENSUEL_A1:ay===2?CA_MENSUEL_A2:CA_MENSUEL_A3;
+  var _isGGu=isGoldGymStudio(_liveSid);
+  var caMensuelRef=_isGGu?(ay===1?CA_MENSUEL_GG_A1:ay===2?CA_MENSUEL_GG_A2:CA_MENSUEL_GG_A3):(ay===1?CA_MENSUEL_A1:ay===2?CA_MENSUEL_A2:CA_MENSUEL_A3);
   var caBPAnnuel=caMensuelRef.reduce(function(s,v){return s+v;},0);
 
   // Mise à jour DOM résultats
@@ -909,11 +921,11 @@ function _refreshSimCA(sid,ay){
   var ecartCA=caAnnuel-caBPAnnuel;
   if(elEcart){elEcart.textContent=(ecartCA>=0?'+':'')+fmt(ecartCA);elEcart.style.color=ecartCA>=0?'#3B6D11':'#A32D2D';}
   var lastM=membres[membres.length-1];
-  if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg,ay)/lastM)):'--';
-  // Mise à jour EBITDA / Cash net en live — basé sur le CA simulé
   var _liveSid=S.selectedId;
+  if(elARPU)elARPU.textContent=lastM>0?fmt(Math.round(computeSimCA(lastM,cfg,ay,_liveSid)/lastM)):'--';
+  // Mise à jour EBITDA / Cash net en live — basé sur le CA simulé
   var _liveOpts=getStudioBPOpts(_liveSid);
-  var _caRefLive=ay===1?CA_A1:ay===2?CA_A2:CA_A3;
+  var _caRefLive=isGoldGymStudio(_liveSid)?(ay===1?CA_GG_A1:ay===2?CA_GG_A2:CA_GG_A3):(ay===1?CA_A1:ay===2?CA_A2:CA_A3);
   // EBITDA simulé = CA simulé
   var simBPRowsLive=buildBPFromDossier(caAnnuel,moisDebut,ay,_liveSid,_liveOpts);
   var ebitdaSimLive=simBPRowsLive.reduce(function(s,r){return s+(r._ebitda||0);},0);
