@@ -292,7 +292,7 @@ function saisirAdherentLive(sid,year,moisIdx,val){
   var bpArr=[];
   for(var i=0;i<12;i++){
     var idx=offset+i;
-    bpArr.push(idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400);
+    var _bpS=getBPAdherents(sid);bpArr.push(idx<_bpS.length?_bpS[idx]:400);
   }
   var actuel=S.adherents[sid]||{};
   var realArr=[];
@@ -462,7 +462,7 @@ async function askAI(){
     var offset=(ay-1)*12;
     var bpMois=[],realMois=[],simCaMois=[];
     for(var m=0;m<12;m++){
-      var bpM=BP_ADHERENTS[offset+m]||0;
+      var _bpSm=getBPAdherents(sid);var bpM=_bpSm[offset+m]||0;
       var key='y'+ay+'_m'+m;
       var reel=actuel[key]!==undefined?actuel[key]:null;
       var membres=reel!==null?reel:bpM;
@@ -885,7 +885,7 @@ function _refreshSimCA(sid,ay){
   var bpArr=[];
   for(var i=0;i<12;i++){
     var idx=offset+i;
-    bpArr.push(idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400);
+    var _bpS=getBPAdherents(sid);bpArr.push(idx<_bpS.length?_bpS[idx]:400);
   }
   var actuel=S.adherents[sid]||{};
   var realArr=[];

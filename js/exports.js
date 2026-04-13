@@ -37,7 +37,7 @@ function generateReport(sid,sections){
   });
   var beM=-1;
   for(var k=1;k<36;k++){if(ebtArr[k]>0&&ebtArr[k-1]<=0){beM=k;break;}}
-  var beAdh2=beM>=0?(beM<BP_ADHERENTS.length?BP_ADHERENTS[beM]:400):0;
+  var _bpE=getBPAdherents(sid);var beAdh2=beM>=0?(beM<_bpE.length?_bpE[beM]:400):0;
   var beMoiLabel=beM>=0?(MOIS[(md+beM)%12]+' '+(annee0+Math.floor(beM/12))+' \u00b7 '+beAdh2+' adh.'):'N/A';
   var capexDet=getCapexDetailForStudio(sid);
   var capexTots=computeCapexTotals(capexDet);
@@ -278,7 +278,7 @@ function generateReport(sid,sections){
   h+='<div class="sec-hdr"><h2>Strat\u00e9gie adh\u00e9rents</h2><div class="sub">Objectifs, progression & simulation</div></div>';
   h+='<div class="content">';
   h+='<div class="kpi-row">';
-  [{l:'Cible fin A1',v:BP_ADHERENTS[11],s:'membres'},{l:'Cible fin A2',v:BP_ADHERENTS[23],s:'membres'},{l:'Cible fin A3',v:BP_ADHERENTS[35],s:'membres'}].forEach(function(k){
+  var _bpEx=getBPAdherents(sid);[{l:'Cible fin A1',v:_bpEx[11],s:'membres'},{l:'Cible fin A2',v:_bpEx[23],s:'membres'},{l:'Cible fin A3',v:_bpEx[35],s:'membres'}].forEach(function(k){
     h+='<div class="kpi-card" style="border-top:3px solid #1a3a6b"><div class="kl">'+k.l+'</div><div class="kv" style="color:#1a3a6b">'+k.v+'</div><div class="ks">'+k.s+'</div></div>';
   });
   h+='</div>';
@@ -287,11 +287,11 @@ function generateReport(sid,sections){
     h+='<table><tr><th></th>';
     for(var mi=0;mi<12;mi++){h+='<th style="text-align:center;font-size:7.5px;padding:5px 3px">'+MOIS[(md+mi)%12]+'</th>';}
     h+='</tr><tr style="background:#f8fafc"><td style="font-weight:700;color:#64748b;font-size:8px">BP</td>';
-    for(var mi=0;mi<12;mi++){h+='<td style="text-align:center;font-size:9px">'+BP_ADHERENTS[ayi*12+mi]+'</td>';}
+    for(var mi=0;mi<12;mi++){h+='<td style="text-align:center;font-size:9px">'+_bpEx[ayi*12+mi]+'</td>';}
     h+='</tr><tr><td style="font-weight:700;color:#166534;font-size:8px">R\u00e9el</td>';
     for(var mi=0;mi<12;mi++){
       var key='y'+(ayi+1)+'_m'+mi;var val=actuelWF[key];
-      if(val!==undefined){var delta=val-BP_ADHERENTS[ayi*12+mi];
+      if(val!==undefined){var delta=val-_bpEx[ayi*12+mi];
         h+='<td style="text-align:center;font-weight:700;color:'+(delta>=0?'#166534':'#dc2626')+';font-size:9px">'+val+'</td>';
       }else{h+='<td style="text-align:center;color:#e2e8f0;font-size:9px">\u2014</td>';}
     }
@@ -422,7 +422,7 @@ function exportStudioCSV(sid){
     row('');row('Ann\u00e9e '+(yi+1));
     var hdr=[''];for(var mi=0;mi<12;mi++){hdr.push(MOIS[(md+mi)%12]);}
     row.apply(null,hdr);
-    var bpRow=['BP'];for(var mi=0;mi<12;mi++){bpRow.push(BP_ADHERENTS[yi*12+mi]);}
+    var bpRow=['BP'];for(var mi=0;mi<12;mi++){bpRow.push(_bpE[yi*12+mi]);}
     row.apply(null,bpRow);
     var realRow=['R\u00e9el'];for(var mi=0;mi<12;mi++){var key='y'+(yi+1)+'_m'+mi;var val=actuelWF[key];realRow.push(val!==undefined?val:'');}
     row.apply(null,realRow);
@@ -512,7 +512,7 @@ function exportStudioExcel(sid){
     for(var mi=0;mi<12;mi++){xml+=strCell(MOIS[(md+mi)%12]);}
     xml+='</Row>\n';
     xml+='<Row>'+strCell('BP');
-    for(var mi=0;mi<12;mi++){xml+=numCell(BP_ADHERENTS[yi*12+mi]);}
+    for(var mi=0;mi<12;mi++){xml+=numCell(_bpE[yi*12+mi]);}
     xml+='</Row>\n';
     xml+='<Row>'+strCell('R\u00e9el');
     for(var mi=0;mi<12;mi++){var key='y'+(yi+1)+'_m'+mi;var val=actuelWF[key];xml+=(val!==undefined?numCell(val):strCell('\u2014'));}

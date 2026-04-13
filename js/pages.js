@@ -909,7 +909,8 @@ function _getScenarioCA(sid,ay){
   for(var i=0;i<12;i++){
     var k='y'+ay+'_m'+i;
     var idx=offset+i;
-    var bpM=idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400;
+    var _bpA2=getBPAdherents(sid);
+    var bpM=idx<_bpA2.length?_bpA2[idx]:400;
     var membres=actuel[k]!=null?num(actuel[k]):bpM;
     total+=computeSimCA(membres,cfg,ay);
   }
@@ -1827,7 +1828,7 @@ function renderBPConsolide(){
 
     // Membres fin d'année 3
     var actuel=S.adherents[id]||{};
-    var membresFinA3=actuel['y3_m11']!=null?num(actuel['y3_m11']):(BP_ADHERENTS[35]||400);
+    var membresFinA3=actuel['y3_m11']!=null?num(actuel['y3_m11']):(getBPAdherents(id)[35]||400);
 
     totCapex+=s.capex||0;
     totCA1+=ca1;totCA2+=ca2;totCA3+=ca3;
@@ -2480,7 +2481,7 @@ function renderBP3YInfographic(sid,s){
     rows.forEach(function(r){ca+=r._ca;ebitda+=r._ebitda;rex+=r._rex;rnet+=r._result;cashnet+=(r._cashnet||0);});
     var offset=yi*12,mbrs=0,lastMbrs=0;
     for(var i=0;i<12;i++){
-      var v=offset+i<BP_ADHERENTS.length?BP_ADHERENTS[offset+i]:400;
+      var _bpAy=getBPAdherents(sid);var v=offset+i<_bpAy.length?_bpAy[offset+i]:400;
       mbrs+=v; if(i===11)lastMbrs=v;
     }
     return{ca:ca,ebitda:ebitda,rex:rex,rnet:rnet,cashnet:cashnet,avgMbrs:Math.round(mbrs/12),lastMbrs:lastMbrs,annee:annee0+yi};
@@ -2501,7 +2502,7 @@ function renderBP3YInfographic(sid,s){
     var ayWF=Math.floor(si/12)+1;
     var mWF=si%12;
     var keyWF='y'+ayWF+'_m'+mWF;
-    var bpM=si<BP_ADHERENTS.length?BP_ADHERENTS[si]:400;
+    var _bpSi=getBPAdherents(sid);var bpM=si<_bpSi.length?_bpSi[si]:400;
     var hasActual=actuelWF[keyWF]!==undefined;
     var sm=hasActual?actuelWF[keyWF]:bpM;
     if(hasActual)lastActualMonth=si;
@@ -2539,7 +2540,7 @@ function renderBP3YInfographic(sid,s){
     beMoiLabel=MOIS[beMoisIdx]+' '+(annee0+Math.floor(beM/12));
     // Nombre d'adhérents au mois du break-even (réel saisi ou BP)
     var _beAy=Math.floor(beM/12)+1,_beMo=beM%12,_beKey='y'+_beAy+'_m'+_beMo;
-    beAdherents=(actuelWF[_beKey]!==undefined)?num(actuelWF[_beKey]):(beM<BP_ADHERENTS.length?BP_ADHERENTS[beM]:400);
+    var _bpBe=getBPAdherents(sid);beAdherents=(actuelWF[_beKey]!==undefined)?num(actuelWF[_beKey]):(beM<_bpBe.length?_bpBe[beM]:400);
   }
 
   var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
@@ -2846,7 +2847,7 @@ function renderAdherents(sid,s){
   var bpArr=[],churnArr=[];
   for(var i=0;i<12;i++){
     var idx=offset+i;
-    bpArr.push(idx<BP_ADHERENTS.length?BP_ADHERENTS[idx]:400);
+    var _bpRa=getBPAdherents(sid);bpArr.push(idx<_bpRa.length?_bpRa[idx]:400);
     churnArr.push(idx<BP_CHURN.length?BP_CHURN[idx]:0);
   }
   var realArr=[];
@@ -3311,7 +3312,7 @@ function renderForecast(sid,s){
       {l:'Marge nette',v:[Math.round(sRN1/sCA1*100),Math.round(sRN2/sCA2*100),Math.round(sRN3/sCA3*100)],ref:[Math.round(ref[1].marge_nette*100),Math.round(ref[2].marge_nette*100),Math.round(ref[3].marge_nette*100)],pct:true},
       {l:'CAF',v:[sCAF1,sCAF2,sCAF3],ref:[ref[1].caf,ref[2].caf,ref[3].caf],cur:true},
       {l:'Cash net disponible',v:[sumF(a1s,'_cashnet'),sumF(a2s,'_cashnet'),sumF(a3s,'_cashnet')],ref:[ref[1].treso,ref[2].treso,ref[3].treso],cur:true,treso:true},
-      {l:'Adherents fin annee',v:[BP_ADHERENTS[11],BP_ADHERENTS[23],BP_ADHERENTS[35]],adh:true},
+      {l:'Adherents fin annee',v:[getBPAdherents(sid)[11],getBPAdherents(sid)[23],getBPAdherents(sid)[35]],adh:true},
     ];
     lines3.forEach(function(row){
       var isPct=row.pct===true,isAdh=row.adh===true,isTreso=row.treso===true,isGreen=row.green===true;
@@ -4558,9 +4559,10 @@ function renderLocalisation(s){
     h+='<div id="map-adherent-pct" style="margin-top:10px;padding:10px 12px;background:#f8faff;border-radius:10px;border:0.5px solid #dde5f5">';
     h+='<div style="font-size:9.5px;color:#5a6e99;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;margin-bottom:8px">🎯 Adhérents cibles vs zone de chalandise</div>';
     h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;text-align:center" id="map-adherent-grid">';
-    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A1</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+BP_ADHERENTS[11]+'</div><div id="map-adh-pct-a1" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
-    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A2</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+BP_ADHERENTS[23]+'</div><div id="map-adh-pct-a2" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
-    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A3</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+BP_ADHERENTS[35]+'</div><div id="map-adh-pct-a3" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
+    var _bpAdh=getBPAdherents(S.selectedId);
+    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A1</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+_bpAdh[11]+'</div><div id="map-adh-pct-a1" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
+    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A2</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+_bpAdh[23]+'</div><div id="map-adh-pct-a2" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
+    h+='<div style="background:#eef2ff;border-radius:8px;padding:7px 4px"><div style="font-size:8px;color:#94a3b8;margin-bottom:2px">Fin A3</div><div style="font-size:13px;font-weight:700;color:#1a3a6b">'+_bpAdh[35]+'</div><div id="map-adh-pct-a3" style="font-size:12px;font-weight:700;color:#94a3b8;margin-top:2px">—</div></div>';
     h+='</div>';
     h+='</div>';
     h+='<div id="map-age35-card" style="margin-top:10px;padding:11px 13px;background:#f5f3ff;border-radius:10px;border:0.5px solid #d8d0f5;display:flex;align-items:center;justify-content:space-between;gap:8px">';

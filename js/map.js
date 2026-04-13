@@ -162,7 +162,8 @@ function _updateAdherentPct(totalPop){
   if(pctEl){pctEl.style.color=pop35?'#6555a0':'#94a3b8';pctEl.textContent=pop35?'53.7%':'—';}
   // Grille A1/A2/A3 : % adhérents cibles par rapport à pop 35+ de la zone
   var ids=['map-adh-pct-a1','map-adh-pct-a2','map-adh-pct-a3'];
-  var cibles=[BP_ADHERENTS[11],BP_ADHERENTS[23],BP_ADHERENTS[35]];
+  var _bpA=getBPAdherents(S.selectedId);
+  var cibles=[_bpA[11],_bpA[23],_bpA[35]];
   for(var i=0;i<3;i++){
     var el=document.getElementById(ids[i]);
     if(!el)continue;
