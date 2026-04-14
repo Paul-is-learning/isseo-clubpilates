@@ -14,9 +14,13 @@ function animateCounters(root){
     var start=performance.now();
     function ease(t){return 1-Math.pow(1-t,3);} // easeOutCubic
     function format(v){
-      if(fmt==='eur')return (typeof window.fmt==='function')?window.fmt(Math.round(v)):Math.round(v).toLocaleString('fr-FR');
-      if(fmt==='int')return Math.round(v).toLocaleString('fr-FR');
-      return Math.round(v).toLocaleString('fr-FR');
+      var r=Math.round(v);
+      if(fmt==='eur'){
+        try{return window.fmt?window.fmt(r):(typeof window.fmt!=='undefined'?window.fmt(r):r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €');}catch(e){}
+        return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €';
+      }
+      if(fmt==='int')return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ');
+      return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ');
     }
     function tick(now){
       var p=Math.min(1,(now-start)/duration);

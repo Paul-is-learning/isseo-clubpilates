@@ -194,9 +194,11 @@ const STUDIO_COORDS={
   goldgym:{lat:48.7645,lon:1.9350},
 };
 
-const fmt=function(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0);};
-const fmtN=function(n){return isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0);};
+const fmt=function(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0).replace(/\u202f|\u00a0/g,' ');};
+const fmtN=function(n){return isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0).replace(/\u202f|\u00a0/g,' ');};
 const num=function(v,fb){if(fb===undefined)fb=0;var n=parseFloat(v);return isNaN(n)?fb:n;};
+// Expose global formatters for modules that use window.fmt
+window.fmt=fmt;window.fmtN=fmtN;
 const cleanName=function(n){return n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-zA-Z0-9._-]/g,'_').replace(/_+/g,'_');};
 
 // ── BP Adherents 36 mois (source Plan Financier Club Pilates PDF) ─────────────
