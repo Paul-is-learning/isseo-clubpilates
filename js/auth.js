@@ -334,6 +334,11 @@ function renderAdminPanel(){
     });
     h+='</tbody></table>';
   }
+  // ── Section invitations ──
+  if(typeof renderInvitationsSection==='function'){
+    h+=renderInvitationsSection();
+  }
+
   h+='</div>';
   return h;
 }
@@ -886,5 +891,245 @@ function getUserPhoto(profile){
 // Helper: get all filtered studio IDs
 function _getStudioIds(){
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
-  return Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&st.alertes&&(!filter||filter(st));});
+  var ids=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&st.alertes&&(!filter||filter(st));});
+  // Viewer granulaire : filtrer par studios autorisés
+  if(isViewer()&&S.user&&S.adminSettings.viewerPerms&&S.adminSettings.viewerPerms[S.user.id]){
+    var allowed=S.adminSettings.viewerPerms[S.user.id].studios||[];
+    if(allowed.length>0)ids=ids.filter(function(id){return allowed.indexOf(id)>=0;});
+  }
+  return ids;
+}
+
+// ── Invitation Viewer system ─────────────────────────────────────────────────
+
+function _generatePassword(){
+  var chars='abcdefghijkmnpqrstuvwxyz23456789';
+  var pwd='';for(var i=0;i<8;i++)pwd+=chars[Math.floor(Math.random()*chars.length)];
+  return pwd;
+}
+
+function showInviteViewerModal(){
+  var overlay=document.createElement('div');
+  overlay.id='invite-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var allStudios=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&st.alertes;});
+  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:540px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)">';
+  box+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>';
+  box+='<div><div style="font-size:16px;font-weight:700;color:#1a1a1a">Inviter un viewer</div>';
+  box+='<div style="font-size:11px;color:#888">L\'invitation sera soumise à Paul Bécaud pour approbation</div></div></div>';
+  // Nom + Email
+  box+='<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">';
+  box+='<div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Nom complet *</label>';
+  box+='<input id="inv-nom" type="text" placeholder="Jean Dupont" style="width:100%;padding:9px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;outline:none;box-sizing:border-box"/></div>';
+  box+='<div><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:4px">Email *</label>';
+  box+='<input id="inv-email" type="email" placeholder="jean@email.com" style="width:100%;padding:9px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;outline:none;box-sizing:border-box"/></div>';
+  box+='</div>';
+  // Studios checkboxes
+  box+='<div style="margin-bottom:14px"><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:6px">Projets accessibles *</label>';
+  box+='<div style="display:flex;flex-wrap:wrap;gap:6px;max-height:120px;overflow-y:auto;padding:8px;background:#f8f9fb;border-radius:8px;border:1px solid #eee">';
+  allStudios.forEach(function(id){
+    var st=S.studios[id];
+    box+='<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#333;cursor:pointer;padding:3px 8px;background:#fff;border-radius:6px;border:1px solid #e8e8e0;white-space:nowrap"><input type="checkbox" class="inv-studio-cb" value="'+id+'" style="accent-color:#1a3a6b"/> '+st.name+'</label>';
+  });
+  box+='</div>';
+  box+='<button onclick="_invSelectAllStudios()" style="font-size:10px;color:#1a3a6b;background:none;border:none;cursor:pointer;margin-top:4px;text-decoration:underline">Tout sélectionner</button>';
+  box+='</div>';
+  // Tabs checkboxes
+  box+='<div style="margin-bottom:16px"><label style="font-size:11px;font-weight:600;color:#555;display:block;margin-bottom:6px">Onglets accessibles *</label>';
+  box+='<div style="display:flex;flex-wrap:wrap;gap:6px;padding:8px;background:#f8f9fb;border-radius:8px;border:1px solid #eee">';
+  allTabs.forEach(function(t){
+    box+='<label style="display:flex;align-items:center;gap:4px;font-size:11px;color:#333;cursor:pointer;padding:3px 8px;background:#fff;border-radius:6px;border:1px solid #e8e8e0"><input type="checkbox" class="inv-tab-cb" value="'+t[0]+'" checked style="accent-color:#1a3a6b"/> '+t[1]+'</label>';
+  });
+  box+='</div>';
+  box+='<button onclick="_invSelectAllTabs()" style="font-size:10px;color:#1a3a6b;background:none;border:none;cursor:pointer;margin-top:4px;text-decoration:underline">Tout sélectionner</button>';
+  box+='</div>';
+  // Error + buttons
+  box+='<div id="inv-err" style="font-size:11px;color:#A32D2D;min-height:16px;margin-bottom:8px"></div>';
+  box+='<div style="display:flex;justify-content:flex-end;gap:8px">';
+  box+='<button onclick="document.getElementById(\'invite-modal\').remove()" style="padding:9px 18px;border:1px solid #dde;border-radius:10px;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer">Annuler</button>';
+  box+='<button onclick="submitInvitation()" style="padding:9px 18px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;box-shadow:0 4px 12px rgba(26,58,107,0.2)">Envoyer la demande</button>';
+  box+='</div></div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var el=document.getElementById('inv-nom');if(el)el.focus();},100);
+}
+
+function _invSelectAllStudios(){
+  document.querySelectorAll('.inv-studio-cb').forEach(function(cb){cb.checked=true;});
+}
+function _invSelectAllTabs(){
+  document.querySelectorAll('.inv-tab-cb').forEach(function(cb){cb.checked=true;});
+}
+
+async function submitInvitation(){
+  var nom=(document.getElementById('inv-nom')||{}).value||'';
+  var email=(document.getElementById('inv-email')||{}).value||'';
+  var studios=[];document.querySelectorAll('.inv-studio-cb:checked').forEach(function(cb){studios.push(cb.value);});
+  var tabs=[];document.querySelectorAll('.inv-tab-cb:checked').forEach(function(cb){tabs.push(cb.value);});
+  var errEl=document.getElementById('inv-err');
+  if(!nom.trim()||!email.trim()){if(errEl)errEl.textContent='Nom et email sont obligatoires.';return;}
+  if(studios.length===0){if(errEl)errEl.textContent='Sélectionnez au moins un projet.';return;}
+  if(tabs.length===0){if(errEl)errEl.textContent='Sélectionnez au moins un onglet.';return;}
+  var inv={
+    id:'inv_'+Date.now(),
+    nom:nom.trim(),
+    email:email.trim().toLowerCase(),
+    invitedBy:S.user?S.user.id:'',
+    invitedByName:(S.profile&&S.profile.nom)||'Admin',
+    studios:studios,
+    tabs:tabs,
+    status:'pending',
+    createdAt:new Date().toISOString(),
+    approvedAt:null,
+    userId:null,
+    password:null
+  };
+  if(!S.adminSettings.invitations)S.adminSettings.invitations=[];
+  S.adminSettings.invitations.push(inv);
+  await saveAdminSettings();
+  var modal=document.getElementById('invite-modal');
+  if(modal)modal.remove();
+  toast('Demande d\'invitation envoyée à Paul Bécaud pour validation');
+  render();
+}
+
+async function approveInvitation(invId){
+  if(!isSuperAdmin())return;
+  var invs=S.adminSettings.invitations||[];
+  var inv=invs.find(function(i){return i.id===invId;});
+  if(!inv){toast('Invitation introuvable');return;}
+  // Générer mot de passe
+  var pwd=_generatePassword();
+  // Créer le compte Supabase
+  var currentSession=await sb.auth.getSession();
+  var res=await sb.auth.signUp({email:inv.email,password:pwd,options:{data:{nom:inv.nom}}});
+  if(res.error){toast('Erreur création compte: '+res.error.message);return;}
+  var newUid=res.data.user?res.data.user.id:null;
+  if(!newUid){toast('Erreur: UID non obtenu');return;}
+  // Restaurer session admin
+  if(currentSession.data&&currentSession.data.session){
+    await sb.auth.setSession({access_token:currentSession.data.session.access_token,refresh_token:currentSession.data.session.refresh_token});
+  }
+  // Profil
+  await sb.from('profiles').upsert({id:newUid,nom:inv.nom,email:inv.email,role:'viewer'});
+  // Ajouter comme viewer
+  var viewers=S.adminSettings.viewers||[];
+  if(viewers.indexOf(newUid)<0)viewers.push(newUid);
+  S.adminSettings.viewers=viewers;
+  // Rôle
+  if(!S.adminSettings.roles)S.adminSettings.roles={};
+  S.adminSettings.roles[newUid]='viewer';
+  // Permissions granulaires
+  if(!S.adminSettings.viewerPerms)S.adminSettings.viewerPerms={};
+  S.adminSettings.viewerPerms[newUid]={studios:inv.studios,tabs:inv.tabs};
+  // Password
+  if(!S.adminSettings.passwords)S.adminSettings.passwords={};
+  S.adminSettings.passwords[newUid]=encodePwd(pwd);
+  // Update invitation
+  inv.status='approved';
+  inv.approvedAt=new Date().toISOString();
+  inv.userId=newUid;
+  inv.password=encodePwd(pwd);
+  await saveAdminSettings();
+  await loadAdminUsers();
+  toast('Invitation approuvée — compte créé pour '+inv.nom);
+  render();
+}
+
+async function rejectInvitation(invId){
+  if(!isSuperAdmin())return;
+  var invs=S.adminSettings.invitations||[];
+  var inv=invs.find(function(i){return i.id===invId;});
+  if(!inv)return;
+  inv.status='rejected';
+  await saveAdminSettings();
+  toast('Invitation rejetée');
+  render();
+}
+
+function copyInviteLink(invId){
+  var invs=S.adminSettings.invitations||[];
+  var inv=invs.find(function(i){return i.id===invId;});
+  if(!inv||inv.status!=='approved')return;
+  var pwd=inv.password?decodePwd(inv.password):'(voir admin)';
+  var url=window.location.origin+window.location.pathname;
+  var text='🔗 Accès ISSEO Club Pilates\n\nURL : '+url+'\nEmail : '+inv.email+'\nMot de passe : '+pwd+'\n\n👁 Accès en lecture seule';
+  navigator.clipboard.writeText(text).then(function(){toast('Lien copié dans le presse-papier');});
+}
+
+function deleteInvitation(invId){
+  if(!isSuperAdmin())return;
+  var invs=S.adminSettings.invitations||[];
+  S.adminSettings.invitations=invs.filter(function(i){return i.id!==invId;});
+  saveAdminSettings();
+  toast('Invitation supprimée');
+  render();
+}
+
+function renderInvitationsSection(){
+  var invs=(S.adminSettings.invitations||[]).slice().sort(function(a,b){return (b.createdAt||'').localeCompare(a.createdAt||'');});
+  if(!invs.length)return '';
+  var pending=invs.filter(function(i){return i.status==='pending';});
+  var approved=invs.filter(function(i){return i.status==='approved';});
+  var rejected=invs.filter(function(i){return i.status==='rejected';});
+  var h='<div style="margin-top:24px;padding-top:20px;border-top:2px solid #e8e8e0">';
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">';
+  h+='<div style="font-size:15px;font-weight:700;color:#1a1a1a;display:flex;align-items:center;gap:8px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg> Invitations viewers</div>';
+  if(pending.length>0)h+='<span style="background:#FEF3C7;color:#92400E;font-size:10px;font-weight:600;padding:3px 8px;border-radius:6px">'+pending.length+' en attente</span>';
+  h+='</div>';
+  // Pending
+  if(pending.length>0){
+    h+='<div style="margin-bottom:14px">';
+    pending.forEach(function(inv){
+      h+='<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:10px;padding:12px 14px;margin-bottom:8px">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px">';
+      h+='<div><div style="font-weight:600;font-size:13px;color:#1a1a1a">'+inv.nom+' <span style="font-weight:400;color:#888;font-size:11px">'+inv.email+'</span></div>';
+      h+='<div style="font-size:10px;color:#888;margin-top:2px">Invité par <b>'+inv.invitedByName+'</b> · '+new Date(inv.createdAt).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'})+'</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:6px">';
+      inv.studios.forEach(function(sid){var st=S.studios[sid];if(st)h+='<span style="font-size:9px;background:#EEF2FF;color:#3730A3;padding:2px 6px;border-radius:4px">'+st.name+'</span>';});
+      h+='</div>';
+      h+='<div style="display:flex;flex-wrap:wrap;gap:3px;margin-top:4px">';
+      inv.tabs.forEach(function(t){h+='<span style="font-size:9px;background:#F0FDF4;color:#166534;padding:2px 6px;border-radius:4px">'+t+'</span>';});
+      h+='</div></div>';
+      h+='<div style="display:flex;gap:6px;flex-shrink:0">';
+      if(isSuperAdmin()){
+        h+='<button onclick="approveInvitation(\''+inv.id+'\')" style="padding:6px 14px;background:#16A34A;color:#fff;border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Approuver</button>';
+        h+='<button onclick="rejectInvitation(\''+inv.id+'\')" style="padding:6px 14px;background:none;border:1px solid #E5E7EB;color:#6B7280;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer">Rejeter</button>';
+      } else {
+        h+='<span style="font-size:10px;color:#92400E;font-weight:600;padding:6px 10px;background:#FEF3C7;border-radius:8px">⏳ En attente d\'approbation</span>';
+      }
+      h+='</div></div></div>';
+    });
+    h+='</div>';
+  }
+  // Approved
+  if(approved.length>0){
+    h+='<div style="margin-bottom:14px">';
+    approved.forEach(function(inv){
+      h+='<div style="background:#F0FDF4;border:1px solid #BBF7D0;border-radius:10px;padding:12px 14px;margin-bottom:8px">';
+      h+='<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px">';
+      h+='<div><div style="font-weight:600;font-size:13px;color:#1a1a1a">✅ '+inv.nom+' <span style="font-weight:400;color:#888;font-size:11px">'+inv.email+'</span></div>';
+      h+='<div style="font-size:10px;color:#888;margin-top:2px">Approuvé · '+inv.studios.length+' projet'+(inv.studios.length>1?'s':'')+' · '+inv.tabs.length+' onglet'+(inv.tabs.length>1?'s':'')+'</div></div>';
+      h+='<div style="display:flex;gap:6px">';
+      h+='<button onclick="copyInviteLink(\''+inv.id+'\')" style="padding:5px 12px;background:#1a3a6b;color:#fff;border:none;border-radius:7px;font-size:10px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:4px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg> Copier lien</button>';
+      if(isSuperAdmin())h+='<button onclick="deleteInvitation(\''+inv.id+'\')" style="padding:5px 8px;background:none;border:1px solid #e0e0da;border-radius:7px;font-size:10px;color:#A32D2D;cursor:pointer" title="Supprimer">✕</button>';
+      h+='</div></div></div>';
+    });
+    h+='</div>';
+  }
+  // Rejected
+  if(rejected.length>0){
+    h+='<details style="margin-bottom:8px"><summary style="font-size:11px;color:#888;cursor:pointer;margin-bottom:6px">'+rejected.length+' invitation'+(rejected.length>1?'s':'')+' rejetée'+(rejected.length>1?'s':'')+'</summary>';
+    rejected.forEach(function(inv){
+      h+='<div style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:8px 12px;margin-bottom:4px;font-size:11px;color:#991B1B;display:flex;justify-content:space-between;align-items:center">';
+      h+='<span>❌ '+inv.nom+' ('+inv.email+') — par '+inv.invitedByName+'</span>';
+      if(isSuperAdmin())h+='<button onclick="deleteInvitation(\''+inv.id+'\')" style="background:none;border:none;color:#ccc;cursor:pointer;font-size:12px">✕</button>';
+      h+='</div>';
+    });
+    h+='</details>';
+  }
+  h+='</div>';
+  return h;
 }
