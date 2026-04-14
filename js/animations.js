@@ -315,15 +315,248 @@ function emptyState(icon,title,sub){
   return '<div class="empty-state">'+ic+'<div class="es-title">'+title+'</div>'+(sub?'<div class="es-sub">'+sub+'</div>':'')+'</div>';
 }
 
+// ── 12. Page transitions ──
+// Applique une animation au contenu principal à chaque changement de page
+var _lastPageKey=null;
+function triggerPageTransition(){
+  var root=document.getElementById('root');
+  if(!root)return;
+  var pageKey=(window.S&&S.page?S.page:'')+'|'+(window.S&&S.selectedId?S.selectedId:'')+'|'+(window.S&&S.view?S.view:'');
+  if(pageKey===_lastPageKey)return;
+  _lastPageKey=pageKey;
+  // Find main-content child
+  var mc=root.querySelector('.main-content');
+  if(!mc)mc=root;
+  mc.classList.remove('page-enter');
+  // force reflow
+  void mc.offsetWidth;
+  mc.classList.add('page-enter');
+}
+
+// ── 13. Scroll reveal ──
+var _revealObserver=null;
+function initScrollReveal(){
+  if(!window.IntersectionObserver)return;
+  if(!_revealObserver){
+    _revealObserver=new IntersectionObserver(function(entries){
+      entries.forEach(function(e){
+        if(e.isIntersecting){
+          e.target.classList.add('reveal-in');
+          _revealObserver.unobserve(e.target);
+        }
+      });
+    },{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
+  }
+  // Observe targets : .card, .box, .cards > div
+  var targets=document.querySelectorAll('.card:not([data-reveal-bound]),.box:not([data-reveal-bound])');
+  targets.forEach(function(el,i){
+    el.setAttribute('data-reveal-bound','1');
+    el.classList.add('reveal');
+    // subtle stagger — up to 6 items
+    el.style.transitionDelay=Math.min(i,6)*40+'ms';
+    _revealObserver.observe(el);
+  });
+}
+
+// ── 14. Command palette ⌘K ──
+function openCommandPalette(){
+  if(document.getElementById('cmd-palette'))return;
+  var overlay=document.createElement('div');
+  overlay.id='cmd-palette';
+  overlay.className='cmd-palette-overlay';
+  // Build items list
+  var items=_buildCommandItems();
+  var box='<div class="cmd-palette-box">';
+  box+='<div class="cmd-input-wrap">';
+  box+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+  box+='<input id="cmd-input" type="text" placeholder="Rechercher studios, pages, actions..." autocomplete="off"/>';
+  box+='<span class="cmd-kbd">Esc</span></div>';
+  box+='<div class="cmd-results" id="cmd-results"></div>';
+  box+='<div class="cmd-footer"><span><span class="cmd-kbd">↑↓</span> naviguer</span><span><span class="cmd-kbd">↵</span> valider</span><span><span class="cmd-kbd">⌘K</span> fermer</span></div>';
+  box+='</div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  var input=document.getElementById('cmd-input');
+  var results=document.getElementById('cmd-results');
+  var filtered=items.slice();
+  var sel=0;
+  function renderResults(){
+    if(!filtered.length){results.innerHTML='<div class="cmd-empty">Aucun résultat</div>';return;}
+    var h='';
+    filtered.slice(0,20).forEach(function(it,i){
+      h+='<div class="cmd-item'+(i===sel?' selected':'')+'" data-idx="'+i+'">';
+      h+='<div class="cmd-icon" style="background:'+it.color+'18;color:'+it.color+'">'+it.icon+'</div>';
+      h+='<div class="cmd-text"><div class="cmd-label">'+it.label+'</div>';
+      if(it.sub)h+='<div class="cmd-sub">'+it.sub+'</div>';
+      h+='</div>';
+      h+='<div class="cmd-cat">'+it.cat+'</div>';
+      h+='</div>';
+    });
+    results.innerHTML=h;
+    // bind click
+    results.querySelectorAll('.cmd-item').forEach(function(el){
+      el.addEventListener('click',function(){
+        var i=parseInt(el.getAttribute('data-idx'),10);
+        if(filtered[i])runCommandItem(filtered[i]);
+      });
+    });
+  }
+  function filter(){
+    var q=(input.value||'').toLowerCase().trim();
+    if(!q)filtered=items.slice();
+    else filtered=items.filter(function(it){return (it.label+' '+(it.sub||'')+' '+it.cat).toLowerCase().indexOf(q)>=0;});
+    sel=0;renderResults();
+  }
+  function close(){if(overlay.parentNode)overlay.remove();document.removeEventListener('keydown',keyHandler);}
+  function runCommandItem(it){close();if(it.action)setTimeout(it.action,20);}
+  function keyHandler(e){
+    if(e.key==='Escape'){e.preventDefault();close();return;}
+    if(e.key==='ArrowDown'){e.preventDefault();sel=Math.min(sel+1,Math.min(filtered.length-1,19));renderResults();_scrollSelIntoView();return;}
+    if(e.key==='ArrowUp'){e.preventDefault();sel=Math.max(sel-1,0);renderResults();_scrollSelIntoView();return;}
+    if(e.key==='Enter'){e.preventDefault();if(filtered[sel])runCommandItem(filtered[sel]);return;}
+  }
+  function _scrollSelIntoView(){
+    var el=results.querySelector('.cmd-item.selected');
+    if(el&&el.scrollIntoView)el.scrollIntoView({block:'nearest'});
+  }
+  overlay.addEventListener('click',function(e){if(e.target===overlay)close();});
+  input.addEventListener('input',filter);
+  document.addEventListener('keydown',keyHandler);
+  renderResults();
+  setTimeout(function(){input.focus();},50);
+}
+function _buildCommandItems(){
+  var items=[];
+  // Pages
+  var pages=[
+    {l:'Accueil',p:'accueil',c:'#3b82f6',i:'🏠'},
+    {l:'Studios',p:'projets',c:'#10b981',i:'📂'},
+    {l:'Prospection',p:'prospection',c:'#0F6E56',i:'🔍'},
+    {l:'BP Consolidé',p:'bp',c:'#854F0B',i:'📊'},
+    {l:'Récap engagements',p:'engagements',c:'#92630a',i:'📋'}
+  ];
+  pages.forEach(function(p){
+    items.push({label:p.l,sub:'Naviguer vers '+p.l,icon:p.i,color:p.c,cat:'Page',action:function(){if(typeof setPage==='function')setPage(p.p);}});
+  });
+  // Studios
+  if(window.S&&S.studios){
+    Object.keys(S.studios).forEach(function(id){
+      var st=S.studios[id];
+      items.push({label:st.nom||id,sub:'Ouvrir le studio',icon:'🏢',color:'#6366f1',cat:'Studio',action:function(){if(typeof openDetail==='function')openDetail(id);}});
+    });
+  }
+  // Actions
+  items.push({label:'Basculer mode sombre / clair',sub:'Toggle thème',icon:'🌓',color:'#8b5cf6',cat:'Action',action:function(){if(typeof toggleDarkMode==='function')toggleDarkMode();}});
+  items.push({label:'Nouveau studio',sub:'Créer un studio',icon:'➕',color:'#22c55e',cat:'Action',action:function(){if(typeof setPage==='function'){setPage('projets');setTimeout(function(){if(typeof toggleNewForm==='function')toggleNewForm();},200);}}});
+  return items;
+}
+function initCommandPaletteShortcut(){
+  if(window._cmdKInit)return;
+  window._cmdKInit=true;
+  document.addEventListener('keydown',function(e){
+    if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){
+      e.preventDefault();
+      openCommandPalette();
+    }
+  });
+}
+
+// ── 15. Toast redesign ──
+// Remplace window.toast pour empiler en bas droite
+function initToastStack(){
+  if(window._toastEnhanced)return;
+  window._toastEnhanced=true;
+  var stack=document.createElement('div');
+  stack.id='toast-stack';
+  document.body.appendChild(stack);
+  var _origToast=window.toast;
+  window.toast=function(msg,opts){
+    opts=opts||{};
+    // Auto-detect type from content
+    var type=opts.type||'info';
+    var s=(msg||'').toString();
+    if(/erreur|error|échec|échec/i.test(s))type='error';
+    else if(/✓|enregistr|sauvegard|ajout|cré[eé]|succ[eè]s|mis à jour|activ[eé]/i.test(s))type='success';
+    else if(/attention|warn|avertissement/i.test(s))type='warn';
+    var icons={
+      success:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+      error:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>',
+      warn:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+      info:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>'
+    };
+    var el=document.createElement('div');
+    el.className='toast-new toast-'+type;
+    el.innerHTML='<div class="toast-icon">'+(icons[type]||icons.info)+'</div><div class="toast-msg">'+msg+'</div><button class="toast-close" aria-label="Fermer">×</button><div class="toast-progress"></div>';
+    stack.appendChild(el);
+    var dur=opts.duration||3200;
+    var start=Date.now();
+    var pb=el.querySelector('.toast-progress');
+    var raf;
+    function tick(){
+      var elapsed=Date.now()-start;
+      var p=Math.min(1,elapsed/dur);
+      if(pb)pb.style.transform='scaleX('+(1-p)+')';
+      if(p<1)raf=requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
+    function dismiss(){
+      el.classList.add('out');
+      cancelAnimationFrame(raf);
+      setTimeout(function(){if(el.parentNode)el.remove();},320);
+    }
+    el.querySelector('.toast-close').addEventListener('click',dismiss);
+    setTimeout(dismiss,dur);
+    // Also update legacy #toast element to stay in sync
+    var legacy=document.getElementById('toast');
+    if(legacy){legacy.textContent='';legacy.classList.remove('show');}
+  };
+}
+
+// ── 16. Ripple effect ──
+function initRipple(){
+  if(window._rippleInit)return;
+  window._rippleInit=true;
+  document.addEventListener('click',function(e){
+    var btn=e.target.closest('.btn,button.btn-primary,button.btn-secondary');
+    if(!btn||btn.disabled)return;
+    var r=btn.getBoundingClientRect();
+    var size=Math.max(r.width,r.height)*2;
+    var ripple=document.createElement('span');
+    ripple.className='ripple';
+    ripple.style.width=ripple.style.height=size+'px';
+    ripple.style.left=(e.clientX-r.left-size/2)+'px';
+    ripple.style.top=(e.clientY-r.top-size/2)+'px';
+    // ensure btn has position relative + overflow hidden via class
+    if(getComputedStyle(btn).position==='static')btn.style.position='relative';
+    btn.style.overflow='hidden';
+    btn.appendChild(ripple);
+    setTimeout(function(){if(ripple.parentNode)ripple.remove();},650);
+  },true);
+}
+
 // ── Auto-run on render ──
 // Hook pour déclencher les animations après chaque render
 function afterRenderAnimations(){
-  requestAnimationFrame(function(){
-    animateCounters();
-    attachCardTilt();
-    typewriterGreet();
-    initTooltips();
-  });
+  // Synchronous inits (idempotent, safe to run many times)
+  try{initTooltips();}catch(e){}
+  try{initCommandPaletteShortcut();}catch(e){}
+  try{initToastStack();}catch(e){}
+  try{initRipple();}catch(e){}
+  try{triggerPageTransition();}catch(e){}
+  try{initScrollReveal();}catch(e){}
+  // Per-element scanners — defer one frame for layout, fallback to setTimeout
+  var _run=function(){
+    try{animateCounters();}catch(e){}
+    try{attachCardTilt();}catch(e){}
+    try{typewriterGreet();}catch(e){}
+  };
+  if(typeof requestAnimationFrame==='function'){
+    var _fired=false;
+    requestAnimationFrame(function(){if(_fired)return;_fired=true;_run();});
+    setTimeout(function(){if(_fired)return;_fired=true;_run();},50);
+  } else {
+    setTimeout(_run,0);
+  }
 }
 
 // Wrap de render() si dispo
@@ -335,9 +568,17 @@ if(typeof window!=='undefined'){
       var wrapped=function(){var r=orig.apply(this,arguments);afterRenderAnimations();return r;};
       wrapped._animHooked=true;
       window.render=wrapped;
+      // Ensure inits run even if a render happened before wrapping
+      afterRenderAnimations();
     } else if(typeof window.render!=='function'){
-      setTimeout(_installRenderHook,100);
+      setTimeout(_installRenderHook,30);
     }
   };
   _installRenderHook();
+  // Safety net: also run once on DOMContentLoaded
+  if(document.readyState==='loading'){
+    document.addEventListener('DOMContentLoaded',function(){afterRenderAnimations();});
+  } else {
+    setTimeout(afterRenderAnimations,0);
+  }
 }

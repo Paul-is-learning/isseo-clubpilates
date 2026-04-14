@@ -93,9 +93,12 @@ document.addEventListener('click',function(e){
   }
 });
 document.addEventListener('keydown',function(e){
-  if((e.metaKey||e.ctrlKey)&&e.key==='k'){
-    e.preventDefault();
+  // Cmd+K : command palette (fallback : focus search input)
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){
+    if(typeof openCommandPalette==='function'&&S.view!=='auth'){
+      e.preventDefault();openCommandPalette();return;
+    }
     var el=document.getElementById('global-search-input');
-    if(el){el.focus();el.select();}
+    if(el){e.preventDefault();el.focus();el.select();}
   }
 });
