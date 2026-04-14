@@ -40,6 +40,7 @@ var S={
   chatLastSeen:localStorage.getItem('chatLastSeen')||'', // ts du dernier message lu
   adminSettings:{blocked:[],roles:{},viewers:[]}, // contrôle accès utilisateurs
   userPresence:{},      // {userId: {ts:'ISO', nom:'...'}} dernière activité
+  lastLogins:{},        // {userId: {ts:'ISO', nom:'...'}} dernière connexion (race-free, 1 ligne/user)
   _presenceInterval:null, // timer heartbeat présence
   avatarUrls:{}, // URLs photos uploadées par chaque utilisateur {nom: url}
   // ── Notifications ──

@@ -221,6 +221,29 @@ async function loadPresence(){
   var res=await sb.from('studios').select('data').eq('id','_user_presence').maybeSingle();
   S.userPresence=(res.data&&res.data.data&&res.data.data.presence)||{};
 }
+// ── Dernière connexion (race-free, 1 ligne par user) ────────────────────────
+async function recordLastLogin(){
+  if(!S.user)return;
+  var uid=S.user.id;
+  var now=new Date().toISOString();
+  var nom=(S.profile&&S.profile.nom)||'';
+  try{
+    await sb.from('studios').upsert({id:'_login_'+uid,data:{ts:now,nom:nom,uid:uid},updated_at:now});
+    S.lastLogins=S.lastLogins||{};
+    S.lastLogins[uid]={ts:now,nom:nom};
+  }catch(e){console.error('recordLastLogin error:',e);}
+}
+async function loadLastLogins(){
+  try{
+    var res=await sb.from('studios').select('id,data').like('id','_login_%');
+    var map={};
+    (res.data||[]).forEach(function(row){
+      var uid=(row.id||'').replace('_login_','');
+      if(uid&&row.data&&row.data.ts)map[uid]={ts:row.data.ts,nom:row.data.nom||''};
+    });
+    S.lastLogins=map;
+  }catch(e){console.error('loadLastLogins error:',e);S.lastLogins=S.lastLogins||{};}
+}
 function startPresenceHeartbeat(){
   if(S._presenceInterval)clearInterval(S._presenceInterval);
   updatePresence();
@@ -229,18 +252,26 @@ function startPresenceHeartbeat(){
 function stopPresenceHeartbeat(){
   if(S._presenceInterval){clearInterval(S._presenceInterval);S._presenceInterval=null;}
 }
-function _presenceLabel(ts){
-  if(!ts)return{text:'Jamais connecté',color:'#ccc',online:false};
-  var diff=Date.now()-new Date(ts).getTime();
+function _presenceLabel(ts,loginTs){
+  // Prendre le timestamp le plus récent entre présence heartbeat et last_login
+  var best=null;
+  if(ts)best=new Date(ts).getTime();
+  if(loginTs){
+    var lt=new Date(loginTs).getTime();
+    if(!best||lt>best)best=lt;
+  }
+  if(!best)return{text:'Jamais connecté',color:'#ccc',online:false};
+  var diff=Date.now()-best;
   var mins=Math.floor(diff/60000);
-  if(mins<5)return{text:'En ligne',color:'#16A34A',online:true};
+  // "En ligne" seulement si heartbeat récent (pas login seul)
+  if(ts&&Date.now()-new Date(ts).getTime()<5*60000)return{text:'En ligne',color:'#16A34A',online:true};
   if(mins<60)return{text:'Il y a '+mins+' min',color:'#F59E0B',online:false};
   var hrs=Math.floor(mins/60);
   if(hrs<24)return{text:'Il y a '+hrs+'h',color:'#F59E0B',online:false};
   var days=Math.floor(hrs/24);
   if(days===1)return{text:'Hier',color:'#94A3B8',online:false};
   if(days<7)return{text:'Il y a '+days+'j',color:'#94A3B8',online:false};
-  return{text:new Date(ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),color:'#94A3B8',online:false};
+  return{text:new Date(best).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),color:'#94A3B8',online:false};
 }
 
 function _startSessionWatcher(){
@@ -302,6 +333,7 @@ async function doLogin(){
   restoreNavState();render();
   _startSessionWatcher();
   startPresenceHeartbeat();
+  recordLastLogin();
   // Notifications
   _loadAllProfiles();
   loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});

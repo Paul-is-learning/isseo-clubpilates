@@ -130,11 +130,11 @@ function renderAuth(){
     +'<div style="position:absolute;bottom:10%;right:15%;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(15,110,86,0.05) 0%,transparent 70%);pointer-events:none"></div>'
     +'<div style="position:absolute;top:50%;left:50%;width:600px;height:600px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.015) 0%,transparent 60%);pointer-events:none"></div>'
     +'<div class="auth-box">'
-    // Logos en blanc
-    +'<div style="display:flex;align-items:center;justify-content:center;gap:18px;margin-bottom:28px">'
-    +'<img src="logo-black.png" style="height:52px;width:auto;display:block;filter:brightness(0) invert(1)" alt="Isseo">'
-    +'<span style="font-size:22px;font-weight:200;color:rgba(255,255,255,0.15);user-select:none">&times;</span>'
-    +'<img src="logo-cp.webp" style="height:44px;width:auto;display:block;filter:brightness(0) invert(1)" alt="Club Pilates">'
+    // Logos en blanc — animés
+    +'<div class="auth-logos">'
+    +'<div class="auth-logo-wrap isseo-wrap"><div class="auth-logo-halo"></div><img src="logo-black.png" class="auth-logo" alt="Isseo"></div>'
+    +'<span class="auth-sep">&times;</span>'
+    +'<div class="auth-logo-wrap cp-wrap"><div class="auth-logo-halo"></div><img src="logo-cp.webp" class="auth-logo auth-logo-cp" alt="Club Pilates"></div>'
     +'</div>'
     // Sous-titre
     +'<div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:2px;text-transform:uppercase;font-weight:500">Plateforme de suivi</div>'
@@ -160,6 +160,7 @@ async function loadAdminUsers(){
   var res=await sb.from('profiles').select('*');
   _adminUsers=(res.data||[]).sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');});
   await loadPresence();
+  await loadLastLogins();
   // Nettoyer les IDs orphelins dans adminSettings (utilisateurs supprimés/recréés)
   var validIds=new Set(_adminUsers.map(function(u){return u.id;}));
   var dirty=false;
@@ -245,9 +246,10 @@ function renderAdminPanel(){
       h+='<div><div style="font-weight:600;font-size:13px">'+(u.nom||'—')+(isMe?' <span style="font-size:10px;color:#854F0B;font-weight:400">(vous)</span>':'')+'</div>';
       h+='<div style="font-size:11px;color:#999">'+(u.email||u.id||'')+'</div></div>';
       h+='</div></td>';
-      // Statut connexion
+      // Statut connexion (présence heartbeat + last_login par user, race-free)
       var _pres=S.userPresence[uid];
-      var _pl=_presenceLabel(_pres&&_pres.ts);
+      var _ll=(S.lastLogins||{})[uid];
+      var _pl=_presenceLabel(_pres&&_pres.ts,_ll&&_ll.ts);
       h+='<td style="padding:12px 16px;text-align:center">';
       h+='<div style="display:flex;align-items:center;justify-content:center;gap:5px">';
       h+='<div style="width:8px;height:8px;border-radius:50%;background:'+_pl.color+';flex-shrink:0'+(_pl.online?';box-shadow:0 0 0 3px '+_pl.color+'33;animation:pulse-dot 2s infinite':'')+'"></div>';
