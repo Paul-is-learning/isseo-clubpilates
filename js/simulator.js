@@ -823,19 +823,58 @@ function buildSimCAChart(caArr,membres,realArr){
 function _isBPDefault(sid){return (S.activeScenarioId[sid]||'bp_default')==='bp_default';}
 function _isScenarioLocked(sid){return _isBPDefault(sid)&&!S.scenarioEditMode[sid];}
 function toggleScenarioEditMode(sid){
-  S.scenarioEditMode[sid]=!S.scenarioEditMode[sid];
-  if(S.scenarioEditMode[sid]&&!S.simConfig[sid]){
-    S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
-  }
-  render();
+  // Ouvre le modal de nommage au lieu d'ouvrir directement le wizard
+  _showScenarioNameModal(sid,false);
 }
 function nouveauScenario(sid){
-  // Créer un nouveau scénario vierge (valeurs BP par défaut) sans toucher aux existants
+  // Ouvre le modal de nommage pour un nouveau scénario
+  _showScenarioNameModal(sid,true);
+}
+function _showScenarioNameModal(sid,isNew){
+  var overlay=document.createElement('div');
+  overlay.id='scenario-name-modal';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
+  overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
+  var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:440px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  box+='<div style="text-align:center;margin-bottom:20px"><div style="font-size:32px;margin-bottom:8px">✨</div>';
+  box+='<div style="font-size:17px;font-weight:700;color:#1a3a6b">'+(isNew?'Nouveau scénario':'Créer un scénario')+'</div>';
+  box+='<div style="font-size:12px;color:#888;margin-top:4px;line-height:1.5">Donnez un nom à votre scénario pour le retrouver facilement.</div></div>';
+  box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Nom du scénario <span style="color:#A32D2D">*</span></label>';
+  box+='<input id="scenario-name-input" type="text" placeholder="Ex: Hypothèse optimiste, Scénario prudent, Test prix +15%…" style="width:100%;padding:11px 14px;border:1.5px solid #dde;border-radius:10px;font-size:13px;outline:none;font-family:inherit;box-sizing:border-box;transition:border 0.2s" onfocus="this.style.borderColor=\'#1a3a6b\'" onblur="this.style.borderColor=\'#dde\'"/>';
+  box+='<div id="scenario-name-err" style="font-size:11px;color:#A32D2D;margin-top:4px;min-height:16px"></div>';
+  box+='<div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-top:12px;margin-bottom:16px">';
+  box+='<div style="font-size:11px;font-weight:600;color:#64748b;margin-bottom:6px">📋 Vous pourrez ensuite configurer en 3 étapes :</div>';
+  box+='<div style="display:flex;gap:8px;flex-wrap:wrap">';
+  box+='<span style="font-size:10px;background:#eef6ff;color:#185FA5;padding:3px 8px;border-radius:6px;font-weight:600">1. Adhérents réels</span>';
+  box+='<span style="font-size:10px;background:#f0fdf4;color:#3B6D11;padding:3px 8px;border-radius:6px;font-weight:600">2. Répartition forfaits</span>';
+  box+='<span style="font-size:10px;background:#fff7ed;color:#854F0B;padding:3px 8px;border-radius:6px;font-weight:600">3. Prix abonnements</span>';
+  box+='</div></div>';
+  box+='<div style="display:flex;justify-content:flex-end;gap:8px">';
+  box+='<button onclick="document.getElementById(\'scenario-name-modal\').remove()" style="padding:9px 18px;border:1px solid #dde;border-radius:10px;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer">Annuler</button>';
+  box+='<button onclick="_startScenarioWithName(\''+sid+'\')" style="padding:9px 18px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);color:#fff;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px;box-shadow:0 4px 12px rgba(26,58,107,0.2)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"/></svg> Commencer</button>';
+  box+='</div></div>';
+  overlay.innerHTML=box;
+  document.body.appendChild(overlay);
+  setTimeout(function(){var el=document.getElementById('scenario-name-input');if(el)el.focus();},100);
+}
+function _startScenarioWithName(sid){
+  var nameEl=document.getElementById('scenario-name-input');
+  var name=(nameEl?nameEl.value:'').trim();
+  if(!name){
+    var err=document.getElementById('scenario-name-err');
+    if(err)err.textContent='Le nom du scénario est obligatoire.';
+    if(nameEl){nameEl.style.borderColor='#A32D2D';}
+    return;
+  }
+  var modal=document.getElementById('scenario-name-modal');
+  if(modal)modal.remove();
+  // Initialiser le scénario avec le nom
+  S._scenarioName=name;
   S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.adherents[sid]={};
   S.activeScenarioId[sid]='bp_default';
   S.scenarioEditMode[sid]=true;
-  toast('Nouveau scénario — configurez vos hypothèses');
+  toast('Scénario "'+name+'" — configurez vos hypothèses');
   render();
 }
 function updateSimRep(sid,field,val,ay){

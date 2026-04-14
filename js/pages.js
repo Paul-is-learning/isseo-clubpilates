@@ -2912,7 +2912,9 @@ function renderAdherents(sid,s){
   h+='<option value="bp_default"'+(_activeId==='bp_default'?' selected':'')+'>📊 BP de r\u00e9f\u00e9rence (lecture seule)</option>';
   _scList.forEach(function(sc,idx){
     var isLast=idx===0;
-    var lbl=(isLast?'⭐ ':'')+ sc.auteur.split(' ')[0]+' — '+sc.date+(sc.comment?' · '+(sc.comment.length>28?sc.comment.slice(0,28)+'…':sc.comment):'');
+    var scLabel=sc.name||sc.comment||'Sans nom';
+    if(scLabel.length>30)scLabel=scLabel.slice(0,30)+'…';
+    var lbl=(isLast?'⭐ ':'')+scLabel+' — '+sc.auteur.split(' ')[0]+' · '+sc.date;
     h+='<option value="'+sc.id+'"'+(_activeId===sc.id?' selected':'')+'>'+lbl+'</option>';
   });
   h+='</select>';
@@ -2934,7 +2936,7 @@ function renderAdherents(sid,s){
   // Indicateur dernier scénario = référence
   if(_lastSc&&_activeId!==_lastSc.id){
     h+='<div style="background:#f0f7ff;border:1px solid #d0dffa;border-radius:8px;padding:8px 12px;margin-top:8px;display:flex;align-items:center;gap:8px;font-size:11px;color:#1a3a6b">';
-    h+='<span>⭐</span><span>Derni\u00e8re version de r\u00e9f\u00e9rence : <b>'+_lastSc.auteur+'</b> — '+_lastSc.date+'</span>';
+    h+='<span>⭐</span><span>Derni\u00e8re version : <b>'+(_lastSc.name||_lastSc.comment||'Sans nom')+'</b> par '+_lastSc.auteur+' — '+_lastSc.date+'</span>';
     h+='<button onclick="chargerScenario(\''+sid+'\',\''+_lastSc.id+'\')" style="padding:3px 10px;background:#1a3a6b;color:#fff;border:none;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;margin-left:auto">Charger</button>';
     h+='</div>';
   }
@@ -2952,6 +2954,14 @@ function renderAdherents(sid,s){
 
   // ── C. Wizard 3 étapes ──
   if(_wizardOpen){
+    // ─── En-tête scénario en cours ───
+    if(S._scenarioName){
+      h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:12px 16px;background:linear-gradient(135deg,#f0f7ff,#e6f0fd);border-radius:12px;border:1px solid #d0dffa">';
+      h+='<div style="font-size:20px">✨</div>';
+      h+='<div><div style="font-size:14px;font-weight:700;color:#1a3a6b">'+S._scenarioName+'</div>';
+      h+='<div style="font-size:11px;color:#5b7fa6;margin-top:2px">Configurez votre scénario en 3 étapes ci-dessous</div></div></div>';
+    }
+
     // Compteur mois remplis
     var _nbRemplis=0;
     for(var _ri=0;_ri<12;_ri++){var _rk='y'+ay+'_m'+_ri;if(actuel[_rk]!=null&&actuel[_rk]!=='')_nbRemplis++;}

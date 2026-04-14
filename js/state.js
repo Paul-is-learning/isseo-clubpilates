@@ -287,8 +287,11 @@ function enregistrerScenario(sid){
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
   var box='<div style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
   box+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span style="font-size:15px;font-weight:700;color:#1a1a1a">Enregistrer le scénario</span></div>';
-  box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Commentaire <span style="color:#A32D2D">*</span></label>';
-  box+='<textarea id="scenario-comment" rows="3" placeholder="Décrivez les hypothèses de ce scénario…" style="width:100%;padding:10px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box"></textarea>';
+  var _scName=S._scenarioName||'';
+  box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Nom du scénario</label>';
+  box+='<input id="scenario-name-final" type="text" value="'+_scName.replace(/"/g,'&quot;')+'" style="width:100%;padding:8px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:10px;font-weight:600;color:#1a3a6b" placeholder="Nom du scénario"/>';
+  box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Description / hypothèses <span style="font-weight:400;color:#aaa">(optionnel)</span></label>';
+  box+='<textarea id="scenario-comment" rows="3" placeholder="Ex: Prix augmentés de 15%, adhérents conservateurs…" style="width:100%;padding:10px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box"></textarea>';
   box+='<div id="scenario-err" style="font-size:11px;color:#A32D2D;margin-top:4px;min-height:16px"></div>';
   box+='<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">';
   box+='<button onclick="document.getElementById(\'scenario-modal\').remove()" style="padding:8px 16px;border:1px solid #dde;border-radius:8px;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer">Annuler</button>';
@@ -300,18 +303,21 @@ function enregistrerScenario(sid){
 }
 
 async function _confirmerScenario(sid){
+  var scenarioName=(document.getElementById('scenario-name-final')||{}).value||S._scenarioName||'';
   var comment=(document.getElementById('scenario-comment')||{}).value||'';
-  if(!comment.trim()){
+  if(!scenarioName.trim()){
     var err=document.getElementById('scenario-err');
-    if(err)err.textContent='Le commentaire est obligatoire pour enregistrer.';
+    if(err)err.textContent='Le nom du scénario est obligatoire.';
     return;
   }
+  var fullComment=scenarioName.trim()+(comment.trim()?' — '+comment.trim():'');
   var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   var now=new Date();
   var sc={
     id:'sc_'+Date.now(),
     auteur:(S.profile&&S.profile.nom)||'Admin',
-    comment:comment.trim(),
+    name:scenarioName.trim(),
+    comment:fullComment,
     date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
     ts:now.toISOString(),
     config:JSON.parse(JSON.stringify(cfg)),
@@ -320,11 +326,12 @@ async function _confirmerScenario(sid){
   if(!S.scenarios[sid])S.scenarios[sid]=[];
   S.scenarios[sid].push(sc);
   S.activeScenarioId[sid]=sc.id;
+  S._scenarioName=null;
   await saveScenarios(sid);
   saveSimConfig(sid);
   var modal=document.getElementById('scenario-modal');
   if(modal)modal.remove();
-  toast('Scénario enregistré par '+sc.auteur);
+  toast('Scénario "'+sc.name+'" enregistré');
   render();
 }
 
