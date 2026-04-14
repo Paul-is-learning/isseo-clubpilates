@@ -283,9 +283,10 @@ function enregistrerScenario(sid){
   // Modale pour saisir un commentaire obligatoire
   var overlay=document.createElement('div');
   overlay.id='scenario-modal';
+  overlay.className='modal-backdrop-anim';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
-  var box='<div style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  var box='<div class="modal-spring" style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
   box+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span style="font-size:15px;font-weight:700;color:#1a1a1a">Enregistrer le scénario</span></div>';
   var _scName=S._scenarioName||'';
   box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Nom du scénario</label>';
@@ -332,6 +333,7 @@ async function _confirmerScenario(sid){
   var modal=document.getElementById('scenario-modal');
   if(modal)modal.remove();
   toast('Scénario "'+sc.name+'" enregistré');
+  if(typeof confettiBurst==='function')confettiBurst();
   render();
 }
 

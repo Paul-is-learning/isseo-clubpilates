@@ -833,9 +833,10 @@ function nouveauScenario(sid){
 function _showScenarioNameModal(sid,isNew){
   var overlay=document.createElement('div');
   overlay.id='scenario-name-modal';
+  overlay.className='modal-backdrop-anim';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
-  var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:440px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  var box='<div class="modal-spring" style="background:#fff;border-radius:16px;padding:28px 32px;width:440px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
   box+='<div style="text-align:center;margin-bottom:20px"><div style="font-size:32px;margin-bottom:8px">✨</div>';
   box+='<div style="font-size:17px;font-weight:700;color:#1a3a6b">'+(isNew?'Nouveau scénario':'Créer un scénario')+'</div>';
   box+='<div style="font-size:12px;color:#888;margin-top:4px;line-height:1.5">Donnez un nom à votre scénario pour le retrouver facilement.</div></div>';

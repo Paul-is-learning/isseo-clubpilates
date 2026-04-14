@@ -78,10 +78,10 @@ function renderAccueil(){
   // KPIs
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px">';
   var _kpis=[
-    {label:'Studios',val:allIds.length,click:'setPage(\'projets\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA'},
-    {label:'CAPEX total',val:fmt(_capexTotal),click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399'},
-    {label:'CA BP A1',val:fmt(_caTotal),click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24'},
-    {label:'Alertes',val:alertCount,alert:alertCount>0,click:'ouvrirAlertesModal()',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',color:'#F87171'}
+    {label:'Studios',val:'<span class="counter-anim" data-target="'+allIds.length+'" data-format="int">0</span>',click:'setPage(\'projets\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA'},
+    {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+_capexTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399'},
+    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24'},
+    {label:'Alertes',val:'<span class="counter-anim" data-target="'+alertCount+'" data-format="int">0</span>',alert:alertCount>0,click:'ouvrirAlertesModal()',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',color:'#F87171'}
   ];
   _kpis.forEach(function(k){
     h+='<div onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
@@ -2135,13 +2135,27 @@ function renderCard(id,s){
       +'<div style="font-size:12px;font-weight:600;color:#333">'+dir.nom+'</div></div>'
       +'</div>';
   }
+  // Progress ring — % d'étapes workflow complétées
+  var _stSrc=(typeof getStudioSteps==='function')?getStudioSteps(id):STEPS;
+  var _doneCount=_stSrc.filter(function(st){return s.steps&&s.steps[st.id];}).length;
+  var _pctWf=Math.round(_doneCount/_stSrc.length*100);
+  var _ringColor=_pctWf>=100?'#1D9E75':_pctWf>=50?'#1a3a6b':'#FBBF24';
+  var _ringHtml=(typeof progressRingSVG==='function')?progressRingSVG(_pctWf,56,_ringColor):progBar(s.steps,id);
+
   return '<div class="card" onclick="openDetail(\''+id+'\')">'+
-    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">'+
-    '<div><div style="font-weight:600;font-size:14px">'+s.name+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+s.societe+'</div></div>'+
-    '<div style="display:flex;align-items:center;gap:5px">'+badge(s.statut)+'<span style="background:#f0f4ff;color:#1a3a6b;font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px">C'+(s.cohorte||1)+'</span></div></div>'+
-    '<div style="font-size:11px;color:#888;margin-bottom:10px">Ouverture : <strong>'+s.ouverture+'</strong></div>'+
-    progBar(s.steps,id)+
-    (s.alertes.length>0?'<div style="margin-top:10px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+_alerteText(s.alertes[0])+'</div>':'')+
+    '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px">'+
+      '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">'+s.name+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+s.societe+'</div></div>'+
+      '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+badge(s.statut)+'<span style="background:#f0f4ff;color:#1a3a6b;font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px">C'+(s.cohorte||1)+'</span></div>'+
+    '</div>'+
+    '<div style="display:flex;align-items:center;gap:14px;margin-bottom:10px">'+
+      _ringHtml+
+      '<div style="flex:1;min-width:0">'+
+        '<div style="font-size:10px;color:#aaa;text-transform:uppercase;letter-spacing:0.5px;font-weight:600;margin-bottom:2px">Workflow</div>'+
+        '<div style="font-size:12px;color:#555;font-weight:600">'+_doneCount+'/'+_stSrc.length+' étapes</div>'+
+        '<div style="font-size:11px;color:#888;margin-top:3px">Ouv. <strong>'+s.ouverture+'</strong></div>'+
+      '</div>'+
+    '</div>'+
+    (s.alertes.length>0?'<div style="margin-top:4px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+_alerteText(s.alertes[0])+'</div>':'')+
     dirSection+
     '</div>';
 }
@@ -2444,7 +2458,7 @@ function renderDetail(){
   }
   h+='<div class="tabs">';
   tabs.forEach(function(t){h+='<button class="tab '+(S.detailTab===t[0]?'active':'')+'" onclick="setDetailTab(\''+t[0]+'\')">'+t[1]+'</button>';});
-  h+='</div>'+content;
+  h+='</div><div class="tab-content-anim" key="tab-'+S.detailTab+'">'+content+'</div>';
   return h;
 }
 
