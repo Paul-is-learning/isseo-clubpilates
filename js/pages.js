@@ -4574,7 +4574,12 @@ function renderTaches(sid){
 }
 
 function ouvrirFormTache(sid){
-  var profiles=S._allProfiles||[];
+  var profiles=(S._allProfiles||[]).slice();
+  var EXPECTED=['Paul Bécaud','Pascal Bécaud','Tom Bécaud','Paul Sabourin','Caroline Coquel','Clément Coquel'];
+  var seen={};
+  profiles.forEach(function(p){if(p.nom)seen[p.nom]=true;});
+  EXPECTED.forEach(function(n){if(!seen[n]){profiles.push({nom:n});seen[n]=true;}});
+  profiles=profiles.filter(function(p){return p.nom && String(p.nom).trim();}).sort(function(a,b){return a.nom.localeCompare(b.nom);});
   var overlay=document.createElement('div');
   overlay.id='tache-modal';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';

@@ -56,7 +56,7 @@ function _getAllUserIds(){
 }
 async function _loadAllProfiles(){
   var res=await sb.from('profiles').select('id,nom');
-  S._allProfiles=res.data||[];
+  S._allProfiles=(res.data||[]).filter(function(p){return p.nom && String(p.nom).trim();});
 }
 // Notifier tous les utilisateurs sauf l'émetteur
 async function notifyAll(opts){
