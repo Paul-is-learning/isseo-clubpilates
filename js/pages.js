@@ -75,7 +75,7 @@ function renderAccueil(){
   h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">';
   h+='<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>';
   h+='<div>';
-  h+='<div style="font-size:18px;font-weight:700;letter-spacing:-0.3px">Tableau de bord ISSEO × Club Pilates</div>';
+  h+='<div style="font-size:18px;font-weight:700;letter-spacing:-0.3px">Tableau de bord Isséo × Club Pilates</div>';
   h+='<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px">Vue d\'ensemble de vos projets et activités</div>';
   h+='</div></div>';
   // KPIs

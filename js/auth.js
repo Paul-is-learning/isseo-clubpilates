@@ -404,16 +404,34 @@ function toggleShowPwd(uid){
   }
 }
 
-function editUserPassword(uid,nom){
+async function editUserPassword(uid,nom){
   var pwds=S.adminSettings.passwords||{};
   var current=decodePwd(pwds[uid]||'');
   var newPwd=prompt('Nouveau mot de passe pour '+nom+' :'+(current?'\n(actuel : '+current+')':''),current);
   if(newPwd===null)return;
-  if(!newPwd.trim()){toast('Mot de passe vide non autorisé');return;}
+  newPwd=newPwd.trim();
+  if(!newPwd){toast('Mot de passe vide non autorisé');return;}
+  if(newPwd.length<6){toast('Le mot de passe doit contenir au moins 6 caractères');return;}
+  toast('Mise à jour du mot de passe…');
+  try{
+    var res=await sb.functions.invoke('manage-user',{body:{action:'reset-password',userId:uid,password:newPwd}});
+    if(res.error){
+      var msg=(res.error&&res.error.message)||'Erreur inconnue';
+      try{if(res.error.context&&res.error.context.json){var j=await res.error.context.json();if(j&&j.error)msg=j.error;}}catch(e){}
+      toast('Échec : '+msg);
+      return;
+    }
+    if(res.data&&res.data.error){toast('Échec : '+res.data.error);return;}
+  }catch(err){
+    toast('Échec : '+(err.message||'Edge Function indisponible'));
+    return;
+  }
+  // Mise à jour du mémo local (affichage dans le panneau admin)
   if(!S.adminSettings.passwords)S.adminSettings.passwords={};
-  S.adminSettings.passwords[uid]=encodePwd(newPwd.trim());
+  S.adminSettings.passwords[uid]=encodePwd(newPwd);
   saveAdminSettings().then(function(ok){
-    if(ok){toast('Mot de passe enregistré pour '+nom);render();}
+    if(ok){toast('Mot de passe mis à jour pour '+nom+' ✓');render();}
+    else{toast('Mot de passe changé côté auth mais mémo non sauvegardé');}
   });
 }
 
