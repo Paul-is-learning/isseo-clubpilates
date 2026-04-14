@@ -414,15 +414,30 @@ async function editUserPassword(uid,nom){
   if(newPwd.length<6){toast('Le mot de passe doit contenir au moins 6 caractères');return;}
   toast('Mise à jour du mot de passe…');
   try{
-    var res=await sb.functions.invoke('manage-user',{body:{action:'reset-password',userId:uid,password:newPwd}});
-    if(res.error){
-      var msg=(res.error&&res.error.message)||'Erreur inconnue';
-      try{if(res.error.context&&res.error.context.json){var j=await res.error.context.json();if(j&&j.error)msg=j.error;}}catch(e){}
-      toast('Échec : '+msg);
+    // Appel fetch direct pour contrôler l'extraction du message d'erreur
+    var sess=await sb.auth.getSession();
+    var token=sess.data&&sess.data.session&&sess.data.session.access_token;
+    if(!token){toast('Échec : session expirée, reconnecte-toi');return;}
+    var r=await fetch(SURL+'/functions/v1/manage-user',{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'Authorization':'Bearer '+token,
+        'apikey':SKEY
+      },
+      body:JSON.stringify({action:'reset-password',userId:uid,password:newPwd})
+    });
+    var bodyText=await r.text();
+    var bodyJson={};try{bodyJson=JSON.parse(bodyText);}catch(e){}
+    if(!r.ok){
+      var msg=bodyJson.error||bodyJson.message||bodyText||('HTTP '+r.status);
+      console.error('[resetPassword]',r.status,bodyText);
+      toast('Échec ('+r.status+') : '+msg);
       return;
     }
-    if(res.data&&res.data.error){toast('Échec : '+res.data.error);return;}
+    if(bodyJson.error){toast('Échec : '+bodyJson.error);return;}
   }catch(err){
+    console.error('[resetPassword] exception',err);
     toast('Échec : '+(err.message||'Edge Function indisponible'));
     return;
   }
