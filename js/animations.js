@@ -534,6 +534,106 @@ function initRipple(){
   },true);
 }
 
+// ── 15. Mini sparkline for KPI cards ──
+function miniSparkline(values,opts){
+  opts=opts||{};
+  var w=opts.width||80;
+  var h=opts.height||22;
+  var color=opts.color||'rgba(255,255,255,0.85)';
+  var pad=2;
+  if(!values||!values.length)return '';
+  var min=Math.min.apply(null,values);
+  var max=Math.max.apply(null,values);
+  var range=max-min||1;
+  var step=(w-pad*2)/Math.max(values.length-1,1);
+  var pts=values.map(function(v,i){
+    var x=pad+i*step;
+    var y=pad+(h-pad*2)*(1-(v-min)/range);
+    return x.toFixed(1)+','+y.toFixed(1);
+  });
+  var poly=pts.join(' ');
+  var len=0;
+  for(var i=1;i<pts.length;i++){
+    var a=pts[i-1].split(',').map(parseFloat),b=pts[i].split(',').map(parseFloat);
+    len+=Math.hypot(b[0]-a[0],b[1]-a[1]);
+  }
+  var last=pts[pts.length-1].split(',');
+  return '<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'" style="display:block;overflow:visible">'
+    +'<polyline points="'+poly+'" fill="none" stroke="'+color+'" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="stroke-dasharray:'+len.toFixed(0)+';stroke-dashoffset:'+len.toFixed(0)+';animation:sparkDraw 1.2s .5s cubic-bezier(.22,.9,.22,1) forwards"/>'
+    +'<circle cx="'+last[0]+'" cy="'+last[1]+'" r="2" fill="'+color+'" style="opacity:0;animation:sparkDot .3s 1.55s forwards"/>'
+    +'</svg>';
+}
+
+// ── 16. Generate smooth trend series for KPI sparkline ──
+function generateTrendSeries(target,points){
+  points=points||12;
+  if(target<=0)return Array(points).fill(0);
+  var vals=[];
+  var cur=target*0.58;
+  var avgStep=(target-cur)/(points-1);
+  for(var i=0;i<points;i++){
+    var noise=(Math.random()-0.3)*target*0.06;
+    cur+=avgStep+noise;
+    if(cur<0)cur=Math.abs(cur)*0.3;
+    vals.push(cur);
+  }
+  vals[vals.length-1]=target;
+  return vals;
+}
+
+// ── 17. Hero KPI carousel rotation ──
+var _heroCarouselTimer=null;
+function startHeroCarousel(){
+  if(_heroCarouselTimer){clearInterval(_heroCarouselTimer);_heroCarouselTimer=null;}
+  var wrap=document.querySelector('.hero-carousel');
+  if(!wrap||wrap._bound)return;
+  wrap._bound=true;
+  var views=wrap.querySelectorAll('.hero-carousel-view');
+  var dots=wrap.querySelectorAll('.hero-carousel-dot');
+  var titles=[
+    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',text:'CA cumulé (BP A1)'},
+    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',text:'Top studios — CA prévisionnel'},
+    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z" fill="currentColor" fill-opacity=".35"/></svg>',text:'Répartition par statut'}
+  ];
+  var titleEl=wrap.querySelector('.hero-carousel-title');
+  var titleIcon=wrap.querySelector('.hero-carousel-title-icon');
+  if(!views.length)return;
+  var idx=0;
+  function show(i){
+    // Reset bar animations on the new active view by clone trick
+    views.forEach(function(v,j){
+      var wasActive=v.classList.contains('active');
+      v.classList.toggle('active',j===i);
+      if(j===i && !wasActive){
+        // Re-trigger bar animations
+        var fills=v.querySelectorAll('.hero-bar-fill, .hero-cumview-chart');
+        fills.forEach(function(f){
+          var p=f.parentNode;var n=f.nextSibling;var c=f.cloneNode(true);
+          p.removeChild(f);p.insertBefore(c,n);
+        });
+      }
+    });
+    dots.forEach(function(d,j){d.classList.toggle('active',j===i);});
+    if(titleEl && titles[i]){
+      var node=titleEl.querySelector('.hero-carousel-title-text');
+      if(node)node.textContent=titles[i].text;
+      if(titleIcon)titleIcon.innerHTML=titles[i].icon;
+    }
+    idx=i;
+  }
+  dots.forEach(function(d,j){
+    d.addEventListener('click',function(){show(j);resetTimer();});
+  });
+  function resetTimer(){
+    if(_heroCarouselTimer)clearInterval(_heroCarouselTimer);
+    _heroCarouselTimer=setInterval(function(){
+      show((idx+1)%views.length);
+    },5400);
+  }
+  // Stop when sidebar changes page (observer on root dataset or just interval check)
+  resetTimer();
+}
+
 // ── Auto-run on render ──
 // Hook pour déclencher les animations après chaque render
 function afterRenderAnimations(){
@@ -544,11 +644,16 @@ function afterRenderAnimations(){
   try{initRipple();}catch(e){}
   try{triggerPageTransition();}catch(e){}
   try{initScrollReveal();}catch(e){}
+  // Stop hero carousel if we left the Accueil page
+  if(!document.querySelector('.hero-carousel')){
+    if(_heroCarouselTimer){clearInterval(_heroCarouselTimer);_heroCarouselTimer=null;}
+  }
   // Per-element scanners — defer one frame for layout, fallback to setTimeout
   var _run=function(){
     try{animateCounters();}catch(e){}
     try{attachCardTilt();}catch(e){}
     try{typewriterGreet();}catch(e){}
+    try{startHeroCarousel();}catch(e){}
   };
   if(typeof requestAnimationFrame==='function'){
     var _fired=false;

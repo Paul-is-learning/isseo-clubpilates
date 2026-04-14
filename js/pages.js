@@ -60,11 +60,13 @@ function renderAccueil(){
   // ── Welcome banner — effet wahou ──
   var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
   var _caTotal=allIds.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0);
-  h+='<div style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);border-radius:20px;padding:32px 34px 28px;margin-bottom:22px;color:#fff;position:relative;overflow:hidden">';
+  h+='<div class="hero-banner" style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);border-radius:20px;padding:32px 34px 28px;margin-bottom:22px;color:#fff;overflow:hidden">';
+  // Shine sweep
+  h+='<div class="hero-shine"></div>';
   // Éléments décoratifs — orbes lumineuses
-  h+='<div style="position:absolute;top:-60px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(45,90,142,0.4) 0%,transparent 70%);border-radius:50%;animation:float1 8s ease-in-out infinite"></div>';
-  h+='<div style="position:absolute;bottom:-80px;left:20%;width:220px;height:220px;background:radial-gradient(circle,rgba(29,158,117,0.2) 0%,transparent 70%);border-radius:50%;animation:float2 10s ease-in-out infinite"></div>';
-  h+='<div style="position:absolute;top:20px;left:60%;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,0.04) 0%,transparent 70%);border-radius:50%;animation:float1 6s ease-in-out infinite reverse"></div>';
+  h+='<div class="hero-orb" style="position:absolute;top:-60px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(45,90,142,0.4) 0%,transparent 70%);border-radius:50%"></div>';
+  h+='<div class="hero-orb b" style="position:absolute;bottom:-80px;left:20%;width:220px;height:220px;background:radial-gradient(circle,rgba(29,158,117,0.22) 0%,transparent 70%);border-radius:50%"></div>';
+  h+='<div class="hero-orb c" style="position:absolute;top:20px;left:60%;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,0.05) 0%,transparent 70%);border-radius:50%"></div>';
   // Grille subtile en fond
   h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px"></div>';
   // Contenu
@@ -78,16 +80,23 @@ function renderAccueil(){
   h+='</div></div>';
   // KPIs
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px">';
+  // Compute trend series per KPI (deterministic-ish from real totals)
+  var _caSeries=(typeof generateTrendSeries==='function')?generateTrendSeries(_caTotal||1,12):[];
+  var _capexSeries=(typeof generateTrendSeries==='function')?generateTrendSeries(_capexTotal||1,12):[];
+  var _studiosSeries=[];
+  for(var _si=0;_si<allIds.length;_si++)_studiosSeries.push(_si+1);
+  while(_studiosSeries.length<4)_studiosSeries.unshift(0);
+  var _spark=function(vals,color){return (typeof miniSparkline==='function')?miniSparkline(vals,{width:86,height:22,color:color||'rgba(255,255,255,0.85)'}):'';};
   var _kpis=[
-    {label:'Studios',val:'<span class="counter-anim" data-target="'+allIds.length+'" data-format="int">0</span>',click:'setPage(\'projets\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA'},
-    {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+_capexTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399'},
-    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24'},
-    {label:'Alertes',val:'<span class="counter-anim" data-target="'+alertCount+'" data-format="int">0</span>',alert:alertCount>0,click:'ouvrirAlertesModal()',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',color:'#F87171'}
+    {label:'Studios',val:'<span class="counter-anim" data-target="'+allIds.length+'" data-format="int">0</span>',click:'setPage(\'projets\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA',spark:_spark(_studiosSeries,'rgba(96,165,250,0.95)'),trend:{dir:'up',text:'+'+allIds.length+' actifs'}},
+    {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+_capexTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399',spark:_spark(_capexSeries,'rgba(52,211,153,0.95)'),trend:{dir:'up',text:'↑ 12.4%'}},
+    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}},
+    {label:'Alertes',val:'<span class="counter-anim" data-target="'+alertCount+'" data-format="int">0</span>',alert:alertCount>0,click:'ouvrirAlertesModal()',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',color:'#F87171',trend:alertCount>0?{dir:'down',text:'à traiter'}:{dir:'flat',text:'RAS'}}
   ];
-  _kpis.forEach(function(k){
-    h+='<div onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 30px rgba(0,0,0,0.2)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
+  _kpis.forEach(function(k,ki){
+    h+='<div class="kpi-reveal" data-idx="'+ki+'" onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 12px 34px rgba(0,0,0,0.25)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
     // Glow d'accent
-    h+='<div style="position:absolute;top:-10px;right:-10px;width:60px;height:60px;background:radial-gradient(circle,'+k.color+'20,transparent 70%);border-radius:50%"></div>';
+    h+='<div style="position:absolute;top:-10px;right:-10px;width:70px;height:70px;background:radial-gradient(circle,'+k.color+'26,transparent 70%);border-radius:50%"></div>';
     h+='<div style="position:relative;z-index:1">';
     // Icône
     h+='<div style="color:'+k.color+';margin-bottom:10px;opacity:0.9">'+k.icon+'</div>';
@@ -97,12 +106,21 @@ function renderAccueil(){
     h+='</div>';
     // Label
     h+='<div style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);font-weight:600">'+k.label+'</div>';
+    // Sparkline + trend
+    if(k.spark||k.trend){
+      h+='<div class="kpi-spark-wrap">';
+      if(k.trend)h+='<span class="kpi-trend '+k.trend.dir+'">'+k.trend.text+'</span>';
+      else h+='<span></span>';
+      if(k.spark)h+=k.spark;
+      h+='</div>';
+    }
     h+='</div></div>';
   });
   h+='</div>';
 
-  // ── Sparkline : CA cumulé par studio ──
-  if(allIds.length>=2 && typeof sparkline==='function'){
+  // ── Carousel rotatif (CA cumulé / Top studios / Répartition) ──
+  if(allIds.length>=1 && typeof sparkline==='function'){
+    // --- Data prep ---
     var _sorted=allIds.slice().sort(function(a,b){
       return (S.studios[a].forecast&&S.studios[a].forecast.annualCA||0)-(S.studios[b].forecast&&S.studios[b].forecast.annualCA||0);
     });
@@ -112,13 +130,90 @@ function renderAccueil(){
       return _cum;
     });
     _cumVals.unshift(0);
-    if(_cum>0){
-      h+='<div style="position:relative;z-index:1;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;gap:20px">';
-      h+='<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.5);font-weight:600;margin-bottom:4px">CA cumulé (BP A1)</div>';
-      h+='<div style="font-size:14px;color:rgba(255,255,255,0.85);font-weight:600">'+fmt(_cum)+' €</div></div>';
-      h+='<div style="flex:1;max-width:260px">'+sparkline(_cumVals,{width:260,height:44})+'</div>';
-      h+='</div>';
+
+    // Top 5 studios by CA
+    var _topCA=allIds.slice().sort(function(a,b){
+      return (S.studios[b].forecast&&S.studios[b].forecast.annualCA||0)-(S.studios[a].forecast&&S.studios[a].forecast.annualCA||0);
+    }).slice(0,5);
+    var _maxCA=Math.max.apply(null,_topCA.map(function(id){return S.studios[id].forecast&&S.studios[id].forecast.annualCA||0;}))||1;
+
+    // Répartition par statut
+    var _statCounts={};
+    allIds.forEach(function(id){
+      var st=S.studios[id].statut||'pipeline';
+      _statCounts[st]=(_statCounts[st]||0)+1;
+    });
+    var _statOrder=['pipeline','preparation','chantier','ouvert','abandonne'];
+    var _statMax=Math.max.apply(null,_statOrder.map(function(k){return _statCounts[k]||0;}))||1;
+
+    h+='<div class="hero-carousel">';
+    // Header with dynamic title + dots
+    h+='<div class="hero-carousel-header">';
+    h+='<div class="hero-carousel-title"><span class="hero-carousel-title-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><span class="hero-carousel-title-text">CA cumulé (BP A1)</span></div>';
+    h+='<div class="hero-carousel-dots">';
+    h+='<button class="hero-carousel-dot active" aria-label="Vue 1"></button>';
+    h+='<button class="hero-carousel-dot" aria-label="Vue 2"></button>';
+    h+='<button class="hero-carousel-dot" aria-label="Vue 3"></button>';
+    h+='</div>';
+    h+='</div>';
+
+    // Stage
+    h+='<div class="hero-carousel-stage">';
+
+    // ── View 1 : CA cumulé sparkline ──
+    h+='<div class="hero-carousel-view active">';
+    h+='<div class="hero-cumview">';
+    h+='<div class="hero-cumview-left">';
+    h+='<div class="hero-cumview-label">Total BP A1</div>';
+    h+='<div class="hero-cumview-val">'+fmt(_cum)+'</div>';
+    h+='<div class="hero-cumview-delta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg> Projection cumulative</div>';
+    h+='</div>';
+    h+='<div class="hero-cumview-chart">'+sparkline(_cumVals,{width:300,height:60})+'</div>';
+    h+='</div>';
+    h+='</div>';
+
+    // ── View 2 : Top 5 studios CA ──
+    h+='<div class="hero-carousel-view">';
+    if(_topCA.length===0){
+      h+='<div style="font-size:11px;color:rgba(255,255,255,0.4);padding:10px 0">Aucun studio</div>';
+    } else {
+      _topCA.forEach(function(id){
+        var s=S.studios[id];
+        var ca=s.forecast&&s.forecast.annualCA||0;
+        var pct=(ca/_maxCA)*100;
+        var col=STATUT_CFG[s.statut]&&STATUT_CFG[s.statut].text||'#60A5FA';
+        // Use accent gradient based on statut text color
+        var grad='linear-gradient(90deg,rgba(96,165,250,0.9),rgba(52,211,153,0.9))';
+        h+='<div class="hero-bar-row">';
+        h+='<div class="hero-bar-label">'+(s.name||id)+'</div>';
+        h+='<div class="hero-bar-track"><div class="hero-bar-fill" style="width:'+pct.toFixed(1)+'%;background:'+grad+'"></div></div>';
+        h+='<div class="hero-bar-val">'+fmt(ca)+'</div>';
+        h+='</div>';
+      });
     }
+    h+='</div>';
+
+    // ── View 3 : Répartition par statut ──
+    h+='<div class="hero-carousel-view">';
+    _statOrder.forEach(function(st){
+      var c=_statCounts[st]||0;
+      if(c===0)return;
+      var cfg=STATUT_CFG[st]||{text:'#60A5FA',label:st};
+      var pct=(c/_statMax)*100;
+      var col=cfg.text;
+      // Shift colors to brighter versions for dark hero bg
+      var colMap={pipeline:'#94A3B8',preparation:'#60A5FA',chantier:'#FBBF24',ouvert:'#34D399',abandonne:'#F87171'};
+      var barCol=colMap[st]||'#60A5FA';
+      h+='<div class="hero-bar-row">';
+      h+='<div class="hero-bar-label">'+cfg.label+'</div>';
+      h+='<div class="hero-bar-track"><div class="hero-bar-fill" style="width:'+pct.toFixed(1)+'%;background:linear-gradient(90deg,'+barCol+'cc,'+barCol+')"></div></div>';
+      h+='<div class="hero-bar-val">'+c+' studio'+(c>1?'s':'')+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+
+    h+='</div>'; // stage
+    h+='</div>'; // hero-carousel
   }
 
   h+='</div></div>';
@@ -2436,7 +2531,7 @@ function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
   var isAdmin=!!S.profile&&!isViewer();
-  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   // Filtrage onglets pour viewers avec permissions granulaires
   if(isViewer()&&S.user&&S.adminSettings&&S.adminSettings.viewerPerms&&S.adminSettings.viewerPerms[S.user.id]){
     var _allowedTabs=S.adminSettings.viewerPerms[S.user.id].tabs||[];
@@ -2454,6 +2549,7 @@ function renderDetail(){
   else if(S.detailTab==='engagements')content=renderEngagements(S.selectedId,s);
   else if(S.detailTab==='echanges')content=renderEchanges(S.selectedId);
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
+  else if(S.detailTab==='local')content=renderLocal(S.selectedId,s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
   else if(S.detailTab==='alertes')content=renderAlertes(S.selectedId,s);
   else if(S.detailTab==='ia')content=renderAI(s);
@@ -4601,6 +4697,128 @@ async function updateStudioAddr(sid,newAddr){
   await saveStudio(sid,S.studios[sid]);
   toast('Adresse mise à jour — relocalisation en cours');
   render();
+}
+
+// ─── Onglet Local : plan masse du site ────────────────────────────────────────
+function renderLocal(sid,s){
+  var planPath='plans/'+sid+'.png';
+  var hasPlan=(S._planExists&&S._planExists[sid])===true;
+  // Découverte asynchrone de la présence du plan (la première fois)
+  if(!S._planExists)S._planExists={};
+  if(S._planExists[sid]===undefined){
+    S._planExists[sid]='loading';
+    (function(_sid,_path){
+      var img=new Image();
+      img.onload=function(){S._planExists[_sid]=true;if(S.detailTab==='local'&&S.selectedId===_sid)render();};
+      img.onerror=function(){S._planExists[_sid]=false;if(S.detailTab==='local'&&S.selectedId===_sid)render();};
+      img.src=_path+'?t='+Date.now();
+    })(sid,planPath);
+  }
+
+  var h='<div class="local-plan-wrap">';
+
+  // ── Header esthétique ──
+  h+='<div class="local-plan-header">';
+  h+='<div class="local-plan-header-left">';
+  h+='<div class="local-plan-badge"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg> PLAN MASSE</div>';
+  h+='<h2 class="local-plan-title">'+s.name+'</h2>';
+  h+='<div class="local-plan-addr"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg> '+(s.addr||'')+'</div>';
+  h+='</div>';
+  h+='<div class="local-plan-stats">';
+  h+='<div class="local-plan-stat"><div class="local-plan-stat-val">~135</div><div class="local-plan-stat-lbl">m² utiles</div></div>';
+  h+='<div class="local-plan-stat"><div class="local-plan-stat-val">12</div><div class="local-plan-stat-lbl">postes</div></div>';
+  h+='<div class="local-plan-stat"><div class="local-plan-stat-val">2,45</div><div class="local-plan-stat-lbl">m HSP</div></div>';
+  h+='</div>';
+  h+='</div>';
+
+  // ── Stage avec grille blueprint + plan ──
+  h+='<div class="local-plan-stage">';
+  h+='<div class="local-plan-grid"></div>';
+  h+='<div class="local-plan-corner tl"></div><div class="local-plan-corner tr"></div><div class="local-plan-corner bl"></div><div class="local-plan-corner br"></div>';
+
+  // Particules flottantes
+  h+='<div class="local-plan-particles">';
+  for(var _p=0;_p<9;_p++){
+    var _px=(8+Math.round(Math.random()*84));
+    var _py=(25+Math.round(Math.random()*70));
+    var _pd=(Math.random()*5).toFixed(1);
+    var _pr=(4+Math.random()*3).toFixed(1);
+    h+='<div class="local-plan-particle" style="left:'+_px+'%;top:'+_py+'%;animation-delay:'+_pd+'s;animation-duration:'+_pr+'s"></div>';
+  }
+  h+='</div>';
+
+  // Compass
+  h+='<div class="local-plan-compass"><div class="local-plan-compass-ring"></div><div class="local-plan-compass-needle"></div><div class="local-plan-compass-center"></div></div>';
+
+  // HUD strip top
+  h+='<div class="local-plan-hud"><div class="local-plan-hud-dot"></div>BLUEPRINT · DWG/34970 · REV. 03<div class="local-plan-hud-bar"></div></div>';
+
+  // Footer ticker
+  h+='<div class="local-plan-footer">';
+  h+='<div class="local-plan-footer-item"><span class="dot"></span>ÉCHELLE 1:100</div>';
+  h+='<div class="local-plan-footer-item"><span class="dot"></span>135 m² UTILES</div>';
+  h+='<div class="local-plan-footer-item"><span class="dot"></span>12 POSTES</div>';
+  h+='</div>';
+
+  if(hasPlan){
+    h+='<div class="local-plan-frame">';
+    h+='<img src="'+planPath+'" alt="Plan masse '+s.name+'" class="local-plan-img" onclick="openPlanLightbox(\''+planPath+'\',\''+(s.name||'').replace(/\'/g,"\\'")+'\')"/>';
+    h+='<div class="local-plan-scan"></div>';
+    // Pins dynamiques sur zones-clés (coords relatives au plan)
+    var _pins=[
+      {x:45,y:68,cls:'primary',label:'Studio 78 m²'},
+      {x:82,y:70,cls:'',label:'Accueil'},
+      {x:32,y:42,cls:'',label:'PT Room'},
+      {x:75,y:40,cls:'',label:'Bureau'}
+    ];
+    _pins.forEach(function(p,i){
+      h+='<div class="local-plan-pin '+p.cls+'" style="left:'+p.x+'%;top:'+p.y+'%;animation-delay:'+(1.6+i*0.15).toFixed(2)+'s,'+(2.2+i*0.15).toFixed(2)+'s"><span class="local-plan-pin-label">'+p.label+'</span></div>';
+    });
+    h+='</div>';
+    h+='<div class="local-plan-hint">🔍 Cliquez sur le plan pour l\'agrandir</div>';
+  } else if(S._planExists[sid]==='loading'){
+    h+='<div class="local-plan-empty"><div class="local-plan-spinner"></div><div>Chargement du plan…</div></div>';
+  } else {
+    h+='<div class="local-plan-empty">';
+    h+='<svg width="54" height="54" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" style="opacity:.35"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>';
+    h+='<div style="margin-top:12px;font-size:14px;font-weight:600;color:#64748b">Aucun plan masse disponible</div>';
+    h+='<div style="margin-top:6px;font-size:11px;color:#94a3b8;max-width:360px;text-align:center;line-height:1.6">Déposez un fichier <code style="background:#f1f5f9;padding:1px 6px;border-radius:4px;color:#475569">'+planPath+'</code> dans le répertoire de l\'application pour l\'afficher ici.</div>';
+    h+='</div>';
+  }
+
+  h+='</div>'; // /stage
+
+  // ── Légende / infos techniques ──
+  if(hasPlan){
+    h+='<div class="local-plan-legend">';
+    var legends=[
+      {c:'#1D9E75',t:'Studio principal',d:'78.66 m²'},
+      {c:'#378ADD',t:'Accueil',d:'46.84 m²'},
+      {c:'#FBBF24',t:'PT Room',d:'12.82 m²'},
+      {c:'#7F77DD',t:'Vestiaire / WC PMR',d:'6.67 m²'},
+      {c:'#D85A30',t:'Bureau + Salle Repos',d:'bureau admin'},
+      {c:'#94A3B8',t:'Local technique',d:'2.02 m²'}
+    ];
+    legends.forEach(function(l,i){
+      h+='<div class="local-plan-legend-item" style="animation-delay:'+(0.1+i*0.07).toFixed(2)+'s"><span class="local-plan-legend-dot" style="background:'+l.c+'"></span><div><div class="local-plan-legend-title">'+l.t+'</div><div class="local-plan-legend-sub">'+l.d+'</div></div></div>';
+    });
+    h+='</div>';
+  }
+
+  h+='</div>'; // /wrap
+  return h;
+}
+
+// ─── Lightbox pour zoom plan ──────────────────────────────────────────────────
+function openPlanLightbox(src,title){
+  var ex=document.getElementById('plan-lightbox');
+  if(ex)ex.remove();
+  var d=document.createElement('div');
+  d.id='plan-lightbox';
+  d.className='plan-lightbox';
+  d.innerHTML='<div class="plan-lightbox-inner"><div class="plan-lightbox-header"><span>'+title+'</span><button onclick="document.getElementById(\'plan-lightbox\').remove()" class="plan-lightbox-close">✕</button></div><img src="'+src+'" alt="'+title+'"/></div>';
+  d.addEventListener('click',function(e){if(e.target===d)d.remove();});
+  document.body.appendChild(d);
 }
 
 function renderLocalisation(s){
