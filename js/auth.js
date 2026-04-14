@@ -123,12 +123,37 @@ function avatarHTMLForUser(u,size){
 }
 var COLLAB_SEP_LOGIN='<span style="font-size:26px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
 
+// ── Toggle son vidéo d'arrière-plan login ────────────────────────────────────
+function toggleAuthSound(){
+  var v=document.getElementById('auth-bg-video');
+  var ic=document.getElementById('auth-sound-icon');
+  var btn=document.getElementById('auth-sound-btn');
+  if(!v)return;
+  v.muted=!v.muted;
+  if(!v.muted){
+    // Les navigateurs exigent une interaction user pour activer le son — c'est le cas ici (click)
+    v.play().catch(function(){});
+    if(ic)ic.textContent='🔊';
+    if(btn){btn.classList.add('active');btn.setAttribute('title','Couper le son');btn.setAttribute('aria-label','Couper le son');}
+  } else {
+    if(ic)ic.textContent='🔇';
+    if(btn){btn.classList.remove('active');btn.setAttribute('title','Activer le son');btn.setAttribute('aria-label','Activer le son');}
+  }
+}
+
 function renderAuth(){
   return '<div class="auth-wrap">'
-    // Particules décoratives
-    +'<div style="position:absolute;top:15%;left:10%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(26,58,107,0.07) 0%,transparent 70%);pointer-events:none"></div>'
-    +'<div style="position:absolute;bottom:10%;right:15%;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(15,110,86,0.05) 0%,transparent 70%);pointer-events:none"></div>'
-    +'<div style="position:absolute;top:50%;left:50%;width:600px;height:600px;transform:translate(-50%,-50%);border-radius:50%;background:radial-gradient(circle,rgba(255,255,255,0.015) 0%,transparent 60%);pointer-events:none"></div>'
+    // ── Background vidéo cinematic ────────────────────────────────────────
+    +'<video class="auth-bg-video" id="auth-bg-video" autoplay muted loop playsinline preload="auto" poster="video/login-bg-poster.jpg">'
+    +'<source src="video/login-bg.mp4" type="video/mp4">'
+    +'</video>'
+    // Overlay sombre radial : assombrit les bords, laisse le centre respirer
+    +'<div class="auth-bg-overlay"></div>'
+    // Bouton mute/unmute (discret, en bas à droite)
+    +'<button class="auth-sound-btn" id="auth-sound-btn" onclick="toggleAuthSound()" aria-label="Activer le son" title="Activer le son"><span id="auth-sound-icon">🔇</span></button>'
+    // Particules décoratives (conservées, plus subtiles au-dessus de la vidéo)
+    +'<div style="position:absolute;top:15%;left:10%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(26,58,107,0.07) 0%,transparent 70%);pointer-events:none;z-index:2"></div>'
+    +'<div style="position:absolute;bottom:10%;right:15%;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(15,110,86,0.05) 0%,transparent 70%);pointer-events:none;z-index:2"></div>'
     +'<div class="auth-box">'
     // Logos en blanc — animés
     +'<div class="auth-logos">'
