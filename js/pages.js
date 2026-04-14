@@ -4506,6 +4506,18 @@ async function toggleStreetView(){
   render();
 }
 
+async function updateStudioAddr(sid,newAddr){
+  if(!newAddr||!newAddr.trim()){toast('Adresse vide');return;}
+  S.studios[sid].addr=newAddr.trim();
+  delete S.mapCoords[sid]; // force re-géocodage
+  // Vider cache INSEE
+  if(typeof _inseePopCache!=='undefined')Object.keys(_inseePopCache).forEach(function(k){if(k.startsWith(sid+'_'))delete _inseePopCache[k];});
+  S._editAddr=false;S._editAddrVal=null;
+  await saveStudio(sid,S.studios[sid]);
+  toast('Adresse mise à jour — relocalisation en cours');
+  render();
+}
+
 function renderLocalisation(s){
   var ae=encodeURIComponent(s.addr);
   var sv=S.mapStreetView||false;
@@ -4524,6 +4536,23 @@ function renderLocalisation(s){
   h+='</div>';
   if(!sv){
     h+='<button onclick="S.mapShowZones='+(zonesOn?'false':'true')+';render();" style="display:flex;align-items:center;gap:6px;padding:6px 14px;border-radius:20px;border:0.5px solid '+(zonesOn?'#1D9E75':'#ccc')+';background:'+(zonesOn?'#E1F5EE':'#fff')+';color:'+(zonesOn?'#0F6E56':'#666')+';font-size:12px;cursor:pointer;font-weight:'+(zonesOn?600:400)+'">⭕ Zones de chalandise</button>';
+  }
+  h+='</div>';
+
+  // ── Bloc adresse éditable ──
+  var _isEditingAddr=S._editAddr===true;
+  var _canEdit=!!S.profile&&!isViewer();
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;padding:10px 14px;background:#f8fafc;border-radius:10px;border:0.5px solid #e2e8f0;flex-wrap:wrap">';
+  h+='<div style="font-size:12px;color:#64748b;font-weight:600;white-space:nowrap">📍 Adresse :</div>';
+  if(_isEditingAddr){
+    h+='<input id="edit-addr-input" type="text" value="'+(S._editAddrVal||s.addr||'').replace(/"/g,'&quot;')+'" oninput="S._editAddrVal=this.value" style="flex:1;min-width:200px;padding:7px 10px;border:1.5px solid #1D9E75;border-radius:8px;font-size:12px;outline:none;background:#fff" placeholder="Rue, CP Ville"/>';
+    h+='<button onclick="updateStudioAddr(\''+sid+'\',S._editAddrVal)" style="padding:5px 12px;border:none;background:#1D9E75;color:#fff;border-radius:7px;font-size:11px;font-weight:600;cursor:pointer">Valider</button>';
+    h+='<button onclick="S._editAddr=false;S._editAddrVal=null;render();" style="padding:5px 12px;border:1px solid #ccc;background:#fff;color:#666;border-radius:7px;font-size:11px;cursor:pointer">Annuler</button>';
+  } else {
+    h+='<div style="flex:1;font-size:12px;color:#1a1a1a">'+(s.addr||'<i style=\"color:#aaa\">Non renseignée</i>')+'</div>';
+    if(_canEdit){
+      h+='<button onclick="S._editAddr=true;S._editAddrVal=\''+(s.addr||'').replace(/'/g,"\\'")+'\';render();setTimeout(function(){var el=document.getElementById(\'edit-addr-input\');if(el)el.focus();},50);" style="padding:4px 10px;border:1px solid #ddd;background:#fff;color:#64748b;border-radius:7px;font-size:11px;cursor:pointer;display:flex;align-items:center;gap:4px" onmouseenter="this.style.borderColor=\'#1D9E75\';this.style.color=\'#0F6E56\'" onmouseleave="this.style.borderColor=\'#ddd\';this.style.color=\'#64748b\'">✏️ Modifier</button>';
+    }
   }
   h+='</div>';
 
