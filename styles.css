@@ -115,6 +115,69 @@ input[type=range].zone-slider::-moz-range-thumb{width:16px;height:16px;border-ra
 .counter-anim{display:inline-block}
 /* ── Confetti canvas ── */
 #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:99999}
+
+/* ── Typography scale (CSS variables) ── */
+:root{
+  --t-xs:10px;--t-sm:11px;--t-base:12px;--t-md:13px;--t-lg:14px;--t-xl:16px;--t-2xl:18px;--t-3xl:22px;--t-4xl:28px;
+  --fw-regular:400;--fw-medium:500;--fw-semibold:600;--fw-bold:700;
+  --sp-1:4px;--sp-2:8px;--sp-3:12px;--sp-4:16px;--sp-6:24px;--sp-8:32px;--sp-12:48px;
+  --r-sm:6px;--r-md:10px;--r-lg:14px;--r-xl:18px;--r-2xl:22px;
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.06);
+  --shadow-md:0 4px 14px rgba(0,0,0,0.08);
+  --shadow-lg:0 12px 32px -8px rgba(26,58,107,0.18);
+  --ease-spring:cubic-bezier(.34,1.56,.64,1);
+  --ease-out:cubic-bezier(.2,.8,.2,1);
+}
+.t-xs{font-size:var(--t-xs)}.t-sm{font-size:var(--t-sm)}.t-base{font-size:var(--t-base)}.t-md{font-size:var(--t-md)}.t-lg{font-size:var(--t-lg)}.t-xl{font-size:var(--t-xl)}.t-2xl{font-size:var(--t-2xl)}.t-3xl{font-size:var(--t-3xl)}.t-4xl{font-size:var(--t-4xl)}
+.t-title{letter-spacing:-0.01em;font-weight:var(--fw-bold)}
+.t-label{font-size:var(--t-xs);text-transform:uppercase;letter-spacing:0.5px;font-weight:var(--fw-semibold);color:#888}
+
+/* ── Skeleton loaders ── */
+@keyframes skeletonShimmer{0%{background-position:-300px 0}100%{background-position:300px 0}}
+.skeleton{background:linear-gradient(90deg,#e8e8e0 0%,#f0f0ea 50%,#e8e8e0 100%);background-size:600px 100%;animation:skeletonShimmer 1.4s linear infinite;border-radius:8px;display:block}
+body.dark .skeleton{background:linear-gradient(90deg,#1c2128 0%,#262d36 50%,#1c2128 100%);background-size:600px 100%}
+.skeleton-card{background:#fff;border:0.5px solid #e0e0d8;border-radius:16px;padding:1.1rem 1.3rem}
+.skeleton-line{height:12px;margin-bottom:8px}
+.skeleton-line.lg{height:18px}
+.skeleton-line.sm{height:9px}
+
+/* ── Success checkmark overlay ── */
+@keyframes checkScaleIn{0%{transform:scale(0);opacity:0}50%{transform:scale(1.15);opacity:1}100%{transform:scale(1);opacity:1}}
+@keyframes checkFadeOut{0%{opacity:1}100%{opacity:0;transform:scale(0.9)}}
+@keyframes checkDraw{to{stroke-dashoffset:0}}
+.success-check-overlay{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99998;pointer-events:none;background:rgba(255,255,255,0.35);backdrop-filter:blur(2px);animation:modalBackdropIn .2s ease}
+.success-check-box{width:120px;height:120px;border-radius:50%;background:#fff;box-shadow:0 20px 60px rgba(29,158,117,0.35),0 0 0 6px rgba(29,158,117,0.12);display:flex;align-items:center;justify-content:center;animation:checkScaleIn .5s var(--ease-spring)}
+.success-check-box svg{width:72px;height:72px}
+.success-check-box svg path{stroke:#1D9E75;stroke-width:5;stroke-linecap:round;stroke-linejoin:round;fill:none;stroke-dasharray:50;stroke-dashoffset:50;animation:checkDraw .45s .2s ease forwards}
+
+/* ── Custom tooltips (global) ── */
+#ccd-tooltip{position:fixed;background:rgba(15,23,42,0.96);color:#fff;padding:6px 10px;border-radius:7px;font-size:11px;font-weight:500;pointer-events:none;z-index:99997;box-shadow:0 8px 24px rgba(0,0,0,0.25);backdrop-filter:blur(6px);opacity:0;transform:translateY(4px);transition:opacity .18s,transform .18s;max-width:260px;line-height:1.4}
+#ccd-tooltip.show{opacity:1;transform:translateY(0)}
+#ccd-tooltip::after{content:'';position:absolute;width:0;height:0;border:5px solid transparent}
+#ccd-tooltip[data-pos="top"]::after{top:100%;left:50%;margin-left:-5px;border-top-color:rgba(15,23,42,0.96)}
+#ccd-tooltip[data-pos="bottom"]::after{bottom:100%;left:50%;margin-left:-5px;border-bottom-color:rgba(15,23,42,0.96)}
+
+/* ── Leaflet studio marker enhanced pulse ── */
+@keyframes locPulseRing{0%{transform:scale(0.6);opacity:0.9}80%{transform:scale(2.6);opacity:0}100%{transform:scale(2.6);opacity:0}}
+.loc-pulse-ring{position:absolute;inset:0;border-radius:50%;background:rgba(29,158,117,0.55);animation:locPulseRing 2.4s ease-out infinite}
+.loc-pulse-ring.delay{animation-delay:1.2s}
+
+/* ── Typewriter caret ── */
+@keyframes caretBlink{0%,100%{opacity:1}50%{opacity:0}}
+.typewriter-caret{display:inline-block;width:2px;background:currentColor;margin-left:2px;animation:caretBlink .9s steps(2) infinite;vertical-align:middle;height:0.9em}
+
+/* ── Donut chart SVG ── */
+.donut-ring circle.ring-fg{transition:stroke-dashoffset .6s var(--ease-out)}
+
+/* ── Sparkline ── */
+@keyframes sparkDraw{to{stroke-dashoffset:0}}
+@keyframes sparkDot{to{opacity:1}}
+
+/* ── Empty state container ── */
+.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 20px;text-align:center;color:#94a3b8}
+.empty-state svg{margin-bottom:14px;opacity:0.7}
+.empty-state .es-title{font-size:13px;font-weight:600;color:#64748b;margin-bottom:4px}
+.empty-state .es-sub{font-size:11px;color:#94a3b8;max-width:280px;line-height:1.5}
 #dirty-bar{position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid #e74c3c;box-shadow:0 -4px 20px rgba(0,0,0,0.12);z-index:9999;display:flex;align-items:center;justify-content:center;gap:16px;padding:14px 24px;transform:translateY(100%);transition:transform .3s cubic-bezier(.4,0,.2,1)}
 #dirty-bar .dirty-msg{color:#e74c3c;font-weight:600;font-size:14px}
 #dirty-bar .dirty-save{background:#27ae60;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px;transition:background .15s}

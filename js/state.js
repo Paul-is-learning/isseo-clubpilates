@@ -236,7 +236,7 @@ async function saveAllDirty(){
     }
     S.dirty={};S._dirtyBackup={};
     _hideDirtyBar();
-    toast('Modifications enregistrées ✓');
+    if(typeof successCheck==='function')successCheck();else toast('Modifications enregistrées ✓');
     render();
   }catch(e){console.error('saveAllDirty error:',e);toast('Erreur sauvegarde: '+e.message);}
 }

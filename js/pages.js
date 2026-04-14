@@ -28,7 +28,8 @@ function renderAccueil(){
   h+='</div>';
   // Greeting text
   h+='<div>';
-  h+='<div style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.2">'+_salut+(_prenom?', '+_prenom:'')+'</div>';
+  var _greetText=_salut+(_prenom?', '+_prenom:'');
+  h+='<div data-typewriter-greet data-typewriter-text="'+_greetText.replace(/"/g,'&quot;')+'" style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.2;min-height:22px">'+_greetText+'</div>';
   h+='<div style="font-size:12px;color:#888;margin-top:2px">'+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>';
   h+='</div>';
   h+='</div>';
@@ -98,7 +99,29 @@ function renderAccueil(){
     h+='<div style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);font-weight:600">'+k.label+'</div>';
     h+='</div></div>';
   });
-  h+='</div></div></div>';
+  h+='</div>';
+
+  // ── Sparkline : CA cumulé par studio ──
+  if(allIds.length>=2 && typeof sparkline==='function'){
+    var _sorted=allIds.slice().sort(function(a,b){
+      return (S.studios[a].forecast&&S.studios[a].forecast.annualCA||0)-(S.studios[b].forecast&&S.studios[b].forecast.annualCA||0);
+    });
+    var _cum=0;
+    var _cumVals=_sorted.map(function(id){
+      _cum+=(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);
+      return _cum;
+    });
+    _cumVals.unshift(0);
+    if(_cum>0){
+      h+='<div style="position:relative;z-index:1;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:space-between;gap:20px">';
+      h+='<div><div style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.5);font-weight:600;margin-bottom:4px">CA cumulé (BP A1)</div>';
+      h+='<div style="font-size:14px;color:rgba(255,255,255,0.85);font-weight:600">'+fmt(_cum)+' €</div></div>';
+      h+='<div style="flex:1;max-width:260px">'+sparkline(_cumVals,{width:260,height:44})+'</div>';
+      h+='</div>';
+    }
+  }
+
+  h+='</div></div>';
 
   // ── Activité récente ──
   h+=renderActivityFeed(allIds);
@@ -1785,7 +1808,7 @@ function renderBPConsolide(){
   h+='</div>';
 
   if(!allIds.length){
-    h+='<div style="text-align:center;color:#bbb;padding:40px;font-size:13px">Aucun studio disponible</div>';
+    h+=(typeof emptyState==='function')?emptyState('folder','Aucun studio disponible','Créez votre premier studio pour commencer.'):'<div style="text-align:center;color:#bbb;padding:40px;font-size:13px">Aucun studio disponible</div>';
     return h;
   }
 
@@ -1905,6 +1928,28 @@ function renderBPConsolide(){
   h+='<span style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:1px">Rentabilité consolidée — Année 3</span>';
   h+='<span style="font-size:10px;color:#94a3b8;font-weight:500">(croisière)</span>';
   h+='</div>';
+
+  // ── Donuts visuels : marges clés ──
+  if(typeof donutChart==='function' && totCA3>0){
+    var _rexMargin=Math.round(totRex3/totCA3*100);
+    var _cashMargin=Math.round(totCashNet3/totCA3*100);
+    var _donuts=[
+      {p:Math.max(0,margeEbitda3Tot),color:'#10b981',label:'Marge EBITDA',sub:'sur CA A3'},
+      {p:Math.max(0,_rexMargin),color:'#f59e0b',label:'Marge REX',sub:'sur CA A3'},
+      {p:Math.max(0,_cashMargin),color:'#3b82f6',label:'Ratio Cash',sub:'sur CA A3'}
+    ];
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">';
+    _donuts.forEach(function(d){
+      h+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:18px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">';
+      h+=donutChart(d.p,{size:84,stroke:9,color:d.color});
+      h+='<div style="flex:1"><div style="font-size:11px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:0.6px">'+d.label+'</div>';
+      h+='<div style="font-size:10px;color:#94a3b8;margin-top:3px">'+d.sub+'</div>';
+      h+='<div style="font-size:18px;font-weight:800;color:'+d.color+';margin-top:4px;letter-spacing:-0.3px">'+d.p+'%</div>';
+      h+='</div></div>';
+    });
+    h+='</div>';
+  }
+
   h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
   var _rentaCards=[
     {l:'EBITDA',v:fmt(totEbitda3),pos:totEbitda3>=0,accent:'#10b981',bg:'linear-gradient(135deg,#ecfdf5,#d1fae5)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
@@ -2205,7 +2250,7 @@ function renderActivityFeed(ids){
   if(allTasks.length)h+='<span style="background:#DBEAFE;color:#1D4ED8;font-size:9px;font-weight:700;border-radius:8px;padding:1px 6px;min-width:14px;text-align:center">'+allTasks.length+'</span>';
   h+='</div>';
   if(!allTasks.length){
-    h+='<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucune tâche en cours</div>';
+    h+=(typeof emptyState==='function')?emptyState('tasks','Aucune tâche en cours','Tout est sous contrôle.'):'<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucune tâche en cours</div>';
   } else {
     allTasks.forEach(function(item){
       var t=item.task;
@@ -2268,7 +2313,7 @@ function renderActivityFeed(ids){
   h+='<div style="background:'+(S.darkMode?'#161b22':'#fff')+';border:0.5px solid '+(S.darkMode?'#30363d':'#e0e0d8')+';border-radius:12px;padding:16px 18px;min-height:80px">';
   h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span style="font-size:12px;font-weight:700;color:#1a1a1a">Alertes actives</span><span style="background:#DC2626;color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 6px;min-width:14px;text-align:center">'+allAlerts.length+'</span></div>';
   if(!allAlerts.length){
-    h+='<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucune alerte</div>';
+    h+=(typeof emptyState==='function')?emptyState('alert','Aucune alerte','Tous vos studios sont au vert.'):'<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucune alerte</div>';
   } else {
     allAlerts.forEach(function(a){
       h+='<div onclick="openDetail(\''+a.studioId+'\');setTimeout(function(){setDetailTab(\'alertes\')},50)" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid '+(S.darkMode?'#30363d':'#f5f5f0')+';cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=S.darkMode?\'#1c2128\':\'#fef6f6\'" onmouseout="this.style.background=\'transparent\'">';
@@ -3666,7 +3711,7 @@ function renderEngagements(sid,s){
   if(isAdmin)h+='<div style="display:flex;justify-content:flex-end;margin-bottom:12px"><button class="btn btn-primary" onclick="ouvrirFormDepense(\''+sid+'\')">+ Ajouter une d&eacute;pense</button></div>';
   h+='<div id="form-depense-'+sid+'"></div>';
   if(deps.length===0){
-    h+='<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune d&eacute;pense saisie</div>';
+    h+=(typeof emptyState==='function')?('<div class="box" style="padding:10px">'+emptyState('money','Aucune dépense saisie','Ajoutez votre première dépense pour suivre votre budget.')+'</div>'):'<div class="box" style="text-align:center;padding:2rem;color:#aaa;font-size:13px">Aucune d&eacute;pense saisie</div>';
   } else {
     h+='<div style="overflow-x:auto"><table style="min-width:700px">';
     h+='<tr><th style="text-align:left;padding-left:8px">Cat&eacute;gorie</th><th style="text-align:left">Description</th><th>TTC</th><th>Financement</th><th>Par</th><th>Date</th><th>D&eacute;blocage</th><th>Justif</th><th></th></tr>';
@@ -4184,7 +4229,7 @@ function renderTopicThread(sid,topicId){
   // Messages
   h+='<div class="box" style="padding:0;overflow:hidden">';
   h+='<div id="topic-msgs" style="height:380px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:14px">';
-  if(!msgs.length)h+='<div style="text-align:center;color:#aaa;font-size:12px;padding:20px">Aucune réponse pour le moment</div>';
+  if(!msgs.length)h+=(typeof emptyState==='function')?emptyState('chat','Aucune réponse pour le moment','Soyez le premier à répondre.'):'<div style="text-align:center;color:#aaa;font-size:12px;padding:20px">Aucune réponse pour le moment</div>';
   msgs.forEach(function(m,mi){
     var isMe=m.auteur===me;
     var canEdit=isMe||isSuperAdmin();

@@ -249,7 +249,8 @@ async function saveMois(){
   newAk[S.editMoisIdx]=Object.assign({},S.editVals);
   var newFc=Object.assign({},fc);newFc[ak]=newAk;
   await saveStudio(S.selectedId,Object.assign({},s,{forecast:newFc}));
-  S.editMoisIdx=null;toast('Saisie enregistree');
+  S.editMoisIdx=null;
+  if(typeof successCheck==='function')successCheck();else toast('Saisie enregistree');
 }
 
 async function clearMois(){
