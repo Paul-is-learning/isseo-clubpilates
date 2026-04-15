@@ -91,13 +91,17 @@ serve(async (req) => {
       ? task.assignees
       : (task.responsable ? [task.responsable] : []);
 
-    // Sur un commentaire, on notifie tous les assignés sauf l'auteur.
     // Sur une assignation ciblée (extra.newAssignee), on ne notifie que cette personne.
-    // Sur 'mentioned', on notifie uniquement les personnes mentionnées (extra.mentions).
-    // Sinon : tous les assignés sauf l'auteur.
+    // Sur 'assigned' (création de tâche) : tous les assignés, Y COMPRIS l'auteur s'il s'est auto-assigné
+    //   → le créateur veut l'email de confirmation avec boutons d'action.
+    // Sur 'commented' / 'status_changed' : tous les assignés sauf l'auteur (évite l'auto-spam).
+    // Sur 'mentioned' : uniquement les personnes mentionnées (hors l'auteur).
     let recipients: string[] = [];
     if (event === "assigned" && extra?.newAssignee) {
       recipients = [extra.newAssignee];
+    } else if (event === "assigned") {
+      // Création de tâche : on notifie TOUS les assignés, auteur inclus s'il est dans la liste
+      recipients = assignees.filter((n) => !!n);
     } else if (event === "mentioned") {
       const mentioned: string[] = Array.isArray(extra?.mentions) ? extra.mentions : [];
       recipients = mentioned.filter((n) => n && n !== actorName);
@@ -151,7 +155,7 @@ serve(async (req) => {
         appUrl: PUBLIC_APP_URL,
       });
 
-      const subject = composeSubject(event, task, studioName, actorName);
+      const subject = composeSubject(event, task, studioName, actorName, nom);
 
       const res = await fetch("https://api.resend.com/emails", {
         method: "POST",
@@ -216,10 +220,14 @@ function b64urlEncode(bytes: Uint8Array): string {
   return btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
-function composeSubject(event: string, task: any, studioName: string, actorName?: string): string {
+function composeSubject(event: string, task: any, studioName: string, actorName?: string, recipientName?: string): string {
   const t = task.titre || "Tâche";
   const actor = (actorName || "").split(" ")[0] || "";
-  if (event === "assigned") return `🎯 Nouvelle tâche : ${t} — ${studioName}`;
+  const isSelf = recipientName && actorName && recipientName === actorName;
+  if (event === "assigned") {
+    if (isSelf) return `📌 Tâche créée : ${t} — ${studioName}`;
+    return `🎯 Nouvelle tâche : ${t} — ${studioName}`;
+  }
   if (event === "commented") return `💬 ${actor} a commenté « ${t} » — ${studioName}`;
   if (event === "status_changed") return `↻ ${t} — statut mis à jour — ${studioName}`;
   if (event === "mentioned") return `@ ${actor} t'a mentionné dans « ${t} » — ${studioName}`;
@@ -254,9 +262,10 @@ function composeTaskEmail(opts: {
   }
 
   // Headline contextuelle
+  const isSelfAssigned = event === "assigned" && recipientName === actorName;
   let headline = "";
   if (event === "assigned") {
-    headline = `${actorName} t'a assigné une tâche`;
+    headline = isSelfAssigned ? `Nouvelle tâche créée` : `${actorName} t'a assigné une tâche`;
   } else if (event === "commented") {
     headline = `${actorName} a commenté une tâche`;
   } else if (event === "status_changed") {
@@ -313,7 +322,9 @@ function composeTaskEmail(opts: {
           ${
             event === "mentioned"
               ? `Salut ${esc(recipientName.split(" ")[0] || "")}, ${esc(actorName)} t'a mentionné dans un commentaire.`
-              : `Salut ${esc(recipientName.split(" ")[0] || "")}, ${esc(actorName)} a besoin de toi sur cette tâche.`
+              : isSelfAssigned
+                ? `Salut ${esc(recipientName.split(" ")[0] || "")}, voici ta nouvelle tâche — utilise les boutons ci-dessous pour la piloter directement depuis cet email.`
+                : `Salut ${esc(recipientName.split(" ")[0] || "")}, ${esc(actorName)} a besoin de toi sur cette tâche.`
           }
         </div>
       </td></tr>
