@@ -5387,7 +5387,18 @@ async function creerTache(sid){
       sb.functions.invoke('task-notify',{body:{sid:sid,taskId:newTask.id,event:'assigned',actorName:moi}}).then(function(r){
         console.log('[task-notify assigned] response:',r);
         if(r && r.error){
-          toast('❌ task-notify: '+(r.error.message||JSON.stringify(r.error)),6000);
+          // Le SDK ne parse pas le body d'erreur — on le lit manuellement
+          var ctx=r.error.context;
+          if(ctx && typeof ctx.text==='function'){
+            ctx.text().then(function(txt){
+              console.log('[task-notify err body]',txt);
+              toast('❌ task-notify ('+(ctx.status||'?')+'): '+txt.slice(0,300),12000);
+            }).catch(function(){
+              toast('❌ task-notify: '+(r.error.message||'?'),8000);
+            });
+          } else {
+            toast('❌ task-notify: '+(r.error.message||JSON.stringify(r.error)),8000);
+          }
         } else if(r && r.data){
           var dbg=r.data.debug||{};
           if(r.data.skipped){
