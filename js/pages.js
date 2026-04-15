@@ -4556,7 +4556,8 @@ function _renderTaskRow(sid,t){
   var commentCount=(t.comments||[]).length;
   var priorityMeta=t.priority?_getPriorityMeta(t.priority):null;
   var cbCls='task-checkbox'+(isDone?' done':'')+(isDoing?' doing':'')+(isBlocked?' blocked':'');
-  var h='<div class="task-row'+(isDone?' done':'')+'" onclick="openTacheModal(\''+sid+'\',\''+t.id+'\')">';
+  var isNew=(S._newlyCreatedTaskId===t.id);
+  var h='<div class="task-row'+(isDone?' done':'')+(isNew?' task-new-entry':'')+'" onclick="openTacheModal(\''+sid+'\',\''+t.id+'\')">';
   // Checkbox
   h+='<button class="'+cbCls+'" onclick="event.stopPropagation();toggleTacheStatut(\''+sid+'\',\''+t.id+'\')" title="'+statusMeta.label+' — clic pour avancer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>';
   // Titre
@@ -4614,6 +4615,58 @@ function setTasksView(sid,view){
   render();
 }
 
+// V3 — Inline task creation (Notion-style "＋ Ajouter")
+function _startInlineCreate(sid,statut,el){
+  if(!el)return;
+  var isKanban=el.classList.contains('kanban-add-inline');
+  var inp=document.createElement('input');
+  inp.type='text';
+  inp.className=isKanban?'kanban-add-inline-input':'task-add-inline-input';
+  inp.placeholder='Titre de la tâche…';
+  el.replaceWith(inp);
+  inp.focus();
+  inp.addEventListener('keydown',function(e){
+    if(e.key==='Enter'){
+      e.preventDefault();
+      var titre=(inp.value||'').trim();
+      if(!titre){inp.blur();return;}
+      _inlineCreateTask(sid,statut,titre);
+    }
+    if(e.key==='Escape'){inp.blur();}
+  });
+  inp.addEventListener('blur',function(){
+    setTimeout(function(){render();},50);
+  });
+}
+// V3 — Tags dans le modal détail
+function _addTagToTask(sid,taskId,val){
+  var tag=(val||'').trim().replace(/^#/,'');
+  if(!tag)return;
+  var t=(S.todos[sid]||[]).find(function(x){return x.id===taskId;});
+  if(!t)return;
+  if(!t.tags)t.tags=[];
+  if(t.tags.indexOf(tag)>=0)return;
+  t.tags.push(tag);
+  saveTodos(sid).then(function(){_rerenderTacheModal(sid,taskId);});
+}
+function _removeTagFromTask(sid,taskId,tag){
+  var t=(S.todos[sid]||[]).find(function(x){return x.id===taskId;});
+  if(!t||!t.tags)return;
+  t.tags=t.tags.filter(function(x){return x!==tag;});
+  saveTodos(sid).then(function(){_rerenderTacheModal(sid,taskId);});
+}
+
+async function _inlineCreateTask(sid,statut,titre){
+  var moi=(S.profile&&S.profile.nom)||'';
+  if(!S.todos[sid])S.todos[sid]=[];
+  var newTask={id:'todo_'+Date.now(),titre:titre,description:'',assignees:[moi],responsable:moi,priority:'P2',tags:[],deadline:'',statut:statut||'todo',auteur:moi,ts:new Date().toISOString(),comments:[]};
+  S.todos[sid].push(newTask);
+  S._newlyCreatedTaskId=newTask.id;
+  await saveTodos(sid);
+  toast('Tâche créée');
+  render();
+}
+
 // V2 — Vue Liste classique (ex-corps de renderTachesInline)
 function _renderTachesListe(sid){
   var todos=_sortTodos(S.todos[sid]||[]);
@@ -4621,10 +4674,17 @@ function _renderTachesListe(sid){
   var total=todos.length;
   var pct=total?Math.round(doneCount/total*100):0;
   var h='';
-  h+='<div class="tasks-progress"><div class="tasks-progress-bar"><div class="tasks-progress-fill" style="width:'+pct+'%"></div></div><span>'+doneCount+'/'+total+' · '+pct+'%</span></div>';
+  h+='<div class="tasks-progress"><div class="tasks-progress-bar"><div class="tasks-progress-fill" data-pct="'+pct+'" style="width:0%"></div></div><span>'+doneCount+'/'+total+' · '+pct+'%</span></div>';
+  // RAF : animer la barre de 0 → pct%
+  setTimeout(function(){var bar=document.querySelector('.tasks-progress-fill[data-pct="'+pct+'"]');if(bar)requestAnimationFrame(function(){bar.style.width=pct+'%';});},30);
   h+='<div class="tasks-list">';
   todos.forEach(function(t){h+=_renderTaskRow(sid,t);});
+  // Inline add Notion-style
+  if(!isViewer()){
+    h+='<div class="task-add-inline" onclick="_startInlineCreate(\''+sid+'\',\'todo\',this)"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Ajouter une tâche</div>';
+  }
   h+='</div>';
+  if(S._newlyCreatedTaskId)setTimeout(function(){S._newlyCreatedTaskId=null;},400);
   return h;
 }
 
@@ -4664,6 +4724,9 @@ function _renderTachesKanban(sid){
     } else {
       list.forEach(function(t){h+=_renderKanbanCard(sid,t,viewer);});
     }
+    if(!viewer){
+      h+='<div class="kanban-add-inline" onclick="_startInlineCreate(\''+sid+'\',\''+c+'\',this)">＋ Ajouter</div>';
+    }
     h+='</div></div>';
   });
   h+='</div>';
@@ -4680,7 +4743,8 @@ function _renderKanbanCard(sid,t,viewer){
   var overdue=t.deadline&&t.deadline<today&&!isDone;
   var soon=t.deadline&&!overdue&&!isDone&&t.deadline<=new Date(Date.now()+7*86400000).toISOString().slice(0,10);
   var dragAttrs=viewer?'':' draggable="true" ondragstart="_onKanbanDragStart(event,\''+t.id+'\')" ondragend="_onKanbanDragEnd(event)"';
-  var h='<div class="kanban-card"'+dragAttrs+' onclick="openTacheModal(\''+sid+'\',\''+t.id+'\')">';
+  var isNew=(S._newlyCreatedTaskId===t.id);
+  var h='<div class="kanban-card'+(isNew?' task-new-entry':'')+'"'+dragAttrs+' onclick="openTacheModal(\''+sid+'\',\''+t.id+'\')">';
   // Titre
   h+='<div class="kanban-card-title">'+_escHtml(t.titre||'(sans titre)')+'</div>';
   // Description abrégée (si présente)
@@ -5127,7 +5191,12 @@ function ouvrirFormTache(sid){
 
 function _closeNewTacheModal(){
   var m=document.getElementById('tache-quick-modal');
-  if(m)m.remove();
+  if(!m){_newTacheDraft=null;return;}
+  m.classList.add('closing');
+  var done=false;
+  function fin(){if(done)return;done=true;m.remove();}
+  m.addEventListener('animationend',fin);
+  setTimeout(fin,280);
   _newTacheDraft=null;
   if(_newTacheEscHandler){
     document.removeEventListener('keydown',_newTacheEscHandler);
@@ -5385,6 +5454,7 @@ async function creerTache(sid){
   if(assignees.length){
     try{sb.functions.invoke('task-notify',{body:{sid:sid,taskId:newTask.id,event:'assigned',actorName:moi}}).catch(function(e){console.warn('[task-notify]',e);});}catch(e){console.warn('[task-notify]',e);}
   }
+  S._newlyCreatedTaskId=newTask.id;
   var toastMsg='Tâche créée';
   if(others.length===1)toastMsg+=' — '+others[0].split(' ')[0]+' a été notifié(e)';
   else if(others.length>1)toastMsg+=' — '+others.length+' personnes notifiées';
@@ -5400,19 +5470,35 @@ async function toggleTacheStatut(sid,todoId){
   var cur=t.statut||'todo';
   if(cur==='vu'||cur==='doing')cur='in_progress';
   var cycle={todo:'in_progress',in_progress:'done',done:'todo',blocked:'todo'};
-  t.statut=cycle[cur]||'todo';
+  var newStatut=cycle[cur]||'todo';
+  var wasDone=(newStatut==='done');
+  t.statut=newStatut;
+  // Pulse animation si on passe en done
+  if(wasDone){
+    var el=document.querySelector('.task-row[onclick*="'+todoId+'"]')||document.querySelector('.kanban-card[ondragstart*="'+todoId+'"]');
+    if(el){el.classList.add('task-completing');setTimeout(function(){el.classList.remove('task-completing');},550);}
+  }
   await saveTodos(sid);
-  if(t.statut==='done')notifyAll({type:'statut',studio_id:sid,title:'✓ Tâche terminée — '+(S.studios[sid]?S.studios[sid].name:sid),body:t.titre});
+  if(wasDone)notifyAll({type:'statut',studio_id:sid,title:'✓ Tâche terminée — '+(S.studios[sid]?S.studios[sid].name:sid),body:t.titre});
   try{
     var moi=(S.profile&&S.profile.nom)||'';
     sb.functions.invoke('task-notify',{body:{sid:sid,taskId:todoId,event:'status_changed',actorName:moi,extra:{statut:t.statut}}}).catch(function(e){console.warn('[task-notify]',e);});
   }catch(e){}
-  render();
-  if(document.getElementById('tache-detail-modal'))_rerenderTacheModal(sid,todoId);
+  setTimeout(function(){render();if(document.getElementById('tache-detail-modal'))_rerenderTacheModal(sid,todoId);},wasDone?400:0);
 }
 
-async function supprimerTache(sid,todoId){
-  if(!confirm('Supprimer cette tâche ?'))return;
+function supprimerTache(sid,todoId){
+  // Inline confirm dans le footer du modal
+  var footer=document.querySelector('.task-modal-footer');
+  if(!footer)return;
+  if(footer.querySelector('.task-confirm-bar'))return;
+  var bar=document.createElement('div');
+  bar.className='task-confirm-bar';
+  bar.style.width='100%';
+  bar.innerHTML='<span class="confirm-label">Supprimer cette tâche ?</span><button class="confirm-yes" onclick="_doDeleteTask(\''+sid+'\',\''+todoId+'\')">Supprimer</button><button class="confirm-no" onclick="this.parentNode.remove()">Annuler</button>';
+  footer.appendChild(bar);
+}
+async function _doDeleteTask(sid,todoId){
   var tache=(S.todos[sid]||[]).find(function(t){return t.id===todoId;});
   var titreTache=tache?tache.titre:'';
   S.todos[sid]=(S.todos[sid]||[]).filter(function(t){return t.id!==todoId;});
@@ -5452,7 +5538,12 @@ function openTacheModal(sid,taskId){
 
 function closeTacheModal(){
   var m=document.getElementById('tache-detail-modal');
-  if(m)m.remove();
+  if(!m)return;
+  m.classList.add('closing');
+  var done=false;
+  function fin(){if(done)return;done=true;m.remove();}
+  m.addEventListener('animationend',fin);
+  setTimeout(fin,280);
 }
 
 function _rerenderTacheModal(sid,taskId){
@@ -5488,7 +5579,7 @@ function _tacheModalInnerHtml(sid,t){
   var cbCls='task-checkbox task-checkbox-lg'+(isDone?' done':'')+(isDoing?' doing':'')+(isBlocked?' blocked':'');
   h+='<div class="task-modal-header">';
   h+='<button class="'+cbCls+'" '+(readOnly?'disabled':'onclick="toggleTacheStatut(\''+sid+'\',\''+t.id+'\')"')+' title="Marquer comme fait"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>';
-  h+='<div id="task-modal-title" class="task-modal-title'+(isDone?' done':'')+'" '+(readOnly?'':'contenteditable="true"')+' data-placeholder="Titre de la tâche…" onblur="_updateTacheField(\''+sid+'\',\''+t.id+'\',\'titre\',this.innerText)">'+_escHtml(t.titre||'')+'</div>';
+  h+='<div id="task-modal-title" class="task-modal-title'+(isDone?' done':'')+'"'+(t.titre?'':' data-empty="true"')+' '+(readOnly?'':'contenteditable="true"')+' data-placeholder="Titre de la tâche…" oninput="this.dataset.empty=this.innerText.trim()?\'false\':\'true\'" onblur="_updateTacheField(\''+sid+'\',\''+t.id+'\',\'titre\',this.innerText)">'+_escHtml(t.titre||'')+'</div>';
   h+='</div>';
 
   h+='<div class="task-modal-meta">';
@@ -5529,6 +5620,20 @@ function _tacheModalInnerHtml(sid,t){
   h+='<div class="task-meta-row"><div class="task-meta-label">Créée par</div>';
   h+='<div class="task-meta-value"><span style="font-size:12px;color:#6b7280;display:inline-flex;align-items:center;gap:6px">'+_avatarHtml(t.auteur||'?',18)+' '+_escHtml(t.auteur||'—')+' · '+_relTime(t.ts)+'</span></div></div>';
 
+  // Tags row
+  h+='<div class="task-meta-row"><div class="task-meta-label">Tags</div>';
+  h+='<div class="task-meta-value"><div class="task-meta-tags">';
+  (t.tags||[]).forEach(function(tag){
+    h+='<span class="task-meta-tag-chip">#'+_escHtml(tag);
+    if(!readOnly)h+='<button onclick="event.stopPropagation();_removeTagFromTask(\''+sid+'\',\''+t.id+'\',\''+tag.replace(/'/g,"\\'")+'\')">&times;</button>';
+    h+='</span>';
+  });
+  if(!readOnly){
+    h+='<input class="task-meta-tag-input" placeholder="+ tag…" onkeydown="if(event.key===\'Enter\'){event.preventDefault();_addTagToTask(\''+sid+'\',\''+t.id+'\',this.value);this.value=\'\';}" />';
+  }
+  if(!(t.tags||[]).length && readOnly) h+='<span style="font-size:12px;color:#9ca3af;font-style:italic">Aucun</span>';
+  h+='</div></div></div>';
+
   h+='</div>';
 
   h+='<div class="task-modal-description">';
@@ -5548,7 +5653,7 @@ function _tacheModalInnerHtml(sid,t){
   } else {
     comments.forEach(function(c){
       var canDelete=!readOnly && c.auteur===moi;
-      h+='<div class="task-comment">';
+      h+='<div class="task-comment" data-cmt-id="'+c.id+'">';
       h+='<div style="flex-shrink:0">'+_avatarHtml(c.auteur||'?',32)+'</div>';
       h+='<div class="task-comment-body">';
       h+='<div class="task-comment-header"><span class="task-comment-author">'+_escHtml(c.auteur||'—')+'</span><span class="task-comment-time">'+_relTime(c.ts)+'</span>';
@@ -5655,10 +5760,18 @@ async function addCommentToTache(sid,taskId,body){
   render();
 }
 
-async function _deleteCommentFromTache(sid,taskId,cmtId){
-  if(!confirm('Supprimer ce commentaire ?'))return;
-  var todos=S.todos[sid]||[];
-  var t=todos.find(function(x){return x.id===taskId;});
+function _deleteCommentFromTache(sid,taskId,cmtId){
+  // Inline confirm au lieu de window.confirm()
+  var cmtEl=document.querySelector('[data-cmt-id="'+cmtId+'"]');
+  if(!cmtEl)return;
+  if(cmtEl.querySelector('.task-confirm-bar'))return; // déjà affiché
+  var bar=document.createElement('div');
+  bar.className='task-confirm-bar';
+  bar.innerHTML='<span class="confirm-label">Supprimer ce commentaire ?</span><button class="confirm-yes" onclick="_doDeleteComment(\''+sid+'\',\''+taskId+'\',\''+cmtId+'\')">Supprimer</button><button class="confirm-no" onclick="this.parentNode.remove()">Annuler</button>';
+  cmtEl.appendChild(bar);
+}
+async function _doDeleteComment(sid,taskId,cmtId){
+  var t=(S.todos[sid]||[]).find(function(x){return x.id===taskId;});
   if(!t||!t.comments)return;
   t.comments=t.comments.filter(function(c){return c.id!==cmtId;});
   await saveTodos(sid);

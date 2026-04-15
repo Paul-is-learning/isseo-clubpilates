@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20260415-deeplink1';
+const CACHE_VERSION = 'isseo-v1-20260415-notionv3';
 const APP_SHELL = [
   './',
   './index.html',
@@ -19,19 +19,19 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  './js/constants.js?v=20260415deeplink1',
-  './js/animations.js?v=20260415deeplink1',
-  './js/state.js?v=20260415deeplink1',
-  './js/notifications.js?v=20260415deeplink1',
-  './js/auth.js?v=20260415deeplink1',
-  './js/pages.js?v=20260415deeplink1',
-  './js/map.js?v=20260415deeplink1',
-  './js/utils.js?v=20260415deeplink1',
-  './js/exports.js?v=20260415deeplink1',
-  './js/simulator.js?v=20260415deeplink1',
-  './js/chat.js?v=20260415deeplink1',
-  './js/sync.js?v=20260415deeplink1',
-  './js/app.js?v=20260415deeplink1'
+  './js/constants.js?v=20260415notionv3',
+  './js/animations.js?v=20260415notionv3',
+  './js/state.js?v=20260415notionv3',
+  './js/notifications.js?v=20260415notionv3',
+  './js/auth.js?v=20260415notionv3',
+  './js/pages.js?v=20260415notionv3',
+  './js/map.js?v=20260415notionv3',
+  './js/utils.js?v=20260415notionv3',
+  './js/exports.js?v=20260415notionv3',
+  './js/simulator.js?v=20260415notionv3',
+  './js/chat.js?v=20260415notionv3',
+  './js/sync.js?v=20260415notionv3',
+  './js/app.js?v=20260415notionv3'
 ];
 
 // ── Install : pré-cache l'app shell ──────────────────────────────────────────
