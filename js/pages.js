@@ -5381,9 +5381,30 @@ async function creerTache(sid){
   } else if(!assignees.length){
     notifyAll({type:'statut',studio_id:sid,title:'📌 Nouvelle tâche non assignée — '+studioName,body:titre.trim()+dlTxt});
   }
-  // Email fire-and-forget
+  // Email — debug mode : on affiche la réponse pour diagnostiquer
   if(assignees.length){
-    try{sb.functions.invoke('task-notify',{body:{sid:sid,taskId:newTask.id,event:'assigned',actorName:moi}}).catch(function(e){console.warn('[task-notify]',e);});}catch(e){console.warn('[task-notify]',e);}
+    try{
+      sb.functions.invoke('task-notify',{body:{sid:sid,taskId:newTask.id,event:'assigned',actorName:moi}}).then(function(r){
+        console.log('[task-notify assigned] response:',r);
+        if(r && r.error){
+          toast('❌ task-notify: '+(r.error.message||JSON.stringify(r.error)),6000);
+        } else if(r && r.data){
+          var dbg=r.data.debug||{};
+          if(r.data.skipped){
+            toast('⚠️ Skipped — '+(r.data.reason||'?')+' | recipients calc: '+JSON.stringify(dbg),8000);
+          } else if(r.data.results && r.data.results.length){
+            var ok=r.data.results.filter(function(x){return x.messageId;}).length;
+            var no=r.data.results.filter(function(x){return x.skipped==='no-email';}).map(function(x){return x.nom;});
+            var err=r.data.results.filter(function(x){return x.error;});
+            if(ok) toast('✉️ '+ok+' email(s) envoyé(s) — profilesFound='+dbg.profilesFound,5000);
+            if(no.length) toast('⚠️ Pas d\'email BDD pour : '+no.join(', ')+' (profilesFound='+dbg.profilesFound+'/'+(dbg.recipients||[]).length+')',9000);
+            if(err.length) toast('❌ Resend: '+JSON.stringify(err[0]),9000);
+          } else {
+            toast('task-notify: '+JSON.stringify(r.data).slice(0,200),7000);
+          }
+        }
+      }).catch(function(e){console.warn('[task-notify]',e);toast('❌ task-notify: '+(e.message||e),5000);});
+    }catch(e){console.warn('[task-notify]',e);}
   }
   var toastMsg='Tâche créée';
   if(others.length===1)toastMsg+=' — '+others[0].split(' ')[0]+' a été notifié(e)';

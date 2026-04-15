@@ -113,19 +113,21 @@ serve(async (req) => {
       recipients = assignees.filter((n) => n && n !== actorName);
     }
     if (!recipients.length) {
-      return json({ success: true, skipped: true, reason: "Aucun destinataire" });
+      return json({ success: true, skipped: true, reason: "Aucun destinataire", debug: { event, actorName, assignees } });
     }
 
     // 4. Résoudre les emails des destinataires
-    const { data: profiles } = await admin
+    const { data: profiles, error: profErr } = await admin
       .from("profiles")
       .select("nom, email")
       .in("nom", recipients);
+    if (profErr) console.error("[task-notify] profiles err:", profErr);
 
     const byNom = new Map<string, string>();
     (profiles || []).forEach((p: any) => {
       if (p.nom && p.email) byNom.set(p.nom, p.email);
     });
+    console.log("[task-notify] event:", event, "recipients:", recipients, "profiles found:", profiles?.length || 0, "byNom:", Array.from(byNom.keys()));
 
     // 5. Pour chaque destinataire : générer tokens + composer HTML + envoyer
     const results: any[] = [];
@@ -180,7 +182,7 @@ serve(async (req) => {
       }
     }
 
-    return json({ success: true, results });
+    return json({ success: true, results, debug: { event, recipients, profilesFound: profiles?.length || 0 } });
   } catch (err) {
     console.error("[task-notify]", err);
     return json({ error: (err as Error).message || "Erreur serveur" }, 500);
