@@ -77,6 +77,23 @@ sb.auth.getSession().then(function(res){
         }
         restoreNavState();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
         _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
+        // Deeplink email → ouvre directement la tâche : #tache=SID:TASKID
+        try{
+          var h=(location.hash||'').replace(/^#/,'');
+          var m=/^tache=([^:]+):([^&]+)/.exec(h);
+          if(m){
+            var _dsid=decodeURIComponent(m[1]);
+            var _dtid=decodeURIComponent(m[2]);
+            setTimeout(function(){
+              if(typeof openDetail==='function')openDetail(_dsid);
+              if(typeof setDetailTab==='function')setDetailTab('taches');
+              setTimeout(function(){
+                if(typeof openTacheModal==='function')openTacheModal(_dsid,_dtid);
+                try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+              },150);
+            },400);
+          }
+        }catch(e){console.warn('[deeplink]',e);}
       });
     });
   } else {render();}

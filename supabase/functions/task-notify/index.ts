@@ -146,6 +146,7 @@ serve(async (req) => {
       };
 
       const html = composeTaskEmail({
+        sid,
         task,
         studioName,
         event,
@@ -237,6 +238,7 @@ function composeSubject(event: string, task: any, studioName: string, actorName?
 }
 
 function composeTaskEmail(opts: {
+  sid: string;
   task: any;
   studioName: string;
   event: string;
@@ -247,7 +249,7 @@ function composeTaskEmail(opts: {
   functionsBase: string;
   appUrl: string;
 }): string {
-  const { task, studioName, event, actorName, recipientName, extra, tokens, functionsBase, appUrl } = opts;
+  const { sid, task, studioName, event, actorName, recipientName, extra, tokens, functionsBase, appUrl } = opts;
 
   const priorityMap: Record<string, { label: string; color: string; icon: string }> = {
     P0: { label: "Urgent",  color: "#DC2626", icon: "🔥" },
@@ -280,7 +282,10 @@ function composeTaskEmail(opts: {
   const urlDone = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.done)}`;
   const urlDoing = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.in_progress)}`;
   const urlTodo = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.todo)}`;
-  const urlComment = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.comment)}`;
+  // Le bouton "Répondre / Commenter" pointe DIRECTEMENT vers l'app (avec deeplink vers la tâche)
+  // plutôt que task-action → meilleure UX (contexte complet, mentions, réactions) et évite les
+  // soucis de rendering HTML isolé qu'on a eus avec task-action.
+  const urlComment = `${appUrl}/#tache=${encodeURIComponent(sid)}:${encodeURIComponent(task.id || "")}`;
 
   const esc = (s: string) =>
     (s || "")
