@@ -435,6 +435,7 @@ function _buildCommandItems(){
   var pages=[
     {l:'Accueil',p:'accueil',c:'#3b82f6',i:'🏠'},
     {l:'Studios',p:'projets',c:'#10b981',i:'📂'},
+    {l:'Collab — Tâches & Discussions',p:'collab',c:'#7C3AED',i:'✨'},
     {l:'Prospection',p:'prospection',c:'#0F6E56',i:'🔍'},
     {l:'BP Consolidé',p:'bp',c:'#854F0B',i:'📊'},
     {l:'Récap engagements',p:'engagements',c:'#92630a',i:'📋'}

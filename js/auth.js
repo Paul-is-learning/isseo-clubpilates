@@ -580,6 +580,7 @@ function globalSearch(query){
   var _pages=[
     {label:'Accueil',pageId:'accueil',desc:'Page d\'accueil'},
     {label:'Studios',pageId:'projets',desc:'Tous les studios'},
+    {label:'Collab',pageId:'collab',desc:'Tâches & discussions consolidés'},
     {label:'Prospection',pageId:'prospection',desc:'Recherche de locaux'},
     {label:'BP Consolide',pageId:'bp',desc:'Business plan consolidé'},
     {label:'Recap engagements',pageId:'engagements',desc:'Récapitulatif des engagements'},
@@ -880,9 +881,22 @@ function renderSidebar(){
   var _alertCount=_allIds.reduce(function(s,id){return s+(S.studios[id]?S.studios[id].alertes.length:0);},0);
   var _unreadNotif=S.notifications.filter(function(n){return!n.read;}).length;
   var _prospectCount=(S.prospects||[]).length;
+  // Badge Collab : mes tâches actives assignées (non done)
+  var _myName=(S.profile&&S.profile.nom)||'';
+  var _collabCount=0;
+  if(_myName){
+    _allIds.forEach(function(id){
+      (S.todos[id]||[]).forEach(function(t){
+        if(!t||t.statut==='done')return;
+        var asg=(t.assignees&&t.assignees.length?t.assignees:[t.responsable||t.auteur||'']).filter(Boolean);
+        if(asg.indexOf(_myName)>=0)_collabCount++;
+      });
+    });
+  }
   var links=[
     {id:'accueil',label:'Accueil',badge:_unreadNotif,badgeColor:'#3B82F6',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
     {id:'projets',label:'Studios',badge:_alertCount,badgeColor:'#EF4444',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
+    {id:'collab',label:'Collab',badge:_collabCount,badgeColor:'#7C3AED',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
     {id:'prospection',label:'Prospection',badge:_prospectCount,badgeColor:'#F59E0B',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
     {id:'bp',label:'BP Consolidé',badge:0,icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
     {id:'engagements',label:"R\u00e9cap' engagements",badge:0,badgeColor:'#92630a',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}

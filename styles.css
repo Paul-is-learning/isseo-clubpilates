@@ -1490,3 +1490,358 @@ body.dark .new-tache-modal .nt-deadline-hint{color:#818cf8 !important}
   .kanban-column{max-height:70vh}
 }
 
+/* ═══════════════════════════════════════════════════════════════════════
+   ── COLLAB — Tâches & Discussions consolidés cross-studio ───────────────
+   ═══════════════════════════════════════════════════════════════════════ */
+.collab-page{display:flex;flex-direction:column;gap:16px}
+
+/* Hero navy gradient */
+.collab-hero{
+  background:linear-gradient(135deg,#0f1f3d 0%,#1a3a6b 60%,#2d5a9e 100%);
+  border-radius:18px;
+  padding:26px 30px;
+  color:#fff;
+  position:relative;
+  overflow:hidden;
+  box-shadow:0 4px 24px rgba(15,31,61,0.15);
+}
+.collab-hero::before{
+  content:'';position:absolute;top:-60px;right:-40px;width:220px;height:220px;
+  background:radial-gradient(circle,rgba(124,58,237,0.25) 0%,transparent 70%);pointer-events:none;
+}
+.collab-hero-inner{position:relative;z-index:1}
+.collab-hero-head{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+.collab-hero-icon{
+  width:44px;height:44px;border-radius:12px;
+  background:rgba(255,255,255,0.12);
+  display:flex;align-items:center;justify-content:center;color:#fff;
+  backdrop-filter:blur(6px);
+}
+.collab-hero-title{font-size:22px;font-weight:700;letter-spacing:-0.3px;line-height:1.15}
+.collab-hero-sub{font-size:13px;color:rgba(255,255,255,0.65);margin-top:3px}
+
+/* KPI grid sur hero */
+.collab-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+.collab-kpi{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:12px;
+  padding:14px 16px;
+  transition:background .2s, transform .2s;
+  backdrop-filter:blur(4px);
+}
+.collab-kpi:hover{background:rgba(255,255,255,0.12);transform:translateY(-1px)}
+.collab-kpi-top{display:flex;align-items:center;gap:6px;margin-bottom:8px}
+.collab-kpi-emoji{font-size:14px}
+.collab-kpi-label{font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.6px;font-weight:600}
+.collab-kpi-value{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+
+/* Segment control Tâches / Discussions */
+.collab-segment{
+  display:inline-flex;gap:4px;
+  background:#f3f4f6;border:1px solid #e5e7eb;border-radius:12px;
+  padding:4px;
+  align-self:flex-start;
+}
+.collab-seg-btn{
+  display:flex;align-items:center;gap:7px;
+  background:transparent;border:none;border-radius:9px;
+  padding:8px 16px;font-size:13px;font-weight:600;color:#6b7280;cursor:pointer;
+  transition:all .15s;
+}
+.collab-seg-btn:hover{color:#374151}
+.collab-seg-btn.active{
+  background:#fff;color:#1a1a1a;
+  box-shadow:0 1px 3px rgba(0,0,0,0.08),0 1px 2px rgba(0,0,0,0.04);
+}
+.collab-seg-count{
+  background:#e5e7eb;color:#4b5563;
+  font-size:10px;font-weight:700;
+  padding:2px 7px;border-radius:10px;min-width:18px;text-align:center;
+}
+.collab-seg-btn.active .collab-seg-count{background:#eef2ff;color:#4338CA}
+
+/* Barre de filtres */
+.collab-filters{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  background:#fff;border:1px solid #e5e7eb;border-radius:12px;
+  padding:10px 12px;
+}
+.collab-filter-select{
+  background:#f9fafb;border:1px solid #e5e7eb;border-radius:9px;
+  padding:7px 28px 7px 11px;font-size:12px;font-weight:600;color:#374151;cursor:pointer;
+  appearance:none;-webkit-appearance:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>");
+  background-repeat:no-repeat;background-position:right 10px center;
+  transition:all .15s;
+}
+.collab-filter-select:hover{border-color:#6366F1;background-color:#fff}
+.collab-filter-select:focus{outline:none;border-color:#6366F1;box-shadow:0 0 0 3px rgba(99,102,241,0.12)}
+
+.collab-search{
+  flex:1;min-width:200px;
+  display:flex;align-items:center;gap:8px;
+  background:#f9fafb;border:1px solid #e5e7eb;border-radius:9px;
+  padding:7px 11px;color:#6b7280;
+  transition:all .15s;
+}
+.collab-search:focus-within{border-color:#6366F1;background:#fff;box-shadow:0 0 0 3px rgba(99,102,241,0.12)}
+.collab-search input{
+  flex:1;border:none;background:transparent;outline:none;
+  font-size:12px;color:#1a1a1a;font-family:inherit;
+}
+.collab-search input::placeholder{color:#9ca3af}
+
+.collab-view-toggle{display:flex;gap:2px;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:9px;padding:2px;margin-left:auto}
+.collab-view-btn{
+  background:transparent;border:none;border-radius:7px;
+  padding:6px 10px;color:#6b7280;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  transition:all .15s;
+}
+.collab-view-btn:hover{color:#374151}
+.collab-view-btn.active{background:#fff;color:#4338CA;box-shadow:0 1px 2px rgba(0,0,0,0.08)}
+
+/* ── Vue Liste (cross-studio) ─────────────────────────────────────────── */
+.collab-list{
+  background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;
+}
+.collab-list-head{
+  display:grid;
+  grid-template-columns:140px minmax(0,1fr) 130px 110px 60px 100px;
+  gap:14px;align-items:center;
+  padding:12px 18px;
+  background:#fafafa;border-bottom:1px solid #eef0f3;
+  font-size:10px;text-transform:uppercase;letter-spacing:0.6px;font-weight:700;color:#6b7280;
+}
+.collab-list-row{
+  display:grid;
+  grid-template-columns:140px minmax(0,1fr) 130px 110px 60px 100px;
+  gap:14px;align-items:center;
+  padding:14px 18px;
+  border-bottom:1px solid #f3f4f6;
+  cursor:pointer;transition:background .12s;
+}
+.collab-list-row:hover{background:#fafaf6}
+.collab-list-row:last-child{border-bottom:none}
+.collab-list-row.done{opacity:0.55}
+.collab-list-row.done .collab-task-title{text-decoration:line-through}
+
+.collab-col-studio{min-width:0}
+.collab-studio-pill{
+  display:inline-block;
+  font-size:11px;font-weight:600;
+  padding:4px 10px;border-radius:7px;
+  max-width:130px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.collab-task-title{
+  font-size:13px;font-weight:600;color:#1a1a1a;line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.collab-task-desc{
+  font-size:11px;color:#6b7280;margin-top:3px;line-height:1.4;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.collab-col-assignees{display:flex;align-items:center}
+.collab-none{font-size:11px;color:#cbd5e1;font-weight:500}
+.collab-col-status,.collab-col-priority{display:flex;justify-content:flex-start}
+.collab-col-deadline{font-size:11px}
+.collab-deadline{
+  display:inline-block;padding:3px 9px;border-radius:7px;
+  background:#f3f4f6;color:#6b7280;font-size:11px;font-weight:600;
+  white-space:nowrap;
+}
+.collab-deadline.soon{background:#fef3c7;color:#92400e}
+.collab-deadline.overdue{background:#fee2e2;color:#b91c1c;font-weight:700}
+
+/* ── Vue Kanban (cross-studio) ────────────────────────────────────────── */
+.collab-kanban{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:14px;
+  min-height:400px;
+}
+.collab-kanban-col{
+  background:#fafafa;border:1px solid #eef0f3;border-radius:14px;
+  display:flex;flex-direction:column;overflow:hidden;
+}
+.collab-kanban-head{
+  display:flex;align-items:center;gap:8px;
+  padding:12px 14px;
+  background:#fff;border-bottom:1px solid #eef0f3;border-top:3px solid;
+}
+.collab-kanban-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.collab-kanban-label{font-size:12px;font-weight:700;color:#1a1a1a;flex:1}
+.collab-kanban-count{
+  background:#f3f4f6;color:#4b5563;
+  font-size:11px;font-weight:700;
+  padding:2px 9px;border-radius:10px;min-width:22px;text-align:center;
+}
+.collab-kanban-body{
+  flex:1;padding:10px;display:flex;flex-direction:column;gap:10px;
+  min-height:200px;max-height:640px;overflow-y:auto;
+}
+.collab-kanban-empty{
+  text-align:center;font-size:11px;color:#cbd5e1;padding:24px 8px;font-weight:500;
+}
+
+.collab-kcard{
+  background:#fff;border:1px solid #e5e7eb;border-radius:10px;
+  padding:11px 13px;cursor:pointer;
+  box-shadow:0 1px 2px rgba(0,0,0,0.03);
+  transition:all .15s;
+  display:flex;flex-direction:column;gap:8px;
+}
+.collab-kcard:hover{
+  border-color:#c7d2fe;box-shadow:0 4px 12px rgba(99,102,241,0.12);
+  transform:translateY(-1px);
+}
+.collab-kcard-studio{display:flex;align-items:center;justify-content:space-between;gap:6px}
+.collab-kcard-title{font-size:12.5px;font-weight:600;color:#1a1a1a;line-height:1.35}
+.collab-kcard-foot{
+  display:flex;align-items:center;gap:8px;
+  padding-top:7px;border-top:1px solid #f3f4f6;
+}
+.collab-kcard-assignees{flex:1}
+.collab-kcard-deadline{
+  font-size:10px;font-weight:600;color:#6b7280;
+  background:#f3f4f6;padding:3px 7px;border-radius:6px;
+  white-space:nowrap;
+}
+.collab-kcard-deadline.overdue{background:#fee2e2;color:#b91c1c}
+.collab-kcard-comments{
+  display:inline-flex;align-items:center;gap:3px;
+  font-size:10px;color:#9ca3af;font-weight:600;
+}
+
+/* ── Discussions consolidées ──────────────────────────────────────────── */
+.collab-topics{
+  background:#fff;border:1px solid #e5e7eb;border-radius:14px;overflow:hidden;
+}
+.collab-topic-row{
+  display:flex;align-items:center;gap:14px;
+  padding:14px 18px;
+  border-bottom:1px solid #f3f4f6;cursor:pointer;
+  transition:background .12s;
+}
+.collab-topic-row:hover{background:#fafaf6}
+.collab-topic-row:last-child{border-bottom:none}
+.collab-topic-row.closed{opacity:0.5}
+.collab-topic-main{flex:1;min-width:0}
+.collab-topic-head{display:flex;align-items:center;gap:9px;margin-bottom:4px;flex-wrap:wrap}
+.collab-topic-title{font-size:13.5px;font-weight:700;color:#1a1a1a}
+.collab-topic-closed{
+  font-size:9px;font-weight:700;text-transform:uppercase;
+  background:#f3f4f6;color:#6b7280;padding:2px 7px;border-radius:5px;
+}
+.collab-topic-preview{
+  font-size:12px;color:#6b7280;line-height:1.4;margin-top:3px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+.collab-topic-preview strong{color:#374151;font-weight:700}
+.collab-topic-meta{
+  display:flex;align-items:center;gap:7px;margin-top:5px;
+  font-size:11px;color:#9ca3af;
+}
+.collab-topic-meta svg{vertical-align:middle;margin-right:2px}
+.collab-topic-arrow{color:#cbd5e1;flex-shrink:0}
+
+/* État vide */
+.collab-empty{
+  background:#fff;border:1px dashed #e5e7eb;border-radius:14px;
+  padding:56px 20px;text-align:center;
+}
+.collab-empty-icon{
+  display:inline-flex;
+  width:64px;height:64px;border-radius:50%;
+  background:#eef2ff;color:#6366F1;
+  align-items:center;justify-content:center;margin-bottom:14px;
+}
+.collab-empty-title{font-size:15px;font-weight:700;color:#1a1a1a;margin-bottom:5px}
+.collab-empty-sub{font-size:12px;color:#9ca3af;margin-bottom:18px;max-width:360px;margin-left:auto;margin-right:auto;line-height:1.5}
+.collab-empty-btn{
+  display:inline-flex;align-items:center;gap:7px;
+  background:#6366F1;color:#fff;border:none;border-radius:10px;
+  padding:10px 18px;font-size:12px;font-weight:700;cursor:pointer;
+  transition:all .15s;
+}
+.collab-empty-btn:hover{background:#4F46E5;transform:translateY(-1px);box-shadow:0 4px 12px rgba(99,102,241,0.3)}
+
+/* ── Responsive ────────────────────────────────────────────────────────── */
+@media (max-width:1100px){
+  .collab-kpis{grid-template-columns:repeat(2,1fr)}
+  .collab-kanban{grid-template-columns:repeat(4,260px);overflow-x:auto}
+  .collab-list-head,.collab-list-row{
+    grid-template-columns:110px minmax(0,1fr) 100px 100px 50px 90px;
+    gap:10px;padding:12px;
+  }
+}
+@media (max-width:760px){
+  .collab-hero{padding:20px}
+  .collab-hero-title{font-size:18px}
+  .collab-kpis{grid-template-columns:repeat(2,1fr);gap:8px}
+  .collab-kpi-value{font-size:22px}
+  .collab-filters{padding:10px;gap:6px}
+  .collab-filter-select{font-size:11px;padding:6px 24px 6px 9px}
+  .collab-search{min-width:100%;order:-1}
+  .collab-view-toggle{margin-left:0}
+  .collab-list-head{display:none}
+  .collab-list-row{
+    grid-template-columns:1fr auto;gap:8px;padding:12px 14px;
+  }
+  .collab-col-studio{grid-column:1 / -1;margin-bottom:4px}
+  .collab-col-title{grid-column:1 / -1}
+  .collab-col-assignees{grid-column:1}
+  .collab-col-status{grid-column:2;justify-self:end}
+  .collab-col-priority{display:none}
+  .collab-col-deadline{grid-column:1 / -1;margin-top:4px}
+  .collab-kanban{grid-template-columns:repeat(4,85vw);gap:10px;padding-bottom:10px}
+}
+
+/* ── Dark mode ─────────────────────────────────────────────────────────── */
+body.dark .collab-hero{background:linear-gradient(135deg,#0a0f1c 0%,#121f3a 60%,#1d3460 100%)!important}
+body.dark .collab-segment{background:#1f2937!important;border-color:#374151!important}
+body.dark .collab-seg-btn{color:#9ca3af!important}
+body.dark .collab-seg-btn.active{background:#111827!important;color:#f3f4f6!important;box-shadow:0 1px 3px rgba(0,0,0,0.5)!important}
+body.dark .collab-seg-count{background:#374151!important;color:#9ca3af!important}
+body.dark .collab-seg-btn.active .collab-seg-count{background:#312e81!important;color:#c7d2fe!important}
+body.dark .collab-filters{background:#161b22!important;border-color:#30363d!important}
+body.dark .collab-filter-select{background:#0d1117!important;border-color:#30363d!important;color:#e6edf3!important;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%239ca3af' stroke-width='3'><polyline points='6 9 12 15 18 9'/></svg>")!important}
+body.dark .collab-filter-select:hover{border-color:#6366F1!important}
+body.dark .collab-search{background:#0d1117!important;border-color:#30363d!important;color:#9ca3af!important}
+body.dark .collab-search input{color:#e6edf3!important}
+body.dark .collab-view-toggle{background:#1f2937!important;border-color:#30363d!important}
+body.dark .collab-view-btn{color:#9ca3af!important}
+body.dark .collab-view-btn.active{background:#0d1117!important;color:#c7d2fe!important}
+body.dark .collab-list{background:#161b22!important;border-color:#30363d!important}
+body.dark .collab-list-head{background:#0d1117!important;border-color:#30363d!important;color:#9ca3af!important}
+body.dark .collab-list-row{border-color:#21262d!important}
+body.dark .collab-list-row:hover{background:#1c2128!important}
+body.dark .collab-task-title{color:#e6edf3!important}
+body.dark .collab-task-desc{color:#9ca3af!important}
+body.dark .collab-deadline{background:#1f2937!important;color:#9ca3af!important}
+body.dark .collab-deadline.soon{background:#451a03!important;color:#fcd34d!important}
+body.dark .collab-deadline.overdue{background:#450a0a!important;color:#fca5a5!important}
+body.dark .collab-kanban-col{background:#0d1117!important;border-color:#30363d!important}
+body.dark .collab-kanban-head{background:#161b22!important;border-color:#30363d!important}
+body.dark .collab-kanban-label{color:#e6edf3!important}
+body.dark .collab-kanban-count{background:#1f2937!important;color:#9ca3af!important}
+body.dark .collab-kcard{background:#161b22!important;border-color:#30363d!important;box-shadow:0 1px 2px rgba(0,0,0,0.3)!important}
+body.dark .collab-kcard:hover{border-color:#6366F1!important;box-shadow:0 4px 14px rgba(99,102,241,0.2)!important}
+body.dark .collab-kcard-title{color:#e6edf3!important}
+body.dark .collab-kcard-foot{border-color:#21262d!important}
+body.dark .collab-kcard-deadline{background:#1f2937!important;color:#9ca3af!important}
+body.dark .collab-kcard-deadline.overdue{background:#450a0a!important;color:#fca5a5!important}
+body.dark .collab-topics{background:#161b22!important;border-color:#30363d!important}
+body.dark .collab-topic-row{border-color:#21262d!important}
+body.dark .collab-topic-row:hover{background:#1c2128!important}
+body.dark .collab-topic-title{color:#e6edf3!important}
+body.dark .collab-topic-preview{color:#9ca3af!important}
+body.dark .collab-topic-preview strong{color:#c7d2fe!important}
+body.dark .collab-topic-closed{background:#1f2937!important;color:#9ca3af!important}
+body.dark .collab-topic-meta{color:#6b7280!important}
+body.dark .collab-topic-arrow{color:#4b5563!important}
+body.dark .collab-empty{background:#161b22!important;border-color:#30363d!important}
+body.dark .collab-empty-icon{background:#1e1b4b!important;color:#a5b4fc!important}
+body.dark .collab-empty-title{color:#e6edf3!important}
+body.dark .collab-empty-sub{color:#9ca3af!important}
+

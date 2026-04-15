@@ -45,6 +45,7 @@ function render(){
       else if(S.page==='prospection')pageContent=renderProspection();
       else if(S.page==='bp')pageContent=renderBPConsolide();
       else if(S.page==='engagements')pageContent=renderPageEngagements();
+      else if(S.page==='collab')pageContent=renderCollab();
       else pageContent=renderAccueil();
       root.innerHTML=renderSidebar()+'<div class="main-content"><div class="app">'+pageContent+'</div></div>';
       if(S.view==='detail'&&S.detailTab==='localisation')setTimeout(function(){initLocalisationMap(S.selectedId);},60);
