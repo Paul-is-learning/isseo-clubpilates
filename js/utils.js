@@ -434,11 +434,35 @@ function _renderMentionsHtml(text){
 }
 
 // Retourne la photo (data URL) d'un utilisateur à partir de son nom
+// Lookup complet : S.avatarUrls (uploads user) > PHOTO_MAP (statique) > S._allProfiles.photo_url
+// Essaye le nom tel quel, puis nettoyé (sans suffixe "(ISSEO)" etc), puis juste le prénom.
 function _getAvatarByNom(nom){
-  if(!nom||!S._allProfiles)return null;
-  var needle=String(nom).trim().toLowerCase();
-  var p=S._allProfiles.find(function(x){return (x.nom||'').trim().toLowerCase()===needle;});
-  return p && (p.photo_url||p.avatar) || null;
+  if(!nom)return null;
+  var key=String(nom).trim().toLowerCase();
+  var cleanKey=key.replace(/\s*\(.*\)\s*$/,'').trim();
+  var firstName=key.split(/\s+/)[0];
+  // 1. S.avatarUrls (photos uploadées par les users)
+  if(S.avatarUrls){
+    if(S.avatarUrls[key])return S.avatarUrls[key];
+    if(S.avatarUrls[cleanKey])return S.avatarUrls[cleanKey];
+    if(S.avatarUrls[firstName])return S.avatarUrls[firstName];
+  }
+  // 2. PHOTO_MAP (constantes statiques)
+  if(typeof PHOTO_MAP!=='undefined'&&PHOTO_MAP){
+    if(PHOTO_MAP[key])return PHOTO_MAP[key];
+    if(PHOTO_MAP[cleanKey])return PHOTO_MAP[cleanKey];
+    if(PHOTO_MAP[firstName])return PHOTO_MAP[firstName];
+  }
+  // 3. S._allProfiles (fallback — match par nom nettoyé)
+  if(S._allProfiles){
+    var p=S._allProfiles.find(function(x){
+      var xn=(x.nom||'').trim().toLowerCase();
+      var xClean=xn.replace(/\s*\(.*\)\s*$/,'').trim();
+      return xn===key||xClean===cleanKey||xn===cleanKey;
+    });
+    if(p)return p.photo_url||p.avatar||null;
+  }
+  return null;
 }
 
 // Génère un avatar circulaire stylisé pour un nom (photo si dispo, sinon initiales + gradient)
@@ -447,11 +471,11 @@ function _avatarHtml(nom,size){
   var photo=_getAvatarByNom(nom);
   var ini=(nom||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).join('').slice(0,2).toUpperCase();
   if(photo){
-    return '<div style="width:'+s+'px;height:'+s+'px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);flex-shrink:0"><img src="'+photo+'" style="width:100%;height:100%;object-fit:cover" alt="'+nom+'"/></div>';
+    return '<div title="'+(nom||'')+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);flex-shrink:0;background:#e5e7eb"><img src="'+photo+'" style="width:100%;height:100%;object-fit:cover;object-position:center top;display:block" alt="'+_escHtml(nom||'')+'" onerror="this.parentNode.innerHTML=\'<div style=\\\'width:100%;height:100%;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,hsl('+_strHue(nom||'')+',55%,55%),hsl('+((_strHue(nom||'')+30)%360)+',55%,45%));color:#fff;font-size:'+Math.round(s*0.42)+'px;font-weight:700\\\'>'+ini+'</div>\'"/></div>';
   }
   // Fallback gradient initiales
   var hue=_strHue(nom||'');
-  return '<div title="'+nom+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;background:linear-gradient(135deg,hsl('+hue+',55%,55%),hsl('+((hue+30)%360)+',55%,45%));color:#fff;display:flex;align-items:center;justify-content:center;font-size:'+Math.round(s*0.42)+'px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);flex-shrink:0;letter-spacing:-0.5px">'+ini+'</div>';
+  return '<div title="'+(nom||'')+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;background:linear-gradient(135deg,hsl('+hue+',55%,55%),hsl('+((hue+30)%360)+',55%,45%));color:#fff;display:flex;align-items:center;justify-content:center;font-size:'+Math.round(s*0.42)+'px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);flex-shrink:0;letter-spacing:-0.5px">'+ini+'</div>';
 }
 
 function _strHue(str){
