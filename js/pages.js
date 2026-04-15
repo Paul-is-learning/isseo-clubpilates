@@ -2329,7 +2329,7 @@ function renderBPConsolide(){
   // Orbes décoratifs
   h+='<div style="position:absolute;top:-40px;right:-30px;width:180px;height:180px;background:radial-gradient(circle,rgba(99,102,241,0.15),transparent 70%);border-radius:50%;pointer-events:none"></div>';
   h+='<div style="position:absolute;bottom:-50px;left:20%;width:200px;height:200px;background:radial-gradient(circle,rgba(16,185,129,0.1),transparent 70%);border-radius:50%;pointer-events:none"></div>';
-  h+='<div style="position:absolute;top:20px;left:50%;width:100px;height:100px;background:radial-gradient(circle,rgba(139,92,246,0.12),transparent 70%);border-radius:50%;pointer-events:none"></div>';
+
   // Dot grid subtle
   h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.04) 1px,transparent 1px);background-size:20px 20px;pointer-events:none"></div>';
   // Title
@@ -2341,10 +2341,10 @@ function renderBPConsolide(){
   // CA Cards row
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px">';
   var _caCards=[
-    {l:'Année 1',sub:'Lancement',v:totCA1,grad:'linear-gradient(135deg,#065f46,#059669)',glow:'rgba(16,185,129,0.25)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>'},
+    {l:'Année 1',sub:'Lancement',v:totCA1,grad:'linear-gradient(135deg,#0F6E56,#1D9E75)',glow:'rgba(15,110,86,0.25)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>'},
     {l:'Année 2',sub:'Croissance',v:totCA2,grad:'linear-gradient(135deg,#1e40af,#3b82f6)',glow:'rgba(59,130,246,0.25)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>'},
-    {l:'Année 3',sub:'Croisière',v:totCA3,grad:'linear-gradient(135deg,#5b21b6,#8b5cf6)',glow:'rgba(139,92,246,0.3)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'},
-    {l:'CAPEX Total',sub:'Investissement',v:totCapex,grad:'linear-gradient(135deg,#78350f,#d97706)',glow:'rgba(217,119,6,0.2)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
+    {l:'Année 3',sub:'Croisière',v:totCA3,grad:'linear-gradient(135deg,#312e81,#4338ca)',glow:'rgba(67,56,202,0.25)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'},
+    {l:'CAPEX Total',sub:'Investissement',v:totCapex,grad:'linear-gradient(135deg,#1a3a6b,#2d5a9e)',glow:'rgba(26,58,107,0.2)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
   ];
   _caCards.forEach(function(k){
     h+='<div style="background:'+k.grad+';border-radius:16px;padding:18px 20px;position:relative;overflow:hidden;transition:all .3s;cursor:default;box-shadow:0 4px 20px '+k.glow+'" onmouseenter="this.style.transform=\'translateY(-4px) scale(1.02)\';this.style.boxShadow=\'0 8px 30px '+k.glow+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'0 4px 20px '+k.glow+'\'">';
@@ -2360,7 +2360,7 @@ function renderBPConsolide(){
   // RENTABILITÉ A3 — Glassmorphism cards
   // ══════════════════════════════════════════════
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
-  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
   h+='<span style="font-size:12px;font-weight:700;color:#1a1a1a;text-transform:uppercase;letter-spacing:1px">Rentabilité consolidée — Année 3</span>';
   h+='<span style="font-size:10px;color:#94a3b8;font-weight:500">(croisière)</span>';
   h+='</div>';
@@ -2370,8 +2370,8 @@ function renderBPConsolide(){
     var _rexMargin=Math.round(totRex3/totCA3*100);
     var _cashMargin=Math.round(totCashNet3/totCA3*100);
     var _donuts=[
-      {p:Math.max(0,margeEbitda3Tot),color:'#10b981',label:'Marge EBITDA',sub:'sur CA A3'},
-      {p:Math.max(0,_rexMargin),color:'#f59e0b',label:'Marge REX',sub:'sur CA A3'},
+      {p:Math.max(0,margeEbitda3Tot),color:'#0F6E56',label:'Marge EBITDA',sub:'sur CA A3'},
+      {p:Math.max(0,_rexMargin),color:'#1e40af',label:'Marge REX',sub:'sur CA A3'},
       {p:Math.max(0,_cashMargin),color:'#3b82f6',label:'Ratio Cash',sub:'sur CA A3'}
     ];
     h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">';
@@ -2388,11 +2388,11 @@ function renderBPConsolide(){
 
   h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
   var _rentaCards=[
-    {l:'EBITDA',v:fmt(totEbitda3),pos:totEbitda3>=0,accent:'#10b981',bg:'linear-gradient(135deg,#ecfdf5,#d1fae5)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#10b981" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
+    {l:'EBITDA',v:fmt(totEbitda3),pos:totEbitda3>=0,accent:'#0F6E56',bg:'linear-gradient(135deg,#f0fdf4,#E1F5EE)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
     {l:'Marge EBITDA',v:margeEbitda3Tot+'%',pos:margeEbitda3Tot>=0,accent:'#6366f1',bg:'linear-gradient(135deg,#eef2ff,#e0e7ff)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>',pbar:true,pval:Math.min(margeEbitda3Tot,60)},
-    {l:'REX',v:fmt(totRex3),pos:totRex3>=0,accent:'#f59e0b',bg:'linear-gradient(135deg,#fffbeb,#fef3c7)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'},
+    {l:'REX',v:fmt(totRex3),pos:totRex3>=0,accent:'#1e40af',bg:'linear-gradient(135deg,#eff6ff,#dbeafe)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'},
     {l:'Cash Net',v:fmt(totCashNet3),pos:totCashNet3>=0,accent:'#3b82f6',bg:'linear-gradient(135deg,#eff6ff,#dbeafe)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'},
-    {l:'Membres',v:totMembres.toLocaleString('fr-FR'),pos:true,accent:'#8b5cf6',bg:'linear-gradient(135deg,#f5f3ff,#ede9fe)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8b5cf6" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'}
+    {l:'Membres',v:totMembres.toLocaleString('fr-FR'),pos:true,accent:'#6366f1',bg:'linear-gradient(135deg,#eef2ff,#e0e7ff)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'}
   ];
   _rentaCards.forEach(function(k){
     h+='<div style="background:'+k.bg+';border:1px solid '+(k.pos?k.accent+'20':'#fecaca')+';border-radius:16px;padding:16px 18px;transition:all .3s;cursor:default;position:relative;overflow:hidden" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 25px '+k.accent+'18\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
@@ -2417,13 +2417,13 @@ function renderBPConsolide(){
   h+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:24px 28px;margin-bottom:20px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">';
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">';
   h+='<div style="display:flex;align-items:center;gap:10px">';
-  h+='<div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#6366f1,#8b5cf6);display:flex;align-items:center;justify-content:center">';
+  h+='<div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#4338ca,#6366f1);display:flex;align-items:center;justify-content:center">';
   h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg></div>';
   h+='<div><div style="font-size:15px;font-weight:700;color:#1a1a1a">Synthèse P&L consolidée</div>';
   h+='<div style="font-size:10px;color:#94a3b8;font-weight:500">Évolution sur 3 ans</div></div></div>';
   // Year pills legend
   h+='<div style="display:flex;gap:6px">';
-  [{l:'A1',c:'#10b981'},{l:'A2',c:'#3b82f6'},{l:'A3',c:'#8b5cf6'}].forEach(function(y){
+  [{l:'A1',c:'#0F6E56'},{l:'A2',c:'#3b82f6'},{l:'A3',c:'#6366f1'}].forEach(function(y){
     h+='<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:'+y.c+'10;font-size:10px;font-weight:600;color:'+y.c+'"><span style="width:6px;height:6px;border-radius:50%;background:'+y.c+'"></span>'+y.l+'</span>';
   });
   h+='</div></div>';
@@ -2431,9 +2431,9 @@ function renderBPConsolide(){
   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:0">';
   h+='<thead><tr style="background:linear-gradient(90deg,#f8fafc,#f1f5f9)">';
   h+='<th style="text-align:left;padding:12px 16px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0;border-radius:10px 0 0 0">Indicateur</th>';
-  h+='<th style="padding:12px 20px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#10b981;font-weight:700;border-bottom:2px solid #e2e8f0;text-align:center">Année 1</th>';
+  h+='<th style="padding:12px 20px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#0F6E56;font-weight:700;border-bottom:2px solid #e2e8f0;text-align:center">Année 1</th>';
   h+='<th style="padding:12px 20px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#3b82f6;font-weight:700;border-bottom:2px solid #e2e8f0;text-align:center">Année 2</th>';
-  h+='<th style="padding:12px 20px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#8b5cf6;font-weight:700;border-bottom:2px solid #e2e8f0;text-align:center;border-radius:0 10px 0 0">Année 3</th>';
+  h+='<th style="padding:12px 20px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#6366f1;font-weight:700;border-bottom:2px solid #e2e8f0;text-align:center;border-radius:0 10px 0 0">Année 3</th>';
   h+='<th style="padding:12px 16px;font-size:10px;text-transform:uppercase;letter-spacing:1px;color:#64748b;font-weight:700;border-bottom:2px solid #e2e8f0;text-align:center;width:120px">Tendance</th>';
   h+='</tr></thead><tbody>';
   var synthRows=[
@@ -2444,7 +2444,7 @@ function renderBPConsolide(){
     {l:'Résultat net',v:[totRN1,totRN2,totRN3],icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>'},
     {l:'Cash net disponible',v:[totCashNet1,totCashNet2,totCashNet3],bold:true,icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#64748b" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'}
   ];
-  var _yearColors=['#10b981','#3b82f6','#8b5cf6'];
+  var _yearColors=['#0F6E56','#3b82f6','#6366f1'];
   synthRows.forEach(function(r,ri){
     var isLast=ri===synthRows.length-1;
     h+='<tr style="transition:background .15s" onmouseenter="this.style.background=\''+(S.darkMode?'#1c2128':'#f8fafc')+'\'" onmouseleave="this.style.background=\'transparent\'">';
@@ -2463,12 +2463,12 @@ function renderBPConsolide(){
     var trendUp=vals[2]>vals[0];
     h+='<td style="padding:12px 16px;text-align:center;border-bottom:'+(isLast?'none':'1px solid #f1f5f9')+'">';
     h+='<svg width="70" height="30" viewBox="0 0 70 30" style="vertical-align:middle">';
-    h+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(trendUp?'#10b981':'#ef4444')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    h+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="'+(trendUp?'#0F6E56':'#ef4444')+'" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
     vals.forEach(function(v,i){
       h+='<circle cx="'+(10+i*25)+'" cy="'+(25-Math.round(v/_max*20))+'" r="3" fill="'+_yearColors[i]+'"/>';
     });
     h+='</svg>';
-    h+='<div style="font-size:8px;font-weight:600;color:'+(trendUp?'#10b981':'#ef4444')+'">'+(trendUp?'▲':'▼')+' '+(r.pct?(vals[2]-vals[0])+'pts':fmt(vals[2]-vals[0]))+'</div>';
+    h+='<div style="font-size:8px;font-weight:600;color:'+(trendUp?'#0F6E56':'#ef4444')+'">'+(trendUp?'▲':'▼')+' '+(r.pct?(vals[2]-vals[0])+'pts':fmt(vals[2]-vals[0]))+'</div>';
     h+='</td>';
     h+='</tr>';
   });
@@ -2486,7 +2486,7 @@ function renderBPConsolide(){
   h+='<div style="display:flex;align-items:center;gap:16px">';
   h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#0F6E56,#15956F)"></div><span style="font-size:10px;color:#888;font-weight:500">A1</span></div>';
   h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#185FA5,#2B7BD4)"></div><span style="font-size:10px;color:#888;font-weight:500">A2</span></div>';
-  h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#533AB7,#7B5FD6)"></div><span style="font-size:10px;color:#888;font-weight:500">A3</span></div>';
+  h+='<div style="display:flex;align-items:center;gap:5px"><div style="width:10px;height:10px;border-radius:3px;background:linear-gradient(135deg,#4338ca,#6366f1)"></div><span style="font-size:10px;color:#888;font-weight:500">A3</span></div>';
   h+='</div></div>';
   // Tooltip
   h+='<div id="bp-chart-tooltip" style="display:none;position:absolute;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:12px 16px;border-radius:12px;font-size:11px;pointer-events:none;z-index:10;box-shadow:0 8px 30px rgba(0,0,0,0.25);white-space:nowrap;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);line-height:1.6"></div>';
@@ -2506,7 +2506,7 @@ function renderBPConsolide(){
   h+='<defs>';
   h+='<linearGradient id="grad-a1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#15956F"/><stop offset="100%" stop-color="#0F6E56"/></linearGradient>';
   h+='<linearGradient id="grad-a2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2B7BD4"/><stop offset="100%" stop-color="#185FA5"/></linearGradient>';
-  h+='<linearGradient id="grad-a3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#7B5FD6"/><stop offset="100%" stop-color="#533AB7"/></linearGradient>';
+  h+='<linearGradient id="grad-a3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#6366f1"/><stop offset="100%" stop-color="#4338ca"/></linearGradient>';
   h+='<filter id="bar-shadow"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.1"/></filter>';
   h+='</defs>';
   // Grid lines horizontales subtiles
@@ -2555,7 +2555,7 @@ function renderBPConsolide(){
   h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:separate;border-spacing:0">';
   h+='<thead><tr style="background:linear-gradient(90deg,#f8fafc,#f1f5f9)">';
   var _detailCols=[
-    {l:'Studio',align:'left'},{l:'Scénario',align:'left'},{l:'CA A1',align:'right',c:'#10b981'},{l:'CA A3',align:'right',c:'#8b5cf6'},
+    {l:'Studio',align:'left'},{l:'Scénario',align:'left'},{l:'CA A1',align:'right',c:'#0F6E56'},{l:'CA A3',align:'right',c:'#6366f1'},
     {l:'EBITDA A1',align:'right'},{l:'EBITDA A3',align:'right'},{l:'Marge A3',align:'center'},
     {l:'REX A3',align:'right'},{l:'RN A3',align:'right'},{l:'Cash Net A3',align:'right'},{l:'Membres',align:'center'}
   ];
@@ -2572,18 +2572,18 @@ function renderBPConsolide(){
     h+='<div style="width:24px;height:24px;border-radius:6px;background:linear-gradient(135deg,#dbeafe,#bfdbfe);display:flex;align-items:center;justify-content:center;flex-shrink:0"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg></div>';
     h+=r.name+'</a></td>';
     h+='<td style="padding:10px 12px;font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r.scenario||'BP de référence')+'">';
-    h+='<span style="background:'+(r.scenario?'#fef3c7':'#f1f5f9')+';color:'+(r.scenario?'#854F0B':'#94a3b8')+';padding:3px 8px;border-radius:6px;font-size:9px;font-weight:600">'+(r.scenario||'BP réf.')+'</span></td>';
-    h+='<td style="padding:10px 12px;color:#10b981;font-weight:600;text-align:right;font-size:12px">'+fmt(r.ca1)+'</td>';
-    h+='<td style="padding:10px 12px;color:#8b5cf6;font-weight:600;text-align:right;font-size:12px">'+fmt(r.ca3)+'</td>';
-    h+='<td style="padding:10px 12px;font-weight:600;text-align:right;font-size:12px;color:'+(r.ebitda1>=0?'#10b981':'#dc2626')+'">'+fmt(r.ebitda1)+'</td>';
-    h+='<td style="padding:10px 12px;font-weight:600;text-align:right;font-size:12px;color:'+(r.ebitda3>=0?'#10b981':'#dc2626')+'">'+fmt(r.ebitda3)+'</td>';
+    h+='<span style="background:'+(r.scenario?'#eef2ff':'#f1f5f9')+';color:'+(r.scenario?'#4338ca':'#94a3b8')+';padding:3px 8px;border-radius:6px;font-size:9px;font-weight:600">'+(r.scenario||'BP réf.')+'</span></td>';
+    h+='<td style="padding:10px 12px;color:#0F6E56;font-weight:600;text-align:right;font-size:12px">'+fmt(r.ca1)+'</td>';
+    h+='<td style="padding:10px 12px;color:#6366f1;font-weight:600;text-align:right;font-size:12px">'+fmt(r.ca3)+'</td>';
+    h+='<td style="padding:10px 12px;font-weight:600;text-align:right;font-size:12px;color:'+(r.ebitda1>=0?'#0F6E56':'#dc2626')+'">'+fmt(r.ebitda1)+'</td>';
+    h+='<td style="padding:10px 12px;font-weight:600;text-align:right;font-size:12px;color:'+(r.ebitda3>=0?'#0F6E56':'#dc2626')+'">'+fmt(r.ebitda3)+'</td>';
     // Marge avec badge coloré
-    var _margeBg=r.margeEbitda3>=30?'#dcfce7':r.margeEbitda3>=15?'#fef9c3':'#fee2e2';
-    var _margeC=r.margeEbitda3>=30?'#166534':r.margeEbitda3>=15?'#854d0e':'#991b1b';
+    var _margeBg=r.margeEbitda3>=30?'#dcfce7':r.margeEbitda3>=15?'#dbeafe':'#fee2e2';
+    var _margeC=r.margeEbitda3>=30?'#166534':r.margeEbitda3>=15?'#1e40af':'#991b1b';
     h+='<td style="padding:10px 12px;text-align:center"><span style="background:'+_margeBg+';color:'+_margeC+';padding:4px 10px;border-radius:8px;font-size:11px;font-weight:700">'+r.margeEbitda3+'%</span></td>';
     h+='<td style="padding:10px 12px;text-align:right;font-size:12px;color:'+(r.rex3>=0?'#1e293b':'#dc2626')+';font-weight:500">'+fmt(r.rex3)+'</td>';
     h+='<td style="padding:10px 12px;text-align:right;font-size:12px;color:'+(r.rn3>=0?'#1e293b':'#dc2626')+';font-weight:500">'+fmt(r.rn3)+'</td>';
-    h+='<td style="padding:10px 12px;text-align:right;font-size:12px;font-weight:700;color:'+(r.cashnet3>=0?'#10b981':'#dc2626')+'">'+fmt(r.cashnet3)+'</td>';
+    h+='<td style="padding:10px 12px;text-align:right;font-size:12px;font-weight:700;color:'+(r.cashnet3>=0?'#0F6E56':'#dc2626')+'">'+fmt(r.cashnet3)+'</td>';
     h+='<td style="padding:10px 12px;text-align:center;font-weight:600;font-size:12px">'+r.membres+'</td>';
     h+='</tr>';
   });
@@ -2591,7 +2591,7 @@ function renderBPConsolide(){
   h+='<tr style="background:linear-gradient(90deg,#0f172a,#1e293b);color:#fff">';
   h+='<td style="padding:12px;font-weight:800;font-size:12px;border-radius:0 0 0 12px" colspan="2"><span style="display:flex;align-items:center;gap:6px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#818cf8" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>TOTAL CONSOLIDÉ</span></td>';
   h+='<td style="padding:12px;font-weight:700;text-align:right;color:#6ee7b7">'+fmt(totCA1)+'</td>';
-  h+='<td style="padding:12px;font-weight:700;text-align:right;color:#c4b5fd">'+fmt(totCA3)+'</td>';
+  h+='<td style="padding:12px;font-weight:700;text-align:right;color:#a5b4fc">'+fmt(totCA3)+'</td>';
   h+='<td style="padding:12px;font-weight:700;text-align:right;color:'+(totEbitda1>=0?'#6ee7b7':'#fca5a5')+'">'+fmt(totEbitda1)+'</td>';
   h+='<td style="padding:12px;font-weight:700;text-align:right;color:'+(totEbitda3>=0?'#6ee7b7':'#fca5a5')+'">'+fmt(totEbitda3)+'</td>';
   h+='<td style="padding:12px;text-align:center"><span style="background:rgba(255,255,255,0.1);padding:4px 10px;border-radius:8px;font-weight:800;font-size:11px">'+margeEbitda3Tot+'%</span></td>';
