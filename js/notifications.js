@@ -58,12 +58,84 @@ async function _loadAllProfiles(){
   var res=await sb.from('profiles').select('id,nom');
   S._allProfiles=(res.data||[]).filter(function(p){return p.nom && String(p.nom).trim();});
 }
+// Résoudre un nom (ex: "Paul Bécaud") → user_id, null si introuvable
+function _findUserIdByNom(nom){
+  if(!nom||!S._allProfiles)return null;
+  var needle=String(nom).trim().toLowerCase();
+  var p=S._allProfiles.find(function(x){return (x.nom||'').trim().toLowerCase()===needle;});
+  return p?p.id:null;
+}
 // Notifier tous les utilisateurs sauf l'émetteur
 async function notifyAll(opts){
   if(!S._allProfiles)await _loadAllProfiles();
   opts.target_user_ids=S._allProfiles.map(function(p){return p.id;});
   await createNotification(opts);
 }
+// Notifier un utilisateur spécifique par son nom (ex: responsable d'une tâche)
+async function notifyUserByNom(nom,opts){
+  if(!S._allProfiles)await _loadAllProfiles();
+  var uid=_findUserIdByNom(nom);
+  if(!uid){
+    // Fallback : diffuser à tout le monde si on ne retrouve pas la personne
+    await notifyAll(opts);
+    return;
+  }
+  opts.target_user_ids=[uid];
+  await createNotification(opts);
+}
+
+// ── Emails transactionnels via Edge Function `send-email` ───────────────────
+// Fire-and-forget : un échec email ne doit jamais casser l'UI.
+async function sendEmail(opts){
+  try{
+    var r=await sb.functions.invoke('send-email',{body:opts});
+    if(r.error){console.warn('[sendEmail]',r.error);return false;}
+    return true;
+  }catch(e){console.warn('[sendEmail]',e);return false;}
+}
+
+// Layout commun pour tous les emails transactionnels ISSEO
+function _emailLayout(opts){
+  var title=opts.title||'ISSEO';
+  var preheader=opts.preheader||'';
+  var body=opts.body||'';
+  var accentColor='#1a3a6b';
+  var url=(typeof window!=='undefined'&&window.location)?(window.location.origin+window.location.pathname):'https://isseo-dev.com';
+  return ''
+    +'<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"/>'
+    +'<meta name="viewport" content="width=device-width,initial-scale=1.0"/>'
+    +'<title>'+title+'</title></head>'
+    +'<body style="margin:0;padding:0;background:#faf9f6;font-family:-apple-system,BlinkMacSystemFont,\'Segoe UI\',sans-serif;color:#1a1a1a;-webkit-font-smoothing:antialiased">'
+    +'<div style="display:none;max-height:0;overflow:hidden">'+preheader+'</div>'
+    +'<div style="max-width:600px;margin:0 auto;padding:32px 20px">'
+    // Header
+    +'<div style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 30%,#1a3a6b 70%,#2d5a8e 100%);border-radius:18px 18px 0 0;padding:28px 32px;color:#fff;position:relative;overflow:hidden">'
+    +'<div style="position:absolute;top:-40px;right:-30px;width:200px;height:200px;background:radial-gradient(circle,rgba(45,90,142,0.4) 0%,transparent 70%);border-radius:50%"></div>'
+    +'<div style="position:relative;z-index:1">'
+    +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.5);font-weight:600;margin-bottom:6px">ISSEO × Club Pilates</div>'
+    +'<div style="font-size:22px;font-weight:700;letter-spacing:-0.3px">'+title+'</div>'
+    +'</div></div>'
+    // Body
+    +'<div style="background:#fff;padding:32px;border:1px solid #e8e8e0;border-top:none">'
+    +body
+    +'</div>'
+    // Footer
+    +'<div style="background:#fff;border-radius:0 0 18px 18px;border:1px solid #e8e8e0;border-top:1px solid #f0f0ea;padding:20px 32px;text-align:center;font-size:11px;color:#999">'
+    +'Email envoyé automatiquement par <a href="'+url+'" style="color:'+accentColor+';text-decoration:none;font-weight:600">ISSEO Club Pilates</a><br/>'
+    +'<span style="font-size:10px;color:#bbb">Ne pas répondre à cet email</span>'
+    +'</div>'
+    +'</div></body></html>';
+}
+
+function _emailBtn(text,url,color){
+  var c=color||'#1a3a6b';
+  return '<a href="'+url+'" style="display:inline-block;padding:12px 26px;background:'+c+';color:#fff!important;text-decoration:none;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:0.2px;margin:4px 4px">'+text+'</a>';
+}
+
+function _emailBtnOutline(text,url){
+  return '<a href="'+url+'" style="display:inline-block;padding:12px 26px;background:#fff;color:#1a3a6b!important;text-decoration:none;border:1.5px solid #1a3a6b;border-radius:10px;font-size:13px;font-weight:600;letter-spacing:0.2px;margin:4px 4px">'+text+'</a>';
+}
+
 // ── Rapport hebdomadaire du lundi matin ─────────────────────────────────────
 async function checkMondayReport(){
   if(!S.user)return;
@@ -172,7 +244,10 @@ async function checkMondayReport(){
 // Vérification échéances (appelée au login)
 async function checkEcheances(){
   if(!S.user)return;
-  var now=new Date();var ids=Object.keys(S.studios);
+  var now=new Date();
+  var todayStr=now.toISOString().slice(0,10);
+  var ids=Object.keys(S.studios);
+  // ── 1. Échéances textuelles dans studios.alertes ──
   ids.forEach(function(sid){
     var s=S.studios[sid];if(!s||!s.alertes)return;
     s.alertes.forEach(function(a){
@@ -182,13 +257,63 @@ async function checkEcheances(){
       var d=new Date(m[3],m[2]-1,m[1]);
       var diff=Math.ceil((d-now)/(1000*60*60*24));
       if(diff>=0&&diff<=14){
-        // Vérifier si déjà notifié aujourd'hui
-        var todayStr=now.toISOString().slice(0,10);
         var already=S.notifications.find(function(n){return n.type==='echeance'&&n.studio_id===sid&&n.body===a&&n.created_at&&n.created_at.slice(0,10)===todayStr;});
         if(!already){
           sb.from('notifications').insert({type:'echeance',user_id:S.user.id,source_user_id:S.user.id,studio_id:sid,title:'\u00c9ch\u00e9ance dans '+diff+'j — '+s.name,body:a,read:false});
         }
       }
+    });
+  });
+
+  // ── 2. Rappels sur les tâches assignées à l'utilisateur courant ──
+  var myName=(S.profile&&S.profile.nom)||'';
+  if(!myName)return;
+  // Jours de déclenchement : J-7, J-3, J-1, J-0, puis retards
+  var triggerDays=[7,3,1,0,-1,-3,-7,-14];
+  ids.forEach(function(sid){
+    var todos=S.todos[sid]||[];
+    var studioName=(S.studios[sid]?S.studios[sid].name:sid);
+    todos.forEach(function(t){
+      if(!t||t.statut==='done')return;
+      if(!t.deadline)return;
+      // La tâche doit m'être assignée (responsable) ou être à moi par défaut (auteur sans responsable)
+      var assignee=t.responsable||t.auteur||'';
+      if(assignee!==myName)return;
+      var dl=new Date(t.deadline+'T00:00:00');
+      if(isNaN(dl.getTime()))return;
+      // diff en jours (positif = à venir, négatif = en retard)
+      var diff=Math.ceil((dl-now)/(1000*60*60*24));
+      // N'alerter qu'aux paliers définis
+      if(triggerDays.indexOf(diff)<0)return;
+      // Dedup local : 1 rappel max par (tâche, jour)
+      var dedupKey='isseo_todo_reminder_'+t.id+'_'+todayStr;
+      if(localStorage.getItem(dedupKey))return;
+      // Dedup serveur : éviter de recréer si notif existe déjà aujourd'hui pour cette tâche
+      var marker='[todo:'+t.id+']';
+      var already=S.notifications.find(function(n){
+        return n.type==='echeance'&&n.body&&n.body.indexOf(marker)>=0&&n.created_at&&n.created_at.slice(0,10)===todayStr;
+      });
+      if(already){localStorage.setItem(dedupKey,'1');return;}
+      // Construire le titre selon la proximité
+      var title;
+      if(diff===0)title='🔴 À faire AUJOURD\'HUI — '+studioName;
+      else if(diff===1)title='⏰ À faire demain — '+studioName;
+      else if(diff>0)title='⏰ Rappel : dans '+diff+'j — '+studioName;
+      else if(diff===-1)title='🔴 EN RETARD de 1j — '+studioName;
+      else title='🔴 EN RETARD de '+Math.abs(diff)+'j — '+studioName;
+      // Date formatée pour le body
+      var dlLabel=dl.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+      var body=t.titre+'\nÉchéance : '+dlLabel+' '+marker;
+      sb.from('notifications').insert({
+        type:'echeance',
+        user_id:S.user.id,
+        source_user_id:S.user.id,
+        studio_id:sid,
+        title:title,
+        body:body,
+        read:false
+      });
+      localStorage.setItem(dedupKey,'1');
     });
   });
 }

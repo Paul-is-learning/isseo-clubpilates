@@ -22,6 +22,21 @@ function _handleRowChange(r){
   } else if(id.endsWith('_scenarios')){
     var nv=r.data&&r.data.scenarios||[];
     if(JSON.stringify(nv)!==JSON.stringify(S.scenarios[id.slice(0,-10)]||[])){S.scenarios[id.slice(0,-10)]=nv;changed=true;}
+  } else if(id.endsWith('_todos')){
+    // V2 : sync temps réel des tâches (kanban, commentaires, mentions, reactions)
+    var sid=id.slice(0,-6);
+    var nv=r.data&&r.data.todos||[];
+    if(JSON.stringify(nv)!==JSON.stringify(S.todos[sid]||[])){
+      S.todos[sid]=nv;
+      changed=true;
+      // Re-render le modal de tâche s'il est ouvert sur une tâche de ce studio
+      try{
+        var modal=document.getElementById('tache-detail-modal');
+        if(modal&&modal.dataset&&modal.dataset.sid===sid&&typeof _rerenderTacheModal==='function'){
+          _rerenderTacheModal(sid,modal.dataset.tid);
+        }
+      }catch(e){}
+    }
   } else if(id.endsWith('_simconfig')){
     var nv=r.data&&r.data.config||{};
     if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[id.slice(0,-10)]||{})){

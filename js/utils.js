@@ -342,3 +342,162 @@ async function doLogin(){
   finally{if(btn){btn.textContent=btnOrig;btn.disabled=false;}}
 }
 // ══════════════════════════════════════════════════════════════════════════════
+// ── Helpers tâches (plateforme Notion-style) ────────────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Retourne la liste des assignés d'une tâche. Backward-compat : utilise
+// `assignees[]` s'il existe, sinon fallback sur l'ancien champ `responsable`.
+function _getAssignees(task){
+  if(!task)return [];
+  if(task.assignees && task.assignees.length) return task.assignees.slice();
+  if(task.responsable) return [task.responsable];
+  return [];
+}
+
+// Métadonnées de priorité (label, couleur, icône)
+function _getPriorityMeta(p){
+  var m={
+    P0:{label:'Urgent',   color:'#DC2626', bg:'#FEE2E2', icon:'🔥'},
+    P1:{label:'Haute',    color:'#D97706', bg:'#FEF3C7', icon:'▲'},
+    P2:{label:'Normale',  color:'#6B7280', bg:'#F3F4F6', icon:'●'},
+    P3:{label:'Basse',    color:'#9CA3AF', bg:'#F9FAFB', icon:'▽'}
+  };
+  return m[p||'P2']||m.P2;
+}
+
+// Métadonnées de statut (4 états)
+function _getStatusMeta(s){
+  var m={
+    todo:        {label:'À faire',  color:'#6B7280', bg:'#F3F4F6', dot:'#9CA3AF'},
+    in_progress: {label:'En cours', color:'#2563EB', bg:'#DBEAFE', dot:'#3B82F6'},
+    done:        {label:'Fait',     color:'#16A34A', bg:'#DCFCE7', dot:'#22C55E'},
+    blocked:     {label:'Bloqué',   color:'#DC2626', bg:'#FEE2E2', dot:'#EF4444'}
+  };
+  // Backward-compat : anciens status legacy → nouveaux
+  if(s==='pending')s='todo';
+  if(s==='vu'||s==='doing')s='in_progress';
+  return m[s||'todo']||m.todo;
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// ── Helpers V2 : Kanban view + Mentions + Reactions ────────────────────────
+// ══════════════════════════════════════════════════════════════════════════════
+
+// Préférence d'affichage des tâches ('liste' | 'kanban') — par studio, en localStorage
+function _getTasksView(sid){
+  try{return localStorage.getItem('isseo_tasks_view_'+sid)||'liste';}catch(e){return 'liste';}
+}
+function _setTasksView(sid,view){
+  try{localStorage.setItem('isseo_tasks_view_'+sid,view);}catch(e){}
+}
+
+// Ordre fixe des colonnes du kanban board
+function _kanbanColumns(){
+  return ['todo','in_progress','done','blocked'];
+}
+
+// Palette fixe GitHub-style pour les réactions (6 emojis)
+var TASK_REACTIONS=['👍','❤️','🎉','🚀','👀','😄'];
+
+// Parse les mentions @Nom d'un texte. Matche @ suivi d'un nom (1 à 3 mots capitalisés).
+// Retourne un array dédupliqué de noms en full form (ex: ['Paul Bécaud','Tom Bécaud']).
+// Matche contre S._allProfiles pour ne garder que les mentions valides.
+function _parseMentions(text){
+  if(!text||!S._allProfiles)return [];
+  var profiles=S._allProfiles.map(function(p){return (p.nom||'').trim();}).filter(Boolean);
+  var out=[];
+  // Pour chaque profil connu, regarde si "@<nom>" apparaît (case-insensitive)
+  profiles.forEach(function(nom){
+    var re=new RegExp('@'+nom.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'i');
+    if(re.test(text)&&out.indexOf(nom)===-1)out.push(nom);
+  });
+  return out;
+}
+
+// Transforme le texte d'un commentaire en HTML avec les @mentions en badge violet.
+// Appelé au rendu du thread de commentaires. Le texte source reste brut dans le storage.
+function _renderMentionsHtml(text){
+  if(!text)return '';
+  var safe=String(text)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+  if(!S._allProfiles)return safe;
+  var profiles=S._allProfiles.map(function(p){return (p.nom||'').trim();}).filter(Boolean);
+  // Trier par longueur desc pour matcher les noms complets avant les noms partiels
+  profiles.sort(function(a,b){return b.length-a.length;});
+  profiles.forEach(function(nom){
+    var esc=nom.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+    var re=new RegExp('@'+esc,'gi');
+    safe=safe.replace(re,'<span class="mention">@'+nom+'</span>');
+  });
+  return safe;
+}
+
+// Retourne la photo (data URL) d'un utilisateur à partir de son nom
+function _getAvatarByNom(nom){
+  if(!nom||!S._allProfiles)return null;
+  var needle=String(nom).trim().toLowerCase();
+  var p=S._allProfiles.find(function(x){return (x.nom||'').trim().toLowerCase()===needle;});
+  return p && (p.photo_url||p.avatar) || null;
+}
+
+// Génère un avatar circulaire stylisé pour un nom (photo si dispo, sinon initiales + gradient)
+function _avatarHtml(nom,size){
+  var s=size||28;
+  var photo=_getAvatarByNom(nom);
+  var ini=(nom||'?').trim().split(/\s+/).map(function(w){return w.charAt(0);}).join('').slice(0,2).toUpperCase();
+  if(photo){
+    return '<div style="width:'+s+'px;height:'+s+'px;border-radius:50%;overflow:hidden;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);flex-shrink:0"><img src="'+photo+'" style="width:100%;height:100%;object-fit:cover" alt="'+nom+'"/></div>';
+  }
+  // Fallback gradient initiales
+  var hue=_strHue(nom||'');
+  return '<div title="'+nom+'" style="width:'+s+'px;height:'+s+'px;border-radius:50%;background:linear-gradient(135deg,hsl('+hue+',55%,55%),hsl('+((hue+30)%360)+',55%,45%));color:#fff;display:flex;align-items:center;justify-content:center;font-size:'+Math.round(s*0.42)+'px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15);flex-shrink:0;letter-spacing:-0.5px">'+ini+'</div>';
+}
+
+function _strHue(str){
+  var h=0;
+  for(var i=0;i<str.length;i++)h=(h*31+str.charCodeAt(i))>>>0;
+  return h%360;
+}
+
+// Stack d'avatars (avec chevauchement) pour une liste d'assignés
+function _avatarStackHtml(nomArray,size){
+  var arr=(nomArray||[]).slice(0,3);
+  if(!arr.length)return '<span style="font-size:11px;color:#aaa;font-style:italic">Non assigné</span>';
+  var s=size||26;
+  var h='<div style="display:inline-flex;align-items:center">';
+  arr.forEach(function(nom,i){
+    h+='<div style="margin-left:'+(i===0?0:-8)+'px;position:relative;z-index:'+(10-i)+'">'+_avatarHtml(nom,s)+'</div>';
+  });
+  var extra=(nomArray||[]).length-3;
+  if(extra>0){
+    h+='<div style="margin-left:-8px;width:'+s+'px;height:'+s+'px;border-radius:50%;background:#F3F4F6;color:#6B7280;display:flex;align-items:center;justify-content:center;font-size:'+Math.round(s*0.38)+'px;font-weight:700;border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.15)">+'+extra+'</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+// Format relatif "il y a X" pour les dates de commentaires
+function _relTime(iso){
+  if(!iso)return '';
+  var d=new Date(iso);
+  var diff=(Date.now()-d.getTime())/1000;
+  if(diff<60)return 'à l\'instant';
+  if(diff<3600)return 'il y a '+Math.floor(diff/60)+' min';
+  if(diff<86400)return 'il y a '+Math.floor(diff/3600)+' h';
+  if(diff<604800)return 'il y a '+Math.floor(diff/86400)+' j';
+  return d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+}
+
+// Échappe le HTML (pour l'affichage sécurisé de contenu utilisateur)
+function _escHtml(s){
+  if(s==null)return '';
+  return String(s)
+    .replace(/&/g,'&amp;')
+    .replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;')
+    .replace(/'/g,'&#039;');
+}
+
+// ══════════════════════════════════════════════════════════════════════════════

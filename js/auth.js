@@ -27,10 +27,12 @@ function saveTauxInteret(sid,valPct){
   render();
 }
 
-function toast(msg){
+function toast(msg,duration){
   var t=document.getElementById('toast');
+  if(!t)return;
   t.textContent=msg;t.classList.add('show');
-  setTimeout(function(){t.classList.remove('show');},2500);
+  if(t._hideTimer)clearTimeout(t._hideTimer);
+  t._hideTimer=setTimeout(function(){t.classList.remove('show');},duration||2500);
 }
 function badge(statut){
   var s=STATUT_CFG[statut]||STATUT_CFG.pipeline;
@@ -974,7 +976,7 @@ function showInviteViewerModal(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
   var allStudios=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&st.alertes;});
-  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
   var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:540px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)">';
   box+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>';
   box+='<div><div style="font-size:16px;font-weight:700;color:#1a1a1a">Inviter un viewer</div>';
@@ -1051,6 +1053,35 @@ async function submitInvitation(){
   await saveAdminSettings();
   var modal=document.getElementById('invite-modal');
   if(modal)modal.remove();
+  // ── Email à Paul Bécaud (super-admin) ───────────────────────────────────
+  try{
+    var studioNames=(inv.studios||[]).map(function(sid){var st=S.studios[sid];return st?st.name:sid;}).join(', ');
+    var tabNames=(inv.tabs||[]).join(', ');
+    var appUrl=window.location.origin+window.location.pathname;
+    var body=''
+      +'<div style="font-size:14px;line-height:1.6;color:#333">'
+      +'<p style="margin:0 0 14px">Bonjour Paul,</p>'
+      +'<p style="margin:0 0 18px"><b>'+inv.invitedByName+'</b> vient de soumettre une demande d\'invitation viewer qui attend ton approbation.</p>'
+      +'<div style="background:#f8f9fb;border-left:3px solid #1a3a6b;border-radius:8px;padding:16px 18px;margin-bottom:22px">'
+      +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:8px">Détails de l\'invitation</div>'
+      +'<div style="margin-bottom:6px"><span style="color:#666">Invité&nbsp;:</span> <b>'+inv.nom+'</b> <span style="color:#888">('+inv.email+')</span></div>'
+      +'<div style="margin-bottom:6px"><span style="color:#666">Projets&nbsp;:</span> '+(studioNames||'<i style="color:#aaa">aucun</i>')+'</div>'
+      +'<div><span style="color:#666">Onglets&nbsp;:</span> '+(tabNames||'<i style="color:#aaa">aucun</i>')+'</div>'
+      +'</div>'
+      +'<div style="text-align:center;margin:28px 0 14px">'+_emailBtn('Ouvrir le panneau admin',appUrl,'#1a3a6b')+'</div>'
+      +'<p style="margin:18px 0 0;font-size:12px;color:#888">Tu peux approuver ou rejeter cette demande depuis le panneau admin.</p>'
+      +'</div>';
+    var html=_emailLayout({
+      title:'🎟️ Nouvelle invitation viewer',
+      preheader:inv.invitedByName+' a invité '+inv.nom+' en lecture seule',
+      body:body
+    });
+    sendEmail({
+      to:'paulbecaud@isseo-dev.com',
+      subject:'🎟️ Nouvelle invitation viewer — '+inv.nom,
+      html:html
+    });
+  }catch(e){console.warn('[invite-email]',e);}
   toast('Demande d\'invitation envoyée à Paul Bécaud pour validation');
   render();
 }
@@ -1094,6 +1125,57 @@ async function approveInvitation(invId){
   inv.password=encodePwd(pwd);
   await saveAdminSettings();
   await loadAdminUsers();
+  // ── Emails : à l'invité (identifiants) + à l'admin inviteur si différent ─
+  try{
+    var appUrl=window.location.origin+window.location.pathname;
+    var studioNames=(inv.studios||[]).map(function(sid){var st=S.studios[sid];return st?st.name:sid;}).join(', ');
+    var tabNames=(inv.tabs||[]).join(', ');
+    // 1. Email à l'invité
+    var guestBody=''
+      +'<div style="font-size:14px;line-height:1.6;color:#333">'
+      +'<p style="margin:0 0 14px">Bonjour <b>'+inv.nom+'</b>,</p>'
+      +'<p style="margin:0 0 18px">Ton accès à la plateforme <b>ISSEO Club Pilates</b> vient d\'être activé par Paul Bécaud. Tu peux dès maintenant te connecter en lecture seule aux projets qui te sont partagés.</p>'
+      +'<div style="background:linear-gradient(135deg,#f0fdf4,#ffffff);border:1px solid #bbf7d0;border-radius:12px;padding:20px 22px;margin-bottom:22px">'
+      +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#16A34A;font-weight:700;margin-bottom:10px">🔐 Tes identifiants</div>'
+      +'<div style="font-family:\'SF Mono\',Menlo,monospace;font-size:13px;background:#fff;padding:12px 14px;border-radius:8px;border:1px dashed #bbf7d0">'
+      +'<div><span style="color:#888">Email&nbsp;:</span> <b>'+inv.email+'</b></div>'
+      +'<div style="margin-top:4px"><span style="color:#888">Mot de passe&nbsp;:</span> <b>'+pwd+'</b></div>'
+      +'</div>'
+      +'<div style="font-size:11px;color:#666;margin-top:10px">Tu pourras changer ton mot de passe depuis l\'app (icône cadenas en haut à droite).</div>'
+      +'</div>'
+      +'<div style="background:#f8f9fb;border-radius:10px;padding:14px 16px;margin-bottom:22px">'
+      +'<div style="font-size:11px;text-transform:uppercase;letter-spacing:1px;color:#888;font-weight:600;margin-bottom:6px">Tes accès</div>'
+      +'<div style="font-size:12px;color:#555;margin-bottom:4px"><b>Projets&nbsp;:</b> '+(studioNames||'—')+'</div>'
+      +'<div style="font-size:12px;color:#555"><b>Onglets&nbsp;:</b> '+(tabNames||'—')+'</div>'
+      +'</div>'
+      +'<div style="text-align:center;margin:22px 0 10px">'+_emailBtn('Se connecter à ISSEO',appUrl,'#16A34A')+'</div>'
+      +'<p style="margin:18px 0 0;font-size:11px;color:#aaa;text-align:center">Besoin d\'aide ? Réponds à cet email ou contacte Paul directement.</p>'
+      +'</div>';
+    sendEmail({
+      to:inv.email,
+      subject:'🎉 Bienvenue sur ISSEO Club Pilates — tes accès sont prêts',
+      html:_emailLayout({title:'Bienvenue sur ISSEO',preheader:'Tes identifiants d\'accès à la plateforme',body:guestBody}),
+      replyTo:'paulbecaud@isseo-dev.com'
+    });
+    // 2. Email à l'admin inviteur (si différent du super-admin)
+    if(inv.invitedBy && inv.invitedBy!==S.user.id){
+      var inviter=(S._allProfiles||[]).find(function(p){return p.id===inv.invitedBy;});
+      if(inviter && inviter.email){
+        var inviterBody=''
+          +'<div style="font-size:14px;line-height:1.6;color:#333">'
+          +'<p style="margin:0 0 14px">Bonjour '+(inviter.nom||'').split(' ')[0]+',</p>'
+          +'<p style="margin:0 0 18px">Bonne nouvelle&nbsp;! Ta demande d\'invitation pour <b>'+inv.nom+'</b> (<span style="color:#888">'+inv.email+'</span>) vient d\'être <b style="color:#16A34A">approuvée</b> par Paul Bécaud.</p>'
+          +'<p style="margin:0 0 22px">L\'invité a reçu ses identifiants par email. Tu peux aussi les lui partager directement depuis le panneau admin si besoin.</p>'
+          +'<div style="text-align:center">'+_emailBtn('Ouvrir le panneau admin',appUrl,'#1a3a6b')+'</div>'
+          +'</div>';
+        sendEmail({
+          to:inviter.email,
+          subject:'✅ Invitation approuvée — '+inv.nom,
+          html:_emailLayout({title:'Invitation approuvée',preheader:inv.nom+' a maintenant accès à la plateforme',body:inviterBody})
+        });
+      }
+    }
+  }catch(e){console.warn('[approve-email]',e);}
   toast('Invitation approuvée — compte créé pour '+inv.nom);
   render();
 }
