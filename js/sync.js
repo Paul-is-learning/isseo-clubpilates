@@ -129,9 +129,22 @@ function subscribeDataChanges(){
     })
     .subscribe(function(status){
       if(status==='SUBSCRIBED'){
-        console.log('[Realtime] Connecté — sync instantanée active');
+        console.log('[Realtime] Connect\u00e9 \u2014 sync instantan\u00e9e active');
+        _rtBackoff=0;
+        // Rattraper les changements manqués pendant la déconnexion
+        syncDataFallback();
+        // Restaurer polling normal
+        if(_syncInterval)clearInterval(_syncInterval);
+        _syncInterval=setInterval(syncDataFallback,60000);
       } else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
-        console.warn('[Realtime] Erreur — fallback polling actif');
+        console.warn('[Realtime] Erreur \u2014 reconnexion...');
+        // Polling rapide pendant la coupure
+        if(_syncInterval)clearInterval(_syncInterval);
+        _syncInterval=setInterval(syncDataFallback,10000);
+        // Reconnexion avec backoff exponentiel
+        _rtBackoff=Math.min((_rtBackoff||5)*2,30);
+        if(_realtimeSub){try{sb.removeChannel(_realtimeSub);}catch(e){}_realtimeSub=null;}
+        setTimeout(subscribeDataChanges,_rtBackoff*1000);
       }
     });
 }
@@ -155,5 +168,11 @@ function startSync(){
   if(_syncInterval)clearInterval(_syncInterval);
   subscribeDataChanges();
   _syncInterval=setInterval(syncDataFallback,60000);
+}
+
+function stopSync(){
+  if(_realtimeSub){try{sb.removeChannel(_realtimeSub);}catch(e){}_realtimeSub=null;}
+  if(_syncInterval){clearInterval(_syncInterval);_syncInterval=null;}
+  _rtBackoff=0;
 }
 

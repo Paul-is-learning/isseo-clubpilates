@@ -191,6 +191,47 @@ async function safeSave(id,data){
   return true;
 }
 
+// ── RPC Patch : opérations atomiques sur studios.data ────────────────────────
+async function rpcPatch(id,opts){
+  // opts: {merge, array_field, array_append, array_remove_key, array_remove_val, expected_updated_at}
+  var sess=await sb.auth.getSession();
+  if(!sess.data||!sess.data.session){toast('Session expir\u00e9e — reconnectez-vous');return null;}
+  var params={p_id:id};
+  if(opts.merge)params.p_merge=opts.merge;
+  if(opts.array_field)params.p_array_field=opts.array_field;
+  if(opts.array_append)params.p_array_append=opts.array_append;
+  if(opts.array_remove_key){params.p_array_remove_key=opts.array_remove_key;params.p_array_remove_val=opts.array_remove_val;}
+  if(opts.expected_updated_at)params.p_expected_updated_at=opts.expected_updated_at;
+  var res=await sb.rpc('patch_studio_data',params);
+  if(res.error){toast('Erreur sauvegarde : '+res.error.message);return null;}
+  var d=res.data;
+  if(d&&d.conflict){
+    toast('Conflit \u2014 un autre utilisateur a modifi\u00e9 ces donn\u00e9es. Rechargement...');
+    await syncDataFallback();
+    render();
+    return null;
+  }
+  if(d&&d.ok&&d.data){
+    _lastKnownTimestamps[id]=new Date().toISOString();
+    return d.data;
+  }
+  return d;
+}
+
+// ── Utilitaire rollback pour saves optimistes ────────────────────────────────
+async function withRollback(saveFn,snapshot,restoreFn){
+  try{
+    var r=await saveFn();
+    if(r===null||r===false){restoreFn(snapshot);render();return false;}
+    return true;
+  }catch(e){
+    restoreFn(snapshot);
+    toast('Erreur : '+(e.message||e));
+    render();
+    return false;
+  }
+}
+
 // ── SimConfig persistence ──────────────────────────────────────────────────────
 var _simSaveTimeout={};
 function saveSimConfig(sid){
@@ -231,9 +272,9 @@ async function saveAllDirty(){
       var parts=keys[i].split('_');var type=parts[0];var sid=parts.slice(1).join('_');
       if(type==='adherents')await saveAdherents(sid);
       if(type==='sim'){saveSimConfig(sid);}
-      if(type==='taux'){_tauxPending[sid]=false;await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});}
-      if(type==='loyer'){var ex=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d=Object.assign({},ex.data&&ex.data.data||{});d.loyer_mensuel=S.studios[sid].loyer_mensuel;await sb.from('studios').upsert({id:sid,data:d,updated_at:new Date().toISOString()});}
-      if(type==='capex'){var ex2=await sb.from('studios').select('data').eq('id',sid).maybeSingle();var d2=Object.assign({},ex2.data&&ex2.data.data||{});d2.capexDetail=S.studios[sid].capexDetail;await sb.from('studios').upsert({id:sid,data:d2,updated_at:new Date().toISOString()});}
+      if(type==='taux'){_tauxPending[sid]=false;await rpcPatch(sid,{merge:{tauxInteret:S.studios[sid].tauxInteret}});}
+      if(type==='loyer'){await rpcPatch(sid,{merge:{loyer_mensuel:S.studios[sid].loyer_mensuel}});}
+      if(type==='capex'){await rpcPatch(sid,{merge:{capexDetail:S.studios[sid].capexDetail}});}
     }
     S.dirty={};S._dirtyBackup={};
     _hideDirtyBar();

@@ -274,13 +274,14 @@ function _presenceLabel(ts,loginTs){
   return{text:new Date(best).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}),color:'#94A3B8',online:false};
 }
 
+var _visibilityHandler=null;
 function _startSessionWatcher(){
   ['mousemove','keydown','mousedown','click','scroll','touchstart'].forEach(function(ev){
     document.addEventListener(ev,_resetInactivityTimer,{passive:true});
   });
   _resetInactivityTimer();
   // Déconnexion si l'onglet/page a été fermé plus de 10 min
-  document.addEventListener('visibilitychange',function(){
+  _visibilityHandler=function(){
     if(!S.user)return;
     if(document.visibilityState==='hidden'){
       try{localStorage.setItem('isseo_hidden_at',String(Date.now()));}catch(e){}
@@ -292,7 +293,15 @@ function _startSessionWatcher(){
       }catch(e){}
       _resetInactivityTimer();
     }
+  };
+  document.addEventListener('visibilitychange',_visibilityHandler);
+}
+function _stopSessionWatcher(){
+  ['mousemove','keydown','mousedown','click','scroll','touchstart'].forEach(function(ev){
+    document.removeEventListener(ev,_resetInactivityTimer);
   });
+  if(_visibilityHandler){document.removeEventListener('visibilitychange',_visibilityHandler);_visibilityHandler=null;}
+  _clearInactivityTimers();
 }
 
 async function doLogin(){

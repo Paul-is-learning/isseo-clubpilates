@@ -349,9 +349,7 @@ async function uploadFichier(sid,input,folder){
   if(isViewer())return;
   var files=Array.from(input.files);if(!files.length)return;
   var prog=document.getElementById('uprog-'+sid);if(prog)prog.style.display='block';
-  var ex=await sb.from('studios').select('data').eq('id',sid+'_files').maybeSingle();
-  var cur=(ex.data&&ex.data.data&&ex.data.data.files)||S.files[sid]||[];
-  cur=cur.slice();var added=0;
+  var newFiles=[];var added=0;
   var _blocked=['exe','bat','cmd','dll','sh','msi'];
   for(var i=0;i<files.length;i++){
     var file=files[i];
@@ -363,13 +361,21 @@ async function uploadFichier(sid,input,folder){
     if(!ur.error){
       var pu=sb.storage.from('studio-files').getPublicUrl(path);
       var size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
-      cur.push({name:file.name,path:path,url:pu.data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size:size,folder:folder||null});
+      newFiles.push({name:file.name,path:path,url:pu.data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size:size,folder:folder||null});
       added++;
     }
   }
-  await sb.from('studios').upsert({id:sid+'_files',data:{files:cur},updated_at:new Date().toISOString()});
-  S.files[sid]=cur;if(prog)prog.style.display='none';
-  toast(added+' fichier(s) ajoute(s)');
+  if(added>0){
+    var backup=(S.files[sid]||[]).slice();
+    S.files[sid]=backup.concat(newFiles);// optimiste
+    await withRollback(
+      function(){return rpcPatch(sid+'_files',{array_field:'files',array_append:newFiles}).then(function(r){if(r&&r.files)S.files[sid]=r.files;return r;});},
+      backup,
+      function(snap){S.files[sid]=snap;}
+    );
+  }
+  if(prog)prog.style.display='none';
+  toast(added+' fichier(s) ajout\u00e9(s)');
   if(added>0)notifyAll({type:'document',studio_id:sid,title:'Document ajout\u00e9 \u2014 '+(S.studios[sid]?S.studios[sid].name:sid),body:added+' fichier(s) : '+files.map(function(f){return f.name;}).join(', ')});
   render();
 }
@@ -377,10 +383,16 @@ async function uploadFichier(sid,input,folder){
 async function deleteFichier(sid,path){
   if(isViewer())return;
   if(!confirm('Supprimer ?'))return;
+  var backup=(S.files[sid]||[]).slice();
   await sb.storage.from('studio-files').remove([path]);
-  S.files[sid]=(S.files[sid]||[]).filter(function(f){return f.path!==path;});
-  await sb.from('studios').upsert({id:sid+'_files',data:{files:S.files[sid]},updated_at:new Date().toISOString()});
-  toast('Supprime');render();
+  S.files[sid]=backup.filter(function(f){return f.path!==path;});// optimiste
+  var ok=await withRollback(
+    function(){return rpcPatch(sid+'_files',{array_field:'files',array_remove_key:'path',array_remove_val:path}).then(function(r){if(r&&r.files)S.files[sid]=r.files;return r;});},
+    backup,
+    function(snap){S.files[sid]=snap;}
+  );
+  if(ok)toast('Supprim\u00e9');
+  render();
 }
 
 async function archiverStudio(id){

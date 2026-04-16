@@ -432,8 +432,13 @@ function handleNotifClick(notifId,studioId,type){
 }
 
 async function saveStudio(id,studio){
-  S.studios[id]=studio;
-  await sb.from('studios').upsert({id:id,data:studio,updated_at:new Date().toISOString()});
+  var backup=S.studios[id]?Object.assign({},S.studios[id]):null;
+  S.studios[id]=studio;// optimiste
+  await withRollback(
+    function(){var ts=_lastKnownTimestamps[id]||null;return rpcPatch(id,{merge:studio,expected_updated_at:ts}).then(function(r){if(r)S.studios[id]=r;return r;});},
+    backup,
+    function(snap){if(snap)S.studios[id]=snap;else delete S.studios[id];}
+  );
   render();
 }
 async function setStudioCohorte(sid,val){
@@ -443,8 +448,10 @@ async function setStudioCohorte(sid,val){
   toast('Cohorte mise à jour : C'+val);
 }
 async function saveDepenses(sid){
-  await sb.from('studios').upsert({id:sid+'_depenses',data:{depenses:S.depenses[sid]},updated_at:new Date().toISOString()});
+  await rpcPatch(sid+'_depenses',{merge:{depenses:S.depenses[sid]}});
 }
 async function saveAdherents(sid){
-  await sb.from('studios').upsert({id:sid+'_adherents',data:{actuel:S.adherents[sid]||{}},updated_at:new Date().toISOString()});
+  // Atomic merge via RPC — chaque utilisateur ne modifie que ses champs
+  var result=await rpcPatch(sid+'_adherents',{merge:{actuel:S.adherents[sid]||{}}});
+  if(result&&result.actuel){S.adherents[sid]=result.actuel;}
 }

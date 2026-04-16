@@ -544,10 +544,22 @@ function exportStudioExcel(sid){
 
 async function doLogout(){
   _clearInactivityTimers();_removeInactivityWarn();
+  _stopSessionWatcher();
+  stopSync();
   unsubscribeNotifications();stopPresenceHeartbeat();
+  // Clear all debounce timers
+  Object.keys(_simSaveTimeout).forEach(function(k){clearTimeout(_simSaveTimeout[k]);});
+  Object.keys(_tauxTimeout).forEach(function(k){clearTimeout(_tauxTimeout[k]);});
+  if(_lienLoyerTimer){clearTimeout(_lienLoyerTimer);_lienLoyerTimer=null;}
+  if(_ficheLoyerTimer){clearTimeout(_ficheLoyerTimer);_ficheLoyerTimer=null;}
   try{localStorage.removeItem('isseo_hidden_at');}catch(e){}
   await sb.auth.signOut();
-  S.user=null;S.profile=null;S.view='auth';S.selectedId=null;S.notifications=[];S.notifOpen=false;
+  // Full state reset
+  S.user=null;S.profile=null;S.view='auth';S.selectedId=null;
+  S.notifications=[];S.notifOpen=false;
+  S.studios={};S.files={};S.depenses={};S.adherents={};S.scenarios={};S.todos={};
+  S.simConfig={};S.userPresence={};S.globalChat=[];S.prospects=[];
+  _syncTimestamps={};_tauxPending={};
   try{localStorage.removeItem('isseo_nav');}catch(e){}
   render();
 }
