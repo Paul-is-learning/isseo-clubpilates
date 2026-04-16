@@ -287,6 +287,15 @@ body.dark .health-score-card .health-score-num{text-shadow:0 0 20px currentColor
 @media(max-width:768px){.health-score-card .health-gauge{margin:0 auto}
 .health-score-card #health-sub-scores{grid-template-columns:repeat(3,1fr) !important}}
 
+/* ── CA Hero Cards — staggered pop-in + shimmer ── */
+.ca-hero-card{opacity:0;transform:translateY(40px) scale(0.7);filter:blur(6px);transition:transform .3s,box-shadow .3s}
+.ca-hero-card.ca-animated{animation:caCardPop .75s cubic-bezier(.22,.8,.24,1) forwards}
+@keyframes caCardPop{0%{opacity:0;transform:translateY(40px) scale(0.7);filter:blur(6px)}55%{opacity:1;transform:translateY(-6px) scale(1.04);filter:blur(0)}75%{transform:translateY(3px) scale(0.985)}100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+.ca-hero-card.ca-animated::after{content:'';position:absolute;top:0;left:-60%;width:60%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent);animation:caShimmer .6s .45s ease-in-out forwards;pointer-events:none}
+@keyframes caShimmer{0%{left:-60%}100%{left:120%}}
+.ca-hero-card.ca-animated .counter-anim{animation:caDigitGlow 1.2s .4s ease-out both}
+@keyframes caDigitGlow{0%{text-shadow:0 0 0 transparent}40%{text-shadow:0 0 18px rgba(255,255,255,0.5)}100%{text-shadow:0 0 0 transparent}}
+
 /* ── Scroll reveal ── */
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.22,.8,.24,1),transform .6s cubic-bezier(.22,.8,.24,1)}
 .reveal-in{opacity:1;transform:translateY(0)}

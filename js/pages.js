@@ -2491,8 +2491,8 @@ function renderBPConsolide(){
     {l:'Année 3',sub:'Croisière',v:totCA3,grad:'linear-gradient(135deg,#312e81,#4338ca)',glow:'rgba(67,56,202,0.25)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>'},
     {l:'CAPEX Total',sub:'Investissement',v:totCapex,grad:'linear-gradient(135deg,#1a3a6b,#2d5a9e)',glow:'rgba(26,58,107,0.2)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
   ];
-  _caCards.forEach(function(k){
-    h+='<div style="background:'+k.grad+';border-radius:16px;padding:18px 20px;position:relative;overflow:hidden;transition:all .3s;cursor:default;box-shadow:0 4px 20px '+k.glow+'" onmouseenter="this.style.transform=\'translateY(-4px) scale(1.02)\';this.style.boxShadow=\'0 8px 30px '+k.glow+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'0 4px 20px '+k.glow+'\'">';
+  _caCards.forEach(function(k,ci){
+    h+='<div class="ca-hero-card" data-ca-idx="'+ci+'" style="background:'+k.grad+';border-radius:16px;padding:18px 20px;position:relative;overflow:hidden;cursor:default;box-shadow:0 4px 20px '+k.glow+'" onmouseenter="this.style.transform=\'translateY(-4px) scale(1.02)\';this.style.boxShadow=\'0 8px 30px '+k.glow+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'0 4px 20px '+k.glow+'\'">';
     h+='<div style="position:absolute;top:-15px;right:-15px;width:60px;height:60px;background:rgba(255,255,255,0.06);border-radius:50%"></div>';
     h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+k.icon+'<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7)">'+k.l+'</span></div>';
     h+='<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;line-height:1"><span class="counter-anim" data-target="'+Math.round(k.v)+'" data-format="eur" data-duration="1400">0</span></div>';
@@ -2637,9 +2637,9 @@ function renderBPConsolide(){
   h+='<div id="bp-chart-tooltip" style="display:none;position:absolute;background:linear-gradient(135deg,#1a1a2e,#16213e);color:#fff;padding:12px 16px;border-radius:12px;font-size:11px;pointer-events:none;z-index:10;box-shadow:0 8px 30px rgba(0,0,0,0.25);white-space:nowrap;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.08);line-height:1.6"></div>';
   var maxEbitda=studioRows.reduce(function(m,r){return Math.max(m,Math.abs(r.ebitda1)+Math.abs(r.ebitda2)+Math.abs(r.ebitda3));},1);
   var nBars=studioRows.length;
-  var chartW=Math.max(500,nBars*120);
-  var barW=Math.min(56,Math.floor((chartW-60)/(nBars))-20);
-  var groupW=barW+20;
+  var chartW=Math.max(600,nBars*160);
+  var barW=Math.min(72,Math.floor((chartW-60)/(nBars))-24);
+  var groupW=barW+24;
   var totalGroupsW=nBars*groupW;
   var offsetX=Math.round((chartW-totalGroupsW)/2);
   var svgH=280;
@@ -2682,8 +2682,8 @@ function renderBPConsolide(){
     // Montant total — visible
     h+='<text class="bp-total" x="'+(x+barW/2)+'" y="'+(yBase-h1-h2-h3-10)+'" text-anchor="middle" font-size="9" font-weight="700" fill="#1a1a1a" style="opacity:0.7">'+fmt(totalEbitda)+'</text>';
     // Nom du studio
-    h+='<text x="'+(x+barW/2)+'" y="'+(yBase+16)+'" text-anchor="middle" font-size="10" fill="#666" font-weight="600">'+r.name.substring(0,12)+'</text>';
-    if(r.name.length>12)h+='<text x="'+(x+barW/2)+'" y="'+(yBase+28)+'" text-anchor="middle" font-size="8" fill="#aaa" font-weight="400">'+r.name.substring(12,22)+'</text>';
+    h+='<text x="'+(x+barW/2)+'" y="'+(yBase+16)+'" text-anchor="middle" font-size="10" fill="#666" font-weight="600">'+r.name.substring(0,18)+'</text>';
+    if(r.name.length>18)h+='<text x="'+(x+barW/2)+'" y="'+(yBase+28)+'" text-anchor="middle" font-size="8" fill="#aaa" font-weight="400">'+r.name.substring(18,32)+'</text>';
     // Tooltip data
     h+='<desc>'+safeName+'|'+fmt(r.ebitda1)+'|'+fmt(r.ebitda2)+'|'+fmt(r.ebitda3)+'|'+fmt(totalEbitda)+'|'+r.margeEbitda3+'|'+(r.margeEbitda3>=20?'#22c55e':r.margeEbitda3>=10?'#eab308':'#ef4444')+'</desc>';
     h+='</g>';

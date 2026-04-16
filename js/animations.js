@@ -7,6 +7,8 @@ function animateCounters(root){
   var els=(root||document).querySelectorAll('.counter-anim');
   els.forEach(function(el){
     if(el._animated)return;
+    // Skip counters inside CA hero cards — they animate via animateCACards()
+    if(el.closest&&el.closest('.ca-hero-card:not(.ca-animated)'))return;
     el._animated=true;
     var target=parseFloat(el.getAttribute('data-target'))||0;
     var fmt=el.getAttribute('data-format')||'num';
@@ -736,7 +738,47 @@ function animateHealthSubScores(){
   }
 }
 
-// ── 19. Magnetic cursor on primary buttons ──
+// ── 19. CA Hero Cards staggered pop-in ──
+function animateCACards(){
+  var cards=document.querySelectorAll('.ca-hero-card:not([data-ca-animated])');
+  if(!cards.length)return;
+  // Mark immediately to prevent re-runs
+  for(var k=0;k<cards.length;k++)cards[k].setAttribute('data-ca-animated','1');
+  var baseDelay=250;
+  for(var i=0;i<cards.length;i++){
+    (function(card,idx){
+      var delay=baseDelay+idx*180;
+      // Set shimmer delay to match card entrance
+      card.style.animationDelay='0s';
+      card.style.setProperty('--ca-shimmer-delay',(delay/1000+0.5)+'s');
+      setTimeout(function(){
+        card.classList.add('ca-animated');
+        // Trigger counter-anim inside after card lands
+        var ctr=card.querySelector('.counter-anim');
+        if(ctr&&!ctr.getAttribute('data-counted')){
+          ctr.setAttribute('data-counted','1');
+          var target=parseInt(ctr.getAttribute('data-target'))||0;
+          var fmt=ctr.getAttribute('data-format');
+          var dur=parseInt(ctr.getAttribute('data-duration'))||1200;
+          var start=Date.now();
+          (function tick(){
+            var p=Math.min(1,(Date.now()-start)/dur);
+            var eased=1-Math.pow(1-p,3);
+            var val=Math.round(target*eased);
+            if(fmt==='eur'){
+              ctr.textContent=val.toLocaleString('fr-FR')+' €';
+            } else {
+              ctr.textContent=val.toLocaleString('fr-FR');
+            }
+            if(p<1)requestAnimationFrame(tick);
+          })();
+        }
+      },delay);
+    })(cards[i],i);
+  }
+}
+
+// ── 20. Magnetic cursor on primary buttons ──
 function initMagneticButtons(){
   if(window._magneticInit)return;
   window._magneticInit=true;
@@ -802,6 +844,7 @@ function afterRenderAnimations(){
   var _run=function(){
     try{animateCounters();}catch(e){}
     try{animateHealthSubScores();}catch(e){}
+    try{animateCACards();}catch(e){}
     try{attachCardTilt();}catch(e){}
     try{typewriterGreet();}catch(e){}
     try{startHeroCarousel();}catch(e){}
