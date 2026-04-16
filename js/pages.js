@@ -629,8 +629,15 @@ function renderFichiersHub(){
   // ── Niveau 0 : grille de studios ──
   if(!S.fileNav.studio){
     h+='<div class="folder-grid">';
+    if(ids.length===0){
+      h+='<div style="text-align:center;padding:32px;color:#94a3b8">';
+      h+='<svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.4;margin-bottom:8px"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>';
+      h+='<div style="font-size:12px;font-weight:600">Aucun studio</div>';
+      h+='</div>';
+    }
     ids.forEach(function(id,idx){
       var s=S.studios[id];
+      if(!s)return;
       var fc=(S.files[id]||[]).length;
       var hasDrive=!!(s.driveUrl);
       var statColor=s.statut==='ouvert'?'#10b981':s.statut==='chantier'?'#f59e0b':s.statut==='preparation'?'#3b82f6':'#94a3b8';
@@ -652,7 +659,7 @@ function renderFichiersHub(){
     var sFiles=S.files[sid]||[];
     var sDrive=S.studios[sid]&&S.studios[sid].driveUrl||'';
     // Google Drive config bar
-    h+='<div class="drive-config-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,#f0f9ff,#eff6ff);border:1px solid #bfdbfe;border-radius:12px">';
+    h+='<div class="drive-config-bar">';
     h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/><path d="M4.5 12.5L12 2l7.5 10.5H4.5z" fill="#EA4335" opacity=".3"/></svg>';
     if(sDrive){
       h+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#1e40af">Google Drive connect\u00e9</div>';
@@ -700,6 +707,7 @@ function renderFichiersHub(){
     var allF=S.files[sid2]||[];
     var filtered=allF.filter(function(f){return f.folder===folder;});
     var fDef2=_FDEFS.filter(function(f){return f.key===folder;})[0];
+    if(!fDef2){S.fileNav.folder=null;render();return h;}
     var fIdx=_FDEFS.indexOf(fDef2);
     var fColor=_FCOLORS[fIdx]||'#3b82f6';
     var sDrive2=S.studios[sid2]&&S.studios[sid2].driveUrl||'';
@@ -744,7 +752,7 @@ function renderFichiersHub(){
       filtered.forEach(function(f,fi){
         var fi2=_fIcon(f.name);
         var isImg=['jpg','jpeg','png','gif','webp'].indexOf((f.name||'').split('.').pop().toLowerCase())>=0;
-        h+='<div class="fh-file-row" data-fname="'+f.name.toLowerCase()+'" style="animation-delay:'+(fi*40)+'ms">';
+        h+='<div class="fh-file-row" data-fname="'+(f.name||'').toLowerCase().replace(/"/g,'&quot;')+'" style="animation-delay:'+(fi*40)+'ms">';
         // Thumbnail or type badge
         h+='<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">';
         if(isImg){
@@ -760,7 +768,7 @@ function renderFichiersHub(){
         h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
         h+='<a href="'+f.url+'" target="_blank" class="btn fh-action-btn" title="Ouvrir" style="text-decoration:none">';
         h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
-        if(!isViewer())h+='<button class="btn fh-action-btn" title="Supprimer" style="color:#dc2626" onclick="event.stopPropagation();deleteFichier(\''+sid2+'\',\''+f.path+'\')">';
+        if(!isViewer())h+='<button class="btn fh-action-btn" title="Supprimer" style="color:#dc2626" onclick="event.stopPropagation();deleteFichier(\''+sid2+'\',\''+f.path.replace(/'/g,"\\'")+'\')">';
         if(!isViewer())h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
         h+='</div></div>';
       });
@@ -775,12 +783,15 @@ function renderFichiersHub(){
 function _promptDriveUrl(sid){
   var url=prompt('Collez le lien du dossier Google Drive partag\u00e9 pour '+((S.studios[sid]&&S.studios[sid].name)||sid)+' :');
   if(url===null)return;
-  _setDriveUrl(sid,url.trim());
+  url=url.trim();
+  if(url&&!/drive\.google\.com/i.test(url)){toast('URL invalide — collez un lien Google Drive');return;}
+  _setDriveUrl(sid,url);
 }
 async function _setDriveUrl(sid,url){
-  if(isViewer())return;
+  if(isViewer()||!S.studios[sid])return;
   S.studios[sid].driveUrl=url||'';
-  await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});
+  var res=await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});
+  if(res.error){toast('Erreur : '+res.error.message);return;}
   toast(url?'Drive connect\u00e9':'Drive retir\u00e9');
   render();
 }
@@ -795,8 +806,8 @@ function _handleDrop(ev,sid,folder){
 
 function _extractDriveFolderId(url){
   if(!url)return null;
-  var m=url.match(/[-\w]{25,}/);
-  return m?m[0]:null;
+  var m=url.match(/\/folders\/([^?/]+)/)||url.match(/id=([^&]+)/)||url.match(/[-\w]{25,}/);
+  return m?(m[1]||m[0]):null;
 }
 
 function _filterFiles(query,sid,folder){

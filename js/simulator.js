@@ -352,8 +352,12 @@ async function uploadFichier(sid,input,folder){
   var ex=await sb.from('studios').select('data').eq('id',sid+'_files').maybeSingle();
   var cur=(ex.data&&ex.data.data&&ex.data.data.files)||S.files[sid]||[];
   cur=cur.slice();var added=0;
+  var _blocked=['exe','bat','cmd','dll','sh','msi'];
   for(var i=0;i<files.length;i++){
     var file=files[i];
+    var _ext=(file.name||'').split('.').pop().toLowerCase();
+    if(file.size>50*1024*1024){toast('Fichier trop volumineux (max 50 Mo) : '+file.name);continue;}
+    if(_blocked.indexOf(_ext)>=0){toast('Type de fichier non autoris\u00e9 : .'+_ext);continue;}
     var path=sid+'/'+Date.now()+'_'+cleanName(file.name);
     var ur=await sb.storage.from('studio-files').upload(path,file,{upsert:true});
     if(!ur.error){
