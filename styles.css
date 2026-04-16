@@ -274,10 +274,10 @@ body.dark .skeleton{background:linear-gradient(90deg,#1c2128 0%,#262d36 50%,#1c2
 .page-slide-down{animation:slideDownIn .38s cubic-bezier(.22,.8,.24,1)}
 
 /* ── Health Score gauge — white card premium ── */
-.health-score-card{background:#fff;border:1px solid #e8e8e0;border-radius:20px;padding:18px 24px 14px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);transition:transform .3s,box-shadow .3s}
+.health-score-card{background:#fff;border:1px solid #e8e8e0;border-radius:20px;padding:14px 22px 10px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);transition:transform .3s,box-shadow .3s}
 .health-score-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.07)}
-.health-gauge{position:relative;width:180px;height:105px;flex-shrink:0}
-.health-score-num{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:32px;font-weight:800;line-height:1;text-shadow:0 0 16px currentColor}
+.health-gauge{position:relative;width:160px;height:92px;flex-shrink:0}
+.health-score-num{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:800;line-height:1;text-shadow:0 0 16px currentColor}
 @keyframes healthArcDraw{from{stroke-dashoffset:var(--health-full)}to{stroke-dashoffset:var(--health-offset)}}
 .health-arc{animation:healthArcDraw 1.2s .3s cubic-bezier(.22,.8,.24,1) both}
 @keyframes healthDotPop{from{opacity:0;r:0}to{opacity:1;r:4}}

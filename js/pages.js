@@ -57,7 +57,7 @@ function _computeHealthScore(){
 }
 
 function _renderHealthGauge(hs){
-  var w=180,hh=105,r=68,sw=13;
+  var w=160,hh=92,r=60,sw=12;
   var cx=w/2,cy=hh-10;
   var fullArc=Math.PI*r;
   var filled=fullArc*(hs.score/100);
@@ -179,12 +179,12 @@ function renderAccueil(){
   var _hs=_computeHealthScore();
   h+='<div class="health-score-card">';
   // Title row — top left
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
-  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
-  h+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#94a3b8">Santé du portefeuille</span></div>';
-  h+='<div style="font-size:16px;font-weight:700;color:'+_hs.color+';margin-bottom:12px;line-height:1.3">'+_hs.summary+'</div>';
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">';
+  h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
+  h+='<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#94a3b8">Santé du portefeuille</span></div>';
+  h+='<div style="font-size:14px;font-weight:700;color:'+_hs.color+';margin-bottom:8px;line-height:1.25">'+_hs.summary+'</div>';
   // Content row
-  h+='<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">';
+  h+='<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">';
   // Gauge
   h+=_renderHealthGauge(_hs);
   // Right side
@@ -198,7 +198,7 @@ function renderAccueil(){
     {l:'Alertes',v:_hs.alerts,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'}
   ];
   // Radar chart — 5 axes
-  var _rc=180,_rcx=90,_rcy=90,_rr=65;
+  var _rc=150,_rcx=75,_rcy=75,_rr=52;
   var _axes=[
     {l:'Studios',v:_hs.progress,a:-90},
     {l:'Tâches',v:_hs.tasks,a:-90+72},
