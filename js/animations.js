@@ -822,6 +822,118 @@ function initLogoEasterEgg(){
   });
 }
 
+// ── 21. Tab underline morph ──
+function morphTabIndicator(){
+  var tabs=document.querySelector('.tabs');
+  if(!tabs)return;
+  var active=tabs.querySelector('.tab.active');
+  if(!active)return;
+  var indicator=tabs.querySelector('.tab-indicator');
+  if(!indicator){
+    indicator=document.createElement('div');
+    indicator.className='tab-indicator';
+    tabs.appendChild(indicator);
+  }
+  var tabsRect=tabs.getBoundingClientRect();
+  var activeRect=active.getBoundingClientRect();
+  var left=activeRect.left-tabsRect.left;
+  var width=activeRect.width;
+  if(!indicator._init){
+    indicator.style.transition='none';
+    indicator._init=true;
+    indicator.style.left=left+'px';
+    indicator.style.width=width+'px';
+    requestAnimationFrame(function(){indicator.style.transition='';});
+  } else {
+    indicator.style.left=left+'px';
+    indicator.style.width=width+'px';
+  }
+}
+
+// ── 22. Swipe gestures (mobile) ──
+function initSwipeGestures(){
+  if(window._swipeInit)return;
+  window._swipeInit=true;
+  var startX=0,startY=0,swiping=false;
+  document.addEventListener('touchstart',function(e){
+    var t=e.touches[0];
+    startX=t.clientX;startY=t.clientY;swiping=true;
+  },{passive:true});
+  document.addEventListener('touchend',function(e){
+    if(!swiping)return;swiping=false;
+    var t=e.changedTouches[0];
+    var dx=t.clientX-startX;
+    var dy=t.clientY-startY;
+    if(Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*0.7)return; // too short or too vertical
+    // Detail tabs swipe
+    if(typeof S!=='undefined'&&S.view==='detail'&&S.selectedId){
+      var tabEls=document.querySelectorAll('.tabs .tab');
+      if(tabEls.length<2)return;
+      var ids=[];tabEls.forEach(function(el){
+        var oc=el.getAttribute('onclick')||'';
+        var m=oc.match(/setDetailTab\('([^']+)'\)/);
+        if(m)ids.push(m[1]);
+      });
+      var ci=ids.indexOf(S.detailTab);
+      if(ci<0)return;
+      var ni=dx<0?ci+1:ci-1;
+      if(ni>=0&&ni<ids.length&&typeof setDetailTab==='function'){
+        setDetailTab(ids[ni]);
+      }
+      return;
+    }
+    // Main page swipe — edge swipe from left opens sidebar
+    if(dx>0&&startX<30&&typeof toggleSidebar==='function'&&!S.sidebarOpen){
+      toggleSidebar();
+    }
+  },{passive:true});
+}
+
+// ── 23. Radar chart animation ──
+function animateRadarChart(){
+  var poly=document.querySelector('.radar-polygon:not([data-radar-done])');
+  if(!poly)return;
+  poly.setAttribute('data-radar-done','1');
+  // Dots stagger
+  var dots=document.querySelectorAll('.radar-dot');
+  dots.forEach(function(d,i){
+    d.style.animationDelay=(0.6+i*0.12)+'s';
+  });
+}
+
+// ── 24. Unified modal helper ──
+function openModalUnified(title,bodyHtml,opts){
+  opts=opts||{};
+  var overlay=document.createElement('div');
+  overlay.className='modal-overlay-u';
+  overlay.onclick=function(e){if(e.target===overlay){overlay.remove();if(opts.onClose)opts.onClose();}};
+  var box=document.createElement('div');
+  box.className='modal-box-u';
+  if(opts.width)box.style.maxWidth=opts.width;
+  var hdr='<div class="modal-hdr-u"><h3>'+(opts.icon||'')+title+'</h3><button class="modal-close-u" onclick="this.closest(\'.modal-overlay-u\').remove()">✕</button></div>';
+  var body='<div class="modal-body-u">'+bodyHtml+'</div>';
+  var foot='';
+  if(opts.footer)foot='<div class="modal-foot-u">'+opts.footer+'</div>';
+  box.innerHTML=hdr+body+foot;
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+  // Close on Escape
+  var escH=function(e){if(e.key==='Escape'){overlay.remove();document.removeEventListener('keydown',escH);if(opts.onClose)opts.onClose();}};
+  document.addEventListener('keydown',escH);
+  return overlay;
+}
+
+// ── 25. Bottom tab bar active sync ──
+function syncBottomTabBar(){
+  var bar=document.getElementById('bottom-tab-bar');
+  if(!bar)return;
+  var btns=bar.querySelectorAll('.btab');
+  btns.forEach(function(b){
+    var pid=b.getAttribute('data-page');
+    b.classList.toggle('active',pid===S.page);
+  });
+}
+
 // ── Auto-run on render ──
 // Hook pour déclencher les animations après chaque render
 function afterRenderAnimations(){
@@ -835,6 +947,9 @@ function afterRenderAnimations(){
   try{triggerPageTransition();}catch(e){}
   try{staggerChildren();}catch(e){}
   try{morphSidebarPill();}catch(e){}
+  try{morphTabIndicator();}catch(e){}
+  try{syncBottomTabBar();}catch(e){}
+  try{initSwipeGestures();}catch(e){}
   try{initScrollReveal();}catch(e){}
   // Stop hero carousel if we left the Accueil page
   if(!document.querySelector('.hero-carousel')){
@@ -845,6 +960,7 @@ function afterRenderAnimations(){
     try{animateCounters();}catch(e){}
     try{animateHealthSubScores();}catch(e){}
     try{animateCACards();}catch(e){}
+    try{animateRadarChart();}catch(e){}
     try{attachCardTilt();}catch(e){}
     try{typewriterGreet();}catch(e){}
     try{startHeroCarousel();}catch(e){}

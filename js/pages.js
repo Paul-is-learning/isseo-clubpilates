@@ -189,17 +189,65 @@ function renderAccueil(){
     {l:'Prospection',v:_hs.prospection,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
     {l:'Alertes',v:_hs.alerts,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'}
   ];
-  h+='<div id="health-sub-scores" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">';
-  _hsPills.forEach(function(p,pi){
+  // Radar chart — 5 axes
+  var _rc=220,_rcx=110,_rcy=110,_rr=80;
+  var _axes=[
+    {l:'Studios',v:_hs.progress,a:-90},
+    {l:'Tâches',v:_hs.tasks,a:-90+72},
+    {l:'Financier',v:_hs.financial,a:-90+144},
+    {l:'Prospection',v:_hs.prospection,a:-90+216},
+    {l:'Alertes',v:_hs.alerts,a:-90+288}
+  ];
+  h+='<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">';
+  h+='<div class="radar-chart"><svg width="'+_rc+'" height="'+_rc+'" viewBox="0 0 '+_rc+' '+_rc+'">';
+  // Grid circles
+  for(var _gi=1;_gi<=4;_gi++){
+    var _gr=_rr*_gi/4;
+    var _gpts=[];
+    for(var _gj=0;_gj<5;_gj++){
+      var _ga=_axes[_gj].a*Math.PI/180;
+      _gpts.push((_rcx+_gr*Math.cos(_ga)).toFixed(1)+','+(_rcy+_gr*Math.sin(_ga)).toFixed(1));
+    }
+    h+='<polygon points="'+_gpts.join(' ')+'" fill="none" stroke="'+(S.darkMode?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)')+'" stroke-width="1"/>';
+  }
+  // Axis lines + labels
+  for(var _ai=0;_ai<5;_ai++){
+    var _aa=_axes[_ai].a*Math.PI/180;
+    var _ax2=_rcx+_rr*Math.cos(_aa),_ay2=_rcy+_rr*Math.sin(_aa);
+    h+='<line x1="'+_rcx+'" y1="'+_rcy+'" x2="'+_ax2.toFixed(1)+'" y2="'+_ay2.toFixed(1)+'" stroke="'+(S.darkMode?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.08)')+'" stroke-width="1"/>';
+    var _lx=_rcx+(_rr+16)*Math.cos(_aa),_ly=_rcy+(_rr+16)*Math.sin(_aa);
+    h+='<text class="radar-label" x="'+_lx.toFixed(1)+'" y="'+_ly.toFixed(1)+'" dominant-baseline="middle">'+_axes[_ai].l+'</text>';
+  }
+  // Data polygon
+  var _dpts=[];
+  for(var _di=0;_di<5;_di++){
+    var _daa=_axes[_di].a*Math.PI/180;
+    var _dr=_rr*(_axes[_di].v/100);
+    _dpts.push((_rcx+_dr*Math.cos(_daa)).toFixed(1)+','+(_rcy+_dr*Math.sin(_daa)).toFixed(1));
+  }
+  h+='<polygon class="radar-fill" points="'+_dpts.join(' ')+'" fill="'+_hs.color+'" stroke="none"/>';
+  h+='<polygon class="radar-polygon" points="'+_dpts.join(' ')+'" fill="none" stroke="'+_hs.color+'" stroke-width="2.5" stroke-linejoin="round"/>';
+  // Data dots
+  for(var _ddi=0;_ddi<5;_ddi++){
+    var _ddaa=_axes[_ddi].a*Math.PI/180;
+    var _ddr=_rr*(_axes[_ddi].v/100);
+    var _ddx=_rcx+_ddr*Math.cos(_ddaa),_ddy=_rcy+_ddr*Math.sin(_ddaa);
+    var _ddpc=_axes[_ddi].v>=80?'#0F6E56':_axes[_ddi].v>=60?'#3b82f6':_axes[_ddi].v>=40?'#f59e0b':'#ef4444';
+    h+='<circle class="radar-dot" cx="'+_ddx.toFixed(1)+'" cy="'+_ddy.toFixed(1)+'" r="4" fill="'+_ddpc+'" stroke="#fff" stroke-width="2"/>';
+  }
+  h+='</svg></div>';
+  // Legend pills
+  h+='<div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px">';
+  _hsPills.forEach(function(p){
     var pc=p.v>=80?'#0F6E56':p.v>=60?'#3b82f6':p.v>=40?'#f59e0b':'#ef4444';
-    var barW=Math.max(0,Math.min(p.v,100));
-    h+='<div class="hs-item" data-hs-idx="'+pi+'" data-hs-bar="'+barW+'" data-hs-color="'+pc+'" style="text-align:center;opacity:0;transform:translateY(16px)">';
-    h+='<div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:6px;color:#94a3b8">'+p.icon+'<span style="font-size:9px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase">'+p.l+'</span></div>';
-    h+='<div style="font-size:22px;font-weight:800;color:'+pc+';margin-bottom:5px;line-height:1" data-hs-val="'+p.v+'">0</div>';
-    h+='<div style="height:5px;background:#e8e8e0;border-radius:3px;overflow:hidden">';
-    h+='<div class="hs-bar" style="width:0%;height:100%;background:'+pc+';border-radius:3px;box-shadow:0 0 8px '+pc+'30;transition:width .6s cubic-bezier(.22,.8,.24,1)"></div></div>';
+    h+='<div style="display:flex;align-items:center;gap:8px;font-size:11px">';
+    h+='<div style="width:8px;height:8px;border-radius:50%;background:'+pc+';flex-shrink:0"></div>';
+    h+='<span style="color:#64748b;font-weight:500;min-width:72px">'+p.l+'</span>';
+    h+='<span style="font-weight:700;color:'+pc+'">'+p.v+'</span>';
+    h+='<div style="flex:1;height:4px;background:'+(S.darkMode?'#21262d':'#e8e8e0')+';border-radius:2px;overflow:hidden;min-width:40px"><div style="width:'+Math.min(p.v,100)+'%;height:100%;background:'+pc+';border-radius:2px;transition:width .8s cubic-bezier(.22,.8,.24,1)"></div></div>';
     h+='</div>';
   });
+  h+='</div>';
   h+='</div></div></div></div>';
 
   // ── Welcome banner — effet wahou ──
@@ -529,6 +577,7 @@ function openMyTask(sid,todoId){
 
 // ── PAGE: Projets (liste studios) ──────────────────────────────────────
 function renderProjets(){
+  if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div class="skeleton-page">'+skeletonGrid(6)+'</div>';
   var allIds=_getStudioIds();
   var isAdmin=!!S.profile&&!isViewer();
   var ids=allIds;
@@ -646,6 +695,7 @@ function _filterAndSortProspects(items){
 }
 
 function renderProspection(){
+  if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div class="skeleton-page">'+skeletonGrid(4)+'</div>';
   var h='';
   var tab=S.prospectTab||'pw';
   var tabInfo=PROSPECT_TABS.filter(function(t){return t.id===tab;})[0]||PROSPECT_TABS[0];
@@ -1544,6 +1594,7 @@ function setFpSimCohorte(cohorte,societe,nb){S.fpSimCohortes[cohorte][societe]=p
 function toggleEngExpand(k){S.engExpanded[k]=!S.engExpanded[k];render();}
 
 function renderPageEngagements(){
+  if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div class="skeleton-page">'+skeletonGrid(4)+'</div>';
   var allIds=_getStudioIds();
   var dm=S.darkMode;
   var cardBg=dm?'#161b22':'#fff';
@@ -2380,6 +2431,7 @@ function renderPageEngagements(){
 }
 
 function renderBPConsolide(){
+  if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div class="skeleton-page">'+skeletonGrid(4)+'</div>';
   var allIds=_getStudioIds();
   var h='';
   // Header
@@ -2709,6 +2761,7 @@ function renderBPConsolide(){
     h+='<th style="text-align:'+c.align+';padding:10px 12px;font-size:9px;text-transform:uppercase;letter-spacing:0.8px;color:'+(c.c||'#64748b')+';font-weight:700;white-space:nowrap;border-bottom:2px solid #e2e8f0;'+(isFirst?'border-radius:10px 0 0 0':'')+(isLast?'border-radius:0 10px 0 0':'')+'">'+c.l+'</th>';
   });
   h+='</tr></thead><tbody>';
+  var _mcMax=studioRows.reduce(function(m,r){return Math.max(m,Math.abs(r.ca1),Math.abs(r.ca3));},1);
   studioRows.forEach(function(r,ri){
     var hoverBg=S.darkMode?'#1c2128':'#f8fafc';
     h+='<tr style="border-bottom:1px solid #f1f5f9;transition:all .15s" onmouseenter="this.style.background=\''+hoverBg+'\'" onmouseleave="this.style.background=\'transparent\'">';
@@ -2718,8 +2771,10 @@ function renderBPConsolide(){
     h+=r.name+'</a></td>';
     h+='<td style="padding:10px 12px;font-size:10px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+(r.scenario||'BP de référence')+'">';
     h+='<span style="background:'+(r.scenario?'#eef2ff':'#f1f5f9')+';color:'+(r.scenario?'#4338ca':'#94a3b8')+';padding:3px 8px;border-radius:6px;font-size:9px;font-weight:600">'+(r.scenario||'BP réf.')+'</span></td>';
-    h+='<td style="padding:10px 12px;color:#0F6E56;font-weight:600;text-align:right;font-size:12px">'+fmt(r.ca1)+'</td>';
-    h+='<td style="padding:10px 12px;color:#6366f1;font-weight:600;text-align:right;font-size:12px">'+fmt(r.ca3)+'</td>';
+    var _mcW1=Math.round(Math.abs(r.ca1)/_mcMax*100);
+    h+='<td style="padding:10px 12px;color:#0F6E56;font-weight:600;text-align:right;font-size:12px"><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">'+fmt(r.ca1)+'<div style="width:40px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;flex-shrink:0"><div style="width:'+_mcW1+'%;height:100%;background:#0F6E56;border-radius:3px;transition:width .6s ease"></div></div></div></td>';
+    var _mcW3=Math.round(Math.abs(r.ca3)/_mcMax*100);
+    h+='<td style="padding:10px 12px;color:#6366f1;font-weight:600;text-align:right;font-size:12px"><div style="display:flex;align-items:center;gap:6px;justify-content:flex-end">'+fmt(r.ca3)+'<div style="width:40px;height:6px;background:#e2e8f0;border-radius:3px;overflow:hidden;flex-shrink:0"><div style="width:'+_mcW3+'%;height:100%;background:#6366f1;border-radius:3px;transition:width .6s ease"></div></div></div></td>';
     h+='<td style="padding:10px 12px;font-weight:600;text-align:right;font-size:12px;color:'+(r.ebitda1>=0?'#0F6E56':'#dc2626')+'">'+fmt(r.ebitda1)+'</td>';
     h+='<td style="padding:10px 12px;font-weight:600;text-align:right;font-size:12px;color:'+(r.ebitda3>=0?'#0F6E56':'#dc2626')+'">'+fmt(r.ebitda3)+'</td>';
     // Marge avec badge coloré
@@ -3041,7 +3096,13 @@ function renderDetail(){
   else if(S.detailTab==='ia')content=renderAI(s);
   var h='';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">';
-  h+='<div onclick="retourProjets()" style="background:#f5f5f0;border:1px solid #e8e8e0;cursor:pointer;font-size:12px;color:#555;padding:8px 16px;border-radius:8px;font-weight:600;display:inline-flex;align-items:center;gap:6px;position:relative;z-index:100;-webkit-tap-highlight-color:transparent" onmouseenter="this.style.background=S.darkMode?\'#30363d\':\'#e8e8e0\'" onmouseleave="this.style.background=S.darkMode?\'#21262d\':\'#f5f5f0\'">← Studios</div>';
+  h+='<nav class="breadcrumb" aria-label="Fil d\'Ariane">';
+  h+='<button class="bc-item" onclick="setPage(\'accueil\')" style="animation-delay:.05s">Accueil</button>';
+  h+='<span class="bc-chevron" style="animation-delay:.1s">›</span>';
+  h+='<button class="bc-item" onclick="retourProjets()" style="animation-delay:.15s">Studios</button>';
+  h+='<span class="bc-chevron" style="animation-delay:.2s">›</span>';
+  h+='<span class="bc-item current" style="animation-delay:.25s">'+s.name+'</span>';
+  h+='</nav>';
   h+='<div style="display:flex;align-items:center;gap:8px">';
   h+=renderSearchBar();
   h+=userAvatarWidget(S.profile);
@@ -6704,6 +6765,7 @@ function _collabStudioCounts(){
 
 // ── Rendu principal ────────────────────────────────────────────────────────
 function renderCollab(){
+  if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div class="skeleton-page">'+skeletonGrid(4)+'</div>';
   var f=_loadCollabFilters();
   var dm=S.darkMode;
   var myName=(S.profile&&S.profile.nom)||'';
