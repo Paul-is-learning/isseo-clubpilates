@@ -593,6 +593,22 @@ function _fIcon(name){
   return {bg:'#f1f5f9',color:'#64748b',label:ext.toUpperCase()||'?'};
 }
 
+function renderFichiersPage(){
+  var ids=_getStudioIds();
+  var totalFiles=0;
+  ids.forEach(function(id){totalFiles+=(S.files[id]||[]).length;});
+  var h='';
+  h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px">';
+  h+='<div><div style="font-size:20px;font-weight:700;color:#1a1a1a">Fichiers partag\u00e9s</div>';
+  h+='<div style="font-size:12px;color:#888;margin-top:2px">'+totalFiles+' document'+(totalFiles!==1?'s':'')+' \u00b7 '+ids.length+' studio'+(ids.length!==1?'s':'')+'</div></div>';
+  h+='<div style="display:flex;align-items:center;gap:8px">';
+  h+=renderSearchBar();
+  h+=userAvatarWidget(S.profile);
+  h+='</div></div>';
+  h+=renderFichiersHub();
+  return h;
+}
+
 function renderFichiersHub(){
   var ids=_getStudioIds();
   var totalFiles=0;
