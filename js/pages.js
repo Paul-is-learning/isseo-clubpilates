@@ -632,12 +632,16 @@ function renderFichiersHub(){
     ids.forEach(function(id,idx){
       var s=S.studios[id];
       var fc=(S.files[id]||[]).length;
+      var hasDrive=!!(s.driveUrl);
       var statColor=s.statut==='ouvert'?'#10b981':s.statut==='chantier'?'#f59e0b':s.statut==='preparation'?'#3b82f6':'#94a3b8';
       h+='<div class="folder-card studio-folder-card" onclick="setFileNav(\''+id+'\')" style="animation-delay:'+(idx*60)+'ms">';
       h+='<div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,'+statColor+'20,'+statColor+'08);display:flex;align-items:center;justify-content:center;margin-bottom:10px">';
       h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+statColor+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>';
       h+='<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px">'+s.name+'</div>';
-      h+='<div style="font-size:11px;color:#94a3b8">'+fc+' fichier'+(fc!==1?'s':'')+'</div>';
+      h+='<div style="display:flex;align-items:center;gap:6px;font-size:11px;color:#94a3b8">';
+      h+=fc+' fichier'+(fc!==1?'s':'');
+      if(hasDrive)h+=' <span style="color:#34a853;font-weight:600" title="Google Drive connect\u00e9">\u2713 Drive</span>';
+      h+='</div>';
       h+='</div>';
     });
     h+='</div>';
@@ -646,6 +650,22 @@ function renderFichiersHub(){
   } else if(!S.fileNav.folder){
     var sid=S.fileNav.studio;
     var sFiles=S.files[sid]||[];
+    var sDrive=S.studios[sid]&&S.studios[sid].driveUrl||'';
+    // Google Drive config bar
+    h+='<div class="drive-config-bar" style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,#f0f9ff,#eff6ff);border:1px solid #bfdbfe;border-radius:12px">';
+    h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/><path d="M4.5 12.5L12 2l7.5 10.5H4.5z" fill="#EA4335" opacity=".3"/></svg>';
+    if(sDrive){
+      h+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#1e40af">Google Drive connect\u00e9</div>';
+      h+='<div style="font-size:10px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sDrive+'</div></div>';
+      h+='<a href="'+sDrive+'" target="_blank" class="btn btn-primary" style="font-size:11px;text-decoration:none;padding:6px 14px;flex-shrink:0">Ouvrir Drive</a>';
+      if(!isViewer())h+='<button class="btn" style="font-size:10px;padding:4px 8px;color:#dc2626" onclick="event.stopPropagation();_setDriveUrl(\''+sid+'\',\'\')">Retirer</button>';
+    } else {
+      h+='<div style="flex:1"><div style="font-size:12px;font-weight:600;color:#1e40af">Connecter Google Drive</div>';
+      h+='<div style="font-size:10px;color:#64748b">Collez le lien d\'un dossier Drive partag\u00e9 pour stocker vos fichiers (15 Go gratuit)</div></div>';
+      if(!isViewer())h+='<button class="btn btn-primary" style="font-size:11px;padding:6px 14px;flex-shrink:0" onclick="event.stopPropagation();_promptDriveUrl(\''+sid+'\')">Configurer</button>';
+    }
+    h+='</div>';
+    // Sub-folders grid
     h+='<div class="folder-grid">';
     _FDEFS.forEach(function(fd,idx){
       var fc=sFiles.filter(function(f){return f.folder===fd.key;}).length;
@@ -667,15 +687,21 @@ function renderFichiersHub(){
     var fDef2=_FDEFS.filter(function(f){return f.key===folder;})[0];
     var fIdx=_FDEFS.indexOf(fDef2);
     var fColor=_FCOLORS[fIdx]||'#3b82f6';
-    // Upload button + drop zone
+    var sDrive2=S.studios[sid2]&&S.studios[sid2].driveUrl||'';
+    // Actions bar
+    h+='<div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">';
     if(!isViewer()){
-      h+='<div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">';
       h+='<label class="btn btn-primary" style="cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px">';
       h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
-      h+='Ajouter des fichiers<input type="file" style="display:none" onchange="uploadFichier(\''+sid2+'\',this,\''+folder+'\')" multiple/></label>';
-      h+='<div id="uprog-'+sid2+'" style="display:none;font-size:12px;color:'+fColor+'">Upload en cours...</div>';
-      h+='</div>';
+      h+='Ajouter<input type="file" style="display:none" onchange="uploadFichier(\''+sid2+'\',this,\''+folder+'\')" multiple/></label>';
     }
+    if(sDrive2){
+      h+='<a href="'+sDrive2+'" target="_blank" class="btn" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:6px;color:#1e40af;border-color:#bfdbfe;background:#eff6ff">';
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/></svg>';
+      h+='Ouvrir dans Drive</a>';
+    }
+    h+='<div id="uprog-'+sid2+'" style="display:none;font-size:12px;color:'+fColor+'">Upload en cours...</div>';
+    h+='</div>';
     // Drop zone
     h+='<div class="file-drop-zone" id="fdz-'+sid2+'" style="--fdz-color:'+fColor+'"';
     h+=' ondragover="event.preventDefault();this.classList.add(\'drag-over\')"';
@@ -705,6 +731,20 @@ function renderFichiersHub(){
   }
   h+='</div>';
   return h;
+}
+
+// Google Drive URL config
+function _promptDriveUrl(sid){
+  var url=prompt('Collez le lien du dossier Google Drive partag\u00e9 pour '+((S.studios[sid]&&S.studios[sid].name)||sid)+' :');
+  if(url===null)return;
+  _setDriveUrl(sid,url.trim());
+}
+async function _setDriveUrl(sid,url){
+  if(isViewer())return;
+  S.studios[sid].driveUrl=url||'';
+  await sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});
+  toast(url?'Drive connect\u00e9':'Drive retir\u00e9');
+  render();
 }
 
 // Drag & drop handler for file hub
