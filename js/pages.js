@@ -178,18 +178,17 @@ function renderAccueil(){
   // ── Health Score — Portfolio santé (white card + sequential reveal) ──
   var _hs=_computeHealthScore();
   h+='<div class="health-score-card">';
-  // Content
-  h+='<div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">';
+  // Title row — top left
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
+  h+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#94a3b8">Santé du portefeuille</span></div>';
+  h+='<div style="font-size:16px;font-weight:700;color:'+_hs.color+';margin-bottom:12px;line-height:1.3">'+_hs.summary+'</div>';
+  // Content row
+  h+='<div style="display:flex;align-items:center;gap:24px;flex-wrap:wrap">';
   // Gauge
   h+=_renderHealthGauge(_hs);
   // Right side
   h+='<div style="flex:1;min-width:200px">';
-  // Title row
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
-  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
-  h+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#94a3b8">Santé du portefeuille</span></div>';
-  // Summary text
-  h+='<div style="font-size:18px;font-weight:700;color:'+_hs.color+';margin-bottom:14px;line-height:1.3">'+_hs.summary+'</div>';
   // Sub-scores — sequential reveal animation
   var _hsPills=[
     {l:'Studios',v:_hs.progress,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
