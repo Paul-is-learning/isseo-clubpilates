@@ -57,23 +57,51 @@ function _computeHealthScore(){
 }
 
 function _renderHealthGauge(hs){
-  var w=200,h=110,r=70,sw=14;
-  var cx=w/2,cy=h-8;
+  var w=220,hh=130,r=85,sw=16;
+  var cx=w/2,cy=hh-10;
   var fullArc=Math.PI*r;
   var filled=fullArc*(hs.score/100);
   var offset=fullArc-filled;
+  // Needle angle: -180° (0%) to 0° (100%)
+  var needleAngle=-180+hs.score*1.8;
   var h2='<div class="health-gauge">';
-  h2+='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">';
-  h2+='<defs><linearGradient id="hg-grad" x1="0" y1="0" x2="1" y2="0">';
-  h2+='<stop offset="0%" stop-color="#dc2626"/><stop offset="30%" stop-color="#f59e0b"/><stop offset="60%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#0F6E56"/>';
-  h2+='</linearGradient></defs>';
+  h2+='<svg width="'+w+'" height="'+hh+'" viewBox="0 0 '+w+' '+hh+'">';
+  // Defs
+  h2+='<defs>';
+  h2+='<linearGradient id="hg-grad" x1="0" y1="0" x2="1" y2="0">';
+  h2+='<stop offset="0%" stop-color="#dc2626"/><stop offset="25%" stop-color="#f59e0b"/><stop offset="55%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#0F6E56"/>';
+  h2+='</linearGradient>';
+  h2+='<filter id="hg-glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  h2+='<filter id="hg-glow-lg"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
+  h2+='</defs>';
+  // Tick marks
+  for(var t=0;t<=10;t++){
+    var ta=-180+t*18;
+    var tr=ta*Math.PI/180;
+    var ir=r+12,or2=r+18;
+    var x1t=cx+ir*Math.cos(tr),y1t=cy+ir*Math.sin(tr);
+    var x2t=cx+or2*Math.cos(tr),y2t=cy+or2*Math.sin(tr);
+    h2+='<line x1="'+x1t.toFixed(1)+'" y1="'+y1t.toFixed(1)+'" x2="'+x2t.toFixed(1)+'" y2="'+y2t.toFixed(1)+'" stroke="rgba(255,255,255,0.15)" stroke-width="'+(t%5===0?'2':'1')+'"/>';
+  }
   // Background arc
-  h2+='<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="#e8e8e0" stroke-width="'+sw+'" stroke-linecap="round"/>';
-  // Filled arc
-  h2+='<path class="health-arc" d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="url(#hg-grad)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+fullArc.toFixed(1)+'" style="--health-full:'+fullArc.toFixed(1)+';--health-offset:'+offset.toFixed(1)+';stroke-dashoffset:'+offset.toFixed(1)+'"/>';
+  h2+='<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="'+sw+'" stroke-linecap="round"/>';
+  // Filled arc with glow
+  h2+='<path class="health-arc" d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="url(#hg-grad)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+fullArc.toFixed(1)+'" filter="url(#hg-glow)" style="--health-full:'+fullArc.toFixed(1)+';--health-offset:'+offset.toFixed(1)+';stroke-dashoffset:'+offset.toFixed(1)+'"/>';
+  // Needle
+  var nr=r-8;
+  var nRad=needleAngle*Math.PI/180;
+  var nx=cx+nr*Math.cos(nRad),ny=cy+nr*Math.sin(nRad);
+  h2+='<line class="health-needle" x1="'+cx+'" y1="'+cy+'" x2="'+nx.toFixed(1)+'" y2="'+ny.toFixed(1)+'" stroke="'+hs.color+'" stroke-width="2.5" stroke-linecap="round" filter="url(#hg-glow)" style="--needle-angle:'+needleAngle+'deg"/>';
+  h2+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+hs.color+'" filter="url(#hg-glow-lg)"/>';
+  h2+='<circle cx="'+cx+'" cy="'+cy+'" r="3" fill="#fff"/>';
+  // Endpoint dot on arc
+  var epRad=(-180+hs.score*1.8)*Math.PI/180;
+  var epx=cx+r*Math.cos(epRad),epy=cy+r*Math.sin(epRad);
+  h2+='<circle class="health-dot" cx="'+epx.toFixed(1)+'" cy="'+epy.toFixed(1)+'" r="4" fill="#fff" filter="url(#hg-glow-lg)" style="opacity:0;animation:healthDotPop .3s 1.4s cubic-bezier(.22,.8,.24,1) forwards"/>';
   h2+='</svg>';
-  h2+='<div class="health-score-num"><span class="counter-anim" data-target="'+hs.score+'" data-format="int" data-duration="1400">0</span></div>';
-  h2+='<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:10px;color:#94a3b8;font-weight:500">/100</div>';
+  // Score number
+  h2+='<div class="health-score-num" style="color:'+hs.color+'"><span class="counter-anim" data-target="'+hs.score+'" data-format="int" data-duration="1400">0</span></div>';
+  h2+='<div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,0.35);font-weight:500">/100</div>';
   h2+='</div>';
   return h2;
 }
@@ -138,28 +166,46 @@ function renderAccueil(){
   h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
   h+='</div>';
 
-  // ── Health Score — Portfolio santé ──
+  // ── Health Score — Portfolio santé (premium dark hero) ──
   var _hs=_computeHealthScore();
-  h+='<div class="health-score-card">';
+  h+='<div class="health-score-card" style="position:relative;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#0a1628 0%,#0f1f3d 40%,#162d54 100%);padding:28px 32px;margin-bottom:18px;color:#fff;border:1px solid rgba(255,255,255,0.06)">';
+  // Decorative orbs
+  h+='<div style="position:absolute;top:-30px;right:-20px;width:160px;height:160px;background:radial-gradient(circle,'+_hs.color+'18,transparent 70%);border-radius:50%;pointer-events:none"></div>';
+  h+='<div style="position:absolute;bottom:-40px;left:15%;width:140px;height:140px;background:radial-gradient(circle,rgba(99,102,241,0.08),transparent 70%);border-radius:50%;pointer-events:none"></div>';
+  // Dot grid
+  h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:20px 20px;pointer-events:none"></div>';
+  // Content
+  h+='<div style="position:relative;z-index:1;display:flex;align-items:center;gap:28px;flex-wrap:wrap">';
+  // Gauge
   h+=_renderHealthGauge(_hs);
-  h+='<div style="flex:1;min-width:0">';
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
-  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
-  h+='<span style="font-size:15px;font-weight:700;color:#1a1a1a">Santé du portefeuille</span></div>';
-  h+='<div style="font-size:13px;font-weight:500;color:'+_hs.color+';margin-bottom:10px">'+_hs.summary+'</div>';
-  h+='<div style="display:flex;flex-wrap:wrap;gap:8px">';
+  // Right side
+  h+='<div style="flex:1;min-width:200px">';
+  // Title row
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
+  h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
+  h+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.5)">Santé du portefeuille</span></div>';
+  // Summary text
+  h+='<div style="font-size:18px;font-weight:700;color:'+_hs.color+';margin-bottom:14px;line-height:1.3">'+_hs.summary+'</div>';
+  // Sub-scores as mini progress bars
   var _hsPills=[
-    {l:'Studios',v:_hs.progress,icon:'📊'},
-    {l:'Tâches',v:_hs.tasks,icon:'✅'},
-    {l:'Financier',v:_hs.financial,icon:'💹'},
-    {l:'Prospection',v:_hs.prospection,icon:'🔍'},
-    {l:'Alertes',v:_hs.alerts,icon:'🔔'}
+    {l:'Studios',v:_hs.progress,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
+    {l:'Tâches',v:_hs.tasks,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
+    {l:'Financier',v:_hs.financial,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
+    {l:'Prospection',v:_hs.prospection,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
+    {l:'Alertes',v:_hs.alerts,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'}
   ];
+  h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">';
   _hsPills.forEach(function(p){
-    var pc=p.v>=80?'#0F6E56':p.v>=60?'#3b82f6':p.v>=40?'#f59e0b':'#dc2626';
-    h+='<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:'+pc+'10;font-size:10px;font-weight:600;color:'+pc+'" title="'+p.l+': '+p.v+'/100">'+p.icon+' '+p.l+' <b>'+p.v+'</b></span>';
+    var pc=p.v>=80?'#22c55e':p.v>=60?'#3b82f6':p.v>=40?'#f59e0b':'#ef4444';
+    var barW=Math.max(0,Math.min(p.v,100));
+    h+='<div style="text-align:center">';
+    h+='<div style="display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:4px;color:rgba(255,255,255,0.45)">'+p.icon+'<span style="font-size:9px;font-weight:600;letter-spacing:0.3px">'+p.l+'</span></div>';
+    h+='<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:3px">';
+    h+='<div class="health-sub-bar" style="width:'+barW+'%;height:100%;background:'+pc+';border-radius:2px;box-shadow:0 0 6px '+pc+'40"></div></div>';
+    h+='<div style="font-size:11px;font-weight:700;color:'+pc+'">'+p.v+'</div>';
+    h+='</div>';
   });
-  h+='</div></div></div>';
+  h+='</div></div></div></div>';
 
   // ── Welcome banner — effet wahou ──
   var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
