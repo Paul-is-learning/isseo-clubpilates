@@ -311,7 +311,14 @@ function composeTaskEmail(opts: {
   <tr><td align="center">
     <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;background:#ffffff;border-radius:14px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
       <!-- Header -->
-      <tr><td style="background:linear-gradient(135deg,#1a3a6b 0%,#2e5a9e 100%);padding:26px 32px">
+      <tr><td style="background:linear-gradient(135deg,#1a3a6b 0%,#2e5a9e 100%);padding:24px 32px 22px">
+        <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:16px">
+          <tr>
+            <td style="vertical-align:middle"><img src="${appUrl}/logo-white.png" alt="Isseo" height="30" style="display:block;height:30px;width:auto;border:0"></td>
+            <td style="vertical-align:middle;padding:0 12px;color:rgba(255,255,255,0.45);font-size:16px;font-weight:300;font-family:Helvetica,Arial,sans-serif">&times;</td>
+            <td style="vertical-align:middle"><img src="${appUrl}/logo-cp.webp" alt="Club Pilates" height="22" style="display:block;height:22px;width:auto;border:0;filter:brightness(0) invert(1)"></td>
+          </tr>
+        </table>
         <div style="color:#ffffff;font-size:12px;font-weight:600;letter-spacing:1px;opacity:0.85">ISSEO · ${esc(studioName)}</div>
         <div style="color:#ffffff;font-size:17px;font-weight:600;margin-top:6px">${esc(headline)}</div>
       </td></tr>
