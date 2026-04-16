@@ -1,7 +1,7 @@
 var S={
   user:null,profile:null,_dataLoaded:false,
   studios:JSON.parse(JSON.stringify(INIT)),
-  files:{},depenses:{},messages:{},adherents:{},
+  files:{},fileNav:{studio:null,folder:null},depenses:{},messages:{},adherents:{},
   topics:{},todos:{},         // forum topics + todo par studio
   msgSubTab:'discussions',    // 'discussions' | 'taches'
   openTopicId:null,           // topic ouvert (vue fil)

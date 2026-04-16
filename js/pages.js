@@ -567,7 +567,152 @@ function renderMyTasks(allIds){
     }
   }
   h+='</div>';
+  // ── Fichiers partagés hub ──
+  h+=renderFichiersHub();
   return h;
+}
+
+// ── Fichiers partagés — Hub centralisé sur l'accueil ──
+var _FDEFS=[
+  {key:'contrats',label:'Contrats & Baux',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>',desc:'Bail, contrat franchise, avenants'},
+  {key:'juridique',label:'Juridique & Admin',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>',desc:'KBis, statuts, assurances, licences'},
+  {key:'travaux',label:'Travaux & Am\u00e9nagement',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="6" width="20" height="12" rx="2"/><path d="M12 12h.01"/><path d="M17 12h.01"/><path d="M7 12h.01"/></svg>',desc:'Plans, devis, photos chantier'},
+  {key:'rh',label:'RH & \u00c9quipe',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',desc:'Contrats, planning, formations'},
+  {key:'marketing',label:'Marketing & Com',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>',desc:'Supports com, photos, flyers'},
+  {key:'finances',label:'Finances & Compta',icon:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>',desc:'Bilans, relev\u00e9s, factures'}
+];
+var _FCOLORS=['#3b82f6','#8b5cf6','#f59e0b','#10b981','#ef4444','#06b6d4'];
+
+function _fIcon(name){
+  var ext=(name||'').split('.').pop().toLowerCase();
+  if(ext==='pdf')return {bg:'#fee2e2',color:'#dc2626',label:'PDF'};
+  if(ext==='xls'||ext==='xlsx'||ext==='csv')return {bg:'#d1fae5',color:'#059669',label:ext.toUpperCase()};
+  if(ext==='doc'||ext==='docx')return {bg:'#dbeafe',color:'#2563eb',label:'DOC'};
+  if(ext==='ppt'||ext==='pptx')return {bg:'#fef3c7',color:'#d97706',label:'PPT'};
+  if(['jpg','jpeg','png','gif','webp','svg'].indexOf(ext)>=0)return {bg:'#e0e7ff',color:'#4f46e5',label:'IMG'};
+  return {bg:'#f1f5f9',color:'#64748b',label:ext.toUpperCase()||'?'};
+}
+
+function renderFichiersHub(){
+  var ids=_getStudioIds();
+  var totalFiles=0;
+  ids.forEach(function(id){totalFiles+=(S.files[id]||[]).length;});
+  var h='<div class="fichiers-hub reveal">';
+  // Header
+  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">';
+  h+='<div style="display:flex;align-items:center;gap:10px">';
+  h+='<div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#3b82f6,#6366f1);display:flex;align-items:center;justify-content:center"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>';
+  h+='<div><div style="font-size:15px;font-weight:700;color:#1a1a1a">Fichiers partag\u00e9s</div>';
+  h+='<div style="font-size:11px;color:#94a3b8">'+totalFiles+' document'+(totalFiles!==1?'s':'')+' au total</div></div></div>';
+  // Back button when drilling down
+  if(S.fileNav.studio){
+    h+='<button onclick="setFileNav(null)" class="btn" style="font-size:12px;display:flex;align-items:center;gap:4px"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg>Retour</button>';
+  }
+  h+='</div>';
+  // Breadcrumb
+  if(S.fileNav.studio){
+    var sName=S.studios[S.fileNav.studio]?S.studios[S.fileNav.studio].name:S.fileNav.studio;
+    h+='<div style="display:flex;align-items:center;gap:6px;font-size:11px;margin-bottom:14px;color:#94a3b8;flex-wrap:wrap">';
+    h+='<span style="cursor:pointer;color:#3b82f6;font-weight:500" onclick="setFileNav(null)">Tous les studios</span>';
+    h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+    if(S.fileNav.folder){
+      h+='<span style="cursor:pointer;color:#3b82f6;font-weight:500" onclick="setFileNav(\''+S.fileNav.studio+'\')">'+sName+'</span>';
+      h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>';
+      var fDef=_FDEFS.filter(function(f){return f.key===S.fileNav.folder;})[0];
+      h+='<span style="font-weight:600;color:#1a1a1a">'+(fDef?fDef.label:S.fileNav.folder)+'</span>';
+    } else {
+      h+='<span style="font-weight:600;color:#1a1a1a">'+sName+'</span>';
+    }
+    h+='</div>';
+  }
+
+  // ── Niveau 0 : grille de studios ──
+  if(!S.fileNav.studio){
+    h+='<div class="folder-grid">';
+    ids.forEach(function(id,idx){
+      var s=S.studios[id];
+      var fc=(S.files[id]||[]).length;
+      var statColor=s.statut==='ouvert'?'#10b981':s.statut==='chantier'?'#f59e0b':s.statut==='preparation'?'#3b82f6':'#94a3b8';
+      h+='<div class="folder-card studio-folder-card" onclick="setFileNav(\''+id+'\')" style="animation-delay:'+(idx*60)+'ms">';
+      h+='<div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,'+statColor+'20,'+statColor+'08);display:flex;align-items:center;justify-content:center;margin-bottom:10px">';
+      h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+statColor+'" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></div>';
+      h+='<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px">'+s.name+'</div>';
+      h+='<div style="font-size:11px;color:#94a3b8">'+fc+' fichier'+(fc!==1?'s':'')+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+
+  // ── Niveau 1 : 6 sous-dossiers d'un studio ──
+  } else if(!S.fileNav.folder){
+    var sid=S.fileNav.studio;
+    var sFiles=S.files[sid]||[];
+    h+='<div class="folder-grid">';
+    _FDEFS.forEach(function(fd,idx){
+      var fc=sFiles.filter(function(f){return f.folder===fd.key;}).length;
+      h+='<div class="folder-card" onclick="setFileNav(\''+sid+'\',\''+fd.key+'\')" style="animation-delay:'+(idx*60)+'ms">';
+      h+='<div style="width:40px;height:40px;border-radius:12px;background:'+_FCOLORS[idx]+'12;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:'+_FCOLORS[idx]+'">'+fd.icon+'</div>';
+      h+='<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px">'+fd.label+'</div>';
+      h+='<div style="font-size:11px;color:#94a3b8">'+fd.desc+'</div>';
+      if(fc>0)h+='<div style="margin-top:6px;font-size:10px;font-weight:700;color:'+_FCOLORS[idx]+';background:'+_FCOLORS[idx]+'10;padding:2px 8px;border-radius:10px;display:inline-block">'+fc+' fichier'+(fc!==1?'s':'')+'</div>';
+      h+='</div>';
+    });
+    h+='</div>';
+
+  // ── Niveau 2 : fichiers d'un dossier ──
+  } else {
+    var sid2=S.fileNav.studio;
+    var folder=S.fileNav.folder;
+    var allF=S.files[sid2]||[];
+    var filtered=allF.filter(function(f){return f.folder===folder;});
+    var fDef2=_FDEFS.filter(function(f){return f.key===folder;})[0];
+    var fIdx=_FDEFS.indexOf(fDef2);
+    var fColor=_FCOLORS[fIdx]||'#3b82f6';
+    // Upload button + drop zone
+    if(!isViewer()){
+      h+='<div style="display:flex;gap:10px;margin-bottom:14px;align-items:center">';
+      h+='<label class="btn btn-primary" style="cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px">';
+      h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+      h+='Ajouter des fichiers<input type="file" style="display:none" onchange="uploadFichier(\''+sid2+'\',this,\''+folder+'\')" multiple/></label>';
+      h+='<div id="uprog-'+sid2+'" style="display:none;font-size:12px;color:'+fColor+'">Upload en cours...</div>';
+      h+='</div>';
+    }
+    // Drop zone
+    h+='<div class="file-drop-zone" id="fdz-'+sid2+'" style="--fdz-color:'+fColor+'"';
+    h+=' ondragover="event.preventDefault();this.classList.add(\'drag-over\')"';
+    h+=' ondragleave="this.classList.remove(\'drag-over\')"';
+    h+=' ondrop="event.preventDefault();this.classList.remove(\'drag-over\');_handleDrop(event,\''+sid2+'\',\''+folder+'\')">';
+    if(filtered.length===0){
+      h+='<div class="file-empty-state">';
+      h+='<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="'+fColor+'" stroke-width="1.2" style="opacity:.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
+      h+='<div style="font-size:13px;font-weight:600;color:#64748b;margin-top:10px">Aucun fichier</div>';
+      h+='<div style="font-size:11px;color:#94a3b8;margin-top:4px">Glissez vos fichiers ici ou cliquez "Ajouter"</div>';
+      h+='</div>';
+    } else {
+      filtered.forEach(function(f,fi){
+        var fi2=_fIcon(f.name);
+        h+='<div class="fh-file-row" style="animation-delay:'+(fi*40)+'ms">';
+        h+='<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">';
+        h+='<div style="width:36px;height:36px;border-radius:8px;background:'+fi2.bg+';color:'+fi2.color+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">'+fi2.label+'</div>';
+        h+='<div style="min-width:0"><div style="font-size:12px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.name+'</div>';
+        h+='<div style="font-size:10px;color:#94a3b8;margin-top:1px">'+f.date+' \u00b7 '+f.size+'</div></div></div>';
+        h+='<div style="display:flex;gap:6px;flex-shrink:0">';
+        h+='<a href="'+f.url+'" target="_blank" class="btn" style="font-size:11px;text-decoration:none;padding:4px 10px">Ouvrir</a>';
+        if(!isViewer())h+='<button class="btn" style="font-size:11px;color:#dc2626;padding:4px 8px" onclick="deleteFichier(\''+sid2+'\',\''+f.path+'\')">Supprimer</button>';
+        h+='</div></div>';
+      });
+    }
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
+// Drag & drop handler for file hub
+function _handleDrop(ev,sid,folder){
+  if(isViewer())return;
+  var dt=ev.dataTransfer;if(!dt||!dt.files||!dt.files.length)return;
+  var fakeInput={files:dt.files};
+  uploadFichier(sid,fakeInput,folder);
 }
 
 // Ouvre la tâche dans la page studio (onglet Workflow)

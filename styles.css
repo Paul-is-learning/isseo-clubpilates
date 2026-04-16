@@ -302,6 +302,26 @@ body.dark .health-score-card .health-score-num{text-shadow:0 0 20px currentColor
 .ca-hero-card.ca-animated .counter-anim{animation:caDigitGlow 1.2s .4s ease-out both}
 @keyframes caDigitGlow{0%{text-shadow:0 0 0 transparent}40%{text-shadow:0 0 18px rgba(255,255,255,0.5)}100%{text-shadow:0 0 0 transparent}}
 
+/* ── Fichiers partagés hub ── */
+.fichiers-hub{background:#fff;border:1px solid #e8e8e0;border-radius:20px;padding:24px 28px;margin-top:22px;box-shadow:0 1px 4px rgba(0,0,0,0.03)}
+.folder-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:768px){.folder-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:480px){.folder-grid{grid-template-columns:1fr}}
+.folder-card{background:#fafaf6;border:1px solid #efefe8;border-radius:14px;padding:18px;cursor:pointer;transition:all .25s cubic-bezier(.22,.8,.24,1);opacity:0;animation:folderCardIn .4s cubic-bezier(.22,.8,.24,1) forwards}
+.folder-card:hover{transform:translateY(-3px);box-shadow:0 8px 24px rgba(0,0,0,0.06);border-color:#ddd;background:#fff}
+@keyframes folderCardIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+.file-drop-zone{min-height:120px;border:2px dashed #e0e0d8;border-radius:14px;padding:16px;transition:all .25s ease}
+.file-drop-zone.drag-over{border-color:var(--fdz-color,#3b82f6);background:color-mix(in srgb,var(--fdz-color,#3b82f6) 4%,transparent);transform:scale(1.005)}
+.file-empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px 0}
+.fh-file-row{display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-radius:10px;transition:background .15s;opacity:0;animation:folderCardIn .3s ease forwards}
+.fh-file-row:hover{background:#f5f5ed}
+.fh-file-row+.fh-file-row{margin-top:4px}
+body.dark .fichiers-hub{background:#161b22;border-color:#30363d}
+body.dark .folder-card{background:#1c2128;border-color:#30363d}
+body.dark .folder-card:hover{background:#21262d;border-color:#444c56}
+body.dark .file-drop-zone{border-color:#30363d}
+body.dark .fh-file-row:hover{background:#1c2128}
+
 /* ── Scroll reveal ── */
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.22,.8,.24,1),transform .6s cubic-bezier(.22,.8,.24,1)}
 .reveal-in{opacity:1;transform:translateY(0)}

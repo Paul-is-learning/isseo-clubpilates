@@ -556,5 +556,6 @@ function retourProjets(){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())disca
 function retourAccueil(){retourProjets();}
 function setPage(p){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();window._prevPage=S.page;S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';saveNavState();render();try{var _btb=document.getElementById('bottom-tab-bar');if(_btb){var _bs=_btb.querySelectorAll('.btab');_bs.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-page')===p);});}}catch(e){}}
 function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;var sb=document.querySelector('.sidebar');var ov=document.getElementById('sidebar-overlay');if(sb)sb.classList.toggle('open',S.sidebarOpen);if(ov)ov.classList.toggle('show',S.sidebarOpen);}
+function setFileNav(studio,folder){S.fileNav={studio:studio||null,folder:folder||null};render();}
 function toggleDarkMode(){S.darkMode=!S.darkMode;try{localStorage.setItem('isseo_darkMode',S.darkMode);}catch(e){}document.body.classList.toggle('dark',S.darkMode);render();}
 

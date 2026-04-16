@@ -345,7 +345,7 @@ function saisirAdherentLive(sid,year,moisIdx,val){
   markDirty('adherents',sid);
 }
 
-async function uploadFichier(sid,input){
+async function uploadFichier(sid,input,folder){
   if(isViewer())return;
   var files=Array.from(input.files);if(!files.length)return;
   var prog=document.getElementById('uprog-'+sid);if(prog)prog.style.display='block';
@@ -359,7 +359,7 @@ async function uploadFichier(sid,input){
     if(!ur.error){
       var pu=sb.storage.from('studio-files').getPublicUrl(path);
       var size=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' Mo':(file.size/1024).toFixed(0)+' Ko';
-      cur.push({name:file.name,path:path,url:pu.data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size:size});
+      cur.push({name:file.name,path:path,url:pu.data.publicUrl,date:new Date().toLocaleDateString('fr-FR'),size:size,folder:folder||null});
       added++;
     }
   }
