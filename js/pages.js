@@ -57,7 +57,7 @@ function _computeHealthScore(){
 }
 
 function _renderHealthGauge(hs){
-  var w=220,hh=130,r=85,sw=16;
+  var w=180,hh=105,r=68,sw=13;
   var cx=w/2,cy=hh-10;
   var fullArc=Math.PI*r;
   var filled=fullArc*(hs.score/100);
@@ -198,7 +198,7 @@ function renderAccueil(){
     {l:'Alertes',v:_hs.alerts,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'}
   ];
   // Radar chart — 5 axes
-  var _rc=220,_rcx=110,_rcy=110,_rr=80;
+  var _rc=180,_rcx=90,_rcy=90,_rr=65;
   var _axes=[
     {l:'Studios',v:_hs.progress,a:-90},
     {l:'Tâches',v:_hs.tasks,a:-90+72},
