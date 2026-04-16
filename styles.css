@@ -281,6 +281,12 @@ body.dark .skeleton{background:linear-gradient(90deg,#1c2128 0%,#262d36 50%,#1c2
 @keyframes healthArcDraw{from{stroke-dashoffset:var(--health-full)}to{stroke-dashoffset:var(--health-offset)}}
 .health-arc{animation:healthArcDraw 1.2s .3s cubic-bezier(.22,.8,.24,1) both}
 @keyframes healthDotPop{from{opacity:0;r:0}to{opacity:1;r:4}}
+.gauge-cycle-label{font-size:10px;text-transform:uppercase;letter-spacing:1.5px;color:#94a3b8;font-weight:600;text-align:center;margin-top:6px;transition:opacity .2s ease;line-height:1}
+.gauge-cycle-dots{display:flex;justify-content:center;gap:5px;margin-top:8px}
+.gauge-cycle-dot{width:6px;height:6px;border-radius:50%;background:#ddd;cursor:pointer;transition:background .3s,transform .3s}
+.gauge-cycle-dot.active{background:var(--gc-color,#1a3a6b);transform:scale(1.35);box-shadow:0 0 6px var(--gc-color,#1a3a6b)}
+body.dark .gauge-cycle-dot{background:#30363d}
+body.dark .gauge-cycle-label{color:#8b949e}
 .hs-item{transition:opacity .5s cubic-bezier(.22,.8,.24,1),transform .5s cubic-bezier(.22,.8,.24,1)}
 body.dark .health-score-card{background:#161b22;border-color:#30363d}
 body.dark .health-score-card .health-score-num{text-shadow:0 0 20px currentColor}

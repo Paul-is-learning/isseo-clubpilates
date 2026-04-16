@@ -62,11 +62,19 @@ function _renderHealthGauge(hs){
   var fullArc=Math.PI*r;
   var filled=fullArc*(hs.score/100);
   var offset=fullArc-filled;
-  // Needle angle: -180° (0%) to 0° (100%)
   var needleAngle=-180+hs.score*1.8;
-  var h2='<div class="health-gauge">';
+  // Build metrics array for cycling
+  function _gcColor(v){return v>=80?'#0F6E56':v>=60?'#3b82f6':v>=40?'#f59e0b':'#dc2626';}
+  var _gcMetrics=[
+    {l:'Global',v:hs.score,c:hs.color},
+    {l:'Studios',v:hs.progress,c:_gcColor(hs.progress)},
+    {l:'T\u00e2ches',v:hs.tasks,c:_gcColor(hs.tasks)},
+    {l:'Financier',v:hs.financial,c:_gcColor(hs.financial)},
+    {l:'Prospection',v:hs.prospection,c:_gcColor(hs.prospection)},
+    {l:'Alertes',v:hs.alerts,c:_gcColor(hs.alerts)}
+  ];
+  var h2='<div class="health-gauge" data-hs-metrics=\''+JSON.stringify(_gcMetrics)+'\' data-hs-r="'+r+'" data-hs-cx="'+cx+'" data-hs-cy="'+cy+'">';
   h2+='<svg width="'+w+'" height="'+hh+'" viewBox="0 0 '+w+' '+hh+'">';
-  // Defs
   h2+='<defs>';
   h2+='<linearGradient id="hg-grad" x1="0" y1="0" x2="1" y2="0">';
   h2+='<stop offset="0%" stop-color="#dc2626"/><stop offset="25%" stop-color="#f59e0b"/><stop offset="55%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#0F6E56"/>';
@@ -74,7 +82,6 @@ function _renderHealthGauge(hs){
   h2+='<filter id="hg-glow"><feGaussianBlur stdDeviation="3" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
   h2+='<filter id="hg-glow-lg"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>';
   h2+='</defs>';
-  // Tick marks
   for(var t=0;t<=10;t++){
     var ta=-180+t*18;
     var tr=ta*Math.PI/180;
@@ -83,25 +90,27 @@ function _renderHealthGauge(hs){
     var x2t=cx+or2*Math.cos(tr),y2t=cy+or2*Math.sin(tr);
     h2+='<line x1="'+x1t.toFixed(1)+'" y1="'+y1t.toFixed(1)+'" x2="'+x2t.toFixed(1)+'" y2="'+y2t.toFixed(1)+'" stroke="rgba(0,0,0,0.08)" stroke-width="'+(t%5===0?'2':'1')+'"/>';
   }
-  // Background arc
   h2+='<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="#e8e8e0" stroke-width="'+sw+'" stroke-linecap="round"/>';
-  // Filled arc with glow
   h2+='<path class="health-arc" d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="url(#hg-grad)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+fullArc.toFixed(1)+'" filter="url(#hg-glow)" style="--health-full:'+fullArc.toFixed(1)+';--health-offset:'+offset.toFixed(1)+';stroke-dashoffset:'+offset.toFixed(1)+'"/>';
-  // Needle
   var nr=r-8;
   var nRad=needleAngle*Math.PI/180;
   var nx=cx+nr*Math.cos(nRad),ny=cy+nr*Math.sin(nRad);
-  h2+='<line class="health-needle" x1="'+cx+'" y1="'+cy+'" x2="'+nx.toFixed(1)+'" y2="'+ny.toFixed(1)+'" stroke="'+hs.color+'" stroke-width="2.5" stroke-linecap="round" filter="url(#hg-glow)" style="--needle-angle:'+needleAngle+'deg"/>';
-  h2+='<circle cx="'+cx+'" cy="'+cy+'" r="5" fill="'+hs.color+'" filter="url(#hg-glow-lg)"/>';
+  h2+='<line class="health-needle" x1="'+cx+'" y1="'+cy+'" x2="'+nx.toFixed(1)+'" y2="'+ny.toFixed(1)+'" stroke="'+hs.color+'" stroke-width="2.5" stroke-linecap="round" filter="url(#hg-glow)"/>';
+  h2+='<circle class="hg-hub" cx="'+cx+'" cy="'+cy+'" r="5" fill="'+hs.color+'" filter="url(#hg-glow-lg)"/>';
   h2+='<circle cx="'+cx+'" cy="'+cy+'" r="3" fill="#fff"/>';
-  // Endpoint dot on arc
   var epRad=(-180+hs.score*1.8)*Math.PI/180;
   var epx=cx+r*Math.cos(epRad),epy=cy+r*Math.sin(epRad);
   h2+='<circle class="health-dot" cx="'+epx.toFixed(1)+'" cy="'+epy.toFixed(1)+'" r="4" fill="#fff" filter="url(#hg-glow-lg)" style="opacity:0;animation:healthDotPop .3s 1.4s cubic-bezier(.22,.8,.24,1) forwards"/>';
   h2+='</svg>';
-  // Score number
-  h2+='<div class="health-score-num" style="color:'+hs.color+'"><span class="counter-anim" data-target="'+hs.score+'" data-format="int" data-duration="1400">0</span></div>';
+  h2+='<div class="health-score-num" style="color:'+hs.color+'"><span class="gc-value">'+hs.score+'</span></div>';
   h2+='<div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;color:#94a3b8;font-weight:500">/100</div>';
+  h2+='</div>';
+  // Cycle label + dots
+  h2+='<div class="gauge-cycle-label">Global</div>';
+  h2+='<div class="gauge-cycle-dots">';
+  for(var gi=0;gi<_gcMetrics.length;gi++){
+    h2+='<div class="gauge-cycle-dot'+(gi===0?' active':'')+'" data-gc-idx="'+gi+'" style="'+(gi===0?'--gc-color:'+_gcMetrics[gi].c:'')+'"></div>';
+  }
   h2+='</div>';
   return h2;
 }
@@ -253,7 +262,7 @@ function renderAccueil(){
   // ── Welcome banner — effet wahou ──
   var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
   var _caTotal=allIds.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0);
-  h+='<div class="hero-banner" style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);border-radius:20px;padding:32px 34px 28px;margin-bottom:22px;color:#fff;overflow:hidden">';
+  h+='<div class="hero-banner" style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);border-radius:20px;padding:22px 28px 18px;margin-bottom:18px;color:#fff;overflow:hidden">';
   // Shine sweep
   h+='<div class="hero-shine"></div>';
   // Éléments décoratifs — orbes lumineuses

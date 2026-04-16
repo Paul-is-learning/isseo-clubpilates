@@ -19,19 +19,19 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  './js/constants.js?v=20260416ux10',
-  './js/animations.js?v=20260416ux10',
-  './js/state.js?v=20260416ux10',
-  './js/notifications.js?v=20260416ux10',
-  './js/auth.js?v=20260416ux10',
-  './js/pages.js?v=20260416ux10',
-  './js/map.js?v=20260416ux10',
-  './js/utils.js?v=20260416ux10',
-  './js/exports.js?v=20260416ux10',
-  './js/simulator.js?v=20260416ux10',
-  './js/chat.js?v=20260416ux10',
-  './js/sync.js?v=20260416ux10',
-  './js/app.js?v=20260416ux10'
+  './js/constants.js?v=20260416gc1',
+  './js/animations.js?v=20260416gc1',
+  './js/state.js?v=20260416gc1',
+  './js/notifications.js?v=20260416gc1',
+  './js/auth.js?v=20260416gc1',
+  './js/pages.js?v=20260416gc1',
+  './js/map.js?v=20260416gc1',
+  './js/utils.js?v=20260416gc1',
+  './js/exports.js?v=20260416gc1',
+  './js/simulator.js?v=20260416gc1',
+  './js/chat.js?v=20260416gc1',
+  './js/sync.js?v=20260416gc1',
+  './js/app.js?v=20260416gc1'
 ];
 
 // ── Install : pré-cache l'app shell ──────────────────────────────────────────

@@ -700,6 +700,109 @@ function startHeroCarousel(){
   resetTimer();
 }
 
+// ── 17b. Gauge metric cycling ──
+var _gaugeCycleTimer=null;
+function startGaugeCycle(){
+  var gauge=document.querySelector('.health-gauge[data-hs-metrics]');
+  if(!gauge||gauge._gcBound)return;
+  gauge._gcBound=true;
+  var metrics;
+  try{metrics=JSON.parse(gauge.getAttribute('data-hs-metrics'));}catch(e){return;}
+  if(!metrics||!metrics.length)return;
+  var r=parseFloat(gauge.getAttribute('data-hs-r'))||85;
+  var cx=parseFloat(gauge.getAttribute('data-hs-cx'))||110;
+  var cy=parseFloat(gauge.getAttribute('data-hs-cy'))||120;
+  var fullArc=Math.PI*r;
+  var nr=r-8;
+  var svg=gauge.querySelector('svg');
+  var arc=gauge.querySelector('.health-arc');
+  var needle=gauge.querySelector('.health-needle');
+  var hub=gauge.querySelector('.hg-hub');
+  var dot=gauge.querySelector('.health-dot');
+  var valEl=gauge.querySelector('.gc-value');
+  var numEl=gauge.querySelector('.health-score-num');
+  var label=gauge.parentNode?gauge.parentNode.querySelector('.gauge-cycle-label'):null;
+  if(!label)label=gauge.closest('.health-score-card')?gauge.closest('.health-score-card').querySelector('.gauge-cycle-label'):null;
+  var dotsWrap=label?label.nextElementSibling:null;
+  var dotEls=dotsWrap?dotsWrap.querySelectorAll('.gauge-cycle-dot'):[];
+  var idx=0;
+  var curVal=metrics[0].v;
+  function ease(t){return 1-Math.pow(1-t,3);}
+  function show(i){
+    var m=metrics[i];
+    var fromVal=curVal;
+    var toVal=m.v;
+    var newAngle=-180+toVal*1.8;
+    var newOffset=fullArc-fullArc*(toVal/100);
+    var newNRad=newAngle*Math.PI/180;
+    var newNx=cx+nr*Math.cos(newNRad);
+    var newNy=cy+nr*Math.sin(newNRad);
+    var epRad=newNRad;
+    var newEpx=cx+r*Math.cos(epRad);
+    var newEpy=cy+r*Math.sin(epRad);
+    // Animate needle, arc, dot, counter over 600ms
+    var oldNx=parseFloat(needle.getAttribute('x2'));
+    var oldNy=parseFloat(needle.getAttribute('y2'));
+    var oldOffset=parseFloat(arc.style.strokeDashoffset)||0;
+    var oldEpx=parseFloat(dot.getAttribute('cx'));
+    var oldEpy=parseFloat(dot.getAttribute('cy'));
+    var start=performance.now();
+    var dur=600;
+    function tick(now){
+      var p=Math.min(1,(now-start)/dur);
+      var e2=ease(p);
+      // Needle position
+      needle.setAttribute('x2',(oldNx+(newNx-oldNx)*e2).toFixed(1));
+      needle.setAttribute('y2',(oldNy+(newNy-oldNy)*e2).toFixed(1));
+      // Arc fill
+      arc.style.strokeDashoffset=(oldOffset+(newOffset-oldOffset)*e2).toFixed(1);
+      // Endpoint dot
+      dot.setAttribute('cx',(oldEpx+(newEpx-oldEpx)*e2).toFixed(1));
+      dot.setAttribute('cy',(oldEpy+(newEpy-oldEpy)*e2).toFixed(1));
+      // Counter
+      var cv=Math.round(fromVal+(toVal-fromVal)*e2);
+      if(valEl)valEl.textContent=cv;
+      if(p<1)requestAnimationFrame(tick);
+      else curVal=toVal;
+    }
+    requestAnimationFrame(tick);
+    // Colors
+    needle.setAttribute('stroke',m.c);
+    if(hub)hub.setAttribute('fill',m.c);
+    if(numEl)numEl.style.color=m.c;
+    // Label fade
+    if(label){
+      label.style.opacity='0';
+      setTimeout(function(){label.textContent=m.l;label.style.opacity='1';},200);
+    }
+    // Dots
+    for(var d2=0;d2<dotEls.length;d2++){
+      dotEls[d2].classList.toggle('active',d2===i);
+      dotEls[d2].style.setProperty('--gc-color',d2===i?m.c:'');
+    }
+    idx=i;
+  }
+  // Dot click handlers
+  for(var di=0;di<dotEls.length;di++){
+    (function(j){
+      dotEls[j].addEventListener('click',function(){show(j);resetTimer();});
+    })(di);
+  }
+  // Pause on hover
+  gauge.addEventListener('mouseenter',function(){
+    if(_gaugeCycleTimer){clearInterval(_gaugeCycleTimer);_gaugeCycleTimer=null;}
+  });
+  gauge.addEventListener('mouseleave',function(){resetTimer();});
+  function resetTimer(){
+    if(_gaugeCycleTimer)clearInterval(_gaugeCycleTimer);
+    _gaugeCycleTimer=setInterval(function(){
+      show((idx+1)%metrics.length);
+    },4000);
+  }
+  // Start after initial arc animation completes (~1.5s)
+  setTimeout(function(){resetTimer();},2000);
+}
+
 // ── 18. Health sub-scores sequential reveal ──
 function animateHealthSubScores(){
   var items=document.querySelectorAll('.hs-item:not([data-hs-animated])');
@@ -951,9 +1054,12 @@ function afterRenderAnimations(){
   try{syncBottomTabBar();}catch(e){}
   try{initSwipeGestures();}catch(e){}
   try{initScrollReveal();}catch(e){}
-  // Stop hero carousel if we left the Accueil page
+  // Stop hero carousel & gauge cycle if we left the Accueil page
   if(!document.querySelector('.hero-carousel')){
     if(_heroCarouselTimer){clearInterval(_heroCarouselTimer);_heroCarouselTimer=null;}
+  }
+  if(!document.querySelector('.health-gauge')){
+    if(_gaugeCycleTimer){clearInterval(_gaugeCycleTimer);_gaugeCycleTimer=null;}
   }
   // Per-element scanners — defer one frame for layout, fallback to setTimeout
   var _run=function(){
@@ -964,6 +1070,7 @@ function afterRenderAnimations(){
     try{attachCardTilt();}catch(e){}
     try{typewriterGreet();}catch(e){}
     try{startHeroCarousel();}catch(e){}
+    try{startGaugeCycle();}catch(e){}
   };
   if(typeof requestAnimationFrame==='function'){
     var _fired=false;
