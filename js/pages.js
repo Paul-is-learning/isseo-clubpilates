@@ -597,7 +597,7 @@ function renderFichiersHub(){
   var ids=_getStudioIds();
   var totalFiles=0;
   ids.forEach(function(id){totalFiles+=(S.files[id]||[]).length;});
-  var h='<div class="fichiers-hub reveal">';
+  var h='<div class="fichiers-hub">';
   // Header
   h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">';
   h+='<div style="display:flex;align-items:center;gap:10px">';
