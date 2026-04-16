@@ -554,7 +554,7 @@ async function doLogout(){
 function openDetail(id){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
 function retourProjets(){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.view='dashboard';S.selectedId=null;S.page='projets';saveNavState();render();}
 function retourAccueil(){retourProjets();}
-function setPage(p){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';saveNavState();render();}
+function setPage(p){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();window._prevPage=S.page;S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';saveNavState();render();}
 function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;var sb=document.querySelector('.sidebar');var ov=document.getElementById('sidebar-overlay');if(sb)sb.classList.toggle('open',S.sidebarOpen);if(ov)ov.classList.toggle('show',S.sidebarOpen);}
 function toggleDarkMode(){S.darkMode=!S.darkMode;try{localStorage.setItem('isseo_darkMode',S.darkMode);}catch(e){}document.body.classList.toggle('dark',S.darkMode);render();}
 

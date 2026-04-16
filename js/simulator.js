@@ -183,6 +183,8 @@ async function toggleStep(sid,stepId){
   var stepLabel=stepObj?stepObj.label:stepId;
   notifyAll({type:'statut',studio_id:sid,title:(ns[stepId]?'\u2705':'\u274c')+' '+stepLabel+' \u2014 '+(s.name||sid),body:oldStatut!==newStatut?'Statut : '+oldStatut+' \u2192 '+newStatut:'\u00c9tape mise \u00e0 jour'});
   toast('Etape mise a jour');
+  try{if(navigator.vibrate)navigator.vibrate(30);}catch(e){}
+  if(oldStatut!=='ouvert'&&newStatut==='ouvert'){setTimeout(function(){if(typeof confettiBurst==='function')confettiBurst();toast('🎉 Studio ouvert !');},300);}
 }
 
 function ajouterEtape(sid){

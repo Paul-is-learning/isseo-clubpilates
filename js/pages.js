@@ -1,5 +1,86 @@
+// ── Health Score — Portfolio santé ────────────────────────────────────
+function _computeHealthScore(){
+  var ids=_getStudioIds();
+  var n=ids.length||1;
+  // 1. Progression studios (30%) — % moyen de steps complétées
+  var progSum=0;
+  ids.forEach(function(id){
+    var s=S.studios[id];
+    var steps=getStudioSteps(id);
+    var done=steps.filter(function(st){return s.steps&&s.steps[st.id];}).length;
+    progSum+=done/Math.max(steps.length,1)*100;
+  });
+  var progress=Math.round(progSum/n);
+  // 2. Santé tâches (20%) — ratio tâches non-overdue
+  var totalT=0,healthyT=0;
+  var today=new Date().toISOString().slice(0,10);
+  ids.forEach(function(id){
+    var todos=S.todos[id];if(!todos||!todos.length)return;
+    todos.forEach(function(t){
+      totalT++;
+      if(t.statut==='done'||!t.deadline||t.deadline>=today)healthyT++;
+    });
+  });
+  var tasks=totalT>0?Math.round(healthyT/totalT*100):100;
+  // 3. Santé financière (25%) — marge EBITDA A1 normalisée
+  var finSum=0,finCount=0;
+  ids.forEach(function(id){
+    var s=S.studios[id];
+    if(!s.forecast||!s.forecast.annualCA)return;
+    try{
+      var bp=build3YearBP(s.forecast,id,{capex:s.capex,emprunt:s.emprunt,leasing:s.leasing,tauxInteret:s.tauxInteret,loyer_mensuel:s.loyer_mensuel});
+      var ca1=bp.a1.reduce(function(s,m){return s+m.ca;},0);
+      var ebitda1=bp.a1.reduce(function(s,m){return s+m.ebitda;},0);
+      if(ca1>0){finSum+=Math.min(100,Math.max(0,ebitda1/ca1*100*5));finCount++;}
+    }catch(e){}
+  });
+  var financial=finCount>0?Math.round(finSum/finCount):50;
+  // 4. Prospection (15%)
+  var pros=S.prospects||[];
+  var proSum=0;
+  if(pros.length>0){
+    pros.forEach(function(p){
+      proSum+=(p.statut==='chaud'?100:p.statut==='tiede'?60:20);
+    });
+    proSum=Math.round(proSum/pros.length);
+  } else proSum=50;
+  // 5. Alertes (10%)
+  var alertSum=0;
+  ids.forEach(function(id){alertSum+=S.studios[id].alertes.length;});
+  var alerts=Math.max(0,Math.min(100,100-Math.round(alertSum/n*25)));
+  // Weighted
+  var score=Math.round(progress*0.30+tasks*0.20+financial*0.25+proSum*0.15+alerts*0.10);
+  score=Math.max(0,Math.min(100,score));
+  var summary=score>=80?'Excellent — portefeuille en bonne santé':score>=60?'Bon — quelques points d\'attention à surveiller':score>=40?'Attention — des actions correctives recommandées':'Critique — intervention nécessaire';
+  var color=score>=80?'#0F6E56':score>=60?'#3b82f6':score>=40?'#f59e0b':'#dc2626';
+  return {score:score,progress:progress,tasks:tasks,financial:financial,prospection:proSum,alerts:alerts,summary:summary,color:color};
+}
+
+function _renderHealthGauge(hs){
+  var w=200,h=110,r=70,sw=14;
+  var cx=w/2,cy=h-8;
+  var fullArc=Math.PI*r;
+  var filled=fullArc*(hs.score/100);
+  var offset=fullArc-filled;
+  var h2='<div class="health-gauge">';
+  h2+='<svg width="'+w+'" height="'+h+'" viewBox="0 0 '+w+' '+h+'">';
+  h2+='<defs><linearGradient id="hg-grad" x1="0" y1="0" x2="1" y2="0">';
+  h2+='<stop offset="0%" stop-color="#dc2626"/><stop offset="30%" stop-color="#f59e0b"/><stop offset="60%" stop-color="#3b82f6"/><stop offset="100%" stop-color="#0F6E56"/>';
+  h2+='</linearGradient></defs>';
+  // Background arc
+  h2+='<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="#e8e8e0" stroke-width="'+sw+'" stroke-linecap="round"/>';
+  // Filled arc
+  h2+='<path class="health-arc" d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="url(#hg-grad)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+fullArc.toFixed(1)+'" style="--health-full:'+fullArc.toFixed(1)+';--health-offset:'+offset.toFixed(1)+';stroke-dashoffset:'+offset.toFixed(1)+'"/>';
+  h2+='</svg>';
+  h2+='<div class="health-score-num"><span class="counter-anim" data-target="'+hs.score+'" data-format="int" data-duration="1400">0</span></div>';
+  h2+='<div style="position:absolute;bottom:0;left:50%;transform:translateX(-50%);font-size:10px;color:#94a3b8;font-weight:500">/100</div>';
+  h2+='</div>';
+  return h2;
+}
+
 // ── PAGE: Accueil ──────────────────────────────────────────────────────
 function renderAccueil(){
+  if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div style="padding:24px">'+skeletonGrid(6)+'</div>';
   var allIds=_getStudioIds();
   var alertCount=allIds.reduce(function(s,id){return s+S.studios[id].alertes.length;},0);
 
@@ -56,6 +137,29 @@ function renderAccueil(){
   h+='</div>';
   h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
   h+='</div>';
+
+  // ── Health Score — Portfolio santé ──
+  var _hs=_computeHealthScore();
+  h+='<div class="health-score-card">';
+  h+=_renderHealthGauge(_hs);
+  h+='<div style="flex:1;min-width:0">';
+  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">';
+  h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
+  h+='<span style="font-size:15px;font-weight:700;color:#1a1a1a">Santé du portefeuille</span></div>';
+  h+='<div style="font-size:13px;font-weight:500;color:'+_hs.color+';margin-bottom:10px">'+_hs.summary+'</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:8px">';
+  var _hsPills=[
+    {l:'Studios',v:_hs.progress,icon:'📊'},
+    {l:'Tâches',v:_hs.tasks,icon:'✅'},
+    {l:'Financier',v:_hs.financial,icon:'💹'},
+    {l:'Prospection',v:_hs.prospection,icon:'🔍'},
+    {l:'Alertes',v:_hs.alerts,icon:'🔔'}
+  ];
+  _hsPills.forEach(function(p){
+    var pc=p.v>=80?'#0F6E56':p.v>=60?'#3b82f6':p.v>=40?'#f59e0b':'#dc2626';
+    h+='<span style="display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:8px;background:'+pc+'10;font-size:10px;font-weight:600;color:'+pc+'" title="'+p.l+': '+p.v+'/100">'+p.icon+' '+p.l+' <b>'+p.v+'</b></span>';
+  });
+  h+='</div></div></div>';
 
   // ── Welcome banner — effet wahou ──
   var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
@@ -2350,7 +2454,7 @@ function renderBPConsolide(){
     h+='<div style="background:'+k.grad+';border-radius:16px;padding:18px 20px;position:relative;overflow:hidden;transition:all .3s;cursor:default;box-shadow:0 4px 20px '+k.glow+'" onmouseenter="this.style.transform=\'translateY(-4px) scale(1.02)\';this.style.boxShadow=\'0 8px 30px '+k.glow+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'0 4px 20px '+k.glow+'\'">';
     h+='<div style="position:absolute;top:-15px;right:-15px;width:60px;height:60px;background:rgba(255,255,255,0.06);border-radius:50%"></div>';
     h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+k.icon+'<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7)">'+k.l+'</span></div>';
-    h+='<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;line-height:1">'+fmt(k.v)+'</div>';
+    h+='<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;line-height:1"><span class="counter-anim" data-target="'+Math.round(k.v)+'" data-format="eur" data-duration="1400">0</span></div>';
     h+='<div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;font-weight:500">'+k.sub+'</div>';
     h+='</div>';
   });

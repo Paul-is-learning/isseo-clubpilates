@@ -4,10 +4,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .app-layout{display:flex;min-height:100vh}
 .sidebar{width:220px;background:linear-gradient(180deg,#0a1628 0%,#0f1f3d 40%,#162d54 100%);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:500;transition:transform .3s ease}
 .sidebar-logo{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:8px}
-.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px}
-.sidebar-link{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);transition:all .2s;text-decoration:none;border:none;background:none;width:100%;text-align:left}
+.sidebar-nav{flex:1;padding:12px 10px;display:flex;flex-direction:column;gap:2px;position:relative}
+.sidebar-pill{position:absolute;left:4px;right:4px;border-radius:10px;background:rgba(255,255,255,0.10);pointer-events:none;z-index:0;opacity:0}
+.sidebar-pill::before{content:'';position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:#58a6ff;box-shadow:0 0 8px rgba(88,166,255,0.5)}
+.sidebar-link{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:10px;cursor:pointer;font-size:13px;font-weight:500;color:rgba(255,255,255,0.55);transition:all .2s;text-decoration:none;border:none;background:none;width:100%;text-align:left;position:relative;z-index:1}
 .sidebar-link:hover{background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.85)}
-.sidebar-link.active{background:rgba(255,255,255,0.12);color:#fff;font-weight:600}
+.sidebar-link.active{background:transparent;color:#fff;font-weight:600}
 .sidebar-link svg{flex-shrink:0;opacity:0.7}
 .sidebar-link.active svg{opacity:1}
 .sidebar-bottom{padding:14px 14px 18px;border-top:1px solid rgba(255,255,255,0.07);display:flex;align-items:center;gap:10px}
@@ -34,8 +36,11 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .auth-box input:focus{border-color:rgba(255,255,255,0.25);background:rgba(255,255,255,0.08);box-shadow:0 0 0 3px rgba(255,255,255,0.04)}
 .btn{padding:8px 16px;border:0.5px solid #ccc;border-radius:8px;background:#fff;cursor:pointer;font-size:13px}
 .btn:hover{background:#f0f0ea}
-.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
-.btn-primary:hover{background:#333}
+@keyframes btnGlow{0%,100%{box-shadow:0 0 0 0 rgba(26,26,26,0.12)}50%{box-shadow:0 0 0 4px rgba(26,26,26,0.06)}}
+@keyframes btnGlowDark{0%,100%{box-shadow:0 0 0 0 rgba(99,102,241,0.15)}50%{box-shadow:0 0 0 4px rgba(99,102,241,0.08)}}
+.btn-primary{background:#1a1a1a;color:#fff;border-color:#1a1a1a;animation:btnGlow 2.5s ease-in-out infinite}
+.btn-primary:hover{background:#333;animation:none;box-shadow:0 4px 14px rgba(26,26,26,0.18)}
+body.dark .btn-primary{animation-name:btnGlowDark}
 .btn-full{width:100%}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(110px,1fr));gap:10px;margin-bottom:16px}
 .kpi{background:#fff;border:0.5px solid #e8e8e0;border-radius:12px;padding:0.9rem 1rem;transition:transform .2s,box-shadow .2s}
@@ -49,7 +54,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .card{background:#fff;border:0.5px solid #e0e0d8;border-radius:16px;padding:1.1rem 1.3rem;cursor:pointer;transition:transform .35s cubic-bezier(.2,.8,.2,1),box-shadow .35s cubic-bezier(.2,.8,.2,1),border-color .2s;transform-style:preserve-3d;will-change:transform;position:relative;overflow:hidden}
 .card::after{content:'';position:absolute;inset:0;border-radius:inherit;background:radial-gradient(600px circle at var(--mx,50%) var(--my,50%),rgba(26,58,107,0.06),transparent 40%);opacity:0;transition:opacity .3s;pointer-events:none}
 .card:hover::after{opacity:1}
-.card:hover{border-color:#1a3a6b;box-shadow:0 18px 40px -12px rgba(26,58,107,0.22),0 6px 18px -10px rgba(26,58,107,0.15)}
+.card:hover{border-color:#1a3a6b;box-shadow:0 18px 40px -12px rgba(26,58,107,0.22),0 6px 18px -10px rgba(26,58,107,0.15);transform:translateY(-5px) scale(1.006)}
 .badge{font-size:11px;font-weight:500;padding:3px 8px;border-radius:6px;white-space:nowrap}
 .prog-bar{background:#e8e8e0;border-radius:4px;height:5px;overflow:hidden}
 .box{background:#fff;border:0.5px solid #e0e0d8;border-radius:12px;padding:1rem 1.25rem;margin-bottom:12px}
@@ -260,9 +265,25 @@ body.dark .skeleton{background:linear-gradient(90deg,#1c2128 0%,#262d36 50%,#1c2
 #dirty-bar .dirty-cancel{background:#95a5a6;color:#fff;border:none;border-radius:8px;padding:8px 20px;font-weight:600;cursor:pointer;font-size:13px;transition:background .15s}
 #dirty-bar .dirty-cancel:hover{background:#7f8c8d}
 
-/* ── Page transitions ── */
+/* ── Page transitions — cinematic direction-aware ── */
 @keyframes pageEnter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
 .page-enter{animation:pageEnter .36s cubic-bezier(.22,.8,.24,1)}
+@keyframes slideUpIn{from{opacity:0;transform:translateY(28px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideDownIn{from{opacity:0;transform:translateY(-28px)}to{opacity:1;transform:translateY(0)}}
+.page-slide-up{animation:slideUpIn .38s cubic-bezier(.22,.8,.24,1)}
+.page-slide-down{animation:slideDownIn .38s cubic-bezier(.22,.8,.24,1)}
+
+/* ── Health Score gauge ── */
+.health-score-card{display:flex;align-items:center;gap:24px;background:#fff;border:1px solid #e8e8e0;border-radius:16px;padding:22px 28px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);transition:transform .3s,box-shadow .3s}
+.health-score-card:hover{transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.06)}
+.health-gauge{position:relative;width:200px;height:110px;flex-shrink:0}
+.health-score-num{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);font-size:36px;font-weight:800;color:#1a1a1a;line-height:1}
+@keyframes healthArcDraw{from{stroke-dashoffset:var(--health-full)}to{stroke-dashoffset:var(--health-offset)}}
+.health-arc{animation:healthArcDraw 1.2s .3s cubic-bezier(.22,.8,.24,1) both}
+body.dark .health-score-card{background:#161b22;border-color:#30363d}
+body.dark .health-score-num{color:#e6edf3}
+body.dark .health-score-card span[style*="color:#1a1a1a"]{color:#e6edf3 !important}
+@media(max-width:768px){.health-score-card{flex-direction:column;text-align:center;padding:16px}}
 
 /* ── Scroll reveal ── */
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.22,.8,.24,1),transform .6s cubic-bezier(.22,.8,.24,1)}

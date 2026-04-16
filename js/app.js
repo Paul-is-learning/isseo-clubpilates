@@ -75,7 +75,7 @@ sb.auth.getSession().then(function(res){
         if(S.adminSettings.blocked&&S.adminSettings.blocked.indexOf(session.user.id)>=0){
           sb.auth.signOut();S.user=null;S.profile=null;render();return;
         }
-        restoreNavState();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
+        S._dataLoaded=true;restoreNavState();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
         _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
         // Deeplink email → ouvre directement la tâche : #tache=SID:TASKID
         try{

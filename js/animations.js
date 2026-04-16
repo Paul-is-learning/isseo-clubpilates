@@ -319,22 +319,81 @@ function emptyState(icon,title,sub){
   return '<div class="empty-state">'+ic+'<div class="es-title">'+title+'</div>'+(sub?'<div class="es-sub">'+sub+'</div>':'')+'</div>';
 }
 
-// ── 12. Page transitions ──
-// Applique une animation au contenu principal à chaque changement de page
+// ── 12. Page transitions — direction-aware cinematic ──
 var _lastPageKey=null;
+var _NAV_ORDER=['accueil','projets','collab','prospection','bp','engagements'];
 function triggerPageTransition(){
   var root=document.getElementById('root');
   if(!root)return;
   var pageKey=(window.S&&S.page?S.page:'')+'|'+(window.S&&S.selectedId?S.selectedId:'')+'|'+(window.S&&S.view?S.view:'');
   if(pageKey===_lastPageKey)return;
   _lastPageKey=pageKey;
-  // Find main-content child
   var mc=root.querySelector('.main-content');
   if(!mc)mc=root;
-  mc.classList.remove('page-enter');
-  // force reflow
+  mc.classList.remove('page-enter','page-slide-up','page-slide-down');
   void mc.offsetWidth;
-  mc.classList.add('page-enter');
+  var prev=window._prevPage||'';
+  var cur=window.S&&S.page?S.page:'';
+  var pi=_NAV_ORDER.indexOf(prev);
+  var ci=_NAV_ORDER.indexOf(cur);
+  if(pi>=0&&ci>=0&&pi!==ci){
+    mc.classList.add(ci>pi?'page-slide-up':'page-slide-down');
+  } else {
+    mc.classList.add('page-enter');
+  }
+}
+
+// ── 12b. Stagger children above fold ──
+function staggerChildren(){
+  var mc=document.querySelector('.main-content');
+  if(!mc)return;
+  var els=mc.querySelectorAll('.card:not([data-stagger-done]),.box:not([data-stagger-done]),.health-score-card:not([data-stagger-done])');
+  if(!els.length)return;
+  var vh=window.innerHeight;
+  var idx=0;
+  for(var i=0;i<els.length;i++){
+    var el=els[i];
+    var r=el.getBoundingClientRect();
+    if(r.top>=vh)continue;
+    el.setAttribute('data-stagger-done','1');
+    el.style.opacity='0';
+    el.style.transform='translateY(14px)';
+    el.style.transition='opacity .45s cubic-bezier(.22,.8,.24,1),transform .45s cubic-bezier(.22,.8,.24,1)';
+    el.style.transitionDelay=(50*Math.min(idx,12))+'ms';
+    idx++;
+    (function(e){
+      requestAnimationFrame(function(){requestAnimationFrame(function(){
+        e.style.opacity='1';e.style.transform='translateY(0)';
+      });});
+    })(el);
+  }
+}
+
+// ── 12c. Sidebar morphing pill ──
+function morphSidebarPill(){
+  var pill=document.getElementById('sidebar-pill');
+  if(!pill)return;
+  var active=document.querySelector('.sidebar-link.active');
+  if(!active)return;
+  var nav=pill.parentElement;
+  if(!nav)return;
+  var navRect=nav.getBoundingClientRect();
+  var linkRect=active.getBoundingClientRect();
+  var top=linkRect.top-navRect.top;
+  var h=linkRect.height;
+  if(!pill._initialized){
+    pill.style.transition='none';
+    pill.style.transform='translateY('+top+'px)';
+    pill.style.height=h+'px';
+    pill.style.opacity='1';
+    requestAnimationFrame(function(){
+      pill.style.transition='transform .35s cubic-bezier(.22,.8,.24,1),height .25s ease,opacity .3s ease';
+      pill._initialized=true;
+    });
+  } else {
+    pill.style.transform='translateY('+top+'px)';
+    pill.style.height=h+'px';
+  }
 }
 
 // ── 13. Scroll reveal ──
@@ -639,6 +698,50 @@ function startHeroCarousel(){
   resetTimer();
 }
 
+// ── 18. Magnetic cursor on primary buttons ──
+function initMagneticButtons(){
+  if(window._magneticInit)return;
+  window._magneticInit=true;
+  document.addEventListener('mousemove',function(e){
+    var btns=document.querySelectorAll('.btn-primary');
+    for(var i=0;i<btns.length;i++){
+      var b=btns[i];
+      var r=b.getBoundingClientRect();
+      var cx=r.left+r.width/2;
+      var cy=r.top+r.height/2;
+      var dx=e.clientX-cx;
+      var dy=e.clientY-cy;
+      var dist=Math.sqrt(dx*dx+dy*dy);
+      if(dist<60){
+        var pull=Math.min(4,(1-dist/60)*4);
+        var tx=(dx/dist)*pull;
+        var ty=(dy/dist)*pull;
+        b.style.transform='translate('+tx.toFixed(1)+'px,'+ty.toFixed(1)+'px)';
+      } else if(b.style.transform){
+        b.style.transform='';
+      }
+    }
+  },{passive:true});
+}
+
+// ── 19. Easter egg — triple-click logo ──
+function initLogoEasterEgg(){
+  if(window._eggInit)return;
+  window._eggInit=true;
+  var _clicks=0;var _timer=null;
+  document.addEventListener('click',function(e){
+    if(!e.target.closest('.sidebar-logo'))return;
+    _clicks++;
+    if(_timer)clearTimeout(_timer);
+    _timer=setTimeout(function(){_clicks=0;},600);
+    if(_clicks>=3){
+      _clicks=0;
+      if(typeof confettiBurst==='function')confettiBurst();
+      if(typeof toast==='function')toast('🎉 Easter egg trouvé ! Bravo 👏');
+    }
+  });
+}
+
 // ── Auto-run on render ──
 // Hook pour déclencher les animations après chaque render
 function afterRenderAnimations(){
@@ -647,7 +750,11 @@ function afterRenderAnimations(){
   try{initCommandPaletteShortcut();}catch(e){}
   try{initToastStack();}catch(e){}
   try{initRipple();}catch(e){}
+  try{initMagneticButtons();}catch(e){}
+  try{initLogoEasterEgg();}catch(e){}
   try{triggerPageTransition();}catch(e){}
+  try{staggerChildren();}catch(e){}
+  try{morphSidebarPill();}catch(e){}
   try{initScrollReveal();}catch(e){}
   // Stop hero carousel if we left the Accueil page
   if(!document.querySelector('.hero-carousel')){

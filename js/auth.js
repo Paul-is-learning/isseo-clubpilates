@@ -907,11 +907,10 @@ function renderSidebar(){
   // Nav links
   h+='<div class="sidebar-nav">';
   h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.25);font-weight:600;padding:8px 14px 6px">Navigation</div>';
-  links.forEach(function(l){
+  h+='<div class="sidebar-pill" id="sidebar-pill"></div>';
+  links.forEach(function(l,li){
     var active=p===l.id;
-    h+='<button class="sidebar-link '+(active?'active':'')+'" onclick="setPage(\''+l.id+'\')" style="position:relative">';
-    // Indicateur actif — barre latérale lumineuse
-    if(active)h+='<div style="position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:#58a6ff;box-shadow:0 0 8px rgba(88,166,255,0.5)"></div>';
+    h+='<button class="sidebar-link '+(active?'active':'')+'" data-nav-idx="'+li+'" onclick="setPage(\''+l.id+'\')" style="position:relative">';
     h+=l.icon+'<span>'+l.label+'</span>';
     // Badge compteur
     if(l.badge>0)h+='<span style="margin-left:auto;background:'+l.badgeColor+';color:#fff;font-size:9px;font-weight:700;min-width:18px;height:18px;border-radius:9px;display:flex;align-items:center;justify-content:center;padding:0 5px;line-height:1">'+l.badge+'</span>';
@@ -922,7 +921,6 @@ function renderSidebar(){
     var _adminActive=S.mainTab==='admin'&&p==='projets';
     h+='<div style="margin-top:auto;padding-top:12px;border-top:1px solid rgba(255,255,255,0.05)">';
     h+='<button class="sidebar-link '+(_adminActive?'active':'')+'" onclick="S.page=\'projets\';S.mainTab=\'admin\';S.view=\'dashboard\';S.selectedId=null;saveNavState();render()" style="position:relative">';
-    if(_adminActive)h+='<div style="position:absolute;left:0;top:6px;bottom:6px;width:3px;border-radius:0 3px 3px 0;background:#58a6ff;box-shadow:0 0 8px rgba(88,166,255,0.5)"></div>';
     h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Administration</span></button>';
     h+='</div>';
   }

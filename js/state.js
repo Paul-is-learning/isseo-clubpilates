@@ -1,5 +1,5 @@
 var S={
-  user:null,profile:null,
+  user:null,profile:null,_dataLoaded:false,
   studios:JSON.parse(JSON.stringify(INIT)),
   files:{},depenses:{},messages:{},adherents:{},
   topics:{},todos:{},         // forum topics + todo par studio
