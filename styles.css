@@ -273,20 +273,19 @@ body.dark .skeleton{background:linear-gradient(90deg,#1c2128 0%,#262d36 50%,#1c2
 .page-slide-up{animation:slideUpIn .38s cubic-bezier(.22,.8,.24,1)}
 .page-slide-down{animation:slideDownIn .38s cubic-bezier(.22,.8,.24,1)}
 
-/* ── Health Score gauge — premium dark hero ── */
-.health-score-card{transition:transform .3s,box-shadow .3s;box-shadow:0 4px 20px rgba(0,0,0,0.15)}
-.health-score-card:hover{transform:translateY(-2px);box-shadow:0 12px 36px rgba(0,0,0,0.25)}
+/* ── Health Score gauge — white card premium ── */
+.health-score-card{background:#fff;border:1px solid #e8e8e0;border-radius:20px;padding:26px 32px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);transition:transform .3s,box-shadow .3s}
+.health-score-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.07)}
 .health-gauge{position:relative;width:220px;height:130px;flex-shrink:0}
-.health-score-num{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:38px;font-weight:800;line-height:1;text-shadow:0 0 20px currentColor}
+.health-score-num{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);font-size:38px;font-weight:800;line-height:1;text-shadow:0 0 16px currentColor}
 @keyframes healthArcDraw{from{stroke-dashoffset:var(--health-full)}to{stroke-dashoffset:var(--health-offset)}}
 .health-arc{animation:healthArcDraw 1.2s .3s cubic-bezier(.22,.8,.24,1) both}
-@keyframes healthNeedleSweep{from{transform:rotate(-180deg)}to{transform:rotate(var(--needle-angle))}}
-.health-needle{transform-origin:var(--nx,110px) var(--ny,120px);animation:healthNeedleSweep 1.4s .2s cubic-bezier(.22,.8,.24,1) both}
 @keyframes healthDotPop{from{opacity:0;r:0}to{opacity:1;r:4}}
-@keyframes healthSubBar{from{width:0}to{width:var(--bar-w)}}
-.health-sub-bar{animation:healthSubBar .8s .5s cubic-bezier(.22,.8,.24,1) both}
-body.dark .health-score-card{border-color:#30363d}
-@media(max-width:768px){.health-score-card .health-gauge{margin:0 auto}}
+.hs-item{transition:opacity .5s cubic-bezier(.22,.8,.24,1),transform .5s cubic-bezier(.22,.8,.24,1)}
+body.dark .health-score-card{background:#161b22;border-color:#30363d}
+body.dark .health-score-card .health-score-num{text-shadow:0 0 20px currentColor}
+@media(max-width:768px){.health-score-card .health-gauge{margin:0 auto}
+.health-score-card #health-sub-scores{grid-template-columns:repeat(3,1fr) !important}}
 
 /* ── Scroll reveal ── */
 .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s cubic-bezier(.22,.8,.24,1),transform .6s cubic-bezier(.22,.8,.24,1)}

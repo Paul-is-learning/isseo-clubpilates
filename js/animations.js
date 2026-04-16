@@ -698,7 +698,45 @@ function startHeroCarousel(){
   resetTimer();
 }
 
-// ── 18. Magnetic cursor on primary buttons ──
+// ── 18. Health sub-scores sequential reveal ──
+function animateHealthSubScores(){
+  var items=document.querySelectorAll('.hs-item:not([data-hs-animated])');
+  if(!items.length)return;
+  // Mark all immediately to prevent re-runs
+  for(var k=0;k<items.length;k++)items[k].setAttribute('data-hs-animated','1');
+  // Sequential reveal: each item appears 280ms after the previous
+  var baseDelay=600; // wait for gauge arc animation to start
+  for(var i=0;i<items.length;i++){
+    (function(el,idx){
+      var delay=baseDelay+idx*280;
+      var barW=el.getAttribute('data-hs-bar')||'0';
+      var targetVal=parseInt(el.getAttribute('data-hs-bar'))||0;
+      var valEl=el.querySelector('[data-hs-val]');
+      var barEl=el.querySelector('.hs-bar');
+      setTimeout(function(){
+        // 1. Reveal the item (slide up + fade in)
+        el.style.opacity='1';
+        el.style.transform='translateY(0)';
+        // 2. Animate the number count-up
+        if(valEl){
+          var start=Date.now();var dur=600;
+          (function tick(){
+            var p=Math.min(1,(Date.now()-start)/dur);
+            var eased=1-Math.pow(1-p,3); // easeOutCubic
+            valEl.textContent=Math.round(targetVal*eased);
+            if(p<1)requestAnimationFrame(tick);
+          })();
+        }
+        // 3. Fill the progress bar (slightly delayed for drama)
+        setTimeout(function(){
+          if(barEl)barEl.style.width=barW+'%';
+        },120);
+      },delay);
+    })(items[i],i);
+  }
+}
+
+// ── 19. Magnetic cursor on primary buttons ──
 function initMagneticButtons(){
   if(window._magneticInit)return;
   window._magneticInit=true;
@@ -763,6 +801,7 @@ function afterRenderAnimations(){
   // Per-element scanners — defer one frame for layout, fallback to setTimeout
   var _run=function(){
     try{animateCounters();}catch(e){}
+    try{animateHealthSubScores();}catch(e){}
     try{attachCardTilt();}catch(e){}
     try{typewriterGreet();}catch(e){}
     try{startHeroCarousel();}catch(e){}

@@ -81,10 +81,10 @@ function _renderHealthGauge(hs){
     var ir=r+12,or2=r+18;
     var x1t=cx+ir*Math.cos(tr),y1t=cy+ir*Math.sin(tr);
     var x2t=cx+or2*Math.cos(tr),y2t=cy+or2*Math.sin(tr);
-    h2+='<line x1="'+x1t.toFixed(1)+'" y1="'+y1t.toFixed(1)+'" x2="'+x2t.toFixed(1)+'" y2="'+y2t.toFixed(1)+'" stroke="rgba(255,255,255,0.15)" stroke-width="'+(t%5===0?'2':'1')+'"/>';
+    h2+='<line x1="'+x1t.toFixed(1)+'" y1="'+y1t.toFixed(1)+'" x2="'+x2t.toFixed(1)+'" y2="'+y2t.toFixed(1)+'" stroke="rgba(0,0,0,0.08)" stroke-width="'+(t%5===0?'2':'1')+'"/>';
   }
   // Background arc
-  h2+='<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="'+sw+'" stroke-linecap="round"/>';
+  h2+='<path d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="#e8e8e0" stroke-width="'+sw+'" stroke-linecap="round"/>';
   // Filled arc with glow
   h2+='<path class="health-arc" d="M '+(cx-r)+' '+cy+' A '+r+' '+r+' 0 0 1 '+(cx+r)+' '+cy+'" fill="none" stroke="url(#hg-grad)" stroke-width="'+sw+'" stroke-linecap="round" stroke-dasharray="'+fullArc.toFixed(1)+'" filter="url(#hg-glow)" style="--health-full:'+fullArc.toFixed(1)+';--health-offset:'+offset.toFixed(1)+';stroke-dashoffset:'+offset.toFixed(1)+'"/>';
   // Needle
@@ -101,7 +101,7 @@ function _renderHealthGauge(hs){
   h2+='</svg>';
   // Score number
   h2+='<div class="health-score-num" style="color:'+hs.color+'"><span class="counter-anim" data-target="'+hs.score+'" data-format="int" data-duration="1400">0</span></div>';
-  h2+='<div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;color:rgba(255,255,255,0.35);font-weight:500">/100</div>';
+  h2+='<div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;color:#94a3b8;font-weight:500">/100</div>';
   h2+='</div>';
   return h2;
 }
@@ -166,16 +166,11 @@ function renderAccueil(){
   h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
   h+='</div>';
 
-  // ── Health Score — Portfolio santé (premium dark hero) ──
+  // ── Health Score — Portfolio santé (white card + sequential reveal) ──
   var _hs=_computeHealthScore();
-  h+='<div class="health-score-card" style="position:relative;border-radius:20px;overflow:hidden;background:linear-gradient(135deg,#0a1628 0%,#0f1f3d 40%,#162d54 100%);padding:28px 32px;margin-bottom:18px;color:#fff;border:1px solid rgba(255,255,255,0.06)">';
-  // Decorative orbs
-  h+='<div style="position:absolute;top:-30px;right:-20px;width:160px;height:160px;background:radial-gradient(circle,'+_hs.color+'18,transparent 70%);border-radius:50%;pointer-events:none"></div>';
-  h+='<div style="position:absolute;bottom:-40px;left:15%;width:140px;height:140px;background:radial-gradient(circle,rgba(99,102,241,0.08),transparent 70%);border-radius:50%;pointer-events:none"></div>';
-  // Dot grid
-  h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:20px 20px;pointer-events:none"></div>';
+  h+='<div class="health-score-card">';
   // Content
-  h+='<div style="position:relative;z-index:1;display:flex;align-items:center;gap:28px;flex-wrap:wrap">';
+  h+='<div style="display:flex;align-items:center;gap:28px;flex-wrap:wrap">';
   // Gauge
   h+=_renderHealthGauge(_hs);
   // Right side
@@ -183,26 +178,26 @@ function renderAccueil(){
   // Title row
   h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">';
   h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
-  h+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:rgba(255,255,255,0.5)">Santé du portefeuille</span></div>';
+  h+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#94a3b8">Santé du portefeuille</span></div>';
   // Summary text
   h+='<div style="font-size:18px;font-weight:700;color:'+_hs.color+';margin-bottom:14px;line-height:1.3">'+_hs.summary+'</div>';
-  // Sub-scores as mini progress bars
+  // Sub-scores — sequential reveal animation
   var _hsPills=[
-    {l:'Studios',v:_hs.progress,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
-    {l:'Tâches',v:_hs.tasks,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
-    {l:'Financier',v:_hs.financial,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
-    {l:'Prospection',v:_hs.prospection,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
-    {l:'Alertes',v:_hs.alerts,icon:'<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'}
+    {l:'Studios',v:_hs.progress,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
+    {l:'Tâches',v:_hs.tasks,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
+    {l:'Financier',v:_hs.financial,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
+    {l:'Prospection',v:_hs.prospection,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
+    {l:'Alertes',v:_hs.alerts,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'}
   ];
-  h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px">';
-  _hsPills.forEach(function(p){
-    var pc=p.v>=80?'#22c55e':p.v>=60?'#3b82f6':p.v>=40?'#f59e0b':'#ef4444';
+  h+='<div id="health-sub-scores" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px">';
+  _hsPills.forEach(function(p,pi){
+    var pc=p.v>=80?'#0F6E56':p.v>=60?'#3b82f6':p.v>=40?'#f59e0b':'#ef4444';
     var barW=Math.max(0,Math.min(p.v,100));
-    h+='<div style="text-align:center">';
-    h+='<div style="display:flex;align-items:center;justify-content:center;gap:3px;margin-bottom:4px;color:rgba(255,255,255,0.45)">'+p.icon+'<span style="font-size:9px;font-weight:600;letter-spacing:0.3px">'+p.l+'</span></div>';
-    h+='<div style="height:4px;background:rgba(255,255,255,0.08);border-radius:2px;overflow:hidden;margin-bottom:3px">';
-    h+='<div class="health-sub-bar" style="width:'+barW+'%;height:100%;background:'+pc+';border-radius:2px;box-shadow:0 0 6px '+pc+'40"></div></div>';
-    h+='<div style="font-size:11px;font-weight:700;color:'+pc+'">'+p.v+'</div>';
+    h+='<div class="hs-item" data-hs-idx="'+pi+'" data-hs-bar="'+barW+'" data-hs-color="'+pc+'" style="text-align:center;opacity:0;transform:translateY(16px)">';
+    h+='<div style="display:flex;align-items:center;justify-content:center;gap:4px;margin-bottom:6px;color:#94a3b8">'+p.icon+'<span style="font-size:9px;font-weight:600;letter-spacing:0.3px;text-transform:uppercase">'+p.l+'</span></div>';
+    h+='<div style="font-size:22px;font-weight:800;color:'+pc+';margin-bottom:5px;line-height:1" data-hs-val="'+p.v+'">0</div>';
+    h+='<div style="height:5px;background:#e8e8e0;border-radius:3px;overflow:hidden">';
+    h+='<div class="hs-bar" style="width:0%;height:100%;background:'+pc+';border-radius:3px;box-shadow:0 0 8px '+pc+'30;transition:width .6s cubic-bezier(.22,.8,.24,1)"></div></div>';
     h+='</div>';
   });
   h+='</div></div></div></div>';
