@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20260415-wow7';
+const CACHE_VERSION = 'isseo-v1-20260416-gc4';
 const APP_SHELL = [
   './',
   './index.html',
@@ -19,19 +19,19 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  './js/constants.js?v=20260416gc3',
-  './js/animations.js?v=20260416gc3',
-  './js/state.js?v=20260416gc3',
-  './js/notifications.js?v=20260416gc3',
-  './js/auth.js?v=20260416gc3',
-  './js/pages.js?v=20260416gc3',
-  './js/map.js?v=20260416gc3',
-  './js/utils.js?v=20260416gc3',
-  './js/exports.js?v=20260416gc3',
-  './js/simulator.js?v=20260416gc3',
-  './js/chat.js?v=20260416gc3',
-  './js/sync.js?v=20260416gc3',
-  './js/app.js?v=20260416gc3'
+  './js/constants.js?v=20260416gc4',
+  './js/animations.js?v=20260416gc4',
+  './js/state.js?v=20260416gc4',
+  './js/notifications.js?v=20260416gc4',
+  './js/auth.js?v=20260416gc4',
+  './js/pages.js?v=20260416gc4',
+  './js/map.js?v=20260416gc4',
+  './js/utils.js?v=20260416gc4',
+  './js/exports.js?v=20260416gc4',
+  './js/simulator.js?v=20260416gc4',
+  './js/chat.js?v=20260416gc4',
+  './js/sync.js?v=20260416gc4',
+  './js/app.js?v=20260416gc4'
 ];
 
 // ── Install : pré-cache l'app shell ──────────────────────────────────────────

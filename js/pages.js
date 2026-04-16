@@ -688,8 +688,23 @@ function renderFichiersHub(){
     var fIdx=_FDEFS.indexOf(fDef2);
     var fColor=_FCOLORS[fIdx]||'#3b82f6';
     var sDrive2=S.studios[sid2]&&S.studios[sid2].driveUrl||'';
+    // Google Drive embed (si configur\u00e9)
+    if(sDrive2){
+      var dFolderId=_extractDriveFolderId(sDrive2);
+      if(dFolderId){
+        h+='<div class="drive-embed-wrap" style="margin-bottom:16px">';
+        h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+        h+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#1e40af">';
+        h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/></svg>';
+        h+='Google Drive</div>';
+        h+='<a href="'+sDrive2+'" target="_blank" style="font-size:11px;color:#3b82f6;text-decoration:none">Ouvrir en plein \u00e9cran \u2197</a>';
+        h+='</div>';
+        h+='<iframe src="https://drive.google.com/embeddedfolderview?id='+dFolderId+'#list" class="drive-iframe" frameborder="0"></iframe>';
+        h+='</div>';
+      }
+    }
     // Actions bar
-    h+='<div style="display:flex;gap:10px;margin-bottom:14px;align-items:center;flex-wrap:wrap">';
+    h+='<div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap">';
     if(!isViewer()){
       h+='<label class="btn btn-primary" style="cursor:pointer;font-size:12px;display:flex;align-items:center;gap:6px">';
       h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
@@ -698,11 +713,23 @@ function renderFichiersHub(){
     if(sDrive2){
       h+='<a href="'+sDrive2+'" target="_blank" class="btn" style="font-size:12px;text-decoration:none;display:flex;align-items:center;gap:6px;color:#1e40af;border-color:#bfdbfe;background:#eff6ff">';
       h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/></svg>';
-      h+='Ouvrir dans Drive</a>';
+      h+='Ouvrir Drive</a>';
+    }
+    // Search filter
+    if(filtered.length>3){
+      h+='<div style="flex:1"></div>';
+      h+='<div style="display:flex;align-items:center;gap:6px;background:#f5f5ed;border:1px solid #e8e8e0;border-radius:8px;padding:4px 10px;min-width:140px">';
+      h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>';
+      h+='<input type="text" placeholder="Rechercher..." style="border:none;background:none;font-size:11px;outline:none;width:100%;color:#1a1a1a" oninput="_filterFiles(this.value,\''+sid2+'\',\''+folder+'\')"/>';
+      h+='</div>';
     }
     h+='<div id="uprog-'+sid2+'" style="display:none;font-size:12px;color:'+fColor+'">Upload en cours...</div>';
     h+='</div>';
-    // Drop zone
+    // File list header
+    if(filtered.length>0){
+      h+='<div style="font-size:10px;color:#94a3b8;font-weight:600;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;padding:0 12px">Fichiers Supabase ('+filtered.length+')</div>';
+    }
+    // Drop zone + file list
     h+='<div class="file-drop-zone" id="fdz-'+sid2+'" style="--fdz-color:'+fColor+'"';
     h+=' ondragover="event.preventDefault();this.classList.add(\'drag-over\')"';
     h+=' ondragleave="this.classList.remove(\'drag-over\')"';
@@ -710,20 +737,31 @@ function renderFichiersHub(){
     if(filtered.length===0){
       h+='<div class="file-empty-state">';
       h+='<svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="'+fColor+'" stroke-width="1.2" style="opacity:.5"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>';
-      h+='<div style="font-size:13px;font-weight:600;color:#64748b;margin-top:10px">Aucun fichier</div>';
+      h+='<div style="font-size:13px;font-weight:600;color:#64748b;margin-top:10px">Aucun fichier dans ce dossier</div>';
       h+='<div style="font-size:11px;color:#94a3b8;margin-top:4px">Glissez vos fichiers ici ou cliquez "Ajouter"</div>';
       h+='</div>';
     } else {
       filtered.forEach(function(f,fi){
         var fi2=_fIcon(f.name);
-        h+='<div class="fh-file-row" style="animation-delay:'+(fi*40)+'ms">';
+        var isImg=['jpg','jpeg','png','gif','webp'].indexOf((f.name||'').split('.').pop().toLowerCase())>=0;
+        h+='<div class="fh-file-row" data-fname="'+f.name.toLowerCase()+'" style="animation-delay:'+(fi*40)+'ms">';
+        // Thumbnail or type badge
         h+='<div style="display:flex;align-items:center;gap:10px;flex:1;min-width:0">';
-        h+='<div style="width:36px;height:36px;border-radius:8px;background:'+fi2.bg+';color:'+fi2.color+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">'+fi2.label+'</div>';
+        if(isImg){
+          h+='<div style="width:42px;height:42px;border-radius:8px;overflow:hidden;flex-shrink:0;border:1px solid #e8e8e0"><img src="'+f.url+'" style="width:100%;height:100%;object-fit:cover" loading="lazy" onerror="this.parentNode.innerHTML=\'IMG\'"/></div>';
+        } else {
+          h+='<div style="width:42px;height:42px;border-radius:8px;background:'+fi2.bg+';color:'+fi2.color+';display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;flex-shrink:0">'+fi2.label+'</div>';
+        }
         h+='<div style="min-width:0"><div style="font-size:12px;font-weight:600;color:#1a1a1a;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+f.name+'</div>';
         h+='<div style="font-size:10px;color:#94a3b8;margin-top:1px">'+f.date+' \u00b7 '+f.size+'</div></div></div>';
-        h+='<div style="display:flex;gap:6px;flex-shrink:0">';
-        h+='<a href="'+f.url+'" target="_blank" class="btn" style="font-size:11px;text-decoration:none;padding:4px 10px">Ouvrir</a>';
-        if(!isViewer())h+='<button class="btn" style="font-size:11px;color:#dc2626;padding:4px 8px" onclick="deleteFichier(\''+sid2+'\',\''+f.path+'\')">Supprimer</button>';
+        // Action buttons
+        h+='<div style="display:flex;gap:4px;flex-shrink:0">';
+        h+='<button class="btn fh-action-btn" title="Copier le lien" onclick="event.stopPropagation();_copyFileLink(\''+f.url.replace(/'/g,"\\'")+'\')">';
+        h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg></button>';
+        h+='<a href="'+f.url+'" target="_blank" class="btn fh-action-btn" title="Ouvrir" style="text-decoration:none">';
+        h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg></a>';
+        if(!isViewer())h+='<button class="btn fh-action-btn" title="Supprimer" style="color:#dc2626" onclick="event.stopPropagation();deleteFichier(\''+sid2+'\',\''+f.path+'\')">';
+        if(!isViewer())h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
         h+='</div></div>';
       });
     }
@@ -753,6 +791,34 @@ function _handleDrop(ev,sid,folder){
   var dt=ev.dataTransfer;if(!dt||!dt.files||!dt.files.length)return;
   var fakeInput={files:dt.files};
   uploadFichier(sid,fakeInput,folder);
+}
+
+function _extractDriveFolderId(url){
+  if(!url)return null;
+  var m=url.match(/[-\w]{25,}/);
+  return m?m[0]:null;
+}
+
+function _filterFiles(query,sid,folder){
+  var rows=document.querySelectorAll('.fh-file-row');
+  var q=(query||'').toLowerCase();
+  rows.forEach(function(row){
+    var name=(row.getAttribute('data-fname')||'').toLowerCase();
+    row.style.display=(!q||name.indexOf(q)>=0)?'':'none';
+  });
+}
+
+function _copyFileLink(url){
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(url).then(function(){
+      if(typeof toast==='function')toast('Lien copié !');
+    });
+  }else{
+    var ta=document.createElement('textarea');
+    ta.value=url;document.body.appendChild(ta);
+    ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    if(typeof toast==='function')toast('Lien copié !');
+  }
 }
 
 // Ouvre la tâche dans la page studio (onglet Workflow)
