@@ -665,6 +665,21 @@ function renderFichiersHub(){
       if(!isViewer())h+='<button class="btn btn-primary" style="font-size:11px;padding:6px 14px;flex-shrink:0" onclick="event.stopPropagation();_promptDriveUrl(\''+sid+'\')">Configurer</button>';
     }
     h+='</div>';
+    // Google Drive embed (si configuré)
+    if(sDrive){
+      var dFId=_extractDriveFolderId(sDrive);
+      if(dFId){
+        h+='<div class="drive-embed-wrap">';
+        h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
+        h+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#1e40af">';
+        h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/></svg>';
+        h+='Google Drive</div>';
+        h+='<a href="'+sDrive+'" target="_blank" style="font-size:11px;color:#3b82f6;text-decoration:none">Ouvrir en plein \u00e9cran \u2197</a>';
+        h+='</div>';
+        h+='<iframe src="https://drive.google.com/embeddedfolderview?id='+dFId+'#list" class="drive-iframe" frameborder="0"></iframe>';
+        h+='</div>';
+      }
+    }
     // Sub-folders grid
     h+='<div class="folder-grid">';
     _FDEFS.forEach(function(fd,idx){
@@ -688,21 +703,6 @@ function renderFichiersHub(){
     var fIdx=_FDEFS.indexOf(fDef2);
     var fColor=_FCOLORS[fIdx]||'#3b82f6';
     var sDrive2=S.studios[sid2]&&S.studios[sid2].driveUrl||'';
-    // Google Drive embed (si configur\u00e9)
-    if(sDrive2){
-      var dFolderId=_extractDriveFolderId(sDrive2);
-      if(dFolderId){
-        h+='<div class="drive-embed-wrap" style="margin-bottom:16px">';
-        h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">';
-        h+='<div style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:#1e40af">';
-        h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/></svg>';
-        h+='Google Drive</div>';
-        h+='<a href="'+sDrive2+'" target="_blank" style="font-size:11px;color:#3b82f6;text-decoration:none">Ouvrir en plein \u00e9cran \u2197</a>';
-        h+='</div>';
-        h+='<iframe src="https://drive.google.com/embeddedfolderview?id='+dFolderId+'#list" class="drive-iframe" frameborder="0"></iframe>';
-        h+='</div>';
-      }
-    }
     // Actions bar
     h+='<div style="display:flex;gap:8px;margin-bottom:14px;align-items:center;flex-wrap:wrap">';
     if(!isViewer()){
