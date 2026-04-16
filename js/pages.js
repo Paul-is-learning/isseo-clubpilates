@@ -5787,7 +5787,7 @@ function _renderNewTacheModalInner(sid){
   ];
   presets.forEach(function(p){
     var active=(d.deadline===p.val);
-    h+='<button class="nt-preset'+(active?' active':'')+'" onclick="_nt_setDeadline(\''+p.val+'\')">'+p.label+'</button>';
+    h+='<button class="nt-preset'+(active?' active':'')+'" onclick="_nt_setDeadline(\''+(active?'':p.val)+'\')">'+p.label+'</button>';
   });
   h+='<input type="date" class="nt-date-input" value="'+(d.deadline||'')+'" onchange="_nt_setDeadline(this.value)" title="Choisir une date"/>';
   if(d.deadline){
