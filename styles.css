@@ -1,5 +1,258 @@
+/* ═══════════════════════════════════════════════════════════════════════════
+   DESIGN TOKENS — ISSEO × Club Pilates (Phase 2)
+   Variables centrales pour couleurs/espacement/radius/ombres/transitions.
+   Changer 1 variable → impacte tout le site. Éviter les valeurs en dur.
+   ═══════════════════════════════════════════════════════════════════════════ */
+:root{
+  /* Couleurs marque */
+  --brand-navy:#1a3a6b;
+  --brand-navy-dark:#0f1f3d;
+  --brand-navy-deep:#080e1e;
+  --brand-green:#1D9E75;
+  --brand-green-dark:#0F6E56;
+  --brand-amber:#B8860B;
+  --brand-amber-dark:#854F0B;
+
+  /* Accents */
+  --accent-blue:#3b82f6;
+  --accent-blue-soft:#60A5FA;
+  --accent-emerald:#34D399;
+  --accent-emerald-dark:#059669;
+  --accent-amber:#FBBF24;
+  --accent-violet:#6366f1;
+  --accent-violet-dark:#4338ca;
+  --accent-red:#ef4444;
+  --accent-red-dark:#dc2626;
+
+  /* Surfaces (thème clair) */
+  --bg-app:#f5f5f0;
+  --surface:#ffffff;
+  --surface-soft:#f8fafc;
+  --surface-alt:#f0f4fc;
+  --border:#e2e8f0;
+  --border-soft:#ebebE6;
+
+  /* Texte */
+  --text-primary:#1a1a1a;
+  --text-secondary:#64748b;
+  --text-muted:#94a3b8;
+  --text-inverse:#ffffff;
+
+  /* Espacement */
+  --space-xs:4px;
+  --space-sm:6px;
+  --space-md:10px;
+  --space-lg:14px;
+  --space-xl:20px;
+  --space-2xl:28px;
+
+  /* Radius */
+  --radius-xs:4px;
+  --radius-sm:6px;
+  --radius-md:8px;
+  --radius-lg:12px;
+  --radius-xl:16px;
+  --radius-2xl:20px;
+  --radius-pill:999px;
+
+  /* Ombres */
+  --shadow-xs:0 1px 2px rgba(0,0,0,0.04);
+  --shadow-sm:0 1px 3px rgba(0,0,0,0.08);
+  --shadow-md:0 4px 14px rgba(0,0,0,0.12);
+  --shadow-lg:0 8px 28px rgba(0,0,0,0.18);
+  --shadow-xl:0 20px 60px rgba(0,0,0,0.25);
+
+  /* Transitions */
+  --transition-fast:.15s ease;
+  --transition-base:.25s ease;
+  --transition-slow:.4s ease;
+  --transition-bounce:.3s cubic-bezier(.4,0,.2,1);
+
+  /* Glass (bannières hero sombres) */
+  --glass-bg:rgba(255,255,255,0.06);
+  --glass-bg-hover:rgba(255,255,255,0.12);
+  --glass-border:rgba(255,255,255,0.08);
+  --glass-border-hover:rgba(255,255,255,0.2);
+  --glass-text:rgba(255,255,255,0.95);
+  --glass-text-soft:rgba(255,255,255,0.65);
+  --glass-text-muted:rgba(255,255,255,0.45);
+
+  /* Gradient hero principal */
+  --grad-hero:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);
+}
+
+/* Overrides thème sombre */
+body.dark{
+  --bg-app:#0d1117;
+  --surface:#161b22;
+  --surface-soft:#21262d;
+  --surface-alt:#1c222b;
+  --border:#30363d;
+  --border-soft:#21262d;
+  --text-primary:#e6edf3;
+  --text-secondary:#8b949e;
+  --text-muted:#6e7681;
+}
+
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f0;color:#1a1a1a;font-size:14px}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg-app);color:var(--text-primary);font-size:14px}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   COMPOSANTS EXTRAITS (Phase 2) — remplace les styles inline répétés
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Carte "glass" sur fond sombre (utilisée dans hero banners) */
+.glass-card{
+  background:var(--glass-bg);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-lg);
+  transition:all var(--transition-bounce);
+  position:relative;
+  overflow:hidden;
+}
+.glass-card--hover{cursor:pointer}
+.glass-card--hover:hover{
+  background:var(--glass-bg-hover);
+  border-color:var(--glass-border-hover);
+  transform:translateY(-3px);
+  box-shadow:0 10px 28px rgba(0,0,0,0.22);
+}
+
+/* KPI card compacte (4 vignettes accueil) */
+.kpi-card{
+  background:var(--glass-bg);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-lg);
+  padding:12px 14px;
+  cursor:pointer;
+  transition:all var(--transition-bounce);
+  position:relative;
+  overflow:hidden;
+}
+.kpi-card:hover{
+  background:var(--glass-bg-hover);
+  border-color:var(--glass-border-hover);
+  transform:translateY(-3px);
+  box-shadow:0 10px 28px rgba(0,0,0,0.22);
+}
+.kpi-card__glow{
+  position:absolute;
+  top:-10px;
+  right:-10px;
+  width:56px;
+  height:56px;
+  border-radius:50%;
+  pointer-events:none;
+}
+.kpi-card__inner{position:relative;z-index:1}
+.kpi-card__icon{margin-bottom:var(--space-sm);opacity:0.9}
+.kpi-card__value{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:-0.4px;
+  line-height:1;
+  margin-bottom:var(--space-xs);
+  display:flex;
+  align-items:center;
+  gap:var(--space-sm);
+  color:var(--glass-text);
+}
+.kpi-card__label{
+  font-size:9px;
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  color:var(--glass-text-muted);
+  font-weight:600;
+}
+.kpi-card__alert-dot{
+  width:8px;
+  height:8px;
+  border-radius:50%;
+  background:var(--accent-red);
+  display:inline-block;
+  animation:pulse 2s infinite;
+  box-shadow:0 0 8px rgba(239,68,68,0.6);
+}
+
+/* Widget "Prochaines étapes" (4e vignette hero) */
+.next-steps-widget{
+  background:var(--glass-bg);
+  backdrop-filter:blur(12px);
+  -webkit-backdrop-filter:blur(12px);
+  border:1px solid var(--glass-border);
+  border-radius:var(--radius-lg);
+  padding:12px 14px;
+  display:flex;
+  flex-direction:column;
+  overflow:hidden;
+  box-shadow:var(--shadow-md);
+}
+.next-steps-widget__header{
+  display:flex;
+  align-items:center;
+  gap:var(--space-sm);
+  margin-bottom:8px;
+  flex-shrink:0;
+}
+.next-steps-widget__title{
+  font-size:9px;
+  font-weight:700;
+  text-transform:uppercase;
+  letter-spacing:1.2px;
+  color:var(--glass-text-soft);
+}
+.next-steps-widget__count{
+  margin-left:auto;
+  font-size:9px;
+  font-weight:700;
+  color:var(--accent-blue-soft);
+  background:rgba(96,165,250,0.18);
+  padding:2px 7px;
+  border-radius:var(--radius-sm);
+}
+.next-steps-widget__list{
+  flex:1;
+  min-height:0;
+  overflow-y:auto;
+  display:flex;
+  flex-direction:column;
+  gap:2px;
+}
+.next-steps-widget__item{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:var(--space-sm);
+  padding:var(--space-xs) var(--space-xs);
+  border-radius:var(--radius-sm);
+  cursor:pointer;
+  transition:background var(--transition-fast),transform var(--transition-fast);
+}
+.next-steps-widget__item:hover{
+  background:rgba(255,255,255,0.1);
+  transform:translateX(2px);
+}
+.next-steps-widget__item-body{min-width:0;flex:1}
+.next-steps-widget__item-name{
+  font-size:10.5px;
+  font-weight:700;
+  color:var(--glass-text);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.next-steps-widget__item-step{
+  font-size:9.5px;
+  color:var(--glass-text-soft);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  margin-top:1px;
+}
 .app{max-width:1100px;margin:0 auto;padding:1.5rem}
 .app-layout{display:flex;min-height:100vh}
 .sidebar{width:220px;background:linear-gradient(180deg,#0a1628 0%,#0f1f3d 40%,#162d54 100%);color:#fff;display:flex;flex-direction:column;position:fixed;top:0;left:0;bottom:0;z-index:500;transition:transform .3s ease}

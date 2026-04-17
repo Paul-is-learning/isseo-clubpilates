@@ -298,19 +298,14 @@ function renderAccueil(){
     {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}}
   ];
   _kpis.forEach(function(k,ki){
-    h+='<div class="kpi-reveal" data-idx="'+ki+'" onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 10px 28px rgba(0,0,0,0.22)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
-    // Glow d'accent
-    h+='<div style="position:absolute;top:-10px;right:-10px;width:56px;height:56px;background:radial-gradient(circle,'+k.color+'26,transparent 70%);border-radius:50%"></div>';
-    h+='<div style="position:relative;z-index:1">';
-    // Icône
-    h+='<div style="color:'+k.color+';margin-bottom:6px;opacity:0.9">'+k.icon+'</div>';
-    // Valeur
-    h+='<div style="font-size:18px;font-weight:800;letter-spacing:-0.4px;line-height:1;margin-bottom:4px;display:flex;align-items:center;gap:6px">'+k.val;
-    if(k.alert)h+='<span style="width:8px;height:8px;border-radius:50%;background:#EF4444;display:inline-block;animation:pulse 2s infinite;box-shadow:0 0 8px rgba(239,68,68,0.6)"></span>';
+    h+='<div class="kpi-card kpi-reveal" data-idx="'+ki+'" onclick="'+k.click+'">';
+    h+='<div class="kpi-card__glow" style="background:radial-gradient(circle,'+k.color+'26,transparent 70%)"></div>';
+    h+='<div class="kpi-card__inner">';
+    h+='<div class="kpi-card__icon" style="color:'+k.color+'">'+k.icon+'</div>';
+    h+='<div class="kpi-card__value">'+k.val;
+    if(k.alert)h+='<span class="kpi-card__alert-dot"></span>';
     h+='</div>';
-    // Label
-    h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);font-weight:600">'+k.label+'</div>';
-    // Sparkline + trend
+    h+='<div class="kpi-card__label">'+k.label+'</div>';
     if(k.spark||k.trend){
       h+='<div class="kpi-spark-wrap">';
       if(k.trend)h+='<span class="kpi-trend '+k.trend.dir+'">'+k.trend.text+'</span>';
@@ -322,18 +317,18 @@ function renderAccueil(){
   });
   // 4e vignette — Widget "Prochaines étapes" (aligné avec les 3 KPIs)
   if(_nextSteps.length){
-    h+='<div class="next-steps-widget" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;display:flex;flex-direction:column;overflow:hidden;box-shadow:0 4px 14px rgba(0,0,0,0.12)">';
-    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:8px;flex-shrink:0">';
+    h+='<div class="next-steps-widget">';
+    h+='<div class="next-steps-widget__header">';
     h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
-    h+='<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.65)">Prochaines étapes</span>';
-    h+='<span style="margin-left:auto;font-size:9px;font-weight:700;color:#60A5FA;background:rgba(96,165,250,0.18);padding:2px 7px;border-radius:6px">'+_nextSteps.length+'</span>';
+    h+='<span class="next-steps-widget__title">Prochaines étapes</span>';
+    h+='<span class="next-steps-widget__count">'+_nextSteps.length+'</span>';
     h+='</div>';
-    h+='<div style="flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:2px">';
+    h+='<div class="next-steps-widget__list">';
     _nextSteps.forEach(function(it){
-      h+='<div onclick="openDetail(\''+it.id+'\')" style="display:flex;align-items:center;justify-content:space-between;gap:6px;padding:4px 4px;border-radius:6px;cursor:pointer;transition:background .15s,transform .15s" onmouseenter="this.style.background=\'rgba(255,255,255,0.1)\';this.style.transform=\'translateX(2px)\'" onmouseleave="this.style.background=\'none\';this.style.transform=\'none\'">';
-      h+='<div style="min-width:0;flex:1">';
-      h+='<div style="font-size:10.5px;font-weight:700;color:rgba(255,255,255,0.95);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+it.name+'</div>';
-      h+='<div style="font-size:9.5px;color:rgba(255,255,255,0.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">→ '+it.step+'</div>';
+      h+='<div class="next-steps-widget__item" onclick="openDetail(\''+it.id+'\')">';
+      h+='<div class="next-steps-widget__item-body">';
+      h+='<div class="next-steps-widget__item-name">'+it.name+'</div>';
+      h+='<div class="next-steps-widget__item-step">→ '+it.step+'</div>';
       h+='</div>';
       h+='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>';
       h+='</div>';
