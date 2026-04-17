@@ -982,7 +982,7 @@ function showInviteViewerModal(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
   var allStudios=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name;});
-  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
+  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Business plan'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
   var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:540px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)">';
   box+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>';
   box+='<div><div style="font-size:16px;font-weight:700;color:#1a1a1a">Inviter un viewer</div>';

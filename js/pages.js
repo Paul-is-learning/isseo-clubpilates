@@ -264,13 +264,45 @@ function renderAccueil(){
   h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px"></div>';
   // Contenu
   h+='<div style="position:relative;z-index:1">';
-  // Titre
-  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">';
+  // Titre + widget prochaines étapes
+  h+='<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;margin-bottom:6px;flex-wrap:wrap">';
+  h+='<div style="display:flex;align-items:center;gap:12px">';
   h+='<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>';
   h+='<div>';
   h+='<div style="font-size:18px;font-weight:700;letter-spacing:-0.3px">Tableau de bord Isséo × Club Pilates</div>';
   h+='<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px">Vue d\'ensemble de vos projets et activités</div>';
   h+='</div></div>';
+  // Widget "Prochaines étapes" par projet actif
+  var _nextSteps=[];
+  allIds.forEach(function(id){
+    var st=S.studios[id];
+    if(!st||st.statut==='abandonne')return;
+    var STw=(typeof getStudioSteps==='function')?getStudioSteps(id):STEPS;
+    var done=st.steps||{};
+    var next=null;
+    for(var _ni=0;_ni<STw.length;_ni++){if(!done[STw[_ni].id]){next=STw[_ni];break;}}
+    if(!next)return;
+    _nextSteps.push({id:id,name:st.name,step:next.label});
+  });
+  if(_nextSteps.length){
+    h+='<div class="next-steps-widget" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.12);border-radius:14px;padding:12px 14px;min-width:260px;max-width:340px;max-height:210px;overflow-y:auto;box-shadow:0 6px 20px rgba(0,0,0,0.18)">';
+    h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,0.1)">';
+    h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
+    h+='<span style="font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.7)">Prochaines étapes</span>';
+    h+='<span style="margin-left:auto;font-size:9px;font-weight:700;color:#60A5FA;background:rgba(96,165,250,0.18);padding:2px 8px;border-radius:6px">'+_nextSteps.length+'</span>';
+    h+='</div>';
+    _nextSteps.forEach(function(it){
+      h+='<div onclick="openDetail(\''+it.id+'\')" style="display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 6px;border-radius:8px;cursor:pointer;transition:background .15s,transform .15s" onmouseenter="this.style.background=\'rgba(255,255,255,0.1)\';this.style.transform=\'translateX(2px)\'" onmouseleave="this.style.background=\'none\';this.style.transform=\'none\'">';
+      h+='<div style="min-width:0;flex:1">';
+      h+='<div style="font-size:11.5px;font-weight:700;color:rgba(255,255,255,0.95);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+it.name+'</div>';
+      h+='<div style="font-size:10px;color:rgba(255,255,255,0.55);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px">→ '+it.step+'</div>';
+      h+='</div>';
+      h+='<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
   // KPIs
   h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px">';
   // Compute trend series per KPI (deterministic-ish from real totals)
@@ -3363,7 +3395,7 @@ function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
   var isAdmin=!!S.profile&&!isViewer();
-  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
+  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Business plan'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
   // Filtrage onglets pour viewers avec permissions granulaires
   if(isViewer()&&S.user&&S.adminSettings&&S.adminSettings.viewerPerms&&S.adminSettings.viewerPerms[S.user.id]){
     var _allowedTabs=S.adminSettings.viewerPerms[S.user.id].tabs||[];
@@ -3710,7 +3742,7 @@ function renderBP3YInfographic(sid,s){
     var rexMargin=yr.ca>0?Math.round(yr.rex/yr.ca*100):0;
     var mbrPct=Math.min(100,Math.round(yr.lastMbrs/400*100));
     var borderR=i<2?'border-right:0.5px solid #ebebE6;':'';
-    h+='<div style="padding:14px 16px;background:'+(i===2?'#f9f8f5':'#fff')+';'+borderR+'border-bottom:0.5px solid #ebebE6">';
+    h+='<div onclick="S.forecastYear='+(i+1)+';setDetailTab(\'forecast\')" style="padding:14px 16px;background:'+(i===2?'#f9f8f5':'#fff')+';'+borderR+'border-bottom:0.5px solid #ebebE6;cursor:pointer;transition:background .15s" onmouseenter="this.style.background=\''+(i===2?'#f2efe8':'#f8faff')+'\'" onmouseleave="this.style.background=\''+(i===2?'#f9f8f5':'#fff')+'\'" title="Voir le Business plan — Année '+(i+1)+'">';
 
     // En-tête année
     h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
