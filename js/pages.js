@@ -3451,10 +3451,13 @@ function renderWorkflow(s){
   WF_STEPS.forEach(function(step,i){
     var done=_steps[step.id];
     var unlocked=i===0||_steps[WF_STEPS[i-1].id];
+    // Toujours autoriser le toggle si l'étape est déjà cochée (permet de revenir en arrière)
+    // ou si elle est débloquée par la séquence
+    var canToggle=canEdit&&(done||unlocked);
     var bg=done?'#1D9E75':'transparent';
     var border=done?'#1D9E75':unlocked?'#aaa':'#ddd';
-    var cursor=unlocked&&canEdit?'pointer':'default';
-    var click=unlocked&&canEdit?'onclick="toggleStep(\''+sid+'\',\''+step.id+'\')">':'>';
+    var cursor=canToggle?'pointer':'default';
+    var click=canToggle?'onclick="toggleStep(\''+sid+'\',\''+step.id+'\')">':'>';
     h+='<div style="display:flex;gap:12px;margin-bottom:10px;opacity:'+((!done&&!unlocked)?0.4:1)+';align-items:flex-start">';
     h+='<div style="display:flex;flex-direction:column;align-items:center">';
     h+='<div class="step-dot" style="background:'+bg+';border:2px solid '+border+';color:'+(done?'#fff':'#aaa')+';cursor:'+cursor+'" '+click+(done?'&#10003;':'')+'</div>';
