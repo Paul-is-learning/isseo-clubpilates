@@ -369,14 +369,24 @@ async function createStudio(){
   var steps={};STEPS.forEach(function(s){steps[s.id]=false;});
   var ca1=num(f.annualCA,CA_A1);
   var lm=num(f.loyerMensuel,4800);
+  // Modèle de référence : La Garenne-Colombes (IDF, loyer 4800€/mois, capex/emprunt/leasing standards)
+  var garenneRef=INIT.garenne;
+  var creatorName=(S.profile&&S.profile.nom)||'Paul';
+  var nowIso=new Date().toISOString();
   await saveStudio(id,{
     name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,
-    statut:'pipeline',capex:306200,emprunt:214340,cohorte:num(f.cohorte,1),steps:steps,
+    statut:'pipeline',
+    capex:num(f.capex,garenneRef.capex),
+    emprunt:num(f.emprunt,garenneRef.emprunt),
+    leasing:num(f.leasing,garenneRef.leasing),
+    cohorte:num(f.cohorte,1),steps:steps,
     loyer_mensuel:lm,
     forecast:{annualCA:ca1,annualCA2:Math.round(ca1*1.10),annualCA3:Math.round(ca1*1.21),
-      moisDebut:num(f.moisDebut,0),annee:num(f.annee||2026),actuel:{},actuel2:{},actuel3:{}}
+      moisDebut:num(f.moisDebut,0),annee:num(f.annee||2026),actuel:{},actuel2:{},actuel3:{}},
+    bpMeta:{createdBy:creatorName,createdAt:nowIso,modelBase:'La Garenne-Colombes',
+      lastModifiedBy:creatorName,lastModifiedAt:nowIso}
   });
-  S.showNewForm=false;toast('Studio cree');
+  S.showNewForm=false;toast('Studio créé — BP initialisé sur le modèle La Garenne-Colombes');
 }
 
 async function askAI(){

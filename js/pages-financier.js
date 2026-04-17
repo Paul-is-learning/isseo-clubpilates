@@ -623,9 +623,11 @@ function renderAdherentChart(labels,bp,real,annee){
 // ── Forecast ──────────────────────────────────────────────────────────────────
 function renderForecast(sid,s){
   var fy=S.forecastYear||1;
-  var fs=S.forecastSection||'summary';
+  var fs=S.forecastSection||'detail';
+  // Retro-compat : 'summary' n'existe plus — bascule vers 'detail'
+  if(fs==='summary')fs='detail';
   var fc=s.forecast||{};
-  var bps=build3YearBP(fc,sid,getStudioBPOpts(sid));
+  var bps=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(fc,sid,getStudioBPOpts(sid));
   var bp=fy===1?bps.a1:fy===2?bps.a2:bps.a3;
   var actuelKey=fy===1?'actuel':fy===2?'actuel2':'actuel3';
   var actuel=fc[actuelKey]||{};
@@ -706,98 +708,147 @@ function renderForecast(sid,s){
   h+='<div class="kpi" style="border:1.5px solid #d0d9ec;background:#f0f4fc"><div class="kpi-label" style="color:#1a3a6b;font-weight:600">Cash net disponible</div><div class="kpi-val" style="color:'+(cumBPCashnet>=0?'#1a3a6b':'#A32D2D')+'">'+fmt(cumBPCashnet)+'</div></div>';
   h+='</div>';
 
-  h+='<div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap">';
-  h+='<button class="tab '+(fs==='summary'?'active':'')+'" onclick="setFS(\'summary\')">Synthese</button>';
-  h+='<button class="tab '+(fs==='detail'?'active':'')+'" onclick="setFS(\'detail\')">Detail complet</button>';
-  h+='<button class="tab '+(fs==='saisie'?'active':'')+'" onclick="setFS(\'saisie\')">Saisie mensuelle</button>';
-  h+='<button class="tab '+(fs==='recap3'?'active':'')+'" onclick="setFS(\'recap3\')">Recap 3 ans</button>';
+  // ── Sub-tabs BP (3D, dynamiques) ────────────────────────────────────────────
+  h+='<div class="bp-subtabs">';
+  h+='<button class="bp-subtab '+(fs==='detail'?'active':'')+'" onclick="setFS(\'detail\')">';
+  h+='<span class="bp-subtab-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M3 11h18v4H3z"/><path d="M3 19h18v2H3z"/></svg></span>';
+  h+='<span class="bp-subtab-label">Detail complet</span>';
+  h+='<span class="bp-subtab-sub">CA, charges, IS &mdash; Y'+fy+'</span></button>';
+  h+='<button class="bp-subtab '+(fs==='saisie'?'active':'')+'" onclick="setFS(\'saisie\')">';
+  h+='<span class="bp-subtab-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4z"/></svg></span>';
+  h+='<span class="bp-subtab-label">Saisie mensuelle</span>';
+  h+='<span class="bp-subtab-sub">R&eacute;el saisi par mois</span></button>';
+  h+='<button class="bp-subtab '+(fs==='recap3'?'active':'')+'" onclick="setFS(\'recap3\')">';
+  h+='<span class="bp-subtab-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/></svg></span>';
+  h+='<span class="bp-subtab-label">R&eacute;cap 3 ans</span>';
+  h+='<span class="bp-subtab-sub">Y1 &middot; Y2 &middot; Y3</span></button>';
   h+='</div>';
 
-  if(fs==='summary'){
-    var rows=[
-      {l:'CA BP',vals:totals.map(function(t){return t.bpCA;}),tot:cumBPCA,bold:true},
-      {l:'CA Reel',vals:totals.map(function(t){return t.aCA;}),tot:cumActCA,blue:true},
-      {l:'REX BP (Res. Expl.)',vals:totals.map(function(t){return t.bpREX;}),tot:cumBPREX,bold:true,green:true},
-      {l:'EBITDA BP (REX+Amort)',vals:totals.map(function(t){return t.bpEBITDA;}),tot:cumBPEBITDA,orange:true},
-      {l:'Charges BP',vals:totals.map(function(t){return t.bpCharges;}),tot:totals.reduce(function(s,t){return s+t.bpCharges;},0)},
-      {l:'Resultat Net BP',vals:totals.map(function(t){return t.bpResult;}),tot:cumBPRes,bold:true},
-      {l:'CAF BP',vals:totals.map(function(t){return t.bpCAF;}),tot:cumBPCAF,bold:true},
-      {l:'Cash net disponible',vals:totals.map(function(t){return t.bpCashnet||0;}),tot:cumBPCashnet,bold:true,blue:true},
-      {l:'Resultat Net Reel',vals:totals.map(function(t){return t.aResult;}),tot:cumActRes,blue:true,res:true},
-    ];
-    h+='<div style="overflow-x:auto"><table>';
-    h+='<tr><th style="text-align:left;padding-left:8px">Ligne</th>';
-    moisLabels.forEach(function(m){h+='<th>'+m+'</th>';});
-    h+='<th>Total</th></tr>';
-    rows.forEach(function(row){
-      h+='<tr style="background:'+(row.green?'#f0faf5':row.orange?'#fff8f0':row.bold?'#f5f5f0':'')+'">';
-      h+='<td class="lbl" style="font-weight:'+(row.bold||row.green||row.orange?600:400)+';color:'+(row.green?'#0F6E56':row.orange?'#854F0B':'inherit')+'">'+row.l+'</td>';
-      row.vals.forEach(function(v){
-        var c='inherit';
-        if(row.green&&v!==null)c='#0F6E56';
-        else if(row.orange&&v!==null)c='#854F0B';
-        else if(row.blue&&v!==null)c=row.res?(v>=0?'#3B6D11':'#A32D2D'):'#185FA5';
-        h+='<td style="color:'+c+'">'+(v===null?'<span style="color:#ddd">--</span>':fmtN(v))+'</td>';
-      });
-      var totColor=row.green?'#0F6E56':row.orange?'#854F0B':row.res?(row.tot>=0?'#3B6D11':'#A32D2D'):'inherit';
-      h+='<td style="font-weight:700;color:'+totColor+'">'+fmtN(row.tot)+'</td></tr>';
-    });
-    h+='</table></div>';
-    h+='<div style="font-size:10px;color:#888;margin-top:6px">Noir/gris = BP &middot; Bleu = Reel saisi &middot; Vert = EBITDA</div>';
-  }
-
   if(fs==='detail'){
-    h+='<div style="overflow-x:auto"><table>';
-    h+='<tr><th style="text-align:left;padding-left:8px;min-width:150px">Ligne</th>';
+    var _bpEdit=isSuperAdmin()||(!isViewer());
+    h+='<div style="overflow-x:auto"><table class="bp-detail-table">';
+    h+='<tr><th style="text-align:left;padding-left:8px;min-width:180px">Ligne</th>';
     moisLabels.forEach(function(m){h+='<th>'+m+'</th>';});
     h+='<th style="font-weight:700">Total</th></tr>';
-    // Produits
-    h+='<tr style="background:#e8f0f8"><td class="lbl" colspan="14" style="font-weight:700;color:#185FA5;padding:6px 8px">PRODUITS</td></tr>';
+
+    // ── Produits ──
+    h+='<tr class="bp-section-head produits"><td colspan="14">PRODUITS</td></tr>';
+    var monthProd=Array(12).fill(0);
     PRODUITS.forEach(function(l){
       var tot=0;
-      h+='<tr><td class="lbl" style="padding-left:16px">'+l.label+'</td>';
+      h+='<tr class="bp-line"><td class="lbl" style="padding-left:18px">'+l.label+'</td>';
       bp.forEach(function(r,i){
-        var bv=r[l.id];tot+=bv;
+        var bv=r[l.id];tot+=bv;monthProd[i]+=bv;
         var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td><div style="font-size:10px;color:#444">'+fmtN(bv)+'</div>'+(a!==null?'<div style="font-size:10px;color:#185FA5;font-weight:600">'+fmtN(a)+'</div>':'')+'</td>';
+        h+='<td class="bp-cell" data-line="'+l.id+'" data-month="'+i+'" data-year="'+fy+'">';
+        if(_bpEdit){
+          h+='<input type="number" class="bp-edit-input" value="'+bv+'" onchange="onEditBP(\''+sid+'\',\''+l.id+'\','+i+','+fy+',this.value)" />';
+        } else {
+          h+='<div class="bp-val">'+fmtN(bv)+'</div>';
+        }
+        if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
+        h+='</td>';
       });
-      h+='<td style="font-weight:600;font-size:10px">'+fmtN(tot)+'</td></tr>';
+      h+='<td class="bp-total">'+fmtN(tot)+'</td></tr>';
     });
-    // EBITDA
-    h+='<tr style="background:#f0faf5"><td class="lbl" colspan="14" style="font-weight:700;color:#0F6E56;padding:6px 8px">EBITDA</td></tr>';
-    h+='<tr style="background:#f0faf5"><td class="lbl" style="padding-left:16px;font-weight:600;color:#0F6E56">EBITDA mensuel</td>';
-    var totEB=0;
-    totals.forEach(function(t){
-      totEB+=t.bpEBITDA;
-      h+='<td><div style="font-size:10px;font-weight:600;color:#0F6E56">'+fmtN(t.bpEBITDA)+'</div>';
-      if(t.hasReal)h+='<div style="font-size:10px;color:'+(t.aEBITDA>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+fmtN(t.aEBITDA)+'</div>';
-      h+='</td>';
-    });
-    h+='<td style="font-weight:700;color:#0F6E56">'+fmtN(totEB)+'</td></tr>';
-    // Charges
-    h+='<tr style="background:#fafafa"><td class="lbl" colspan="14" style="font-weight:700;color:#555;padding:6px 8px">CHARGES</td></tr>';
+    // Sum row Produits
+    var totProd=monthProd.reduce(function(s,v){return s+v;},0);
+    h+='<tr class="bp-sum-row produits"><td class="lbl">Total Produits</td>';
+    monthProd.forEach(function(v){h+='<td>'+fmtN(v)+'</td>';});
+    h+='<td class="bp-total">'+fmtN(totProd)+'</td></tr>';
+
+    // ── Charges ──
+    h+='<tr class="bp-section-head charges"><td colspan="14">CHARGES</td></tr>';
+    var monthCh=Array(12).fill(0);
     CHARGES.forEach(function(l){
       var tot=0;
-      h+='<tr><td class="lbl" style="padding-left:16px">'+l.label+'</td>';
+      // IS est auto-calculé — verrouillé (read-only)
+      var isReadonly=(l.id==='is');
+      h+='<tr class="bp-line'+(isReadonly?' bp-line-readonly':'')+'"><td class="lbl" style="padding-left:18px">'+l.label;
+      if(isReadonly)h+=' <span class="bp-auto-badge" title="Calcul&eacute; automatiquement (15% jusqu\'&agrave; 42 500 &euro;, 25% au-del&agrave;)">auto</span>';
+      h+='</td>';
       bp.forEach(function(r,i){
-        var bv=r[l.id];tot+=bv;
+        var bv=r[l.id];tot+=bv;monthCh[i]+=bv;
         var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td><div style="font-size:10px;color:#444">'+fmtN(bv)+'</div>'+(a!==null?'<div style="font-size:10px;color:#185FA5;font-weight:600">'+fmtN(a)+'</div>':'')+'</td>';
+        h+='<td class="bp-cell" data-line="'+l.id+'" data-month="'+i+'" data-year="'+fy+'">';
+        if(_bpEdit&&!isReadonly){
+          h+='<input type="number" class="bp-edit-input" value="'+bv+'" onchange="onEditBP(\''+sid+'\',\''+l.id+'\','+i+','+fy+',this.value)" />';
+        } else {
+          h+='<div class="bp-val'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(bv)+'</div>';
+        }
+        if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
+        h+='</td>';
       });
-      h+='<td style="font-weight:600;font-size:10px">'+fmtN(tot)+'</td></tr>';
+      h+='<td class="bp-total">'+fmtN(tot)+'</td></tr>';
     });
-    // Resultat
-    h+='<tr style="background:#f5f5f0"><td class="lbl" style="font-weight:700">RESULTAT NET</td>';
-    var totRN=0;
+    // Sum row Charges
+    var totCh=monthCh.reduce(function(s,v){return s+v;},0);
+    h+='<tr class="bp-sum-row charges"><td class="lbl">Total Charges</td>';
+    monthCh.forEach(function(v){h+='<td>'+fmtN(v)+'</td>';});
+    h+='<td class="bp-total">'+fmtN(totCh)+'</td></tr>';
+
+    // ── Indicateurs dérivés (EBITDA, RN, CAF) ──
+    h+='<tr class="bp-section-head indicateurs"><td colspan="14">INDICATEURS (recalcul&eacute;s)</td></tr>';
+
+    // EBITDA mensuel = REX + Amort (CA - charges hors amort/IS/charges_fin)
+    var totEB=0;
+    h+='<tr class="bp-indic ebitda"><td class="lbl">EBITDA <span class="bp-auto-badge">auto</span></td>';
     totals.forEach(function(t){
-      totRN+=t.bpResult;
-      h+='<td><div style="font-size:10px;font-weight:700">'+fmtN(t.bpResult)+'</div>';
-      if(t.hasReal)h+='<div style="font-size:10px;color:'+(t.aResult>=0?'#3B6D11':'#A32D2D')+';font-weight:600">'+fmtN(t.aResult)+'</div>';
+      totEB+=t.bpEBITDA;
+      h+='<td><div class="bp-val-indic">'+fmtN(t.bpEBITDA)+'</div>';
+      if(t.hasReal)h+='<div class="bp-actual '+(t.aEBITDA>=0?'pos':'neg')+'">'+fmtN(t.aEBITDA)+'</div>';
       h+='</td>';
     });
-    h+='<td style="font-weight:700">'+fmtN(totRN)+'</td></tr>';
+    h+='<td class="bp-total">'+fmtN(totEB)+'</td></tr>';
+
+    // REX
+    var totREX=0;
+    h+='<tr class="bp-indic rex"><td class="lbl">R&eacute;sultat d\'exploitation <span class="bp-auto-badge">auto</span></td>';
+    totals.forEach(function(t){
+      totREX+=t.bpREX;
+      h+='<td><div class="bp-val-indic">'+fmtN(t.bpREX)+'</div></td>';
+    });
+    h+='<td class="bp-total">'+fmtN(totREX)+'</td></tr>';
+
+    // Résultat Net
+    var totRN=0;
+    h+='<tr class="bp-indic rn"><td class="lbl">R&eacute;sultat net <span class="bp-auto-badge">auto</span></td>';
+    totals.forEach(function(t){
+      totRN+=t.bpResult;
+      h+='<td><div class="bp-val-indic strong">'+fmtN(t.bpResult)+'</div>';
+      if(t.hasReal)h+='<div class="bp-actual '+(t.aResult>=0?'pos':'neg')+'">'+fmtN(t.aResult)+'</div>';
+      h+='</td>';
+    });
+    h+='<td class="bp-total">'+fmtN(totRN)+'</td></tr>';
+
+    // CAF apparent = RN + Amort
+    var totCAF=0;
+    h+='<tr class="bp-indic caf"><td class="lbl">CAF apparente <span class="bp-auto-badge">auto</span></td>';
+    totals.forEach(function(t){
+      totCAF+=t.bpCAF;
+      h+='<td><div class="bp-val-indic">'+fmtN(t.bpCAF)+'</div></td>';
+    });
+    h+='<td class="bp-total">'+fmtN(totCAF)+'</td></tr>';
+
     h+='</table></div>';
-    h+='<div style="font-size:10px;color:#888;margin-top:6px">Gris/noir = BP &middot; Bleu = Reel saisi</div>';
+
+    // Panel propositions en attente (si existe)
+    if(typeof renderBPProposalsPanel==='function')h+=renderBPProposalsPanel(sid);
+
+    // Légende + metadata
+    var bpMeta=(s.bpMeta||{});
+    var metaTxt=bpMeta.createdBy?('BP initial enregistr&eacute; par <b>'+bpMeta.createdBy+'</b>'+(bpMeta.createdAt?' &middot; '+new Date(bpMeta.createdAt).toLocaleDateString('fr-FR'):'')):'BP par d&eacute;faut (mod&egrave;le La Garenne-Colombes)';
+    if(bpMeta.lastModifiedBy&&bpMeta.lastModifiedBy!==bpMeta.createdBy){
+      metaTxt+=' &middot; derni&egrave;re modif : '+bpMeta.lastModifiedBy+(bpMeta.lastModifiedAt?' le '+new Date(bpMeta.lastModifiedAt).toLocaleDateString('fr-FR'):'');
+    }
+    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:10px">';
+    h+='<div style="font-size:11px;color:#888">'+metaTxt+'</div>';
+    h+='<div style="display:flex;gap:8px;align-items:center">';
+    h+='<div style="font-size:10px;color:#888">Cellules &eacute;ditables &middot; <span class="bp-auto-badge">auto</span> = recalcul&eacute; (IS 15/25%, EBITDA, CAF)</div>';
+    if(isSuperAdmin()){
+      h+='<button class="btn" style="font-size:10px;padding:4px 10px;color:#6b7280" onclick="resetBPYear(\''+sid+'\','+fy+')" title="Revenir aux valeurs La Garenne-Colombes pour l\'ann&eacute;e Y'+fy+'">Reset Y'+fy+'</button>';
+    }
+    h+='</div></div>';
   }
 
   if(fs==='saisie'){

@@ -12,7 +12,7 @@ var S={
   prospectTab:'pw', // 'pw'|'cobe'|'sacobe'
   prospectExpandedComments:{}, // {globalIdx: true}
   mainTab:'studios',detailTab:'workflow',
-  forecastYear:1,forecastSection:'summary',
+  forecastYear:1,forecastSection:'detail',
   editMoisIdx:null,editVals:{},
   adherentYear:1,
   showNewForm:false,newForm:{},
@@ -153,6 +153,8 @@ async function loadAll(){
     }
     if(changed)sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()});
   });
+  // Seed rétroactif : attribue Paul comme créateur du BP initial pour studios sans bpMeta
+  if(typeof seedBPMetaIfMissing==='function')seedBPMetaIfMissing();
 }
 
 // ── Navigation persistante ─────────────────────────────────────────────────────
@@ -165,7 +167,7 @@ function restoreNavState(){
     S.page=n.page||'accueil';
     if(n.page==='projets'&&n.sid&&S.studios[n.sid]){
       S.view='detail';S.selectedId=n.sid;S.detailTab=n.tab||'workflow';
-      S.adherentYear=1;S.forecastYear=1;S.forecastSection='summary';
+      S.adherentYear=1;S.forecastYear=1;S.forecastSection='detail';
     } else {
       S.view='dashboard';S.mainTab=n.main||'studios';
     }
