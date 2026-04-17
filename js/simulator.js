@@ -489,6 +489,12 @@ var SIM_ARPU_TOTAL_BP={
 
 // CA BP mensuel de référence = directement issu du dossier (somme = CA annuel exact)
 // computeBPCA : membres × ARPU_total_BP
+/**
+ * Calcule le CA d'un nombre de membres pour une année donnée (ARPU dossier officiel).
+ * @param {number} membres - Nombre de membres (somme des mois ou par mois selon usage)
+ * @param {1|2|3} ay - Année du BP (1, 2 ou 3). Fallback sur année 1 si invalide.
+ * @returns {number} CA arrondi en euros
+ */
 function computeBPCA(membres,ay){
   return Math.round(membres*(SIM_ARPU_TOTAL_BP[ay]||SIM_ARPU_TOTAL_BP[1]));
 }
@@ -507,6 +513,11 @@ var SIM_BOUTIQUE_FACTOR={
   3:SIM_ARPU_TOTAL_BP[3]/_BP_PACK_ARPU_DEF,   // ≈ 1.0845
 };
 
+/**
+ * ARPU moyen d'un client selon la répartition packs 4/8/illimité et leurs prix.
+ * @param {SimConfig} cfg - Répartition (p4/p8/pi en %) + prix (prix4/prix8/prixi)
+ * @returns {number} ARPU mensuel € HT
+ */
 function computeSimARPU(cfg){
   var p4=num(cfg.p4,47)/100, p8=num(cfg.p8,50)/100, pi=num(cfg.pi,3)/100;
   return p4*num(cfg.prix4,SIM_PRIX_REF.prix4) + p8*num(cfg.prix8,SIM_PRIX_REF.prix8) + pi*num(cfg.prixi,SIM_PRIX_REF.prixi);
@@ -515,6 +526,15 @@ function computeSimARPU(cfg){
 // CA simulé mensuel = membres × ARPU_packs × facteur_boutique(année)
 // Cohérence garantie : au défaut BP, CA_sim = CA_BP exact
 // Pour Gold Gym : CA basé sur le tarif GG (34€ HT/mois) ajusté proportionnellement
+/**
+ * CA mensuel simulé selon répartition/prix custom.
+ * Invariant clé : avec la config BP par défaut et les prix BP, CA_sim === CA_BP.
+ * @param {number} membres - Nombre de membres pour le mois
+ * @param {SimConfig} cfg - Répartition + prix custom
+ * @param {1|2|3} ay - Année du BP (impacte le facteur boutique)
+ * @param {string} [sid] - Studio ID (branche Gold Gym si applicable)
+ * @returns {number} CA arrondi en euros
+ */
 function computeSimCA(membres,cfg,ay,sid){
   if(sid&&isGoldGymStudio(sid)){
     // Gold Gym : ARPU ≈ CA_annuel / somme_membres
