@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20260417-m3c10';
+const CACHE_VERSION = 'isseo-v1-20260417-m3d11';
 const APP_SHELL = [
   './',
   './index.html',
@@ -29,6 +29,7 @@ const APP_SHELL = [
   './js/pages-prospection.js?v=20260416gc19',
   './js/pages-collab.js?v=20260416gc19',
   './js/pages-local.js?v=20260416gc19',
+  './js/pages-echanges.js?v=20260416gc19',
   './js/pages.js?v=20260416gc19',
   './js/map.js?v=20260416gc19',
   './js/utils.js?v=20260416gc19',
