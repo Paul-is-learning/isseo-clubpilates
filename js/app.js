@@ -87,6 +87,7 @@ function render(){
 }
 
 // ── Hash routing (#7) ──────────────────────────────────────────────────────
+var _firstSync=true;
 function _syncHash(){
   if(!S.user)return;
   var h='#/'+S.page;
@@ -95,7 +96,13 @@ function _syncHash(){
     h='#/studio/'+encodeURIComponent(sName);
     if(S.detailTab&&S.detailTab!=='workflow')h+='/'+S.detailTab;
   }
-  if(location.hash!==h){try{history.replaceState(null,'',h);}catch(e){}}
+  if(location.hash!==h){
+    try{
+      if(_firstSync)history.replaceState(null,'',h);
+      else history.pushState(null,'',h);
+    }catch(e){}
+  }
+  _firstSync=false;
 }
 function _restoreFromHash(){
   var h=(location.hash||'').replace(/^#\/?/,'');
