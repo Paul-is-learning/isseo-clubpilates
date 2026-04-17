@@ -33,16 +33,10 @@ serve(async (req) => {
 
   try {
     // ── Auth ──────────────────────────────────────────────────────────────
+    // La plateforme Supabase vérifie déjà le JWT (verify_jwt = true par défaut).
+    // On exige juste la présence du header pour bloquer les appels anonymes.
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) return json({ error: "Non autorisé" }, 401);
-
-    const supabaseUser = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? "",
-      { global: { headers: { Authorization: authHeader } } }
-    );
-    const { data: { user: caller } } = await supabaseUser.auth.getUser();
-    if (!caller) return json({ error: "Session invalide" }, 401);
 
     // ── Parse body ────────────────────────────────────────────────────────
     const { sid, taskId, event, actorName, extra } = await req.json();
@@ -279,9 +273,12 @@ function composeTaskEmail(opts: {
     headline = `💬 ${actorName} t'a mentionné`;
   }
 
-  const urlDone = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.done)}`;
-  const urlDoing = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.in_progress)}`;
-  const urlTodo = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.todo)}`;
+  // apikey publique requise sinon la plateforme Supabase force content-type:text/plain
+  // (protection anti-phishing pour les invocations anonymes).
+  const PUB_KEY = Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") || "sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv";
+  const urlDone = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.done)}&apikey=${PUB_KEY}`;
+  const urlDoing = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.in_progress)}&apikey=${PUB_KEY}`;
+  const urlTodo = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.todo)}&apikey=${PUB_KEY}`;
   // Le bouton "Répondre / Commenter" pointe DIRECTEMENT vers l'app (avec deeplink vers la tâche)
   // plutôt que task-action → meilleure UX (contexte complet, mentions, réactions) et évite les
   // soucis de rendering HTML isolé qu'on a eus avec task-action.
