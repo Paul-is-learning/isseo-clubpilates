@@ -149,20 +149,20 @@ function renderAccueil(){
   h+='<div style="display:flex;align-items:center;gap:4px">';
   // Cloche notifications
   h+='<div style="position:relative" onclick="event.stopPropagation();toggleNotifPanel()">';
-  h+='<button title="Notifications" style="background:none;border:1px solid #e8e8e0;border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s;position:relative" onmouseover="this.style.background=\'#f5f5f0\';this.style.borderColor=\'#d0d0c8\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e8e8e0\'">';
+  h+='<button class="icon-btn" title="Notifications" style="position:relative">';
   h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
   h+='</button>';
-  h+='<div id="notif-badge-accueil" style="display:'+(_unread>0?'flex':'none')+';position:absolute;top:-3px;right:-3px;background:#ef4444;color:#fff;font-size:8px;font-weight:700;min-width:16px;height:16px;border-radius:8px;align-items:center;justify-content:center;padding:0 4px;border:2px solid #faf9f6;line-height:1;box-shadow:0 1px 4px rgba(239,68,68,0.4)">'+(_unread>99?'99+':_unread)+'</div>';
+  h+='<div class="icon-btn__badge" id="notif-badge-accueil" style="display:'+(_unread>0?'flex':'none')+'">'+(_unread>99?'99+':_unread)+'</div>';
   if(S.notifOpen)h+=renderNotifPanel();
   h+='</div>';
-  // Cadenas mot de passe
   // Bouton Inviter un viewer (admins uniquement)
   if(S.profile&&(S.profile.role==='admin'||S.profile.role==='superadmin'||isSuperAdmin())){
-    h+='<button onclick="showInviteViewerModal()" title="Inviter un viewer" style="background:none;border:1px solid #e8e8e0;border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background=\'#f0fdf4\';this.style.borderColor=\'#86efac\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e8e8e0\'">';
+    h+='<button class="icon-btn icon-btn--success" onclick="showInviteViewerModal()" title="Inviter un viewer">';
     h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#22c55e" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>';
     h+='</button>';
   }
-  h+='<button onclick="openChangePassword()" title="Modifier mot de passe" style="background:none;border:1px solid #e8e8e0;border-radius:12px;width:40px;height:40px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background=\'#f5f5f0\';this.style.borderColor=\'#d0d0c8\'" onmouseout="this.style.background=\'none\';this.style.borderColor=\'#e8e8e0\'">';
+  // Cadenas mot de passe
+  h+='<button class="icon-btn" onclick="openChangePassword()" title="Modifier mot de passe">';
   h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16.5" r="1.5"/></svg>';
   h+='</button>';
   h+='</div>';
