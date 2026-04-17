@@ -243,12 +243,15 @@ async function doLogin(){
     if(er){er.style.display='block';er.textContent='Votre accès à la plateforme a été suspendu. Contactez l\'administrateur.';}
     return;
   }
+  S._dataLoaded=true;
   restoreNavState();render();
+  if(typeof startSync==='function')startSync();
   _startSessionWatcher();
   startPresenceHeartbeat();
   recordLastLogin();
-  // Notifications
+  // Notifications + autres profils + prospects (mêmes étapes que le flux session-restore)
   _loadAllProfiles();
+  if(typeof loadProspects==='function')loadProspects();
   loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});
   subscribeNotifications();
   }catch(e){console.error('Login error:',e);if(err){err.style.display='block';err.textContent='Erreur de connexion: '+e.message;}}

@@ -555,11 +555,36 @@ async function doLogout(){
   try{localStorage.removeItem('isseo_nav');}catch(e){}
   render();
 }
-function openDetail(id){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='summary';S.adherentYear=1;saveNavState();render();}
+function openDetail(id){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='detail';S.adherentYear=1;saveNavState();render();}
 function retourProjets(){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.view='dashboard';S.selectedId=null;S.page='projets';saveNavState();render();}
 function retourAccueil(){retourProjets();}
 function setPage(p){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();window._prevPage=S.page;S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';saveNavState();render();try{var _btb=document.getElementById('bottom-tab-bar');if(_btb){var _bs=_btb.querySelectorAll('.btab');_bs.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-page')===p);});}}catch(e){}}
 function toggleSidebar(){S.sidebarOpen=!S.sidebarOpen;var sb=document.querySelector('.sidebar');var ov=document.getElementById('sidebar-overlay');if(sb)sb.classList.toggle('open',S.sidebarOpen);if(ov)ov.classList.toggle('show',S.sidebarOpen);}
 function setFileNav(studio,folder){S.fileNav={studio:studio||null,folder:folder||null};render();}
 function toggleDarkMode(){S.darkMode=!S.darkMode;try{localStorage.setItem('isseo_darkMode',S.darkMode);}catch(e){}document.body.classList.toggle('dark',S.darkMode);render();}
+
+// ── Vider le cache de l'app (SW + Cache Storage) et recharger ─────────────
+// Utile quand une nouvelle version est déployée mais que le Service Worker
+// sert encore les anciens fichiers (symptôme typique : skeleton persistant,
+// features manquantes après déploiement). Pas de perte de données : les
+// données utilisateur sont sur Supabase, pas dans le cache.
+async function clearAppCacheAndReload(){
+  if(!confirm('Vider le cache local et recharger l\'app ?\n\n(Utile après une mise à jour — aucune donnée ne sera perdue.)'))return;
+  try{
+    // 1) Unregister service workers
+    if('serviceWorker' in navigator){
+      var regs=await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map(function(r){return r.unregister();}));
+    }
+    // 2) Purge Cache Storage
+    if(window.caches&&caches.keys){
+      var keys=await caches.keys();
+      await Promise.all(keys.map(function(k){return caches.delete(k);}));
+    }
+    // 3) Invalidate hash fragment pour forcer un chargement réseau
+    try{location.hash='#_nocache='+Date.now();}catch(e){}
+  }catch(e){console.warn('[cache clear]',e);}
+  // 4) Hard reload — bypass HTTP cache
+  location.reload();
+}
 
