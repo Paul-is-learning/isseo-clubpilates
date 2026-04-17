@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20260417-sn15';
+const CACHE_VERSION = 'isseo-v1-20260417-gd16';
 const APP_SHELL = [
   './',
   './index.html',
@@ -38,6 +38,8 @@ const APP_SHELL = [
   './js/vendor/preact.umd.js?v=20260416gc19',
   './js/vendor/htm.umd.js?v=20260416gc19',
   './js/preact-components/next-steps-widget.js?v=20260416gc19',
+  './js/gdrive.js?v=20260416gc19',
+  './js/gdrive-ui.js?v=20260416gc19',
   './js/map.js?v=20260416gc19',
   './js/utils.js?v=20260416gc19',
   './js/exports.js?v=20260416gc19',

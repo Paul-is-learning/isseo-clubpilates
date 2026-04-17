@@ -84,6 +84,8 @@ function render(){
     renderChat();
     // Montage des composants Preact (Phase 5) — appelé après chaque render()
     if(typeof mountNextStepsWidget==='function')mountNextStepsWidget();
+    // Montage des file browsers Google Drive (Phase 7) — scan les placeholders
+    if(typeof mountGDriveBrowsers==='function')mountGDriveBrowsers();
   }catch(e){console.error('render() error:',e);}
   _rendering=false;
 }

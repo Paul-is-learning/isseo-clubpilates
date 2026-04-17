@@ -17,3 +17,11 @@ window.ISSEO_POSTHOG_HOST = 'https://eu.i.posthog.com';
 
 // Environnement logique — utilisé par Sentry/PostHog pour séparer dev / prod
 window.ISSEO_ENV = /^(localhost|127\.0\.0\.1|192\.168\.|10\.)/.test(location.hostname) ? 'dev' : 'prod';
+
+// Google Drive API — intégration complète (OAuth + list/upload/preview).
+// Setup : https://console.cloud.google.com → créer un projet → activer Drive API
+//   → OAuth 2.0 Client ID (Web app) + API Key.
+// Authorized JavaScript origins à déclarer : https://clubpilates.isseo-dev.com
+// et http://localhost:5173 (pour le dev).
+window.ISSEO_GOOGLE_CLIENT_ID = '';
+window.ISSEO_GOOGLE_API_KEY = '';
