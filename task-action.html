@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISSEO — Redirection</title>
+<style>
+  body{margin:0;padding:0;background:#faf9f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;color:#1a1a1a;display:flex;align-items:center;justify-content:center;min-height:100vh}
+  .box{text-align:center;padding:40px 28px;background:#fff;border-radius:14px;box-shadow:0 4px 24px rgba(0,0,0,0.06);max-width:380px;margin:16px}
+  .spinner{width:36px;height:36px;border:3px solid #e8e8e0;border-top-color:#1a3a6b;border-radius:50%;margin:0 auto 18px;animation:spin .8s linear infinite}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  h1{font-size:16px;font-weight:600;color:#1a3a6b;margin:0 0 6px;letter-spacing:0.3px}
+  p{font-size:13px;color:#6b7280;margin:0;line-height:1.5}
+  a{color:#1a3a6b;font-weight:600;text-decoration:none}
+</style>
+</head>
+<body>
+<div class="box">
+  <div class="spinner"></div>
+  <h1>Redirection vers ISSEO…</h1>
+  <p id="msg">Traitement de votre action en cours.</p>
+</div>
+<script>
+(function(){
+  var SUPA_URL = 'https://wfqtpcujujqxgfsgbpvp.supabase.co';
+  var PUB_KEY = 'sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv';
+  var p = new URLSearchParams(window.location.search);
+  var t = p.get('t');
+  if(!t){
+    document.getElementById('msg').innerHTML = 'Lien invalide ou expiré.<br><a href="https://clubpilates.isseo-dev.com">Ouvrir ISSEO</a>';
+    return;
+  }
+  var target = SUPA_URL + '/functions/v1/task-action?t=' + encodeURIComponent(t) + '&apikey=' + PUB_KEY;
+  // Replace pour ne pas polluer l'historique
+  window.location.replace(target);
+})();
+</script>
+</body>
+</html>

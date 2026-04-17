@@ -52,7 +52,7 @@ serve(async (req) => {
     }
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
-    const PUBLIC_APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://isseo-app.vercel.app";
+    const PUBLIC_APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://clubpilates.isseo-dev.com";
     const FUNCTIONS_BASE = `${SUPABASE_URL}/functions/v1`;
 
     // ── Service-role client (lecture des tâches + profils) ────────────────
@@ -294,12 +294,13 @@ function composeTaskEmail(opts: {
     headline = `💬 ${actorName} t'a mentionné`;
   }
 
-  // apikey publique requise sinon la plateforme Supabase force content-type:text/plain
-  // (protection anti-phishing pour les invocations anonymes).
-  const PUB_KEY = Deno.env.get("PUBLIC_SUPABASE_ANON_KEY") || "sb_publishable_DzvE9czY1AqkmXI3gTK28Q_DvoxNZAv";
-  const urlDone = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.done)}&apikey=${PUB_KEY}`;
-  const urlDoing = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.in_progress)}&apikey=${PUB_KEY}`;
-  const urlTodo = `${functionsBase}/task-action?t=${encodeURIComponent(tokens.todo)}&apikey=${PUB_KEY}`;
+  // Les liens passent par /task-action.html sur notre domaine (Vercel) qui ajoute
+  // l'apikey et redirige vers la fonction. Évite les soucis content-type:text/plain
+  // imposés par la plateforme Supabase quand l'apikey n'est pas présente, et donne
+  // une URL plus pro (clubpilates.isseo-dev.com) dans les emails.
+  const urlDone = `${appUrl}/task-action.html?t=${encodeURIComponent(tokens.done)}`;
+  const urlDoing = `${appUrl}/task-action.html?t=${encodeURIComponent(tokens.in_progress)}`;
+  const urlTodo = `${appUrl}/task-action.html?t=${encodeURIComponent(tokens.todo)}`;
   // Le bouton "Répondre / Commenter" pointe DIRECTEMENT vers l'app (avec deeplink vers la tâche)
   // plutôt que task-action → meilleure UX (contexte complet, mentions, réactions) et évite les
   // soucis de rendering HTML isolé qu'on a eus avec task-action.
