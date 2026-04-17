@@ -23,5 +23,5 @@ window.ISSEO_ENV = /^(localhost|127\.0\.0\.1|192\.168\.|10\.)/.test(location.hos
 //   → OAuth 2.0 Client ID (Web app) + API Key.
 // Authorized JavaScript origins à déclarer : https://clubpilates.isseo-dev.com
 // et http://localhost:5173 (pour le dev).
-window.ISSEO_GOOGLE_CLIENT_ID = '';
-window.ISSEO_GOOGLE_API_KEY = '';
+window.ISSEO_GOOGLE_CLIENT_ID = '733378463549-1t4fe9pf607t66v89eql9de1fgns2s4c.apps.googleusercontent.com';
+window.ISSEO_GOOGLE_API_KEY = 'AIzaSyCElJQzc9mteUBlz3O4V0O9d8jH3gRS5A4';
