@@ -726,10 +726,23 @@ function renderForecast(sid,s){
 
   if(fs==='detail'){
     var _bpEdit=isSuperAdmin()||(!isViewer());
+
+    // ── Bandeau didactique : comment saisir ? ─────────────────────────────
+    if(_bpEdit){
+      h+='<div class="bp-help-banner">';
+      h+='<div class="bp-help-ic">💡</div>';
+      h+='<div style="flex:1">';
+      h+='<div class="bp-help-title">Comment modifier le BP ?</div>';
+      h+='<div class="bp-help-txt">Saisissez un <b>montant annuel</b> dans la colonne <b>Total</b> à droite — l\'app répartit automatiquement sur les 12 mois. '
+        +'Pour le <b>CA</b>, la saisonnalité du dossier (ramp-up) est conservée ; pour les charges fixes, le montant est divisé par 12. '
+        +'<b>IS</b>, <b>EBITDA</b> et <b>CAF</b> se recalculent en direct.</div>';
+      h+='</div></div>';
+    }
+
     h+='<div style="overflow-x:auto"><table class="bp-detail-table">';
     h+='<tr><th style="text-align:left;padding-left:8px;min-width:180px">Ligne</th>';
     moisLabels.forEach(function(m){h+='<th>'+m+'</th>';});
-    h+='<th style="font-weight:700">Total</th></tr>';
+    h+='<th class="bp-total-col-head">Total annuel'+(_bpEdit?' <span class="bp-edit-hint">✎</span>':'')+'</th></tr>';
 
     // ── Produits ──
     h+='<tr class="bp-section-head produits"><td colspan="14">PRODUITS</td></tr>';
@@ -740,18 +753,22 @@ function renderForecast(sid,s){
       bp.forEach(function(r,i){
         var bv=r[l.id];tot+=bv;monthProd[i]+=bv;
         var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td class="bp-cell" data-line="'+l.id+'" data-month="'+i+'" data-year="'+fy+'">';
-        if(_bpEdit){
-          h+='<input type="number" class="bp-edit-input" value="'+bv+'" onchange="onEditBP(\''+sid+'\',\''+l.id+'\','+i+','+fy+',this.value)" />';
-        } else {
-          h+='<div class="bp-val">'+fmtN(bv)+'</div>';
-        }
+        h+='<td class="bp-cell"><div class="bp-val">'+fmtN(bv)+'</div>';
         if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
         h+='</td>';
       });
-      h+='<td class="bp-total">'+fmtN(tot)+'</td></tr>';
+      // Colonne Total = input annuel éditable
+      h+='<td class="bp-total-cell">';
+      if(_bpEdit){
+        h+='<input type="number" class="bp-annual-input" value="'+tot+'" '
+          +'onchange="onEditBPAnnual(\''+sid+'\',\''+l.id+'\','+fy+',this.value)" '
+          +'title="Montant annuel Y'+fy+' — r&eacute;parti sur 12 mois (saisonnalit&eacute; CA pr&eacute;serv&eacute;e)" />';
+      } else {
+        h+='<div class="bp-total">'+fmtN(tot)+'</div>';
+      }
+      h+='</td></tr>';
     });
-    // Sum row Produits
+    // Sum row Produits (non éditable — c'est une somme)
     var totProd=monthProd.reduce(function(s,v){return s+v;},0);
     h+='<tr class="bp-sum-row produits"><td class="lbl">Total Produits</td>';
     monthProd.forEach(function(v){h+='<td>'+fmtN(v)+'</td>';});
@@ -770,16 +787,20 @@ function renderForecast(sid,s){
       bp.forEach(function(r,i){
         var bv=r[l.id];tot+=bv;monthCh[i]+=bv;
         var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td class="bp-cell" data-line="'+l.id+'" data-month="'+i+'" data-year="'+fy+'">';
-        if(_bpEdit&&!isReadonly){
-          h+='<input type="number" class="bp-edit-input" value="'+bv+'" onchange="onEditBP(\''+sid+'\',\''+l.id+'\','+i+','+fy+',this.value)" />';
-        } else {
-          h+='<div class="bp-val'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(bv)+'</div>';
-        }
+        h+='<td class="bp-cell"><div class="bp-val'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(bv)+'</div>';
         if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
         h+='</td>';
       });
-      h+='<td class="bp-total">'+fmtN(tot)+'</td></tr>';
+      // Colonne Total éditable (sauf IS)
+      h+='<td class="bp-total-cell">';
+      if(_bpEdit&&!isReadonly){
+        h+='<input type="number" class="bp-annual-input" value="'+tot+'" '
+          +'onchange="onEditBPAnnual(\''+sid+'\',\''+l.id+'\','+fy+',this.value)" '
+          +'title="Montant annuel Y'+fy+' — r&eacute;parti sur 12 mois" />';
+      } else {
+        h+='<div class="bp-total'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(tot)+'</div>';
+      }
+      h+='</td></tr>';
     });
     // Sum row Charges
     var totCh=monthCh.reduce(function(s,v){return s+v;},0);
