@@ -150,7 +150,7 @@ sb.auth.getSession().then(function(res){
             var _dtid=decodeURIComponent(m[2]);
             setTimeout(function(){
               if(typeof openDetail==='function')openDetail(_dsid);
-              if(typeof setDetailTab==='function')setDetailTab('taches');
+              if(typeof setDetailTab==='function')setDetailTab('echanges');
               setTimeout(function(){
                 if(typeof openTacheModal==='function')openTacheModal(_dsid,_dtid);
                 try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}

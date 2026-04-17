@@ -455,8 +455,8 @@ function renderMyTasks(allIds){
   (allIds||Object.keys(S.studios||{})).forEach(function(sid){
     (S.todos[sid]||[]).forEach(function(t){
       if(!t||t.statut==='done')return;
-      var assignee=t.responsable||t.auteur||'';
-      if(assignee!==myName)return;
+      // Match tolérant sur tous les assignés (gère "Pascal Bécaud" ≡ "Pascal Bécaud (ISSEO)")
+      if(!_taskAssignedTo(t,myName))return;
       // Calcul urgence
       var diff=null,urgency='normal';
       if(t.deadline){

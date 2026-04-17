@@ -385,7 +385,7 @@ function composeTaskEmail(opts: {
       </td></tr>
 
       <tr><td style="padding:8px 32px 24px">
-        <a href="${appUrl}" style="display:block;text-align:center;padding:10px;background:#f3f4f6;color:#374151;text-decoration:none;border-radius:9px;font-size:12px;font-weight:500">Ouvrir dans l'app</a>
+        <a href="${urlComment}" style="display:block;text-align:center;padding:10px;background:#f3f4f6;color:#374151;text-decoration:none;border-radius:9px;font-size:12px;font-weight:500">Ouvrir cette tâche dans l'app</a>
       </td></tr>
 
       <!-- Footer -->

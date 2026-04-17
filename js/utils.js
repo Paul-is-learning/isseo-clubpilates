@@ -363,6 +363,26 @@ function _getAssignees(task){
   return [];
 }
 
+// Normalise un nom : lowercase, accents enlevés, parenthèses (...) supprimées,
+// espaces collapsés. Permet "Pascal Bécaud" ≡ "Pascal Bécaud (ISSEO)".
+function _normalizeName(s){
+  return (s||'').toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+    .replace(/\([^)]*\)/g,'')
+    .replace(/\s+/g,' ').trim();
+}
+// True si deux noms désignent la même personne (matching tolérant).
+function _namesMatch(a,b){
+  var na=_normalizeName(a),nb=_normalizeName(b);
+  if(!na||!nb)return false;
+  if(na===nb)return true;
+  return na.indexOf(nb)>=0||nb.indexOf(na)>=0;
+}
+// True si la tâche est assignée à un nom donné (tolérant + multi-assignés).
+function _taskAssignedTo(task,name){
+  return _getAssignees(task).some(function(a){return _namesMatch(a,name);});
+}
+
 // Métadonnées de priorité (label, couleur, icône)
 function _getPriorityMeta(p){
   var m={

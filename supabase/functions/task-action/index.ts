@@ -27,7 +27,7 @@ serve(async (req) => {
     const TASK_ACTION_SECRET = Deno.env.get("TASK_ACTION_SECRET");
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL") ?? "";
     const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-    const PUBLIC_APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://isseo-app.vercel.app";
+    const PUBLIC_APP_URL = Deno.env.get("PUBLIC_APP_URL") || "https://clubpilates.isseo-dev.com";
     if (!TASK_ACTION_SECRET || !SERVICE_KEY) {
       return htmlError("Configuration serveur incomplète.", PUBLIC_APP_URL);
     }
@@ -98,7 +98,7 @@ serve(async (req) => {
           <p style="font-size:15px;color:#374151;line-height:1.6;margin:0 0 10px">Merci ${escHtml(firstName(targetUser))} ! La tâche <strong>${escHtml(task.titre)}</strong> dans <strong>${escHtml(studioName)}</strong> est désormais <strong style="color:${sm.color}">${sm.label.toLowerCase()}</strong>.</p>
           <p style="font-size:13px;color:#6b7280;margin:14px 0 0">Les autres membres de l'équipe ont été notifiés.</p>
         `,
-        appUrl: PUBLIC_APP_URL,
+        appUrl: `${PUBLIC_APP_URL}/#tache=${encodeURIComponent(sid)}:${encodeURIComponent(taskId)}`,
       });
     }
 
@@ -137,7 +137,7 @@ serve(async (req) => {
             <div style="background:#f8fafc;border-left:3px solid #6366F1;padding:12px 14px;border-radius:0 8px 8px 0;font-size:13px;color:#374151;margin:16px 0;white-space:pre-wrap">${escHtml(body)}</div>
             <p style="font-size:12px;color:#6b7280;margin:10px 0 0">L'équipe a été notifiée.</p>
           `,
-          appUrl: PUBLIC_APP_URL,
+          appUrl: `${PUBLIC_APP_URL}/#tache=${encodeURIComponent(sid)}:${encodeURIComponent(taskId)}`,
         });
       }
 
@@ -159,7 +159,7 @@ serve(async (req) => {
             <button type="submit" style="margin-top:12px;width:100%;padding:13px;background:#111827;color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:600;cursor:pointer">Envoyer le commentaire</button>
           </form>
         `,
-        appUrl: PUBLIC_APP_URL,
+        appUrl: `${PUBLIC_APP_URL}/#tache=${encodeURIComponent(sid)}:${encodeURIComponent(taskId)}`,
         wide: true,
       });
     }
