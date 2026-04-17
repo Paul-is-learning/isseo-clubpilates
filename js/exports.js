@@ -348,14 +348,6 @@ function generateReport(sid,sections){
     h+='</div>'+pageFooter()+'</div>';
   }
 
-  // Alertes
-  if(s.alertes&&s.alertes.length>0){
-    h+='<div style="padding:0 40px;margin-top:-20px"><div style="background:#fef3c7;border:1px solid #fde68a;border-radius:6px;padding:10px 14px">';
-    h+='<div style="font-size:9px;font-weight:700;color:#92400e;margin-bottom:4px">ALERTES</div>';
-    s.alertes.forEach(function(a){h+='<div style="font-size:9.5px;color:#92400e;padding:2px 0">\u26a0 '+_alerteText(a)+'</div>';});
-    h+='</div></div>';
-  }
-
   // Print button
   h+='<div class="no-print" style="position:fixed;bottom:24px;right:24px;z-index:9999;display:flex;gap:10px">';
   h+='<button onclick="window.print()" style="background:#0f1f3d;color:#fff;border:none;border-radius:10px;padding:12px 24px;font-size:13px;font-weight:700;cursor:pointer;box-shadow:0 4px 20px rgba(15,31,61,0.3);display:flex;align-items:center;gap:8px">';

@@ -4,14 +4,8 @@
     {
       "name": "isseo-app (frontend)",
       "runtimeExecutable": "python3",
-      "runtimeArgs": ["/Users/paulbecaud/Desktop/isseo-app/.claude/serve.py"],
+      "runtimeArgs": ["/tmp/serve_isseo.py"],
       "port": 8080
-    },
-    {
-      "name": "supabase-functions (ask-ai)",
-      "runtimeExecutable": "supabase",
-      "runtimeArgs": ["functions", "serve", "ask-ai"],
-      "port": 54321
     }
   ]
 }

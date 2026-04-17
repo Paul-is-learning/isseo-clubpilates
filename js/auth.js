@@ -521,12 +521,6 @@ function globalSearch(query){
     // Studios
     var fields=[s.name,s.societe,s.addr||'',s.ouverture||''].join(' ').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if(fields.indexOf(q)>=0)results.push({type:'studio',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',title:s.name,subtitle:s.societe+' · '+s.ouverture,studioId:id,tab:null,color:'#1a3a6b'});
-    // Alertes
-    (s.alertes||[]).forEach(function(a){
-      var at=_alerteText(a);
-      var an=at.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
-      if(an.indexOf(q)>=0)results.push({type:'alerte',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',title:at,subtitle:s.name,studioId:id,tab:'alertes',color:'#DC2626'});
-    });
     // Étapes workflow non complétées
     getStudioSteps(id).forEach(function(step){
       if(!s.steps[step.id]){
@@ -644,7 +638,7 @@ function renderSearchResultsInner(){
   if(!results.length)return '<div style="padding:16px 20px;text-align:center;color:#999;font-size:12px">Aucun résultat pour « '+S.searchQuery+' »</div>';
   var h='';
   var lastType='';
-  var TYPE_LABELS={studio:'Studios',alerte:'Alertes',workflow:'Workflow',message:'Messages',document:'Documents',depense:'Dépenses',tache:'Tâches',scenario:'Scénarios',prospect:'Prospection',page:'Navigation'};
+  var TYPE_LABELS={studio:'Studios',workflow:'Workflow',message:'Messages',document:'Documents',depense:'Dépenses',tache:'Tâches',scenario:'Scénarios',prospect:'Prospection',page:'Navigation'};
   results.forEach(function(r,i){
     if(r.type!==lastType){
       lastType=r.type;
@@ -878,7 +872,6 @@ function renderSidebar(){
   var roleLabel=role==='admin'?'Administrateur':role==='viewer'?'Lecteur':role;
   // Compteurs pour badges
   var _allIds=_getStudioIds();
-  var _alertCount=_allIds.reduce(function(s,id){return s+(S.studios[id]?S.studios[id].alertes.length:0);},0);
   var _unreadNotif=S.notifications.filter(function(n){return!n.read;}).length;
   var _prospectCount=(S.prospects||[]).length;
   // Badge Collab : mes tâches actives assignées (non done)
@@ -895,7 +888,7 @@ function renderSidebar(){
   }
   var links=[
     {id:'accueil',label:'Accueil',badge:_unreadNotif,badgeColor:'#3B82F6',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
-    {id:'projets',label:'Studios',badge:_alertCount,badgeColor:'#EF4444',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
+    {id:'projets',label:'Studios',badge:0,icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
     {id:'collab',label:'Collab',badge:_collabCount,badgeColor:'#7C3AED',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
     {id:'prospection',label:'Prospection',badge:_prospectCount,badgeColor:'#F59E0B',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
     {id:'bp',label:'BP Consolidé',badge:0,icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
@@ -966,7 +959,7 @@ function getUserPhoto(profile){
 // Helper: get all filtered studio IDs
 function _getStudioIds(){
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
-  var ids=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&st.alertes&&(!filter||filter(st));});
+  var ids=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&(!filter||filter(st));});
   // Viewer granulaire : filtrer par studios autorisés
   if(isViewer()&&S.user&&S.adminSettings.viewerPerms&&S.adminSettings.viewerPerms[S.user.id]){
     var allowed=S.adminSettings.viewerPerms[S.user.id].studios||[];
@@ -988,8 +981,8 @@ function showInviteViewerModal(){
   overlay.id='invite-modal';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
-  var allStudios=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&st.alertes;});
-  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var allStudios=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name;});
+  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
   var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:540px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)">';
   box+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>';
   box+='<div><div style="font-size:16px;font-weight:700;color:#1a1a1a">Inviter un viewer</div>';

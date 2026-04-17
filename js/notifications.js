@@ -248,25 +248,8 @@ async function checkEcheances(){
   var now=new Date();
   var todayStr=now.toISOString().slice(0,10);
   var ids=Object.keys(S.studios);
-  // ── 1. Échéances textuelles dans studios.alertes ──
-  ids.forEach(function(sid){
-    var s=S.studios[sid];if(!s||!s.alertes)return;
-    s.alertes.forEach(function(a){
-      // Chercher des dates dans les alertes (format DD/MM/YYYY)
-      var m=a.match(/(\d{2})\/(\d{2})\/(\d{4})/);
-      if(!m)return;
-      var d=new Date(m[3],m[2]-1,m[1]);
-      var diff=Math.ceil((d-now)/(1000*60*60*24));
-      if(diff>=0&&diff<=14){
-        var already=S.notifications.find(function(n){return n.type==='echeance'&&n.studio_id===sid&&n.body===a&&n.created_at&&n.created_at.slice(0,10)===todayStr;});
-        if(!already){
-          sb.from('notifications').insert({type:'echeance',user_id:S.user.id,source_user_id:S.user.id,studio_id:sid,title:'\u00c9ch\u00e9ance dans '+diff+'j — '+s.name,body:a,read:false});
-        }
-      }
-    });
-  });
 
-  // ── 2. Rappels sur les tâches assignées à l'utilisateur courant ──
+  // ── Rappels sur les tâches assignées à l'utilisateur courant ──
   var myName=(S.profile&&S.profile.nom)||'';
   if(!myName)return;
   // Jours de déclenchement : J-7, J-3, J-1, J-0, puis retards
@@ -277,9 +260,8 @@ async function checkEcheances(){
     todos.forEach(function(t){
       if(!t||t.statut==='done')return;
       if(!t.deadline)return;
-      // La tâche doit m'être assignée (responsable) ou être à moi par défaut (auteur sans responsable)
-      var assignee=t.responsable||t.auteur||'';
-      if(assignee!==myName)return;
+      // La tâche doit m'être assignée (matching tolérant des noms)
+      if(!_taskAssignedTo(t,myName))return;
       var dl=new Date(t.deadline+'T00:00:00');
       if(isNaN(dl.getTime()))return;
       // diff en jours (positif = à venir, négatif = en retard)
@@ -427,7 +409,7 @@ function handleNotifClick(notifId,studioId,type){
     else if(type==='document')S.detailTab='fichiers';
     else if(type==='depense')S.detailTab='engagements';
     else if(type==='statut')S.detailTab='workflow';
-    else if(type==='echeance')S.detailTab='alertes';
+    else if(type==='echeance')S.detailTab='echanges';
     render();
   }
 }

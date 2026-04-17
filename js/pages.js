@@ -44,16 +44,12 @@ function _computeHealthScore(){
     });
     proSum=Math.round(proSum/pros.length);
   } else proSum=50;
-  // 5. Alertes (10%)
-  var alertSum=0;
-  ids.forEach(function(id){alertSum+=S.studios[id].alertes.length;});
-  var alerts=Math.max(0,Math.min(100,100-Math.round(alertSum/n*25)));
-  // Weighted
-  var score=Math.round(progress*0.30+tasks*0.20+financial*0.25+proSum*0.15+alerts*0.10);
+  // Weighted (alertes supprimées — leur 10% redistribué : tasks +5, prospection +5)
+  var score=Math.round(progress*0.30+tasks*0.25+financial*0.25+proSum*0.20);
   score=Math.max(0,Math.min(100,score));
   var summary=score>=80?'Excellent — portefeuille en bonne santé':score>=60?'Bon — quelques points d\'attention à surveiller':score>=40?'Attention — des actions correctives recommandées':'Critique — intervention nécessaire';
   var color=score>=80?'#0F6E56':score>=60?'#3b82f6':score>=40?'#f59e0b':'#dc2626';
-  return {score:score,progress:progress,tasks:tasks,financial:financial,prospection:proSum,alerts:alerts,summary:summary,color:color};
+  return {score:score,progress:progress,tasks:tasks,financial:financial,prospection:proSum,summary:summary,color:color};
 }
 
 function _renderHealthGauge(hs){
@@ -70,8 +66,7 @@ function _renderHealthGauge(hs){
     {l:'Studios',v:hs.progress,c:_gcColor(hs.progress)},
     {l:'T\u00e2ches',v:hs.tasks,c:_gcColor(hs.tasks)},
     {l:'Financier',v:hs.financial,c:_gcColor(hs.financial)},
-    {l:'Prospection',v:hs.prospection,c:_gcColor(hs.prospection)},
-    {l:'Alertes',v:hs.alerts,c:_gcColor(hs.alerts)}
+    {l:'Prospection',v:hs.prospection,c:_gcColor(hs.prospection)}
   ];
   var h2='<div class="health-gauge" data-hs-metrics=\''+JSON.stringify(_gcMetrics)+'\' data-hs-r="'+r+'" data-hs-cx="'+cx+'" data-hs-cy="'+cy+'">';
   h2+='<svg width="'+w+'" height="'+hh+'" viewBox="0 0 '+w+' '+hh+'">';
@@ -119,7 +114,6 @@ function _renderHealthGauge(hs){
 function renderAccueil(){
   if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div style="padding:24px">'+skeletonGrid(6)+'</div>';
   var allIds=_getStudioIds();
-  var alertCount=allIds.reduce(function(s,id){return s+S.studios[id].alertes.length;},0);
 
   var h='';
   var _prenom=(S.profile&&S.profile.nom||'').split(' ')[0]||'';
@@ -194,17 +188,15 @@ function renderAccueil(){
     {l:'Studios',v:_hs.progress,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
     {l:'Tâches',v:_hs.tasks,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
     {l:'Financier',v:_hs.financial,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
-    {l:'Prospection',v:_hs.prospection,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
-    {l:'Alertes',v:_hs.alerts,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>'}
+    {l:'Prospection',v:_hs.prospection,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'}
   ];
-  // Radar chart — 5 axes
-  var _rc=150,_rcx=75,_rcy=75,_rr=52;
+  // Radar chart — 4 axes (90° entre chacun)
+  var _rc=150,_rcx=75,_rcy=75,_rr=52,_nax=4;
   var _axes=[
     {l:'Studios',v:_hs.progress,a:-90},
-    {l:'Tâches',v:_hs.tasks,a:-90+72},
-    {l:'Financier',v:_hs.financial,a:-90+144},
-    {l:'Prospection',v:_hs.prospection,a:-90+216},
-    {l:'Alertes',v:_hs.alerts,a:-90+288}
+    {l:'Tâches',v:_hs.tasks,a:0},
+    {l:'Financier',v:_hs.financial,a:90},
+    {l:'Prospection',v:_hs.prospection,a:180}
   ];
   h+='<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">';
   h+='<div class="radar-chart"><svg width="'+_rc+'" height="'+_rc+'" viewBox="0 0 '+_rc+' '+_rc+'">';
@@ -212,14 +204,14 @@ function renderAccueil(){
   for(var _gi=1;_gi<=4;_gi++){
     var _gr=_rr*_gi/4;
     var _gpts=[];
-    for(var _gj=0;_gj<5;_gj++){
+    for(var _gj=0;_gj<_nax;_gj++){
       var _ga=_axes[_gj].a*Math.PI/180;
       _gpts.push((_rcx+_gr*Math.cos(_ga)).toFixed(1)+','+(_rcy+_gr*Math.sin(_ga)).toFixed(1));
     }
     h+='<polygon points="'+_gpts.join(' ')+'" fill="none" stroke="'+(S.darkMode?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)')+'" stroke-width="1"/>';
   }
   // Axis lines + labels
-  for(var _ai=0;_ai<5;_ai++){
+  for(var _ai=0;_ai<_nax;_ai++){
     var _aa=_axes[_ai].a*Math.PI/180;
     var _ax2=_rcx+_rr*Math.cos(_aa),_ay2=_rcy+_rr*Math.sin(_aa);
     h+='<line x1="'+_rcx+'" y1="'+_rcy+'" x2="'+_ax2.toFixed(1)+'" y2="'+_ay2.toFixed(1)+'" stroke="'+(S.darkMode?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.08)')+'" stroke-width="1"/>';
@@ -228,7 +220,7 @@ function renderAccueil(){
   }
   // Data polygon
   var _dpts=[];
-  for(var _di=0;_di<5;_di++){
+  for(var _di=0;_di<_nax;_di++){
     var _daa=_axes[_di].a*Math.PI/180;
     var _dr=_rr*(_axes[_di].v/100);
     _dpts.push((_rcx+_dr*Math.cos(_daa)).toFixed(1)+','+(_rcy+_dr*Math.sin(_daa)).toFixed(1));
@@ -236,7 +228,7 @@ function renderAccueil(){
   h+='<polygon class="radar-fill" points="'+_dpts.join(' ')+'" fill="'+_hs.color+'" stroke="none"/>';
   h+='<polygon class="radar-polygon" points="'+_dpts.join(' ')+'" fill="none" stroke="'+_hs.color+'" stroke-width="2.5" stroke-linejoin="round"/>';
   // Data dots
-  for(var _ddi=0;_ddi<5;_ddi++){
+  for(var _ddi=0;_ddi<_nax;_ddi++){
     var _ddaa=_axes[_ddi].a*Math.PI/180;
     var _ddr=_rr*(_axes[_ddi].v/100);
     var _ddx=_rcx+_ddr*Math.cos(_ddaa),_ddy=_rcy+_ddr*Math.sin(_ddaa);
@@ -291,8 +283,7 @@ function renderAccueil(){
   var _kpis=[
     {label:'Studios',val:'<span class="counter-anim" data-target="'+allIds.length+'" data-format="int">0</span>',click:'setPage(\'projets\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA',spark:_spark(_studiosSeries,'rgba(96,165,250,0.95)'),trend:{dir:'up',text:'+'+allIds.length+' actifs'}},
     {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+_capexTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399',spark:_spark(_capexSeries,'rgba(52,211,153,0.95)'),trend:{dir:'up',text:'↑ 12.4%'}},
-    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}},
-    {label:'Alertes',val:'<span class="counter-anim" data-target="'+alertCount+'" data-format="int">0</span>',alert:alertCount>0,click:'ouvrirAlertesModal()',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',color:'#F87171',trend:alertCount>0?{dir:'down',text:'à traiter'}:{dir:'flat',text:'RAS'}}
+    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}}
   ];
   _kpis.forEach(function(k,ki){
     h+='<div class="kpi-reveal" data-idx="'+ki+'" onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 12px 34px rgba(0,0,0,0.25)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
@@ -3161,12 +3152,11 @@ function renderCard(id,s){
         '<div style="font-size:11px;color:#888;margin-top:3px">Ouv. <strong>'+s.ouverture+'</strong></div>'+
       '</div>'+
     '</div>'+
-    (s.alertes.length>0?'<div style="margin-top:4px;font-size:11px;color:#854F0B;background:#FAEEDA;border-radius:6px;padding:4px 8px">! '+_alerteText(s.alertes[0])+'</div>':'')+
     dirSection+
     '</div>';
 }
 
-// ── Activité récente — 3 colonnes : Tâches | Chat | Alertes ──────────────
+// ── Activité récente — 2 colonnes : Tâches | Chat ──────────────
 function renderActivityFeed(ids){
   // ── 1. Collecter toutes les tâches actives (non done) ──
   var allTasks=[];
@@ -3193,15 +3183,7 @@ function renderActivityFeed(ids){
   // ── 2. Chat commun — derniers messages ──
   var chatMsgs=(S.globalChat||[]).slice(-5).reverse();
 
-  // ── 3. Alertes ──
-  var allAlerts=[];
-  ids.forEach(function(id){
-    (S.studios[id].alertes||[]).forEach(function(a){
-      allAlerts.push({studioId:id,studioName:S.studios[id].name,text:_alerteText(a)});
-    });
-  });
-
-  var h='<div class="activity-grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:18px">';
+  var h='<div class="activity-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px">';
 
   // ═══ Bloc 1 : Tâches actives ═══
   h+='<div style="background:'+(S.darkMode?'#161b22':'#fff')+';border:0.5px solid '+(S.darkMode?'#30363d':'#e0e0d8')+';border-radius:12px;padding:16px 18px;min-height:80px">';
@@ -3268,22 +3250,6 @@ function renderActivityFeed(ids){
     h+='</div>';
   }
   h+='<button onclick="toggleChat()" style="margin-top:10px;width:100%;padding:6px;background:'+(S.darkMode?'#21262d':'#f0f2f8')+';color:'+(S.darkMode?'#e6edf3':'#0f1f3d')+';border:none;border-radius:8px;font-size:11px;font-weight:600;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background=S.darkMode?\'#30363d\':\'#e2e6f0\'" onmouseout="this.style.background=S.darkMode?\'#21262d\':\'#f0f2f8\'">Ouvrir le chat</button>';
-  h+='</div>';
-
-  // ═══ Bloc 3 : Alertes actives ═══
-  h+='<div style="background:'+(S.darkMode?'#161b22':'#fff')+';border:0.5px solid '+(S.darkMode?'#30363d':'#e0e0d8')+';border-radius:12px;padding:16px 18px;min-height:80px">';
-  h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:12px"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg><span style="font-size:12px;font-weight:700;color:#1a1a1a">Alertes actives</span><span style="background:#DC2626;color:#fff;font-size:9px;font-weight:700;border-radius:8px;padding:1px 6px;min-width:14px;text-align:center">'+allAlerts.length+'</span></div>';
-  if(!allAlerts.length){
-    h+=(typeof emptyState==='function')?emptyState('alert','Aucune alerte','Tous vos studios sont au vert.'):'<div style="font-size:11px;color:#bbb;text-align:center;padding:12px 0">Aucune alerte</div>';
-  } else {
-    allAlerts.forEach(function(a){
-      h+='<div onclick="openDetail(\''+a.studioId+'\');setTimeout(function(){setDetailTab(\'alertes\')},50)" style="display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid '+(S.darkMode?'#30363d':'#f5f5f0')+';cursor:pointer;transition:background 0.1s" onmouseover="this.style.background=S.darkMode?\'#1c2128\':\'#fef6f6\'" onmouseout="this.style.background=\'transparent\'">';
-      h+='<div style="flex-shrink:0;width:6px;height:6px;border-radius:50%;background:#DC2626"></div>';
-      h+='<div style="min-width:0;flex:1"><div style="font-size:11px;color:#854F0B;font-weight:500">'+a.text+'</div>';
-      h+='<div style="font-size:10px;color:#999;margin-top:1px">'+a.studioName+'</div>';
-      h+='</div></div>';
-    });
-  }
   h+='</div>';
   h+='</div>';
   return h;
@@ -3397,7 +3363,7 @@ function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
   var isAdmin=!!S.profile&&!isViewer();
-  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['alertes','Alertes'],['ia','IA']];
+  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Forecast'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
   // Filtrage onglets pour viewers avec permissions granulaires
   if(isViewer()&&S.user&&S.adminSettings&&S.adminSettings.viewerPerms&&S.adminSettings.viewerPerms[S.user.id]){
     var _allowedTabs=S.adminSettings.viewerPerms[S.user.id].tabs||[];
@@ -3417,7 +3383,6 @@ function renderDetail(){
   else if(S.detailTab==='localisation')content=renderLocalisation(s);
   else if(S.detailTab==='local')content=renderLocal(S.selectedId,s);
   else if(S.detailTab==='fichiers')content=renderFichiers(S.selectedId);
-  else if(S.detailTab==='alertes')content=renderAlertes(S.selectedId,s);
   else if(S.detailTab==='ia')content=renderAI(s);
   var h='';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px">';

@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ISSEO — Guide d'utilisation</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--bg:#faf9f6;--card:#fff;--text:#1a1a1a;--sub:#666;--accent:#0F6E56;--accent2:#0f1f3d;--gold:#B8860B;--border:#e8e6e1;--code:#f4f3ef;--shadow:0 2px 12px rgba(0,0,0,0.06)}
+body{font-family:'Segoe UI',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.7;font-size:15px}
+.container{max-width:820px;margin:0 auto;padding:40px 24px 80px}
+h1{font-size:32px;color:var(--accent2);margin-bottom:8px;letter-spacing:-0.5px}
+h2{font-size:22px;color:var(--accent2);margin:48px 0 16px;padding-bottom:8px;border-bottom:2px solid var(--accent)}
+h3{font-size:17px;color:var(--accent);margin:28px 0 10px}
+h4{font-size:14px;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin:20px 0 8px}
+p{margin:8px 0}
+.subtitle{font-size:16px;color:var(--sub);margin-bottom:32px}
+.badge{display:inline-block;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;letter-spacing:0.3px}
+.badge-admin{background:#e8f5e9;color:#2e7d32}
+.badge-limited{background:#fff3e0;color:#e65100}
+.badge-viewer{background:#e3f2fd;color:#1565c0}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px;margin:16px 0;box-shadow:var(--shadow)}
+.card-accent{border-left:4px solid var(--accent)}
+.card-gold{border-left:4px solid var(--gold)}
+.card-blue{border-left:4px solid #3B6FB6}
+.steps{counter-reset:step}
+.step{position:relative;padding:16px 16px 16px 56px;margin:12px 0;background:var(--card);border:1px solid var(--border);border-radius:10px;counter-increment:step}
+.step::before{content:counter(step);position:absolute;left:16px;top:16px;width:28px;height:28px;background:var(--accent);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.step b{color:var(--accent2)}
+.tip{background:#fef9e7;border:1px solid #f0e6c0;border-radius:10px;padding:14px 18px;margin:12px 0;font-size:13.5px}
+.tip::before{content:'Astuce';display:block;font-weight:700;color:var(--gold);font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+.warn{background:#fde8e8;border:1px solid #f0c0c0;border-radius:10px;padding:14px 18px;margin:12px 0;font-size:13.5px}
+.warn::before{content:'Important';display:block;font-weight:700;color:#c0392b;font-size:11px;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px}
+table{width:100%;border-collapse:collapse;margin:12px 0;font-size:13.5px}
+th{background:var(--accent2);color:#fff;padding:10px 14px;text-align:left;font-size:12px;text-transform:uppercase;letter-spacing:0.3px}
+td{padding:10px 14px;border-bottom:1px solid var(--border)}
+tr:nth-child(even){background:#fafaf7}
+.icon{font-size:18px;vertical-align:middle;margin-right:4px}
+.kbd{display:inline-block;background:var(--code);border:1px solid #ddd;border-radius:4px;padding:1px 6px;font-size:12px;font-family:monospace;color:#333}
+.toc{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:24px 28px;margin:24px 0}
+.toc a{color:var(--accent);text-decoration:none;display:block;padding:4px 0;font-size:14px}
+.toc a:hover{text-decoration:underline}
+.toc-title{font-weight:700;font-size:13px;color:var(--sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.cols{grid-template-columns:1fr}}
+.screen{background:var(--accent2);color:#c8d6e5;border-radius:10px;padding:16px 20px;margin:12px 0;font-family:monospace;font-size:12.5px;line-height:1.6;overflow-x:auto}
+.screen b{color:#48dbfb}
+.screen em{color:#feca57;font-style:normal}
+.nav-visual{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.nav-item{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 16px;font-size:13px;text-align:center;min-width:110px}
+.nav-item .icon{display:block;font-size:22px;margin-bottom:4px}
+hr{border:none;border-top:1px solid var(--border);margin:32px 0}
+.role-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin:12px 0}
+@media(max-width:600px){.role-grid{grid-template-columns:1fr}}
+.role-card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;text-align:center}
+.role-card h4{margin:8px 0 4px;text-transform:none;letter-spacing:0;font-size:15px;color:var(--text)}
+.role-card p{font-size:12.5px;color:var(--sub)}
+.footer{text-align:center;margin-top:60px;padding-top:24px;border-top:1px solid var(--border);color:var(--sub);font-size:12px}
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>ISSEO Club Pilates</h1>
+<p class="subtitle">Guide d'utilisation — Bienvenue dans votre outil de pilotage</p>
+
+<div class="toc">
+  <div class="toc-title">Sommaire</div>
+  <a href="#connexion">1. Se connecter</a>
+  <a href="#roles">2. Comprendre les profils utilisateurs</a>
+  <a href="#accueil">3. L'accueil — votre tableau de bord</a>
+  <a href="#projets">4. Projets — suivre vos studios</a>
+  <a href="#detail">5. Fiche studio — le coeur de l'app</a>
+  <a href="#bp">6. BP Consolide — vision financiere globale</a>
+  <a href="#prospection">7. Prospection — evaluer de nouveaux emplacements</a>
+  <a href="#engagements">8. Engagements — suivi des financements</a>
+  <a href="#collaboration">9. Collaboration — chat, messages, taches</a>
+  <a href="#notifications">10. Notifications — ne rien rater</a>
+  <a href="#exports">11. Exports — PDF, Excel, CSV</a>
+  <a href="#admin">12. Administration (super-admins)</a>
+  <a href="#astuces">13. Astuces & raccourcis</a>
+  <a href="#faq">14. FAQ & depannage</a>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="connexion">1. Se connecter</h2>
+
+<div class="steps">
+  <div class="step">Ouvrez l'application dans votre navigateur (Chrome, Safari, Firefox — tous compatibles).</div>
+  <div class="step">Entrez votre <b>adresse email</b> et votre <b>mot de passe</b> fournis par l'administrateur.</div>
+  <div class="step">Cliquez sur <b>Se connecter</b>. Vous arrivez directement sur la page d'accueil.</div>
+</div>
+
+<div class="tip">
+  Votre session reste active pendant 5 minutes d'inactivite. Un bandeau jaune vous previent 1 minute avant la deconnexion automatique — cliquez "Rester connecte" pour prolonger.
+</div>
+
+<div class="warn">
+  Si le message "Acces suspendu" apparait, votre compte a ete desactive par l'administrateur. Contactez Paul ou Tom.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="roles">2. Comprendre les profils utilisateurs</h2>
+
+<p>Chaque utilisateur a un <b>role</b> qui determine ce qu'il voit et ce qu'il peut faire :</p>
+
+<div class="role-grid">
+  <div class="role-card">
+    <span class="icon">👑</span>
+    <h4>Admin complet</h4>
+    <span class="badge badge-admin">Paul, Tom, Pascal</span>
+    <p>Acces a tous les studios, toutes les fonctionnalites, gestion des comptes utilisateurs.</p>
+  </div>
+  <div class="role-card">
+    <span class="icon">📋</span>
+    <h4>Admin limite</h4>
+    <span class="badge badge-limited">Clement, Caroline, Sabourin</span>
+    <p>Acces uniquement aux studios de leur(s) societe(s). Memes fonctions que l'admin, sur leur perimetre.</p>
+  </div>
+  <div class="role-card">
+    <span class="icon">👁</span>
+    <h4>Lecteur</h4>
+    <span class="badge badge-viewer">Partenaires, observateurs</span>
+    <p>Consultation uniquement. Pas de modification, pas d'envoi de messages.</p>
+  </div>
+</div>
+
+<table>
+  <tr><th>Perimetre par role</th><th>Studios visibles</th></tr>
+  <tr><td><b>admin / tom / pascal</b></td><td>Tous les studios (Garenne, Lattes, Levallois, Issy, Toulouse)</td></tr>
+  <tr><td><b>coquel</b> (Clement)</td><td>Studios COBE + SACOBE uniquement</td></tr>
+  <tr><td><b>caroline</b></td><td>Studios COBE uniquement</td></tr>
+  <tr><td><b>sabourin</b></td><td>Studios SACOBE uniquement</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="accueil">3. L'accueil — votre tableau de bord</h2>
+
+<p>La page d'accueil vous donne une <b>vue d'ensemble instantanee</b> de l'activite.</p>
+
+<div class="card card-accent">
+  <h4>Ce que vous voyez</h4>
+  <div class="cols">
+    <div>
+      <p><b>Bandeau de bienvenue</b> — Votre nom, la date du jour, et un message adapte a l'heure.</p>
+      <p><b>4 indicateurs cles</b> (cliquables) :</p>
+      <ul style="margin-left:18px;font-size:14px">
+        <li>Nombre de studios</li>
+        <li>CAPEX total engage</li>
+        <li>CA previsionnel Annee 1</li>
+        <li>Alertes en cours</li>
+      </ul>
+    </div>
+    <div>
+      <p><b>Fil d'activite recente</b> — Les dernieres actions (messages, documents, changements de statut).</p>
+      <p><b>4 raccourcis</b> — Acces rapide vers Projets, Prospection, BP Consolide, Engagements.</p>
+    </div>
+  </div>
+</div>
+
+<div class="tip">
+  Cliquez sur votre <b>photo de profil</b> (en haut a gauche) pour la changer. Cliquez sur le <b>cadenas</b> pour modifier votre mot de passe.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="projets">4. Projets — suivre vos studios</h2>
+
+<p>La page <b>Projets</b> liste tous les studios auxquels vous avez acces.</p>
+
+<h3>Les 3 vues disponibles</h3>
+<div class="nav-visual">
+  <div class="nav-item"><span class="icon">◻</span> Grille<br><small>Cartes visuelles</small></div>
+  <div class="nav-item"><span class="icon">☰</span> Liste<br><small>Tableau compact</small></div>
+  <div class="nav-item"><span class="icon">◫</span> Cohorte<br><small>Groupement par vague</small></div>
+</div>
+
+<h3>Filtrer par statut</h3>
+<table>
+  <tr><th>Statut</th><th>Signification</th><th>Couleur</th></tr>
+  <tr><td>Pipeline</td><td>Projet identifie, en phase d'etude</td><td style="color:#888">Gris</td></tr>
+  <tr><td>Preparation</td><td>Bail signe ou en cours, travaux planifies</td><td style="color:#3B6FB6">Bleu</td></tr>
+  <tr><td>En chantier</td><td>Travaux en cours</td><td style="color:#e67e22">Orange</td></tr>
+  <tr><td>Ouvert</td><td>Studio operationnel, en exploitation</td><td style="color:#0F6E56">Vert</td></tr>
+  <tr><td>Abandonne</td><td>Projet arrete</td><td style="color:#c0392b">Rouge</td></tr>
+</table>
+
+<h3>Ce qu'affiche chaque carte</h3>
+<ul style="margin-left:18px;font-size:14px">
+  <li>Nom du studio et societe</li>
+  <li>Badge de statut</li>
+  <li>Date d'ouverture prevue</li>
+  <li>Barre de progression du workflow</li>
+  <li>CA previsionnel sur 3 ans (A1, A2, A3)</li>
+  <li>Nombre d'alertes</li>
+</ul>
+
+<p><b>Cliquez sur une carte</b> pour ouvrir la fiche detaillee du studio.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="detail">5. Fiche studio — le coeur de l'app</h2>
+
+<p>Chaque studio dispose de <b>9 onglets</b> accessibles via les boutons en haut de la fiche :</p>
+
+<div class="card">
+<table>
+  <tr><th>Onglet</th><th>A quoi ca sert</th></tr>
+  <tr><td><b>Workflow</b></td><td>Liste des etapes du projet (test-fit, bail, travaux…). Cochez chaque etape au fur et a mesure.</td></tr>
+  <tr><td><b>Adherents</b></td><td>Previsions d'adherents et simulateur de CA. Configurez les packs (P4/P8/Illimite) et leurs prix.</td></tr>
+  <tr><td><b>Forecast</b></td><td>Business plan mois par mois sur 3 ans. CA, charges, EBITDA, resultat, CAF.</td></tr>
+  <tr><td><b>Engagements</b></td><td>Suivi des depenses : lignes de CAPEX avec statut (Attente / Demande / Debloque).</td></tr>
+  <tr><td><b>Echanges</b></td><td>Forum de discussion par sujet + gestionnaire de taches avec assignation et deadlines.</td></tr>
+  <tr><td><b>Fichiers</b></td><td>Depot de documents (bail, plans, devis…). Glissez-deposez ou cliquez pour uploader.</td></tr>
+  <tr><td><b>Alertes</b></td><td>Echeances et rappels. Ajoutez une date et un texte, l'app vous notifie 14 jours avant.</td></tr>
+  <tr><td><b>Localisation</b></td><td>Carte interactive, zone de chalandise (rayon ajustable), donnees INSEE, analyse marche.</td></tr>
+  <tr><td><b>IA</b></td><td>Assistant IA pour poser des questions sur les donnees du studio.</td></tr>
+</table>
+</div>
+
+<h3>Workflow — suivre l'avancement</h3>
+<div class="steps">
+  <div class="step"><b>Visualisez</b> la barre de progression en haut (ex: "5/12 etapes — 42%").</div>
+  <div class="step"><b>Cochez</b> une etape en cliquant sur la case a gauche. L'etape passe au vert.</div>
+  <div class="step">Les etapes se debloquent <b>dans l'ordre</b> : vous devez valider la precedente pour acceder a la suivante.</div>
+</div>
+
+<div class="tip">
+  Chaque changement d'etape envoie une notification a toute l'equipe du studio.
+</div>
+
+<h3>Adherents & Simulateur — tester des scenarios</h3>
+<div class="steps">
+  <div class="step">Dans l'onglet <b>Adherents</b>, ajustez les curseurs de repartition des packs (P4, P8, Illimite).</div>
+  <div class="step">Modifiez les <b>prix unitaires</b> si besoin. Le CA se recalcule instantanement.</div>
+  <div class="step">Cliquez <b>"Enregistrer scenario"</b>, ajoutez un commentaire, et sauvegardez. Vous pouvez creer autant de scenarios que necessaire.</div>
+  <div class="step">Pour comparer, chargez un scenario precedent depuis le <b>menu deroulant</b>. "BP Default" revient aux valeurs de reference.</div>
+</div>
+
+<div class="warn">
+  N'oubliez pas de cliquer <b>"Enregistrer"</b> dans la barre jaune en bas si elle apparait — cela signifie que vos modifications ne sont pas encore sauvegardees.
+</div>
+
+<h3>Forecast — le business plan detaille</h3>
+<p>Le forecast affiche vos projections financieres mois par mois :</p>
+<ul style="margin-left:18px;font-size:14px">
+  <li><b>Resume</b> — Vue annuelle synthetique (CA, charges, EBITDA)</li>
+  <li><b>Detail</b> — Tableau mensuel complet</li>
+  <li><b>Comparaison</b> — Annee par annee cote a cote</li>
+  <li><b>Adherents</b> — Courbe d'evolution des membres</li>
+</ul>
+
+<h3>Engagements — suivre les depenses</h3>
+<div class="steps">
+  <div class="step">Cliquez <b>"+ Ajouter ligne"</b> pour creer une depense.</div>
+  <div class="step">Remplissez : libelle, montant HT, montant TTC.</div>
+  <div class="step">Suivez le statut de deblocage :
+    <span class="badge" style="background:#fff3e0;color:#e65100">Attente</span>
+    <span class="badge" style="background:#e3f2fd;color:#1565c0">Demande</span>
+    <span class="badge" style="background:#e8f5e9;color:#2e7d32">Debloque</span>
+  </div>
+</div>
+
+<h3>Echanges — communiquer en equipe</h3>
+<p>Deux sous-onglets :</p>
+<div class="cols">
+  <div class="card" style="padding:14px">
+    <h4 style="margin:0 0 6px">Discussions</h4>
+    <p style="font-size:13px">Creez des sujets thematiques (ex: "Negociation bail"). Chaque sujet a son fil de messages. Repondez directement dans le fil.</p>
+  </div>
+  <div class="card" style="padding:14px">
+    <h4 style="margin:0 0 6px">Taches</h4>
+    <p style="font-size:13px">Creez des taches avec un responsable, une deadline et un statut (A faire → En cours → Termine). Ideal pour le suivi des actions.</p>
+  </div>
+</div>
+
+<h3>Localisation — analyser le marche</h3>
+<p>Cet onglet affiche une <b>carte interactive</b> avec :</p>
+<ul style="margin-left:18px;font-size:14px">
+  <li>Position du studio sur la carte</li>
+  <li>Zone de chalandise ajustable (curseur 500m a 5km)</li>
+  <li>Estimation population INSEE dans le rayon</li>
+  <li>Donnees de trafic, transports, demographie</li>
+  <li>Comparaison avec les autres studios</li>
+  <li>Points forts / points de vigilance</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="bp">6. BP Consolide — vision financiere globale</h2>
+
+<p>Cette page regroupe les <b>donnees financieres de tous vos studios</b> en un seul ecran.</p>
+
+<div class="card card-gold">
+  <h4>Ce que vous y trouvez</h4>
+  <ul style="margin-left:18px;font-size:14px">
+    <li><b>Synthese 3 ans</b> — CA, EBITDA, Resultat consolides</li>
+    <li><b>Cartes par studio</b> — Survolez pour voir A1/A2/A3, marge, total</li>
+    <li><b>Graphiques</b> — Barres animees representant la performance</li>
+    <li><b>Point mort</b> — Indicateur du mois de rentabilite</li>
+  </ul>
+</div>
+
+<div class="tip">
+  Cliquez sur la carte d'un studio pour acceder directement a sa fiche detaillee.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="prospection">7. Prospection — evaluer de nouveaux emplacements</h2>
+
+<p>Gerez votre <b>pipeline de prospects</b> immobiliers pour de futurs studios.</p>
+
+<div class="steps">
+  <div class="step">Choisissez l'onglet de la societe (<b>P&W Occitanie</b>, <b>COBE</b>, <b>SACOBE</b>).</div>
+  <div class="step">Filtrez par temperature : <span class="badge" style="background:#fde8e8;color:#c0392b">Chaud</span> <span class="badge" style="background:#fff3e0;color:#e65100">Tiede</span> <span class="badge" style="background:#e3f2fd;color:#1565c0">Froid</span></div>
+  <div class="step">Notez chaque prospect avec les <b>etoiles</b> (1 a 5) pour prioriser.</div>
+  <div class="step">Ajoutez des <b>commentaires</b> pour partager vos observations avec l'equipe.</div>
+</div>
+
+<p>Chaque fiche prospect affiche : adresse, loyer mensuel, note, statut, et historique des commentaires.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="engagements">8. Engagements — suivi des financements</h2>
+
+<p>Vue consolidee des <b>engagements financiers</b> par societe et par actionnaire.</p>
+
+<h3>Deux angles de vue</h3>
+<div class="cols">
+  <div class="card" style="padding:14px">
+    <h4 style="margin:0 0 6px">Par societe</h4>
+    <p style="font-size:13px">P&W Occitanie, COBE, SACOBE — totaux engages, debloques, en attente.</p>
+  </div>
+  <div class="card" style="padding:14px">
+    <h4 style="margin:0 0 6px">Par actionnaire</h4>
+    <p style="font-size:13px">Apports individuels, comptes courants, repartition du capital.</p>
+  </div>
+</div>
+
+<h3>Sections detaillees</h3>
+<ul style="margin-left:18px;font-size:14px">
+  <li><b>Recapitulatif</b> — Vision d'ensemble des engagements</li>
+  <li><b>Fonds propres</b> — Simulation equity par cohorte (C1, C2, C3, C4)</li>
+  <li><b>Comptes courants</b> — Suivi des comptes courants d'associes</li>
+</ul>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="collaboration">9. Collaboration — chat, messages, taches</h2>
+
+<h3>Chat global</h3>
+<div class="card card-blue">
+  <p>La <b>bulle 💬</b> en bas a droite ouvre le chat global — visible par tous les utilisateurs.</p>
+  <ul style="margin-left:18px;font-size:14px">
+    <li>Tapez votre message (max 2000 caracteres) et appuyez sur <kbd>Entree</kbd> ou cliquez ➤</li>
+    <li>Chaque message affiche l'auteur, l'avatar, et l'heure</li>
+    <li>Les nouveaux messages envoient une notification a tous</li>
+  </ul>
+</div>
+
+<h3>Discussions par studio</h3>
+<p>Dans l'onglet <b>Echanges</b> d'un studio, creez des sujets thematiques. Chaque sujet a son propre fil de conversation — ideal pour garder la trace des decisions.</p>
+
+<h3>Taches</h3>
+<table>
+  <tr><th>Statut</th><th>Signification</th></tr>
+  <tr><td><span class="badge" style="background:#e3f2fd;color:#1565c0">A faire</span></td><td>Tache creee, pas encore commencee</td></tr>
+  <tr><td><span class="badge" style="background:#fff3e0;color:#e65100">Vu</span></td><td>Le responsable a pris connaissance</td></tr>
+  <tr><td><span class="badge" style="background:#fef9e7;color:#B8860B">En cours</span></td><td>Travail en cours</td></tr>
+  <tr><td><span class="badge" style="background:#e8f5e9;color:#2e7d32">Termine</span></td><td>Tache accomplie</td></tr>
+</table>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="notifications">10. Notifications — ne rien rater</h2>
+
+<p>La <b>cloche 🔔</b> en haut a droite affiche vos notifications. Le badge rouge indique le nombre de non-lues.</p>
+
+<table>
+  <tr><th>Type</th><th>Icone</th><th>Declencheur</th></tr>
+  <tr><td>Message</td><td>💬</td><td>Nouveau message ou sujet de discussion</td></tr>
+  <tr><td>Document</td><td>📄</td><td>Fichier uploade dans un studio</td></tr>
+  <tr><td>Depense</td><td>💳</td><td>Nouvelle ligne de depense ajoutee</td></tr>
+  <tr><td>Statut</td><td>🔄</td><td>Changement d'etape workflow ou de tache</td></tr>
+  <tr><td>Echeance</td><td>⏰</td><td>Alerte a moins de 14 jours</td></tr>
+  <tr><td>Prospect</td><td>🏠</td><td>Mise a jour d'une fiche prospect</td></tr>
+  <tr><td>Rapport</td><td>📋</td><td>Rapport hebdomadaire (lundi matin)</td></tr>
+</table>
+
+<div class="tip">
+  Cliquez sur une notification pour etre redirige directement vers le studio et l'onglet concerne. "Tout marquer lu" efface le compteur d'un coup.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="exports">11. Exports — PDF, Excel, CSV</h2>
+
+<p>Depuis la fiche d'un studio, vous pouvez exporter ses donnees :</p>
+
+<div class="cols" style="grid-template-columns:1fr 1fr 1fr">
+  <div class="card" style="padding:14px;text-align:center">
+    <span style="font-size:28px">📄</span>
+    <h4 style="margin:8px 0 4px;text-transform:none;color:var(--text)">PDF</h4>
+    <p style="font-size:12px;color:var(--sub)">Rapport complet avec graphiques, ideal pour presenter aux partenaires.</p>
+  </div>
+  <div class="card" style="padding:14px;text-align:center">
+    <span style="font-size:28px">📊</span>
+    <h4 style="margin:8px 0 4px;text-transform:none;color:var(--text)">Excel</h4>
+    <p style="font-size:12px;color:var(--sub)">Multi-onglets : BP, adherents, simulateur, depenses. Pour analyses approfondies.</p>
+  </div>
+  <div class="card" style="padding:14px;text-align:center">
+    <span style="font-size:28px">📋</span>
+    <h4 style="margin:8px 0 4px;text-transform:none;color:var(--text)">CSV</h4>
+    <p style="font-size:12px;color:var(--sub)">Donnees brutes, 36 mois. Compatible tous tableurs et outils d'analyse.</p>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="admin">12. Administration (super-admins)</h2>
+
+<p>Accessible uniquement a <b>Paul</b> et <b>Tom</b> via l'icone ⚙ en haut a droite.</p>
+
+<h3>Gerer les comptes</h3>
+<div class="steps">
+  <div class="step"><b>Creer</b> — Cliquez "+ Nouveau compte", remplissez nom/email/mot de passe/role, validez.</div>
+  <div class="step"><b>Modifier le role</b> — Dans le tableau, changez le role via le menu deroulant. Effectif en 5 secondes.</div>
+  <div class="step"><b>Suspendre</b> — Cliquez "Suspendre" sur la ligne de l'utilisateur. Il ne pourra plus se connecter.</div>
+  <div class="step"><b>Supprimer</b> — Cliquez 🗑, confirmez. L'utilisateur est definitivement supprime.</div>
+</div>
+
+<h3>Tableau de bord admin</h3>
+<ul style="margin-left:18px;font-size:14px">
+  <li><b>Pastille verte</b> = utilisateur en ligne (actif dans les 5 dernieres minutes)</li>
+  <li><b>Pastille grise</b> = hors ligne</li>
+  <li><b>Lecture seule</b> = active le mode Lecteur (pas d'edition possible)</li>
+  <li><b>Mot de passe</b> = cliquez l'oeil pour voir, le crayon pour modifier</li>
+</ul>
+
+<div class="warn">
+  Vous ne pouvez pas supprimer votre propre compte. Chaque action est irreversible — confirmez avec soin.
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="astuces">13. Astuces & raccourcis</h2>
+
+<div class="card">
+<table>
+  <tr><th>Action</th><th>Comment</th></tr>
+  <tr><td>Envoyer un message chat</td><td>Tapez puis <span class="kbd">Entree</span></td></tr>
+  <tr><td>Fermer une modale</td><td><span class="kbd">Echap</span> ou clic a l'exterieur</td></tr>
+  <tr><td>Recherche globale</td><td>Barre de recherche en haut de la page Projets (min. 2 caracteres)</td></tr>
+  <tr><td>Mode sombre</td><td>🌙 dans le menu lateral</td></tr>
+  <tr><td>Changer sa photo</td><td>Cliquez sur votre avatar en haut a gauche</td></tr>
+  <tr><td>Modifier son mot de passe</td><td>Cliquez sur le cadenas 🔒</td></tr>
+  <tr><td>Voir les utilisateurs connectes</td><td>Panneau admin → pastilles vertes</td></tr>
+</table>
+</div>
+
+<h3>Barre de modifications non enregistrees</h3>
+<p>Si vous modifiez un formulaire, une <b>barre jaune</b> apparait en bas de l'ecran :</p>
+<ul style="margin-left:18px;font-size:14px">
+  <li><b>Enregistrer</b> — sauvegarde toutes les modifications en attente</li>
+  <li><b>Annuler</b> — revient aux valeurs d'avant vos modifications</li>
+</ul>
+
+<div class="tip">
+  L'application detecte automatiquement si un autre utilisateur a modifie les memes donnees. Dans ce cas, un message vous previent et les donnees sont rechargees pour eviter les conflits.
+</div>
+
+<h3>Connexion hors ligne</h3>
+<p>Si vous perdez la connexion internet, un <b>bandeau rouge</b> apparait en haut. Vos modifications locales sont conservees. Des que la connexion revient, l'application se resynchronise automatiquement.</p>
+
+<!-- ═══════════════════════════════════════════════════════════ -->
+<h2 id="faq">14. FAQ & depannage</h2>
+
+<div class="card" style="margin-bottom:10px">
+  <p><b>Je ne vois pas tous les studios ?</b></p>
+  <p style="font-size:13.5px;color:var(--sub)">C'est normal : votre role limite l'acces a certaines societes. Contactez l'admin si vous pensez qu'il manque un acces.</p>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+  <p><b>Je ne peux rien modifier, tout est grise ?</b></p>
+  <p style="font-size:13.5px;color:var(--sub)">Votre compte est en mode "Lecture seule". Demandez a l'admin de desactiver cette option.</p>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+  <p><b>Mes modifications ont disparu ?</b></p>
+  <p style="font-size:13.5px;color:var(--sub)">Verifiez que vous avez bien clique "Enregistrer" dans la barre jaune. Si un conflit a ete detecte, les donnees du serveur ont pu ecraser les votres.</p>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+  <p><b>Je ne recois pas les notifications ?</b></p>
+  <p style="font-size:13.5px;color:var(--sub)">Les notifications sont en temps reel. Rafraichissez la page si elles n'apparaissent pas. Verifiez aussi la cloche — elles sont peut-etre marquees comme lues.</p>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+  <p><b>L'export PDF est vide ou incomplet ?</b></p>
+  <p style="font-size:13.5px;color:var(--sub)">Assurez-vous que les donnees du studio sont bien remplies. Verifiez les parametres d'impression de votre navigateur (marges, echelle).</p>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+  <p><b>J'ai ete deconnecte automatiquement ?</b></p>
+  <p style="font-size:13.5px;color:var(--sub)">Apres 5 minutes d'inactivite, la session expire pour des raisons de securite. Reconnectez-vous simplement.</p>
+</div>
+
+<div class="card" style="margin-bottom:10px">
+  <p><b>Comment contacter le support ?</b></p>
+  <p style="font-size:13.5px;color:var(--sub)">Utilisez le chat global 💬 ou contactez directement Paul ou Tom.</p>
+</div>
+
+<div class="footer">
+  ISSEO Club Pilates — Guide d'utilisation v1.0<br>
+  Derniere mise a jour : avril 2026
+</div>
+
+</div>
+</body>
+</html>
