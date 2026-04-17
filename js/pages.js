@@ -5972,7 +5972,7 @@ async function creerTache(sid){
     dlTxt=' · échéance '+_dl.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
   }
   // Notifs in-app à chaque assigné (hors créateur)
-  var others=assignees.filter(function(n){return n && n!==moi;});
+  var others=assignees.filter(function(n){return n && !_namesMatch(n,moi);});
   if(others.length){
     var bodyResp=titre.trim()+dlTxt+(desc?'\n'+desc.trim():'');
     others.forEach(function(nom){
@@ -6272,7 +6272,7 @@ async function addCommentToTache(sid,taskId,body){
   await saveTodos(sid);
   var studioName=(S.studios[sid]&&S.studios[sid].name)||sid;
   // Notifs in-app aux assignés (hors auteur et hors personnes déjà mentionnées)
-  var others=_getAssignees(t).filter(function(n){return n && n!==moi && mentions.indexOf(n)<0;});
+  var others=_getAssignees(t).filter(function(n){return n && !_namesMatch(n,moi) && mentions.indexOf(n)<0;});
   if(others.length){
     others.forEach(function(nom){
       notifyUserByNom(nom,{type:'message',studio_id:sid,title:'💬 '+moi.split(' ')[0]+' a commenté — '+studioName,body:t.titre+' : '+trimmed.slice(0,120)});
@@ -6280,7 +6280,7 @@ async function addCommentToTache(sid,taskId,body){
   }
   // V2 : notifs mentions (in-app + fire-and-forget email via task-notify)
   if(mentions.length){
-    mentions.filter(function(n){return n && n!==moi;}).forEach(function(nom){
+    mentions.filter(function(n){return n && !_namesMatch(n,moi);}).forEach(function(nom){
       notifyUserByNom(nom,{type:'mention',studio_id:sid,title:'@mention — '+t.titre,body:moi.split(' ')[0]+' t\'a mentionné : "'+trimmed.slice(0,120)+'"'});
     });
     try{sb.functions.invoke('task-notify',{body:{sid:sid,taskId:taskId,event:'mentioned',actorName:moi,extra:{body:trimmed,mentions:mentions}}}).catch(function(e){console.warn('[task-notify mention]',e);});}catch(e){}
@@ -6577,7 +6577,7 @@ async function _toggleAssignee(sid,taskId,nom){
   await saveTodos(sid);
   if(wasNew){
     var moi=(S.profile&&S.profile.nom)||'';
-    if(nom!==moi){
+    if(!_namesMatch(nom,moi)){
       var studioName=(S.studios[sid]&&S.studios[sid].name)||sid;
       notifyUserByNom(nom,{type:'statut',studio_id:sid,title:'🎯 '+(moi.split(' ')[0]||'Quelqu\'un')+' t\'a assigné une tâche — '+studioName,body:t.titre});
     }
@@ -6995,13 +6995,11 @@ function _applyCollabTaskFilters(items){
     if(f.statut==='todo'&&t.statut!=='todo')return false;
     if(f.statut==='doing'&&!(t.statut==='in_progress'||t.statut==='doing'||t.statut==='vu'))return false;
     if(f.statut==='blocked'&&t.statut!=='blocked')return false;
-    // Assignee
+    // Assignee (matching tolérant : "Pascal" ≡ "Pascal Bécaud (ISSEO)")
     if(f.assignee==='me'){
-      var assignees=_getAssignees(t);
-      if(assignees.indexOf(myName)<0)return false;
+      if(!_taskAssignedTo(t,myName))return false;
     }else if(f.assignee!=='all'){
-      var a2=_getAssignees(t);
-      if(a2.indexOf(f.assignee)<0)return false;
+      if(!_taskAssignedTo(t,f.assignee))return false;
     }
     // Priorité
     if(f.priority!=='all'&&t.priority!==f.priority)return false;
@@ -7101,7 +7099,7 @@ function renderCollab(){
   var totalActive=allTasks.filter(function(x){return x.task.statut!=='done';}).length;
   var totalMine=allTasks.filter(function(x){
     if(x.task.statut==='done')return false;
-    return _getAssignees(x.task).indexOf(myName)>=0;
+    return _taskAssignedTo(x.task,myName);
   }).length;
   var totalLate=allTasks.filter(function(x){
     return x.task.statut!=='done'&&x.task.deadline&&x.task.deadline<today;

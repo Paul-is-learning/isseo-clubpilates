@@ -58,11 +58,12 @@ async function _loadAllProfiles(){
   var res=await sb.from('profiles').select('id,nom');
   S._allProfiles=(res.data||[]).filter(function(p){return p.nom && String(p.nom).trim();});
 }
-// Résoudre un nom (ex: "Paul Bécaud") → user_id, null si introuvable
+// Résoudre un nom (ex: "Paul Bécaud") → user_id, null si introuvable.
+// Match tolérant : "Pascal Bécaud" trouve "Pascal Bécaud (ISSEO)" et vice-versa.
 function _findUserIdByNom(nom){
   if(!nom||!S._allProfiles)return null;
-  var needle=String(nom).trim().toLowerCase();
-  var p=S._allProfiles.find(function(x){return (x.nom||'').trim().toLowerCase()===needle;});
+  // Match exact d'abord (lookup rapide), puis tolérant (parenthèses + accents + casse)
+  var p=S._allProfiles.find(function(x){return _namesMatch(x.nom,nom);});
   return p?p.id:null;
 }
 // Notifier tous les utilisateurs sauf l'émetteur
