@@ -10,13 +10,17 @@
     "preview": "vite preview",
     "lint": "eslint 'js/**/*.js'",
     "format": "prettier --write 'js/**/*.js' '*.html' '*.css' '*.json'",
-    "format:check": "prettier --check 'js/**/*.js' '*.html' '*.css' '*.json'"
+    "format:check": "prettier --check 'js/**/*.js' '*.html' '*.css' '*.json'",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "devDependencies": {
     "@eslint/js": "^9.13.0",
     "eslint": "^9.13.0",
     "globals": "^15.11.0",
+    "happy-dom": "^20.9.0",
     "prettier": "^3.3.3",
-    "vite": "^5.4.10"
+    "vite": "^5.4.10",
+    "vitest": "^4.1.4"
   }
 }
