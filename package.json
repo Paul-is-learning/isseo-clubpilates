@@ -1,0 +1,22 @@
+{
+  "name": "isseo-clubpilates",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Plateforme de suivi projets Club Pilates — ISSEO",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint 'js/**/*.js'",
+    "format": "prettier --write 'js/**/*.js' '*.html' '*.css' '*.json'",
+    "format:check": "prettier --check 'js/**/*.js' '*.html' '*.css' '*.json'"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.13.0",
+    "eslint": "^9.13.0",
+    "globals": "^15.11.0",
+    "prettier": "^3.3.3",
+    "vite": "^5.4.10"
+  }
+}
