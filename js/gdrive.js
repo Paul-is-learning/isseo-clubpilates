@@ -356,6 +356,9 @@
 
   // Auto-init si credentials présents (ne bloque pas le boot si credentials vides)
   if (window.ISSEO_GOOGLE_CLIENT_ID && window.ISSEO_GOOGLE_API_KEY) {
-    init().catch(function (err) { console.warn('[gdrive] init:', err.message); });
+    init().catch(function (err) {
+      var msg = (err && (err.message || err.error || err.toString())) || 'erreur inconnue';
+      console.warn('[gdrive] init:', msg);
+    });
   }
 })();
