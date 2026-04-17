@@ -311,25 +311,25 @@ function renderAccueil(){
   var _studiosSeries=[];
   for(var _si=0;_si<allIds.length;_si++)_studiosSeries.push(_si+1);
   while(_studiosSeries.length<4)_studiosSeries.unshift(0);
-  var _spark=function(vals,color){return (typeof miniSparkline==='function')?miniSparkline(vals,{width:86,height:22,color:color||'rgba(255,255,255,0.85)'}):'';};
+  var _spark=function(vals,color){return (typeof miniSparkline==='function')?miniSparkline(vals,{width:72,height:18,color:color||'rgba(255,255,255,0.85)'}):'';};
   var _kpis=[
-    {label:'Studios',val:'<span class="counter-anim" data-target="'+allIds.length+'" data-format="int">0</span>',click:'setPage(\'projets\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA',spark:_spark(_studiosSeries,'rgba(96,165,250,0.95)'),trend:{dir:'up',text:'+'+allIds.length+' actifs'}},
-    {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+_capexTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399',spark:_spark(_capexSeries,'rgba(52,211,153,0.95)'),trend:{dir:'up',text:'↑ 12.4%'}},
-    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}}
+    {label:'Studios',val:'<span class="counter-anim" data-target="'+allIds.length+'" data-format="int">0</span>',click:'setPage(\'projets\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA',spark:_spark(_studiosSeries,'rgba(96,165,250,0.95)'),trend:{dir:'up',text:'+'+allIds.length+' actifs'}},
+    {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+_capexTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399',spark:_spark(_capexSeries,'rgba(52,211,153,0.95)'),trend:{dir:'up',text:'↑ 12.4%'}},
+    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}}
   ];
   _kpis.forEach(function(k,ki){
-    h+='<div class="kpi-reveal" data-idx="'+ki+'" onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:14px;padding:16px 18px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-4px)\';this.style.boxShadow=\'0 12px 34px rgba(0,0,0,0.25)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
+    h+='<div class="kpi-reveal" data-idx="'+ki+'" onclick="'+k.click+'" style="background:rgba(255,255,255,0.06);backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,0.08);border-radius:12px;padding:12px 14px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);position:relative;overflow:hidden" onmouseenter="this.style.background=\'rgba(255,255,255,0.12)\';this.style.borderColor=\'rgba(255,255,255,0.2)\';this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 10px 28px rgba(0,0,0,0.22)\'" onmouseleave="this.style.background=\'rgba(255,255,255,0.06)\';this.style.borderColor=\'rgba(255,255,255,0.08)\';this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
     // Glow d'accent
-    h+='<div style="position:absolute;top:-10px;right:-10px;width:70px;height:70px;background:radial-gradient(circle,'+k.color+'26,transparent 70%);border-radius:50%"></div>';
+    h+='<div style="position:absolute;top:-10px;right:-10px;width:56px;height:56px;background:radial-gradient(circle,'+k.color+'26,transparent 70%);border-radius:50%"></div>';
     h+='<div style="position:relative;z-index:1">';
     // Icône
-    h+='<div style="color:'+k.color+';margin-bottom:10px;opacity:0.9">'+k.icon+'</div>';
+    h+='<div style="color:'+k.color+';margin-bottom:6px;opacity:0.9">'+k.icon+'</div>';
     // Valeur
-    h+='<div style="font-size:22px;font-weight:800;letter-spacing:-0.5px;line-height:1;margin-bottom:5px;display:flex;align-items:center;gap:8px">'+k.val;
-    if(k.alert)h+='<span style="width:9px;height:9px;border-radius:50%;background:#EF4444;display:inline-block;animation:pulse 2s infinite;box-shadow:0 0 8px rgba(239,68,68,0.6)"></span>';
+    h+='<div style="font-size:18px;font-weight:800;letter-spacing:-0.4px;line-height:1;margin-bottom:4px;display:flex;align-items:center;gap:6px">'+k.val;
+    if(k.alert)h+='<span style="width:8px;height:8px;border-radius:50%;background:#EF4444;display:inline-block;animation:pulse 2s infinite;box-shadow:0 0 8px rgba(239,68,68,0.6)"></span>';
     h+='</div>';
     // Label
-    h+='<div style="font-size:10px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);font-weight:600">'+k.label+'</div>';
+    h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.2px;color:rgba(255,255,255,0.4);font-weight:600">'+k.label+'</div>';
     // Sparkline + trend
     if(k.spark||k.trend){
       h+='<div class="kpi-spark-wrap">';
