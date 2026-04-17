@@ -82,6 +82,8 @@ function render(){
       _syncHash();
     }
     renderChat();
+    // Montage des composants Preact (Phase 5) — appelé après chaque render()
+    if(typeof mountNextStepsWidget==='function')mountNextStepsWidget();
   }catch(e){console.error('render() error:',e);}
   _rendering=false;
 }

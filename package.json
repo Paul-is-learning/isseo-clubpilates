@@ -22,5 +22,10 @@
     "prettier": "^3.3.3",
     "vite": "^5.4.10",
     "vitest": "^4.1.4"
+  },
+  "dependencies": {
+    "@preact/signals": "^2.9.0",
+    "htm": "^3.1.1",
+    "preact": "^10.29.1"
   }
 }

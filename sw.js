@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20260417-m3f13';
+const CACHE_VERSION = 'isseo-v1-20260417-pr14';
 const APP_SHELL = [
   './',
   './index.html',
@@ -35,6 +35,9 @@ const APP_SHELL = [
   './js/pages-financier.js?v=20260416gc19',
   './js/pages-detail.js?v=20260416gc19',
   './js/pages.js?v=20260416gc19',
+  './js/vendor/preact.umd.js?v=20260416gc19',
+  './js/vendor/htm.umd.js?v=20260416gc19',
+  './js/preact-components/next-steps-widget.js?v=20260416gc19',
   './js/map.js?v=20260416gc19',
   './js/utils.js?v=20260416gc19',
   './js/exports.js?v=20260416gc19',

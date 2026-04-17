@@ -320,26 +320,10 @@ function renderAccueil(){
     }
     h+='</div></div>';
   });
-  // 4e vignette — Widget "Prochaines étapes" (aligné avec les 3 KPIs)
+  // 4e vignette — Widget "Prochaines étapes" (rendu par Preact, Phase 5)
+  // pages-accueil.js émet un placeholder ; app.js appelle mountNextStepsWidget() après render()
   if(_nextSteps.length){
-    h+='<div class="next-steps-widget">';
-    h+='<div class="next-steps-widget__header">';
-    h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#60A5FA" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>';
-    h+='<span class="next-steps-widget__title">Prochaines étapes</span>';
-    h+='<span class="next-steps-widget__count">'+_nextSteps.length+'</span>';
-    h+='</div>';
-    h+='<div class="next-steps-widget__list">';
-    _nextSteps.forEach(function(it){
-      h+='<div class="next-steps-widget__item" onclick="openDetail(\''+it.id+'\')">';
-      h+='<div class="next-steps-widget__item-body">';
-      h+='<div class="next-steps-widget__item-name">'+it.name+'</div>';
-      h+='<div class="next-steps-widget__item-step">→ '+it.step+'</div>';
-      h+='</div>';
-      h+='<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>';
-      h+='</div>';
-    });
-    h+='</div>';
-    h+='</div>';
+    h+='<div data-preact-widget="next-steps"></div>';
   }
   h+='</div>';
 
