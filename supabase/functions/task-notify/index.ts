@@ -111,16 +111,37 @@ serve(async (req) => {
     }
 
     // 4. Résoudre les emails des destinataires
-    const { data: profiles, error: profErr } = await admin
+    // On charge TOUS les profils (faible volume) pour permettre un matching
+    // tolérant : "Pascal Bécaud" matche "Pascal Bécaud (ISSEO)" et vice-versa.
+    const { data: allProfiles, error: profErr } = await admin
       .from("profiles")
-      .select("nom, email")
-      .in("nom", recipients);
+      .select("nom, email");
     if (profErr) console.error("[task-notify] profiles err:", profErr);
 
+    // Normalise un nom : minuscules, accents enlevés, parenthèses enlevées, trim, espaces collapsés
+    const normalize = (s: string) =>
+      (s || "")
+        .toLowerCase()
+        .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+        .replace(/\([^)]*\)/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+
     const byNom = new Map<string, string>();
-    (profiles || []).forEach((p: any) => {
-      if (p.nom && p.email) byNom.set(p.nom, p.email);
-    });
+    for (const recipient of recipients) {
+      const target = normalize(recipient);
+      if (!target) continue;
+      // Match exact d'abord, puis contains des deux côtés
+      let match = (allProfiles || []).find((p: any) => normalize(p.nom) === target);
+      if (!match) {
+        match = (allProfiles || []).find((p: any) => {
+          const n = normalize(p.nom);
+          return n.includes(target) || target.includes(n);
+        });
+      }
+      if (match && match.email) byNom.set(recipient, match.email);
+    }
+    const profiles = allProfiles;
     console.log("[task-notify] event:", event, "recipients:", recipients, "profiles found:", profiles?.length || 0, "byNom:", Array.from(byNom.keys()));
 
     // 5. Pour chaque destinataire : générer tokens + composer HTML + envoyer
