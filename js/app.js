@@ -232,11 +232,15 @@ async function _uploadSharedFilesToStudio(sid,files){
 sb.auth.getSession().then(function(res){
   var session=res.data&&res.data.session;
   if(session){
-    var hiddenAt=0;
-    try{hiddenAt=parseInt(localStorage.getItem('isseo_hidden_at')||'0');}catch(e){}
-    if(hiddenAt&&Date.now()-hiddenAt>_INACTIVITY_MS){
-      try{localStorage.removeItem('isseo_hidden_at');localStorage.removeItem('isseo_nav');}catch(e){}
-      sb.auth.signOut();render();return;
+    // Mobile / PWA : on skip le check d'inactivité — l'utilisateur reste connecté
+    var _isMobile=(typeof _isMobileDevice==='function')&&_isMobileDevice();
+    if(!_isMobile){
+      var hiddenAt=0;
+      try{hiddenAt=parseInt(localStorage.getItem('isseo_hidden_at')||'0');}catch(e){}
+      if(hiddenAt&&Date.now()-hiddenAt>_INACTIVITY_MS){
+        try{localStorage.removeItem('isseo_hidden_at');localStorage.removeItem('isseo_nav');}catch(e){}
+        sb.auth.signOut();render();return;
+      }
     }
     try{localStorage.removeItem('isseo_hidden_at');}catch(e){}
     S.user=session.user;

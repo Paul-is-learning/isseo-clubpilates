@@ -142,6 +142,18 @@ var _inactivityTimer=null;
 var _inactivityWarnTimer=null;
 var _INACTIVITY_MS=5*60*1000; // 5 minutes
 
+// Mobile / touch device → on garde l'utilisateur connecté (pas de logout automatique d'inactivité).
+// Sur desktop on conserve la sécurité : auto-logout après 5 min d'inactivité + tab caché.
+function _isMobileDevice(){
+  try{
+    var coarse=window.matchMedia&&window.matchMedia('(pointer: coarse)').matches;
+    var narrow=window.matchMedia&&window.matchMedia('(max-width: 768px)').matches;
+    var standalone=window.matchMedia&&window.matchMedia('(display-mode: standalone)').matches;
+    // PWA installée (standalone) OU écran étroit OU pointer coarse (touch) = mobile-like
+    return !!(standalone||narrow||coarse);
+  }catch(e){return false;}
+}
+
 function _clearInactivityTimers(){
   if(_inactivityTimer)clearTimeout(_inactivityTimer);
   if(_inactivityWarnTimer)clearTimeout(_inactivityWarnTimer);
@@ -242,11 +254,13 @@ function _presenceLabel(ts,loginTs){
 
 var _visibilityHandler=null;
 function _startSessionWatcher(){
+  // Mobile / PWA : on reste connecté (pas de logout inactivité)
+  if(_isMobileDevice())return;
   ['mousemove','keydown','mousedown','click','scroll','touchstart'].forEach(function(ev){
     document.addEventListener(ev,_resetInactivityTimer,{passive:true});
   });
   _resetInactivityTimer();
-  // Déconnexion si l'onglet/page a été fermé plus de 10 min
+  // Déconnexion si l'onglet/page a été fermé plus de 5 min
   _visibilityHandler=function(){
     if(!S.user)return;
     if(document.visibilityState==='hidden'){
