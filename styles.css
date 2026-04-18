@@ -3158,3 +3158,46 @@ body.dark .share-studio-choice{background:#21262d;border-color:#30363d;color:#e6
 body.dark .share-studio-choice:active{background:#30363d}
 body.dark .share-received-cancel{background:#21262d;color:#8b949e}
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   Centre d'attention du jour — Apple-style focus card
+   ═══════════════════════════════════════════════════════════════════════════ */
+.focus-card{background:#fff;border:1px solid rgba(15,31,61,.06);border-radius:20px;padding:18px 22px 14px;margin-bottom:18px;box-shadow:0 1px 3px rgba(15,31,61,.04);transition:transform .3s,box-shadow .3s}
+.focus-card:hover{box-shadow:0 6px 24px rgba(15,31,61,.07)}
+.focus-head{display:flex;flex-direction:column;gap:2px;padding-bottom:14px;border-bottom:1px solid #f1f5f9;margin-bottom:10px}
+.focus-eyebrow{font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#94a3b8}
+.focus-mood{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:700;letter-spacing:-.3px;line-height:1.2;margin-top:3px}
+.focus-mood-ic{display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.focus-list{display:flex;flex-direction:column;gap:6px}
+.focus-item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:12px;cursor:pointer;transition:background .15s,transform .15s;user-select:none;-webkit-tap-highlight-color:transparent;outline:none}
+.focus-item:hover,.focus-item:focus-visible{background:#f8fafc;transform:translateX(2px)}
+.focus-item:active{background:#f1f5f9;transform:translateX(2px) scale(.99)}
+.focus-item-ic{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.focus-item-body{flex:1;min-width:0}
+.focus-item-title{font-size:14px;font-weight:600;color:#0f1f3d;letter-spacing:-.2px;line-height:1.25;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.focus-item-detail{font-size:11.5px;color:#64748b;margin-top:2px;line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.focus-item-chev{color:#cbd5e1;flex-shrink:0;transition:transform .15s,color .15s}
+.focus-item:hover .focus-item-chev,.focus-item:focus-visible .focus-item-chev{color:#94a3b8;transform:translateX(2px)}
+.focus-empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px 14px;text-align:center}
+.focus-empty-ic{width:60px;height:60px;border-radius:16px;background:#d1fae5;display:flex;align-items:center;justify-content:center}
+.focus-empty-txt{font-size:13px;color:#64748b;line-height:1.5}
+
+body.dark .focus-card{background:#161b22;border-color:#30363d}
+body.dark .focus-head{border-bottom-color:#30363d}
+body.dark .focus-item-title{color:#e6edf3}
+body.dark .focus-item:hover,body.dark .focus-item:focus-visible{background:#21262d}
+body.dark .focus-item:active{background:#30363d}
+body.dark .focus-item-chev{color:#4a5568}
+body.dark .focus-empty-ic{background:#064e3b}
+
+@media(max-width:640px){
+  .focus-card{padding:16px 16px 12px;border-radius:16px}
+  .focus-mood{font-size:16px}
+  .focus-item{padding:12px 10px;gap:10px}
+  .focus-item-title{font-size:13.5px;white-space:normal}
+  .focus-item-detail{white-space:normal;font-size:11px}
+}
+
+/* Accueil — top bar : laisser la place au hamburger fixé en haut-gauche */
+@media(max-width:768px){
+  .accueil-topbar{padding-left:56px!important}
+}

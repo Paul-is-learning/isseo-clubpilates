@@ -114,6 +114,222 @@ function _renderHealthGauge(hs){
   return h2;
 }
 
+// ═════════════════════════════════════════════════════════════════════════
+// Centre d'attention du jour — Apple-style focus card
+// Remplace la jauge "Santé du portefeuille" par une liste d'items concrets
+// et cliquables, triés par urgence. Si rien d'urgent → état calme.
+// ═════════════════════════════════════════════════════════════════════════
+function _computeFocusItems(){
+  var items=[];
+  var now=new Date();
+  var todayIso=now.toISOString().slice(0,10);
+  var myName=(S.profile&&S.profile.nom)||'';
+  var ids=_getStudioIds();
+
+  // 1) Tâches perso en retard ou pour aujourd'hui
+  var lateCount=0,todayCount=0,firstLate=null;
+  ids.forEach(function(sid){
+    (S.todos[sid]||[]).forEach(function(t){
+      if(!t||t.statut==='done')return;
+      if(!myName||!_taskAssignedTo(t,myName))return;
+      if(!t.deadline)return;
+      if(t.deadline<todayIso){lateCount++;if(!firstLate)firstLate={t:t,sid:sid};}
+      else if(t.deadline===todayIso)todayCount++;
+    });
+  });
+  if(lateCount>0){
+    items.push({
+      urg:0,
+      kind:'task-late',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>',
+      color:'#DC2626',
+      bg:'#FEE2E2',
+      title:lateCount+(lateCount>1?' tâches en retard':' tâche en retard'),
+      detail:firstLate?('« '+firstLate.t.titre+' » · '+((S.studios[firstLate.sid]||{}).name||firstLate.sid)):'',
+      action:firstLate?"openMyTask('"+firstLate.sid+"','"+firstLate.t.id+"')":"setPage('collab')"
+    });
+  }
+  if(todayCount>0){
+    items.push({
+      urg:1,
+      kind:'task-today',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>',
+      color:'#F59E0B',
+      bg:'#FEF3C7',
+      title:todayCount+(todayCount>1?' tâches pour aujourd\'hui':' tâche pour aujourd\'hui'),
+      detail:'Dans ton planning',
+      action:"setPage('accueil')"
+    });
+  }
+
+  // 2) Déblocages en attente > 3 jours
+  var pendingDeblocages=[];
+  ids.forEach(function(sid){
+    (S.depenses[sid]||[]).forEach(function(d){
+      if(d.deblocage!=='demande')return;
+      var dd=d.date_demande||d.date;
+      if(!dd)return;
+      var ageDays=Math.floor((now-new Date(dd+'T00:00:00'))/(1000*60*60*24));
+      if(ageDays>=3)pendingDeblocages.push({sid:sid,ttc:num(d.ttc),age:ageDays,dep:d});
+    });
+  });
+  if(pendingDeblocages.length>0){
+    pendingDeblocages.sort(function(a,b){return b.age-a.age;});
+    var top=pendingDeblocages[0];
+    var studioName=(S.studios[top.sid]||{}).name||top.sid;
+    var totalMontant=pendingDeblocages.reduce(function(s,x){return s+x.ttc;},0);
+    items.push({
+      urg:2,
+      kind:'deblocage',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>',
+      color:'#92630a',
+      bg:'#FEF3C7',
+      title:pendingDeblocages.length+(pendingDeblocages.length>1?' déblocages en attente':' déblocage en attente'),
+      detail:fmt(totalMontant)+' · plus ancien '+top.age+' j ('+studioName+')',
+      action:"setPage('engagements');toggleEngSection('recap');setEngRecapStudio('"+top.sid+"')"
+    });
+  }
+
+  // 3) Studios qui ouvrent dans < 60 jours avec workflow incomplet
+  var imminent=[];
+  ids.forEach(function(sid){
+    var s=S.studios[sid];
+    if(!s||s.statut==='ouvert'||s.statut==='abandonne')return;
+    var ouv=s.ouverture||'';
+    // Parse "T1 2027", "T2 2026" or absolute date
+    var openMonth=_parseOpenMonth(ouv,s.forecast);
+    if(openMonth==null)return;
+    var daysUntil=Math.round((openMonth-now)/(1000*60*60*24));
+    if(daysUntil<0||daysUntil>60)return;
+    var steps=(typeof getStudioSteps==='function'?getStudioSteps(sid):[]);
+    var done=steps.filter(function(st){return s.steps&&s.steps[st.id];}).length;
+    var todo=steps.length-done;
+    if(todo===0)return;
+    imminent.push({sid:sid,name:s.name,days:daysUntil,todo:todo});
+  });
+  if(imminent.length>0){
+    imminent.sort(function(a,b){return a.days-b.days;});
+    var im=imminent[0];
+    items.push({
+      urg:3,
+      kind:'imminent',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+      color:'#1e40af',
+      bg:'#DBEAFE',
+      title:im.name+' — ouvre dans '+im.days+' j',
+      detail:im.todo+(im.todo>1?' étapes workflow restantes':' étape workflow restante'),
+      action:"openDetail('"+im.sid+"');setTimeout(function(){setDetailTab('workflow')},50)"
+    });
+  }
+
+  // 4) Notifications non lues
+  var unread=(S.notifications||[]).filter(function(n){return!n.read;}).length;
+  if(unread>=3){
+    items.push({
+      urg:4,
+      kind:'notifs',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+      color:'#7C3AED',
+      bg:'#EDE9FE',
+      title:unread+' notifications non lues',
+      detail:'Activité sur tes studios',
+      action:'toggleNotifPanel()'
+    });
+  }
+
+  // 5) Prospects chauds sans relance depuis > 14 jours
+  var staleChaud=(S.prospects||[]).filter(function(p){
+    if(p.statut!=='chaud')return false;
+    var lastComment=(p.comments||[]).sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');})[0];
+    if(!lastComment)return true;
+    var age=Math.floor((now-new Date(lastComment.ts))/(1000*60*60*24));
+    return age>=14;
+  });
+  if(staleChaud.length>0){
+    items.push({
+      urg:5,
+      kind:'prospect-stale',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+      color:'#B45309',
+      bg:'#FEF3C7',
+      title:staleChaud.length+(staleChaud.length>1?' prospects chauds sans relance':' prospect chaud sans relance'),
+      detail:'Depuis plus de 14 j',
+      action:"setPage('prospection')"
+    });
+  }
+
+  items.sort(function(a,b){return a.urg-b.urg;});
+  return items;
+}
+
+// Parse "T1 2027", "T2 2026", "T3 2025" ou date absolue en Date approximative
+function _parseOpenMonth(ouv,forecast){
+  if(!ouv)return null;
+  var s=String(ouv).trim();
+  var mT=s.match(/^T([1-4])\s+(\d{4})$/i);
+  if(mT){
+    var q=parseInt(mT[1],10),y=parseInt(mT[2],10);
+    var month=(q-1)*3+1; // T1→jan, T2→avr, T3→juil, T4→oct
+    return new Date(y,month-1,15);
+  }
+  var mM=s.match(/^(\d{4})-(\d{2})(?:-(\d{2}))?$/);
+  if(mM){return new Date(parseInt(mM[1]),parseInt(mM[2])-1,parseInt(mM[3]||'15'));}
+  if(forecast&&forecast.annee&&forecast.moisDebut!=null){
+    return new Date(num(forecast.annee),num(forecast.moisDebut),15);
+  }
+  return null;
+}
+
+function _renderFocusCard(){
+  var items=_computeFocusItems();
+  var n=items.length;
+  var mood,moodColor,moodIcon;
+  if(n===0){
+    mood='Tout est calme — rien d\'urgent';
+    moodColor='#0F6E56';
+    moodIcon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
+  } else if(n<=2){
+    mood=n+(n>1?' points à regarder aujourd\'hui':' point à regarder aujourd\'hui');
+    moodColor='#1e40af';
+    moodIcon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>';
+  } else {
+    mood='Attention — '+n+' points urgents';
+    moodColor='#DC2626';
+    moodIcon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  }
+
+  var h='<div class="focus-card">';
+  // Header
+  h+='<div class="focus-head">';
+  h+='<div class="focus-eyebrow">Centre d\'attention</div>';
+  h+='<div class="focus-mood" style="color:'+moodColor+'"><span class="focus-mood-ic">'+moodIcon+'</span><span>'+mood+'</span></div>';
+  h+='</div>';
+  // Liste
+  if(n===0){
+    h+='<div class="focus-empty">';
+    h+='<div class="focus-empty-ic" style="color:#0F6E56">';
+    h+='<svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
+    h+='</div>';
+    h+='<div class="focus-empty-txt">Profite, c\'est rare. <br>Je te notifie dès qu\'un point mérite attention.</div>';
+    h+='</div>';
+  } else {
+    h+='<div class="focus-list">';
+    items.forEach(function(it){
+      h+='<div class="focus-item" onclick="'+it.action+'" role="button" tabindex="0">';
+      h+='<div class="focus-item-ic" style="background:'+it.bg+';color:'+it.color+'">'+it.icon+'</div>';
+      h+='<div class="focus-item-body">';
+      h+='<div class="focus-item-title">'+it.title+'</div>';
+      if(it.detail)h+='<div class="focus-item-detail">'+it.detail+'</div>';
+      h+='</div>';
+      h+='<svg class="focus-item-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>';
+      h+='</div>';
+    });
+    h+='</div>';
+  }
+  h+='</div>';
+  return h;
+}
+
 // ── PAGE: Accueil ──────────────────────────────────────────────────────
 function renderAccueil(){
   if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div style="padding:24px">'+skeletonGrid(6)+'</div>';
@@ -130,7 +346,7 @@ function renderAccueil(){
   var _unread=S.notifications.filter(function(n){return!n.read;}).length;
 
   // ── Top bar : photo + salut + icônes ──
-  h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:0 2px">';
+  h+='<div class="accueil-topbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:0 2px">';
   // Left: photo + greeting
   h+='<div style="display:flex;align-items:center;gap:14px">';
   // Photo utilisateur classe
@@ -173,88 +389,8 @@ function renderAccueil(){
   h+='<input type="file" id="avatar-upload-input" accept="image/*" style="display:none" onchange="uploadAvatar(this)">';
   h+='</div>';
 
-  // ── Health Score — Portfolio santé (white card + sequential reveal) ──
-  var _hs=_computeHealthScore();
-  h+='<div class="health-score-card">';
-  // Title row — top left
-  h+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:2px">';
-  h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="'+_hs.color+'" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>';
-  h+='<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#94a3b8">Santé du portefeuille</span></div>';
-  h+='<div style="font-size:14px;font-weight:700;color:'+_hs.color+';margin-bottom:8px;line-height:1.25">'+_hs.summary+'</div>';
-  // Content row
-  h+='<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">';
-  // Gauge
-  h+=_renderHealthGauge(_hs);
-  // Right side
-  h+='<div style="flex:1;min-width:200px">';
-  // Sub-scores — sequential reveal animation
-  var _hsPills=[
-    {l:'Studios',v:_hs.progress,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
-    {l:'Tâches',v:_hs.tasks,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
-    {l:'Financier',v:_hs.financial,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
-    {l:'Prospection',v:_hs.prospection,icon:'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'}
-  ];
-  // Radar chart — 4 axes (90° entre chacun)
-  var _rc=150,_rcx=75,_rcy=75,_rr=52,_nax=4;
-  var _axes=[
-    {l:'Studios',v:_hs.progress,a:-90},
-    {l:'Tâches',v:_hs.tasks,a:0},
-    {l:'Financier',v:_hs.financial,a:90},
-    {l:'Prospection',v:_hs.prospection,a:180}
-  ];
-  h+='<div style="display:flex;align-items:center;gap:20px;flex-wrap:wrap">';
-  h+='<div class="radar-chart"><svg width="'+_rc+'" height="'+_rc+'" viewBox="0 0 '+_rc+' '+_rc+'">';
-  // Grid circles
-  for(var _gi=1;_gi<=4;_gi++){
-    var _gr=_rr*_gi/4;
-    var _gpts=[];
-    for(var _gj=0;_gj<_nax;_gj++){
-      var _ga=_axes[_gj].a*Math.PI/180;
-      _gpts.push((_rcx+_gr*Math.cos(_ga)).toFixed(1)+','+(_rcy+_gr*Math.sin(_ga)).toFixed(1));
-    }
-    h+='<polygon points="'+_gpts.join(' ')+'" fill="none" stroke="'+(S.darkMode?'rgba(255,255,255,0.06)':'rgba(0,0,0,0.06)')+'" stroke-width="1"/>';
-  }
-  // Axis lines + labels
-  for(var _ai=0;_ai<_nax;_ai++){
-    var _aa=_axes[_ai].a*Math.PI/180;
-    var _ax2=_rcx+_rr*Math.cos(_aa),_ay2=_rcy+_rr*Math.sin(_aa);
-    h+='<line x1="'+_rcx+'" y1="'+_rcy+'" x2="'+_ax2.toFixed(1)+'" y2="'+_ay2.toFixed(1)+'" stroke="'+(S.darkMode?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.08)')+'" stroke-width="1"/>';
-    var _lx=_rcx+(_rr+16)*Math.cos(_aa),_ly=_rcy+(_rr+16)*Math.sin(_aa);
-    // Alignement text-anchor selon la position (sinon labels tronqués sur les bords)
-    var _anchor=_axes[_ai].a===-90||_axes[_ai].a===90?'middle':(_axes[_ai].a===180?'end':'start');
-    h+='<text class="radar-label" text-anchor="'+_anchor+'" x="'+_lx.toFixed(1)+'" y="'+_ly.toFixed(1)+'" dominant-baseline="middle">'+_axes[_ai].l+'</text>';
-  }
-  // Data polygon
-  var _dpts=[];
-  for(var _di=0;_di<_nax;_di++){
-    var _daa=_axes[_di].a*Math.PI/180;
-    var _dr=_rr*(_axes[_di].v/100);
-    _dpts.push((_rcx+_dr*Math.cos(_daa)).toFixed(1)+','+(_rcy+_dr*Math.sin(_daa)).toFixed(1));
-  }
-  h+='<polygon class="radar-fill" points="'+_dpts.join(' ')+'" fill="'+_hs.color+'" stroke="none"/>';
-  h+='<polygon class="radar-polygon" points="'+_dpts.join(' ')+'" fill="none" stroke="'+_hs.color+'" stroke-width="2.5" stroke-linejoin="round"/>';
-  // Data dots
-  for(var _ddi=0;_ddi<_nax;_ddi++){
-    var _ddaa=_axes[_ddi].a*Math.PI/180;
-    var _ddr=_rr*(_axes[_ddi].v/100);
-    var _ddx=_rcx+_ddr*Math.cos(_ddaa),_ddy=_rcy+_ddr*Math.sin(_ddaa);
-    var _ddpc=_axes[_ddi].v>=80?'#0F6E56':_axes[_ddi].v>=60?'#3b82f6':_axes[_ddi].v>=40?'#f59e0b':'#ef4444';
-    h+='<circle class="radar-dot" cx="'+_ddx.toFixed(1)+'" cy="'+_ddy.toFixed(1)+'" r="4" fill="'+_ddpc+'" stroke="#fff" stroke-width="2"/>';
-  }
-  h+='</svg></div>';
-  // Legend pills
-  h+='<div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:140px">';
-  _hsPills.forEach(function(p){
-    var pc=p.v>=80?'#0F6E56':p.v>=60?'#3b82f6':p.v>=40?'#f59e0b':'#ef4444';
-    h+='<div style="display:flex;align-items:center;gap:8px;font-size:11px">';
-    h+='<div style="width:8px;height:8px;border-radius:50%;background:'+pc+';flex-shrink:0"></div>';
-    h+='<span style="color:#64748b;font-weight:500;min-width:72px">'+p.l+'</span>';
-    h+='<span style="font-weight:700;color:'+pc+'">'+p.v+'</span>';
-    h+='<div style="flex:1;height:4px;background:'+(S.darkMode?'#21262d':'#e8e8e0')+';border-radius:2px;overflow:hidden;min-width:40px"><div style="width:'+Math.min(p.v,100)+'%;height:100%;background:'+pc+';border-radius:2px;transition:width .8s cubic-bezier(.22,.8,.24,1)"></div></div>';
-    h+='</div>';
-  });
-  h+='</div>';
-  h+='</div></div></div></div>';
+  // ── Centre d'attention du jour — Apple-style focus card ──
+  h+=_renderFocusCard();
 
   // ── Welcome banner — effet wahou ──
   var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
