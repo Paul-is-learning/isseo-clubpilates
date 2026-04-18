@@ -132,30 +132,30 @@ function renderFichiersHub(){
         }
       }
     }
-    // Sub-folders grid
-    var driveFolderUrls=(S.studios[sid]&&S.studios[sid].driveFolderUrls)||{};
-    h+='<div class="folder-grid">';
+    // ── Grille des 6 sous-cat\u00e9gories : navigation in-app via API Drive ────
+    // Chaque carte cherche (ou cr\u00e9e) un sous-dossier homonyme dans le dossier
+    // parent Drive li\u00e9, puis navigue le browser natif vers lui.
+    h+='<div class="folder-grid folder-grid-premium">';
     _FDEFS.forEach(function(fd,idx){
       var fc=sFiles.filter(function(f){return f.folder===fd.key;}).length;
-      var folderDrive=driveFolderUrls[fd.key]||'';
-      var clickHandler=folderDrive
-        ? 'window.open(\''+folderDrive.replace(/'/g,'%27')+'\',\'_blank\')'
-        : '_promptFolderDriveUrl(\''+sid+'\',\''+fd.key+'\')';
-      h+='<div class="folder-card" onclick="'+clickHandler+'" style="animation-delay:'+(idx*60)+'ms;position:relative">';
-      // Bouton config (admin) si Drive déjà configuré
-      if(folderDrive&&!isViewer()){
-        h+='<button onclick="event.stopPropagation();_promptFolderDriveUrl(\''+sid+'\',\''+fd.key+'\')" title="Modifier le lien Drive" style="position:absolute;top:8px;right:8px;width:24px;height:24px;border-radius:6px;border:1px solid #e8e8e0;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;font-size:11px;padding:0">&#9881;</button>';
-      }
-      h+='<div style="width:40px;height:40px;border-radius:12px;background:'+_FCOLORS[idx]+'12;display:flex;align-items:center;justify-content:center;margin-bottom:10px;color:'+_FCOLORS[idx]+'">'+fd.icon+'</div>';
-      h+='<div style="font-size:13px;font-weight:600;color:#1a1a1a;margin-bottom:2px">'+fd.label+'</div>';
-      h+='<div style="font-size:11px;color:#94a3b8">'+fd.desc+'</div>';
-      // Badge état
-      if(folderDrive){
-        h+='<div style="margin-top:6px;display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:#34a853;background:#e6f4ea;padding:2px 8px;border-radius:10px"><svg width="10" height="10" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/></svg>Drive</div>';
-      } else if(fc>0){
-        h+='<div style="margin-top:6px;font-size:10px;font-weight:700;color:'+_FCOLORS[idx]+';background:'+_FCOLORS[idx]+'10;padding:2px 8px;border-radius:10px;display:inline-block">'+fc+' fichier'+(fc!==1?'s':'')+'</div>';
-      } else if(!isViewer()){
-        h+='<div style="margin-top:6px;font-size:10px;color:#94a3b8;font-style:italic">Cliquez pour lier un dossier Drive</div>';
+      var color=_FCOLORS[idx];
+      h+='<div class="folder-card folder-card-premium" '
+        +'data-subfolder-key="'+fd.key+'" '
+        +'style="--fc-color:'+color+';animation-delay:'+(idx*70)+'ms" '
+        +'onclick="openSubfolderInBrowser(\''+sid+'\',\''+fd.key+'\',\''+fd.label.replace(/'/g,'\\\'').replace(/"/g,'&quot;')+'\',this)">';
+      h+='<div class="folder-card-bg"></div>';
+      h+='<div class="folder-card-ic">'+fd.icon+'</div>';
+      h+='<div class="folder-card-body">';
+      h+='<div class="folder-card-title">'+fd.label+'</div>';
+      h+='<div class="folder-card-desc">'+fd.desc+'</div>';
+      h+='<div class="folder-card-state">';
+      h+='<span class="folder-card-state-default">Ouvrir le dossier Drive &rarr;</span>';
+      h+='<span class="folder-card-state-loading">Recherche\u2026</span>';
+      h+='<span class="folder-card-state-created">Dossier cr\u00e9\u00e9 ✓</span>';
+      h+='</div>';
+      h+='</div>';
+      if(fc>0){
+        h+='<div class="folder-card-badge">'+fc+'</div>';
       }
       h+='</div>';
     });

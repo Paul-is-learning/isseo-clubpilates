@@ -317,4 +317,80 @@
       renderInto(el, folderId);
     });
   };
+
+  /**
+   * Navigate le browser existant vers un nouveau folderId (utilisé par les
+   * vignettes sous-catégories).
+   */
+  window.navigateGDriveBrowserTo = function (newFolderId) {
+    var el = document.querySelector('[data-gdrive-browser]');
+    if (!el) return false;
+    el.setAttribute('data-gdrive-browser', newFolderId);
+    _mounting[newFolderId] = el;
+    renderInto(el, newFolderId);
+    try { el.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (_) {}
+    return true;
+  };
+
+  /**
+   * Invalide le cache d'un parent (utilisé après création d'un sous-dossier).
+   */
+  window.invalidateGDriveCache = function (parentId) {
+    if (parentId) delete _cache[parentId];
+    else _cache = {};
+  };
 })();
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Navigation vignettes sous-catégories → sous-dossier Drive correspondant
+// ═══════════════════════════════════════════════════════════════════════════
+// Cherche (ou crée à la volée) le sous-dossier homonyme dans le dossier
+// parent lié au studio, puis navigue le browser natif vers lui.
+window.openSubfolderInBrowser = async function (sid, folderKey, folderLabel, cardEl) {
+  var gd = window.isseoGDrive;
+  if (!gd || !gd.isConfigured()) { toast('Google Drive non configuré'); return; }
+  var s = S.studios[sid];
+  if (!s || !s.driveUrl) { toast('Liez d\'abord un dossier Drive parent'); return; }
+  var parentId = _extractDriveFolderId(s.driveUrl);
+  if (!parentId) { toast('URL Drive invalide'); return; }
+
+  // Signin si besoin
+  if (!gd.isSignedIn()) {
+    try { await gd.signIn(); } catch (e) { toast('Connexion Google requise'); return; }
+  }
+
+  // État visuel "loading" sur la carte
+  if (cardEl) cardEl.classList.add('is-loading');
+
+  try {
+    // Liste les enfants du parent (pas de cache — on veut l'état à jour)
+    var children = await gd.listFolder(parentId, { pageSize: 100 });
+    var norm = function (s) { return (s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim(); };
+    var target = (children || []).filter(function (c) {
+      return c.mimeType && c.mimeType.indexOf('folder') >= 0 && norm(c.name) === norm(folderLabel);
+    })[0];
+
+    if (!target) {
+      if (cardEl) cardEl.classList.remove('is-loading');
+      var ok = confirm('Le sous-dossier « ' + folderLabel + ' » n\'existe pas encore dans votre Drive.\n\nLe créer maintenant ?');
+      if (!ok) return;
+      if (cardEl) cardEl.classList.add('is-loading');
+      var created = await gd.createFolder(folderLabel, parentId);
+      target = created;
+      if (window.invalidateGDriveCache) window.invalidateGDriveCache(parentId);
+      toast('Sous-dossier « ' + folderLabel + ' » créé dans Drive');
+      if (cardEl) { cardEl.classList.remove('is-loading'); cardEl.classList.add('is-created'); setTimeout(function () { cardEl.classList.remove('is-created'); }, 1500); }
+    }
+
+    if (cardEl) cardEl.classList.remove('is-loading');
+    // Naviguer le browser embed vers ce sous-dossier
+    if (!window.navigateGDriveBrowserTo(target.id)) {
+      // Fallback : ouvrir Drive dans un nouvel onglet si pas de browser monté
+      window.open('https://drive.google.com/drive/folders/' + target.id, '_blank');
+    }
+  } catch (e) {
+    if (cardEl) cardEl.classList.remove('is-loading');
+    toast('Erreur Drive : ' + (e && e.message ? e.message : 'inconnue'));
+    console.warn('[gdrive nav]', e);
+  }
+};
