@@ -323,7 +323,7 @@ function renderBPConsolide(){
   var svgH=280;
   var chartH=180;
   var yBase=220;
-  h+='<div style="overflow-x:auto;display:flex;justify-content:center">';
+  h+='<div class="bp-ebitda-svg-wrap" style="overflow-x:auto;display:flex;justify-content:center">';
   h+='<svg width="'+chartW+'" height="'+svgH+'" viewBox="0 0 '+chartW+' '+svgH+'" style="overflow:visible">';
   // Defs: gradients pour les barres
   h+='<defs>';
@@ -366,7 +366,34 @@ function renderBPConsolide(){
     h+='<desc>'+safeName+'|'+fmt(r.ebitda1)+'|'+fmt(r.ebitda2)+'|'+fmt(r.ebitda3)+'|'+fmt(totalEbitda)+'|'+r.margeEbitda3+'|'+(r.margeEbitda3>=20?'#22c55e':r.margeEbitda3>=10?'#eab308':'#ef4444')+'</desc>';
     h+='</g>';
   });
-  h+='</svg></div></div>';
+  h+='</svg></div>';
+
+  // ── Vue MOBILE alternative : liste horizontale avec barres stack proportionnelles ──
+  h+='<div class="bp-ebitda-mobile">';
+  var _fmtEC=window.fmtC||fmt;
+  var _maxTot=studioRows.reduce(function(m,r){return Math.max(m,Math.abs(r.ebitda1+r.ebitda2+r.ebitda3));},1);
+  studioRows.forEach(function(r){
+    var tot=r.ebitda1+r.ebitda2+r.ebitda3;
+    var pct=Math.max(0,Math.min(100,tot/_maxTot*100));
+    var a1p=tot>0?Math.max(0,r.ebitda1)/tot*100:0;
+    var a2p=tot>0?Math.max(0,r.ebitda2)/tot*100:0;
+    var a3p=tot>0?Math.max(0,r.ebitda3)/tot*100:0;
+    h+='<div class="bp-ebitda-row">';
+    h+='<div class="bp-ebitda-row-head">';
+    h+='<span class="bp-ebitda-row-name">'+r.name+'</span>';
+    h+='<span class="bp-ebitda-row-tot">'+_fmtEC(tot)+'</span>';
+    h+='</div>';
+    h+='<div class="bp-ebitda-row-bar" style="width:'+pct+'%">';
+    if(a1p>0)h+='<div class="bp-ebitda-seg a1" style="flex:'+a1p+'" title="A1 '+_fmtEC(r.ebitda1)+'"></div>';
+    if(a2p>0)h+='<div class="bp-ebitda-seg a2" style="flex:'+a2p+'" title="A2 '+_fmtEC(r.ebitda2)+'"></div>';
+    if(a3p>0)h+='<div class="bp-ebitda-seg a3" style="flex:'+a3p+'" title="A3 '+_fmtEC(r.ebitda3)+'"></div>';
+    h+='</div>';
+    h+='<div class="bp-ebitda-row-sub">A1 '+_fmtEC(r.ebitda1)+' · A2 '+_fmtEC(r.ebitda2)+' · A3 '+_fmtEC(r.ebitda3)+'</div>';
+    h+='</div>';
+  });
+  h+='</div>';
+
+  h+='</div>';
 
   // ── Tableau détaillé par studio — Premium ──
   h+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:20px;padding:24px 28px;box-shadow:0 1px 3px rgba(0,0,0,0.04)">';

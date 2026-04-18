@@ -2998,6 +2998,27 @@ body.dark .notif-native-prompt div[style*="color:#64748b"]{color:#8b949e !import
   .bp-renta-grid .bp-renta-val{font-size:18px !important}
 }
 
+/* ── BP Consolidé — Vue EBITDA par studio : SVG desktop, liste mobile ──── */
+.bp-ebitda-mobile{display:none}
+@media(max-width:760px){
+  .bp-ebitda-svg-wrap{display:none !important}
+  .bp-ebitda-mobile{display:flex;flex-direction:column;gap:12px;padding:4px 0}
+  .bp-ebitda-row{display:flex;flex-direction:column;gap:6px;padding:12px 14px;background:#fff;border:1px solid #e8e8e0;border-radius:12px}
+  body.dark .bp-ebitda-row{background:#161b22;border-color:#30363d}
+  .bp-ebitda-row-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+  .bp-ebitda-row-name{font-size:12px;font-weight:700;color:#1a1a1a;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  body.dark .bp-ebitda-row-name{color:#e6edf3}
+  .bp-ebitda-row-tot{font-size:14px;font-weight:800;color:#0F6E56;letter-spacing:-.3px;white-space:nowrap}
+  .bp-ebitda-row-bar{display:flex;height:14px;border-radius:7px;overflow:hidden;background:#f3f4ec;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  body.dark .bp-ebitda-row-bar{background:#21262d}
+  .bp-ebitda-seg{height:100%}
+  .bp-ebitda-seg.a1{background:linear-gradient(135deg,#15956F,#0F6E56)}
+  .bp-ebitda-seg.a2{background:linear-gradient(135deg,#2B7BD4,#185FA5)}
+  .bp-ebitda-seg.a3{background:linear-gradient(135deg,#6366f1,#4338ca)}
+  .bp-ebitda-row-sub{font-size:10px;color:#888;font-weight:500}
+  body.dark .bp-ebitda-row-sub{color:#8b949e}
+}
+
 /* ── Grille Raccourcis accueil (4 cols desktop, 2 cols tablet/mobile) ───── */
 .home-shortcuts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:10px}
 @media(max-width:900px){
