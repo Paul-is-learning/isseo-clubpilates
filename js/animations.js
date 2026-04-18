@@ -992,6 +992,80 @@ function initSwipeGestures(){
   },{passive:true});
 }
 
+// ── 23. Pull-to-refresh (mobile) ──
+// Quand l'utilisateur tire vers le bas depuis le haut de la page, re-sync.
+function initPullToRefresh(){
+  if(window._ptrInit)return;
+  window._ptrInit=true;
+  var startY=0,currentY=0,pulling=false,ready=false;
+  var THRESHOLD=70;
+  var ind=null;
+  function ensureIndicator(){
+    if(ind)return ind;
+    ind=document.createElement('div');
+    ind.id='ptr-indicator';
+    ind.innerHTML='<div class="ptr-icon"></div><span class="ptr-txt">Tirez pour rafraîchir</span>';
+    document.body.appendChild(ind);
+    return ind;
+  }
+  document.addEventListener('touchstart',function(e){
+    if(window.scrollY>5)return;
+    if(!S||!S.user||S.view==='auth')return;
+    var t=e.touches[0];
+    startY=t.clientY;currentY=startY;pulling=true;ready=false;
+  },{passive:true});
+  document.addEventListener('touchmove',function(e){
+    if(!pulling)return;
+    var t=e.touches[0];
+    currentY=t.clientY;
+    var dy=currentY-startY;
+    if(dy<=0){pulling=false;if(ind)ind.classList.remove('show');return;}
+    var i=ensureIndicator();
+    var pulled=Math.min(dy*0.5,100);
+    i.style.height=pulled+'px';
+    i.classList.add('show');
+    // Icon progresse
+    var icon=i.querySelector('.ptr-icon');
+    var txt=i.querySelector('.ptr-txt');
+    if(pulled>=THRESHOLD){
+      ready=true;
+      if(icon)icon.style.transform='rotate(180deg)';
+      if(txt)txt.textContent='Relâchez pour rafraîchir';
+    } else {
+      ready=false;
+      if(icon)icon.style.transform='rotate('+(pulled/THRESHOLD*180)+'deg)';
+      if(txt)txt.textContent='Tirez pour rafraîchir';
+    }
+  },{passive:true});
+  document.addEventListener('touchend',function(){
+    if(!pulling){return;}
+    pulling=false;
+    if(!ind)return;
+    if(ready){
+      ind.classList.add('ready');
+      ind.style.height='60px';
+      var txt=ind.querySelector('.ptr-txt');
+      if(txt)txt.textContent='Rafraîchissement…';
+      try{if(navigator.vibrate)navigator.vibrate(15);}catch(e){}
+      // Re-sync des données via Supabase
+      (typeof loadAll==='function'?loadAll():Promise.resolve()).then(function(){
+        if(typeof render==='function')render();
+        setTimeout(function(){
+          ind.classList.remove('show','ready');
+          ind.style.height='';
+          if(typeof toast==='function')toast('Données à jour ✓');
+        },300);
+      }).catch(function(){
+        ind.classList.remove('show','ready');
+        ind.style.height='';
+      });
+    } else {
+      ind.classList.remove('show');
+      ind.style.height='';
+    }
+  },{passive:true});
+}
+
 // ── 23. Radar chart animation ──
 function animateRadarChart(){
   var poly=document.querySelector('.radar-polygon:not([data-radar-done])');
@@ -1053,6 +1127,7 @@ function afterRenderAnimations(){
   try{morphTabIndicator();}catch(e){}
   try{syncBottomTabBar();}catch(e){}
   try{initSwipeGestures();}catch(e){}
+  try{initPullToRefresh();}catch(e){}
   try{initScrollReveal();}catch(e){}
   // Stop hero carousel & gauge cycle if we left the Accueil page
   if(!document.querySelector('.hero-carousel')){

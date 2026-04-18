@@ -49,7 +49,10 @@ function render(){
       else if(S.page==='collab')pageContent=renderCollab();
       else if(S.page==='fichiers')pageContent=renderFichiersPage();
       else pageContent=renderAccueil();
-      root.innerHTML=renderSidebar()+'<div class="main-content"><div class="app">'+pageContent+'</div></div>';
+      // Classe "page-transition" sur .main-content → déclenche l'anim slide-in (mobile)
+      var _pageChanged=window._lastRenderedPage!==S.page||window._lastRenderedView!==S.view;
+      window._lastRenderedPage=S.page;window._lastRenderedView=S.view;
+      root.innerHTML=renderSidebar()+'<div class="main-content'+(_pageChanged?' page-transition':'')+'"><div class="app">'+pageContent+'</div></div>';
       // Bottom tab bar (mobile) — show if hidden
       var _btbExist=document.getElementById('bottom-tab-bar');
       if(_btbExist)_btbExist.style.display='';
