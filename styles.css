@@ -3399,8 +3399,8 @@ body.dark .accueil-topbar-date{color:#8b949e}
     border:none!important;
     scrollbar-width:none;
     -ms-overflow-style:none;
-    mask-image:linear-gradient(to right,transparent 0,#000 8px,#000 calc(100% - 8px),transparent 100%);
-    -webkit-mask-image:linear-gradient(to right,transparent 0,#000 8px,#000 calc(100% - 8px),transparent 100%);
+    touch-action:pan-x;
+    overscroll-behavior-x:contain;
   }
   .tabs::-webkit-scrollbar{display:none;width:0;height:0}
   .tab{

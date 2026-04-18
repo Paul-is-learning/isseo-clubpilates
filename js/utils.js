@@ -335,6 +335,7 @@ async function doLogin(){
   loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});
   subscribeNotifications();
   if(window.isseoPush&&typeof window.isseoPush.refresh==='function')window.isseoPush.refresh();
+  if(typeof maybeStartOnboardingTour==='function')maybeStartOnboardingTour();
   }catch(e){console.error('Login error:',e);if(err){err.style.display='block';err.textContent='Erreur de connexion: '+e.message;}}
   finally{if(btn){btn.textContent=btnOrig;btn.disabled=false;}}
 }

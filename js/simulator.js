@@ -93,6 +93,17 @@ var _msgPollInterval=null;
 function setDetailTab(t){
   if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();
   S.detailTab=t;S.aiResp='';S.editMoisIdx=null;saveNavState();
+  // Auto-scroll de la barre d'onglets vers le tab actif (utile mobile avec overflow-x)
+  requestAnimationFrame(function(){
+    var tabsEl=document.querySelector('.tabs');if(!tabsEl)return;
+    var activeBtn=tabsEl.querySelector('.tab.active');if(!activeBtn)return;
+    var tr=tabsEl.getBoundingClientRect(),ar=activeBtn.getBoundingClientRect();
+    var target=activeBtn.offsetLeft-(tabsEl.clientWidth-activeBtn.offsetWidth)/2;
+    if(ar.left<tr.left+12||ar.right>tr.right-12){
+      try{tabsEl.scrollTo({left:Math.max(0,target),behavior:'smooth'});}
+      catch(_){tabsEl.scrollLeft=Math.max(0,target);}
+    }
+  });
   // Arrêter le polling précédent
   if(_msgPollInterval){clearInterval(_msgPollInterval);_msgPollInterval=null;}
   // Démarrer le polling si on est sur l'onglet messages

@@ -984,13 +984,18 @@ function morphTabIndicator(){
 function initSwipeGestures(){
   if(window._swipeInit)return;
   window._swipeInit=true;
-  var startX=0,startY=0,swiping=false;
+  var startX=0,startY=0,swiping=false,startedInTabs=false;
   document.addEventListener('touchstart',function(e){
     var t=e.touches[0];
     startX=t.clientX;startY=t.clientY;swiping=true;
+    // Si le geste démarre dans la barre d'onglets (ou tout conteneur scrollable horizontal),
+    // on laisse le scroll natif gérer — sinon on bloque la navigation horizontale.
+    var tgt=e.target;
+    startedInTabs=!!(tgt&&tgt.closest&&(tgt.closest('.tabs')||tgt.closest('[data-no-swipe-nav]')));
   },{passive:true});
   document.addEventListener('touchend',function(e){
     if(!swiping)return;swiping=false;
+    if(startedInTabs){startedInTabs=false;return;}
     var t=e.changedTouches[0];
     var dx=t.clientX-startX;
     var dy=t.clientY-startY;
