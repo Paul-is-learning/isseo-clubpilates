@@ -42,26 +42,85 @@ function renderAI(s){
 
 function renderNewForm(){
   var f=S.newForm;
-  var h='<div class="box"><div style="font-weight:600;font-size:15px;margin-bottom:14px">Nouveau studio</div><div class="form-grid">';
+  // Références BP (sert à calculer le CA par règle de 3 sur les adhérents fin d'année)
+  var BP_FIN_A1=285,BP_FIN_A2=345,BP_FIN_A3=400;
+  var BP_CA_A1=448800,BP_CA_A2=610190,BP_CA_A3=761841;
+  var _adh1=(f.adhFinA1!=null?f.adhFinA1:BP_FIN_A1);
+  var _adh2=(f.adhFinA2!=null?f.adhFinA2:BP_FIN_A2);
+  var _adh3=(f.adhFinA3!=null?f.adhFinA3:BP_FIN_A3);
+  var _ca1=Math.round(_adh1/BP_FIN_A1*BP_CA_A1);
+  var _ca2=Math.round(_adh2/BP_FIN_A2*BP_CA_A2);
+  var _ca3=Math.round(_adh3/BP_FIN_A3*BP_CA_A3);
+  var _lmInit=(f.loyerMensuel!=null?f.loyerMensuel:4800);
+  var _fmtC=window.fmtC||fmt;
+
+  var h='<div class="nf-wrap">';
+
+  // ═══ Bloc 1 : Identité ═══
+  h+='<div class="nf-section">';
+  h+='<div class="nf-section-head"><span class="nf-section-num">1</span><span class="nf-section-title">Identité du studio</span></div>';
+  h+='<div class="nf-grid">';
   h+='<div class="fg"><label>Nom</label><input value="'+(f.name||'')+'" oninput="setNF(\'name\',this.value)" placeholder="Ex: Paris 16e"/></div>';
   h+='<div class="fg"><label>Adresse</label><input value="'+(f.addr||'')+'" oninput="setNF(\'addr\',this.value)" placeholder="Rue, CP Ville"/></div>';
-  h+='<div class="fg"><label>Societe</label><select onchange="setNF(\'societe\',this.value)"><option>P&amp;W Occitanie</option><option>COBE Society</option><option>SACOBE Society</option></select></div>';
+  h+='<div class="fg"><label>Société</label><select onchange="setNF(\'societe\',this.value)"><option>P&amp;W Occitanie</option><option>COBE Society</option><option>SACOBE Society</option></select></div>';
   h+='<div class="fg"><label>Ouverture</label><input value="'+(f.ouverture||'')+'" oninput="setNF(\'ouverture\',this.value)" placeholder="Ex: T2 2027"/></div>';
-  h+='<div class="fg"><label>CA annuel A1</label><input type="number" value="'+(f.annualCA||CA_A1)+'" oninput="setNF(\'annualCA\',this.value)"/></div>';
   h+='<div class="fg"><label>Mois ouverture</label><select onchange="setNF(\'moisDebut\',this.value)">';
   MOIS.forEach(function(m,i){h+='<option value="'+i+'" '+((f.moisDebut||0)==i?'selected':'')+'>'+m+'</option>';});
   h+='</select></div>';
   h+='<div class="fg"><label>Cohorte</label><select onchange="setNF(\'cohorte\',+this.value)">';
   for(var nci=1;nci<=10;nci++)h+='<option value="'+nci+'"'+((f.cohorte||1)===nci?' selected':'')+'>Cohorte '+nci+'</option>';
   h+='</select></div>';
-  // Loyer mensuel : pas de render() à chaque frappe (sinon l'input perd focus/curseur)
-  // → on utilise setNFLoyer qui met à jour S + l'affichage annuel via DOM direct
-  var _lmInit=(f.loyerMensuel!=null?f.loyerMensuel:4800);
+  h+='</div></div>';
+
+  // ═══ Bloc 2 : Loyer ═══
+  h+='<div class="nf-section">';
+  h+='<div class="nf-section-head"><span class="nf-section-num">2</span><span class="nf-section-title">Loyer</span></div>';
+  h+='<div class="nf-grid">';
   h+='<div class="fg"><label>Loyer mensuel HT (€)</label><input type="number" inputmode="numeric" min="0" step="100" value="'+_lmInit+'" oninput="setNFLoyer(this.value)" placeholder="4800"/></div>';
-  h+='<div class="fg"><div style="font-size:11px;color:#64748b;padding-top:22px">→ Loyer annuel BP : <b id="nf-loyer-annuel-out" style="color:#1a3a6b">'+fmt(_lmInit*12)+'</b> &nbsp;•&nbsp; Impact direct sur EBITDA / REX / Résultat net</div></div>';
+  h+='<div class="fg"><div class="nf-inline-result">→ Loyer annuel BP : <b id="nf-loyer-annuel-out">'+fmt(_lmInit*12)+'</b></div></div>';
+  h+='</div></div>';
+
+  // ═══ Bloc 3 : Prévision adhérents (pilote le CA) ═══
+  h+='<div class="nf-section nf-section-accent">';
+  h+='<div class="nf-section-head"><span class="nf-section-num">3</span><div><span class="nf-section-title">Prévision d\'adhérents</span><span class="nf-section-sub">Pilote directement le CA prévisionnel</span></div></div>';
+  h+='<div class="nf-adh-grid">';
+  var _adhRows=[
+    {y:1,label:'Fin Année 1',val:_adh1,ref:BP_FIN_A1,caRef:BP_CA_A1,ca:_ca1,color:'#0F6E56'},
+    {y:2,label:'Fin Année 2',val:_adh2,ref:BP_FIN_A2,caRef:BP_CA_A2,ca:_ca2,color:'#1e40af'},
+    {y:3,label:'Fin Année 3',val:_adh3,ref:BP_FIN_A3,caRef:BP_CA_A3,ca:_ca3,color:'#4338ca'}
+  ];
+  _adhRows.forEach(function(r){
+    var delta=r.val-r.ref;
+    var deltaPct=Math.round((r.val/r.ref-1)*100);
+    h+='<div class="nf-adh-row" style="border-left-color:'+r.color+'">';
+    h+='<div class="nf-adh-left"><div class="nf-adh-label">'+r.label+'</div><div class="nf-adh-ref">BP réf : <b>'+r.ref+' membres</b></div></div>';
+    h+='<div class="nf-adh-input-wrap"><input type="number" inputmode="numeric" min="0" step="5" value="'+r.val+'" oninput="setNFAdh('+r.y+',this.value)" id="nf-adh-'+r.y+'" data-ref="'+r.ref+'" data-caref="'+r.caRef+'"/><span class="nf-adh-unit">membres</span></div>';
+    h+='<div class="nf-adh-right">';
+    h+='<div class="nf-adh-ca" id="nf-ca-'+r.y+'" style="color:'+r.color+'">'+_fmtC(r.ca)+'</div>';
+    h+='<div class="nf-adh-delta" id="nf-delta-'+r.y+'">'+(deltaPct===0?'= BP réf':(deltaPct>0?'+':'')+deltaPct+'% vs BP')+'</div>';
+    h+='</div>';
+    h+='</div>';
+  });
   h+='</div>';
-  h+='<div class="info-box">CA A2 et A3 calcules automatiquement sur base A1 (+10% / +21%). Repartition et churn BP issus du Plan Financier CP.</div>';
-  h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="createStudio()">Creer</button><button class="btn" onclick="toggleNewForm()">Annuler</button></div></div>';
+  // Explication didactique
+  h+='<details class="nf-howto">';
+  h+='<summary><span>💡 Comment est calculé le CA ?</span><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></summary>';
+  h+='<div class="nf-howto-body">';
+  h+='<p><b>Règle de 3 proportionnelle</b> sur le nombre d\'adhérents en fin d\'année, appliquée aux CA de référence du Business Plan Club Pilates officiel.</p>';
+  h+='<div class="nf-howto-formula">CA année = <span style="color:#6366f1">(adhérents fin année / réf. BP)</span> × <span style="color:#0F6E56">CA BP de réf.</span></div>';
+  h+='<p style="margin-top:10px"><b>Prix et répartition identiques sur tous les studios</b> (garantit la comparabilité) :</p>';
+  h+='<div class="nf-howto-packs">';
+  h+='<div class="nf-pack"><div class="nf-pack-dot" style="background:#5b7fa6"></div><div><b>Pack 4 séances</b><br><span>47 % · 110 €/mois</span></div></div>';
+  h+='<div class="nf-pack"><div class="nf-pack-dot" style="background:#1D9E75"></div><div><b>Pack 8 séances</b><br><span>50 % · 193 €/mois</span></div></div>';
+  h+='<div class="nf-pack"><div class="nf-pack-dot" style="background:#854F0B"></div><div><b>Illimité</b><br><span>3 % · 277 €/mois</span></div></div>';
+  h+='</div>';
+  h+='<div class="nf-howto-arpu">ARPU moyen ≈ <b>157 €/mois</b> par adhérent · <b>1 880 €/an</b></div>';
+  h+='</div></details>';
+  h+='</div>';
+
+  // ═══ Footer actions ═══
+  h+='<div class="nf-actions"><button class="btn btn-primary" onclick="createStudio()">Créer le studio</button><button class="btn" onclick="toggleNewForm()">Annuler</button></div>';
+  h+='</div>';
   return h;
 }
 
