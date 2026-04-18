@@ -733,7 +733,7 @@ function _normalizeProfileName(n){
 
 function _taskProfilesList(){
   var raw=(S._allProfiles||[]).slice();
-  var EXPECTED=['Paul Bécaud','Pascal Bécaud','Tom Bécaud','Paul Sabourin','Caroline Coquel','Clément Coquel'];
+  var EXPECTED=['Paul Bécaud','Pascal Bécaud','Tom Bécaud','Caroline Coquel','Clément Coquel'];
   // Ajoute les EXPECTED manquants (vérification sur forme normalisée)
   var normSeen={};
   raw.forEach(function(p){if(p&&p.nom)normSeen[_normalizeProfileName(p.nom)]=true;});

@@ -56,7 +56,6 @@ var COLLAB_SEP='<span style="font-size:18px;font-weight:300;color:#b0b8c8;letter
 var EMAIL_PHOTO_MAP={
   'caro.falzon@gmail.com':    'photos/caroline.jpg',
   'clementcoquel@yahoo.fr':   'photos/clement.jpg',
-  'paulsabourin3@gmail.com':  'photos/paul-s.jpg',
 };
 var PHOTO_MAP={
   'pascal':            'photos/pascal.jpg',
@@ -71,12 +70,9 @@ var PHOTO_MAP={
   'clément':           'photos/clement.jpg',
   'clément coquel':    'photos/clement.jpg',
   'clement coquel':    'photos/clement.jpg',
-  'paul sabourin':     'photos/paul-s.jpg',
-  'paul s':            'photos/paul-s.jpg',
 };
 // Directeurs opérationnels par studio (matching sur nom ou société)
 var STUDIO_DIRECTOR=[
-  {match:'sacobe', nom:'Paul S.',   photo:'photos/paul-s.jpg'},
   {match:'p&w',    nom:'Tom',       photo:'photos/tom.jpg'},
   {match:'cobe',   nom:'Caroline',  photo:'photos/caroline.jpg'},
 ];

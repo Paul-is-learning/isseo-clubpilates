@@ -31,7 +31,6 @@ function renderPageEngagements(){
     {nom:'SAS Isséo',contributors:['SAS Isséo'],avatarNom:'Pascal Bécaud',desc:'Holding famille Bécaud',color:'#0F6E56'},
     {nom:'Paul Bécaud',contributors:['Paul Bécaud'],avatarNom:'Paul Bécaud',desc:'À titre personnel',color:'#1a3a6b'},
     {nom:'SAS P&W Studios',contributors:['SAS P&W Studios'],avatarNom:'Tom Bécaud',desc:'Holding Tom Bécaud',color:'#1a3a6b'},
-    {nom:'Paul Sabourin',contributors:['Paul Sabourin'],avatarNom:'Paul Sabourin',desc:'À titre personnel',color:'#B45309'},
   ];
 
   // ── Agrégation ──
@@ -84,6 +83,13 @@ function renderPageEngagements(){
   // VOLET 1 : Récap' engagements
   // ════════════════════════════════════════════════════════════════════════════
   if(S.engSection==='recap'){
+
+  // ────────────────────────────────────────────────────────────────
+  // Panneau "Saisir / suivre les dépenses par studio"
+  // Permet d'entrer les dépenses sans naviguer vers chaque studio.
+  // ────────────────────────────────────────────────────────────────
+  h+=renderRecapDepensesPicker(allIds,{dm:dm,cardBg:cardBg,borderC:borderC,txtMain:txtMain,txtSub:txtSub,subtleBg:subtleBg});
+
 
   // ── Pré-calcul données par société ──
   var socData=[];
@@ -320,7 +326,7 @@ function renderPageEngagements(){
 
   h+='<div style="text-align:center;margin-top:14px;font-size:11px;color:'+txtSub+'">';
   h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
-  h+='Pour saisir ou modifier les d\u00e9penses, rendez-vous dans l\'onglet <b>Engagements</b> de chaque studio</div>';
+  h+='Pour saisir une nouvelle d\u00e9pense, utilisez le panneau <b>\u00ab Saisir / suivre les d\u00e9penses \u00bb</b> en haut de cette page.</div>';
 
   } // fin volet recap
 
@@ -840,6 +846,81 @@ function renderPageEngagements(){
 
   } // fin volet comptescourants
 
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Panneau "Saisir / suivre les dépenses" dans le récap engagements
+// ═══════════════════════════════════════════════════════════════════════════
+// Permet d'entrer les dépenses depuis la page d'accueil → onglet Récap,
+// sans avoir à naviguer dans le détail de chaque studio.
+function renderRecapDepensesPicker(allIds,th){
+  var dm=th.dm,cardBg=th.cardBg,borderC=th.borderC,txtMain=th.txtMain,txtSub=th.txtSub;
+  // Tri : ouverts → pipeline → alpha
+  var studios=allIds.map(function(id){return {id:id,s:S.studios[id]||{}};}).sort(function(a,b){
+    var sa=a.s.statut==='ouvert'?0:a.s.statut==='pipeline'?1:2;
+    var sb=b.s.statut==='ouvert'?0:b.s.statut==='pipeline'?1:2;
+    if(sa!==sb)return sa-sb;
+    return (a.s.name||'').localeCompare(b.s.name||'');
+  });
+  var selSid=S.engRecapSelectedSid;
+  // Si le studio sélectionné n'existe plus, reset
+  if(selSid&&!S.studios[selSid]){S.engRecapSelectedSid=null;selSid=null;}
+
+  var h='';
+  h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;margin-bottom:16px;overflow:hidden">';
+
+  // Header
+  h+='<div style="padding:14px 18px;border-bottom:1px solid '+borderC+';display:flex;align-items:center;gap:10px;flex-wrap:wrap">';
+  h+='<div style="width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,#92630a,#d4a843);color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0">';
+  h+='<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="M5 12h14"/></svg>';
+  h+='</div>';
+  h+='<div style="flex:1;min-width:160px">';
+  h+='<div style="font-size:14px;font-weight:700;color:'+txtMain+'">Saisir / suivre les d\u00e9penses</div>';
+  h+='<div style="font-size:11px;color:'+txtSub+';margin-top:2px">Choisis un studio, renseigne tes d\u00e9penses CAPEX et leasing depuis ici.</div>';
+  h+='</div>';
+  if(selSid){
+    h+='<button onclick="setEngRecapStudio(\''+selSid+'\')" style="background:'+(dm?'#21262d':'#f1f5f9')+';color:'+(dm?'#c7d2fe':'#475569')+';border:1px solid '+borderC+';border-radius:8px;padding:6px 12px;font-size:11.5px;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:6px">';
+    h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+    h+='Fermer</button>';
+  }
+  h+='</div>';
+
+  // Studio picker (pastilles)
+  h+='<div class="recap-dep-picker" style="display:flex;gap:8px;padding:12px 18px;overflow-x:auto;scrollbar-width:thin;background:'+(dm?'#0d1117':'#fafbfc')+'">';
+  if(studios.length===0){
+    h+='<div style="font-size:12px;color:'+txtSub+';padding:6px 2px">Aucun studio \u2014 cr\u00e9e un studio depuis la page Studios.</div>';
+  } else {
+    studios.forEach(function(x){
+      var id=x.id,s=x.s;
+      var active=selSid===id;
+      var nbDeps=(S.depenses[id]||[]).length;
+      var statutCol=s.statut==='ouvert'?'#0F6E56':s.statut==='pipeline'?'#1e40af':'#64748b';
+      h+='<button onclick="setEngRecapStudio(\''+id+'\')" class="recap-dep-chip'+(active?' active':'')+'" style="flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-start;gap:3px;padding:9px 14px;border-radius:10px;border:1.5px solid '+(active?'#92630a':borderC)+';background:'+(active?'#fef3c7':cardBg)+';color:'+(active?'#7a4e00':txtMain)+';cursor:pointer;transition:all .15s;font-family:inherit;min-width:150px;text-align:left">';
+      h+='<span style="font-size:12.5px;font-weight:700;line-height:1.2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:160px">'+(s.name||id)+'</span>';
+      h+='<span style="display:flex;align-items:center;gap:6px;font-size:10px;color:'+(active?'#92630a':txtSub)+'">';
+      h+='<span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:'+statutCol+'"></span>';
+      h+=(s.societe||'\u2014')+' \u00b7 '+nbDeps+' d\u00e9p.';
+      h+='</span>';
+      h+='</button>';
+    });
+  }
+  h+='</div>';
+
+  // Contenu : engagement complet du studio sélectionné
+  if(selSid&&S.studios[selSid]){
+    h+='<div style="padding:16px 18px;border-top:1px solid '+borderC+';background:'+(dm?'#0d1117':'#fff')+'">';
+    try{
+      h+=renderEngagements(selSid,S.studios[selSid]);
+    }catch(e){
+      h+='<div style="padding:12px;background:#fee2e2;color:#991b1b;border-radius:8px;font-size:12px">Erreur de rendu : '+String(e.message||e)+'</div>';
+    }
+    h+='</div>';
+  } else {
+    h+='<div style="padding:16px 18px;font-size:12px;color:'+txtSub+';text-align:center;font-style:italic">\u2190 S\u00e9lectionne un studio ci-dessus pour voir ses d\u00e9penses et en ajouter</div>';
+  }
+
+  h+='</div>';
   return h;
 }
 

@@ -34,6 +34,7 @@ var S={
   engView:'societes',   // vue récap engagements : 'societes' | 'actionnaires'
   engSection:'recap',   // volet récap engagements : 'recap' | 'fondspropres' | 'comptescourants'
   engExpanded:{},       // sections dépliées récap engagements {nomGroupe: true}
+  engRecapSelectedSid:null, // studio sélectionné dans le panneau "Saisir une dépense" du récap
   fpSimActiveCohorte:'1', // cohorte active dans le volet fonds propres
   fpSimCohortes:{2:{'P&W Occitanie':0,'COBE Society':0,'SACOBE Society':0},3:{'P&W Occitanie':0,'COBE Society':0,'SACOBE Society':0},4:{'P&W Occitanie':0,'COBE Society':0,'SACOBE Society':0}},
   chatOpen:false,       // panneau chat ouvert/fermé

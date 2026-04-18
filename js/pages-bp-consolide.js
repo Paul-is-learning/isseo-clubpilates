@@ -50,6 +50,7 @@ function toggleEngSection(v){S.engSection=v;render();}
 function toggleFpCohorte(v){S.fpSimActiveCohorte=v;render();}
 function setFpSimCohorte(cohorte,societe,nb){S.fpSimCohortes[cohorte][societe]=parseInt(nb)||0;render();}
 function toggleEngExpand(k){S.engExpanded[k]=!S.engExpanded[k];render();}
+function setEngRecapStudio(sid){S.engRecapSelectedSid=(S.engRecapSelectedSid===sid)?null:sid;render();}
 
 function renderBPConsolide(){
   if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div class="skeleton-page">'+skeletonGrid(4)+'</div>';

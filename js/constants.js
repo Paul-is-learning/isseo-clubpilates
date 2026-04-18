@@ -452,8 +452,8 @@ const DEPENSE_CATS=[
 ];
 const DEPENSE_FINS=['Emprunt bancaire','Crédit-bail (leasing)','Fonds propres'];
 const DEPENSE_CONTRIBUTORS=[
-  'SAS Isséo','SAS P&W Studios','Moovi-moov','Pilatine','Holding Sabourin',
-  'Paul Bécaud','Pascal Bécaud','Tom Bécaud','Paul Sabourin','Caroline Coquel','Clément Coquel',
+  'SAS Isséo','SAS P&W Studios','Moovi-moov','Pilatine',
+  'Paul Bécaud','Pascal Bécaud','Tom Bécaud','Caroline Coquel','Clément Coquel',
 ];
 
 // ── Structure capitalistique : quote-part par société porteuse ────────────────
@@ -468,8 +468,10 @@ const OWNERSHIP_MAP={
     {nom:'Paul Bécaud',pct:20,type:'ADP',desc:'Nom propre',color:'#1a3a6b',avatarNom:'Paul Bécaud'},
     {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',avatarNom:'Pascal Bécaud'},
   ],
+  // ⚠ SACOBE Society : Paul Sabourin (60% AO) retiré — les 60% restants sont
+  // à réaffecter. Structure actuelle = 40% seulement ; la dédicace du studio
+  // Issy doit être revue côté business.
   'SACOBE Society':[
-    {nom:'Paul Sabourin',pct:60,type:'AO',desc:'Nom propre',color:'#B45309',avatarNom:'Paul Sabourin'},
     {nom:'Moovi-moov',pct:20,type:'ADP',desc:'Holding Clément',color:'#854F0B',avatarNom:'Clément Coquel'},
     {nom:'SAS Isséo',pct:20,type:'ADP',desc:'Holding famille Bécaud',color:'#0F6E56',avatarNom:'Pascal Bécaud'},
   ]
