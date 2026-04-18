@@ -5,12 +5,13 @@
   "start_url": "./?source=pwa",
   "scope": "./",
   "display": "standalone",
+  "display_override": ["standalone", "fullscreen", "minimal-ui"],
   "orientation": "any",
   "background_color": "#0f1f3d",
   "theme_color": "#0f1f3d",
   "lang": "fr",
   "dir": "ltr",
-  "categories": ["business", "productivity"],
+  "categories": ["business", "productivity", "finance"],
   "icons": [
     {
       "src": "icons/icon-192.png",
@@ -24,5 +25,43 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "shortcuts": [
+    {
+      "name": "Accueil",
+      "url": "./?source=pwa#/accueil",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Studios",
+      "url": "./?source=pwa#/projets",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Collab",
+      "url": "./?source=pwa#/collab",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "BP Consolidé",
+      "url": "./?source=pwa#/bp",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ],
+  "share_target": {
+    "action": "./?source=share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url",
+      "files": [
+        {
+          "name": "files",
+          "accept": ["image/*", "application/pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv"]
+        }
+      ]
+    }
+  }
 }

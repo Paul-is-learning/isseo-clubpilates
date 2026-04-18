@@ -38,11 +38,69 @@ function subscribeNotifications(){
   S.notifSub=sb.channel('notif-'+S.user.id).on('postgres_changes',{event:'INSERT',schema:'public',table:'notifications',filter:'user_id=eq.'+S.user.id},function(payload){
     S.notifications.unshift(payload.new);
     _updateNotifBadge();
-    // Toast éphémère
     var nt=NOTIF_TYPES[payload.new.type]||{icon:'',label:''};
+    // Toast in-app
     toast(nt.icon+' '+payload.new.title);
+    // Notification OS native si permission accordée et onglet pas focus
+    showNativeNotification(payload.new,nt);
     render();
   }).subscribe();
+}
+
+// ── Notifications natives OS (Web Notifications API) ───────────────────────
+function canShowNativeNotif(){
+  return typeof Notification!=='undefined'&&Notification.permission==='granted';
+}
+function shouldShowNativeNotif(){
+  // N'afficher que si l'utilisateur n'est pas sur l'onglet (sinon le toast suffit)
+  return canShowNativeNotif()&&(document.hidden||document.visibilityState==='hidden');
+}
+function showNativeNotification(notif,meta){
+  if(!shouldShowNativeNotif())return;
+  meta=meta||{};
+  try{
+    // Préférer le SW si enregistré (permet tap → ouvrir l'app)
+    if('serviceWorker' in navigator&&navigator.serviceWorker.ready){
+      navigator.serviceWorker.ready.then(function(reg){
+        reg.showNotification((meta.icon||'')+' '+notif.title,{
+          body:notif.body||'',
+          icon:'/icons/icon-192.png',
+          badge:'/icons/icon-192.png',
+          tag:'isseo-notif-'+(notif.id||Date.now()),
+          data:{studioId:notif.studio_id,notifId:notif.id,type:notif.type},
+          vibrate:[30,40,20],
+          renotify:false
+        });
+      });
+    } else if(typeof Notification!=='undefined'){
+      new Notification((meta.icon||'')+' '+notif.title,{body:notif.body||'',icon:'/icons/icon-192.png',tag:'isseo-notif'});
+    }
+  }catch(e){console.warn('[notif native]',e);}
+}
+async function requestNativeNotifPermission(){
+  if(typeof Notification==='undefined'){toast('Notifications non support\u00e9es sur ce navigateur');return false;}
+  if(Notification.permission==='granted'){toast('Notifications d\u00e9j\u00e0 activ\u00e9es ✓');return true;}
+  if(Notification.permission==='denied'){
+    toast('Autorisez les notifications dans les param\u00e8tres du navigateur');
+    return false;
+  }
+  try{
+    var perm=await Notification.requestPermission();
+    if(perm==='granted'){
+      toast('Notifications activ\u00e9es ✓');
+      // Test immédiat
+      if('serviceWorker' in navigator&&navigator.serviceWorker.ready){
+        var reg=await navigator.serviceWorker.ready;
+        reg.showNotification('ISSEO Club Pilates',{body:'Vous recevrez maintenant les notifications m\u00eame app ferm\u00e9e',icon:'/icons/icon-192.png',tag:'isseo-welcome',vibrate:[30,40,30]});
+      }
+      return true;
+    }
+    toast('Notifications refus\u00e9es');
+    return false;
+  }catch(e){console.warn('[notif perm]',e);return false;}
+}
+function isNativeNotifEnabled(){
+  return typeof Notification!=='undefined'&&Notification.permission==='granted';
 }
 function unsubscribeNotifications(){
   if(S.notifSub){sb.removeChannel(S.notifSub);S.notifSub=null;}
@@ -321,6 +379,18 @@ function renderNotifPanel(){
   h+='<div style="font-size:14px;font-weight:700;color:#0f1f3d">Notifications'+(unread>0?' <span style="background:#dc2626;color:#fff;font-size:10px;padding:1px 7px;border-radius:10px;font-weight:600;margin-left:4px">'+unread+'</span>':'')+'</div>';
   if(unread>0)h+='<button onclick="markAllNotifsRead()" style="background:none;border:none;cursor:pointer;font-size:10px;color:#3B6FB6;font-weight:600">Tout marquer lu</button>';
   h+='</div>';
+  // Prompt notifications OS natives (si non activ\u00e9es)
+  if(typeof Notification!=='undefined'&&Notification.permission==='default'){
+    h+='<div class="notif-native-prompt">';
+    h+='<div style="display:flex;align-items:center;gap:10px">';
+    h+='<span style="font-size:20px">\uD83D\uDD14</span>';
+    h+='<div style="flex:1;min-width:0">';
+    h+='<div style="font-size:12px;font-weight:700;color:#1e40af">Activez les notifications natives</div>';
+    h+='<div style="font-size:10.5px;color:#64748b;line-height:1.4;margin-top:2px">Recevez les alertes m\u00eame app ferm\u00e9e (m\u00e9ca notification OS).</div>';
+    h+='</div>';
+    h+='<button onclick="requestNativeNotifPermission()" style="flex-shrink:0;background:linear-gradient(135deg,#3b82f6,#1e40af);color:#fff;border:none;padding:7px 12px;border-radius:8px;font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Activer</button>';
+    h+='</div></div>';
+  }
   // Filtres
   h+='<div style="padding:8px 12px;border-bottom:1px solid #f1f5f9;display:flex;gap:6px;flex-wrap:wrap">';
   // Filtre type

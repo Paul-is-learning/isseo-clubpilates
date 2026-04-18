@@ -102,8 +102,7 @@ function _renderHealthGauge(hs){
   var epx=cx+r*Math.cos(epRad),epy=cy+r*Math.sin(epRad);
   h2+='<circle class="health-dot" cx="'+epx.toFixed(1)+'" cy="'+epy.toFixed(1)+'" r="4" fill="#fff" filter="url(#hg-glow-lg)" style="opacity:0;animation:healthDotPop .3s 1.4s cubic-bezier(.22,.8,.24,1) forwards"/>';
   h2+='</svg>';
-  h2+='<div class="health-score-num" style="color:'+hs.color+'"><span class="gc-value">'+hs.score+'</span></div>';
-  h2+='<div style="position:absolute;bottom:-2px;left:50%;transform:translateX(-50%);font-size:10px;color:#94a3b8;font-weight:500">/100</div>';
+  h2+='<div class="health-score-num" style="color:'+hs.color+'"><span class="gc-value">'+hs.score+'</span><span class="health-score-scale">/100</span></div>';
   h2+='</div>';
   // Cycle label + dots
   h2+='<div class="gauge-cycle-label">Global</div>';
@@ -221,7 +220,9 @@ function renderAccueil(){
     var _ax2=_rcx+_rr*Math.cos(_aa),_ay2=_rcy+_rr*Math.sin(_aa);
     h+='<line x1="'+_rcx+'" y1="'+_rcy+'" x2="'+_ax2.toFixed(1)+'" y2="'+_ay2.toFixed(1)+'" stroke="'+(S.darkMode?'rgba(255,255,255,0.08)':'rgba(0,0,0,0.08)')+'" stroke-width="1"/>';
     var _lx=_rcx+(_rr+16)*Math.cos(_aa),_ly=_rcy+(_rr+16)*Math.sin(_aa);
-    h+='<text class="radar-label" x="'+_lx.toFixed(1)+'" y="'+_ly.toFixed(1)+'" dominant-baseline="middle">'+_axes[_ai].l+'</text>';
+    // Alignement text-anchor selon la position (sinon labels tronqués sur les bords)
+    var _anchor=_axes[_ai].a===-90||_axes[_ai].a===90?'middle':(_axes[_ai].a===180?'end':'start');
+    h+='<text class="radar-label" text-anchor="'+_anchor+'" x="'+_lx.toFixed(1)+'" y="'+_ly.toFixed(1)+'" dominant-baseline="middle">'+_axes[_ai].l+'</text>';
   }
   // Data polygon
   var _dpts=[];

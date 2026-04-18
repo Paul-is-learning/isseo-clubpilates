@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20260418-a10';
+const CACHE_VERSION = 'isseo-v1-20260418-a11';
 const APP_SHELL = [
   './',
   './index.html',
@@ -19,34 +19,34 @@ const APP_SHELL = [
   './icons/icon-192.png',
   './icons/icon-512.png',
   './icons/apple-touch-icon.png',
-  './js/constants.js?v=20260418a10',
-  './js/animations.js?v=20260418a10',
-  './js/state.js?v=20260418a10',
-  './js/notifications.js?v=20260418a10',
-  './js/auth.js?v=20260418a10',
-  './js/pages-accueil.js?v=20260418a10',
-  './js/pages-fichiers.js?v=20260418a10',
-  './js/pages-prospection.js?v=20260418a10',
-  './js/pages-engagements.js?v=20260418a10',
-  './js/pages-bp-consolide.js?v=20260418a10',
-  './js/pages-collab.js?v=20260418a10',
-  './js/pages-local.js?v=20260418a10',
-  './js/pages-echanges.js?v=20260418a10',
-  './js/pages-financier.js?v=20260418a10',
-  './js/pages-detail.js?v=20260418a10',
-  './js/pages.js?v=20260418a10',
-  './js/vendor/preact.umd.js?v=20260418a10',
-  './js/vendor/htm.umd.js?v=20260418a10',
-  './js/preact-components/next-steps-widget.js?v=20260418a10',
-  './js/gdrive.js?v=20260418a10',
-  './js/gdrive-ui.js?v=20260418a10',
-  './js/map.js?v=20260418a10',
-  './js/utils.js?v=20260418a10',
-  './js/exports.js?v=20260418a10',
-  './js/simulator.js?v=20260418a10',
-  './js/chat.js?v=20260418a10',
-  './js/sync.js?v=20260418a10',
-  './js/app.js?v=20260418a10'
+  './js/constants.js?v=20260418a11',
+  './js/animations.js?v=20260418a11',
+  './js/state.js?v=20260418a11',
+  './js/notifications.js?v=20260418a11',
+  './js/auth.js?v=20260418a11',
+  './js/pages-accueil.js?v=20260418a11',
+  './js/pages-fichiers.js?v=20260418a11',
+  './js/pages-prospection.js?v=20260418a11',
+  './js/pages-engagements.js?v=20260418a11',
+  './js/pages-bp-consolide.js?v=20260418a11',
+  './js/pages-collab.js?v=20260418a11',
+  './js/pages-local.js?v=20260418a11',
+  './js/pages-echanges.js?v=20260418a11',
+  './js/pages-financier.js?v=20260418a11',
+  './js/pages-detail.js?v=20260418a11',
+  './js/pages.js?v=20260418a11',
+  './js/vendor/preact.umd.js?v=20260418a11',
+  './js/vendor/htm.umd.js?v=20260418a11',
+  './js/preact-components/next-steps-widget.js?v=20260418a11',
+  './js/gdrive.js?v=20260418a11',
+  './js/gdrive-ui.js?v=20260418a11',
+  './js/map.js?v=20260418a11',
+  './js/utils.js?v=20260418a11',
+  './js/exports.js?v=20260418a11',
+  './js/simulator.js?v=20260418a11',
+  './js/chat.js?v=20260418a11',
+  './js/sync.js?v=20260418a11',
+  './js/app.js?v=20260418a11'
 ];
 
 // ── Install : pré-cache l'app shell ──────────────────────────────────────────
@@ -131,5 +131,72 @@ self.addEventListener('fetch', function(event) {
 self.addEventListener('message', function(event) {
   if (event.data && event.data.type === 'SKIP_WAITING') {
     self.skipWaiting();
+  }
+});
+
+// ── Notification click : ouvre l'app (studio ciblé si studioId présent) ──
+self.addEventListener('notificationclick', function(event) {
+  event.notification.close();
+  var data = event.notification.data || {};
+  var targetPath = './';
+  if (data.studioId) targetPath = './#/studio/' + encodeURIComponent(data.studioId);
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(function(clientList) {
+      for (var i = 0; i < clientList.length; i++) {
+        var c = clientList[i];
+        if (c.url.indexOf(self.location.origin) >= 0 && 'focus' in c) {
+          c.focus();
+          if ('postMessage' in c) c.postMessage({ type: 'NOTIF_CLICK', data: data });
+          return;
+        }
+      }
+      if (self.clients.openWindow) return self.clients.openWindow(targetPath);
+    })
+  );
+});
+
+// ── Push event : skeleton pour Web Push + VAPID (à wire avec backend plus tard) ──
+self.addEventListener('push', function(event) {
+  if (!event.data) return;
+  var payload = {};
+  try { payload = event.data.json(); } catch (e) { payload = { title: 'ISSEO', body: event.data.text() }; }
+  event.waitUntil(
+    self.registration.showNotification(payload.title || 'ISSEO', {
+      body: payload.body || '',
+      icon: './icons/icon-192.png',
+      badge: './icons/icon-192.png',
+      tag: payload.tag || 'isseo-push',
+      data: payload.data || {},
+      vibrate: [30, 40, 20],
+      renotify: !!payload.renotify
+    })
+  );
+});
+
+// ── Share Target : intercepte les fichiers partagés depuis d'autres apps ─────
+// Déclaré dans manifest.json (share_target). Stocke dans Cache Storage puis
+// redirige vers /#/share-received où la page cliente lit et propose l'upload.
+self.addEventListener('fetch', function(event) {
+  var url = new URL(event.request.url);
+  if (event.request.method === 'POST' && url.searchParams.get('source') === 'share') {
+    event.respondWith((async function() {
+      try {
+        var formData = await event.request.formData();
+        var title = formData.get('title') || '';
+        var text = formData.get('text') || '';
+        var shared_url = formData.get('url') || '';
+        var files = formData.getAll('files') || [];
+        var cache = await caches.open('isseo-share-inbox');
+        var payload = { title: String(title), text: String(text), url: String(shared_url), filesCount: files.length, receivedAt: Date.now() };
+        await cache.put('/share-meta', new Response(JSON.stringify(payload), { headers: { 'Content-Type': 'application/json' } }));
+        for (var i = 0; i < files.length; i++) {
+          var f = files[i];
+          if (f && f.name) {
+            await cache.put('/share-file-' + i, new Response(f, { headers: { 'Content-Type': f.type || 'application/octet-stream', 'X-File-Name': f.name } }));
+          }
+        }
+      } catch (e) { console.warn('[sw share]', e); }
+      return Response.redirect('./#/share-received', 303);
+    })());
   }
 });

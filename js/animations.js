@@ -15,8 +15,16 @@ function animateCounters(root){
     var duration=parseInt(el.getAttribute('data-duration')||'1200',10);
     var start=performance.now();
     function ease(t){return 1-Math.pow(1-t,3);} // easeOutCubic
+    function fmtCompact(r){
+      // Format compact FR : 1.2 M €, 395 k €, 980 €
+      var abs=Math.abs(r);
+      if(abs>=1e6)return (r/1e6).toFixed(abs>=1e7?0:1).replace('.',',').replace(/,0$/,'')+' M €';
+      if(abs>=1e3)return Math.round(r/1e3)+' k €';
+      return r+' €';
+    }
     function format(v){
       var r=Math.round(v);
+      if(fmt==='eur-compact'||(fmt==='eur'&&el.closest&&el.closest('.kpi-card')&&window.innerWidth<=480))return fmtCompact(r);
       if(fmt==='eur'){
         try{return window.fmt?window.fmt(r):(typeof window.fmt!=='undefined'?window.fmt(r):r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €');}catch(e){}
         return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €';

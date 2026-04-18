@@ -130,8 +130,103 @@ function _restoreFromHash(){
   return false;
 }
 window.addEventListener('hashchange',function(){
+  if((location.hash||'').indexOf('share-received')>=0){
+    handleShareReceived();return;
+  }
   if(_restoreFromHash()){saveNavState();render();}
 });
+
+// ── Messages depuis Service Worker (NOTIF_CLICK, etc.) ──────────────────
+if('serviceWorker' in navigator){
+  navigator.serviceWorker.addEventListener('message',function(e){
+    if(!e.data||!e.data.type)return;
+    if(e.data.type==='NOTIF_CLICK'){
+      var d=e.data.data||{};
+      if(d.studioId&&S.studios&&S.studios[d.studioId]&&typeof openDetail==='function'){
+        openDetail(d.studioId);
+      }
+    }
+  });
+}
+
+// ── Share Target : affiche un bottom-sheet "Fichiers reçus" ────────────
+async function handleShareReceived(){
+  try{
+    var cache=await caches.open('isseo-share-inbox');
+    var metaRes=await cache.match('/share-meta');
+    if(!metaRes){try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}return;}
+    var meta=await metaRes.json();
+    var files=[];
+    for(var i=0;i<(meta.filesCount||0);i++){
+      var r=await cache.match('/share-file-'+i);
+      if(r){
+        var name=r.headers.get('X-File-Name')||('fichier-'+i);
+        var blob=await r.blob();
+        files.push(new File([blob],name,{type:blob.type}));
+      }
+    }
+    _showShareReceivedModal(meta,files);
+    // Nettoie le cache
+    await cache.delete('/share-meta');
+    for(var j=0;j<(meta.filesCount||0);j++)await cache.delete('/share-file-'+j);
+    try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+  }catch(e){console.warn('[share recv]',e);}
+}
+
+function _showShareReceivedModal(meta,files){
+  var ids=(typeof _getStudioIds==='function')?_getStudioIds():Object.keys(S.studios||{});
+  var studiosWithDrive=ids.filter(function(id){return S.studios[id]&&S.studios[id].driveUrl;});
+  var overlay=document.createElement('div');
+  overlay.className='share-received-modal';
+  var html='<div class="share-received-box" onclick="event.stopPropagation()">';
+  html+='<div class="share-received-title">📥 '+files.length+' fichier'+(files.length>1?'s':'')+' re&ccedil;u'+(files.length>1?'s':'')+'</div>';
+  html+='<div class="share-received-sub">Choisissez le studio o&ugrave; les ajouter. Les fichiers seront upload&eacute;s dans son dossier Google Drive li&eacute;.</div>';
+  if(studiosWithDrive.length===0){
+    html+='<div style="padding:14px;background:#fef3c7;border-radius:10px;color:#854d0e;font-size:12px">Aucun studio n\'a de dossier Drive li&eacute;. Liez-en un d\'abord depuis la page Fichiers.</div>';
+  } else {
+    studiosWithDrive.forEach(function(sid){
+      var s=S.studios[sid];
+      html+='<button class="share-studio-choice" data-sid="'+sid+'">'+s.name;
+      html+='<span class="share-studio-meta">'+(s.societe||'')+'</span></button>';
+    });
+  }
+  html+='<button class="share-received-cancel">Annuler</button>';
+  html+='</div>';
+  overlay.innerHTML=html;
+  overlay.addEventListener('click',function(e){
+    var b=e.target.closest('.share-studio-choice');
+    if(b){
+      var sid=b.getAttribute('data-sid');
+      _uploadSharedFilesToStudio(sid,files);
+      overlay.remove();
+      return;
+    }
+    if(e.target.classList.contains('share-received-cancel')||e.target===overlay){
+      overlay.remove();
+    }
+  });
+  document.body.appendChild(overlay);
+}
+
+async function _uploadSharedFilesToStudio(sid,files){
+  var s=S.studios[sid];if(!s||!s.driveUrl){toast('Pas de Drive li&eacute;');return;}
+  var gd=window.isseoGDrive;
+  if(!gd||!gd.isConfigured()){toast('Google Drive non configur&eacute;');return;}
+  var parentId=(typeof _extractDriveFolderId==='function')?_extractDriveFolderId(s.driveUrl):null;
+  if(!parentId){toast('URL Drive invalide');return;}
+  if(!gd.isSignedIn()){try{await gd.signIn();}catch(e){toast('Connexion Drive requise');return;}}
+  // Ouvre le studio pour que l'utilisateur voie l'upload
+  if(typeof openDetail==='function')openDetail(sid);
+  if(typeof setDetailTab==='function')setDetailTab('fichiers');
+  toast('Upload de '+files.length+' fichier'+(files.length>1?'s':'')+'...');
+  var ok=0;
+  for(var i=0;i<files.length;i++){
+    try{await gd.upload(parentId,files[i]);ok++;}
+    catch(e){console.warn('[share upload]',files[i].name,e);}
+  }
+  toast(ok+'/'+files.length+' fichier'+(ok>1?'s':'')+' upload&eacute;'+(ok>1?'s':'')+' ✓');
+  if(typeof navigator.vibrate==='function')navigator.vibrate([30,40,30]);
+}
 
 // ── Init session ────────────────────────────────────────────────────────────
 sb.auth.getSession().then(function(res){

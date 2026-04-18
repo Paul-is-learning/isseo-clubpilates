@@ -151,7 +151,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
 .kpi-card__inner{position:relative;z-index:1}
 .kpi-card__icon{margin-bottom:var(--space-sm);opacity:0.9}
 .kpi-card__value{
-  font-size:18px;
+  font-size:clamp(14px,4.2vw,18px);
   font-weight:800;
   letter-spacing:-0.4px;
   line-height:1;
@@ -160,7 +160,12 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   align-items:center;
   gap:var(--space-sm);
   color:var(--glass-text);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  min-width:0;
 }
+.kpi-card__value .counter-anim{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:inline-block;max-width:100%}
 .kpi-card__label{
   font-size:9px;
   text-transform:uppercase;
@@ -733,7 +738,9 @@ body.dark .skeleton{background:linear-gradient(90deg,#1c2128 0%,#262d36 50%,#1c2
 .health-score-card{background:#fff;border:1px solid #e8e8e0;border-radius:20px;padding:14px 22px 10px;margin-bottom:18px;box-shadow:0 1px 4px rgba(0,0,0,0.03);transition:transform .3s,box-shadow .3s}
 .health-score-card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(0,0,0,0.07)}
 .health-gauge{position:relative;width:160px;height:92px;flex-shrink:0}
-.health-score-num{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:800;line-height:1;text-shadow:0 0 16px currentColor}
+.health-score-num{position:absolute;bottom:6px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:800;line-height:1;text-shadow:0 0 16px currentColor;display:flex;align-items:baseline;gap:2px;white-space:nowrap}
+.health-score-scale{font-size:11px;font-weight:600;color:#94a3b8;text-shadow:none;opacity:.7}
+body.dark .health-score-scale{color:#8b949e}
 @keyframes healthArcDraw{from{stroke-dashoffset:var(--health-full)}to{stroke-dashoffset:var(--health-offset)}}
 .health-arc{animation:healthArcDraw 1.2s .3s cubic-bezier(.22,.8,.24,1) both}
 @keyframes healthDotPop{from{opacity:0;r:0}to{opacity:1;r:4}}
@@ -2605,7 +2612,8 @@ body.dark .tab-indicator{background:linear-gradient(90deg,#58a6ff,#79b8ff,#a5d8f
 @keyframes tabSlideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(-12px)}}
 
 /* ── #3 Radar Chart ── */
-.radar-chart{position:relative}
+.radar-chart{position:relative;padding:8px 18px;overflow:visible}
+.radar-chart svg{overflow:visible}
 @keyframes radarDraw{from{opacity:0;transform:scale(0.3)}to{opacity:1;transform:scale(1)}}
 @keyframes radarFill{from{opacity:0}to{opacity:0.25}}
 .radar-polygon{transform-origin:center;animation:radarDraw .8s .3s cubic-bezier(.22,.8,.24,1) both}
@@ -2922,4 +2930,26 @@ body.dark .task-ctx-cancel:active{background:#30363d}
 @keyframes skeletonShimmerMove{100%{transform:translateX(100%)}}
 body.dark .skeleton{background:#1c2128 !important}
 body.dark .skeleton::after{background:linear-gradient(90deg,transparent 0%,rgba(255,255,255,.08) 50%,transparent 100%)}
+
+/* ── Prompt notif native (apparaît dans le panel notifications) ─────────── */
+.notif-native-prompt{padding:12px 16px;background:linear-gradient(135deg,#eff6ff,#dbeafe);border-bottom:1px solid #bfdbfe}
+body.dark .notif-native-prompt{background:linear-gradient(135deg,#0b2453,#112a6b);border-bottom-color:#1e3a8a}
+body.dark .notif-native-prompt div[style*="color:#1e40af"]{color:#93c5fd !important}
+body.dark .notif-native-prompt div[style*="color:#64748b"]{color:#8b949e !important}
+
+/* ── Modal "Fichiers partagés" (share target reçu) ──────────────────────── */
+.share-received-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:9800;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s}
+.share-received-box{background:#fff;width:100%;max-width:520px;border-radius:22px 22px 0 0;padding:20px 22px calc(22px + env(safe-area-inset-bottom));box-shadow:0 -20px 60px rgba(0,0,0,.3);animation:shareSlideUp .35s cubic-bezier(.2,.8,.2,1)}
+@keyframes shareSlideUp{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.share-received-title{font-size:16px;font-weight:800;color:#0f172a;margin-bottom:4px}
+.share-received-sub{font-size:12px;color:#64748b;margin-bottom:16px}
+.share-studio-choice{display:block;width:100%;padding:14px 16px;background:#f1f5f9;border:1px solid #e2e8f0;border-radius:12px;text-align:left;font-size:14px;font-weight:600;color:#1e293b;cursor:pointer;margin-bottom:8px;font-family:inherit;transition:all .15s}
+.share-studio-choice:hover,.share-studio-choice:active{background:#eef2ff;border-color:#c7d2fe;transform:translateX(4px)}
+.share-studio-choice .share-studio-meta{display:block;font-size:11px;color:#94a3b8;font-weight:500;margin-top:2px}
+.share-received-cancel{display:block;width:100%;padding:14px;margin-top:10px;background:#f8fafc;border:none;border-radius:12px;font-size:14px;font-weight:700;color:#64748b;cursor:pointer;font-family:inherit}
+body.dark .share-received-box{background:#161b22}
+body.dark .share-received-title{color:#e6edf3}
+body.dark .share-studio-choice{background:#21262d;border-color:#30363d;color:#e6edf3}
+body.dark .share-studio-choice:active{background:#30363d}
+body.dark .share-received-cancel{background:#21262d;color:#8b949e}
 
