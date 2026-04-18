@@ -218,10 +218,24 @@
     }).catch(function (err) {
       progressBox.style.background = '#fef2f2';
       progressBox.style.borderColor = '#fecaca';
-      pctEl.textContent = '✗';
-      pctEl.style.color = '#dc2626';
-      progressBox.querySelector('div > div > div').innerHTML = '<strong style="color:#dc2626">' + file.name + '</strong> — ' + err.message;
-      setTimeout(function () { progressBox.remove(); }, 6000);
+      progressBox.style.flexDirection = 'column';
+      progressBox.style.alignItems = 'stretch';
+      var status = err && err.httpStatus;
+      var isPermErr = status === 403;
+      var head = '<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="flex-shrink:0;font-size:16px">⚠</span>'
+        + '<div style="flex:1"><strong style="color:#991b1b">' + file.name + '</strong>'
+        + '<div style="font-size:11px;color:#b91c1c;margin-top:2px">' + (err.message || 'Erreur inconnue') + '</div></div></div>';
+      var hint = '';
+      if (isPermErr) {
+        hint = '<div style="font-size:11px;color:#78350f;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;margin-top:4px">'
+          + '<b>Comment résoudre :</b><br>'
+          + '• Ouvrez le dossier Drive, partagez-le avec le compte connecté en <b>Éditeur</b>.<br>'
+          + '• OU transférez-en la propriété au compte connecté.<br>'
+          + '• OU reconnectez-vous avec le compte propriétaire (bouton Déconnecter ↑).'
+          + '</div>';
+      }
+      progressBox.innerHTML = head + hint;
+      setTimeout(function () { progressBox.remove(); }, isPermErr ? 15000 : 8000);
     });
   }
 

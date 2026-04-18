@@ -212,11 +212,45 @@
         q: q,
         pageSize: opts.pageSize || 100,
         fields: 'files(id, name, mimeType, size, modifiedTime, iconLink, thumbnailLink, webViewLink, webContentLink, owners(displayName, emailAddress), parents)',
-        orderBy: opts.orderBy || 'folder,name'
+        orderBy: opts.orderBy || 'folder,name',
+        supportsAllDrives: true,
+        includeItemsFromAllDrives: true
       }).then(function (res) {
         return res.result.files || [];
       });
     });
+  }
+
+  /**
+   * Parse une réponse d'erreur Drive et produit un message lisible.
+   */
+  function _parseDriveError(xhr, defaultMsg) {
+    var msg = defaultMsg || 'Erreur Drive';
+    try {
+      var body = JSON.parse(xhr.responseText);
+      var e = body && body.error;
+      if (e) {
+        if (xhr.status === 403) {
+          if (/insufficient/i.test(e.message || '')) {
+            msg = 'Permissions insuffisantes sur le dossier Drive lié. Assurez-vous que le compte Google connecté dispose d\'un accès en écriture (Éditeur, pas Spectateur).';
+          } else if (/rateLimit|userRateLimit/i.test(e.message || '')) {
+            msg = 'Quota Drive dépassé — réessayez dans quelques secondes.';
+          } else {
+            msg = e.message || msg;
+          }
+        } else if (xhr.status === 404) {
+          msg = 'Dossier Drive introuvable. Le lien est peut-être expiré ou vous n\'y avez pas accès.';
+        } else if (xhr.status === 401) {
+          msg = 'Session Google expirée — déconnectez-vous et reconnectez-vous.';
+        } else {
+          msg = e.message || msg;
+        }
+      }
+    } catch (_) { /* responseText non-JSON */ }
+    var err = new Error(msg);
+    err.httpStatus = xhr.status;
+    err.driveCode = xhr.status;
+    return err;
   }
 
   /**
@@ -250,7 +284,7 @@
             closeDelim;
 
           var xhr = new XMLHttpRequest();
-          xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink');
+          xhr.open('POST', 'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,name,mimeType,size,modifiedTime,webViewLink,thumbnailLink');
           xhr.setRequestHeader('Authorization', 'Bearer ' + _currentToken.access_token);
           xhr.setRequestHeader('Content-Type', 'multipart/related; boundary="' + boundary + '"');
           if (onProgress && xhr.upload) {
@@ -260,9 +294,9 @@
           }
           xhr.onload = function () {
             if (xhr.status >= 200 && xhr.status < 300) resolve(JSON.parse(xhr.responseText));
-            else reject(new Error('Upload échoué (HTTP ' + xhr.status + ') : ' + xhr.responseText));
+            else reject(_parseDriveError(xhr, 'Upload échoué (HTTP ' + xhr.status + ')'));
           };
-          xhr.onerror = function () { reject(new Error('Upload: erreur réseau')); };
+          xhr.onerror = function () { reject(new Error('Upload : erreur réseau')); };
           xhr.send(multipartBody);
         };
         reader.onerror = function () { reject(new Error('Lecture fichier échouée')); };
@@ -278,7 +312,8 @@
     return _ensureToken().then(function () {
       return window.gapi.client.drive.files.update({
         fileId: fileId,
-        resource: { trashed: true }
+        resource: { trashed: true },
+        supportsAllDrives: true
       });
     });
   }
@@ -294,7 +329,8 @@
           mimeType: 'application/vnd.google-apps.folder',
           parents: parentId ? [parentId] : undefined
         },
-        fields: 'id, name, webViewLink'
+        fields: 'id, name, webViewLink',
+        supportsAllDrives: true
       }).then(function (res) { return res.result; });
     });
   }

@@ -20,7 +20,7 @@
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<link rel="stylesheet" href="styles.css?v=20260418a05"/>
+<link rel="stylesheet" href="styles.css?v=20260418a06"/>
 <style>
   /* Safe-area insets — uniquement quand l'app est lancée en mode standalone (PWA installée) */
   @media (display-mode: standalone){
@@ -59,45 +59,45 @@ const sb=supabase.createClient(SURL,SKEY);
 </script>
 
 <!-- Config + Observabilité (Sentry / PostHog) — chargés tôt pour capturer les erreurs -->
-<script src="js/config.js?v=20260418a05"></script>
-<script src="js/observability.js?v=20260418a05"></script>
+<script src="js/config.js?v=20260418a06"></script>
+<script src="js/observability.js?v=20260418a06"></script>
 
 <!-- Preact + htm pour les composants réactifs (Phase 5) -->
-<script src="js/vendor/preact.umd.js?v=20260418a05"></script>
-<script src="js/vendor/htm.umd.js?v=20260418a05"></script>
+<script src="js/vendor/preact.umd.js?v=20260418a06"></script>
+<script src="js/vendor/htm.umd.js?v=20260418a06"></script>
 
 <!-- Modules applicatifs -->
-<script src="js/constants.js?v=20260418a05"></script>
-<script src="js/animations.js?v=20260418a05"></script>
-<script src="js/state.js?v=20260418a05"></script>
-<script src="js/notifications.js?v=20260418a05"></script>
-<script src="js/auth.js?v=20260418a05"></script>
-<script src="js/pages-accueil.js?v=20260418a05"></script>
-<script src="js/pages-fichiers.js?v=20260418a05"></script>
-<script src="js/pages-prospection.js?v=20260418a05"></script>
-<script src="js/pages-engagements.js?v=20260418a05"></script>
-<script src="js/pages-bp-consolide.js?v=20260418a05"></script>
-<script src="js/pages-collab.js?v=20260418a05"></script>
-<script src="js/pages-local.js?v=20260418a05"></script>
-<script src="js/pages-echanges.js?v=20260418a05"></script>
-<script src="js/pages-financier.js?v=20260418a05"></script>
-<script src="js/pages-detail.js?v=20260418a05"></script>
-<script src="js/pages.js?v=20260418a05"></script>
-<script src="js/bp-edit.js?v=20260418a05"></script>
+<script src="js/constants.js?v=20260418a06"></script>
+<script src="js/animations.js?v=20260418a06"></script>
+<script src="js/state.js?v=20260418a06"></script>
+<script src="js/notifications.js?v=20260418a06"></script>
+<script src="js/auth.js?v=20260418a06"></script>
+<script src="js/pages-accueil.js?v=20260418a06"></script>
+<script src="js/pages-fichiers.js?v=20260418a06"></script>
+<script src="js/pages-prospection.js?v=20260418a06"></script>
+<script src="js/pages-engagements.js?v=20260418a06"></script>
+<script src="js/pages-bp-consolide.js?v=20260418a06"></script>
+<script src="js/pages-collab.js?v=20260418a06"></script>
+<script src="js/pages-local.js?v=20260418a06"></script>
+<script src="js/pages-echanges.js?v=20260418a06"></script>
+<script src="js/pages-financier.js?v=20260418a06"></script>
+<script src="js/pages-detail.js?v=20260418a06"></script>
+<script src="js/pages.js?v=20260418a06"></script>
+<script src="js/bp-edit.js?v=20260418a06"></script>
 
 <!-- Composants Preact (montés après render()) -->
-<script src="js/preact-components/next-steps-widget.js?v=20260418a05"></script>
+<script src="js/preact-components/next-steps-widget.js?v=20260418a06"></script>
 
 <!-- Google Drive API — intégration OAuth + Drive v3 (no-op si credentials vides) -->
-<script src="js/gdrive.js?v=20260418a05"></script>
-<script src="js/gdrive-ui.js?v=20260418a05"></script>
-<script src="js/map.js?v=20260418a05"></script>
-<script src="js/utils.js?v=20260418a05"></script>
-<script src="js/exports.js?v=20260418a05"></script>
-<script src="js/simulator.js?v=20260418a05"></script>
-<script src="js/chat.js?v=20260418a05"></script>
-<script src="js/sync.js?v=20260418a05"></script>
-<script src="js/app.js?v=20260418a05"></script>
+<script src="js/gdrive.js?v=20260418a06"></script>
+<script src="js/gdrive-ui.js?v=20260418a06"></script>
+<script src="js/map.js?v=20260418a06"></script>
+<script src="js/utils.js?v=20260418a06"></script>
+<script src="js/exports.js?v=20260418a06"></script>
+<script src="js/simulator.js?v=20260418a06"></script>
+<script src="js/chat.js?v=20260418a06"></script>
+<script src="js/sync.js?v=20260418a06"></script>
+<script src="js/app.js?v=20260418a06"></script>
 
 <!-- PWA service worker registration — prod uniquement, jamais en dev local -->
 <script>
