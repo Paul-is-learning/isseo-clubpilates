@@ -232,12 +232,14 @@ function renderBP3YInfographic(sid,s){
   h+='</div>';
 
   // Cartes 3 ans
+  // Cible max = dernière année (si custom) ou 400 (ref BP dossier)
+  var _mbrTarget=(YR[2]&&YR[2].lastMbrs>0)?YR[2].lastMbrs:400;
   h+='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;background:#fff">';
   YR.forEach(function(yr,i){
     var accent=ACCENTS[i];
     var eMargin=yr.ca>0?Math.round(yr.ebitda/yr.ca*100):0;
     var rexMargin=yr.ca>0?Math.round(yr.rex/yr.ca*100):0;
-    var mbrPct=Math.min(100,Math.round(yr.lastMbrs/400*100));
+    var mbrPct=Math.min(100,Math.round(yr.lastMbrs/_mbrTarget*100));
     var borderR=i<2?'border-right:0.5px solid #ebebE6;':'';
     h+='<div onclick="S.forecastYear='+(i+1)+';setDetailTab(\'forecast\')" style="padding:14px 16px;background:'+(i===2?'#f9f8f5':'#fff')+';'+borderR+'border-bottom:0.5px solid #ebebE6;cursor:pointer;transition:background .15s" onmouseenter="this.style.background=\''+(i===2?'#f2efe8':'#f8faff')+'\'" onmouseleave="this.style.background=\''+(i===2?'#f9f8f5':'#fff')+'\'" title="Voir le Business plan — Année '+(i+1)+'">';
 
@@ -261,7 +263,7 @@ function renderBP3YInfographic(sid,s){
     h+='</div>';
     h+='<div style="display:flex;justify-content:space-between;margin-top:3px">';
     h+='<span style="font-size:9px;color:#ccc">moy. '+yr.avgMbrs+'/mois</span>';
-    h+='<span style="font-size:9px;color:#ccc">'+mbrPct+'% / 400</span>';
+    h+='<span style="font-size:9px;color:#ccc">'+mbrPct+'% / '+_mbrTarget+'</span>';
     h+='</div></div>';
 
     // Métriques financières

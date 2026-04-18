@@ -216,7 +216,26 @@ const BP_ADHERENTS_GG=[
   2728,2864,3008,3068,3129,3192,3256,3321,3387,3455,3524,3594,  // A2
   3594,3627,3659,3692,3726,3759,3793,3827,3861,3896,3931,3967   // A3
 ];
-function getBPAdherents(sid){return isGoldGymStudio(sid)?BP_ADHERENTS_GG:BP_ADHERENTS;}
+function getBPAdherents(sid){
+  if(isGoldGymStudio(sid))return BP_ADHERENTS_GG;
+  // Si le studio a des cibles adhérents fin d'année custom (nouveau formulaire),
+  // on scale la courbe mensuelle de référence proportionnellement par année
+  var s=typeof S!=='undefined'&&S.studios&&S.studios[sid];
+  var fc=s&&s.forecast;
+  if(fc&&(fc.adhFinA1!=null||fc.adhFinA2!=null||fc.adhFinA3!=null)){
+    var refA1=285,refA2=345,refA3=400;
+    var tgtA1=fc.adhFinA1>0?fc.adhFinA1:refA1;
+    var tgtA2=fc.adhFinA2>0?fc.adhFinA2:refA2;
+    var tgtA3=fc.adhFinA3>0?fc.adhFinA3:refA3;
+    var r1=tgtA1/refA1,r2=tgtA2/refA2,r3=tgtA3/refA3;
+    var out=[];
+    for(var i=0;i<12;i++)out.push(Math.round(BP_ADHERENTS[i]*r1));
+    for(var i=12;i<24;i++)out.push(Math.round(BP_ADHERENTS[i]*r2));
+    for(var i=24;i<36;i++)out.push(Math.round(BP_ADHERENTS[i]*r3));
+    return out;
+  }
+  return BP_ADHERENTS;
+}
 
 // Churn mensuel BP (source PDF)
 const BP_CHURN=[
