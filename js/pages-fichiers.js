@@ -106,25 +106,30 @@ function renderFichiersHub(){
     var sid=S.fileNav.studio;
     var sFiles=S.files[sid]||[];
     var sDrive=S.studios[sid]&&S.studios[sid].driveUrl||'';
-    // Google Drive config bar
-    h+='<div class="drive-config-bar">';
-    h+='<svg width="20" height="20" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/><path d="M4.5 12.5L12 2l7.5 10.5H4.5z" fill="#EA4335" opacity=".3"/></svg>';
-    if(sDrive){
-      h+='<div style="flex:1;min-width:0"><div style="font-size:12px;font-weight:600;color:#1e40af">Google Drive connect\u00e9</div>';
-      h+='<div style="font-size:10px;color:#64748b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+sDrive+'</div></div>';
-      h+='<a href="'+sDrive+'" target="_blank" class="btn btn-primary" style="font-size:11px;text-decoration:none;padding:6px 14px;flex-shrink:0">Ouvrir Drive</a>';
-      if(!isViewer())h+='<button class="btn" style="font-size:10px;padding:4px 8px;color:#dc2626" onclick="event.stopPropagation();_setDriveUrl(\''+sid+'\',\'\')">Retirer</button>';
+    // ── Google Drive : premier setup (aucun dossier li\u00e9) ─────────────────
+    if(!sDrive){
+      h+='<div class="drive-setup-prompt">';
+      h+='<div class="drive-setup-head">';
+      h+='<svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path d="M12 2L4.5 12.5l3.5 6h8l3.5-6L12 2z" fill="#FBBC04"/><path d="M4.5 12.5l3.5 6h8" fill="#34A853"/><path d="M12 2l7.5 10.5-3.5 6" fill="#4285F4"/><path d="M4.5 12.5L12 2l7.5 10.5H4.5z" fill="#EA4335" opacity=".3"/></svg>';
+      h+='<div style="flex:1">';
+      h+='<div class="drive-setup-title">Connectez un dossier Google Drive</div>';
+      h+='<div class="drive-setup-sub">Collez le lien d\'un dossier partag\u00e9 \u2014 la navigation, l\'upload et l\'aper\u00e7u se feront ensuite directement dans l\'app via l\'API Drive.</div>';
+      h+='</div></div>';
+      if(!isViewer())h+='<button class="btn btn-primary drive-setup-btn" onclick="event.stopPropagation();_promptDriveUrl(\''+sid+'\')">Configurer</button>';
+      h+='</div>';
     } else {
-      h+='<div style="flex:1"><div style="font-size:12px;font-weight:600;color:#1e40af">Connecter Google Drive</div>';
-      h+='<div style="font-size:10px;color:#64748b">Collez le lien d\'un dossier Drive partag\u00e9 pour stocker vos fichiers (15 Go gratuit)</div></div>';
-      if(!isViewer())h+='<button class="btn btn-primary" style="font-size:11px;padding:6px 14px;flex-shrink:0" onclick="event.stopPropagation();_promptDriveUrl(\''+sid+'\')">Configurer</button>';
-    }
-    h+='</div>';
-    // Google Drive — file browser natif in-app (OAuth + Drive API v3)
-    if(sDrive){
+      // ── Google Drive : file browser natif in-app (OAuth + Drive API v3) ───
       var dFId=_extractDriveFolderId(sDrive);
       if(dFId){
         h+='<div class="drive-embed-wrap"><div data-gdrive-browser="'+dFId+'"></div></div>';
+        // Actions admin discr\u00e8tes pour g\u00e9rer le lien (changement / retrait)
+        if(!isViewer()){
+          h+='<div class="drive-admin-links">';
+          h+='<a href="#" onclick="event.preventDefault();_promptDriveUrl(\''+sid+'\')" title="Lier ce studio \u00e0 un autre dossier Drive">Changer le dossier li\u00e9</a>';
+          h+=' &middot; ';
+          h+='<a href="#" class="drive-admin-remove" onclick="event.preventDefault();if(confirm(\'Retirer le lien Google Drive de ce studio ?\\n(Le dossier reste intact sur Google Drive.)\'))_setDriveUrl(\''+sid+'\',\'\');">Retirer le lien</a>';
+          h+='</div>';
+        }
       }
     }
     // Sub-folders grid

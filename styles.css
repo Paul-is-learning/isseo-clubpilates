@@ -775,6 +775,20 @@ body.dark .fh-file-row div[style*="color:#1a1a1a"]{color:#e6edf3 !important}
 body.dark .file-empty-state div{color:#8b949e !important}
 .drive-embed-wrap{margin:16px 0;border-radius:12px;overflow:hidden;border:1px solid #e8e8e0;background:#fafaf5;padding:10px}
 body.dark .drive-embed-wrap{border-color:#30363d;background:#161b22}
+.drive-setup-prompt{display:flex;flex-direction:column;gap:12px;margin-bottom:16px;padding:18px 20px;background:linear-gradient(135deg,#f0f9ff,#eff6ff);border:1px solid #bfdbfe;border-radius:14px}
+.drive-setup-head{display:flex;align-items:center;gap:14px}
+.drive-setup-title{font-size:14px;font-weight:700;color:#1e40af;margin-bottom:2px}
+.drive-setup-sub{font-size:11.5px;color:#64748b;line-height:1.5}
+.drive-setup-btn{align-self:flex-start;font-size:12px;padding:8px 16px}
+.drive-admin-links{font-size:11px;color:#94a3b8;text-align:right;margin:-4px 0 10px}
+.drive-admin-links a{color:#64748b;text-decoration:none;border-bottom:1px dotted #cbd5e1}
+.drive-admin-links a:hover{color:#1e40af;border-color:#1e40af}
+.drive-admin-links a.drive-admin-remove:hover{color:#dc2626;border-color:#dc2626}
+body.dark .drive-setup-prompt{background:linear-gradient(135deg,#0f2847,#1a2d42);border-color:#30363d}
+body.dark .drive-setup-title{color:#58a6ff}
+body.dark .drive-setup-sub{color:#8b949e}
+body.dark .drive-admin-links a{color:#8b949e;border-color:#30363d}
+body.dark .drive-admin-links a:hover{color:#58a6ff;border-color:#58a6ff}
 .drive-config-bar{display:flex;align-items:center;gap:10px;margin-bottom:16px;padding:12px 16px;background:linear-gradient(135deg,#f0f9ff,#eff6ff);border:1px solid #bfdbfe;border-radius:12px}
 body.dark .drive-config-bar{background:linear-gradient(135deg,#0f2847,#1a2d42);border-color:#30363d}
 body.dark .drive-config-bar div[style*="color:#1e40af"]{color:#58a6ff !important}
