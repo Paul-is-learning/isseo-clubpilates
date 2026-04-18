@@ -600,8 +600,17 @@ function initToastStack(){
 function initRipple(){
   if(window._rippleInit)return;
   window._rippleInit=true;
+  // Ripple sur boutons d'action ; haptic universel sur tous les éléments cliquables
+  var RIPPLE_SEL='.btn,button.btn-primary,button.btn-secondary,.sidebar-link,.tab,.bp-subtab,.focus-item,.focus-today-pill,.focus-today-next,.kpi-card';
+  var HAPTIC_SEL=RIPPLE_SEL+',.btab,.icon-btn,.bc-item,.yr-tab,.month-btn,.folder-card-premium,.folder-card,.next-steps-widget__item,.bp-sa,.btn-sa';
   document.addEventListener('click',function(e){
-    var btn=e.target.closest('.btn,button.btn-primary,button.btn-secondary');
+    // Haptic tap léger (8ms) sur tout clic d'action
+    try{
+      var hel=e.target.closest(HAPTIC_SEL);
+      if(hel&&!hel.disabled&&navigator.vibrate)navigator.vibrate(8);
+    }catch(_){}
+    // Ripple visible sur boutons principaux
+    var btn=e.target.closest(RIPPLE_SEL);
     if(!btn||btn.disabled)return;
     var r=btn.getBoundingClientRect();
     var size=Math.max(r.width,r.height)*2;
@@ -610,9 +619,9 @@ function initRipple(){
     ripple.style.width=ripple.style.height=size+'px';
     ripple.style.left=(e.clientX-r.left-size/2)+'px';
     ripple.style.top=(e.clientY-r.top-size/2)+'px';
-    // ensure btn has position relative + overflow hidden via class
     if(getComputedStyle(btn).position==='static')btn.style.position='relative';
-    btn.style.overflow='hidden';
+    // N'impose pas overflow:hidden sur les sidebar-link/tab/kpi-card qui ont déjà leur style
+    if(!btn.classList.contains('kpi-card')&&!btn.classList.contains('focus-today-pill'))btn.style.overflow='hidden';
     btn.appendChild(ripple);
     setTimeout(function(){if(ripple.parentNode)ripple.remove();},650);
   },true);

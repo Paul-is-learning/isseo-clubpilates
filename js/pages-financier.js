@@ -623,6 +623,23 @@ function renderAdherentChart(labels,bp,real,annee){
 }
 
 // ── Forecast ──────────────────────────────────────────────────────────────────
+// Mini bar chart 12 mois — visualisation didactique de la ventilation annuelle
+// shape: 'ramp' = CA avec saisonnalité préservée, 'flat' = charges fixes /12
+function _renderBPMiniBar(values,color,shape){
+  if(!values||values.length!==12)return '';
+  var max=Math.max.apply(null,values)||1;
+  if(max<=0)max=1;
+  var h='<div class="bp-minibar" title="Ventilation sur 12 mois ('+(shape==='ramp'?'ramp-up saisonnalité':'charges fixes /12')+')">';
+  h+='<svg viewBox="0 0 60 16" preserveAspectRatio="none" aria-hidden="true">';
+  values.forEach(function(v,i){
+    var bh=Math.max(1.2,(v/max)*14);
+    var x=i*5;
+    h+='<rect x="'+x+'" y="'+(15-bh).toFixed(2)+'" width="3.5" height="'+bh.toFixed(2)+'" fill="'+color+'" rx=".6" opacity=".82"><animate attributeName="height" from="0" to="'+bh.toFixed(2)+'" dur=".55s" begin="'+(i*.04).toFixed(2)+'s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1"/><animate attributeName="y" from="15" to="'+(15-bh).toFixed(2)+'" dur=".55s" begin="'+(i*.04).toFixed(2)+'s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1"/></rect>';
+  });
+  h+='</svg></div>';
+  return h;
+}
+
 function renderForecast(sid,s){
   var fy=S.forecastYear||1;
   var fs=S.forecastSection||'detail';
@@ -758,20 +775,24 @@ function renderForecast(sid,s){
     var monthProd=Array(12).fill(0);
     PRODUITS.forEach(function(l){
       var tot=0;
-      h+='<tr class="bp-line"><td class="lbl" style="padding-left:18px">'+l.label+'</td>';
+      var lineVals=[];
+      h+='<tr class="bp-line" data-bp-line="'+l.id+'"><td class="lbl" style="padding-left:18px">'+l.label+'</td>';
       bp.forEach(function(r,i){
-        var bv=r[l.id];tot+=bv;monthProd[i]+=bv;
+        var bv=r[l.id];tot+=bv;monthProd[i]+=bv;lineVals.push(bv);
         var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td class="bp-cell"><div class="bp-val">'+fmtN(bv)+'</div>';
+        h+='<td class="bp-cell"><span class="bp-val-month">'+moisLabels[i]+'</span><div class="bp-val">'+fmtN(bv)+'</div>';
         if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
         h+='</td>';
       });
-      // Colonne Total = input annuel éditable
+      // Colonne Total = input annuel éditable + mini bar chart (ventilation visuelle)
       h+='<td class="bp-total-cell">';
+      h+=_renderBPMiniBar(lineVals,'#1a3a6b','ramp');
       if(_bpEdit){
         h+='<input type="number" class="bp-annual-input" value="'+tot+'" '
           +'onchange="onEditBPAnnual(\''+sid+'\',\''+l.id+'\','+fy+',this.value)" '
+          +'onfocus="try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}" '
           +'title="Montant annuel Y'+fy+' — r&eacute;parti sur 12 mois (saisonnalit&eacute; CA pr&eacute;serv&eacute;e)" />';
+        h+='<div class="bp-annual-hint">💡 Saisonnalité ramp-up préservée</div>';
       } else {
         h+='<div class="bp-total">'+fmtN(tot)+'</div>';
       }
@@ -788,24 +809,28 @@ function renderForecast(sid,s){
     var monthCh=Array(12).fill(0);
     CHARGES.forEach(function(l){
       var tot=0;
+      var lineVals=[];
       // IS est auto-calculé — verrouillé (read-only)
       var isReadonly=(l.id==='is');
-      h+='<tr class="bp-line'+(isReadonly?' bp-line-readonly':'')+'"><td class="lbl" style="padding-left:18px">'+l.label;
+      h+='<tr class="bp-line'+(isReadonly?' bp-line-readonly':'')+'" data-bp-line="'+l.id+'"><td class="lbl" style="padding-left:18px">'+l.label;
       if(isReadonly)h+=' <span class="bp-auto-badge" title="Calcul&eacute; automatiquement (15% jusqu\'&agrave; 42 500 &euro;, 25% au-del&agrave;)">auto</span>';
       h+='</td>';
       bp.forEach(function(r,i){
-        var bv=r[l.id];tot+=bv;monthCh[i]+=bv;
+        var bv=r[l.id];tot+=bv;monthCh[i]+=bv;lineVals.push(bv);
         var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td class="bp-cell"><div class="bp-val'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(bv)+'</div>';
+        h+='<td class="bp-cell"><span class="bp-val-month">'+moisLabels[i]+'</span><div class="bp-val'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(bv)+'</div>';
         if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
         h+='</td>';
       });
-      // Colonne Total éditable (sauf IS)
+      // Colonne Total éditable (sauf IS) + mini bar chart
       h+='<td class="bp-total-cell">';
+      h+=_renderBPMiniBar(lineVals,isReadonly?'#94a3b8':'#854F0B','flat');
       if(_bpEdit&&!isReadonly){
         h+='<input type="number" class="bp-annual-input" value="'+tot+'" '
           +'onchange="onEditBPAnnual(\''+sid+'\',\''+l.id+'\','+fy+',this.value)" '
+          +'onfocus="try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}" '
           +'title="Montant annuel Y'+fy+' — r&eacute;parti sur 12 mois" />';
+        h+='<div class="bp-annual-hint">💡 Divisé en 12 mois égaux</div>';
       } else {
         h+='<div class="bp-total'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(tot)+'</div>';
       }

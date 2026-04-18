@@ -3290,6 +3290,30 @@ body.dark .focus-empty-ic{background:#064e3b}
 }
 
 /* ─────────────────────────────────────────────────────────────────────────
+ * BP detail — didactique : mini-bar ventilation + labels mois
+ * ───────────────────────────────────────────────────────────────────────── */
+.bp-val-month{display:none}
+.bp-minibar{display:none}
+.bp-annual-hint{display:none}
+@media(max-width:640px){
+  /* Mini bar chart visible à côté de l'input annuel — visualisation didactique de la ventilation */
+  .bp-minibar{display:block;margin-bottom:6px;opacity:.9}
+  .bp-minibar svg{width:100%;height:22px;display:block}
+  /* Hint sous l'input : "Saisonnalité ramp-up préservée" / "Divisé en 12 mois égaux" */
+  .bp-annual-hint{display:block;font-size:10px;color:#94a3b8;font-weight:500;margin-top:4px;text-align:right;letter-spacing:-.1px;line-height:1.2}
+  body.dark .bp-annual-hint{color:#7d8590}
+  /* Input annuel : pulse subtil au focus pour affirmer le "click here" */
+  .bp-annual-input:focus{animation:bpAnnualPulse 1.2s ease-out;border-color:#1a3a6b!important;box-shadow:0 0 0 3px rgba(26,58,107,.12)!important;outline:none}
+  /* En mode "détail mois" on masque les mini-bars/hints (table complète visible) */
+  .bp-detail-show-months .bp-minibar,
+  .bp-detail-show-months .bp-annual-hint{display:none}
+}
+@keyframes bpAnnualPulse{
+  0%{box-shadow:0 0 0 0 rgba(26,58,107,.3)}
+  100%{box-shadow:0 0 0 8px rgba(26,58,107,0)}
+}
+
+/* ─────────────────────────────────────────────────────────────────────────
  * Accueil — top bar layout (Apple-like : 1 ligne desktop / 2 lignes mobile)
  * ───────────────────────────────────────────────────────────────────────── */
 .accueil-topbar{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:18px;padding:0 2px}
