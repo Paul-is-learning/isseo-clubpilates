@@ -316,14 +316,14 @@ function _copyFileLink(url){
   }
 }
 
-// Ouvre la tâche dans la page studio (onglet Workflow)
+// Ouvre la tâche dans la page studio (onglet Questions & Tâches)
 function openMyTask(sid,todoId){
   if(!S.studios[sid])return;
   S.selectedId=sid;
   S.view='detail';
-  S.detailTab='workflow';
+  S.page='projets';
+  S.detailTab='echanges';
   render();
-  // Scroll to the task if possible
   setTimeout(function(){
     var el=document.querySelector('[data-todo-id="'+todoId+'"]');
     if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'center'});

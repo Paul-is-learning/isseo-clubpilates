@@ -143,7 +143,7 @@ function renderBPConsolide(){
   // ══════════════════════════════════════════════
   // HERO BANNER — CA consolidé avec gradient premium
   // ══════════════════════════════════════════════
-  h+='<div style="position:relative;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#0f172a 0%,#1e293b 40%,#334155 100%);padding:32px 36px;color:#fff">';
+  h+='<div class="bp-hero-banner" style="position:relative;border-radius:20px;overflow:hidden;margin-bottom:20px;background:linear-gradient(135deg,#0f172a 0%,#1e293b 40%,#334155 100%);padding:32px 36px;color:#fff">';
   // Orbes décoratifs
   h+='<div style="position:absolute;top:-40px;right:-30px;width:180px;height:180px;background:radial-gradient(circle,rgba(99,102,241,0.15),transparent 70%);border-radius:50%;pointer-events:none"></div>';
   h+='<div style="position:absolute;bottom:-50px;left:20%;width:200px;height:200px;background:radial-gradient(circle,rgba(16,185,129,0.1),transparent 70%);border-radius:50%;pointer-events:none"></div>';
@@ -157,7 +157,7 @@ function renderBPConsolide(){
   h+='<span style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:2px;color:#818cf8">Chiffre d\'affaires consolidé</span>';
   h+='</div>';
   // CA Cards row
-  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px">';
+  h+='<div class="bp-ca-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:20px">';
   var _caCards=[
     {l:'Année 1',sub:'Lancement',v:totCA1,grad:'linear-gradient(135deg,#0F6E56,#1D9E75)',glow:'rgba(15,110,86,0.25)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v4l2 2"/></svg>'},
     {l:'Année 2',sub:'Croissance',v:totCA2,grad:'linear-gradient(135deg,#1e40af,#3b82f6)',glow:'rgba(59,130,246,0.25)',icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/></svg>'},
@@ -192,7 +192,7 @@ function renderBPConsolide(){
       {p:Math.max(0,_rexMargin),color:'#1e40af',label:'Marge REX',sub:'sur CA A3'},
       {p:Math.max(0,_cashMargin),color:'#3b82f6',label:'Ratio Cash',sub:'sur CA A3'}
     ];
-    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">';
+    h+='<div class="bp-donuts-grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:16px">';
     _donuts.forEach(function(d){
       h+='<div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:18px 20px;display:flex;align-items:center;gap:18px;box-shadow:0 1px 3px rgba(0,0,0,0.03)">';
       h+=donutChart(d.p,{size:84,stroke:9,color:d.color});
@@ -204,7 +204,7 @@ function renderBPConsolide(){
     h+='</div>';
   }
 
-  h+='<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
+  h+='<div class="bp-renta-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
   var _rentaCards=[
     {l:'EBITDA',v:fmt(totEbitda3),pos:totEbitda3>=0,accent:'#0F6E56',bg:'linear-gradient(135deg,#f0fdf4,#E1F5EE)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
     {l:'Marge EBITDA',v:margeEbitda3Tot+'%',pos:margeEbitda3Tot>=0,accent:'#6366f1',bg:'linear-gradient(135deg,#eef2ff,#e0e7ff)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>',pbar:true,pval:Math.min(margeEbitda3Tot,60)},
