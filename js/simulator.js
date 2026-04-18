@@ -111,7 +111,15 @@ function toggleBPMonthsMobile(){S.bpShowMonthsMobile=!S.bpShowMonthsMobile;if(ty
 function setForecastYear(y){S.forecastYear=y;S.editMoisIdx=null;render();}
 function setAdherentYear(y){S.adherentYear=y;render();}
 function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:CA_A1,moisDebut:0,annee:2026};render();}
-function setNF(k,v){S.newForm[k]=v;if(k==='loyerMensuel')render();}
+function setNF(k,v){S.newForm[k]=v;}
+// Mise à jour ciblée du loyer sans render() (sinon l'input perd le focus à chaque frappe)
+function setNFLoyer(rawVal){
+  var n=parseFloat(rawVal);
+  if(isNaN(n)||n<0)n=0;
+  S.newForm.loyerMensuel=n;
+  var el=document.getElementById('nf-loyer-annuel-out');
+  if(el){el.textContent=(typeof fmt==='function')?fmt(n*12):(n*12).toLocaleString('fr-FR')+' €';}
+}
 function setEV(k,v){S.editVals[k]=v;}
 function openEditMois(idx){
   if(isViewer())return;
