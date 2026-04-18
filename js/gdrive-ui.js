@@ -229,9 +229,9 @@
       if (isPermErr) {
         hint = '<div style="font-size:11px;color:#78350f;background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:8px 10px;margin-top:4px">'
           + '<b>Comment résoudre :</b><br>'
-          + '• Ouvrez le dossier Drive, partagez-le avec le compte connecté en <b>Éditeur</b>.<br>'
-          + '• OU transférez-en la propriété au compte connecté.<br>'
-          + '• OU reconnectez-vous avec le compte propriétaire (bouton Déconnecter ↑).'
+          + '• Le plus fréquent : tu es connecté avec le mauvais compte Google. Clique <b>Déconnecter</b> ↑ puis reconnecte-toi avec ton adresse <b>Gmail</b> (pas @isseo-dev.com).<br>'
+          + '• Sinon, demande à Paul d\'ajouter ton Gmail comme Éditeur sur le dossier Drive.<br>'
+          + '• En dernier recours : dans le dossier Drive, passer « Accès général » à "Tous les utilisateurs ayant le lien — Éditeur".'
           + '</div>';
       }
       progressBox.innerHTML = head + hint;
@@ -260,7 +260,11 @@
       container.querySelector('.gdrive-file-list').innerHTML =
         '<div style="text-align:center;color:#94a3b8;padding:32px 20px;font-size:13px">' +
         '<div style="font-size:32px;margin-bottom:8px">🔒</div>' +
-        'Connecte-toi à Google Drive pour voir les fichiers' +
+        '<div style="font-weight:600;color:#64748b;margin-bottom:6px">Connecte-toi à Google Drive pour voir les fichiers</div>' +
+        '<div style="font-size:11px;color:#94a3b8;max-width:360px;margin:0 auto;line-height:1.45">' +
+        '💡 Au moment de choisir ton compte Google, utilise l\'adresse <b>Gmail</b> qui a accès au dossier ' +
+        '(pas ton identifiant ISSEO @isseo-dev.com). En cas de doute, demande à Paul quelles adresses ont été partagées.' +
+        '</div>' +
         '</div>';
       return;
     }

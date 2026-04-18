@@ -232,7 +232,7 @@
       if (e) {
         if (xhr.status === 403) {
           if (/insufficient/i.test(e.message || '')) {
-            msg = 'Permissions insuffisantes sur le dossier Drive lié. Assurez-vous que le compte Google connecté dispose d\'un accès en écriture (Éditeur, pas Spectateur).';
+            msg = 'Permissions insuffisantes. Le compte Google connecté n\'a pas les droits d\'écriture sur ce dossier. Vérifiez que vous êtes connecté avec la bonne adresse Gmail (celle partagée comme Éditeur), pas votre identifiant ISSEO.';
           } else if (/rateLimit|userRateLimit/i.test(e.message || '')) {
             msg = 'Quota Drive dépassé — réessayez dans quelques secondes.';
           } else {
