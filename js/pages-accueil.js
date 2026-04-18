@@ -289,8 +289,8 @@ function renderAccueil(){
     if(!next)return;
     _nextSteps.push({id:id,name:st.name,step:next.label});
   });
-  // KPIs — 4 vignettes alignées (base commune)
-  h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px;align-items:stretch">';
+  // KPIs — 4 vignettes, grille responsive (4 cols desktop, 2 cols mobile, widget span full)
+  h+='<div class="home-kpi-grid">';
   // Compute trend series per KPI (deterministic-ish from real totals)
   var _caSeries=(typeof generateTrendSeries==='function')?generateTrendSeries(_caTotal||1,12):[];
   var _capexSeries=(typeof generateTrendSeries==='function')?generateTrendSeries(_capexTotal||1,12):[];

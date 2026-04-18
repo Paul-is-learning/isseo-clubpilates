@@ -166,6 +166,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   min-width:0;
 }
 .kpi-card__value .counter-anim{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:inline-block;max-width:100%}
+/* Grille KPI accueil responsive — 4 cols desktop, 2 cols mobile, widget span plein */
+.home-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px;align-items:stretch}
+@media(max-width:760px){
+  .home-kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  /* Le widget next-steps (4e élément) prend toute la largeur */
+  .home-kpi-grid>[data-preact-widget="next-steps"]{grid-column:1 / -1}
+}
+@media(max-width:360px){
+  .home-kpi-grid{grid-template-columns:1fr}
+  .home-kpi-grid>[data-preact-widget="next-steps"]{grid-column:1}
+}
 .kpi-card__label{
   font-size:9px;
   text-transform:uppercase;
