@@ -54,8 +54,11 @@ function renderNewForm(){
   h+='<div class="fg"><label>Cohorte</label><select onchange="setNF(\'cohorte\',+this.value)">';
   for(var nci=1;nci<=10;nci++)h+='<option value="'+nci+'"'+((f.cohorte||1)===nci?' selected':'')+'>Cohorte '+nci+'</option>';
   h+='</select></div>';
-  h+='<div class="fg"><label>Loyer mensuel HT (€)</label><input type="number" min="0" step="100" value="'+(f.loyerMensuel||4800)+'" oninput="setNF(\'loyerMensuel\',+this.value)" placeholder="4800"/></div>';
-  h+='<div class="fg"><div style="font-size:11px;color:#64748b;padding-top:22px">→ Loyer annuel BP : <b style="color:#1a3a6b">'+fmt((f.loyerMensuel||4800)*12)+'</b> &nbsp;•&nbsp; Impact direct sur EBITDA / REX / Résultat net</div></div>';
+  // Loyer mensuel : pas de render() à chaque frappe (sinon l'input perd focus/curseur)
+  // → on utilise setNFLoyer qui met à jour S + l'affichage annuel via DOM direct
+  var _lmInit=(f.loyerMensuel!=null?f.loyerMensuel:4800);
+  h+='<div class="fg"><label>Loyer mensuel HT (€)</label><input type="number" inputmode="numeric" min="0" step="100" value="'+_lmInit+'" oninput="setNFLoyer(this.value)" placeholder="4800"/></div>';
+  h+='<div class="fg"><div style="font-size:11px;color:#64748b;padding-top:22px">→ Loyer annuel BP : <b id="nf-loyer-annuel-out" style="color:#1a3a6b">'+fmt(_lmInit*12)+'</b> &nbsp;•&nbsp; Impact direct sur EBITDA / REX / Résultat net</div></div>';
   h+='</div>';
   h+='<div class="info-box">CA A2 et A3 calcules automatiquement sur base A1 (+10% / +21%). Repartition et churn BP issus du Plan Financier CP.</div>';
   h+='<div style="display:flex;gap:8px"><button class="btn btn-primary" onclick="createStudio()">Creer</button><button class="btn" onclick="toggleNewForm()">Annuler</button></div></div>';
