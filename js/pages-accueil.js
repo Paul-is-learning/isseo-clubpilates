@@ -258,8 +258,155 @@ function _computeFocusItems(){
     });
   }
 
+  // 6) ─── ALERTS BP vs RÉEL — copilote de gestion ───────────────────────────
+  //   Pour chaque studio ouvert avec des données réelles, on détecte :
+  //   • CA qui sous-performe vs BP >15% (rouge, actionable)
+  //   • Charges qui dérapent >15% au-dessus du BP (orange)
+  //   • Adhérents qui décrochent >15% vs la cible BP du mois (orange)
+  //   On agrège par type pour ne pas saturer le focus card.
+  var bpVsReal=[];
+  ids.forEach(function(sid){
+    var r=_computeStudioBPvsReal(sid);
+    if(r)bpVsReal.push(r);
+  });
+  // a) CA sous-performance (>-15% vs BP sur les derniers mois réels)
+  var caSous=bpVsReal.filter(function(r){return r.caEcart!=null&&r.caEcart<=-15;})
+    .sort(function(a,b){return a.caEcart-b.caEcart;});
+  if(caSous.length>0){
+    var worst=caSous[0];
+    var titre=caSous.length===1
+      ?worst.name+' — CA '+worst.caEcart+'% vs BP'
+      :caSous.length+' studios en sous-perf CA ('+caSous.slice(0,2).map(function(x){return x.caEcart+'%';}).join(' · ')+(caSous.length>2?'…':'')+')';
+    items.push({
+      urg:0.5,
+      kind:'ca-under',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="23 18 13.5 8.5 8.5 13.5 1 6"/><polyline points="17 18 23 18 23 12"/></svg>',
+      color:'#DC2626',
+      bg:'#FEE2E2',
+      title:titre,
+      detail:'Sur '+worst.nbMonths+(worst.nbMonths>1?' derniers mois':' dernier mois')+' · réel '+fmt(worst.sumRealCA)+' vs BP '+fmt(worst.sumBPCA),
+      action:"openDetail('"+worst.sid+"');setTimeout(function(){setDetailTab('forecast')},50)"
+    });
+  }
+  // b) Charges qui dérapent (>+15% vs BP)
+  var chDerive=bpVsReal.filter(function(r){return r.chEcart!=null&&r.chEcart>=15;})
+    .sort(function(a,b){return b.chEcart-a.chEcart;});
+  if(chDerive.length>0){
+    var worstCh=chDerive[0];
+    var titreCh=chDerive.length===1
+      ?worstCh.name+' — charges +'+worstCh.chEcart+'% vs BP'
+      :chDerive.length+' studios : charges qui dérapent (+'+chDerive.slice(0,2).map(function(x){return x.chEcart+'%';}).join(' · +')+(chDerive.length>2?'…':'')+')';
+    items.push({
+      urg:1.5,
+      kind:'charges-over',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',
+      color:'#B45309',
+      bg:'#FEF3C7',
+      title:titreCh,
+      detail:'Sur '+worstCh.nbMonths+(worstCh.nbMonths>1?' derniers mois':' dernier mois')+' · réel '+fmt(worstCh.sumRealCh)+' vs BP '+fmt(worstCh.sumBPCh),
+      action:"openDetail('"+worstCh.sid+"');setTimeout(function(){setDetailTab('forecast')},50)"
+    });
+  }
+  // c) Adhérents qui décrochent (<-15% vs cible BP du mois)
+  var adhDecroche=bpVsReal.filter(function(r){return r.adhEcartPct!=null&&r.adhEcartPct<=-15;})
+    .sort(function(a,b){return a.adhEcartPct-b.adhEcartPct;});
+  if(adhDecroche.length>0){
+    var worstA=adhDecroche[0];
+    var titreA=adhDecroche.length===1
+      ?worstA.name+' — adhérents '+worstA.adhEcartPct+'% vs cible'
+      :adhDecroche.length+' studios : adhérents qui décrochent ('+adhDecroche.slice(0,2).map(function(x){return x.adhEcartPct+'%';}).join(' · ')+(adhDecroche.length>2?'…':'')+')';
+    items.push({
+      urg:1.7,
+      kind:'adh-under',
+      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="23" y1="11" x2="17" y2="11"/></svg>',
+      color:'#B45309',
+      bg:'#FEF3C7',
+      title:titreA,
+      detail:worstA.lastAdhValue+' adh. réels vs '+worstA.bpAdhTarget+' BP (M'+(worstA.lastMonthWithAdh+1)+')',
+      action:"openDetail('"+worstA.sid+"');setTimeout(function(){setDetailTab('adherents')},50)"
+    });
+  }
+
   items.sort(function(a,b){return a.urg-b.urg;});
   return items;
+}
+
+// ─── BP vs RÉEL — compute par studio (utilisé par _computeFocusItems) ────
+// Retourne null si pas assez de données réelles (moins de 1 mois saisi).
+// Compare CA & charges sur les 3 derniers mois réels + adhérents vs cible.
+function _computeStudioBPvsReal(sid){
+  var s=S.studios[sid];
+  if(!s||!s.forecast)return null;
+  // On ne compare que pour les studios ouverts ou en rampe (sinon pas de réel)
+  if(s.statut==='abandonne')return null;
+  var fc=s.forecast;
+  // Déterminer l'année active : celle qui a le plus de données réelles récentes
+  var activeYear=1;
+  for(var yy=3;yy>=1;yy--){
+    var k=yy===1?'actuel':'actuel'+yy;
+    var ac=fc[k]||{};
+    var hasAny=false;
+    for(var mi=0;mi<12;mi++){if(ac[mi]&&Object.keys(ac[mi]).length>0){hasAny=true;break;}}
+    if(hasAny){activeYear=yy;break;}
+  }
+  var actuelKey=activeYear===1?'actuel':'actuel'+activeYear;
+  var actuel=fc[actuelKey]||{};
+  // Build BP pour cette année
+  var bp;
+  try{
+    var bps=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(fc,sid,{capex:s.capex,emprunt:s.emprunt,leasing:s.leasing,tauxInteret:s.tauxInteret,loyer_mensuel:s.loyer_mensuel});
+    bp=activeYear===1?bps.a1:activeYear===2?bps.a2:bps.a3;
+  }catch(e){return null;}
+  if(!bp||!bp.length)return null;
+  // Collect real months avec données CA
+  var realMonths=[];
+  for(var i=0;i<12;i++){
+    var a=actuel[i];
+    if(!a||Object.keys(a).length===0)continue;
+    var aCA=(+a.ca_cours||0)+(+a.ca_prives||0)+(+a.ca_boutique||0);
+    if(aCA<=0)continue; // pas de CA saisi → skip
+    var aCharges=0;
+    if(typeof CHARGES!=='undefined'){
+      CHARGES.forEach(function(l){
+        var v=a[l.id]!=null?+a[l.id]:(bp[i][l.id]||0);
+        aCharges+=v||0;
+      });
+    }
+    realMonths.push({idx:i,aCA:aCA,bpCA:bp[i]._ca||0,aCharges:aCharges,bpCharges:bp[i]._charges||0});
+  }
+  if(realMonths.length===0)return null;
+  // Prendre les 3 derniers mois réels (min 1)
+  var recent=realMonths.slice(-3);
+  var sumRealCA=recent.reduce(function(s,m){return s+m.aCA;},0);
+  var sumBPCA=recent.reduce(function(s,m){return s+m.bpCA;},0);
+  var sumRealCh=recent.reduce(function(s,m){return s+m.aCharges;},0);
+  var sumBPCh=recent.reduce(function(s,m){return s+m.bpCharges;},0);
+  var caEcart=sumBPCA>0?Math.round((sumRealCA/sumBPCA-1)*100):null;
+  var chEcart=sumBPCh>0?Math.round((sumRealCh/sumBPCh-1)*100):null;
+  // Adhérents : dernier mois avec valeur vs cible BP
+  var adh=(S.adherents&&S.adherents[sid])||{};
+  var lastM=-1,lastV=null;
+  for(var j=0;j<12;j++){
+    var kk='y'+activeYear+'_m'+j;
+    if(adh[kk]!=null){lastM=j;lastV=+adh[kk];}
+  }
+  var adhEcartPct=null,bpAdhTarget=null;
+  if(lastM>=0&&typeof getBPAdherents==='function'){
+    try{
+      var bpAdhArr=getBPAdherents(sid);
+      if(bpAdhArr&&bpAdhArr.length){
+        var offsetAdh=(activeYear-1)*12+lastM;
+        bpAdhTarget=bpAdhArr[offsetAdh];
+        if(bpAdhTarget>0)adhEcartPct=Math.round((lastV/bpAdhTarget-1)*100);
+      }
+    }catch(e){}
+  }
+  return {
+    sid:sid,name:s.name,year:activeYear,nbMonths:recent.length,
+    sumRealCA:sumRealCA,sumBPCA:sumBPCA,caEcart:caEcart,
+    sumRealCh:sumRealCh,sumBPCh:sumBPCh,chEcart:chEcart,
+    lastMonthWithAdh:lastM,lastAdhValue:lastV,bpAdhTarget:bpAdhTarget,adhEcartPct:adhEcartPct
+  };
 }
 
 // Parse "T1 2027", "T2 2026", "T3 2025" ou date absolue en Date approximative
