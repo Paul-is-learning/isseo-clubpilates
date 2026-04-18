@@ -106,7 +106,7 @@ function setDetailTab(t){
   }
   render();
 }
-function setFS(s){S.forecastSection=s;S.editMoisIdx=null;render();}
+function setFS(s){S.forecastSection=s;S.editMoisIdx=null;if(typeof hapticTap==='function')hapticTap(8);render();}
 function setForecastYear(y){S.forecastYear=y;S.editMoisIdx=null;render();}
 function setAdherentYear(y){S.adherentYear=y;render();}
 function toggleNewForm(){S.showNewForm=!S.showNewForm;S.newForm={societe:'P&W Occitanie',annualCA:CA_A1,moisDebut:0,annee:2026};render();}

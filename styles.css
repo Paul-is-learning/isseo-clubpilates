@@ -361,9 +361,15 @@ body.dark .icon-btn--success:hover{
 .sidebar-bottom .sb-name{font-size:12px;font-weight:600;color:rgba(255,255,255,0.85);line-height:1.2}
 .sidebar-bottom .sb-role{font-size:10px;color:rgba(255,255,255,0.4)}
 .main-content{margin-left:220px;flex:1;min-height:100vh;overflow-y:auto}
-.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:600;background:#0f1f3d;border:none;border-radius:8px;padding:8px 10px;cursor:pointer;color:#fff}
+.hamburger{display:none;position:fixed;top:12px;left:12px;z-index:600;background:#0f1f3d;border:none;border-radius:12px;width:44px;height:44px;padding:0;cursor:pointer;color:#fff;box-shadow:0 4px 14px rgba(15,31,61,.25),0 2px 4px rgba(0,0,0,.1);flex-direction:column;align-items:center;justify-content:center;gap:5px;transition:transform .18s ease,box-shadow .25s ease}
+.hamburger:active{transform:scale(.92)}
+.hamburger .hm-bar{display:block;width:20px;height:2px;background:#fff;border-radius:2px;transition:transform .32s cubic-bezier(.7,0,.3,1),opacity .2s ease,width .28s ease}
+.hamburger.open{background:linear-gradient(135deg,#1a3a6b,#2c5fa8);box-shadow:0 6px 20px rgba(26,58,107,.45)}
+.hamburger.open .hm-bar:nth-child(1){transform:translateY(7px) rotate(45deg)}
+.hamburger.open .hm-bar:nth-child(2){opacity:0;width:0}
+.hamburger.open .hm-bar:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:499}
-@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.hamburger{display:block}.sidebar-overlay.show{display:block}}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.hamburger{display:flex}.sidebar-overlay.show{display:block}}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#000000 0%,#0a0a0a 30%,#111111 60%,#0a0a0a 100%);position:relative;overflow:hidden}
 .auth-wrap::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 20%,rgba(26,58,107,0.08) 0%,transparent 50%),radial-gradient(circle at 70% 80%,rgba(15,110,86,0.06) 0%,transparent 50%);animation:authBgShift 15s ease infinite alternate;z-index:2;pointer-events:none}
 @keyframes authBgShift{0%{transform:translate(0,0)}100%{transform:translate(2%,1%)}}
@@ -2672,4 +2678,89 @@ body.dark .modal-hdr-u{border-bottom-color:#30363d}
 body.dark .modal-close-u{background:#21262d;border-color:#30363d;color:#8b949e}
 body.dark .modal-close-u:hover{background:#30363d;color:#e6edf3}
 body.dark .modal-foot-u{border-top-color:#30363d}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+ * MOBILE 10/10 — Touch targets, anti iOS-zoom, BP table responsive, etc.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+@media(max-width:640px){
+  /* ── Anti iOS zoom : tous les inputs >= 16px ── */
+  input,textarea,select{font-size:16px !important}
+  .fg input,.fg select,.lien-modal-input{font-size:16px !important}
+  .bp-annual-input{font-size:14px !important}
+  .bp-edit-input{font-size:13px !important}
+  .gdrive-search{font-size:14px !important}
+
+  /* ── Touch targets généreux ── */
+  .btn{padding:11px 18px;min-height:44px;font-size:14px}
+  .btn.btn-primary{min-height:48px;font-weight:600}
+  .tab{padding:12px 18px;min-height:48px;font-size:13px}
+  .bp-subtab{min-height:72px;padding:14px 16px}
+  .bp-subtab-label{font-size:14px}
+  .month-btn{padding:10px 14px;min-height:44px;font-size:13px}
+  .btab{min-height:56px;padding:8px 2px 6px !important}
+  .btab svg{width:22px;height:22px}
+  .btab span{font-size:10px}
+  .fh-action-btn{width:40px;height:40px}
+  .modal-close-u{width:40px;height:40px}
+  .btn-approve,.btn-reject{padding:10px 14px;min-height:40px;font-size:12px}
+
+  /* ── Cartes et KPIs : spacing ── */
+  .kpi{padding:.8rem .9rem}
+  .kpi-val{font-size:16px}
+  .card{padding:1rem 1.1rem}
+  .folder-card-premium{padding:14px 16px 16px}
+
+  /* ── Sidebar : full-width coulissante sur petit écran ── */
+  .sidebar{width:85vw;max-width:320px}
+
+  /* ── BP Detail table : lisibilité + première colonne sticky + scroll hint ── */
+  .bp-detail-table{font-size:12px}
+  .bp-detail-table th,.bp-detail-table td{padding:6px 8px}
+  .bp-detail-table td.lbl,.bp-detail-table .lbl{position:sticky;left:0;background:inherit;z-index:2;box-shadow:2px 0 0 rgba(15,23,42,.06);max-width:150px;padding-left:12px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .bp-detail-table tr{background:#fff}
+  .bp-detail-table tr:nth-child(even){background:#fafbfc}
+  .bp-detail-table .bp-section-head td.lbl,.bp-detail-table .bp-section-head .lbl{background:inherit !important}
+  .bp-detail-table .bp-val{font-size:12px;padding:5px 3px}
+  .bp-detail-table .bp-val-indic{font-size:12px}
+  .bp-detail-table .bp-total-cell{min-width:110px}
+  .bp-detail-table .bp-annual-input{min-width:95px;padding:9px 8px;font-weight:700}
+  .bp-detail-table .bp-sum-row td,.bp-detail-table .bp-indic td{padding:7px 6px}
+  /* Scroll shadow hint à droite pour montrer qu'il y a plus de contenu */
+  .bp-detail-table+*,[style*="overflow-x:auto"]:has(.bp-detail-table){position:relative}
+
+  /* ── Bandeau didactique BP : plus aéré ── */
+  .bp-help-banner{padding:12px 14px;font-size:12px}
+  .bp-help-txt{line-height:1.55}
+
+  /* ── Sub-tabs BP : 3 colonnes deviennent 1 colonne ── */
+  .bp-subtabs{grid-template-columns:1fr;gap:8px}
+
+  /* ── Forms & modals : titres clampés ── */
+  .lien-modal-title,.task-modal-title{font-size:clamp(15px,5vw,22px)}
+
+  /* ── Folder cards premium : hover désactivé sur touch (pas de survol natif) ── */
+  .folder-card-premium{transition:transform .2s ease,border-color .2s ease}
+  .folder-card-premium:active{transform:scale(.98)}
+
+  /* ── KPIs grid : 2 colonnes compactes au lieu de 1 ── */
+  .kpis{grid-template-columns:repeat(2,1fr);gap:8px}
+
+  /* ── Drag-drop zone : padding ajusté ── */
+  .gdrive-dropzone{padding:16px 12px;font-size:11px}
+  .gdrive-dropzone>div:first-child{font-size:22px;margin-bottom:4px}
+}
+
+/* ── iPhone SE / écrans <= 375px : réductions supplémentaires ── */
+@media(max-width:375px){
+  .kpis{grid-template-columns:1fr}
+  .bp-detail-table{font-size:11px}
+  .bp-detail-table .bp-annual-input{min-width:85px;font-size:13px !important}
+  .kpi-val{font-size:15px}
+  .card{padding:.85rem .95rem}
+}
+
+/* ── Haptic tap visuel : scale léger sur tap pour feedback même sans vibration ── */
+@media(hover:none){
+  .btn:active,.tab:active,.bp-subtab:active,.folder-card:active,.month-btn:active{transform:scale(.97);transition:transform .08s ease}
+}
 
