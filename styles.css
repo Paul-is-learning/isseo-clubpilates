@@ -3010,6 +3010,96 @@ body.dark .notif-native-prompt div[style*="color:#64748b"]{color:#8b949e !import
   .bp-renta-grid .bp-renta-val{font-size:18px !important}
 }
 
+/* ── Nouveau studio : formulaire didactique ─────────────────────────────── */
+.nf-wrap{display:flex;flex-direction:column;gap:14px;max-width:1000px}
+.nf-section{background:#fff;border:1px solid #e8e8e0;border-radius:14px;padding:18px 20px}
+.nf-section-accent{border-color:#dbeafe;background:linear-gradient(180deg,#f8fafc 0%,#fff 100%)}
+body.dark .nf-section{background:#161b22;border-color:#30363d}
+body.dark .nf-section-accent{background:linear-gradient(180deg,#1a2332 0%,#161b22 100%);border-color:#1e3a8a}
+.nf-section-head{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+.nf-section-num{flex-shrink:0;width:26px;height:26px;border-radius:50%;background:#1a3a6b;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700}
+.nf-section-accent .nf-section-num{background:linear-gradient(135deg,#4f46e5,#6366f1)}
+.nf-section-title{font-size:15px;font-weight:700;color:#1a1a1a;display:block}
+body.dark .nf-section-title{color:#e6edf3}
+.nf-section-sub{font-size:11px;color:#64748b;display:block;margin-top:2px;font-weight:500}
+.nf-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.nf-grid .fg{display:flex;flex-direction:column;gap:4px}
+.nf-grid .fg label{font-size:11px;font-weight:600;color:#64748b;letter-spacing:.2px}
+.nf-grid .fg input,.nf-grid .fg select{width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px;font-family:inherit;background:#fff;transition:border-color .15s,box-shadow .15s}
+body.dark .nf-grid .fg input,body.dark .nf-grid .fg select{background:#0d1117;border-color:#30363d;color:#e6edf3}
+.nf-grid .fg input:focus,.nf-grid .fg select:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.12)}
+.nf-inline-result{font-size:12px;color:#64748b;padding-top:22px;line-height:1.5}
+.nf-inline-result b{color:#1a3a6b;font-weight:700}
+body.dark .nf-inline-result b{color:#93c5fd}
+
+/* Prévision adhérents — 3 lignes lisibles */
+.nf-adh-grid{display:flex;flex-direction:column;gap:10px;margin-bottom:14px}
+.nf-adh-row{display:grid;grid-template-columns:1.2fr 1fr 1fr;gap:12px;align-items:center;padding:12px 14px;background:#fff;border:1px solid #e8e8e0;border-left:4px solid #0F6E56;border-radius:10px}
+body.dark .nf-adh-row{background:#0d1117;border-color:#30363d}
+.nf-adh-left{display:flex;flex-direction:column;gap:2px;min-width:0}
+.nf-adh-label{font-size:13px;font-weight:700;color:#1a1a1a}
+body.dark .nf-adh-label{color:#e6edf3}
+.nf-adh-ref{font-size:11px;color:#94a3b8}
+.nf-adh-input-wrap{position:relative;display:flex;align-items:center}
+.nf-adh-input-wrap input{width:100%;padding:10px 60px 10px 12px;border:1px solid #cbd5e1;border-radius:8px;font-size:15px;font-weight:700;text-align:right;font-family:inherit;background:#fff;transition:border-color .15s,box-shadow .15s}
+body.dark .nf-adh-input-wrap input{background:#161b22;border-color:#30363d;color:#e6edf3}
+.nf-adh-input-wrap input:focus{outline:none;border-color:#4f46e5;box-shadow:0 0 0 3px rgba(79,70,229,.14)}
+.nf-adh-unit{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:10px;color:#94a3b8;font-weight:500;pointer-events:none;text-transform:uppercase;letter-spacing:.4px}
+.nf-adh-right{text-align:right;display:flex;flex-direction:column;align-items:flex-end;gap:2px}
+.nf-adh-ca{font-size:16px;font-weight:800;letter-spacing:-.3px;line-height:1.1;white-space:nowrap}
+.nf-adh-delta{font-size:10px;font-weight:600;color:#94a3b8;padding:2px 7px;border-radius:6px;background:#f1f5f9}
+body.dark .nf-adh-delta{background:#21262d}
+.nf-adh-delta.pos{color:#0F6E56;background:#E1F5EE}
+.nf-adh-delta.neg{color:#b91c1c;background:#fee2e2}
+body.dark .nf-adh-delta.pos{background:rgba(15,110,86,.25);color:#6ee7b7}
+body.dark .nf-adh-delta.neg{background:rgba(185,28,28,.25);color:#fca5a5}
+
+/* Pédagogique : comment est calculé le CA */
+.nf-howto{background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;overflow:hidden}
+body.dark .nf-howto{background:#0d1117;border-color:#30363d}
+.nf-howto summary{list-style:none;display:flex;justify-content:space-between;align-items:center;padding:12px 14px;font-size:13px;font-weight:600;color:#4f46e5;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.nf-howto summary::-webkit-details-marker{display:none}
+.nf-howto summary svg{transition:transform .2s;color:#94a3b8}
+.nf-howto[open] summary svg{transform:rotate(180deg)}
+.nf-howto-body{padding:0 16px 14px;font-size:12px;line-height:1.6;color:#475569}
+body.dark .nf-howto-body{color:#8b949e}
+.nf-howto-body p{margin:6px 0}
+.nf-howto-formula{background:#fff;border:1px dashed #c7d2fe;border-radius:8px;padding:10px 12px;font-size:13px;text-align:center;font-weight:600;color:#1e293b;margin:10px 0;font-family:'SF Mono',Menlo,monospace}
+body.dark .nf-howto-formula{background:#1a2332;border-color:#4338ca;color:#e6edf3}
+.nf-howto-packs{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:10px 0}
+.nf-pack{display:flex;align-items:flex-start;gap:8px;background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:10px 12px;font-size:11px;line-height:1.5}
+body.dark .nf-pack{background:#161b22;border-color:#30363d;color:#e6edf3}
+.nf-pack-dot{flex-shrink:0;width:10px;height:10px;border-radius:50%;margin-top:4px}
+.nf-pack b{color:#1a1a1a;font-size:12px;display:block;margin-bottom:1px}
+body.dark .nf-pack b{color:#e6edf3}
+.nf-pack span{color:#64748b;font-weight:500}
+.nf-howto-arpu{margin-top:10px;padding:10px 14px;background:linear-gradient(135deg,#eef2ff,#e0e7ff);border-radius:8px;font-size:12px;color:#4338ca;text-align:center;font-weight:500}
+body.dark .nf-howto-arpu{background:linear-gradient(135deg,#1e1b4b,#312e81);color:#c7d2fe}
+.nf-howto-arpu b{color:#1e1b4b;font-size:13px}
+body.dark .nf-howto-arpu b{color:#e0e7ff}
+
+/* Footer actions */
+.nf-actions{display:flex;gap:10px;justify-content:flex-end;margin-top:4px}
+.nf-actions .btn{padding:11px 22px;font-size:14px;font-weight:600}
+
+/* ═══ MOBILE : 1 colonne, lignes adhérents restructurées en 2 niveaux ═══ */
+@media(max-width:640px){
+  .nf-section{padding:14px 14px;border-radius:12px}
+  .nf-grid{grid-template-columns:1fr;gap:10px}
+  .nf-inline-result{padding-top:0;margin-top:-4px}
+  .nf-adh-row{grid-template-columns:1fr 1fr;gap:8px 12px;padding:12px 14px}
+  .nf-adh-left{grid-column:1 / -1}
+  .nf-adh-label{font-size:13px}
+  .nf-adh-ref{font-size:10px}
+  .nf-adh-input-wrap input{padding:12px 58px 12px 14px;font-size:16px}
+  .nf-adh-right{align-items:flex-end;justify-content:center}
+  .nf-adh-ca{font-size:17px}
+  .nf-howto-packs{grid-template-columns:1fr;gap:6px}
+  .nf-pack{padding:8px 12px}
+  .nf-actions{flex-direction:column-reverse;gap:8px}
+  .nf-actions .btn{width:100%;padding:14px;font-size:15px}
+}
+
 /* ── BP Consolidé — Vue EBITDA par studio : SVG desktop, liste mobile ──── */
 .bp-ebitda-mobile{display:none}
 @media(max-width:760px){

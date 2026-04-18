@@ -120,6 +120,29 @@ function setNFLoyer(rawVal){
   var el=document.getElementById('nf-loyer-annuel-out');
   if(el){el.textContent=(typeof fmt==='function')?fmt(n*12):(n*12).toLocaleString('fr-FR')+' €';}
 }
+// Mise à jour ciblée des adhérents fin d'année (année 1/2/3)
+// → recalcule le CA proportionnellement au BP de référence, sans render()
+function setNFAdh(year,rawVal){
+  var n=parseFloat(rawVal);
+  if(isNaN(n)||n<0)n=0;
+  var inp=document.getElementById('nf-adh-'+year);
+  if(!inp)return;
+  var ref=parseFloat(inp.dataset.ref)||1;
+  var caRef=parseFloat(inp.dataset.caref)||0;
+  var ca=Math.round(n/ref*caRef);
+  S.newForm['adhFinA'+year]=n;
+  S.newForm['_caCalcA'+year]=ca;
+  // Update CA display
+  var caEl=document.getElementById('nf-ca-'+year);
+  if(caEl){caEl.textContent=(typeof window.fmtC==='function')?window.fmtC(ca):(typeof fmt==='function'?fmt(ca):ca+' €');}
+  // Update delta vs BP
+  var deltaEl=document.getElementById('nf-delta-'+year);
+  if(deltaEl){
+    var pct=ref>0?Math.round((n/ref-1)*100):0;
+    deltaEl.textContent=(pct===0?'= BP réf':(pct>0?'+':'')+pct+'% vs BP');
+    deltaEl.className='nf-adh-delta'+(pct>0?' pos':pct<0?' neg':'');
+  }
+}
 function setEV(k,v){S.editVals[k]=v;}
 function openEditMois(idx){
   if(isViewer())return;
@@ -376,7 +399,13 @@ async function createStudio(){
   if(!f.name||!f.addr||!f.ouverture){toast('Remplissez tous les champs');return;}
   var id='proj_'+Date.now();
   var steps={};STEPS.forEach(function(s){steps[s.id]=false;});
-  var ca1=num(f.annualCA,CA_A1);
+  // Prévision CA calculée par règle de 3 sur adhérents fin d'année vs BP de référence
+  var BP_FIN_A1=285,BP_FIN_A2=345,BP_FIN_A3=400;
+  var BP_CA_A1=448800,BP_CA_A2=610190,BP_CA_A3=761841;
+  var adh1=num(f.adhFinA1,BP_FIN_A1),adh2=num(f.adhFinA2,BP_FIN_A2),adh3=num(f.adhFinA3,BP_FIN_A3);
+  var ca1=num(f._caCalcA1,Math.round(adh1/BP_FIN_A1*BP_CA_A1));
+  var ca2=num(f._caCalcA2,Math.round(adh2/BP_FIN_A2*BP_CA_A2));
+  var ca3=num(f._caCalcA3,Math.round(adh3/BP_FIN_A3*BP_CA_A3));
   var lm=num(f.loyerMensuel,4800);
   // Modèle de référence : La Garenne-Colombes (IDF, loyer 4800€/mois, capex/emprunt/leasing standards)
   var garenneRef=INIT.garenne;
@@ -390,7 +419,8 @@ async function createStudio(){
     leasing:num(f.leasing,garenneRef.leasing),
     cohorte:num(f.cohorte,1),steps:steps,
     loyer_mensuel:lm,
-    forecast:{annualCA:ca1,annualCA2:Math.round(ca1*1.10),annualCA3:Math.round(ca1*1.21),
+    forecast:{annualCA:ca1,annualCA2:ca2,annualCA3:ca3,
+      adhFinA1:adh1,adhFinA2:adh2,adhFinA3:adh3,
       moisDebut:num(f.moisDebut,0),annee:num(f.annee||2026),actuel:{},actuel2:{},actuel3:{}},
     bpMeta:{createdBy:creatorName,createdAt:nowIso,modelBase:'La Garenne-Colombes',
       lastModifiedBy:creatorName,lastModifiedAt:nowIso}
