@@ -992,6 +992,167 @@ function initSwipeGestures(){
   },{passive:true});
 }
 
+// ── 23b. Swipe-to-delete + Long-press sur tâches (mobile) ──
+// Handlers globaux qui ciblent .task-row[data-task-id] via closest().
+function initTaskGestures(){
+  if(window._taskGesturesInit)return;
+  window._taskGesturesInit=true;
+  var activeRow=null,startX=0,startY=0,currentX=0,moved=false,suppressClick=false;
+  var longTimer=null,longFired=false;
+  var THRESH_DELETE=120,THRESH_REVEAL=50;
+
+  function _findRow(target){return target.closest?target.closest('.task-row[data-task-id]'):null;}
+  function _clearLong(){if(longTimer){clearTimeout(longTimer);longTimer=null;}}
+  function _resetRow(row){if(row){row.style.transition='transform .22s cubic-bezier(.2,.8,.2,1)';row.style.transform='';row.classList.remove('swiping','ready-delete');}}
+
+  document.addEventListener('touchstart',function(e){
+    var row=_findRow(e.target);
+    if(!row)return;
+    activeRow=row;
+    var t=e.touches[0];
+    startX=t.clientX;startY=t.clientY;currentX=startX;
+    moved=false;longFired=false;suppressClick=false;
+    row.style.transition='';
+    // Long-press timer
+    _clearLong();
+    longTimer=setTimeout(function(){
+      if(moved||!activeRow)return;
+      longFired=true;
+      suppressClick=true;
+      try{if(navigator.vibrate)navigator.vibrate([20,40,30]);}catch(e){}
+      showTaskContextMenu(row);
+    },480);
+  },{passive:true});
+
+  document.addEventListener('touchmove',function(e){
+    if(!activeRow)return;
+    var t=e.touches[0];
+    currentX=t.clientX;
+    var dx=currentX-startX,dy=t.clientY-startY;
+    if(Math.abs(dx)>5||Math.abs(dy)>5)moved=true;
+    // Cancel long-press si on bouge
+    if(moved&&longTimer){_clearLong();}
+    // Scroll vertical détecté → bail out du swipe
+    if(Math.abs(dy)>Math.abs(dx)*1.2){
+      if(activeRow.classList.contains('swiping')){_resetRow(activeRow);activeRow=null;}
+      return;
+    }
+    // Swipe horizontal gauche uniquement (droite = navigation naturelle)
+    if(dx<-10){
+      activeRow.classList.add('swiping');
+      var pull=Math.max(dx,-180);
+      activeRow.style.transform='translateX('+pull+'px)';
+      if(pull<=-THRESH_DELETE)activeRow.classList.add('ready-delete');
+      else activeRow.classList.remove('ready-delete');
+    } else if(activeRow.classList.contains('swiping')){
+      activeRow.style.transform='';
+      activeRow.classList.remove('ready-delete');
+    }
+  },{passive:true});
+
+  document.addEventListener('touchend',function(){
+    _clearLong();
+    if(!activeRow){return;}
+    var row=activeRow;activeRow=null;
+    var dx=currentX-startX;
+    if(dx<=-THRESH_DELETE){
+      // Confirmer la suppression
+      suppressClick=true;
+      var sid=row.getAttribute('data-task-sid');
+      var tid=row.getAttribute('data-task-id');
+      row.style.transition='transform .25s ease,opacity .25s ease';
+      row.style.transform='translateX(-100%)';
+      row.style.opacity='0';
+      setTimeout(function(){
+        if(typeof confirmDeleteTask==='function'){confirmDeleteTask(sid,tid,row);}
+        else{_resetRow(row);}
+      },200);
+    } else {
+      _resetRow(row);
+    }
+  },{passive:true});
+
+  // Bloque le click qui suit un long-press ou un swipe-delete
+  document.addEventListener('click',function(e){
+    if(suppressClick){e.stopPropagation();e.preventDefault();suppressClick=false;}
+  },true);
+}
+
+// Context menu bottom-sheet pour une tâche (déclenché par long-press)
+function showTaskContextMenu(row){
+  var sid=row.getAttribute('data-task-sid');
+  var tid=row.getAttribute('data-task-id');
+  // Retire le menu existant
+  var old=document.getElementById('task-ctx-sheet');if(old)old.remove();
+  var sheet=document.createElement('div');
+  sheet.id='task-ctx-sheet';
+  sheet.className='task-ctx-overlay';
+  sheet.innerHTML=
+    '<div class="task-ctx-box" role="menu">'+
+    '<div class="task-ctx-handle"></div>'+
+    '<div class="task-ctx-title">Actions rapides</div>'+
+    '<button class="task-ctx-item" data-action="done">'+
+      '<span class="task-ctx-ic" style="color:#059669">✓</span>'+
+      '<span>Marquer comme termin&eacute;e</span></button>'+
+    '<button class="task-ctx-item" data-action="priority-high">'+
+      '<span class="task-ctx-ic" style="color:#dc2626">🔥</span>'+
+      '<span>Priorit&eacute; haute</span></button>'+
+    '<button class="task-ctx-item" data-action="priority-normal">'+
+      '<span class="task-ctx-ic" style="color:#64748b">●</span>'+
+      '<span>Priorit&eacute; normale</span></button>'+
+    '<button class="task-ctx-item danger" data-action="delete">'+
+      '<span class="task-ctx-ic" style="color:#dc2626">🗑</span>'+
+      '<span>Supprimer la t&acirc;che</span></button>'+
+    '<button class="task-ctx-cancel" data-action="cancel">Annuler</button>'+
+    '</div>';
+  document.body.appendChild(sheet);
+  requestAnimationFrame(function(){sheet.classList.add('open');});
+  sheet.addEventListener('click',function(e){
+    var btn=e.target.closest('[data-action]');
+    var action=btn?btn.getAttribute('data-action'):(e.target===sheet?'cancel':null);
+    if(!action)return;
+    function close(){sheet.classList.remove('open');setTimeout(function(){sheet.remove();},250);}
+    if(action==='cancel'){close();return;}
+    if(action==='done'){
+      var td=(S.todos&&S.todos[sid]||[]).filter(function(x){return x.id===tid;})[0];
+      if(td&&typeof saveTodos==='function'){
+        td.statut='done';
+        saveTodos(sid);
+        if(typeof toast==='function')toast('T&acirc;che termin&eacute;e ✓');
+        if(typeof render==='function')render();
+      }
+    }
+    else if(action==='priority-high'||action==='priority-normal'){
+      var td2=(S.todos&&S.todos[sid]||[]).filter(function(x){return x.id===tid;})[0];
+      if(td2&&typeof saveTodos==='function'){
+        td2.priority=action==='priority-high'?'haute':'normale';
+        saveTodos(sid);
+        if(typeof toast==='function')toast('Priorit&eacute; mise &agrave; jour');
+        if(typeof render==='function')render();
+      }
+    }
+    else if(action==='delete'){
+      if(typeof confirmDeleteTask==='function')confirmDeleteTask(sid,tid,row);
+    }
+    close();
+  });
+}
+
+// Suppression effective d'une tâche (helper réutilisé par swipe + long-press)
+async function confirmDeleteTask(sid,tid,rowEl){
+  if(typeof S==='undefined'||!S.todos||!S.todos[sid])return;
+  var td=S.todos[sid].filter(function(x){return x.id===tid;})[0];
+  if(!td)return;
+  if(!confirm('Supprimer la t\u00e2che \u00ab '+(td.titre||'sans titre')+' \u00bb ?'))return;
+  S.todos[sid]=S.todos[sid].filter(function(x){return x.id!==tid;});
+  if(typeof saveTodos==='function'){
+    try{await saveTodos(sid);}catch(e){}
+  }
+  if(typeof toast==='function')toast('T\u00e2che supprim\u00e9e');
+  try{if(navigator.vibrate)navigator.vibrate(20);}catch(e){}
+  if(typeof render==='function')render();
+}
+
 // ── 23. Pull-to-refresh (mobile) ──
 // Quand l'utilisateur tire vers le bas depuis le haut de la page, re-sync.
 function initPullToRefresh(){
@@ -1128,6 +1289,7 @@ function afterRenderAnimations(){
   try{syncBottomTabBar();}catch(e){}
   try{initSwipeGestures();}catch(e){}
   try{initPullToRefresh();}catch(e){}
+  try{initTaskGestures();}catch(e){}
   try{initScrollReveal();}catch(e){}
   // Stop hero carousel & gauge cycle if we left the Accueil page
   if(!document.querySelector('.hero-carousel')){

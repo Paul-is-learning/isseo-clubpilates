@@ -183,7 +183,7 @@ function _renderTaskRow(sid,t){
   var priorityMeta=t.priority?_getPriorityMeta(t.priority):null;
   var cbCls='task-checkbox'+(isDone?' done':'')+(isDoing?' doing':'')+(isBlocked?' blocked':'');
   var isNew=(S._newlyCreatedTaskId===t.id);
-  var h='<div class="task-row'+(isDone?' done':'')+(isNew?' task-new-entry':'')+'" onclick="openTacheModal(\''+sid+'\',\''+t.id+'\')">';
+  var h='<div class="task-row'+(isDone?' done':'')+(isNew?' task-new-entry':'')+'" data-task-sid="'+sid+'" data-task-id="'+t.id+'" onclick="openTacheModal(\''+sid+'\',\''+t.id+'\')">';
   // Checkbox
   h+='<button class="'+cbCls+'" onclick="event.stopPropagation();toggleTacheStatut(\''+sid+'\',\''+t.id+'\')" title="'+statusMeta.label+' — clic pour avancer"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></button>';
   // Titre
