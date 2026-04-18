@@ -1,5 +1,15 @@
 // ── Animations & micro-interactions utilities ──────────────────────────────
 
+// ── 0. Global helper: format EUR compact (1,2 M €, 395 k €, 980 €) ──
+// Utilisé par les tiles BP consolidé (mobile-first, digeste)
+window.fmtC=function(n){
+  var r=Math.round(n||0);
+  var abs=Math.abs(r);
+  if(abs>=1e6)return (r/1e6).toFixed(abs>=1e7?0:1).replace('.',',').replace(/,0$/,'')+' M €';
+  if(abs>=1e3)return Math.round(r/1e3)+' k €';
+  return r+' €';
+};
+
 // ── 1. Animated number counters ──
 // Usage: <span class="counter-anim" data-target="12345" data-format="eur">0</span>
 // Formats: 'num' (default), 'eur' (fmt), 'int'

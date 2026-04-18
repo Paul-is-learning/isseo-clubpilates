@@ -2965,17 +2965,17 @@ body.dark .notif-native-prompt div[style*="color:#64748b"]{color:#8b949e !import
 @media(max-width:760px){
   .bp-hero-banner{padding:22px 18px !important;border-radius:16px !important}
 }
-/* Hero CA cards : 4 cols desktop → 2 cols mobile (valeurs lisibles) */
+/* Hero CA cards : 4 cols desktop → 2 cols mobile (valeurs compactes M€/k€) */
 .bp-ca-grid{}
 @media(max-width:760px){
   .bp-ca-grid{grid-template-columns:repeat(2,1fr) !important;gap:10px !important}
-  .bp-ca-grid > div{padding:14px 14px !important;border-radius:14px !important}
-  .bp-ca-grid > div > div:nth-child(3){font-size:20px !important;letter-spacing:-0.4px !important}
-  .bp-ca-grid > div > div:nth-child(3) .counter-anim{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:100%}
+  .bp-ca-grid > div{padding:16px 16px !important;border-radius:14px !important}
+  .bp-ca-grid .bp-ca-val{font-size:22px !important;letter-spacing:-0.4px !important}
+  .bp-ca-grid .bp-ca-val .counter-anim{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;max-width:100%}
 }
 @media(max-width:375px){
-  .bp-ca-grid > div{padding:12px 12px !important}
-  .bp-ca-grid > div > div:nth-child(3){font-size:18px !important}
+  .bp-ca-grid > div{padding:14px 14px !important}
+  .bp-ca-grid .bp-ca-val{font-size:19px !important}
 }
 /* Donuts marges : 3 cols → 1 col stack sur mobile (lisibilité ronds + chiffres) */
 .bp-donuts-grid{}
@@ -2983,20 +2983,19 @@ body.dark .notif-native-prompt div[style*="color:#64748b"]{color:#8b949e !import
   .bp-donuts-grid{grid-template-columns:1fr !important;gap:8px !important}
   .bp-donuts-grid > div{padding:14px 16px !important}
 }
-/* Renta cards : 5 cols → 2 cols tablet/mobile, 3 cols intermédiaire */
+/* Renta cards : 4 cols desktop → 2×2 mobile (format compact M€) */
 .bp-renta-grid{}
 @media(max-width:900px){
-  .bp-renta-grid{grid-template-columns:repeat(3,1fr) !important}
+  .bp-renta-grid{grid-template-columns:repeat(2,1fr) !important;gap:12px !important}
 }
 @media(max-width:640px){
   .bp-renta-grid{grid-template-columns:repeat(2,1fr) !important;gap:10px !important}
   .bp-renta-grid > div{padding:14px 14px !important}
-  .bp-renta-grid > div > div:nth-child(3){font-size:18px !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-  .bp-renta-grid > div:last-child:nth-child(odd){grid-column:1 / -1}
+  .bp-renta-grid .bp-renta-val{font-size:20px !important}
 }
 @media(max-width:375px){
   .bp-renta-grid > div{padding:12px 12px !important}
-  .bp-renta-grid > div > div:nth-child(3){font-size:16px !important}
+  .bp-renta-grid .bp-renta-val{font-size:18px !important}
 }
 
 /* ── Grille Raccourcis accueil (4 cols desktop, 2 cols tablet/mobile) ───── */

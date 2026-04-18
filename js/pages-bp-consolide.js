@@ -168,7 +168,7 @@ function renderBPConsolide(){
     h+='<div class="ca-hero-card" data-ca-idx="'+ci+'" style="background:'+k.grad+';border-radius:16px;padding:18px 20px;position:relative;overflow:hidden;cursor:default;box-shadow:0 4px 20px '+k.glow+'" onmouseenter="this.style.transform=\'translateY(-4px) scale(1.02)\';this.style.boxShadow=\'0 8px 30px '+k.glow+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'0 4px 20px '+k.glow+'\'">';
     h+='<div style="position:absolute;top:-15px;right:-15px;width:60px;height:60px;background:rgba(255,255,255,0.06);border-radius:50%"></div>';
     h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+k.icon+'<span style="font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;color:rgba(255,255,255,0.7)">'+k.l+'</span></div>';
-    h+='<div style="font-size:26px;font-weight:800;letter-spacing:-0.5px;line-height:1"><span class="counter-anim" data-target="'+Math.round(k.v)+'" data-format="eur" data-duration="1400">0</span></div>';
+    h+='<div class="bp-ca-val" style="font-size:26px;font-weight:800;letter-spacing:-0.5px;line-height:1;white-space:nowrap"><span class="counter-anim" data-target="'+Math.round(k.v)+'" data-format="eur-compact" data-duration="1400">0</span></div>';
     h+='<div style="font-size:10px;color:rgba(255,255,255,0.45);margin-top:4px;font-weight:500">'+k.sub+'</div>';
     h+='</div>';
   });
@@ -204,26 +204,31 @@ function renderBPConsolide(){
     h+='</div>';
   }
 
-  h+='<div class="bp-renta-grid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:22px">';
+  // 4 tiles (EBITDA+marge fusionnés · REX · Cash Net · Membres) — format compact M€/k€
+  h+='<div class="bp-renta-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:22px">';
+  var _fmtC=window.fmtC||fmt;
   var _rentaCards=[
-    {l:'EBITDA',v:fmt(totEbitda3),pos:totEbitda3>=0,accent:'#0F6E56',bg:'linear-gradient(135deg,#f0fdf4,#E1F5EE)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>'},
-    {l:'Marge EBITDA',v:margeEbitda3Tot+'%',pos:margeEbitda3Tot>=0,accent:'#6366f1',bg:'linear-gradient(135deg,#eef2ff,#e0e7ff)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M8 12l2 2 4-4"/></svg>',pbar:true,pval:Math.min(margeEbitda3Tot,60)},
-    {l:'REX',v:fmt(totRex3),pos:totRex3>=0,accent:'#1e40af',bg:'linear-gradient(135deg,#eff6ff,#dbeafe)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'},
-    {l:'Cash Net',v:fmt(totCashNet3),pos:totCashNet3>=0,accent:'#3b82f6',bg:'linear-gradient(135deg,#eff6ff,#dbeafe)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'},
+    {l:'EBITDA',v:_fmtC(totEbitda3),sub:margeEbitda3Tot+'% marge',pos:totEbitda3>=0,accent:'#0F6E56',bg:'linear-gradient(135deg,#f0fdf4,#E1F5EE)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>',pbar:true,pval:Math.min(Math.max(margeEbitda3Tot,0),60)},
+    {l:'REX',v:_fmtC(totRex3),pos:totRex3>=0,accent:'#1e40af',bg:'linear-gradient(135deg,#eff6ff,#dbeafe)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1e40af" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>'},
+    {l:'Cash Net',v:_fmtC(totCashNet3),pos:totCashNet3>=0,accent:'#3b82f6',bg:'linear-gradient(135deg,#eff6ff,#dbeafe)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#3b82f6" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>'},
     {l:'Membres',v:totMembres.toLocaleString('fr-FR'),pos:true,accent:'#6366f1',bg:'linear-gradient(135deg,#eef2ff,#e0e7ff)',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6366f1" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>'}
   ];
   _rentaCards.forEach(function(k){
     h+='<div style="background:'+k.bg+';border:1px solid '+(k.pos?k.accent+'20':'#fecaca')+';border-radius:16px;padding:16px 18px;transition:all .3s;cursor:default;position:relative;overflow:hidden" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 25px '+k.accent+'18\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\'">';
     h+='<div style="position:absolute;top:-10px;right:-10px;width:50px;height:50px;background:'+k.accent+'08;border-radius:50%"></div>';
     h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+k.icon+'<span style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.8px;color:#64748b">'+k.l+'</span></div>';
-    h+='<div style="font-size:22px;font-weight:800;color:'+(k.pos?k.accent:'#dc2626')+';letter-spacing:-0.3px">'+k.v+'</div>';
+    h+='<div class="bp-renta-val" style="font-size:22px;font-weight:800;color:'+(k.pos?k.accent:'#dc2626')+';letter-spacing:-0.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+k.v+'</div>';
+    // Sub-label (ex: "42% marge" sous l'EBITDA)
+    if(k.sub){
+      h+='<div style="font-size:10px;color:'+k.accent+';font-weight:600;margin-top:3px;opacity:.85">'+k.sub+'</div>';
+    }
     // Progress bar for marge
     if(k.pbar){
       var pw=Math.max(0,Math.min(k.pval/60*100,100));
-      h+='<div style="margin-top:10px;height:5px;background:#e2e8f0;border-radius:3px;overflow:hidden">';
+      h+='<div style="margin-top:8px;height:4px;background:#e2e8f0;border-radius:3px;overflow:hidden">';
       h+='<div style="width:'+pw+'%;height:100%;background:linear-gradient(90deg,'+k.accent+','+k.accent+'88);border-radius:3px;transition:width .6s ease"></div>';
       h+='</div>';
-      h+='<div style="font-size:8px;color:#94a3b8;margin-top:3px;text-align:right">obj. 60%</div>';
+      h+='<div style="font-size:8px;color:#94a3b8;margin-top:2px;text-align:right">obj. 60%</div>';
     }
     h+='</div>';
   });
