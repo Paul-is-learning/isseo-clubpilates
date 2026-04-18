@@ -648,7 +648,20 @@ function build3YearBP(forecast,sid,opts){
       a3:buildBPFromDossier(CA_GG_A3,md,3,sid,opts),
     };
   }
-  // On utilise TOUJOURS les CA du dossier de financement — les valeurs Supabase sont ignorées
+  // CA custom : uniquement si le studio a été créé avec le formulaire "adhérents fin d'année"
+  // (présence de adhFinA1/2/3). Sinon → constantes dossier (anciens studios inchangés).
+  var hasCustomAdh=forecast&&(forecast.adhFinA1!=null||forecast.adhFinA2!=null||forecast.adhFinA3!=null);
+  if(hasCustomAdh){
+    var ca1=forecast.annualCA>0?forecast.annualCA:CA_A1;
+    var ca2=forecast.annualCA2>0?forecast.annualCA2:CA_A2;
+    var ca3=forecast.annualCA3>0?forecast.annualCA3:CA_A3;
+    return {
+      a1:buildBPFromDossier(ca1,md,1,sid,opts),
+      a2:buildBPFromDossier(ca2,md,2,sid,opts),
+      a3:buildBPFromDossier(ca3,md,3,sid,opts),
+    };
+  }
+  // Anciens studios : utilisent toujours les CA du dossier de financement
   return {
     a1:buildBPFromDossier(CA_A1,md,1,sid,opts),
     a2:buildBPFromDossier(CA_A2,md,2,sid,opts),
