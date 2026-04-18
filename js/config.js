@@ -31,4 +31,4 @@ window.ISSEO_GOOGLE_API_KEY = 'AIzaSyCElJQzc9mteUBlz3O4V0O9d8jH3gRS5A4';
 // déclarée comme secret Supabase (VAPID_PRIVATE_KEY) pour l'Edge Function
 // send-push. Générer la paire : `node scripts/generate-vapid-keys.mjs`.
 // Vide = push désactivé (fallback sur les notifications in-app seulement).
-window.ISSEO_VAPID_PUBLIC_KEY = '';
+window.ISSEO_VAPID_PUBLIC_KEY = 'BKse61EsQ76DAz5vVmuontGOyt7nYvYMpRgyM-GH10_Vz33c0Nlu1svCIX4GIlPXZwh6-G8jUEc9l21wSnupek4';
