@@ -250,6 +250,7 @@ sb.auth.getSession().then(function(res){
         }
         S._dataLoaded=true;restoreNavState();if(typeof _restoreFromHash==='function')_restoreFromHash();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
         _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
+        if(window.isseoPush&&typeof window.isseoPush.refresh==='function')window.isseoPush.refresh();
         // Deeplink email → ouvre directement la tâche : #tache=SID:TASKID
         try{
           var h=(location.hash||'').replace(/^#/,'');

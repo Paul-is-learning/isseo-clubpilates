@@ -25,3 +25,10 @@ window.ISSEO_ENV = /^(localhost|127\.0\.0\.1|192\.168\.|10\.)/.test(location.hos
 // et http://localhost:5173 (pour le dev).
 window.ISSEO_GOOGLE_CLIENT_ID = '733378463549-1t4fe9pf607t66v89eql9de1fgns2s4c.apps.googleusercontent.com';
 window.ISSEO_GOOGLE_API_KEY = 'AIzaSyCElJQzc9mteUBlz3O4V0O9d8jH3gRS5A4';
+
+// Web Push VAPID — clé publique (65 bytes base64url) utilisée par le client
+// pour s'abonner au PushManager. La clé privée correspondante doit être
+// déclarée comme secret Supabase (VAPID_PRIVATE_KEY) pour l'Edge Function
+// send-push. Générer la paire : `node scripts/generate-vapid-keys.mjs`.
+// Vide = push désactivé (fallback sur les notifications in-app seulement).
+window.ISSEO_VAPID_PUBLIC_KEY = '';

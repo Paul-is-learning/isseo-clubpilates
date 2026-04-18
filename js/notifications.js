@@ -10,11 +10,24 @@ async function loadNotifications(){
 async function createNotification(opts){
   // opts: {type,studio_id,title,body,target_user_ids:[]}
   if(!S.user||!opts.target_user_ids||!opts.target_user_ids.length)return;
-  var rows=opts.target_user_ids.filter(function(uid){return uid!==S.user.id;}).map(function(uid){
+  var targets=opts.target_user_ids.filter(function(uid){return uid!==S.user.id;});
+  if(!targets.length)return;
+  var rows=targets.map(function(uid){
     return{type:opts.type,user_id:uid,source_user_id:S.user.id,studio_id:opts.studio_id,title:opts.title,body:opts.body||'',read:false};
   });
-  if(!rows.length)return;
   await sb.from('notifications').insert(rows);
+  // Web Push vers les devices des utilisateurs ciblés (fire-and-forget)
+  if(window.isseoPush&&typeof window.isseoPush.sendTo==='function'){
+    var nt=NOTIF_TYPES[opts.type]||{icon:''};
+    var pushTitle=(nt.icon?nt.icon+' ':'')+opts.title;
+    window.isseoPush.sendTo(targets,{
+      title:pushTitle,
+      body:opts.body||'',
+      tag:'isseo-'+(opts.type||'notif')+'-'+(opts.studio_id||''),
+      data:{type:opts.type,studioId:opts.studio_id},
+      url:opts.studio_id?'#/studio/'+encodeURIComponent(opts.studio_id):'/'
+    });
+  }
 }
 async function markNotifRead(notifId){
   await sb.from('notifications').update({read:true}).eq('id',notifId);
@@ -79,6 +92,21 @@ function showNativeNotification(notif,meta){
 }
 async function requestNativeNotifPermission(){
   if(typeof Notification==='undefined'){toast('Notifications non support\u00e9es sur ce navigateur');return false;}
+  // Si Web Push est dispo + config VAPID prête, passer par le vrai flow Push
+  // (qui demande aussi la permission en interne puis s'abonne au PushManager).
+  if(window.isseoPush&&window.isseoPush.isSupported&&window.isseoPush.isSupported()&&window.ISSEO_VAPID_PUBLIC_KEY){
+    var okPush=await window.isseoPush.enable();
+    if(okPush){
+      // Notif d'accueil locale (sans passer par l'Edge Function — test uniquement)
+      try{
+        var reg=await navigator.serviceWorker.ready;
+        reg.showNotification('ISSEO Club Pilates',{body:'Vous recevrez les notifications m\u00eame app ferm\u00e9e ✓',icon:'./icons/icon-192.png',tag:'isseo-welcome',vibrate:[30,40,30]});
+      }catch(e){}
+      render();
+    }
+    return okPush;
+  }
+  // Fallback : simple permission Notification API (pas de push serveur)
   if(Notification.permission==='granted'){toast('Notifications d\u00e9j\u00e0 activ\u00e9es ✓');return true;}
   if(Notification.permission==='denied'){
     toast('Autorisez les notifications dans les param\u00e8tres du navigateur');
@@ -88,10 +116,9 @@ async function requestNativeNotifPermission(){
     var perm=await Notification.requestPermission();
     if(perm==='granted'){
       toast('Notifications activ\u00e9es ✓');
-      // Test immédiat
       if('serviceWorker' in navigator&&navigator.serviceWorker.ready){
-        var reg=await navigator.serviceWorker.ready;
-        reg.showNotification('ISSEO Club Pilates',{body:'Vous recevrez maintenant les notifications m\u00eame app ferm\u00e9e',icon:'/icons/icon-192.png',tag:'isseo-welcome',vibrate:[30,40,30]});
+        var reg2=await navigator.serviceWorker.ready;
+        reg2.showNotification('ISSEO Club Pilates',{body:'Vous recevrez les notifications in-app',icon:'./icons/icon-192.png',tag:'isseo-welcome',vibrate:[30,40,30]});
       }
       return true;
     }
