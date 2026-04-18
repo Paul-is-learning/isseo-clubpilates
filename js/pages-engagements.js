@@ -907,11 +907,12 @@ function renderRecapDepensesPicker(allIds,th){
   }
   h+='</div>';
 
-  // Contenu : engagement complet du studio sélectionné
+  // Contenu : suivi des dépenses du studio sélectionné (le bloc CAPEX reste
+  // dans l'onglet Engagements du studio).
   if(selSid&&S.studios[selSid]){
     h+='<div style="padding:16px 18px;border-top:1px solid '+borderC+';background:'+(dm?'#0d1117':'#fff')+'">';
     try{
-      h+=renderEngagements(selSid,S.studios[selSid]);
+      h+=renderEngagementsDepenses(selSid,S.studios[selSid]);
     }catch(e){
       h+='<div style="padding:12px;background:#fee2e2;color:#991b1b;border-radius:8px;font-size:12px">Erreur de rendu : '+String(e.message||e)+'</div>';
     }
@@ -926,8 +927,10 @@ function renderRecapDepensesPicker(allIds,th){
 
 
 // ═══ Onglet studio ════════════════════════════════════════════════════════
+// Onglet "Engagements" d'un studio — affiche uniquement la structure de
+// financement + détail CAPEX. La saisie des dépenses a été déplacée dans
+// l'onglet "Récap' engagements" de la page d'accueil.
 function renderEngagements(sid,s){
-  var deps=S.depenses[sid]||[];
   // Utiliser le détail CAPEX custom si défini (règle ii), sinon valeurs INIT
   var _capexDet=getCapexDetailForStudio(sid);
   var _capexTots=computeCapexTotals(_capexDet);
@@ -943,12 +946,6 @@ function renderEngagements(sid,s){
   var pctFP=100-pctEmprunt;
   var pctLeasingTotal=Math.round(leasing/totalInvest*100);
   var pctCapexTotal=100-pctLeasingTotal;
-  // Suivi dépenses
-  var engage=deps.reduce(function(sum,d){return sum+num(d.ttc);},0);
-  var debloque=deps.filter(function(d){return d.deblocage==='debloque';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
-  var demande=deps.filter(function(d){return d.deblocage==='demande';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
-  var pctE=Math.min(100,Math.round(engage/capex*100));
-  var pctD=Math.min(100,Math.round(debloque/capex*100));
   var isAdmin=!!S.profile&&!isViewer();
   var h='<div>';
 
@@ -1093,7 +1090,30 @@ function renderEngagements(sid,s){
   }
   h+='</div></div>';
 
-  // ── Suivi des dépenses ──────────────────────────────────────────────────────
+  h+='<div style="text-align:center;font-size:11px;color:#94a3b8;padding:10px 14px;background:#f8fafc;border:1px dashed #e2e8f0;border-radius:10px;margin-top:4px">';
+  h+='<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="vertical-align:-2px;margin-right:4px"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/></svg>';
+  h+='Saisie des d\u00e9penses r\u00e9alis\u00e9es : <b>Accueil \u2192 R\u00e9cap\' engagements</b></div>';
+
+  h+='</div>';
+  return h;
+}
+
+// Bloc "Suivi des dépenses CAPEX" + formulaire + table + bouton d'ajout.
+// Utilisé uniquement dans l'onglet Récap' engagements (panneau "Saisir / suivre
+// les dépenses"). La structure CAPEX reste dans l'onglet studio.
+function renderEngagementsDepenses(sid,s){
+  var deps=S.depenses[sid]||[];
+  var _capexDet=getCapexDetailForStudio(sid);
+  var _capexTots=computeCapexTotals(_capexDet);
+  var capex=_capexTots.capex||s.capex||333500;
+  var engage=deps.reduce(function(sum,d){return sum+num(d.ttc);},0);
+  var debloque=deps.filter(function(d){return d.deblocage==='debloque';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
+  var demande=deps.filter(function(d){return d.deblocage==='demande';}).reduce(function(sum,d){return sum+num(d.ttc);},0);
+  var pctE=Math.min(100,Math.round(engage/capex*100));
+  var pctD=Math.min(100,Math.round(debloque/capex*100));
+  var isAdmin=!!S.profile&&!isViewer();
+  var h='<div>';
+
   h+='<div class="box" style="margin-bottom:14px">';
   h+='<div style="font-size:12px;font-weight:700;color:#1a3a6b;margin-bottom:14px">Suivi des d&eacute;penses CAPEX</div>';
   h+='<div class="kpis" style="margin-bottom:14px">';
@@ -1105,7 +1125,6 @@ function renderEngagements(sid,s){
   h+='</div>';
   h+='<div style="margin-bottom:8px"><div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px"><span>Engag&eacute; / Budget</span><span style="font-weight:600">'+pctE+'%</span></div><div class="prog-bar"><div style="width:'+pctE+'%;background:#1a3a6b;border-radius:4px;height:6px"></div></div></div>';
   h+='<div><div style="display:flex;justify-content:space-between;font-size:11px;color:#888;margin-bottom:4px"><span>D&eacute;bloqu&eacute; / Budget</span><span style="font-weight:600">'+pctD+'%</span></div><div class="prog-bar"><div style="width:'+pctD+'%;background:#0F6E56;border-radius:4px;height:6px"></div></div></div>';
-  // Répartition par mode de financement
   h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid #f0f0ea">';
   DEPENSE_FINS.forEach(function(f){
     var fe=deps.filter(function(d){return d.financement===f;}).reduce(function(s,d){return s+num(d.ttc);},0);
