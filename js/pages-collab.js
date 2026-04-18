@@ -32,6 +32,39 @@ function setCollabFilter(k,v){
   _saveCollabFilters();
   render();
 }
+// Applique un preset de filtres à partir d'un clic KPI (atomique, 1 render)
+function setCollabFromKpi(kpiKey){
+  _loadCollabFilters();
+  // Reset systématique de la recherche et studio pour visibilité max
+  _collabFilters.search='';
+  _collabFilters.studio='all';
+  _collabFilters.priority='all';
+  if(kpiKey==='active'){
+    _collabFilters.tab='tasks';
+    _collabFilters.statut='active';
+    _collabFilters.assignee='all';
+  } else if(kpiKey==='mine'){
+    _collabFilters.tab='tasks';
+    _collabFilters.statut='active';
+    _collabFilters.assignee='me';
+  } else if(kpiKey==='late'){
+    _collabFilters.tab='tasks';
+    _collabFilters.statut='late';
+    _collabFilters.assignee='all';
+  } else if(kpiKey==='topics'){
+    _collabFilters.tab='discussions';
+    _collabFilters.topicState='open';
+  }
+  _saveCollabFilters();
+  // Feedback haptic léger sur mobile si dispo
+  try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}
+  render();
+  // Scroll fluide vers la liste
+  setTimeout(function(){
+    var el=document.querySelector('.collab-segment');
+    if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
+}
 function resetCollabFilters(){
   _collabFilters=null;
   try{localStorage.removeItem('isseo_collab_filters');}catch(e){}
@@ -202,10 +235,10 @@ function renderCollab(){
   h+='</div>';
   // KPI cards
   h+='<div class="collab-kpis">';
-  h+=_collabKpiCard('Tâches actives',totalActive,'#3B6FB6','📋');
-  h+=_collabKpiCard('Mes tâches',totalMine,'#7C3AED','👤');
-  h+=_collabKpiCard('En retard',totalLate,totalLate>0?'#DC2626':'#94A3B8','⚠');
-  h+=_collabKpiCard('Discussions ouvertes',topicsOpen,'#0E7490','💬');
+  h+=_collabKpiCard('Tâches actives',totalActive,'#3B6FB6','📋','active');
+  h+=_collabKpiCard('Mes tâches',totalMine,'#7C3AED','👤','mine');
+  h+=_collabKpiCard('En retard',totalLate,totalLate>0?'#DC2626':'#94A3B8','⚠','late');
+  h+=_collabKpiCard('Discussions ouvertes',topicsOpen,'#0E7490','💬','topics');
   h+='</div>';
   h+='</div></div>';
 
@@ -237,11 +270,19 @@ function renderCollab(){
   return h;
 }
 
-// KPI mini-card (sur fond hero navy)
-function _collabKpiCard(label,value,accent,emoji){
-  var h='<div class="collab-kpi">';
+// KPI mini-card (sur fond hero navy) — cliquable si value > 0, sinon état "vide" design
+function _collabKpiCard(label,value,accent,emoji,kpiKey){
+  var active=value>0;
+  var cls='collab-kpi'+(active?' collab-kpi-clickable':' collab-kpi-empty');
+  var onclick=active&&kpiKey?' onclick="setCollabFromKpi(\''+kpiKey+'\')" role="button" tabindex="0"':'';
+  var h='<div class="'+cls+'"'+onclick+'>';
   h+='<div class="collab-kpi-top"><span class="collab-kpi-emoji">'+emoji+'</span><span class="collab-kpi-label">'+label+'</span></div>';
-  h+='<div class="collab-kpi-value" style="color:'+accent+'">'+value+'</div>';
+  if(active){
+    h+='<div class="collab-kpi-value" style="color:'+accent+'">'+value+'</div>';
+    h+='<div class="collab-kpi-cta">Voir <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></div>';
+  } else {
+    h+='<div class="collab-kpi-empty-msg"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Pas d\'activité en cours</div>';
+  }
   h+='</div>';
   return h;
 }

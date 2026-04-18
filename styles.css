@@ -2290,6 +2290,18 @@ body.dark .task-comment-input-wrap{backdrop-filter:blur(8px) !important;-webkit-
 .collab-kpi-emoji{font-size:14px}
 .collab-kpi-label{font-size:11px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.6px;font-weight:600}
 .collab-kpi-value{font-size:26px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums}
+/* État cliquable — cursor + CTA discret + scale au tap */
+.collab-kpi-clickable{cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.collab-kpi-clickable:hover{background:rgba(255,255,255,0.15);border-color:rgba(255,255,255,0.22);transform:translateY(-2px);box-shadow:0 6px 18px rgba(0,0,0,0.18)}
+.collab-kpi-clickable:active{transform:translateY(0) scale(.97);transition:transform .1s}
+.collab-kpi-clickable .collab-kpi-cta{display:flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:rgba(255,255,255,0.55);margin-top:6px;letter-spacing:.3px;transition:color .2s,gap .2s}
+.collab-kpi-clickable:hover .collab-kpi-cta{color:rgba(255,255,255,0.9);gap:5px}
+.collab-kpi-clickable .collab-kpi-cta svg{flex-shrink:0}
+/* État vide — élégant et non cliquable */
+.collab-kpi-empty{opacity:.55;cursor:default}
+.collab-kpi-empty:hover{background:rgba(255,255,255,0.08);transform:none}
+.collab-kpi-empty .collab-kpi-empty-msg{display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:500;color:rgba(255,255,255,0.75);margin-top:8px;background:rgba(16,185,129,0.18);border:1px solid rgba(16,185,129,0.35);padding:5px 9px;border-radius:8px;letter-spacing:.2px}
+.collab-kpi-empty .collab-kpi-empty-msg svg{color:#34d399;flex-shrink:0}
 
 /* Segment control Tâches / Discussions */
 .collab-segment{
