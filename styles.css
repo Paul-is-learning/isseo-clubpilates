@@ -166,16 +166,28 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;backgrou
   min-width:0;
 }
 .kpi-card__value .counter-anim{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:inline-block;max-width:100%}
-/* Grille KPI accueil responsive — 4 cols desktop, 2 cols mobile, widget span plein */
+/* Grille KPI accueil responsive — 4 cols desktop, 3 cols mobile (les 3 KPI alignés), widget span plein */
 .home-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:22px;align-items:stretch}
 @media(max-width:760px){
-  .home-kpi-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .home-kpi-grid{grid-template-columns:repeat(3,1fr);gap:8px}
   /* Le widget next-steps (4e élément) prend toute la largeur */
   .home-kpi-grid>[data-preact-widget="next-steps"]{grid-column:1 / -1}
+  /* Compacter les kpi-card pour qu'elles tiennent en 3 cols */
+  .home-kpi-grid .kpi-card{padding:10px 10px}
+  .home-kpi-grid .kpi-card__icon{margin-bottom:6px}
+  .home-kpi-grid .kpi-card__icon svg{width:16px;height:16px}
+  .home-kpi-grid .kpi-card__value{font-size:clamp(13px,4.2vw,17px);margin-bottom:3px}
+  .home-kpi-grid .kpi-card__label{font-size:8px;letter-spacing:.9px}
+  /* Le sparkline prend trop de place en 3 cols étroites → on le masque, on garde juste le trend */
+  .home-kpi-grid .kpi-spark-wrap{margin-top:6px;padding-top:6px}
+  .home-kpi-grid .kpi-spark-wrap svg{display:none}
+  .home-kpi-grid .kpi-trend{font-size:8px;padding:2px 5px}
 }
 @media(max-width:360px){
-  .home-kpi-grid{grid-template-columns:1fr}
-  .home-kpi-grid>[data-preact-widget="next-steps"]{grid-column:1}
+  .home-kpi-grid{gap:6px}
+  .home-kpi-grid .kpi-card{padding:8px 8px}
+  .home-kpi-grid .kpi-card__value{font-size:14px}
+  .home-kpi-grid .kpi-card__label{font-size:7px}
 }
 .kpi-card__label{
   font-size:9px;
@@ -2947,6 +2959,27 @@ body.dark .skeleton::after{background:linear-gradient(90deg,transparent 0%,rgba(
 body.dark .notif-native-prompt{background:linear-gradient(135deg,#0b2453,#112a6b);border-bottom-color:#1e3a8a}
 body.dark .notif-native-prompt div[style*="color:#1e40af"]{color:#93c5fd !important}
 body.dark .notif-native-prompt div[style*="color:#64748b"]{color:#8b949e !important}
+
+/* ── Grille Raccourcis accueil (4 cols desktop, 2 cols tablet/mobile) ───── */
+.home-shortcuts-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:10px}
+@media(max-width:900px){
+  .home-shortcuts-grid{grid-template-columns:repeat(2,1fr);gap:12px}
+}
+@media(max-width:640px){
+  .home-shortcuts-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .home-shortcuts-grid>div{padding:14px 14px !important}
+  .home-shortcuts-grid>div>div:nth-child(1){width:38px !important;height:38px !important;border-radius:10px !important}
+  .home-shortcuts-grid>div>div:nth-child(1) svg{width:18px;height:18px}
+  .home-shortcuts-grid>div>div:nth-child(2){min-width:0}
+  .home-shortcuts-grid>div>div:nth-child(2)>div:first-child{font-size:12px !important;line-height:1.25;white-space:normal;word-break:break-word}
+  .home-shortcuts-grid>div>div:nth-child(2)>div:last-child{font-size:10px !important;line-height:1.3;white-space:normal;overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .home-shortcuts-grid>div>svg:last-child{display:none}
+}
+@media(max-width:375px){
+  .home-shortcuts-grid{grid-template-columns:1fr;gap:8px}
+  .home-shortcuts-grid>div>div:nth-child(2)>div:last-child{-webkit-line-clamp:1}
+  .home-shortcuts-grid>div>svg:last-child{display:block !important}
+}
 
 /* ── Modal "Fichiers partagés" (share target reçu) ──────────────────────── */
 .share-received-modal{position:fixed;inset:0;background:rgba(15,23,42,.55);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px);z-index:9800;display:flex;align-items:flex-end;justify-content:center;animation:fadeIn .2s}
