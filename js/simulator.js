@@ -411,6 +411,9 @@ async function createStudio(){
   var garenneRef=INIT.garenne;
   var creatorName=(S.profile&&S.profile.nom)||'Paul';
   var nowIso=new Date().toISOString();
+  // Ferme le formulaire AVANT saveStudio (qui va render()) pour éviter la "bulle fantôme"
+  S.showNewForm=false;
+  S.newForm={};
   await saveStudio(id,{
     name:f.name,addr:f.addr,societe:f.societe||'P&W Occitanie',ouverture:f.ouverture,
     statut:'pipeline',
@@ -425,7 +428,9 @@ async function createStudio(){
     bpMeta:{createdBy:creatorName,createdAt:nowIso,modelBase:'La Garenne-Colombes',
       lastModifiedBy:creatorName,lastModifiedAt:nowIso}
   });
-  S.showNewForm=false;toast('Studio créé — BP initialisé sur le modèle La Garenne-Colombes');
+  // Sécurité : re-render explicite (au cas où saveStudio échouerait silencieusement)
+  render();
+  toast('Studio créé — BP initialisé sur le modèle La Garenne-Colombes');
 }
 
 async function askAI(){
