@@ -314,9 +314,12 @@ function renderDetail(){
   h+='</div></div>';
   h+='</div>';
   if(isSuperAdmin()){
-    h+='<div style="display:flex;gap:8px;margin-bottom:14px">';
-    h+=(s.statut!=='abandonne'?'<button class="btn" style="color:#854F0B" onclick="archiverStudio(\''+S.selectedId+'\')">Archiver</button>':'<button class="btn" style="color:#185FA5" onclick="restaurerStudio(\''+S.selectedId+'\')">Restaurer</button>');
-    h+='<button class="btn" style="color:#A32D2D" onclick="supprimerStudio(\''+S.selectedId+'\')">Supprimer</button></div>';
+    var _icArchive='<svg class="btn-ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="5" rx="1"/><path d="M4 8v11a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8"/><line x1="10" y1="12" x2="14" y2="12"/></svg>';
+    var _icRestore='<svg class="btn-ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></svg>';
+    var _icTrash='<svg class="btn-ic" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2"/></svg>';
+    h+='<div class="studio-actions" style="display:flex;gap:8px;margin-bottom:14px">';
+    h+=(s.statut!=='abandonne'?'<button class="btn btn-sa" style="color:#854F0B" onclick="archiverStudio(\''+S.selectedId+'\')" aria-label="Archiver" title="Archiver">'+_icArchive+'<span class="btn-lbl">Archiver</span></button>':'<button class="btn btn-sa" style="color:#185FA5" onclick="restaurerStudio(\''+S.selectedId+'\')" aria-label="Restaurer" title="Restaurer">'+_icRestore+'<span class="btn-lbl">Restaurer</span></button>');
+    h+='<button class="btn btn-sa" style="color:#A32D2D" onclick="supprimerStudio(\''+S.selectedId+'\')" aria-label="Supprimer" title="Supprimer">'+_icTrash+'<span class="btn-lbl">Supprimer</span></button></div>';
   }
   h+='<div class="tabs">';
   tabs.forEach(function(t){h+='<button class="tab '+(S.detailTab===t[0]?'active':'')+'" onclick="setDetailTab(\''+t[0]+'\')">'+t[1]+'</button>';});

@@ -53,13 +53,21 @@
         <div class="next-steps-widget__list">
           ${items.map(function (it) {
             return html`
-              <div class="next-steps-widget__item"
-                   onClick=${function () { window.openDetail && window.openDetail(it.id); }}>
-                <div class="next-steps-widget__item-body">
-                  <div class="next-steps-widget__item-name">${it.name}</div>
-                  <div class="next-steps-widget__item-step">→ ${it.step}</div>
+              <div class="next-steps-widget__item-wrap">
+                <div class="next-steps-widget__item-action">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                  <span>Valider</span>
                 </div>
-                ${iconChevron}
+                <div class="next-steps-widget__item"
+                     data-studio-id=${it.id}
+                     data-step-id=${it.stepId}
+                     onClick=${function () { window.openDetail && window.openDetail(it.id); }}>
+                  <div class="next-steps-widget__item-body">
+                    <div class="next-steps-widget__item-name">${it.name}</div>
+                    <div class="next-steps-widget__item-step">→ ${it.step}</div>
+                  </div>
+                  ${iconChevron}
+                </div>
               </div>
             `;
           })}
@@ -86,7 +94,7 @@
         if (!done[stepsList[i].id]) { next = stepsList[i]; break; }
       }
       if (!next) return;
-      out.push({ id: id, name: st.name, step: next.label });
+      out.push({ id: id, name: st.name, step: next.label, stepId: next.id });
     });
     return out;
   }

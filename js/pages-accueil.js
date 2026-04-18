@@ -280,12 +280,79 @@ function _parseOpenMonth(ouv,forecast){
   return null;
 }
 
+// Briefing quotidien — affiché quand aucun point urgent (remplace l'empty state)
+function _computeTodayBriefing(){
+  var ids=_getStudioIds();
+  var now=new Date();
+  var active=0,prep=0,ouverts=0;
+  var caTotal=0;
+  var stepsDone=0,stepsTotal=0;
+  var nextOpen=null; // {sid,name,days}
+  ids.forEach(function(sid){
+    var s=S.studios[sid];
+    if(!s||s.statut==='abandonne')return;
+    active++;
+    if(s.statut==='ouvert')ouverts++;else prep++;
+    caTotal+=(s.forecast&&s.forecast.annualCA)||0;
+    var STw=(typeof getStudioSteps==='function')?getStudioSteps(sid):(typeof STEPS!=='undefined'?STEPS:[]);
+    stepsTotal+=STw.length;
+    var done=s.steps||{};
+    STw.forEach(function(st){if(done[st.id])stepsDone++;});
+    if(s.statut!=='ouvert'){
+      var openMonth=_parseOpenMonth(s.ouverture,s.forecast);
+      if(openMonth){
+        var days=Math.round((openMonth-now)/(1000*60*60*24));
+        if(days>=0&&(!nextOpen||days<nextOpen.days))nextOpen={sid:sid,name:s.name,days:days};
+      }
+    }
+  });
+  var pct=stepsTotal>0?Math.round(stepsDone/stepsTotal*100):0;
+  return {active:active,prep:prep,ouverts:ouverts,caTotal:caTotal,pct:pct,nextOpen:nextOpen};
+}
+
+function _renderTodayBriefing(){
+  var b=_computeTodayBriefing();
+  var _fmtCA=function(v){if(v>=1e6)return (v/1e6).toFixed(1).replace('.',',').replace(/,0$/,'')+' M€';if(v>=1e3)return Math.round(v/1e3)+' k€';return v+' €';};
+  var h='<div class="focus-today">';
+  // Intro
+  h+='<div class="focus-today-intro">Briefing du jour <span class="focus-today-dot"></span></div>';
+  // 3 pills statistiques
+  h+='<div class="focus-today-pills">';
+  // Portfolio
+  h+='<button class="focus-today-pill" onclick="try{navigator.vibrate&&navigator.vibrate(8)}catch(e){};setPage(\'projets\')">';
+  h+='<div class="focus-today-pill-ic" style="background:rgba(52,211,153,.12);color:#059669"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>';
+  h+='<div class="focus-today-pill-body"><div class="focus-today-pill-val">'+b.active+'</div><div class="focus-today-pill-lbl">studio'+(b.active>1?'s':'')+' actif'+(b.active>1?'s':'')+(b.prep>0?' · '+b.prep+' en prépa':'')+'</div></div>';
+  h+='</button>';
+  // CA en jeu
+  h+='<button class="focus-today-pill" onclick="try{navigator.vibrate&&navigator.vibrate(8)}catch(e){};setPage(\'bp\')">';
+  h+='<div class="focus-today-pill-ic" style="background:rgba(251,191,36,.14);color:#b45309"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></div>';
+  h+='<div class="focus-today-pill-body"><div class="focus-today-pill-val">'+_fmtCA(b.caTotal)+'</div><div class="focus-today-pill-lbl">CA BP A1 en jeu</div></div>';
+  h+='</button>';
+  // Avancement
+  h+='<div class="focus-today-pill focus-today-pill--static">';
+  h+='<div class="focus-today-pill-ic" style="background:rgba(96,165,250,.14);color:#1d4ed8"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg></div>';
+  h+='<div class="focus-today-pill-body"><div class="focus-today-pill-val">'+b.pct+'%</div><div class="focus-today-pill-lbl">avancement workflow</div></div>';
+  h+='</div>';
+  h+='</div>';
+  // Next jalon
+  if(b.nextOpen){
+    var dTxt=b.nextOpen.days===0?'aujourd\'hui':b.nextOpen.days===1?'demain':'dans '+b.nextOpen.days+' j';
+    h+='<button class="focus-today-next" onclick="try{navigator.vibrate&&navigator.vibrate(8)}catch(e){};openDetail(\''+b.nextOpen.sid+'\')">';
+    h+='<div class="focus-today-next-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>';
+    h+='<div class="focus-today-next-txt"><b>'+b.nextOpen.name+'</b> ouvre <b>'+dTxt+'</b></div>';
+    h+='<svg class="focus-today-next-chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><polyline points="9 18 15 12 9 6"/></svg>';
+    h+='</button>';
+  }
+  h+='</div>';
+  return h;
+}
+
 function _renderFocusCard(){
   var items=_computeFocusItems();
   var n=items.length;
   var mood,moodColor,moodIcon;
   if(n===0){
-    mood='Tout est calme — rien d\'urgent';
+    mood='Tout est calme — briefing du jour';
     moodColor='#0F6E56';
     moodIcon='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"/></svg>';
   } else if(n<=2){
@@ -306,12 +373,7 @@ function _renderFocusCard(){
   h+='</div>';
   // Liste
   if(n===0){
-    h+='<div class="focus-empty">';
-    h+='<div class="focus-empty-ic" style="color:#0F6E56">';
-    h+='<svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>';
-    h+='</div>';
-    h+='<div class="focus-empty-txt">Profite, c\'est rare. <br>Je te notifie dès qu\'un point mérite attention.</div>';
-    h+='</div>';
+    h+=_renderTodayBriefing();
   } else {
     h+='<div class="focus-list">';
     items.forEach(function(it){
@@ -345,28 +407,28 @@ function renderAccueil(){
   var _uPhoto=getUserPhoto(S.profile);
   var _unread=S.notifications.filter(function(n){return!n.read;}).length;
 
-  // ── Top bar : photo + salut + icônes ──
-  h+='<div class="accueil-topbar" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;padding:0 2px">';
-  // Left: photo + greeting
-  h+='<div style="display:flex;align-items:center;gap:14px">';
+  // ── Top bar : photo + salut + icônes (layout Apple-like, 2 lignes mobile) ──
+  h+='<div class="accueil-topbar">';
+  // Greeting block : photo + texte
+  h+='<div class="accueil-topbar-greet">';
   // Photo utilisateur classe
-  h+='<div style="position:relative;flex-shrink:0">';
-  h+='<div style="width:52px;height:52px;border-radius:16px;overflow:hidden;background:linear-gradient(135deg,#1a3a6b,#2d5a8e);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(26,58,107,0.25);border:2.5px solid #fff;cursor:pointer" onclick="document.getElementById(\'avatar-upload-input\').click()" title="Changer ma photo">';
+  h+='<div class="accueil-topbar-photo-wrap">';
+  h+='<div class="accueil-topbar-photo" onclick="document.getElementById(\'avatar-upload-input\').click()" title="Changer ma photo">';
   if(_uPhoto)h+='<img src="'+_uPhoto+'" style="width:100%;height:100%;object-fit:cover" onerror="this.parentNode.innerHTML=\'<span style=color:#fff;font-size:18px;font-weight:700>'+_ini(_prenom)+'</span>\'">';
   else h+='<span style="color:#fff;font-size:18px;font-weight:700">'+_ini(_prenom)+'</span>';
   h+='</div>';
   // Online indicator
-  h+='<div style="position:absolute;bottom:1px;right:1px;width:13px;height:13px;border-radius:50%;background:#22c55e;border:2.5px solid #faf9f6;box-shadow:0 0 0 1px rgba(34,197,94,0.3)"></div>';
+  h+='<div class="accueil-topbar-online"></div>';
   h+='</div>';
   // Greeting text
-  h+='<div>';
+  h+='<div class="accueil-topbar-txt">';
   var _greetText=_salut+(_prenom?', '+_prenom:'');
-  h+='<div data-typewriter-greet data-typewriter-text="'+_greetText.replace(/"/g,'&quot;')+'" style="font-size:18px;font-weight:700;color:#1a1a1a;line-height:1.2;min-height:22px">'+_greetText+'</div>';
-  h+='<div style="font-size:12px;color:#888;margin-top:2px">'+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>';
+  h+='<div data-typewriter-greet data-typewriter-text="'+_greetText.replace(/"/g,'&quot;')+'" class="accueil-topbar-hello">'+_greetText+'</div>';
+  h+='<div class="accueil-topbar-date">'+new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'})+'</div>';
   h+='</div>';
   h+='</div>';
   // Right: notif + cadenas
-  h+='<div style="display:flex;align-items:center;gap:4px">';
+  h+='<div class="accueil-topbar-actions">';
   // Cloche notifications
   h+='<div style="position:relative" onclick="event.stopPropagation();toggleNotifPanel()">';
   h+='<button class="icon-btn" title="Notifications" style="position:relative">';
@@ -440,7 +502,7 @@ function renderAccueil(){
     {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}}
   ];
   _kpis.forEach(function(k,ki){
-    h+='<div class="kpi-card kpi-reveal" data-idx="'+ki+'" onclick="'+k.click+'">';
+    h+='<div class="kpi-card kpi-reveal" data-idx="'+ki+'" onclick="try{navigator.vibrate&&navigator.vibrate(8)}catch(e){};'+k.click+'">';
     h+='<div class="kpi-card__glow" style="background:radial-gradient(circle,'+k.color+'26,transparent 70%)"></div>';
     h+='<div class="kpi-card__inner">';
     h+='<div class="kpi-card__icon" style="color:'+k.color+'">'+k.icon+'</div>';

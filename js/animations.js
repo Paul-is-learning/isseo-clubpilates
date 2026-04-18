@@ -1171,6 +1171,80 @@ async function confirmDeleteTask(sid,tid,rowEl){
   if(typeof render==='function')render();
 }
 
+// ── Swipe sur les "Prochaines étapes" — swipe gauche = valider l'étape ──
+function initNextStepsSwipe(){
+  if(window._nsSwipeInit)return;
+  window._nsSwipeInit=true;
+  var activeItem=null,startX=0,startY=0,currentX=0,moved=false,suppressClick=false;
+  var THRESH_VALIDATE=110,THRESH_REVEAL=30;
+
+  function _find(target){return target.closest?target.closest('.next-steps-widget__item[data-studio-id]'):null;}
+  function _reset(el){if(!el)return;el.style.transition='transform .25s cubic-bezier(.2,.8,.2,1)';el.style.transform='';el.classList.remove('swiping','ready-validate');}
+
+  document.addEventListener('touchstart',function(e){
+    var it=_find(e.target);
+    if(!it)return;
+    activeItem=it;
+    var t=e.touches[0];
+    startX=t.clientX;startY=t.clientY;currentX=startX;
+    moved=false;suppressClick=false;
+    it.style.transition='';
+  },{passive:true});
+
+  document.addEventListener('touchmove',function(e){
+    if(!activeItem)return;
+    var t=e.touches[0];
+    currentX=t.clientX;
+    var dx=currentX-startX,dy=t.clientY-startY;
+    if(Math.abs(dx)>5||Math.abs(dy)>5)moved=true;
+    if(Math.abs(dy)>Math.abs(dx)*1.2){
+      if(activeItem.classList.contains('swiping')){_reset(activeItem);activeItem=null;}
+      return;
+    }
+    if(dx<-10){
+      activeItem.classList.add('swiping');
+      var pull=Math.max(dx,-160);
+      activeItem.style.transform='translateX('+pull+'px)';
+      if(pull<=-THRESH_VALIDATE){
+        if(!activeItem.classList.contains('ready-validate')){
+          activeItem.classList.add('ready-validate');
+          try{if(navigator.vibrate)navigator.vibrate(12);}catch(e){}
+        }
+      } else {
+        activeItem.classList.remove('ready-validate');
+      }
+    } else if(activeItem.classList.contains('swiping')){
+      activeItem.style.transform='';
+      activeItem.classList.remove('ready-validate');
+    }
+  },{passive:true});
+
+  document.addEventListener('touchend',function(){
+    if(!activeItem)return;
+    var it=activeItem;activeItem=null;
+    var dx=currentX-startX;
+    if(dx<=-THRESH_VALIDATE){
+      suppressClick=true;
+      var sid=it.getAttribute('data-studio-id');
+      var stepId=it.getAttribute('data-step-id');
+      it.style.transition='transform .28s ease,opacity .28s ease';
+      it.style.transform='translateX(-110%)';
+      it.style.opacity='0';
+      try{if(navigator.vibrate)navigator.vibrate([15,30,20]);}catch(e){}
+      setTimeout(function(){
+        if(typeof toggleStep==='function'&&sid&&stepId)toggleStep(sid,stepId);
+        else _reset(it);
+      },220);
+    } else {
+      _reset(it);
+    }
+  },{passive:true});
+
+  document.addEventListener('click',function(e){
+    if(suppressClick){e.stopPropagation();e.preventDefault();suppressClick=false;}
+  },true);
+}
+
 // ── 23. Pull-to-refresh (mobile) ──
 // Quand l'utilisateur tire vers le bas depuis le haut de la page, re-sync.
 function initPullToRefresh(){
@@ -1308,6 +1382,7 @@ function afterRenderAnimations(){
   try{initSwipeGestures();}catch(e){}
   try{initPullToRefresh();}catch(e){}
   try{initTaskGestures();}catch(e){}
+  try{initNextStepsSwipe();}catch(e){}
   try{initScrollReveal();}catch(e){}
   // Stop hero carousel & gauge cycle if we left the Accueil page
   if(!document.querySelector('.hero-carousel')){
