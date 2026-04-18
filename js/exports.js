@@ -21,7 +21,7 @@ function generateReport(sid,sections){
   var md=f.moisDebut||0;
   var annee0=f.annee||2026;
   var opts=getStudioBPOpts(sid);
-  var bp=build3YearBP(f,sid,opts);
+  var bp=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(f,sid,opts);
   var allRows=bp.a1.concat(bp.a2,bp.a3);
   var caArr=allRows.map(function(r){return r._ca;});
   var ebtArr=allRows.map(function(r){return r._ebitda;});
@@ -371,7 +371,7 @@ function exportStudioCSV(sid){
   var md=f.moisDebut||0;
   var annee0=f.annee||2026;
   var opts=getStudioBPOpts(sid);
-  var bp=build3YearBP(f,sid,opts);
+  var bp=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(f,sid,opts);
   var actuelWF=S.adherents&&S.adherents[sid]||{};
   var capexDet=getCapexDetailForStudio(sid);
   var sep=';'; // Excel-friendly separator
@@ -444,7 +444,7 @@ function exportStudioExcel(sid){
   var md=f.moisDebut||0;
   var annee0=f.annee||2026;
   var opts=getStudioBPOpts(sid);
-  var bp=build3YearBP(f,sid,opts);
+  var bp=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(f,sid,opts);
   var actuelWF=S.adherents&&S.adherents[sid]||{};
   var capexDet=getCapexDetailForStudio(sid);
 

@@ -400,12 +400,18 @@ async function askAI(){
   var rembtAn=Math.round(emprunt/7);        // remboursement capital/an (7 ans)
   var leasingAn=Math.round(leasing/60*12);  // mensualités leasing annualisées (5 ans)
   var _aiSid=S.selectedId;
-  var _aiRef=getStudioResultats(_aiSid);
-  var r1=_aiRef[1],r2=_aiRef[2],r3=_aiRef[3];
-  var c1=getStudioCharges(_aiSid,1),c2=getStudioCharges(_aiSid,2),c3=getStudioCharges(_aiSid,3);
-  var ebitda1=Math.round(r1.rex+c1.amort);
-  var ebitda2=Math.round(r2.rex+c2.amort);
-  var ebitda3=Math.round(r3.rex+c3.amort);
+  // Calcul override-aware : reflète les ajustements BP saisis par Paul
+  var _aiBPs=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(s.forecast||{},_aiSid,getStudioBPOpts(_aiSid));
+  function _aiYearAgg(rows){
+    var ca=0,ch=0,rex=0,rn=0,eb=0,caf=0,rembt=0,cashnet=0,loyer=0,coachs=0,royalties=0,amort=0,charges_fin=0;
+    rows.forEach(function(r){ca+=r._ca||0;ch+=r._charges||0;rex+=r._rex||0;rn+=r._result||0;eb+=r._ebitda||0;caf+=r._caf||0;rembt+=r._rembt||0;cashnet+=r._cashnet||0;loyer+=r.loyer||0;coachs+=r.coachs||0;royalties+=r.royalties||0;amort+=r.amort||0;charges_fin+=r.charges_fin||0;});
+    return{ca:ca,charges:ch,rex:rex,rnet:rn,ebitda:eb,caf:caf,treso:cashnet,loyer:loyer,coachs:coachs,royalties:royalties,amort:amort,charges_fin:charges_fin};
+  }
+  var r1=_aiYearAgg(_aiBPs.a1),r2=_aiYearAgg(_aiBPs.a2),r3=_aiYearAgg(_aiBPs.a3);
+  var c1={loyer:r1.loyer,coachs:r1.coachs,amort:r1.amort,charges_fin:r1.charges_fin};
+  var c2={loyer:r2.loyer,coachs:r2.coachs,amort:r2.amort,charges_fin:r2.charges_fin};
+  var c3={loyer:r3.loyer,coachs:r3.coachs,amort:r3.amort,charges_fin:r3.charges_fin};
+  var ebitda1=r1.ebitda,ebitda2=r2.ebitda,ebitda3=r3.ebitda;
   // Construction du contexte P&L complet
   var ctx='=== CONTEXTE FINANCIER CLUB PILATES — '+s.name.toUpperCase()+' ===\n';
   ctx+='Société : '+s.societe+' | Ouverture : '+s.ouverture+'\n\n';
@@ -420,7 +426,7 @@ async function askAI(){
   ctx+='Charges opé totales  : '+r1.charges+'€  '+r2.charges+'€  '+r3.charges+'€\n';
   ctx+='  dont Coachs/Salaires: '+c1.coachs+'€     '+c2.coachs+'€     '+c3.coachs+'€\n';
   ctx+='  dont Loyer          : '+c1.loyer+'€      '+c2.loyer+'€      '+c3.loyer+'€\n';
-  ctx+='  dont Royalties (9%) : '+Math.round(r1.ca*0.09)+'€      '+Math.round(r2.ca*0.09)+'€      '+Math.round(r3.ca*0.09)+'€\n';
+  ctx+='  dont Royalties      : '+r1.royalties+'€      '+r2.royalties+'€      '+r3.royalties+'€\n';
   ctx+='  dont Amortissements : '+c1.amort+'€      '+c2.amort+'€      '+c3.amort+'€\n';
   ctx+='  dont Charges fin.   : '+c1.charges_fin+'€       '+c2.charges_fin+'€       '+c3.charges_fin+'€\n';
   ctx+='EBITDA               : '+ebitda1+'€      '+ebitda2+'€     '+ebitda3+'€\n';

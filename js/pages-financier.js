@@ -6,7 +6,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 
 function renderBP3YInfographic(sid,s){
-  var bp=build3YearBP(s.forecast||{},sid,getStudioBPOpts(sid));
+  var bp=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(s.forecast||{},sid,getStudioBPOpts(sid));
   var annee0=s.forecast&&s.forecast.annee||2026;
   var md=s.forecast&&s.forecast.moisDebut||0;
 
@@ -405,7 +405,7 @@ function renderAdherents(sid,s){
 
   var h='<div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
-  var bps3=build3YearBP(s.forecast||{},sid,getStudioBPOpts(sid));
+  var bps3=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(s.forecast||{},sid,getStudioBPOpts(sid));
   [1,2,3].forEach(function(y){
     var ys=y===1?bps3.a1:y===2?bps3.a2:bps3.a3;
     var yCA=ys.reduce(function(s,r){return s+r._ca;},0);
