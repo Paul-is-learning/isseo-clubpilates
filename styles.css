@@ -445,7 +445,7 @@ body.dark .icon-btn--success:hover{
 .hamburger.open .hm-bar:nth-child(2){opacity:0;width:0}
 .hamburger.open .hm-bar:nth-child(3){transform:translateY(-7px) rotate(-45deg)}
 .sidebar-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:499}
-@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.hamburger{display:flex}.sidebar-overlay.show{display:block}}
+@media(max-width:768px){.sidebar{transform:translateX(-100%)}.sidebar.open{transform:translateX(0)}.main-content{margin-left:0}.hamburger{display:flex}.sidebar-overlay.show{display:block}.app{padding-top:62px}}
 .auth-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(145deg,#000000 0%,#0a0a0a 30%,#111111 60%,#0a0a0a 100%);position:relative;overflow:hidden}
 .auth-wrap::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:radial-gradient(circle at 30% 20%,rgba(26,58,107,0.08) 0%,transparent 50%),radial-gradient(circle at 70% 80%,rgba(15,110,86,0.06) 0%,transparent 50%);animation:authBgShift 15s ease infinite alternate;z-index:2;pointer-events:none}
 @keyframes authBgShift{0%{transform:translate(0,0)}100%{transform:translate(2%,1%)}}
@@ -1119,7 +1119,8 @@ body.dark ::-webkit-scrollbar-thumb:hover{background:#484f58}
 
 /* ── Mobile responsive améliorations ────────────────────────────────────── */
 @media(max-width:768px){
-  .app{padding:1rem 0.75rem}
+  /* padding-top généreux pour laisser respirer le hamburger fixé (44px + marge) */
+  .app{padding:62px 0.75rem 1rem}
   /* Touch targets min 44px */
   button,select,.chip,.sidebar-link{min-height:44px}
   /* Chat panel responsive */
@@ -1128,7 +1129,7 @@ body.dark ::-webkit-scrollbar-thumb:hover{background:#484f58}
   .auth-box{width:100%;max-width:400px;margin:0 16px;padding:28px 24px}
 }
 @media(max-width:480px){
-  .app{padding:0.75rem 0.5rem}
+  .app{padding:60px 0.5rem 0.75rem}
   /* Tables horizontally scrollable */
   table{display:block;overflow-x:auto;-webkit-overflow-scrolling:touch}
 }
@@ -3304,21 +3305,17 @@ body.dark .focus-empty-ic{background:#064e3b}
 body.dark .accueil-topbar-hello{color:#e6edf3}
 body.dark .accueil-topbar-date{color:#8b949e}
 
-/* Mobile : layout 2 lignes façon Apple "large title" — nav bar compacte au-dessus, photo+greeting en dessous */
+/* Mobile : layout 2 lignes — actions en haut à droite (le hamburger est déjà géré par le padding-top global de .app), photo+greeting en dessous comme un "large title" iOS */
 @media(max-width:768px){
   .accueil-topbar{
-    display:grid;
-    grid-template-columns:1fr auto;
-    grid-template-areas:"spacer actions" "greet greet";
-    row-gap:14px;
-    column-gap:10px;
+    display:flex;
+    flex-direction:column;
+    align-items:stretch;
+    gap:14px;
     padding:0;
-    align-items:center;
   }
-  .accueil-topbar-actions{grid-area:actions;justify-self:end}
-  .accueil-topbar-greet{grid-area:greet;padding-left:4px}
-  /* Réserve de l'espace pour le hamburger fixé (44px + marge) */
-  .accueil-topbar::before{content:'';grid-area:spacer;display:block;height:44px;min-width:52px}
+  .accueil-topbar-actions{align-self:flex-end;order:1}
+  .accueil-topbar-greet{padding-left:2px;order:2}
   .accueil-topbar-photo{width:56px;height:56px;border-radius:18px}
   .accueil-topbar-hello{font-size:22px;font-weight:800;letter-spacing:-.5px}
   .accueil-topbar-date{font-size:12.5px;margin-top:3px}

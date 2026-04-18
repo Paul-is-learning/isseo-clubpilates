@@ -320,7 +320,11 @@ async function doLogin(){
     return;
   }
   S._dataLoaded=true;
-  restoreNavState();render();
+  // Force l'atterrissage sur la page Accueil à chaque connexion
+  restoreNavState();
+  S.page='accueil';S.view='dashboard';S.selectedId=null;S.mainTab='studios';
+  saveNavState();
+  render();
   if(typeof startSync==='function')startSync();
   _startSessionWatcher();
   startPresenceHeartbeat();

@@ -252,7 +252,11 @@ sb.auth.getSession().then(function(res){
         if(S.adminSettings.blocked&&S.adminSettings.blocked.indexOf(session.user.id)>=0){
           sb.auth.signOut();S.user=null;S.profile=null;render();return;
         }
-        S._dataLoaded=true;restoreNavState();if(typeof _restoreFromHash==='function')_restoreFromHash();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
+        S._dataLoaded=true;restoreNavState();
+        // Atterrissage systématique sur Accueil à l'ouverture de l'app (sauf si deeplink via hash)
+        var _hasDeeplink=(location.hash||'').length>1;
+        if(!_hasDeeplink){S.page='accueil';S.view='dashboard';S.selectedId=null;S.mainTab='studios';saveNavState();}
+        if(typeof _restoreFromHash==='function')_restoreFromHash();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
         _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
         if(window.isseoPush&&typeof window.isseoPush.refresh==='function')window.isseoPush.refresh();
         // Deeplink email → ouvre directement la tâche : #tache=SID:TASKID
