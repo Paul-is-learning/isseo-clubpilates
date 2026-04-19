@@ -779,8 +779,12 @@ var _newTacheEscHandler=null;
 
 function ouvrirFormTache(sid){
   var moi=(S.profile&&S.profile.nom)||'';
+  // Si pas de sid explicite : essayer de récupérer le filtre studio Collab
+  if(!sid&&typeof _loadCollabFilters==='function'){
+    try{var f=_loadCollabFilters();if(f&&f.studio&&f.studio!=='all')sid=f.studio;}catch(e){}
+  }
   _newTacheDraft={
-    sid:sid,
+    sid:sid||'',
     titre:'',
     desc:'',
     assignees:moi?[moi]:[],
@@ -873,6 +877,19 @@ function _renderNewTacheModalInner(sid){
 
   h+='<div class="nt-body">';
 
+  // Sélecteur de studio — obligatoire pour rattacher la tâche
+  h+='<div class="nt-field">';
+  h+='<div class="nt-label">🏢 Studio</div>';
+  h+='<select id="new-tache-studio" class="nt-studio-select" onchange="_nt_setStudio(this.value)">';
+  h+='<option value=""'+(!d.sid?' selected':'')+'>— Choisir un studio —</option>';
+  var _ids=(typeof _getStudioIds==='function')?_getStudioIds():Object.keys(S.studios||{});
+  _ids.forEach(function(_sid){
+    var _st=S.studios[_sid];if(!_st)return;
+    h+='<option value="'+_escHtml(_sid)+'"'+(d.sid===_sid?' selected':'')+'>'+_escHtml(_st.name||_sid)+'</option>';
+  });
+  h+='</select>';
+  h+='</div>';
+
   // Titre
   h+='<input id="new-tache-titre" type="text" class="nt-title" placeholder="Titre de la tâche…" value="'+_escHtml(d.titre||'').replace(/"/g,'&quot;')+'" />';
 
@@ -954,7 +971,7 @@ function _renderNewTacheModalInner(sid){
   h+='<div style="font-size:11px;color:#9ca3af">⌘↵ pour créer · ⎋ pour fermer</div>';
   h+='<div style="display:flex;gap:8px">';
   h+='<button class="task-modal-close-btn" onclick="_closeNewTacheModal()">Annuler</button>';
-  h+='<button class="nt-submit" onclick="creerTache(\''+sid+'\')">Créer la tâche</button>';
+  h+='<button class="nt-submit" onclick="creerTache(\''+(sid||'')+'\')">Créer la tâche</button>';
   h+='</div></div>';
 
   h+='</div>';
@@ -962,6 +979,15 @@ function _renderNewTacheModalInner(sid){
 }
 
 // Handlers state mutations ─────────────────────────────────────────────
+function _nt_setStudio(sid){
+  if(!_newTacheDraft)return;
+  // Préserver titre/desc en cours de frappe
+  var tEl=document.getElementById('new-tache-titre');
+  var dEl=document.getElementById('new-tache-desc');
+  if(tEl)_newTacheDraft.titre=tEl.value;
+  if(dEl)_newTacheDraft.desc=dEl.value;
+  _newTacheDraft.sid=sid||'';
+}
 function _nt_setPriority(p){
   if(!_newTacheDraft)return;
   _newTacheDraft.priority=p;
@@ -1028,6 +1054,14 @@ function _nt_removeTag(t){
 }
 
 async function creerTache(sid){
+  // sid peut être vide : on prend alors celui du draft (sélectionné via le select studio)
+  if(!sid&&_newTacheDraft&&_newTacheDraft.sid)sid=_newTacheDraft.sid;
+  if(!sid){
+    toast('Choisissez un studio');
+    var stEl=document.getElementById('new-tache-studio');
+    if(stEl)stEl.focus();
+    return;
+  }
   // Lire les valeurs live des inputs (titre/desc) + le reste depuis le draft
   var titreEl=document.getElementById('new-tache-titre');
   var descEl=document.getElementById('new-tache-desc');

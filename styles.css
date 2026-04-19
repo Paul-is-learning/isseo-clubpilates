@@ -2093,6 +2093,20 @@ body.dark .reaction-picker-btn:hover{background:#1e232c !important}
 .new-tache-modal .nt-add-btn{width:28px;height:28px;border-radius:50%;background:#fff;border:1.5px dashed #c7d2fe;color:#6366F1;font-size:16px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;transition:all .15s;line-height:1}
 .new-tache-modal .nt-add-btn:hover{background:#eef2ff;border-color:#6366F1;transform:scale(1.05)}
 
+/* Studio select (nouveau) */
+.new-tache-modal .nt-studio-select{width:100%;padding:10px 12px;border:1px solid #eee7d9;border-radius:10px;background:#fff;color:#1a1a1a;font-size:13px;font-weight:500;cursor:pointer;transition:all .15s;font-family:inherit;-webkit-appearance:none;appearance:none;background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><polyline points='6 9 12 15 18 9'/></svg>");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px}
+.new-tache-modal .nt-studio-select:hover{border-color:#d4ccb6}
+.new-tache-modal .nt-studio-select:focus{outline:none;border-color:#3B6FB6;box-shadow:0 0 0 3px rgba(59,111,182,.12)}
+body.dark .new-tache-modal .nt-studio-select{background-color:#181c24;border-color:#2a2f3a;color:#e6edf3}
+
+/* Bouton "Nouvelle tâche" dans la page Collab */
+.collab-new-task-btn{display:inline-flex;align-items:center;gap:8px;background:linear-gradient(180deg,#3B6FB6,#2d5a96);color:#fff;border:none;padding:11px 18px;border-radius:12px;font:600 13.5px/1 -apple-system,system-ui,Inter,sans-serif;cursor:pointer;box-shadow:0 6px 16px -6px rgba(59,111,182,.55),inset 0 1px 0 rgba(255,255,255,.18);transition:transform .18s cubic-bezier(.34,1.56,.64,1),box-shadow .2s;margin:0 0 14px;letter-spacing:.15px}
+.collab-new-task-btn:hover{transform:translateY(-1px);box-shadow:0 10px 22px -6px rgba(59,111,182,.65)}
+.collab-new-task-btn:active{transform:scale(.97)}
+.collab-new-task-btn svg{flex-shrink:0}
+body.dark .collab-new-task-btn{background:linear-gradient(180deg,#4a7bc0,#3d65a0);box-shadow:0 6px 16px -6px rgba(74,123,192,.6),inset 0 1px 0 rgba(255,255,255,.08)}
+@media(max-width:640px){.collab-new-task-btn{width:100%;justify-content:center;padding:13px 18px;font-size:14.5px;min-height:48px}}
+
 /* Priority pills */
 .new-tache-modal .nt-pills{display:flex;gap:6px;flex-wrap:wrap}
 .new-tache-modal .nt-pill{padding:7px 13px;border:1px solid #eee7d9;border-radius:10px;background:#fff;color:#6b7280;font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;display:inline-flex;align-items:center;gap:5px}

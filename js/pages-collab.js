@@ -368,16 +368,21 @@ function _collabFiltersBar(f){
 // ── Rendu onglet Tâches ────────────────────────────────────────────────────
 function _collabTasksContent(allTasks,f){
   var filtered=_sortCollabTasks(_applyCollabTaskFilters(allTasks));
+  // Bouton "Nouvelle tâche" toujours visible en tête, au-dessus de la liste
+  var newBtn='<button class="collab-new-task-btn" onclick="ouvrirFormTache()" aria-label="Nouvelle tâche">'
+    +'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+    +'<span>Nouvelle tâche</span>'
+    +'</button>';
   if(!filtered.length){
-    return _collabEmptyState('Aucune tâche ne correspond aux filtres',
+    return newBtn+_collabEmptyState('Aucune tâche ne correspond aux filtres',
       'Essaie d\'élargir les critères, ou supprime les filtres actifs.',
       '<button class="collab-empty-btn" onclick="resetCollabFilters()">🔄 Réinitialiser les filtres</button>');
   }
 
   if(f.view==='kanban'){
-    return _collabRenderKanban(filtered);
+    return newBtn+_collabRenderKanban(filtered);
   }
-  return _collabRenderListe(filtered);
+  return newBtn+_collabRenderListe(filtered);
 }
 
 // Vue liste : lignes plates, responsive, avec studio badge
