@@ -555,7 +555,23 @@ async function doLogout(){
   try{localStorage.removeItem('isseo_nav');}catch(e){}
   render();
 }
-function openDetail(id){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';S.aiResp='';S.forecastYear=1;S.forecastSection='detail';S.adherentYear=1;saveNavState();render();}
+function openDetail(id,ev){
+  if(!_checkDirtyBeforeNav()){return;}
+  if(hasDirty())discardAllDirty();
+  // Shared element transition : la card source morphe vers la page détail
+  var doNav=function(){
+    S.page='projets';S.view='detail';S.selectedId=id;S.detailTab='workflow';
+    S.aiResp='';S.forecastYear=1;S.forecastSection='detail';S.adherentYear=1;
+    saveNavState();render();
+  };
+  var reducedMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var src=document.querySelector('.card[data-studio-id="'+(window.CSS&&CSS.escape?CSS.escape(id):id)+'"]');
+  if(src&&!reducedMotion&&typeof _sharedMorphToDetail==='function'){
+    _sharedMorphToDetail(src,doNav);
+    return;
+  }
+  doNav();
+}
 function retourProjets(){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();S.view='dashboard';S.selectedId=null;S.page='projets';saveNavState();render();}
 function retourAccueil(){retourProjets();}
 function setPage(p){if(!_checkDirtyBeforeNav()){return;}if(hasDirty())discardAllDirty();window._prevPage=S.page;S.page=p;S.view='dashboard';S.selectedId=null;S.sidebarOpen=false;S.mainTab='studios';hapticTap(10);saveNavState();render();try{var _btb=document.getElementById('bottom-tab-bar');if(_btb){var _bs=_btb.querySelectorAll('.btab');_bs.forEach(function(b){b.classList.toggle('active',b.getAttribute('data-page')===p);});}}catch(e){}}

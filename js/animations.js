@@ -10,44 +10,95 @@ window.fmtC=function(n){
   return r+' €';
 };
 
-// ── 1. Animated number counters ──
+// ── 1. Animated number counters + Liquid morphing ──
 // Usage: <span class="counter-anim" data-target="12345" data-format="eur">0</span>
-// Formats: 'num' (default), 'eur' (fmt), 'int'
+// Formats: 'num' (default), 'eur' (fmt), 'int', 'eur-compact'
+// Optionnel : data-morph-key pour identifier le compteur à travers les renders.
+// Si absent : clé auto basée sur position DOM + format.
+var _counterValues={}; // key → last target value (pour détecter changements)
+
+function _counterKey(el){
+  if(el.getAttribute('data-morph-key'))return el.getAttribute('data-morph-key');
+  var p=[],n=el;
+  while(n&&n!==document.body){
+    var i=0,s=n;while(s.previousElementSibling){s=s.previousElementSibling;i++;}
+    p.push((n.tagName||'')+i);
+    n=n.parentElement;
+    if(p.length>6)break;
+  }
+  return p.join('/')+'|'+(el.getAttribute('data-format')||'')+'|'+(el.className||'');
+}
+
+function _counterFormat(v,fmt,el){
+  var r=Math.round(v);
+  function fmtCompact(x){
+    var abs=Math.abs(x);
+    if(abs>=1e6)return (x/1e6).toFixed(abs>=1e7?0:1).replace('.',',').replace(/,0$/,'')+' M €';
+    if(abs>=1e3)return Math.round(x/1e3)+' k €';
+    return x+' €';
+  }
+  if(fmt==='eur-compact'||(fmt==='eur'&&el&&el.closest&&el.closest('.kpi-card')&&window.innerWidth<=480))return fmtCompact(r);
+  if(fmt==='eur'){
+    try{if(typeof window.fmt==='function')return window.fmt(r);}catch(e){}
+    return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €';
+  }
+  return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ');
+}
+
+function _escChar(c){return c===' '?'\u00a0':(c==='<'?'&lt;':(c==='>'?'&gt;':(c==='&'?'&amp;':c)));}
+
+// Morphing digit-par-digit (slide vertical, style iOS Clock)
+function _renderMorph(el,oldStr,newStr){
+  var maxLen=Math.max(oldStr.length,newStr.length);
+  var oldPad=new Array(maxLen-oldStr.length+1).join(' ')+oldStr;
+  var newPad=new Array(maxLen-newStr.length+1).join(' ')+newStr;
+  var out='';
+  var changedCount=0;
+  for(var i=0;i<maxLen;i++){
+    var o=oldPad.charAt(i),n=newPad.charAt(i);
+    if(o===n){
+      out+='<span class="cnt-chr">'+_escChar(n)+'</span>';
+    } else {
+      var dir=(parseInt(n,10)||0)>=(parseInt(o,10)||0)?'up':'down';
+      var dl=Math.min(changedCount*30,300);
+      out+='<span class="cnt-chr cnt-morph cnt-'+dir+'" style="animation-delay:'+dl+'ms"><span class="cnt-old">'+_escChar(o)+'</span><span class="cnt-new">'+_escChar(n)+'</span></span>';
+      changedCount++;
+    }
+  }
+  el.innerHTML=out;
+}
+
 function animateCounters(root){
   var els=(root||document).querySelectorAll('.counter-anim');
+  var reducedMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
   els.forEach(function(el){
     if(el._animated)return;
-    // Skip counters inside CA hero cards — they animate via animateCACards()
     if(el.closest&&el.closest('.ca-hero-card:not(.ca-animated)'))return;
     el._animated=true;
     var target=parseFloat(el.getAttribute('data-target'))||0;
     var fmt=el.getAttribute('data-format')||'num';
+    var key=_counterKey(el);
+    var prev=_counterValues[key];
+    var newStr=_counterFormat(target,fmt,el);
+    // Mode MORPH : valeur connue précédente ET différente → slide digits
+    if(prev!==undefined&&prev!==target&&!reducedMotion){
+      var oldStr=_counterFormat(prev,fmt,el);
+      _renderMorph(el,oldStr,newStr);
+      _counterValues[key]=target;
+      return;
+    }
+    // Mode premier run → counter incrémental classique
+    _counterValues[key]=target;
     var duration=parseInt(el.getAttribute('data-duration')||'1200',10);
+    if(reducedMotion){el.textContent=newStr;return;}
     var start=performance.now();
-    function ease(t){return 1-Math.pow(1-t,3);} // easeOutCubic
-    function fmtCompact(r){
-      // Format compact FR : 1.2 M €, 395 k €, 980 €
-      var abs=Math.abs(r);
-      if(abs>=1e6)return (r/1e6).toFixed(abs>=1e7?0:1).replace('.',',').replace(/,0$/,'')+' M €';
-      if(abs>=1e3)return Math.round(r/1e3)+' k €';
-      return r+' €';
-    }
-    function format(v){
-      var r=Math.round(v);
-      if(fmt==='eur-compact'||(fmt==='eur'&&el.closest&&el.closest('.kpi-card')&&window.innerWidth<=480))return fmtCompact(r);
-      if(fmt==='eur'){
-        try{return window.fmt?window.fmt(r):(typeof window.fmt!=='undefined'?window.fmt(r):r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €');}catch(e){}
-        return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €';
-      }
-      if(fmt==='int')return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ');
-      return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ');
-    }
+    function ease(t){return 1-Math.pow(1-t,3);}
     function tick(now){
       var p=Math.min(1,(now-start)/duration);
       var v=ease(p)*target;
-      el.textContent=format(v);
+      el.textContent=_counterFormat(v,fmt,el);
       if(p<1)requestAnimationFrame(tick);
-      else el.textContent=format(target);
+      else el.textContent=newStr;
     }
     requestAnimationFrame(tick);
   });
@@ -1259,6 +1310,61 @@ function initNextStepsSwipe(){
   },true);
 }
 
+// ── 22b. Shared element transition (studio list → détail, iOS-like) ──
+// La card source cloneée en overlay fixed, interpole rect → fullscreen puis fade out.
+function _sharedMorphToDetail(src,done){
+  if(!src||typeof done!=='function'){if(done)done();return;}
+  try{
+    var rect=src.getBoundingClientRect();
+    var cs=getComputedStyle(src);
+    var viewportW=window.innerWidth,viewportH=window.innerHeight;
+    // Clone: snapshot visuel de la card (pas seulement un <div>, pour garder l'intérieur)
+    var clone=src.cloneNode(true);
+    // Wrapper pour positionnement absolu
+    var wrap=document.createElement('div');
+    wrap.className='shared-morph-wrap';
+    wrap.style.cssText='position:fixed;left:'+rect.left+'px;top:'+rect.top+'px;'
+      +'width:'+rect.width+'px;height:'+rect.height+'px;'
+      +'border-radius:'+cs.borderRadius+';background:'+cs.backgroundColor+';'
+      +'box-shadow:'+cs.boxShadow+';overflow:hidden;z-index:9998;pointer-events:none;'
+      +'transition:left .46s cubic-bezier(.22,.8,.22,1),top .46s cubic-bezier(.22,.8,.22,1),'
+      +'width .46s cubic-bezier(.22,.8,.22,1),height .46s cubic-bezier(.22,.8,.22,1),'
+      +'border-radius .46s cubic-bezier(.22,.8,.22,1),box-shadow .46s cubic-bezier(.22,.8,.22,1);';
+    // Masque le contenu du clone et ajoute un fond progressif
+    clone.style.cssText='margin:0;width:'+rect.width+'px;height:'+rect.height+'px;box-shadow:none;transform:none;transition:opacity .3s ease';
+    clone.onclick=null;
+    wrap.appendChild(clone);
+    document.body.appendChild(wrap);
+    // Masque temporairement la card source pour éviter un flash double
+    var prevVis=src.style.visibility;
+    src.style.visibility='hidden';
+    // Haptic léger pour marquer le début
+    try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}
+    // Force reflow puis anime vers fullscreen
+    void wrap.offsetWidth;
+    requestAnimationFrame(function(){
+      wrap.style.left='0px';
+      wrap.style.top='0px';
+      wrap.style.width=viewportW+'px';
+      wrap.style.height=viewportH+'px';
+      wrap.style.borderRadius='0px';
+      wrap.style.boxShadow='none';
+      clone.style.opacity='0';
+    });
+    // Navigue (render) juste avant la fin de la morph pour que la nouvelle page soit prête
+    setTimeout(function(){done();},320);
+    // Fade out l'overlay après nav — laisse apparaître la page détail
+    setTimeout(function(){
+      wrap.style.transition='opacity .24s ease';
+      wrap.style.opacity='0';
+      if(src)src.style.visibility=prevVis||'';
+      setTimeout(function(){
+        if(wrap.parentNode)wrap.parentNode.removeChild(wrap);
+      },260);
+    },480);
+  }catch(e){console.warn('[sharedMorph]',e);if(src)src.style.visibility='';done();}
+}
+
 // ── 23. Pull-to-refresh (mobile) ──
 // Quand l'utilisateur tire vers le bas depuis le haut de la page, re-sync.
 function initPullToRefresh(){
@@ -1271,7 +1377,15 @@ function initPullToRefresh(){
     if(ind)return ind;
     ind=document.createElement('div');
     ind.id='ptr-indicator';
-    ind.innerHTML='<div class="ptr-icon"></div><span class="ptr-txt">Tirez pour rafraîchir</span>';
+    ind.innerHTML=''
+      +'<div class="ptr-logo-wrap">'
+      +  '<svg class="ptr-logo" viewBox="0 0 60 60" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'
+      +    '<circle cx="30" cy="30" r="22" class="ptr-ring"/>'
+      +    '<circle cx="30" cy="22" r="3.6" fill="currentColor" class="ptr-dot"/>'
+      +    '<path d="M16 36c4-8 10-12 14-12s10 4 14 12" class="ptr-smile"/>'
+      +  '</svg>'
+      +'</div>'
+      +'<span class="ptr-txt">Tirez pour rafraîchir</span>';
     document.body.appendChild(ind);
     return ind;
   }
@@ -1291,16 +1405,29 @@ function initPullToRefresh(){
     var pulled=Math.min(dy*0.5,100);
     i.style.height=pulled+'px';
     i.classList.add('show');
-    // Icon progresse
-    var icon=i.querySelector('.ptr-icon');
+    // Stroke-draw progressif du logo ISSEO
+    var progress=Math.min(1,pulled/THRESHOLD);
+    var ring=i.querySelector('.ptr-ring');
+    var smile=i.querySelector('.ptr-smile');
+    var dot=i.querySelector('.ptr-dot');
+    // Rotation douce de tout le logo proportionnelle au pull (feedback tactile)
+    var logo=i.querySelector('.ptr-logo');
+    if(logo)logo.style.transform='rotate('+(progress*360).toFixed(1)+'deg)';
+    // Ring : ~138 de circonférence (2πr avec r=22)
+    if(ring)ring.style.strokeDashoffset=''+((1-progress)*138).toFixed(1);
+    // Smile : apparaît après 30% du pull
+    if(smile){
+      var smileP=Math.max(0,(progress-.25)/.75);
+      smile.style.strokeDashoffset=''+((1-smileP)*50).toFixed(1);
+    }
+    // Dot : fade-in après 55%
+    if(dot)dot.style.opacity=''+Math.max(0,(progress-.55)/.45).toFixed(2);
     var txt=i.querySelector('.ptr-txt');
     if(pulled>=THRESHOLD){
-      ready=true;
-      if(icon)icon.style.transform='rotate(180deg)';
+      ready=true;i.classList.add('ptr-armed');
       if(txt)txt.textContent='Relâchez pour rafraîchir';
     } else {
-      ready=false;
-      if(icon)icon.style.transform='rotate('+(pulled/THRESHOLD*180)+'deg)';
+      ready=false;i.classList.remove('ptr-armed');
       if(txt)txt.textContent='Tirez pour rafraîchir';
     }
   },{passive:true});
@@ -1310,11 +1437,20 @@ function initPullToRefresh(){
     if(!ind)return;
     if(ready){
       ind.classList.add('ready');
+      ind.classList.remove('ptr-armed');
       ind.style.height='60px';
+      // Reset inline styles pour laisser l'anim "loading" prendre le relais
+      var ring=ind.querySelector('.ptr-ring');
+      var smile=ind.querySelector('.ptr-smile');
+      var dot=ind.querySelector('.ptr-dot');
+      var logo=ind.querySelector('.ptr-logo');
+      if(ring)ring.style.strokeDashoffset='';
+      if(smile)smile.style.strokeDashoffset='';
+      if(dot)dot.style.opacity='';
+      if(logo)logo.style.transform='';
       var txt=ind.querySelector('.ptr-txt');
       if(txt)txt.textContent='Rafraîchissement…';
       try{if(navigator.vibrate)navigator.vibrate(15);}catch(e){}
-      // Re-sync des données via Supabase
       (typeof loadAll==='function'?loadAll():Promise.resolve()).then(function(){
         if(typeof render==='function')render();
         setTimeout(function(){
@@ -1327,7 +1463,7 @@ function initPullToRefresh(){
         ind.style.height='';
       });
     } else {
-      ind.classList.remove('show');
+      ind.classList.remove('show','ptr-armed');
       ind.style.height='';
     }
   },{passive:true});

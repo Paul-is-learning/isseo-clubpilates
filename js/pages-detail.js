@@ -23,7 +23,7 @@ function renderCard(id,s){
   var _ringColor=_pctWf>=100?'#1D9E75':_pctWf>=50?'#1a3a6b':'#FBBF24';
   var _ringHtml=(typeof progressRingSVG==='function')?progressRingSVG(_pctWf,56,_ringColor):progBar(s.steps,id);
 
-  return '<div class="card" onclick="openDetail(\''+id+'\')">'+
+  return '<div class="card" data-studio-id="'+id+'" onclick="openDetail(\''+id+'\',event)">'+
     '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;gap:10px">'+
       '<div style="flex:1;min-width:0"><div style="font-weight:600;font-size:14px">'+s.name+'</div><div style="font-size:12px;color:#888;margin-top:2px">'+s.societe+'</div></div>'+
       '<div style="display:flex;flex-direction:column;align-items:flex-end;gap:4px">'+badge(s.statut)+'<span style="background:#f0f4ff;color:#1a3a6b;font-size:9px;font-weight:600;padding:2px 6px;border-radius:8px">C'+(s.cohorte||1)+'</span></div>'+

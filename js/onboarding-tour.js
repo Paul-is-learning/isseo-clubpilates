@@ -52,7 +52,7 @@
         +'<div class="dmo-dash">'
         +  '<div class="dmo-dash-row">'
         +    '<div class="dmo-kpi" style="--c:#047857"><div class="dmo-kpi-lbl">CA réseau</div><div class="dmo-kpi-val" data-target="2840000" data-prefix="" data-suffix=" €">0 €</div><div class="dmo-kpi-spark"><svg viewBox="0 0 80 24"><polyline points="0,18 12,14 24,16 36,10 48,12 60,6 72,8 80,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="dmo-kpi-spark-line"/></svg></div></div>'
-        +    '<div class="dmo-kpi" style="--c:#2563eb"><div class="dmo-kpi-lbl">Studios</div><div class="dmo-kpi-val" data-target="24" data-suffix="">0</div><div class="dmo-kpi-spark"><svg viewBox="0 0 80 24"><polyline points="0,20 16,18 32,14 48,10 64,8 80,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="dmo-kpi-spark-line"/></svg></div></div>'
+        +    '<div class="dmo-kpi" style="--c:#2563eb"><div class="dmo-kpi-lbl">Studios</div><div class="dmo-kpi-val" data-target="15" data-suffix="">0</div><div class="dmo-kpi-spark"><svg viewBox="0 0 80 24"><polyline points="0,20 16,18 32,14 48,10 64,8 80,4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="dmo-kpi-spark-line"/></svg></div></div>'
         +  '</div>'
         +  '<div class="dmo-dash-row">'
         +    '<div class="dmo-kpi" style="--c:#b45309"><div class="dmo-kpi-lbl">Adhérents A1</div><div class="dmo-kpi-val" data-target="8640" data-suffix="">0</div><div class="dmo-kpi-spark"><svg viewBox="0 0 80 24"><polyline points="0,20 12,16 24,18 36,12 48,14 60,8 72,10 80,6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" class="dmo-kpi-spark-line"/></svg></div></div>'
@@ -61,21 +61,34 @@
         +'</div>';
     },
     map:function(){
-      // Mini-carte France — silhouette simplifiée (Brest→Dunkerque→Strasbourg→Menton→Biarritz→Brest)
-      // Coords normalisées 0-100 calées sur villes réelles
-      var pins=[{x:47,y:22,l:'Paris'},{x:49,y:21,l:'Garches'},{x:58,y:74,l:'Lattes'},{x:44,y:22,l:'Maurepas'},{x:36,y:38,l:'Angers'},{x:65,y:58,l:'Lyon'},{x:85,y:80,l:'Nice'},{x:28,y:38,l:'Nantes'},{x:58,y:20,l:'Reims'},{x:35,y:78,l:'Bordeaux'}];
+      // Carte France métropolitaine (path topographique simplifié) + Corse
+      // Coords normalisées 0-100 calées sur lat/lon réelles
+      var highlights=[
+        {x:54,y:27,l:'Paris',ly:'top'},
+        {x:45,y:81,l:'Toulouse',ly:'bottom'},
+        {x:62,y:81,l:'Montpellier',ly:'bottom'}
+      ];
       var h='<div class="dmo-map"><svg viewBox="0 0 100 100" class="dmo-map-svg" preserveAspectRatio="xMidYMid meet">';
-      // Silhouette France (hexagone stylisé respectant les extrémités géographiques)
-      h+='<path class="dmo-map-outline" d="M18 26 L22 18 L30 13 L42 10 L52 11 L62 15 L70 14 L82 18 L88 24 L90 32 L88 42 L92 50 L88 60 L84 70 L80 76 L76 82 L68 88 L58 90 L48 92 L38 90 L28 84 L22 76 L18 66 L14 56 L12 46 L14 36 Z M80 18 L84 14 L88 16 L84 20 Z" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>';
+      // Halo général (soft glow sous la silhouette)
+      h+='<defs><radialGradient id="dmoFrFill" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="currentColor" stop-opacity=".08"/><stop offset="100%" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>';
+      // Silhouette France métropolitaine — contour topographique simplifié
+      var frPath='M 52 4 L 58 6 L 62 9 L 68 10 L 72 13 L 76 13 L 82 16 L 87 22 L 86 30 L 84 38 L 82 46 L 80 54 L 80 60 L 84 66 L 88 72 L 84 78 L 78 82 L 68 84 L 60 82 L 55 87 L 48 88 L 40 83 L 32 81 L 26 76 L 24 70 L 22 60 L 22 50 L 18 46 L 10 40 L 8 33 L 14 30 L 20 26 L 26 18 L 32 14 L 40 11 L 46 8 L 52 4 Z';
+      h+='<path class="dmo-map-fill" d="'+frPath+'" fill="url(#dmoFrFill)" stroke="none"/>';
+      h+='<path class="dmo-map-outline" d="'+frPath+'" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>';
       // Corse
-      h+='<path class="dmo-map-outline" d="M92 76 L96 78 L95 86 L90 84 Z" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round" style="animation-delay:.4s"/>';
-      pins.forEach(function(p,i){
-        h+='<g class="dmo-pin" style="--dl:'+(i*0.08+0.4)+'s" transform="translate('+p.x+' '+p.y+')">';
-        h+=  '<circle r="1.8" fill="currentColor" class="dmo-pin-dot"/>';
-        h+=  '<circle r="3.2" fill="none" stroke="currentColor" stroke-width="0.8" class="dmo-pin-ring" opacity=".5"/>';
+      h+='<path class="dmo-map-outline dmo-map-corse" d="M 88 74 L 92 76 L 91 84 L 86 82 Z" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>';
+      // Highlights villes (pin gros + halo + label)
+      highlights.forEach(function(p,i){
+        var labelY=p.ly==='top'?p.y-5.5:p.y+6;
+        var labelAnchor='middle';
+        h+='<g class="dmo-hl" style="--dl:'+(i*0.15+0.7)+'s" transform="translate('+p.x+' '+p.y+')">';
+        h+=  '<circle r="5.5" class="dmo-hl-halo"/>';
+        h+=  '<circle r="3.5" class="dmo-hl-pulse"/>';
+        h+=  '<circle r="2.2" class="dmo-hl-dot"/>';
         h+='</g>';
+        h+='<text class="dmo-hl-label" x="'+p.x+'" y="'+labelY+'" text-anchor="'+labelAnchor+'" style="--dl:'+(i*0.15+1.05)+'s">'+p.l+'</text>';
       });
-      h+='</svg><div class="dmo-map-badge"><span data-target="'+pins.length+'">0</span> studios · <span data-target="14">0</span> en chantier</div></div>';
+      h+='</svg><div class="dmo-map-badge"><span data-target="15">0</span> studios · objectif</div></div>';
       return h;
     },
     newform:function(){
@@ -337,8 +350,18 @@
       // ── Map France ──
       +'.dmo-map{width:100%;height:200px;position:relative;color:var(--onb-tint,#1a3a6b)}'
       +'.dmo-map-svg{width:100%;height:100%}'
-      +'.dmo-map-outline{opacity:0;animation:dmoMapOutline 1.2s cubic-bezier(.2,.8,.2,1) .1s forwards;stroke-dasharray:280;stroke-dashoffset:280}'
-      +'@keyframes dmoMapOutline{to{opacity:.5;stroke-dashoffset:0}}'
+      +'.dmo-map-outline{opacity:0;animation:dmoMapOutline 1.4s cubic-bezier(.2,.8,.2,1) .1s forwards;stroke-dasharray:360;stroke-dashoffset:360}'
+      +'.dmo-map-corse{animation-delay:.9s;stroke-dasharray:40;stroke-dashoffset:40}'
+      +'.dmo-map-fill{opacity:0;animation:dmoFade .8s cubic-bezier(.2,.8,.2,1) 1.1s forwards}'
+      +'@keyframes dmoMapOutline{to{opacity:.75;stroke-dashoffset:0}}'
+      // Highlights villes (pin gros + halo pulsant + label)
+      +'.dmo-hl{opacity:0;animation:dmoPinIn .55s cubic-bezier(.34,1.6,.52,1) var(--dl,0s) forwards}'
+      +'.dmo-hl-dot{fill:var(--onb-tint,#0891b2);stroke:#fff;stroke-width:.6}'
+      +'.dmo-hl-pulse{fill:var(--onb-tint,#0891b2);opacity:.35;transform-origin:center;transform-box:fill-box;animation:dmoHlPulse 2s ease-out infinite;animation-delay:var(--dl,0s)}'
+      +'.dmo-hl-halo{fill:var(--onb-tint,#0891b2);opacity:.15}'
+      +'@keyframes dmoHlPulse{0%{transform:scale(.6);opacity:.5}100%{transform:scale(2.2);opacity:0}}'
+      +'.dmo-hl-label{font:700 3.2px/1 -apple-system,system-ui,Inter,sans-serif;fill:#0f1f3d;letter-spacing:.15px;opacity:0;animation:dmoFade .5s cubic-bezier(.2,.8,.2,1) var(--dl,0s) forwards;paint-order:stroke;stroke:#fff;stroke-width:.7px;stroke-linejoin:round}'
+      +'body.dark .dmo-hl-label{fill:#f0f6fc;stroke:#151b28}'
       +'.dmo-pin{opacity:0;transform-origin:center;animation:dmoPinIn .55s cubic-bezier(.34,1.6,.52,1) var(--dl,0s) forwards}'
       +'.dmo-pin-ring{animation:dmoPinRing 2.2s ease-in-out infinite;animation-delay:var(--dl,0s);transform-origin:center;transform-box:fill-box}'
       +'@keyframes dmoPinIn{0%{opacity:0;transform:scale(0) translateY(-4px)}60%{opacity:1;transform:scale(1.3)}100%{opacity:1;transform:scale(1)}}'

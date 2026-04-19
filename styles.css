@@ -656,8 +656,24 @@ input[type=range].zone-slider::-moz-range-thumb{width:16px;height:16px;border-ra
 @keyframes ringDraw{from{stroke-dashoffset:var(--ring-circumference,157)}to{stroke-dashoffset:var(--ring-offset,0)}}
 .ring-progress{transform:rotate(-90deg);transform-origin:center}
 .ring-progress .ring-fg{stroke-dasharray:var(--ring-circumference,157);stroke-dashoffset:var(--ring-circumference,157);animation:ringDraw 1.1s cubic-bezier(.2,.8,.2,1) forwards;transition:stroke-dashoffset .6s}
-/* ── Animated counters ── */
+/* ── Animated counters + Liquid digit morphing (iOS-like) ── */
 .counter-anim{display:inline-block}
+.counter-anim .cnt-chr{display:inline-block;position:relative;vertical-align:baseline;line-height:1em;font-variant-numeric:tabular-nums}
+.counter-anim .cnt-morph{height:1em;overflow:hidden;vertical-align:baseline}
+.counter-anim .cnt-morph .cnt-old,.counter-anim .cnt-morph .cnt-new{display:block;line-height:1em;will-change:transform,opacity,filter}
+.counter-anim .cnt-morph .cnt-old{animation:cntOldUp .55s cubic-bezier(.34,1.3,.52,1) forwards;animation-delay:inherit}
+.counter-anim .cnt-morph .cnt-new{position:absolute;left:0;top:0;transform:translateY(100%);opacity:0;animation:cntNewIn .55s cubic-bezier(.34,1.3,.52,1) forwards;animation-delay:inherit}
+.counter-anim .cnt-morph.cnt-down .cnt-old{animation-name:cntOldDown}
+.counter-anim .cnt-morph.cnt-down .cnt-new{transform:translateY(-100%);animation-name:cntNewInDown}
+@keyframes cntOldUp{0%{transform:translateY(0);opacity:1;filter:blur(0)}60%{opacity:.4;filter:blur(1.5px)}100%{transform:translateY(-100%);opacity:0;filter:blur(2px)}}
+@keyframes cntNewIn{0%{transform:translateY(100%);opacity:0;filter:blur(2px)}55%{opacity:.95;filter:blur(0)}100%{transform:translateY(0);opacity:1;filter:blur(0)}}
+@keyframes cntOldDown{0%{transform:translateY(0);opacity:1;filter:blur(0)}60%{opacity:.4;filter:blur(1.5px)}100%{transform:translateY(100%);opacity:0;filter:blur(2px)}}
+@keyframes cntNewInDown{0%{transform:translateY(-100%);opacity:0;filter:blur(2px)}55%{opacity:.95;filter:blur(0)}100%{transform:translateY(0);opacity:1;filter:blur(0)}}
+@media (prefers-reduced-motion:reduce){
+  .counter-anim .cnt-morph .cnt-old,.counter-anim .cnt-morph .cnt-new{animation:none!important}
+  .counter-anim .cnt-morph .cnt-old{display:none}
+  .counter-anim .cnt-morph .cnt-new{position:static;transform:none;opacity:1;filter:none}
+}
 /* ── Confetti canvas ── */
 #confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:99999}
 
@@ -2946,13 +2962,27 @@ body.dark .modal-foot-u{border-top-color:#30363d}
 /* ═══════════════════════════════════════════════════════════════════════════
  * Pull-to-refresh indicator
  * ═══════════════════════════════════════════════════════════════════════════ */
-#ptr-indicator{position:fixed;top:0;left:0;right:0;height:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:700;overflow:hidden;transition:height .15s ease;background:linear-gradient(180deg,rgba(26,58,107,.08),transparent)}
+#ptr-indicator{position:fixed;top:0;left:0;right:0;height:0;display:flex;align-items:center;justify-content:center;pointer-events:none;z-index:700;overflow:hidden;transition:height .22s cubic-bezier(.2,.8,.2,1);background:linear-gradient(180deg,rgba(26,58,107,.08),transparent);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)}
 #ptr-indicator.show{height:60px}
-#ptr-indicator .ptr-icon{width:24px;height:24px;border:2px solid #1a3a6b;border-top-color:transparent;border-radius:50%;transition:transform .2s ease}
-#ptr-indicator.ready .ptr-icon{animation:spin .7s linear infinite}
-#ptr-indicator .ptr-txt{margin-left:10px;font-size:12px;font-weight:600;color:#1a3a6b}
+#ptr-indicator .ptr-logo-wrap{display:flex;align-items:center;justify-content:center;width:36px;height:36px;color:#1a3a6b}
+body.dark #ptr-indicator .ptr-logo-wrap{color:#79b8ff}
+#ptr-indicator .ptr-logo{width:34px;height:34px;transition:transform .12s linear;filter:drop-shadow(0 2px 6px rgba(26,58,107,.25))}
+#ptr-indicator .ptr-ring{stroke-dasharray:138;stroke-dashoffset:138;transition:stroke-dashoffset .12s linear}
+#ptr-indicator .ptr-smile{stroke-dasharray:50;stroke-dashoffset:50;transition:stroke-dashoffset .12s linear}
+#ptr-indicator .ptr-dot{opacity:0;transform-box:fill-box;transform-origin:center;transition:opacity .15s ease}
+#ptr-indicator.ptr-armed .ptr-logo{transform:scale(1.08) !important;animation:ptrPulse 1.2s ease-in-out infinite}
+@keyframes ptrPulse{0%,100%{filter:drop-shadow(0 2px 6px rgba(26,58,107,.25))}50%{filter:drop-shadow(0 4px 14px rgba(26,58,107,.55))}}
+#ptr-indicator.ready .ptr-logo{animation:ptrSpin .9s cubic-bezier(.4,.1,.3,1) infinite}
+#ptr-indicator.ready .ptr-ring,#ptr-indicator.ready .ptr-smile{stroke-dashoffset:0}
+#ptr-indicator.ready .ptr-dot{opacity:1}
+@keyframes ptrSpin{to{transform:rotate(360deg)}}
+#ptr-indicator .ptr-txt{margin-left:10px;font-size:12px;font-weight:600;color:#1a3a6b;letter-spacing:.15px}
+body.dark #ptr-indicator .ptr-txt{color:#79b8ff}
 @media (display-mode: standalone){
   #ptr-indicator{top:env(safe-area-inset-top,0)}
+}
+@media (prefers-reduced-motion:reduce){
+  #ptr-indicator .ptr-logo,#ptr-indicator.ready .ptr-logo,#ptr-indicator.ptr-armed .ptr-logo{animation:none!important;transition:none!important}
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
