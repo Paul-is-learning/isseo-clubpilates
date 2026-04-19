@@ -126,15 +126,93 @@
       {selector:'.bp-subtab, .bp-tabs',title:'Vues multiples',text:'Synthèse, détail par studio, comparaison cohortes, trajectoire 36 mois. Naviguez à votre rythme.',placement:'bottom'}
     ],
     engagements:[
-      {selector:'.engagements-hero, [class*="engage"]',title:'Récap engagements',text:'Compromis, permis, travaux, formations, ouvertures — tous les jalons de tous les studios, au même endroit.',placement:'bottom'},
-      {selector:'.task-row[data-task-id], .engagement-row',title:'Swipe pour valider',text:'Sur mobile, swipez une étape vers la gauche pour la marquer faite. Haptic feedback pour confirmer.',placement:'bottom'}
+      {selector:'[onclick*="toggleEngSection"]',all:true,title:'Trois volets financiers',text:'Récap\u2019 engagements (CAPEX engagés), Fonds propres (apports actionnaires), Comptes courants (prêts intra-groupe). Trois lectures complémentaires du financement.',placement:'bottom'},
+      {selector:'.recap-dep-picker, [class*="recap-dep"]',title:'Saisir sans naviguer',text:'Choisissez un studio dans cette barre : vous entrez ses dépenses CAPEX et leasing directement ici, sans ouvrir chaque fiche.',placement:'bottom'},
+      {selector:'.recap-dep-chip',title:'Chips studios',text:'Un chip par studio : statut et nombre de dépenses déjà saisies visibles en un coup d\u2019œil. Cliquez pour rentrer dans la saisie.',placement:'auto'},
+      {selector:'[onclick*="toggleEngView"]',all:true,title:'Par société ou actionnaire',text:'Voir le total engagé par entité juridique (P&W Occitanie, COBE Society…) ou par personne physique. Bascule instantanée.',placement:'bottom'},
+      {selector:'[style*="linear-gradient(135deg,#92630a"], [style*="linear-gradient(135deg, #92630a"]',title:'Synthèse des engagements',text:'Le bloc or au cœur de la page : total engagé, déjà débloqué, en attente. Barre de progression par entité pour comparer rapidement.',placement:'auto'},
+      {selector:'[onclick*="toggleEngExpand"]',title:'Détail par entité',text:'Cliquez sur une ligne société/actionnaire pour voir la répartition studio par studio et le détail des dépenses.',placement:'auto'},
+      {selector:'[onclick*="openDetail"][onclick*="engagements"]',title:'Drill-down studio',text:'Depuis chaque ligne, un clic ouvre le studio concerné directement sur son onglet Engagements pour creuser.',placement:'auto'}
     ],
     fichiers:[
-      {selector:'.folder-grid, .folder-card',title:'Fichiers par studio',text:'Chaque studio a son dossier Google Drive synchronisé. Plans, photos, contrats — tout centralisé.',placement:'bottom'}
+      {selector:'.folder-grid',title:'Vos studios en grille',text:'Une carte par studio. Le badge "✓ Drive" signale les studios déjà reliés à un dossier Google Drive partagé.',placement:'bottom'},
+      {selector:'.drive-setup-prompt',title:'Connecter un dossier Drive',text:'Pour chaque studio : collez le lien d\u2019un dossier Google Drive partagé (dossier racine du studio). L\u2019app s\u2019y connecte ensuite via l\u2019API Drive.',placement:'auto'},
+      {selector:'.gdrive-signin, [class*="signin"]',title:'Connexion Google personnelle',text:'Première utilisation : connectez-vous avec votre compte Gmail (OAuth Google officiel). Vos permissions Drive sont respectées — vous ne voyez QUE les dossiers que vous avez le droit de voir.',placement:'auto'},
+      {selector:'.drive-embed-wrap, [data-gdrive-browser]',title:'Navigation in-app',text:'Une fois connecté : navigation, aperçu, téléchargement, upload — tout se fait dans l\u2019app, sans ouvrir un onglet Google Drive.',placement:'auto'},
+      {selector:'.folder-card',all:true,title:'Six catégories par studio',text:'Contrats, Juridique, Plans, Marketing, Finance, RH… un clic ouvre le sous-dossier correspondant dans votre Drive.',placement:'auto'},
+      {selector:'.drive-admin-links, [class*="drive-admin"]',title:'Changer ou retirer',text:'Admin : modifier le dossier relié à un studio ou retirer le lien (le dossier Drive reste intact, seul le rattachement est supprimé).',placement:'auto'}
     ],
     'how-it-works':[
       {selector:'.how-hero',title:'La visite guidée',text:'Un chapitre par feature, avec animation. Cliquez sur une carte pour voir la démo en storyboard.',placement:'bottom'},
       {selector:'.how-card',all:true,title:'6 chapitres',text:'Chaque chapitre dure ~15 secondes. À la fin, un bouton vous emmène directement dans la vraie feature.',placement:'auto'}
+    ],
+
+    // ── Sous-flows par onglet du détail studio ───────────────────────────
+    'detail.workflow':[
+      {selector:'.tabs',title:'Les onglets du studio',text:'9 volets pour piloter ce studio : workflow, adhérents, BP, engagements, chalandise, local, fichiers, messages, IA. Swipe gauche/droite sur mobile.',placement:'bottom'},
+      {selector:'.ring-progress, [class*="ring-"], svg[class*="progress"]',title:'Avancement global',text:'Le pourcentage d\u2019étapes validées. Passe du rouge au vert au fur et à mesure que le studio avance vers l\u2019ouverture.',placement:'auto'},
+      {selector:'[data-step-id], .step-dot, .workflow-step, .task-row[data-studio-id]',title:'Étapes à valider',text:'Chaque jalon à cocher. Sur mobile, swipe gauche pour valider en un geste (avec vibration).',placement:'auto'},
+      {selector:'[id*="infographic"], [class*="infographic"], .kpi-card',title:'KPIs prévisionnels 3 ans',text:'Les chiffres attendus à 12, 24 et 36 mois : CA, EBITDA, adhérents. Synthèse visuelle au-dessus du workflow.',placement:'auto'},
+      {selector:'button[onclick*="Export"], [onclick*="export"], [onclick*="generateReport"]',title:'Export rapide',text:'PDF complet, synthèse financière, BP détaillé, adhérents… en un clic, au format qui vous convient.',placement:'auto'}
+    ],
+    'detail.adherents':[
+      {selector:'.tabs .tab.active',title:'Onglet Adhérents',text:'Ici vous saisissez vos projections : adhérents fin année 1, 2, 3. Le cœur de votre Business Plan.',placement:'bottom'},
+      {selector:'input[type="number"], input[type="range"], .adh-input',title:'Inputs didactiques',text:'Modifiez les adhérents attendus. CA, pack mix et ARPU se recalculent automatiquement sous vos yeux.',placement:'auto'},
+      {selector:'.kpi-card, [class*="hero"], [class*="gauge"]',title:'Conversion visuelle',text:'Vos chiffres deviennent des jauges et KPIs qui parlent : on voit tout de suite si le studio tient la route.',placement:'auto'},
+      {selector:'svg[class*="chart"], svg[class*="curve"], [class*="evolution"]',title:'Courbe de montée en puissance',text:'L\u2019évolution mois par mois du nombre d\u2019adhérents. Utile pour voir si la trajectoire est réaliste.',placement:'auto'},
+      {selector:'[onclick*="setAdherentYear"], .year-selector, .year-btn',title:'Bascule entre années',text:'Passez rapidement de l\u2019année 1 à l\u2019année 2 ou 3 pour comparer les projections.',placement:'auto'}
+    ],
+    'detail.forecast':[
+      {selector:'.tabs .tab.active',title:'Business Plan 36 mois',text:'Le BP complet de ce studio, dérivé automatiquement des adhérents que vous avez saisis dans l\u2019onglet précédent.',placement:'bottom'},
+      {selector:'.bp-hero-card, .ca-hero-card, .hero-card, [class*="bp-year"]',all:true,title:'3 années en hero cards',text:'Les trois années de votre projection : CA, EBITDA, résultat net. Cliquez pour voir le détail mois par mois.',placement:'auto'},
+      {selector:'.bp-subtab, [class*="subtab"]',title:'Sections du BP',text:'Exploitation, charges, investissement, financement, cash net… explorez chaque volet du plan financier.',placement:'auto'},
+      {selector:'svg[id*="Grad"], .dmo-chart, [class*="chart"]',title:'Courbes dynamiques',text:'La trajectoire CA et EBITDA visualisée. Le point haut à droite, c\u2019est votre objectif.',placement:'auto'},
+      {selector:'.bp-detail-table, [class*="detail-month"], [class*="mois"]',title:'Détail mois par mois',text:'Chaque mois est modifiable. Injectez vos chiffres réels dès qu\u2019ils arrivent, le BP se recalcule.',placement:'auto'},
+      {selector:'.bp-months-toggle',title:'Détail mensuel (mobile)',text:'Sur mobile, ce bouton déplie la vue mois par mois. Masqué par défaut pour gagner de l\u2019espace.',placement:'auto'}
+    ],
+    'detail.engagements':[
+      {selector:'.tabs .tab.active',title:'Engagements du studio',text:'Toutes les dépenses engagées ou à engager : loyer, fonds, travaux, franchise, équipements. Le vrai CAPEX réel.',placement:'bottom'},
+      {selector:'[class*="engagement-header"], [class*="engage-hero"], .kpi-card',title:'Synthèse en en-tête',text:'Total engagé, total débloqué, reste à payer. Le pouls financier du projet, en haut de page.',placement:'auto'},
+      {selector:'[class*="progress-bar"], [class*="stacked"]',title:'Barre de progression',text:'Répartition visuelle débloqué / en attente / restant à dépenser. Idéal pour les points banque.',placement:'auto'},
+      {selector:'.accordion-item, [class*="accordion"], [class*="engagement-card"], .card',title:'Détail par poste',text:'Chaque ligne (loyer, travaux, équipements…) est dépliable. Ajoutez ou modifiez les montants à tout moment.',placement:'auto'}
+    ],
+    'detail.echanges':[
+      {selector:'.tabs .tab.active',title:'Messages & Tâches',text:'L\u2019espace collaboratif de ce studio : discussions d\u2019équipe et tâches à coordonner, centralisés.',placement:'bottom'},
+      {selector:'.echanges-grid, [class*="echanges"]',title:'Deux flux en parallèle',text:'À gauche les discussions, à droite les tâches. Chaque flux se filtre et se notifie indépendamment.',placement:'auto'},
+      {selector:'.task-row[data-task-id], .kanban-card, [class*="task-row"]',title:'Tâches actives',text:'Swipe pour valider (mobile), long-press pour plus d\u2019options. Chaque tâche notifie automatiquement l\u2019assigné.',placement:'auto'},
+      {selector:'.kanban-board, [class*="kanban"]',title:'Vue Kanban',text:'Basculez en vue Kanban pour voir vos tâches ventilées par statut (à faire, en cours, bloqué, fait).',placement:'auto'},
+      {selector:'[class*="topic"], [class*="discussion"]',title:'Discussions ouvertes',text:'Chaque sujet a son fil de messages. Clôturez-le quand le sujet est tranché, il sort du radar principal.',placement:'auto'},
+      {selector:'.tasks-add-btn, [onclick*="ouvrirFormTache"], button[class*="add"]',title:'Nouvelle tâche',text:'Créez une tâche dans ce studio en un clic. Assigner, deadline, priorité, tags — tout en une modal.',placement:'auto'}
+    ],
+    'detail.localisation':[
+      {selector:'.tabs .tab.active',title:'Zone de chalandise',text:'L\u2019étude locale complète : population, transports, trafic, socio-démographie autour du studio.',placement:'bottom'},
+      {selector:'#leaflet-map, [id*="map"], .leaflet-container',title:'Carte interactive',text:'Zoom, déplacement, cercles de chalandise, marqueurs transports. Cliquez sur un pin pour plus d\u2019infos.',placement:'auto'},
+      {selector:'input[type="range"], .zone-slider, [class*="slider"]',title:'Rayon ajustable',text:'Le troisième cercle (vert/bleu/violet) est modulable : testez 1,5 km, 2 km, 3 km selon la densité locale.',placement:'auto'},
+      {selector:'.kpi-card, [class*="loc-section"], [class*="demo"]',title:'Profil socio-démo',text:'Revenu médian, CSP+, âge moyen, densité. Les ingrédients d\u2019une ouverture réussie.',placement:'auto'},
+      {selector:'[class*="transport"], [class*="trafic"], [class*="tmja"]',title:'Transports & trafic',text:'Arrêts bus/métro/tram à proximité, trafic routier journalier (TMJA). Un studio bien connecté vend mieux.',placement:'auto'}
+    ],
+    'detail.local':[
+      {selector:'.tabs .tab.active',title:'Le local physique',text:'Surface, agencement, coûts récurrents. Tout ce qui touche au local lui-même.',placement:'bottom'},
+      {selector:'.local-plan-wrap, [class*="local-plan"]',title:'Plan du local',text:'Schéma zoné du studio : studio principal, vestiaires, accueil, réserve. Annoté selon votre besoin.',placement:'auto'},
+      {selector:'.local-plan-legend, [class*="legend"]',title:'Légende des zones',text:'Chaque couleur = une destination. Visuel intuitif pour valider l\u2019agencement avec votre architecte.',placement:'auto'},
+      {selector:'input[type="number"], [class*="loyer"], [class*="charge"]',title:'Loyer & charges',text:'Coûts mensuels du local : loyer, charges, taxes. Impactent directement le BP (exploitation mensuelle).',placement:'auto'},
+      {selector:'.local-plan-stats, [class*="surface"]',title:'Surface & postes',text:'Nombre de reformers, hauteur sous plafond, surface utile. Les invariants techniques de la franchise.',placement:'auto'}
+    ],
+    'detail.fichiers':[
+      {selector:'.tabs .tab.active',title:'Fichiers du studio',text:'Tous les documents de ce studio, dans un dossier Google Drive dédié. L\u2019app fait le pont avec votre Drive personnel.',placement:'bottom'},
+      {selector:'.drive-setup-prompt',title:'1. Lier un dossier Drive',text:'Première étape : collez l\u2019URL d\u2019un dossier Drive partagé (le dossier racine de ce studio). Un admin configure ça une fois par studio.',placement:'auto'},
+      {selector:'.gdrive-signin, [class*="signin"]',title:'2. Connexion à votre Gmail',text:'Cliquez sur "Se connecter à Google Drive" : une popup Google s\u2019ouvre, vous autorisez avec votre compte Gmail perso. C\u2019est du OAuth officiel, vos identifiants ne passent JAMAIS par l\u2019app.',placement:'auto'},
+      {selector:'.drive-embed-wrap, [data-gdrive-browser]',title:'3. Navigation in-app',text:'Le contenu du dossier s\u2019affiche ici : arborescence, aperçu, téléchargement, upload (drag & drop). Vous restez dans l\u2019app.',placement:'auto'},
+      {selector:'.folder-grid, .folder-card',all:true,title:'Catégories type',text:'Six sous-dossiers pré-pensés : Contrats, Juridique, Plans, Marketing, Finance, RH. Créés automatiquement si absents.',placement:'auto'},
+      {selector:'.fh-file-row, [class*="file-row"], [class*="drive-file"]',title:'Actions sur un fichier',text:'Aperçu in-app, copier le lien Drive, ouvrir dans un nouvel onglet, télécharger, supprimer. Toutes les actions courantes.',placement:'auto'},
+      {selector:'.file-drop-zone, [class*="drop-zone"]',title:'Upload rapide',text:'Glissez-déposez un fichier ici (ou cliquez pour parcourir) : il part directement dans le bon dossier Drive du studio.',placement:'auto'},
+      {selector:'.drive-admin-links, [class*="drive-admin"]',title:'Gestion du lien Drive',text:'Admin : changer le dossier Drive lié ou retirer le lien. Retirer ne supprime PAS le dossier Google, juste le rattachement app.',placement:'auto'}
+    ],
+    'detail.ia':[
+      {selector:'.tabs .tab.active',title:'Assistant IA',text:'Posez des questions sur ce studio en langage naturel. L\u2019IA répond en s\u2019appuyant sur toutes vos données.',placement:'bottom'},
+      {selector:'#prompt-input, textarea',title:'Votre question',text:'Ex : "Fais-moi une synthèse du BP", "Quels sont les risques ?", "Compare ce studio à la moyenne du réseau".',placement:'auto'},
+      {selector:'.generate-btn, button[onclick*="ask"], button[onclick*="generate"]',title:'Générer la réponse',text:'Cliquez pour lancer. L\u2019IA a accès aux adhérents, BP, engagements, chalandise, historique — réponse contextuelle.',placement:'auto'},
+      {selector:'.ai-response-box, [class*="ai-resp"], [class*="response"]',title:'La réponse',text:'Structurée, sourcée, actionnable. Copiez-la dans un email, un rapport, ou demandez un affinage.',placement:'auto'}
     ]
   };
 
@@ -145,7 +223,13 @@
 
   function _getCurrentFlowKey(){
     if(typeof S==='undefined')return null;
-    if(S.view==='detail')return 'detail';
+    if(S.view==='detail'){
+      // Flow spécifique par onglet du studio, fallback sur 'detail' général
+      var sub=S.detailTab||'workflow';
+      var specific='detail.'+sub;
+      if(FLOWS[specific])return specific;
+      return 'detail';
+    }
     return S.page||'accueil';
   }
 
@@ -337,7 +421,14 @@
 
   function _flowLabel(){
     var key=_getCurrentFlowKey();
-    var labels={accueil:'Accueil',projets:'Studios',detail:'Détail studio',collab:'Collab',prospection:'Prospection',bp:'BP consolidé',engagements:'Engagements',fichiers:'Fichiers','how-it-works':'Comment ça marche'};
+    var labels={
+      accueil:'Accueil',projets:'Studios',detail:'Détail studio',
+      collab:'Collab',prospection:'Prospection',bp:'BP consolidé',
+      engagements:'Engagements',fichiers:'Fichiers','how-it-works':'Comment ça marche',
+      'detail.workflow':'Workflow','detail.adherents':'Adhérents','detail.forecast':'Business Plan',
+      'detail.engagements':'Engagements','detail.echanges':'Messages & Tâches',
+      'detail.localisation':'Chalandise','detail.local':'Local','detail.fichiers':'Fichiers','detail.ia':'IA'
+    };
     return labels[key]||'Guide';
   }
 
