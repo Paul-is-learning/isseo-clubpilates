@@ -48,6 +48,7 @@ function render(){
       else if(S.page==='engagements')pageContent=renderPageEngagements();
       else if(S.page==='collab')pageContent=renderCollab();
       else if(S.page==='fichiers')pageContent=renderFichiersPage();
+      else if(S.page==='how-it-works'&&typeof renderHowItWorks==='function')pageContent=renderHowItWorks();
       else pageContent=renderAccueil();
       // Classe "page-transition" sur .main-content → déclenche l'anim slide-in (mobile)
       var _pageChanged=window._lastRenderedPage!==S.page||window._lastRenderedView!==S.view;
