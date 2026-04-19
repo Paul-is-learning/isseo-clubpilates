@@ -1036,13 +1036,30 @@ function initSwipeGestures(){
   if(window._swipeInit)return;
   window._swipeInit=true;
   var startX=0,startY=0,swiping=false,startedInTabs=false;
+  // Détecte si un ancêtre est un conteneur scrollable horizontalement avec du contenu en overflow.
+  // Sert à éviter que le swipe nav global vole le scroll natif d'un tableau, d'une barre d'onglets…
+  function _hasHScrollAncestor(el){
+    while(el&&el.nodeType===1&&el!==document.body){
+      try{
+        var cs=window.getComputedStyle(el);
+        if((cs.overflowX==='auto'||cs.overflowX==='scroll')&&(el.scrollWidth-el.clientWidth)>1)return true;
+      }catch(_){}
+      el=el.parentElement;
+    }
+    return false;
+  }
   document.addEventListener('touchstart',function(e){
     var t=e.touches[0];
     startX=t.clientX;startY=t.clientY;swiping=true;
-    // Si le geste démarre dans la barre d'onglets (ou tout conteneur scrollable horizontal),
-    // on laisse le scroll natif gérer — sinon on bloque la navigation horizontale.
+    // Si le geste démarre dans un scroll horizontal (.tabs, tableau BP, slider) → nav désactivée.
     var tgt=e.target;
-    startedInTabs=!!(tgt&&tgt.closest&&(tgt.closest('.tabs')||tgt.closest('[data-no-swipe-nav]')));
+    startedInTabs=!!(tgt&&tgt.closest&&(
+      tgt.closest('.tabs')||
+      tgt.closest('[data-no-swipe-nav]')||
+      tgt.closest('.bp-detail-wrap')||
+      tgt.closest('.recap-dep-picker')||
+      _hasHScrollAncestor(tgt)
+    ));
   },{passive:true});
   document.addEventListener('touchend',function(e){
     if(!swiping)return;swiping=false;
