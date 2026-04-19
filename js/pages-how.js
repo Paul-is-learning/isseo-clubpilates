@@ -1,533 +1,793 @@
 // ════════════════════════════════════════════════════════════════════════════
-// ── Page "Comment ça marche" — didactique immersive (mobile + web) ──
+// ── Page "Comment ça marche" v2 — 10/10 immersive learning hub ──
 // ════════════════════════════════════════════════════════════════════════════
-// Page d'accueil de découverte : hero immersif + grille bento de 6 chapitres.
-// Chaque chapitre ouvre une modal fullscreen avec un storyboard animé
-// (3 étapes) qui explique la feature + CTA pour la tester dans la vraie app.
-
 (function(){
-  function _ensureHowStyles(){
-    if(document.getElementById('how-styles'))return;
+  'use strict';
+
+  // ── LocalStorage helpers ─────────────────────────────────────────────────
+  function _lsGet(k){try{return JSON.parse(localStorage.getItem(k)||'null');}catch(e){return null;}}
+  function _lsSet(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+
+  var FAV_KEY='isseo_how_favs';
+  var PROG_KEY='isseo_how_prog';
+
+  function _getFavs(){return _lsGet(FAV_KEY)||{};}
+  function _toggleFav(id){var f=_getFavs();f[id]=!f[id];if(!f[id])delete f[id];_lsSet(FAV_KEY,f);}
+  function _isFav(id){return !!_getFavs()[id];}
+  function _getProgress(){return _lsGet(PROG_KEY)||{};}
+  function _markDone(id){var p=_getProgress();p[id]=true;_lsSet(PROG_KEY,p);}
+  function _isDone(id){return !!_getProgress()[id];}
+
+  // ── Styles ───────────────────────────────────────────────────────────────
+  function _ensureStyles(){
+    if(document.getElementById('how2-styles'))return;
     var css=''
-      // ── Hero page ──
-      +'.how-page{max-width:1200px;margin:0 auto;padding:16px 20px 80px;animation:howFade .5s cubic-bezier(.2,.8,.2,1)}'
-      +'@keyframes howFade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}'
-      +'.how-hero{position:relative;padding:64px 28px 48px;border-radius:28px;overflow:hidden;margin-bottom:32px;text-align:center;background:linear-gradient(135deg,#0f1f3d,#1e3a8a);color:#fff;box-shadow:0 24px 60px -18px rgba(10,14,28,.45)}'
-      +'body.dark .how-hero{background:linear-gradient(135deg,#0a1628,#1a2d52)}'
-      +'.how-hero::before{content:"";position:absolute;inset:-30%;background:radial-gradient(closest-side at 30% 20%,rgba(88,166,255,.35),transparent 55%),radial-gradient(closest-side at 75% 80%,rgba(236,72,153,.22),transparent 60%);animation:howHeroOrbit 14s linear infinite;pointer-events:none}'
-      +'@keyframes howHeroOrbit{0%{transform:rotate(0)}100%{transform:rotate(360deg)}}'
-      +'.how-hero-eyebrow{position:relative;font:700 11px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:2.2px;text-transform:uppercase;color:rgba(255,255,255,.65);margin-bottom:14px}'
-      +'.how-hero-title{position:relative;font:700 clamp(30px,5.5vw,52px)/1.08 -apple-system,system-ui,"SF Pro Display",Inter,sans-serif;letter-spacing:-1.2px;margin:0 0 16px;background:linear-gradient(180deg,#fff,#a5c9ff);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;animation:howTitleIn .7s cubic-bezier(.34,1.56,.52,1) .1s both}'
-      +'@keyframes howTitleIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}'
-      +'.how-hero-sub{position:relative;font:400 clamp(15px,1.8vw,18px)/1.5 -apple-system,system-ui,Inter,sans-serif;color:rgba(255,255,255,.78);max-width:620px;margin:0 auto 28px;animation:howTitleIn .7s cubic-bezier(.34,1.56,.52,1) .22s both}'
-      +'.how-hero-cta{position:relative;display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.95);color:#0f1f3d;border:none;padding:13px 22px;border-radius:14px;font:600 14.5px/1 -apple-system,system-ui,Inter,sans-serif;cursor:pointer;box-shadow:0 10px 30px -10px rgba(0,0,0,.5);transition:transform .2s cubic-bezier(.34,1.56,.52,1),box-shadow .2s;animation:howTitleIn .7s cubic-bezier(.34,1.56,.52,1) .35s both}'
-      +'.how-hero-cta:hover{transform:translateY(-2px);box-shadow:0 18px 42px -12px rgba(0,0,0,.55)}'
-      +'.how-hero-cta:active{transform:scale(.97)}'
-      +'.how-hero-cta svg{width:16px;height:16px}'
-      // Floating particles hero
-      +'.how-hero-particle{position:absolute;width:6px;height:6px;border-radius:50%;background:#fff;opacity:.25;pointer-events:none;animation:howParticle 6s ease-in-out infinite}'
-      +'@keyframes howParticle{0%,100%{transform:translateY(0) scale(1);opacity:.15}50%{transform:translateY(-14px) scale(1.25);opacity:.4}}'
-      // ── Grille bento ──
-      +'.how-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:16px}'
-      +'.how-card{position:relative;border-radius:22px;overflow:hidden;background:#fff;border:.5px solid rgba(10,14,28,.08);box-shadow:0 4px 14px -6px rgba(10,14,28,.1);cursor:pointer;transition:transform .35s cubic-bezier(.22,.96,.36,1),box-shadow .35s,border-color .25s;min-height:260px;display:flex;flex-direction:column;padding:22px 20px 20px;opacity:0;animation:howCardIn .55s cubic-bezier(.34,1.56,.52,1) forwards}'
-      +'body.dark .how-card{background:linear-gradient(180deg,#1c2433,#151b28);border-color:rgba(255,255,255,.06)}'
-      +'.how-card:hover{transform:translateY(-6px) scale(1.01);box-shadow:0 22px 48px -18px rgba(10,14,28,.32),0 0 0 1px color-mix(in srgb,var(--ac,#2563eb) 35%,transparent)}'
-      +'.how-card:active{transform:translateY(-2px) scale(.99)}'
-      +'.how-card:nth-child(1){animation-delay:.05s}.how-card:nth-child(2){animation-delay:.12s}.how-card:nth-child(3){animation-delay:.19s}.how-card:nth-child(4){animation-delay:.26s}.how-card:nth-child(5){animation-delay:.33s}.how-card:nth-child(6){animation-delay:.40s}'
-      +'@keyframes howCardIn{from{opacity:0;transform:translateY(20px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}'
-      +'.how-card.sz-2{grid-column:span 2}.how-card.sz-3{grid-column:span 3}.how-card.sz-4{grid-column:span 4}'
-      +'.how-card-tint{position:absolute;inset:-30% -30% auto -30%;height:180px;background:radial-gradient(closest-side,color-mix(in srgb,var(--ac,#2563eb) 25%,transparent),transparent 72%);opacity:.85;pointer-events:none;filter:blur(8px)}'
-      +'.how-card-ico{position:relative;width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#2563eb) 18%,#fff),#fff);color:var(--ac,#2563eb);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 6px 16px -6px color-mix(in srgb,var(--ac,#2563eb) 45%,transparent),inset 0 1px 0 rgba(255,255,255,.85)}'
-      +'body.dark .how-card-ico{background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#2563eb) 30%,#21262d),#21262d);box-shadow:0 6px 16px -6px color-mix(in srgb,var(--ac,#2563eb) 50%,transparent),inset 0 1px 0 rgba(255,255,255,.06)}'
-      +'.how-card-ico svg{width:26px;height:26px}'
-      +'.how-card-eyebrow{position:relative;font:700 10.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:var(--ac,#2563eb);margin-bottom:6px}'
-      +'.how-card-title{position:relative;font:700 20px/1.2 -apple-system,system-ui,"SF Pro Display",Inter,sans-serif;letter-spacing:-.35px;color:#0f1f3d;margin:0 0 8px}'
-      +'body.dark .how-card-title{color:#f0f6fc}'
-      +'.how-card-desc{position:relative;font:400 14px/1.5 -apple-system,system-ui,Inter,sans-serif;color:#4b5563;margin:0 0 auto;max-width:420px}'
-      +'body.dark .how-card-desc{color:#9ba9ba}'
-      +'.how-card-arrow{position:relative;margin-top:16px;display:inline-flex;align-items:center;gap:6px;font:600 13px/1 -apple-system,system-ui,Inter,sans-serif;color:var(--ac,#2563eb);transition:gap .2s}'
-      +'.how-card:hover .how-card-arrow{gap:10px}'
-      +'.how-card-arrow svg{width:14px;height:14px;transition:transform .2s}'
-      +'.how-card:hover .how-card-arrow svg{transform:translateX(3px)}'
-      +'.how-card-duration{position:absolute;top:14px;right:14px;background:rgba(120,120,128,.12);color:#64748b;font:600 10.5px/1 -apple-system,system-ui,Inter,sans-serif;padding:5px 9px;border-radius:10px;letter-spacing:.2px;display:flex;align-items:center;gap:4px}'
-      +'body.dark .how-card-duration{background:rgba(255,255,255,.08);color:#9ba9ba}'
-      +'.how-card-duration svg{width:10px;height:10px}'
-      // ── Modal fullscreen storyboard ──
-      +'.how-modal{position:fixed;inset:0;height:100vh;height:100dvh;z-index:9999;display:flex;align-items:center;justify-content:center;background:radial-gradient(ellipse at 30% 20%,rgba(26,58,107,.55),rgba(10,14,28,.82));backdrop-filter:blur(28px) saturate(1.4);-webkit-backdrop-filter:blur(28px) saturate(1.4);animation:howFade .35s cubic-bezier(.2,.8,.2,1);padding:max(12px,env(safe-area-inset-top)) max(12px,env(safe-area-inset-right)) max(12px,env(safe-area-inset-bottom)) max(12px,env(safe-area-inset-left))}'
-      +'.how-modal-card{position:relative;width:min(860px,100%);max-height:min(860px,100vh);max-height:min(860px,100dvh);background:linear-gradient(180deg,rgba(255,255,255,.98),rgba(248,250,255,.94));border-radius:28px;box-shadow:0 32px 80px -16px rgba(10,14,28,.6),0 0 0 1px rgba(255,255,255,.6) inset;overflow:hidden;display:flex;flex-direction:column;animation:howModalPop .6s cubic-bezier(.34,1.6,.52,1)}'
-      +'body.dark .how-modal-card{background:linear-gradient(180deg,#1c2433,#151b28);color:#e6edf3;box-shadow:0 32px 80px -16px rgba(0,0,0,.7),0 0 0 1px rgba(255,255,255,.08) inset}'
-      +'@keyframes howModalPop{0%{opacity:0;transform:scale(.92) translateY(20px)}55%{opacity:1}100%{opacity:1;transform:scale(1) translateY(0)}}'
-      +'.how-modal-tint{position:absolute;inset:-30% -30% auto -30%;height:360px;background:radial-gradient(closest-side,var(--ac,#2563eb)55,transparent 70%);opacity:.55;filter:blur(14px);pointer-events:none;transition:background 1s}'
-      +'.how-modal-header{position:relative;z-index:2;display:flex;align-items:center;gap:12px;padding:20px 24px 14px;border-bottom:.5px solid rgba(120,120,128,.15)}'
-      +'body.dark .how-modal-header{border-bottom-color:rgba(255,255,255,.08)}'
-      +'.how-modal-ico{width:36px;height:36px;border-radius:11px;background:color-mix(in srgb,var(--ac,#2563eb) 14%,#fff);color:var(--ac,#2563eb);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
-      +'body.dark .how-modal-ico{background:color-mix(in srgb,var(--ac,#2563eb) 22%,#21262d)}'
-      +'.how-modal-ico svg{width:20px;height:20px}'
-      +'.how-modal-titles{flex:1;min-width:0}'
-      +'.how-modal-eyebrow{font:700 10.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1.4px;text-transform:uppercase;color:var(--ac,#2563eb);margin-bottom:3px}'
-      +'.how-modal-title{font:700 18px/1.2 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;letter-spacing:-.3px}'
-      +'body.dark .how-modal-title{color:#f0f6fc}'
-      +'.how-modal-close{background:rgba(120,120,128,.14);border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3c3c43;transition:background .2s,transform .15s;flex-shrink:0}'
-      +'.how-modal-close:hover{background:rgba(120,120,128,.24)}.how-modal-close:active{transform:scale(.92)}'
-      +'body.dark .how-modal-close{background:rgba(255,255,255,.10);color:#c9d1d9}'
-      +'.how-modal-close svg{width:16px;height:16px}'
-      +'.how-modal-body{position:relative;z-index:1;flex:1;overflow-y:auto;overflow-x:hidden;padding:24px 24px 8px;min-height:0;display:flex;flex-direction:column;gap:20px;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
-      +'.how-modal-body::-webkit-scrollbar{display:none}'
-      +'.how-stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#2563eb) 6%,#f5f7fb),#fff);border:.5px solid rgba(10,14,28,.06);display:flex;align-items:center;justify-content:center;padding:20px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),0 12px 40px -18px rgba(10,14,28,.2)}'
-      +'body.dark .how-stage{background:linear-gradient(135deg,color-mix(in srgb,var(--ac,#2563eb) 12%,#1a2030),#151b28);border-color:rgba(255,255,255,.05);box-shadow:inset 0 0 0 1px rgba(255,255,255,.04),0 12px 40px -18px rgba(0,0,0,.5)}'
-      +'.how-step{position:absolute;inset:20px;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateX(30px);transition:opacity .4s cubic-bezier(.2,.8,.2,1),transform .55s cubic-bezier(.22,.96,.36,1)}'
-      +'.how-step.active{opacity:1;transform:translateX(0)}'
-      +'.how-step.past{opacity:0;transform:translateX(-30px);transition:opacity .3s,transform .4s}'
-      +'.how-caption{text-align:center;padding:0 10px}'
-      +'.how-caption-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--ac,#2563eb);color:#fff;font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;margin-right:8px;vertical-align:middle}'
-      +'.how-caption-title{font:700 17px/1.3 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;margin:0 0 6px;letter-spacing:-.2px;display:inline-block}'
-      +'body.dark .how-caption-title{color:#f0f6fc}'
-      +'.how-caption-text{font:400 14.5px/1.55 -apple-system,system-ui,Inter,sans-serif;color:#4b5563;max-width:620px;margin:0 auto}'
-      +'body.dark .how-caption-text{color:#9ba9ba}'
-      +'.how-modal-controls{position:relative;z-index:2;padding:12px 22px max(22px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:10px;border-top:.5px solid rgba(120,120,128,.15)}'
-      +'body.dark .how-modal-controls{border-top-color:rgba(255,255,255,.08)}'
-      +'.how-dots{display:flex;gap:6px;flex:1;justify-content:center}'
-      +'.how-dot{width:7px;height:7px;border-radius:999px;background:rgba(120,120,128,.3);border:none;cursor:pointer;transition:all .35s cubic-bezier(.34,1.56,.52,1);padding:0}'
-      +'.how-dot.active{width:22px;background:var(--ac,#2563eb);box-shadow:0 0 10px color-mix(in srgb,var(--ac,#2563eb) 55%,transparent)}'
-      +'body.dark .how-dot{background:rgba(255,255,255,.18)}'
-      +'.how-ctrl-btn{background:rgba(120,120,128,.14);border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1a3a6b;transition:background .2s,transform .15s}'
-      +'.how-ctrl-btn:hover{background:rgba(120,120,128,.22)}.how-ctrl-btn:active{transform:scale(.92)}'
-      +'.how-ctrl-btn:disabled{opacity:.35;cursor:not-allowed}'
-      +'body.dark .how-ctrl-btn{background:rgba(255,255,255,.1);color:#e6edf3}'
-      +'.how-ctrl-btn svg{width:16px;height:16px}'
-      +'.how-cta{background:linear-gradient(180deg,var(--ac,#2563eb),color-mix(in srgb,var(--ac,#2563eb) 82%,#000));color:#fff;border:none;padding:10px 18px;border-radius:13px;font:600 13.5px/1 -apple-system,system-ui,Inter,sans-serif;cursor:pointer;box-shadow:0 6px 18px -6px color-mix(in srgb,var(--ac,#2563eb) 65%,transparent),inset 0 1px 0 rgba(255,255,255,.22);transition:transform .2s cubic-bezier(.34,1.56,.52,1),box-shadow .2s;display:flex;align-items:center;gap:6px;flex-shrink:0}'
-      +'.how-cta:hover{transform:translateY(-1px)}.how-cta:active{transform:scale(.97)}'
-      +'.how-cta svg{width:13px;height:13px}'
-      +'.how-progress-bar{position:absolute;top:0;left:0;right:0;height:3px;background:rgba(120,120,128,.12);overflow:hidden;z-index:3}'
-      +'.how-progress-fill{height:100%;width:0%;background:linear-gradient(90deg,var(--ac,#2563eb),color-mix(in srgb,var(--ac,#2563eb) 55%,#fff));transition:width .15s linear;box-shadow:0 0 12px color-mix(in srgb,var(--ac,#2563eb) 60%,transparent)}'
+      // ── Page wrapper ──
+      +'.how2{max-width:1200px;margin:0 auto;padding:0 20px 100px;animation:how2Fade .45s cubic-bezier(.2,.8,.2,1)}'
+      +'@keyframes how2Fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}'
+      // ── Hero ──
+      +'.how2-hero{position:relative;margin:0 -20px 0;padding:72px 40px 56px;overflow:hidden;text-align:center;background:linear-gradient(145deg,#06111f 0%,#0d1f40 35%,#1a1650 65%,#0f1a35 100%);color:#fff}'
+      +'.how2-hero-canvas{position:absolute;inset:0;pointer-events:none;overflow:hidden}'
+      +'.how2-orb{position:absolute;border-radius:50%;filter:blur(80px);opacity:.55;animation:how2OrbFloat var(--dur,12s) ease-in-out infinite alternate}'
+      +'.how2-orb.o1{width:420px;height:420px;background:radial-gradient(closest-side,#3b4ff8,transparent);top:-120px;left:-60px;--dur:13s}'
+      +'.how2-orb.o2{width:380px;height:380px;background:radial-gradient(closest-side,#7c3aed,transparent);top:-80px;right:-80px;--dur:17s}'
+      +'.how2-orb.o3{width:300px;height:300px;background:radial-gradient(closest-side,#0891b2,transparent);bottom:-60px;left:35%;--dur:15s}'
+      +'@keyframes how2OrbFloat{from{transform:translate(0,0) scale(1)}to{transform:translate(30px,20px) scale(1.08)}}'
+      +'.how2-grid-lines{position:absolute;inset:0;background-image:linear-gradient(rgba(255,255,255,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.025) 1px,transparent 1px);background-size:60px 60px;mask-image:radial-gradient(ellipse 80% 80% at 50% 50%,#000 30%,transparent 100%)}'
+      +'.how2-hero-content{position:relative;z-index:2}'
+      +'.how2-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(255,255,255,.1);border:.5px solid rgba(255,255,255,.2);padding:6px 14px;border-radius:999px;font:700 10.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:rgba(255,255,255,.8);margin-bottom:22px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px)}'
+      +'.how2-badge-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;box-shadow:0 0 8px #4ade80;animation:how2Blink 2s ease-in-out infinite}'
+      +'@keyframes how2Blink{0%,100%{opacity:1}50%{opacity:.4}}'
+      +'.how2-hero-title{font:700 clamp(32px,5.5vw,58px)/1.06 -apple-system,system-ui,"SF Pro Display",Inter,sans-serif;letter-spacing:-1.5px;margin:0 0 18px;background:linear-gradient(180deg,#fff 0%,rgba(255,255,255,.75) 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}'
+      +'.how2-hero-sub{font:400 clamp(15px,1.9vw,19px)/1.55 -apple-system,system-ui,Inter,sans-serif;color:rgba(255,255,255,.68);max-width:580px;margin:0 auto 32px}'
+      // ── Search bar ──
+      +'.how2-search-wrap{position:relative;max-width:500px;margin:0 auto 0;display:flex;align-items:center}'
+      +'.how2-search{width:100%;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:13px 48px 13px 20px;font:500 15px/1 -apple-system,system-ui,Inter,sans-serif;color:#fff;outline:none;transition:background .2s,border-color .2s;backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);-webkit-appearance:none;appearance:none}'
+      +'.how2-search::placeholder{color:rgba(255,255,255,.45)}'
+      +'.how2-search:focus{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.35)}'
+      +'.how2-search-ico{position:absolute;right:15px;color:rgba(255,255,255,.45);pointer-events:none}'
+      +'.how2-search-ico svg{width:18px;height:18px}'
+      // ── Stats bar ──
+      +'.how2-stats{display:flex;gap:24px;justify-content:center;margin-top:28px;flex-wrap:wrap}'
+      +'.how2-stat{display:flex;flex-direction:column;align-items:center;gap:3px}'
+      +'.how2-stat b{font:700 22px/1 -apple-system,system-ui,Inter,sans-serif;color:#fff;font-variant-numeric:tabular-nums}'
+      +'.how2-stat span{font:500 11px/1 -apple-system,system-ui,Inter,sans-serif;color:rgba(255,255,255,.5);letter-spacing:.3px;text-transform:uppercase}'
+      +'.how2-stat-sep{width:1px;height:30px;background:rgba(255,255,255,.12);align-self:center}'
+      // ── Quick-start use cases ──
+      +'.how2-quickstart{padding:28px 0 0}'
+      +'.how2-qs-label{font:700 11px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1.6px;text-transform:uppercase;color:#64748b;margin-bottom:12px}'
+      +'body.dark .how2-qs-label{color:#6b7280}'
+      +'.how2-qs-row{display:flex;gap:8px;flex-wrap:wrap}'
+      +'.how2-qs-btn{display:inline-flex;align-items:center;gap:7px;background:#fff;border:.5px solid rgba(10,14,28,.1);border-radius:12px;padding:9px 14px;font:500 13px/1 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.52,1),box-shadow .2s,background .15s;box-shadow:0 2px 8px -3px rgba(10,14,28,.12);white-space:nowrap}'
+      +'.how2-qs-btn:hover{transform:translateY(-2px);box-shadow:0 8px 22px -6px rgba(10,14,28,.18)}'
+      +'.how2-qs-btn:active{transform:scale(.97)}'
+      +'body.dark .how2-qs-btn{background:#1c2433;border-color:rgba(255,255,255,.07);color:#e6edf3}'
+      +'.how2-qs-btn .how2-qs-ico{font-size:16px;line-height:1}'
+      // ── Category sections ──
+      +'.how2-section{margin-top:36px}'
+      +'.how2-section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}'
+      +'.how2-section-title{font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:#64748b}'
+      +'body.dark .how2-section-title{color:#6b7280}'
+      +'.how2-section-count{font:600 11px/1 -apple-system,system-ui,Inter,sans-serif;color:rgba(120,120,128,.55);letter-spacing:.3px}'
+      // ── Card grid ──
+      +'.how2-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:14px}'
+      // ── Card ──
+      +'.how2-card{position:relative;border-radius:22px;overflow:hidden;background:#fff;border:.5px solid rgba(10,14,28,.07);box-shadow:0 3px 12px -5px rgba(10,14,28,.1);cursor:pointer;transition:transform .35s cubic-bezier(.22,.96,.36,1),box-shadow .35s,border-color .25s;display:flex;flex-direction:column;padding:22px 20px 18px;opacity:0;animation:how2CardIn .5s cubic-bezier(.34,1.56,.52,1) var(--cd,.05s) forwards}'
+      +'body.dark .how2-card{background:#1c2433;border-color:rgba(255,255,255,.055)}'
+      +'.how2-card:hover{transform:translateY(-5px) scale(1.005);box-shadow:0 20px 48px -14px rgba(10,14,28,.28),0 0 0 1px color-mix(in srgb,var(--ac) 28%,transparent)}'
+      +'.how2-card:active{transform:translateY(-2px) scale(.99)}'
+      +'@keyframes how2CardIn{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}'
+      // Grid span helpers
+      +'.how2-c3{grid-column:span 3}.how2-c4{grid-column:span 4}.how2-c6{grid-column:span 6}.how2-c8{grid-column:span 8}'
+      // ── Card tint / glow ──
+      +'.how2-card-glow{position:absolute;inset:-60% -40% auto;height:240px;background:radial-gradient(closest-side,color-mix(in srgb,var(--ac) 22%,transparent),transparent 72%);filter:blur(12px);pointer-events:none;opacity:.9}'
+      // ── Card content ──
+      +'.how2-card-top{display:flex;align-items:flex-start;gap:10px;margin-bottom:12px}'
+      +'.how2-card-ico{width:44px;height:44px;border-radius:13px;flex-shrink:0;background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 16%,#fff),#fff);color:var(--ac);display:flex;align-items:center;justify-content:center;box-shadow:0 5px 14px -5px color-mix(in srgb,var(--ac) 40%,transparent),inset 0 1px 0 rgba(255,255,255,.85)}'
+      +'body.dark .how2-card-ico{background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 28%,#21262d),#21262d)}'
+      +'.how2-card-ico svg{width:24px;height:24px}'
+      +'.how2-card-meta{flex:1;min-width:0}'
+      +'.how2-card-eyebrow{font:700 10px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1.3px;text-transform:uppercase;color:var(--ac);margin-bottom:4px}'
+      +'.how2-card-title{font:700 17px/1.25 -apple-system,system-ui,"SF Pro Display",Inter,sans-serif;letter-spacing:-.3px;color:#0f1f3d;margin:0}'
+      +'body.dark .how2-card-title{color:#f0f6fc}'
+      +'.how2-card-desc{font:400 13.5px/1.5 -apple-system,system-ui,Inter,sans-serif;color:#4b5563;margin:0 0 auto;flex:1}'
+      +'body.dark .how2-card-desc{color:#9ba9ba}'
+      +'.how2-card-footer{display:flex;align-items:center;gap:6px;margin-top:14px}'
+      +'.how2-card-pill{display:inline-flex;align-items:center;gap:4px;background:rgba(120,120,128,.1);color:#64748b;font:600 10.5px/1 -apple-system,system-ui,Inter,sans-serif;padding:5px 9px;border-radius:10px;letter-spacing:.15px}'
+      +'body.dark .how2-card-pill{background:rgba(255,255,255,.07);color:#9ba9ba}'
+      +'.how2-card-pill svg{width:10px;height:10px}'
+      +'.how2-card-arrow{margin-left:auto;color:var(--ac);opacity:.75;transition:transform .2s,opacity .2s}'
+      +'.how2-card:hover .how2-card-arrow{opacity:1;transform:translateX(3px)}'
+      +'.how2-card-arrow svg{width:15px;height:15px}'
+      // ── Done / Fav badges ──
+      +'.how2-card-done{position:absolute;top:12px;right:40px;width:20px;height:20px;border-radius:50%;background:#22c55e;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 2px #fff,0 2px 6px rgba(34,197,94,.4)}'
+      +'body.dark .how2-card-done{box-shadow:0 0 0 2px #1c2433}'
+      +'.how2-card-done svg{width:11px;height:11px;color:#fff}'
+      +'.how2-card-fav{position:absolute;top:12px;right:12px;width:28px;height:28px;border-radius:50%;background:rgba(120,120,128,.1);border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;transition:background .2s,transform .2s,color .2s;z-index:4}'
+      +'.how2-card-fav:hover{background:rgba(239,68,68,.12);color:#ef4444;transform:scale(1.12)}'
+      +'.how2-card-fav.active{background:rgba(239,68,68,.12);color:#ef4444}'
+      +'.how2-card-fav svg{width:13px;height:13px}'
+      +'body.dark .how2-card-fav{background:rgba(255,255,255,.07)}'
+      // ── Favorites filter ──
+      +'.how2-fav-bar{display:flex;gap:8px;align-items:center;margin:6px 0 0}'
+      +'.how2-filter-btn{display:inline-flex;align-items:center;gap:5px;background:rgba(120,120,128,.1);border:none;border-radius:10px;padding:7px 12px;font:600 11.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#64748b;cursor:pointer;transition:background .2s,color .2s}'
+      +'.how2-filter-btn.active{background:color-mix(in srgb,#ef4444 12%,transparent);color:#ef4444}'
+      +'body.dark .how2-filter-btn{background:rgba(255,255,255,.07);color:#9ba9ba}'
+      +'.how2-filter-btn svg{width:12px;height:12px}'
+      +'.how2-progress-label{margin-left:auto;font:600 11.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#94a3b8;display:flex;align-items:center;gap:6px}'
+      +'.how2-progress-bar{width:80px;height:5px;border-radius:999px;background:rgba(120,120,128,.15);overflow:hidden}'
+      +'.how2-progress-fill{height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);border-radius:999px;transition:width .6s cubic-bezier(.22,.96,.36,1)}'
+      // ── No results ──
+      +'.how2-empty{text-align:center;padding:40px 20px;color:#94a3b8;font:500 14px/1.5 -apple-system,system-ui,Inter,sans-serif}'
+      // ── Modal ──
+      +'.how2-modal{position:fixed;inset:0;height:100vh;height:100dvh;z-index:9999;display:flex;align-items:center;justify-content:center;background:rgba(8,12,24,.78);backdrop-filter:blur(32px) saturate(1.5);-webkit-backdrop-filter:blur(32px) saturate(1.5);animation:how2Fade .3s cubic-bezier(.2,.8,.2,1);padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}'
+      +'.how2-modal-card{position:relative;width:min(880px,100%);max-height:min(880px,100dvh);background:linear-gradient(180deg,#fff,#f8faff);border-radius:28px;box-shadow:0 40px 100px -20px rgba(0,0,0,.65),0 0 0 1px rgba(255,255,255,.6) inset;overflow:hidden;display:flex;flex-direction:column;animation:how2ModalPop .55s cubic-bezier(.34,1.6,.52,1)}'
+      +'body.dark .how2-modal-card{background:linear-gradient(180deg,#1c2433,#141c28);box-shadow:0 40px 100px -20px rgba(0,0,0,.8),0 0 0 1px rgba(255,255,255,.07) inset}'
+      +'@keyframes how2ModalPop{0%{opacity:0;transform:scale(.9) translateY(24px)}60%{opacity:1}100%{opacity:1;transform:none}}'
+      // Modal tint
+      +'.how2-modal-tint{position:absolute;inset:-50% -30% auto;height:420px;background:radial-gradient(closest-side,var(--ac) 55,transparent 70%);opacity:.45;filter:blur(18px);pointer-events:none;transition:background 1.2s;z-index:0}'
+      // Modal header
+      +'.how2-modal-hdr{position:relative;z-index:2;display:flex;align-items:center;gap:12px;padding:20px 22px 14px;border-bottom:.5px solid rgba(120,120,128,.13)}'
+      +'body.dark .how2-modal-hdr{border-bottom-color:rgba(255,255,255,.07)}'
+      +'.how2-modal-hdr-ico{width:38px;height:38px;border-radius:12px;background:color-mix(in srgb,var(--ac) 14%,#fff);color:var(--ac);display:flex;align-items:center;justify-content:center;flex-shrink:0}'
+      +'body.dark .how2-modal-hdr-ico{background:color-mix(in srgb,var(--ac) 24%,#21262d)}'
+      +'.how2-modal-hdr-ico svg{width:21px;height:21px}'
+      +'.how2-modal-hdr-text{flex:1;min-width:0}'
+      +'.how2-modal-hdr-ey{font:700 10.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1.3px;text-transform:uppercase;color:var(--ac);margin-bottom:3px}'
+      +'.how2-modal-hdr-title{font:700 17.5px/1.2 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;letter-spacing:-.3px}'
+      +'body.dark .how2-modal-hdr-title{color:#f0f6fc}'
+      +'.how2-modal-hdr-acts{display:flex;align-items:center;gap:6px}'
+      +'.how2-modal-fav{background:rgba(120,120,128,.1);border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#94a3b8;transition:background .2s,color .2s,transform .18s}'
+      +'.how2-modal-fav:hover{background:rgba(239,68,68,.12);color:#ef4444}'
+      +'.how2-modal-fav.active{background:rgba(239,68,68,.12);color:#ef4444}'
+      +'.how2-modal-fav svg{width:15px;height:15px}'
+      +'.how2-modal-close{background:rgba(120,120,128,.12);border:none;width:34px;height:34px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#3c3c43;transition:background .2s,transform .15s}'
+      +'.how2-modal-close:hover{background:rgba(120,120,128,.22)}.how2-modal-close:active{transform:scale(.9)}'
+      +'body.dark .how2-modal-close,.body.dark .how2-modal-fav{background:rgba(255,255,255,.09);color:#c9d1d9}'
+      +'.how2-modal-close svg{width:15px;height:15px}'
+      // Progress strip
+      +'.how2-modal-prog{position:absolute;top:0;left:0;right:0;height:3px;background:transparent;overflow:hidden;z-index:5}'
+      +'.how2-modal-prog-fill{height:100%;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 55%,#fff));transition:width .5s cubic-bezier(.22,.96,.36,1);box-shadow:0 0 12px color-mix(in srgb,var(--ac) 60%,transparent)}'
+      // Modal body
+      +'.how2-modal-body{position:relative;z-index:1;flex:1;overflow-y:auto;overflow-x:hidden;padding:22px 24px 8px;min-height:0;-webkit-overflow-scrolling:touch;scrollbar-width:none}'
+      +'.how2-modal-body::-webkit-scrollbar{display:none}'
+      // Stage
+      +'.how2-stage{position:relative;width:100%;aspect-ratio:16/9;border-radius:18px;overflow:hidden;background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 5%,#f5f7fb),#fff);border:.5px solid rgba(10,14,28,.06);display:flex;align-items:center;justify-content:center;padding:22px;box-shadow:inset 0 0 0 1px rgba(255,255,255,.8),0 10px 36px -14px rgba(10,14,28,.18)}'
+      +'body.dark .how2-stage{background:linear-gradient(135deg,color-mix(in srgb,var(--ac) 10%,#161e2e),#141c28);border-color:rgba(255,255,255,.045)}'
+      // Step slides
+      +'.how2-step{position:absolute;inset:22px;display:flex;align-items:center;justify-content:center;opacity:0;transform:translateX(28px);transition:opacity .38s cubic-bezier(.2,.8,.2,1),transform .5s cubic-bezier(.22,.96,.36,1)}'
+      +'.how2-step.active{opacity:1;transform:none}'
+      +'.how2-step.past{opacity:0;transform:translateX(-28px);transition-duration:.28s,.38s}'
+      // Caption
+      +'.how2-caption{margin-top:14px;padding:0 4px}'
+      +'.how2-caption-row{display:flex;align-items:center;gap:8px;margin-bottom:6px}'
+      +'.how2-caption-num{display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;background:var(--ac);color:#fff;font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;flex-shrink:0}'
+      +'.how2-caption-ttl{font:700 16.5px/1.25 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;letter-spacing:-.25px}'
+      +'body.dark .how2-caption-ttl{color:#f0f6fc}'
+      +'.how2-caption-txt{font:400 14px/1.55 -apple-system,system-ui,Inter,sans-serif;color:#4b5563;max-width:680px}'
+      +'body.dark .how2-caption-txt{color:#9ba9ba}'
+      // Controls
+      +'.how2-modal-ctrl{position:relative;z-index:2;padding:10px 22px max(18px,env(safe-area-inset-bottom));display:flex;align-items:center;gap:8px;border-top:.5px solid rgba(120,120,128,.12)}'
+      +'body.dark .how2-modal-ctrl{border-top-color:rgba(255,255,255,.07)}'
+      +'.how2-ctrl-btn{background:rgba(120,120,128,.12);border:none;width:38px;height:38px;border-radius:50%;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#1a3a6b;transition:background .18s,transform .15s}'
+      +'.how2-ctrl-btn:hover{background:rgba(120,120,128,.2)}.how2-ctrl-btn:active{transform:scale(.91)}'
+      +'.how2-ctrl-btn:disabled{opacity:.3;cursor:not-allowed}'
+      +'body.dark .how2-ctrl-btn{background:rgba(255,255,255,.09);color:#e6edf3}'
+      +'.how2-ctrl-btn svg{width:16px;height:16px}'
+      +'.how2-dots{flex:1;display:flex;gap:5px;justify-content:center}'
+      +'.how2-dot{width:6px;height:6px;border-radius:999px;background:rgba(120,120,128,.28);border:none;cursor:pointer;transition:all .32s cubic-bezier(.34,1.56,.52,1);padding:0}'
+      +'.how2-dot.active{width:20px;background:var(--ac);box-shadow:0 0 10px color-mix(in srgb,var(--ac) 50%,transparent)}'
+      +'body.dark .how2-dot{background:rgba(255,255,255,.16)}'
+      +'.how2-cta-btn{background:linear-gradient(180deg,var(--ac),color-mix(in srgb,var(--ac) 80%,#000));color:#fff;border:none;padding:10px 18px;border-radius:13px;font:600 13.5px/1 -apple-system,system-ui,Inter,sans-serif;cursor:pointer;box-shadow:0 6px 18px -5px color-mix(in srgb,var(--ac) 60%,transparent),inset 0 1px 0 rgba(255,255,255,.22);transition:transform .18s cubic-bezier(.34,1.56,.52,1),box-shadow .18s;display:flex;align-items:center;gap:6px;flex-shrink:0;white-space:nowrap}'
+      +'.how2-cta-btn:hover{transform:translateY(-1px)}.how2-cta-btn:active{transform:scale(.97)}'
+      +'.how2-cta-btn svg{width:13px;height:13px}'
+      // ── Keyboard hint ──
+      +'.how2-key-hint{display:flex;gap:10px;align-items:center;justify-content:center;padding:8px 0 2px;flex-wrap:wrap}'
+      +'.how2-key{display:inline-flex;align-items:center;gap:4px;font:500 11.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#94a3b8}'
+      +'.how2-kbd{background:rgba(120,120,128,.1);border:.5px solid rgba(120,120,128,.2);border-radius:5px;padding:2px 6px;font:600 11px/1.4 -apple-system,system-ui,Inter,sans-serif}'
+      +'body.dark .how2-key{color:#6b7280}'
+      +'body.dark .how2-kbd{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.1)}'
+      // ── Stage demo components ──
+      +'.sb2-kpi-row{display:flex;gap:10px;width:100%;max-width:560px}'
+      +'.sb2-kpi{flex:1;background:rgba(255,255,255,.88);border:.5px solid rgba(10,14,28,.08);border-radius:14px;padding:13px 15px;opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards;text-align:left}'
+      +'body.dark .sb2-kpi{background:rgba(30,38,52,.75);border-color:rgba(255,255,255,.06)}'
+      +'.sb2-kpi .lbl{font:700 9.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:.8px;text-transform:uppercase;color:var(--ac);opacity:.8;margin-bottom:5px}'
+      +'.sb2-kpi .val{font:700 clamp(18px,3vw,24px)/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:-.3px;color:#0f1f3d;font-variant-numeric:tabular-nums}'
+      +'body.dark .sb2-kpi .val{color:#f0f6fc}'
+      +'@keyframes sb2Up{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}'
+      +'.sb2-list{display:flex;flex-direction:column;gap:7px;width:100%;max-width:440px}'
+      +'.sb2-item{background:rgba(255,255,255,.88);border:.5px solid rgba(10,14,28,.08);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;opacity:0;animation:sb2Up .45s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'body.dark .sb2-item{background:rgba(30,38,52,.75);border-color:rgba(255,255,255,.06)}'
+      +'.sb2-item .dot{width:7px;height:7px;border-radius:50%;background:var(--ac);flex-shrink:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--ac) 18%,transparent)}'
+      +'.sb2-item .txt{font:500 13px/1.35 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;flex:1}'
+      +'body.dark .sb2-item .txt{color:#e6edf3}'
+      +'.sb2-item .val{font:700 13px/1 -apple-system,system-ui,Inter,sans-serif;color:var(--ac);font-variant-numeric:tabular-nums}'
+      +'.sb2-pulse{width:100px;height:100px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--ac) 38%,transparent),transparent 65%);animation:sb2Pulse 2.2s ease-in-out infinite;display:flex;align-items:center;justify-content:center}'
+      +'.sb2-pulse::after{content:"";position:absolute;width:36px;height:36px;border-radius:50%;background:var(--ac);box-shadow:0 0 0 4px #fff,0 0 32px color-mix(in srgb,var(--ac) 55%,transparent)}'
+      +'body.dark .sb2-pulse::after{box-shadow:0 0 0 4px #141c28,0 0 32px color-mix(in srgb,var(--ac) 55%,transparent)}'
+      +'@keyframes sb2Pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.14)}}'
+      +'.sb2-chart{width:100%;max-width:500px;height:150px}'
+      +'.sb2-chart svg{width:100%;height:100%}'
+      +'.sb2-chart-line{stroke-dasharray:700;stroke-dashoffset:700;animation:sb2Draw 1.8s cubic-bezier(.2,.8,.2,1) .15s forwards}'
+      +'@keyframes sb2Draw{to{stroke-dashoffset:0}}'
+      +'.sb2-rings{position:relative;width:200px;height:200px;display:flex;align-items:center;justify-content:center}'
+      +'.sb2-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);border-radius:50%;border:1.5px dashed var(--ac);background:radial-gradient(closest-side,color-mix(in srgb,var(--ac) 10%,transparent),transparent 72%);animation:sb2RingPop .85s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards,sb2RingBreathe 3s ease-in-out calc(var(--d,0s) + 1s) infinite}'
+      +'.sb2-ring.r1{width:60px;height:60px;border-style:solid}'
+      +'.sb2-ring.r2{width:120px;height:120px}'
+      +'.sb2-ring.r3{width:196px;height:196px}'
+      +'@keyframes sb2RingPop{to{opacity:1;transform:translate(-50%,-50%) scale(1)}}'
+      +'@keyframes sb2RingBreathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.04)}}'
+      +'.sb2-ring-lbl{position:absolute;top:-8px;left:50%;transform:translateX(-50%);background:#fff;color:var(--ac);font:700 9.5px/1 -apple-system,system-ui,Inter,sans-serif;padding:3px 7px;border-radius:9px;white-space:nowrap;border:.5px solid var(--ac);opacity:.9}'
+      +'body.dark .sb2-ring-lbl{background:#141c28}'
+      +'.sb2-timeline{display:flex;align-items:flex-start;justify-content:space-between;width:100%;max-width:560px;position:relative}'
+      +'.sb2-tl-track{position:absolute;top:15px;left:0;right:0;height:2px;background:rgba(120,120,128,.15);z-index:0}'
+      +'.sb2-tl-fill{height:100%;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 40%,transparent));transform-origin:left;transform:scaleX(0);animation:sb2TlFill .8s cubic-bezier(.2,.8,.2,1) .2s forwards}'
+      +'@keyframes sb2TlFill{to{transform:scaleX(1)}}'
+      +'.sb2-tl-node{display:flex;flex-direction:column;align-items:center;gap:5px;flex:0 0 auto;opacity:0;animation:sb2Up .45s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards;z-index:1;position:relative}'
+      +'.sb2-tl-circle{width:30px;height:30px;border-radius:50%;background:var(--ac);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;box-shadow:0 2px 10px color-mix(in srgb,var(--ac) 45%,transparent),0 0 0 3px #fff;position:relative}'
+      +'body.dark .sb2-tl-circle{box-shadow:0 2px 10px color-mix(in srgb,var(--ac) 45%,transparent),0 0 0 3px #141c28}'
+      +'.sb2-tl-lbl{font:600 9.5px/1.3 -apple-system,system-ui,Inter,sans-serif;color:#475569;text-align:center;max-width:65px}'
+      +'body.dark .sb2-tl-lbl{color:#9ba9ba}'
+      +'.sb2-chat{display:flex;flex-direction:column;gap:6px;width:100%;max-width:400px}'
+      +'.sb2-bubble{padding:8px 12px;border-radius:14px;font:500 13px/1.4 -apple-system,system-ui,Inter,sans-serif;max-width:80%;opacity:0;animation:sb2Up .4s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'.sb2-bubble.l{align-self:flex-start;background:rgba(120,120,128,.12);color:#0f1f3d;border-bottom-left-radius:5px}'
+      +'.sb2-bubble.r{align-self:flex-end;background:var(--ac);color:#fff;border-bottom-right-radius:5px}'
+      +'body.dark .sb2-bubble.l{background:rgba(255,255,255,.09);color:#e6edf3}'
+      +'.sb2-bubble b{display:block;font-size:9.5px;font-weight:700;opacity:.65;letter-spacing:.4px;text-transform:uppercase;margin-bottom:2px}'
+      +'.sb2-form{width:100%;max-width:310px;background:rgba(255,255,255,.92);border:.5px solid rgba(10,14,28,.1);border-radius:14px;padding:14px}'
+      +'body.dark .sb2-form{background:rgba(25,32,45,.8);border-color:rgba(255,255,255,.06)}'
+      +'.sb2-field{margin-bottom:9px;opacity:0;animation:sb2Up .45s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'.sb2-field label{display:block;font:700 9px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:.6px;text-transform:uppercase;color:#64748b;margin-bottom:4px}'
+      +'body.dark .sb2-field label{color:#9ba9ba}'
+      +'.sb2-field input{width:100%;background:#fff;border:1px solid rgba(10,14,28,.12);border-radius:9px;padding:7px 10px;font:600 15px/1 -apple-system,system-ui,Inter,sans-serif;color:var(--ac);box-sizing:border-box;font-variant-numeric:tabular-nums;outline:none}'
+      +'body.dark .sb2-field input{background:rgba(16,22,34,.9);border-color:rgba(255,255,255,.09);color:var(--ac)}'
+      +'.sb2-phone{width:90px;background:linear-gradient(180deg,#1a1f2e,#0f1320);border-radius:18px;padding:10px 7px;box-shadow:0 12px 40px -8px rgba(0,0,0,.6),0 0 0 1.5px rgba(255,255,255,.08);display:flex;flex-direction:column;gap:5px;align-items:center}'
+      +'.sb2-phone-notch{width:30px;height:6px;background:rgba(255,255,255,.12);border-radius:3px;margin-bottom:4px}'
+      +'.sb2-phone-card{width:100%;background:color-mix(in srgb,var(--ac) 20%,rgba(30,38,52,.9));border-radius:10px;padding:8px;opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'.sb2-phone-card .plbl{font:600 8px/1 -apple-system,system-ui,Inter,sans-serif;text-transform:uppercase;letter-spacing:.5px;color:var(--ac);opacity:.8;margin-bottom:4px}'
+      +'.sb2-phone-card .pval{font:700 16px/1 -apple-system,system-ui,Inter,sans-serif;color:#fff;font-variant-numeric:tabular-nums}'
+      +'.sb2-badge{display:inline-flex;align-items:center;gap:5px;background:color-mix(in srgb,var(--ac) 14%,#fff);border:.5px solid color-mix(in srgb,var(--ac) 30%,transparent);color:var(--ac);font:700 11.5px/1 -apple-system,system-ui,Inter,sans-serif;padding:7px 12px;border-radius:10px;opacity:0;animation:sb2Up .45s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'body.dark .sb2-badge{background:color-mix(in srgb,var(--ac) 20%,#21262d)}'
       // ── Responsive ──
-      +'@media(max-width:900px){.how-grid{grid-template-columns:repeat(2,1fr)}.how-card.sz-2,.how-card.sz-3,.how-card.sz-4{grid-column:span 1}}'
-      +'@media(max-width:640px){.how-page{padding:14px 14px 100px}.how-hero{padding:48px 22px 36px;border-radius:22px}.how-grid{grid-template-columns:1fr;gap:12px}.how-card{min-height:220px;padding:18px 16px}.how-card-title{font-size:18px}.how-modal-card{border-radius:22px;max-height:calc(100dvh - 20px)}.how-modal-header{padding:16px 18px 12px}.how-modal-title{font-size:16px}.how-modal-body{padding:18px 16px 6px;gap:14px}.how-stage{border-radius:14px;padding:14px}.how-step{inset:14px}.how-caption-title{font-size:15.5px}.how-caption-text{font-size:13.5px}.how-modal-controls{padding:10px 14px max(14px,env(safe-area-inset-bottom))}}'
-      +'@media(prefers-reduced-motion:reduce){.how-hero::before,.how-hero-particle,.how-card,.how-modal-card,.how-step{animation:none!important;transition:none!important}}'
-      // ── Styles des démos (stage content) ──
-      +'.sb-kpi-row{display:flex;gap:10px;width:100%;max-width:560px}'
-      +'.sb-kpi{flex:1;background:rgba(255,255,255,.85);border:.5px solid rgba(10,14,28,.08);border-radius:12px;padding:12px 14px;opacity:0;animation:sbFadeUp .5s cubic-bezier(.34,1.56,.52,1) var(--dl,0s) forwards;text-align:left;color:var(--ac,#2563eb)}'
-      +'body.dark .sb-kpi{background:rgba(32,40,55,.7);border-color:rgba(255,255,255,.06)}'
-      +'.sb-kpi b{display:block;font:700 22px/1.1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:-.3px;margin-top:4px;font-variant-numeric:tabular-nums}'
-      +'.sb-kpi span{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;opacity:.72}'
-      +'@keyframes sbFadeUp{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}'
-      +'.sb-pulse{width:110px;height:110px;border-radius:50%;background:radial-gradient(closest-side,color-mix(in srgb,var(--ac,#2563eb) 40%,transparent),transparent 65%);animation:sbPulse 2s ease-in-out infinite;position:relative;display:flex;align-items:center;justify-content:center}'
-      +'.sb-pulse::after{content:"";position:absolute;inset:20%;background:var(--ac,#2563eb);border-radius:50%;box-shadow:0 0 0 4px #fff,0 0 30px color-mix(in srgb,var(--ac,#2563eb) 55%,transparent)}'
-      +'body.dark .sb-pulse::after{box-shadow:0 0 0 4px #151b28,0 0 30px color-mix(in srgb,var(--ac,#2563eb) 55%,transparent)}'
-      +'@keyframes sbPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.15)}}'
-      +'.sb-list{display:flex;flex-direction:column;gap:8px;width:100%;max-width:420px}'
-      +'.sb-list-item{background:rgba(255,255,255,.85);border:.5px solid rgba(10,14,28,.08);border-radius:12px;padding:10px 14px;display:flex;align-items:center;gap:10px;opacity:0;animation:sbFadeUp .5s cubic-bezier(.34,1.56,.52,1) var(--dl,0s) forwards}'
-      +'body.dark .sb-list-item{background:rgba(32,40,55,.7);border-color:rgba(255,255,255,.06)}'
-      +'.sb-list-item .sb-bullet{width:8px;height:8px;border-radius:50%;background:var(--ac,#2563eb);flex-shrink:0;box-shadow:0 0 0 3px color-mix(in srgb,var(--ac,#2563eb) 20%,transparent)}'
-      +'.sb-list-item .sb-txt{font:500 13.5px/1.35 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;flex:1}'
-      +'body.dark .sb-list-item .sb-txt{color:#e6edf3}'
-      +'.sb-list-item .sb-val{font:700 13.5px/1 -apple-system,system-ui,Inter,sans-serif;color:var(--ac,#2563eb);font-variant-numeric:tabular-nums}'
-      +'.sb-chart{width:100%;max-width:480px;height:160px;position:relative}'
-      +'.sb-chart svg{width:100%;height:100%}'
-      +'.sb-chart .sb-chart-line{stroke-dasharray:640;stroke-dashoffset:640;animation:sbDraw 1.6s cubic-bezier(.2,.8,.2,1) .2s forwards}'
-      +'@keyframes sbDraw{to{stroke-dashoffset:0}}'
-      +'.sb-rings{position:relative;width:220px;height:220px;display:flex;align-items:center;justify-content:center;color:var(--ac,#7c3aed)}'
-      +'.sb-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%) scale(0);border-radius:50%;border:1.8px dashed currentColor;background:radial-gradient(closest-side,color-mix(in srgb,currentColor 12%,transparent),transparent 72%);animation:sbRingPop .9s cubic-bezier(.34,1.56,.52,1) var(--dl,0s) forwards,sbRingBreathe 3.2s ease-in-out calc(var(--dl,0s) + 1.2s) infinite}'
-      +'.sb-ring.r1{width:70px;height:70px;border-style:solid}'
-      +'.sb-ring.r2{width:135px;height:135px}'
-      +'.sb-ring.r3{width:210px;height:210px}'
-      +'.sb-ring-lbl{position:absolute;top:-9px;background:#fff;color:currentColor;font:600 10px/1 -apple-system,system-ui,Inter,sans-serif;padding:3px 8px;border-radius:10px;white-space:nowrap;border:.5px solid currentColor}'
-      +'body.dark .sb-ring-lbl{background:#151b28}'
-      +'@keyframes sbRingPop{0%{opacity:0;transform:translate(-50%,-50%) scale(0)}60%{opacity:1}100%{opacity:1;transform:translate(-50%,-50%) scale(1)}}'
-      +'@keyframes sbRingBreathe{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.035)}}'
-      +'.sb-timeline{display:flex;align-items:center;justify-content:space-between;width:100%;max-width:560px}'
-      +'.sb-tl-node{display:flex;flex-direction:column;align-items:center;gap:6px;flex:0 0 auto;opacity:0;animation:sbFadeUp .5s cubic-bezier(.34,1.56,.52,1) var(--dl,0s) forwards;position:relative}'
-      +'.sb-tl-circle{width:30px;height:30px;border-radius:50%;background:var(--ac,#b45309);color:#fff;display:flex;align-items:center;justify-content:center;font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;box-shadow:0 3px 10px color-mix(in srgb,var(--ac,#b45309) 45%,transparent);border:2.5px solid #fff;z-index:2;position:relative}'
-      +'body.dark .sb-tl-circle{border-color:#151b28}'
-      +'.sb-tl-lbl{font:700 10px/1.15 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;text-align:center;max-width:70px}'
-      +'body.dark .sb-tl-lbl{color:#e6edf3}'
-      +'.sb-tl-line{position:absolute;top:15px;left:50%;width:calc(100%);height:2px;background:linear-gradient(90deg,var(--ac,#b45309),color-mix(in srgb,var(--ac,#b45309) 35%,transparent));transform-origin:left;transform:scaleX(0);animation:sbTlLine .5s cubic-bezier(.2,.8,.2,1) calc(var(--dl,0s) + .2s) forwards;z-index:1}'
-      +'.sb-tl-node:last-child .sb-tl-line{display:none}'
-      +'@keyframes sbTlLine{to{transform:scaleX(1)}}'
-      +'.sb-chat{display:flex;flex-direction:column;gap:6px;width:100%;max-width:400px}'
-      +'.sb-bubble{padding:8px 12px;border-radius:14px;font:500 13px/1.4 -apple-system,system-ui,Inter,sans-serif;max-width:78%;opacity:0;animation:sbBubbleIn .45s cubic-bezier(.34,1.56,.52,1) var(--dl,0s) forwards}'
-      +'.sb-bubble.left{align-self:flex-start;background:rgba(120,120,128,.14);color:#0f1f3d;border-bottom-left-radius:6px}'
-      +'.sb-bubble.right{align-self:flex-end;background:var(--ac,#db2777);color:#fff;border-bottom-right-radius:6px}'
-      +'body.dark .sb-bubble.left{background:rgba(255,255,255,.1);color:#e6edf3}'
-      +'.sb-bubble b{display:block;font-size:10px;font-weight:700;opacity:.7;letter-spacing:.3px;text-transform:uppercase;margin-bottom:2px}'
-      +'@keyframes sbBubbleIn{from{opacity:0;transform:translateY(10px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}'
-      +'.sb-form{width:100%;max-width:320px;background:rgba(255,255,255,.92);border:.5px solid rgba(10,14,28,.1);border-radius:14px;padding:14px;text-align:left}'
-      +'body.dark .sb-form{background:rgba(32,40,55,.75);border-color:rgba(255,255,255,.06)}'
-      +'.sb-form-row{margin-bottom:8px;opacity:0;animation:sbFadeUp .5s cubic-bezier(.34,1.56,.52,1) var(--dl,0s) forwards}'
-      +'.sb-form-row label{display:block;font:600 9.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:.5px;text-transform:uppercase;color:#64748b;margin-bottom:3px}'
-      +'body.dark .sb-form-row label{color:#9ba9ba}'
-      +'.sb-form-row input{width:100%;background:#fff;border:1px solid rgba(10,14,28,.12);border-radius:9px;padding:7px 10px;font:600 15px/1 -apple-system,system-ui,Inter,sans-serif;color:var(--ac,#0d9488);box-sizing:border-box;font-variant-numeric:tabular-nums}'
-      +'body.dark .sb-form-row input{background:rgba(20,26,38,.9);border-color:rgba(255,255,255,.08);color:#f0f6fc}';
-    var s=document.createElement('style');s.id='how-styles';s.textContent=css;document.head.appendChild(s);
+      +'@media(max-width:960px){.how2-grid{grid-template-columns:repeat(6,1fr)}.how2-c3{grid-column:span 3}.how2-c4{grid-column:span 3}.how2-c6{grid-column:span 3}.how2-c8{grid-column:span 6}}'
+      +'@media(max-width:640px){.how2{padding:0 14px 100px}.how2-hero{margin:0 -14px;padding:60px 24px 44px}.how2-hero-title{font-size:clamp(28px,8vw,38px)}.how2-stats{gap:16px}.how2-qs-row{gap:6px}.how2-qs-btn{padding:8px 11px;font-size:12px}.how2-grid{grid-template-columns:1fr!important;gap:10px}.how2-c3,.how2-c4,.how2-c6,.how2-c8{grid-column:span 1!important}.how2-modal-card{border-radius:22px;max-height:calc(100dvh - 12px)}.how2-modal-hdr{padding:14px 16px 12px}.how2-modal-body{padding:16px 14px 6px}.how2-stage{border-radius:14px;padding:14px}.how2-step{inset:14px}.how2-modal-ctrl{padding:8px 14px max(14px,env(safe-area-inset-bottom))}.how2-key-hint{display:none}}'
+      +'@media(prefers-reduced-motion:reduce){.how2-hero-canvas,.how2-orb,.how2-card,.how2-modal-card,.how2-step{animation:none!important;transition:none!important}}';
+    var s=document.createElement('style');s.id='how2-styles';s.textContent=css;document.head.appendChild(s);
   }
 
-  // ── Icônes ─────────────────────────────────────────────────────────────
-  var IC={
+  // ── Icons ────────────────────────────────────────────────────────────────
+  var I={
     dashboard:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>',
-    studios:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-8h6v8"/></svg>',
+    studio:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21V9l9-6 9 6v12"/><path d="M9 21v-8h6v8"/></svg>',
     bp:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="6" y="12" width="3" height="7" rx="1"/><rect x="11" y="7" width="3" height="12" rx="1"/><rect x="16" y="4" width="3" height="15" rx="1"/></svg>',
-    chalandise:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
+    map:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
     engage:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18"/><path d="M8 3v4M16 3v4"/><path d="M8 14l3 3 5-6"/></svg>',
     collab:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>',
-    play:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>',
-    pause:'<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>',
-    prev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
-    next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
+    sim:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 12h4l2-4"/><circle cx="12" cy="12" r="1.5" fill="currentColor"/></svg>',
+    files:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>',
+    notif:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>',
+    local:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13S3 17 3 10a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>',
+    workflow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',
+    financier:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>',
+    play:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>',
+    pause:'<svg viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zM14 4h4v16h-4z"/></svg>',
+    prev:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>',
+    next:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>',
     close:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
     arrow:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',
-    clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+    clock:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>',
+    check:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+    star:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>',
+    starOutline:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>',
+    heart:'<svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    heartOutline:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>',
+    search:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'
   };
 
-  // ── Chapitres : data + storyboards ─────────────────────────────────────
-  var CHAPTERS=[
+  // ── Chapter data ─────────────────────────────────────────────────────────
+  var SECTIONS=[
     {
-      id:'accueil',icon:IC.dashboard,accent:'#2563eb',size:'sz-4',
-      eyebrow:'Tableau de bord',
-      title:'Accueil',
-      desc:'Le pouls du réseau. KPIs, alertes, tâches du jour — tout ce qui compte, au premier regard.',
-      cta:{label:'Ouvrir mon accueil',action:"setPage('accueil')"},
-      steps:[
-        {title:'KPIs en direct',text:'Nombre de studios, CAPEX, CA prévisionnel A1 — actualisés dès qu\u2019un BP change.',render:function(){return ''
-          +'<div class="sb-kpi-row" style="--ac:#2563eb">'
-          +'  <div class="sb-kpi" style="--dl:.1s"><span>Studios</span><b>15</b></div>'
-          +'  <div class="sb-kpi" style="--dl:.25s"><span>CAPEX</span><b>4,8 M€</b></div>'
-          +'  <div class="sb-kpi" style="--dl:.4s"><span>CA A1</span><b>11,2 M€</b></div>'
-          +'</div>';}},
-        {title:'Today briefing',text:'Chaque matin, les priorités du jour remontées automatiquement : retards, alertes, rendez-vous.',render:function(){return ''
-          +'<div class="sb-list" style="--ac:#2563eb">'
-          +'  <div class="sb-list-item" style="--dl:.05s"><span class="sb-bullet"></span><span class="sb-txt">Compromis à signer — Lattes</span><span class="sb-val">J-2</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.2s"><span class="sb-bullet"></span><span class="sb-txt">BP à valider — Garches</span><span class="sb-val">Aujourd\u2019hui</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.35s"><span class="sb-bullet"></span><span class="sb-txt">Réunion cohorte 3</span><span class="sb-val">16:00</span></div>'
-          +'</div>';}},
-        {title:'Raccourcis intelligents',text:'Cliquez sur une alerte pour aller directement sur le bon onglet du bon studio. Zéro friction.',render:function(){return '<div class="sb-pulse" style="--ac:#2563eb"></div>';}}
+      id:'fondamentaux',label:'Fondamentaux',
+      chapters:[
+        {
+          id:'accueil',icon:I.dashboard,accent:'#2563eb',span:'how2-c8',
+          cat:'fondamentaux',
+          eyebrow:'Tableau de bord',title:'Accueil',
+          desc:'Le pouls du réseau en un coup d\'œil. KPIs consolidés, alertes prioritaires, et raccourcis intelligents vers l\'action.',
+          tags:['KPI','alertes','dashboard'],
+          steps:[
+            {title:'KPIs réseau en direct',text:'Studios actifs, CAPEX total, CA prévisionnel A1 — recalculés automatiquement dès qu\'un BP change.',
+             render:function(){return '<div class="sb2-kpi-row" style="--ac:#2563eb"><div class="sb2-kpi" style="--d:.08s"><div class="lbl">Studios</div><div class="val">15</div></div><div class="sb2-kpi" style="--d:.22s"><div class="lbl">CAPEX</div><div class="val">4,8 M€</div></div><div class="sb2-kpi" style="--d:.36s"><div class="lbl">CA A1</div><div class="val">11,2 M€</div></div></div>';}},
+            {title:'Briefing du jour',text:'Chaque matin : priorités remontées automatiquement. Retards, signatures imminentes, rendez-vous — classés par urgence.',
+             render:function(){return '<div class="sb2-list" style="--ac:#2563eb"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Compromis à signer — Lattes</span><span class="val">J-2</span></div><div class="sb2-item" style="--d:.18s"><span class="dot"></span><span class="txt">BP à valider — Garches</span><span class="val">Aujourd\'hui</span></div><div class="sb2-item" style="--d:.31s"><span class="dot"></span><span class="txt">Réunion cohorte 3</span><span class="val">16:00</span></div></div>';}},
+            {title:'Navigation zéro friction',text:'Cliquez sur n\'importe quelle alerte → l\'app ouvre directement le bon onglet du bon studio. Fini les clics inutiles.',
+             render:function(){return '<div class="sb2-pulse" style="--ac:#2563eb;position:relative"><div style="position:absolute;top:-24px;left:50%;transform:translateX(-50%);white-space:nowrap;font:600 11px/1 -apple-system,system-ui,Inter,sans-serif;color:#2563eb;opacity:.8">Cliquez → navigation directe</div></div>';}}
+          ]
+        },
+        {
+          id:'studios',icon:I.studio,accent:'#0891b2',span:'how2-c4',
+          cat:'fondamentaux',
+          eyebrow:'Vos studios',title:'Vue réseau',
+          desc:'Tous vos studios sur une grille fluide. Filtrez par statut, cohorte, région.',
+          tags:['studios','liste','filtres'],
+          steps:[
+            {title:'Grille unifiée',text:'Recherche full-text, tri dynamique, filtres par statut (Prospect, Compromis, Travaux, Ouvert). Tout en une vue.',
+             render:function(){return '<div class="sb2-list" style="--ac:#0891b2"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Montpellier — Lattes</span><span class="val">Travaux</span></div><div class="sb2-item" style="--d:.18s"><span class="dot"></span><span class="txt">Paris — Garches</span><span class="val">Ouvert</span></div><div class="sb2-item" style="--d:.31s"><span class="dot"></span><span class="txt">Lyon — Part-Dieu</span><span class="val">Prospect</span></div></div>';}},
+            {title:'Création guidée',text:'Nouveau studio en 30 secondes : nom, ville, cohorte, et les objectifs adhérents A1/A2/A3. Le BP se génère tout seul.',
+             render:function(){return '<div class="sb2-form" style="--ac:#0891b2"><div class="sb2-field" style="--d:.06s"><label>Nom du studio</label><input value="Montpellier — Lattes" readonly/></div><div class="sb2-field" style="--d:.2s"><label>Adhérents fin A1</label><input value="320" readonly/></div><div class="sb2-field" style="--d:.34s"><label>Cohorte</label><input value="Cohorte 3" readonly/></div></div>';}},
+            {title:'9 onglets par studio',text:'Workflow · BP · Adhérents · Chalandise · Engagements · Fichiers · Échanges · Collab · Financier. Tout le dossier en un endroit.',
+             render:function(){return '<div class="sb2-list" style="--ac:#0891b2;max-width:340px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Workflow</span><span class="val">→</span></div><div class="sb2-item" style="--d:.14s"><span class="dot"></span><span class="txt">Business Plan</span><span class="val">→</span></div><div class="sb2-item" style="--d:.23s"><span class="dot"></span><span class="txt">Chalandise</span><span class="val">→</span></div><div class="sb2-item" style="--d:.32s"><span class="dot"></span><span class="txt">Engagements</span><span class="val">→</span></div></div>';}}
+          ]
+        }
       ]
     },
     {
-      id:'studios',icon:IC.studios,accent:'#0891b2',size:'sz-2',
-      eyebrow:'Vos studios',
-      title:'Studios',
-      desc:'Toute la France, chaque studio avec son statut, sa cohorte et son BP.',
-      cta:{label:'Voir mes studios',action:"setPage('projets')"},
-      steps:[
-        {title:'Liste unifiée',text:'Une grille Apple-like. Recherche, tri, filtres — tout est fluide.',render:function(){return ''
-          +'<div class="sb-list" style="--ac:#0891b2;max-width:400px">'
-          +'  <div class="sb-list-item" style="--dl:.05s"><span class="sb-bullet"></span><span class="sb-txt">Montpellier — Lattes</span><span class="sb-val">En chantier</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.18s"><span class="sb-bullet"></span><span class="sb-txt">Paris — Garches</span><span class="sb-val">Ouvert</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.31s"><span class="sb-bullet"></span><span class="sb-txt">Toulouse — Cépière</span><span class="sb-val">Prospect</span></div>'
-          +'</div>';}},
-        {title:'Création rapide',text:'Un formulaire didactique : entrez les adhérents fin A1/A2/A3, le reste se déduit tout seul.',render:function(){return ''
-          +'<div class="sb-form" style="--ac:#0891b2">'
-          +'  <div class="sb-form-row" style="--dl:.05s"><label>Nom du studio</label><input value="Montpellier — Lattes"/></div>'
-          +'  <div class="sb-form-row" style="--dl:.2s"><label>Adhérents fin A1</label><input value="320"/></div>'
-          +'  <div class="sb-form-row" style="--dl:.35s"><label>Adhérents fin A3</label><input value="540"/></div>'
-          +'</div>';}},
-        {title:'Détail complet',text:'Neuf onglets pour tout piloter : workflow, adhérents, BP, engagements, chalandise, fichiers…',render:function(){return '<div class="sb-pulse" style="--ac:#0891b2"></div>';}}
+      id:'finance',label:'Finance',
+      chapters:[
+        {
+          id:'bp',icon:I.bp,accent:'#047857',span:'how2-c4',
+          cat:'finance',
+          eyebrow:'Business Plan',title:'BP didactique',
+          desc:'Trois chiffres. Trente-six mois. La puissance du modèle Club Pilates, sans Excel.',
+          tags:['BP','excel','prévisionnel','adhérents'],
+          steps:[
+            {title:'3 chiffres suffisent',text:'Saisissez les objectifs adhérents fin A1, A2 et A3. L\'algorithme calcule tout le reste : ARPU, pack mix, EBITDA, cash.',
+             render:function(){return '<div class="sb2-form" style="--ac:#047857"><div class="sb2-field" style="--d:.05s"><label>Adhérents fin A1</label><input value="320" readonly/></div><div class="sb2-field" style="--d:.2s"><label>Adhérents fin A2</label><input value="480" readonly/></div><div class="sb2-field" style="--d:.35s"><label>Adhérents fin A3</label><input value="540" readonly/></div></div>';}},
+            {title:'Courbe CA 36 mois',text:'Chaque mois détaillé : CA mensuel, EBITDA, trésorerie nette. La progression vers la rentabilité, visualisée.',
+             render:function(){return '<div class="sb2-chart" style="--ac:#047857"><svg viewBox="0 0 480 150" preserveAspectRatio="none"><defs><linearGradient id="sbg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#047857" stop-opacity=".25"/><stop offset="100%" stop-color="#047857" stop-opacity="0"/></linearGradient></defs><path d="M0 145 L60 132 L120 118 L180 94 L240 80 L300 54 L360 38 L420 20 L480 10 L480 150 L0 150 Z" fill="url(#sbg2)"/><path class="sb2-chart-line" d="M0 145 L60 132 L120 118 L180 94 L240 80 L300 54 L360 38 L420 20 L480 10" fill="none" stroke="#047857" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';}},
+            {title:'Vue réel vs initial',text:'Injectez les vraies données mois par mois. L\'app trace l\'écart entre le BP initial et la réalité terrain.',
+             render:function(){return '<div class="sb2-kpi-row" style="--ac:#047857"><div class="sb2-kpi" style="--d:.08s"><div class="lbl">BP Initial</div><div class="val">320</div></div><div class="sb2-kpi" style="--d:.22s"><div class="lbl">Réel</div><div class="val" style="color:#047857">338</div></div><div class="sb2-kpi" style="--d:.36s"><div class="lbl">Écart</div><div class="val" style="color:#16a34a">+5,6%</div></div></div>';}}
+          ]
+        },
+        {
+          id:'simulator',icon:I.sim,accent:'#0d9488',span:'how2-c4',
+          cat:'finance',
+          eyebrow:'Simulateur',title:'Scénarios adhérents',
+          desc:'Faites varier loyer, charges et répartition des packs. Voyez l\'impact sur le cash en temps réel.',
+          tags:['simulation','scénarios','cash','packs'],
+          steps:[
+            {title:'Étape 1 — Loyer & charges',text:'Renseignez le loyer mensuel et les charges au m². Ce sont les seules variables que vous contrôlez vraiment.',
+             render:function(){return '<div class="sb2-form" style="--ac:#0d9488"><div class="sb2-field" style="--d:.06s"><label>Loyer mensuel</label><input value="6 500 €" readonly/></div><div class="sb2-field" style="--d:.2s"><label>Charges / m²</label><input value="18 €" readonly/></div><div class="sb2-field" style="--d:.34s"><label>Surface</label><input value="320 m²" readonly/></div></div>';}},
+            {title:'Étape 2 — Répartition packs',text:'Premium, Classic, Intro — glissez les curseurs pour tester la distribution. L\'ARPU recalcule en direct.',
+             render:function(){return '<div class="sb2-list" style="--ac:#0d9488;max-width:380px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Premium (34€/sem)</span><span class="val">45%</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Classic (25€/sem)</span><span class="val">40%</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Intro (18€/sem)</span><span class="val">15%</span></div></div>';}},
+            {title:'Étape 3 — ARPU & résultat',text:'L\'ARPU pondéré et le résultat net s\'affichent instantanément. Comparez les scénarios sans toucher au BP.',
+             render:function(){return '<div class="sb2-kpi-row" style="--ac:#0d9488"><div class="sb2-kpi" style="--d:.08s"><div class="lbl">ARPU</div><div class="val">28,3€</div></div><div class="sb2-kpi" style="--d:.22s"><div class="lbl">CA/mois</div><div class="val">9 056€</div></div><div class="sb2-kpi" style="--d:.36s"><div class="lbl">Résultat net</div><div class="val" style="color:#0d9488">+1 640€</div></div></div>';}}
+          ]
+        },
+        {
+          id:'financier',icon:I.financier,accent:'#b45309',span:'how2-c4',
+          cat:'finance',
+          eyebrow:'Suivi financier',title:'Réel vs Prévisionnel',
+          desc:'Comparez chaque mois le réel terrain et le BP initial. Détectez les écarts avant qu\'ils deviennent des problèmes.',
+          tags:['financier','suivi','écarts','mensuel'],
+          steps:[
+            {title:'Tableau de bord financier',text:'Chaque ligne : mois, adhérents réels, CA réel, EBITDA. En vert si on est au-dessus du BP, rouge si en dessous.',
+             render:function(){return '<div class="sb2-list" style="--ac:#b45309"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Mois 6</span><span class="val" style="color:#16a34a">+4%</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Mois 9</span><span class="val">0%</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Mois 12</span><span class="val" style="color:#dc2626">-3%</span></div></div>';}},
+            {title:'Saisie mensuelle rapide',text:'Un formulaire ultra-simple : adhérents ce mois, CA encaissé. L\'app calcule l\'écart vs prévisionnel automatiquement.',
+             render:function(){return '<div class="sb2-form" style="--ac:#b45309"><div class="sb2-field" style="--d:.06s"><label>Adhérents réels</label><input value="310" readonly/></div><div class="sb2-field" style="--d:.2s"><label>CA encaissé (€)</label><input value="43 800" readonly/></div></div>';}},
+            {title:'Alertes EBITDA',text:'Si l\'EBITDA glisse sous le seuil de rentabilité, une notification push arrive sur votre téléphone. Réagissez avant la zone rouge.',
+             render:function(){return '<div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div class="sb2-badge" style="--ac:#b45309;--d:.1s">⚠ EBITDA sous seuil — Lattes</div><div class="sb2-badge" style="--ac:#16a34a;--d:.3s">✓ EBITDA OK — Garches</div></div>';}}
+          ]
+        }
       ]
     },
     {
-      id:'bp',icon:IC.bp,accent:'#047857',size:'sz-2',
-      eyebrow:'Business Plan',
-      title:'BP didactique',
-      desc:'Trois chiffres à saisir, 36 mois à l\u2019arrivée. On calcule, vous décidez.',
-      cta:{label:'Ouvrir un BP',action:"setPage('projets')"},
-      steps:[
-        {title:'Saisie intuitive',text:'Adhérents fin A1, A2, A3. Trois inputs. C\u2019est tout ce qu\u2019il vous faut.',render:function(){return ''
-          +'<div class="sb-form" style="--ac:#047857">'
-          +'  <div class="sb-form-row" style="--dl:.05s"><label>Adhérents fin A1</label><input value="320"/></div>'
-          +'  <div class="sb-form-row" style="--dl:.22s"><label>Adhérents fin A2</label><input value="480"/></div>'
-          +'  <div class="sb-form-row" style="--dl:.39s"><label>Adhérents fin A3</label><input value="540"/></div>'
-          +'</div>';}},
-        {title:'Calcul automatique',text:'Pack mix, ARPU, CA mensuel, EBITDA, cash net. Tous les indicateurs, à la volée.',render:function(){return ''
-          +'<div class="sb-chart" style="--ac:#047857">'
-          +'  <svg viewBox="0 0 480 160" preserveAspectRatio="none"><defs><linearGradient id="sbG1" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="currentColor" stop-opacity=".3"/><stop offset="100%" stop-color="currentColor" stop-opacity="0"/></linearGradient></defs>'
-          +'    <path class="sb-chart-area" d="M0 140 L60 125 L120 110 L180 85 L240 75 L300 50 L360 40 L420 22 L480 12 L480 160 L0 160 Z" fill="url(#sbG1)"/>'
-          +'    <path class="sb-chart-line" d="M0 140 L60 125 L120 110 L180 85 L240 75 L300 50 L360 40 L420 22 L480 12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
-          +'  </svg>'
-          +'</div>';}},
-        {title:'Vue 36 mois',text:'Chaque mois détaillé, modifiable individuellement si vous avez des données réelles à injecter.',render:function(){return ''
-          +'<div class="sb-list" style="--ac:#047857">'
-          +'  <div class="sb-list-item" style="--dl:.05s"><span class="sb-bullet"></span><span class="sb-txt">Mois 1</span><span class="sb-val">—</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.15s"><span class="sb-bullet"></span><span class="sb-txt">Mois 12 (A1)</span><span class="sb-val">320 adh.</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.25s"><span class="sb-bullet"></span><span class="sb-txt">Mois 24 (A2)</span><span class="sb-val">480 adh.</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.35s"><span class="sb-bullet"></span><span class="sb-txt">Mois 36 (A3)</span><span class="sb-val">540 adh.</span></div>'
-          +'</div>';}}
+      id:'terrain',label:'Terrain',
+      chapters:[
+        {
+          id:'chalandise',icon:I.map,accent:'#7c3aed',span:'how2-c4',
+          cat:'terrain',
+          eyebrow:'Étude locale',title:'Zone de chalandise',
+          desc:'500m · 1km · 2km. Population, densité, CSP+, transports — la data pour valider un emplacement.',
+          tags:['chalandise','carte','population','démographie'],
+          steps:[
+            {title:'Trois cercles concentriques',text:'Les zones 500m, 1km, 2km s\'affichent automatiquement autour de l\'adresse du studio. Animation live sur la carte.',
+             render:function(){return '<div class="sb2-rings" style="--ac:#7c3aed"><div class="sb2-ring r1" style="--d:.1s"><span class="sb2-ring-lbl">500m</span></div><div class="sb2-ring r2" style="--d:.3s"><span class="sb2-ring-lbl">1km</span></div><div class="sb2-ring r3" style="--d:.55s"><span class="sb2-ring-lbl">2km</span></div></div>';}},
+            {title:'Données socio-démographiques',text:'Pour chaque rayon : habitants, densité/km², revenu médian, part CSP+, âge médian. La data nécessaire pour défendre un dossier bancaire.',
+             render:function(){return '<div class="sb2-kpi-row" style="--ac:#7c3aed"><div class="sb2-kpi" style="--d:.08s"><div class="lbl">Population</div><div class="val">24k</div></div><div class="sb2-kpi" style="--d:.22s"><div class="lbl">CSP+</div><div class="val">38%</div></div><div class="sb2-kpi" style="--d:.36s"><div class="lbl">Rev. médian</div><div class="val">2 640€</div></div></div>';}},
+            {title:'Transports & concurrence',text:'Arrêts de bus, métro, tramway à portée de marche. Et les concurrents fitness dans la zone — pour anticiper.',
+             render:function(){return '<div class="sb2-list" style="--ac:#7c3aed"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Métro ligne 1 — 280m</span><span class="val">🚇</span></div><div class="sb2-item" style="--d:.18s"><span class="dot"></span><span class="txt">Tram T2 — 420m</span><span class="val">🚊</span></div><div class="sb2-item" style="--d:.31s"><span class="dot"></span><span class="txt">Concurrents directs</span><span class="val">2</span></div></div>';}}
+          ]
+        },
+        {
+          id:'local',icon:I.local,accent:'#6d28d9',span:'how2-c4',
+          cat:'terrain',
+          eyebrow:'Local & travaux',title:'Suivi du local',
+          desc:'Superficie, loyer, planning travaux, photos de chantier. Tout le dossier immobilier en un onglet.',
+          tags:['local','travaux','superficie','loyer'],
+          steps:[
+            {title:'Fiche locale complète',text:'Adresse, superficie, loyer au m², type de bail, propriétaire. Tout est accessible en un clic.',
+             render:function(){return '<div class="sb2-list" style="--ac:#6d28d9;max-width:380px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Superficie</span><span class="val">320 m²</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Loyer mensuel</span><span class="val">6 500 €</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Bail commercial</span><span class="val">3·6·9</span></div></div>';}},
+            {title:'Avancement travaux',text:'Chaque lot de travaux (plomberie, électricité, peinture, signalétique) avec son % d\'avancement et sa date de fin prévue.',
+             render:function(){return '<div class="sb2-list" style="--ac:#6d28d9;max-width:380px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Gros œuvre</span><span class="val">100%</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Électricité</span><span class="val">65%</span></div><div class="sb2-item" style="--d:.27s"><span class="txt">Signalétique</span><span class="val">0%</span></div></div>';}},
+            {title:'Photos de chantier',text:'Uploadez les photos directement depuis mobile. Archivées par date, accessibles par toute l\'équipe.',
+             render:function(){return '<div style="display:flex;gap:8px;justify-content:center"><div style="width:80px;height:80px;border-radius:12px;background:linear-gradient(135deg,#6d28d9 0%,#4c1d95 100%);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) .1s forwards">📷</div><div style="width:80px;height:80px;border-radius:12px;background:linear-gradient(135deg,#7c3aed 0%,#6d28d9 100%);display:flex;align-items:center;justify-content:center;color:#fff;font-size:24px;opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) .25s forwards">🏗️</div><div style="width:80px;height:80px;border-radius:12px;background:rgba(120,120,128,.12);display:flex;align-items:center;justify-content:center;color:#94a3b8;font:600 11px/1 -apple-system,system-ui,Inter,sans-serif;text-align:center;opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) .4s forwards">Ajouter</div></div>';}}
+          ]
+        },
+        {
+          id:'engagements',icon:I.engage,accent:'#b45309',span:'how2-c4',
+          cat:'terrain',
+          eyebrow:'Workflow',title:'Engagements',
+          desc:'Du compromis à l\'ouverture : timeline, check-list, alertes J-7. Zéro échéance oubliée.',
+          tags:['workflow','timeline','échéances','compromis'],
+          steps:[
+            {title:'Timeline ouverture',text:'Toutes les étapes clés d\'un studio Club Pilates — de la signature du compromis au jour J. Linéaire, limpide.',
+             render:function(){return '<div class="sb2-timeline" style="--ac:#b45309"><div class="sb2-tl-track"><div class="sb2-tl-fill"></div></div><div class="sb2-tl-node" style="--d:.05s"><div class="sb2-tl-circle">1</div><div class="sb2-tl-lbl">Compromis</div></div><div class="sb2-tl-node" style="--d:.18s"><div class="sb2-tl-circle">2</div><div class="sb2-tl-lbl">Permis</div></div><div class="sb2-tl-node" style="--d:.31s"><div class="sb2-tl-circle">3</div><div class="sb2-tl-lbl">Travaux</div></div><div class="sb2-tl-node" style="--d:.44s"><div class="sb2-tl-circle">4</div><div class="sb2-tl-lbl">Formation</div></div><div class="sb2-tl-node" style="--d:.57s"><div class="sb2-tl-circle">5</div><div class="sb2-tl-lbl">Ouverture</div></div></div>';}},
+            {title:'Dates prévues vs réelles',text:'Saisissez la date réelle dès qu\'une étape est franchie. L\'app calcule automatiquement le décalage sur les étapes suivantes.',
+             render:function(){return '<div class="sb2-list" style="--ac:#b45309"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Compromis signé</span><span class="val">✓ J0</span></div><div class="sb2-item" style="--d:.18s"><span class="dot"></span><span class="txt">Permis accordé</span><span class="val">✓ +28j</span></div><div class="sb2-item" style="--d:.31s"><span class="dot"></span><span class="txt">Fin travaux</span><span class="val">En cours</span></div></div>';}},
+            {title:'Alertes préventives',text:'À J-7 de chaque échéance : notification push sur mobile + email récap. Vous ne pouvez plus manquer une deadline.',
+             render:function(){return '<div class="sb2-phone" style="--ac:#b45309"><div class="sb2-phone-notch"></div><div class="sb2-phone-card" style="--d:.12s"><div class="plbl">⚠ Alerte ISSEO</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">Dépôt PC dans 7 jours — Lattes</div></div><div class="sb2-phone-card" style="--d:.3s"><div class="plbl">✓ Complété</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">Compromis signé — Garches</div></div></div>';}}
+          ]
+        }
       ]
     },
     {
-      id:'chalandise',icon:IC.chalandise,accent:'#7c3aed',size:'sz-2',
-      eyebrow:'Étude locale',
-      title:'Chalandise',
-      desc:'500m, 1km, 2km autour du studio. Population, trafic, transports, socio-démo — en live.',
-      cta:{label:'Explorer une zone',action:"setPage('projets')"},
-      steps:[
-        {title:'Trois rayons concentriques',text:'La zone de chalandise classique du Club Pilates, visualisée en cercles animés.',render:function(){return ''
-          +'<div class="sb-rings">'
-          +'  <div class="sb-ring r1" style="--dl:.1s"></div>'
-          +'  <div class="sb-ring r2" style="--dl:.3s"></div>'
-          +'  <div class="sb-ring r3" style="--dl:.5s"></div>'
-          +'</div>';}},
-        {title:'Population & transports',text:'Pour chaque rayon : habitants, densité, arrêts de bus/métro/tram à proximité.',render:function(){return ''
-          +'<div class="sb-list" style="--ac:#7c3aed">'
-          +'  <div class="sb-list-item" style="--dl:.05s"><span class="sb-bullet"></span><span class="sb-txt">Rayon 500m</span><span class="sb-val">habitants</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.18s"><span class="sb-bullet"></span><span class="sb-txt">Rayon 1km</span><span class="sb-val">+ transports</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.31s"><span class="sb-bullet"></span><span class="sb-txt">Rayon 2km</span><span class="sb-val">+ socio-démo</span></div>'
-          +'</div>';}},
-        {title:'Socio-démo détaillée',text:'Revenu médian, part des CSP+, âge moyen, ménages type. Les ingrédients d\u2019une ouverture réussie.',render:function(){return ''
-          +'<div class="sb-kpi-row" style="--ac:#7c3aed">'
-          +'  <div class="sb-kpi" style="--dl:.1s"><span>Revenu</span><b>médian</b></div>'
-          +'  <div class="sb-kpi" style="--dl:.25s"><span>CSP+</span><b>%</b></div>'
-          +'  <div class="sb-kpi" style="--dl:.4s"><span>Densité</span><b>/km²</b></div>'
-          +'</div>';}}
-      ]
-    },
-    {
-      id:'engagements',icon:IC.engage,accent:'#b45309',size:'sz-3',
-      eyebrow:'Workflow',
-      title:'Engagements',
-      desc:'Du compromis à l\u2019ouverture, une timeline claire. Zéro échéance oubliée, zéro relance manuelle.',
-      cta:{label:'Voir le récap',action:"setPage('engagements')"},
-      steps:[
-        {title:'Timeline visuelle',text:'Toutes les étapes clés d\u2019une ouverture de studio, sur une seule ligne lisible.',render:function(){return ''
-          +'<div class="sb-timeline">'
-          +'  <div class="sb-tl-node" style="--dl:.05s;--ac:#b45309"><div class="sb-tl-circle">1</div><div class="sb-tl-lbl">Compromis</div><div class="sb-tl-line"></div></div>'
-          +'  <div class="sb-tl-node" style="--dl:.18s;--ac:#b45309"><div class="sb-tl-circle">2</div><div class="sb-tl-lbl">Permis</div><div class="sb-tl-line"></div></div>'
-          +'  <div class="sb-tl-node" style="--dl:.31s;--ac:#b45309"><div class="sb-tl-circle">3</div><div class="sb-tl-lbl">Travaux</div><div class="sb-tl-line"></div></div>'
-          +'  <div class="sb-tl-node" style="--dl:.44s;--ac:#b45309"><div class="sb-tl-circle">4</div><div class="sb-tl-lbl">Formation</div><div class="sb-tl-line"></div></div>'
-          +'  <div class="sb-tl-node" style="--dl:.57s;--ac:#b45309"><div class="sb-tl-circle">5</div><div class="sb-tl-lbl">Ouverture</div></div>'
-          +'</div>';}},
-        {title:'Check-list intelligente',text:'Chaque étape : date prévue vs date réelle. L\u2019app calcule les décalages toute seule.',render:function(){return ''
-          +'<div class="sb-list" style="--ac:#b45309">'
-          +'  <div class="sb-list-item" style="--dl:.05s"><span class="sb-bullet"></span><span class="sb-txt">Compromis signé</span><span class="sb-val">✓</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.18s"><span class="sb-bullet"></span><span class="sb-txt">Permis accordé</span><span class="sb-val">✓</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.31s"><span class="sb-bullet"></span><span class="sb-txt">Travaux</span><span class="sb-val">En cours</span></div>'
-          +'</div>';}},
-        {title:'Alertes préventives',text:'Un ping sur votre mobile à J-7 de chaque échéance. Impossible de laisser glisser un dossier.',render:function(){return '<div class="sb-pulse" style="--ac:#b45309"></div>';}}
-      ]
-    },
-    {
-      id:'collab',icon:IC.collab,accent:'#db2777',size:'sz-3',
-      eyebrow:'Équipe',
-      title:'Collab',
-      desc:'Messages, tâches, notifications push. Tout le réseau dans votre poche, synchronisé en temps réel.',
-      cta:{label:'Ouvrir Collab',action:"setPage('collab')"},
-      steps:[
-        {title:'Conversation par studio',text:'Un fil de discussion dédié à chaque projet. Plus de WhatsApp mélangés.',render:function(){return ''
-          +'<div class="sb-chat">'
-          +'  <div class="sb-bubble left"  style="--dl:.05s;--ac:#db2777"><b>Paul</b>Le permis est accordé ✅</div>'
-          +'  <div class="sb-bubble right" style="--dl:.28s;--ac:#db2777"><b>Clément</b>Parfait, on lance les travaux 🚀</div>'
-          +'  <div class="sb-bubble left"  style="--dl:.51s;--ac:#db2777"><b>Paul</b>Je t\u2019assigne la commande équipements.</div>'
-          +'</div>';}},
-        {title:'Tâches assignées',text:'Créer, assigner à un membre, valider en un swipe. Mobile-first.',render:function(){return ''
-          +'<div class="sb-list" style="--ac:#db2777">'
-          +'  <div class="sb-list-item" style="--dl:.05s"><span class="sb-bullet"></span><span class="sb-txt">Commande équipements</span><span class="sb-val">@Clément</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.18s"><span class="sb-bullet"></span><span class="sb-txt">Valider planning travaux</span><span class="sb-val">@Paul</span></div>'
-          +'  <div class="sb-list-item" style="--dl:.31s"><span class="sb-bullet"></span><span class="sb-txt">Formation coachs</span><span class="sb-val">J-30</span></div>'
-          +'</div>';}},
-        {title:'Notifications push',text:'Dès qu\u2019une tâche bouge, tout le monde le sait. Mobile + desktop.',render:function(){return '<div class="sb-pulse" style="--ac:#db2777"></div>';}}
+      id:'collab',label:'Collab & Intelligence',
+      chapters:[
+        {
+          id:'collab',icon:I.collab,accent:'#db2777',span:'how2-c4',
+          cat:'collab',
+          eyebrow:'Travail en équipe',title:'Collaboration',
+          desc:'Messages par studio, tâches assignées, notifications temps réel. L\'équipe ISSEO toujours dans la boucle.',
+          tags:['messages','tâches','équipe','temps réel'],
+          steps:[
+            {title:'Fil de discussion par studio',text:'Chaque studio a son propre fil. Plus de WhatsApp mélangés. Tout est archivé, retrouvable, cité.',
+             render:function(){return '<div class="sb2-chat" style="--ac:#db2777"><div class="sb2-bubble l" style="--d:.05s"><b>Paul</b>Permis accordé ✅ Lattes</div><div class="sb2-bubble r" style="--d:.28s"><b>Clément</b>Parfait, on démarre les travaux 🚀</div><div class="sb2-bubble l" style="--d:.51s"><b>Paul</b>Je t\'assigne la commande équipements.</div></div>';}},
+            {title:'Tâches & assignation',text:'Créez une tâche en 2 secondes, assignez à un membre. La tâche apparaît dans son briefing du matin.',
+             render:function(){return '<div class="sb2-list" style="--ac:#db2777"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Commande équipements</span><span class="val">@Clément</span></div><div class="sb2-item" style="--d:.18s"><span class="dot"></span><span class="txt">Valider planning</span><span class="val">@Paul</span></div><div class="sb2-item" style="--d:.31s"><span class="dot"></span><span class="txt">Formation coachs</span><span class="val">J-30</span></div></div>';}},
+            {title:'Notifications push',text:'Dès qu\'une tâche est mise à jour ou qu\'un message vous mentionne, une push arrive sur votre mobile en moins de 2 secondes.',
+             render:function(){return '<div class="sb2-phone" style="--ac:#db2777"><div class="sb2-phone-notch"></div><div class="sb2-phone-card" style="--d:.1s"><div class="plbl">Nouveau message</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">Clément — Lattes</div></div><div class="sb2-phone-card" style="--d:.28s"><div class="plbl">Tâche complétée</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">Commande équipements ✓</div></div></div>';}}
+          ]
+        },
+        {
+          id:'fichiers',icon:I.files,accent:'#0891b2',span:'how2-c4',
+          cat:'collab',
+          eyebrow:'Documents',title:'Fichiers',
+          desc:'Contrats, permis, plans, photos — uploadés une fois, accessibles partout, classés par studio.',
+          tags:['fichiers','documents','google drive','upload'],
+          steps:[
+            {title:'Bibliothèque par studio',text:'Chaque studio a sa propre bibliothèque de fichiers. Contrats, permis de construire, plans, photos de chantier — tout est là.',
+             render:function(){return '<div class="sb2-list" style="--ac:#0891b2;max-width:380px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Compromis_Lattes_2024.pdf</span><span class="val">📄</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">PC_Lattes_accordé.pdf</span><span class="val">✓</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Plan_Lattes_v3.dwg</span><span class="val">📐</span></div></div>';}},
+            {title:'Upload mobile direct',text:'Prenez une photo du contrat depuis votre iPhone, elle est uploadée et classée dans la seconde. Sans passer par un PC.',
+             render:function(){return '<div class="sb2-phone" style="--ac:#0891b2"><div class="sb2-phone-notch"></div><div class="sb2-phone-card" style="--d:.1s"><div class="plbl">Upload en cours</div><div class="pval" style="font-size:11px;color:rgba(255,255,255,.85);font-weight:500">Contrat_signé.pdf → Lattes</div></div><div class="sb2-phone-card" style="--d:.28s"><div class="plbl">✓ Enregistré</div><div class="pval" style="font-size:11px;color:rgba(255,255,255,.85);font-weight:500">Google Drive synchronisé</div></div></div>';}},
+            {title:'Google Drive synchronisé',text:'Activez l\'intégration Drive : tous les fichiers uploadés sont automatiquement copiés dans le dossier Drive du studio.',
+             render:function(){return '<div style="display:flex;flex-direction:column;align-items:center;gap:14px"><div class="sb2-badge" style="--ac:#0891b2;--d:.1s">🔗 Google Drive connecté</div><div class="sb2-badge" style="--ac:#0891b2;--d:.3s">📁 3 fichiers synchronisés</div></div>';}}
+          ]
+        },
+        {
+          id:'echanges',icon:I.notif,accent:'#7c3aed',span:'how2-c4',
+          cat:'collab',
+          eyebrow:'Historique',title:'Échanges & notes',
+          desc:'Toutes les notes de réunion, appels téléphoniques, échanges email — tracés et horodatés.',
+          tags:['notes','échanges','historique','logs'],
+          steps:[
+            {title:'Journal d\'activité',text:'Chaque action sur un studio est loguée : appel téléphonique, note de réunion, email envoyé. Horodaté, attribué à un membre.',
+             render:function(){return '<div class="sb2-list" style="--ac:#7c3aed"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Appel banque BNP</span><span class="val">Hier</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Réunion cohorte 3</span><span class="val">Lundi</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Note : PC en attente</span><span class="val">J-3</span></div></div>';}},
+            {title:'Note rapide en 10 secondes',text:'Tapez votre note en sortant d\'un appel. Elle est liée au studio, horodatée, et visible par toute l\'équipe. Plus de post-its.',
+             render:function(){return '<div class="sb2-form" style="--ac:#7c3aed"><div class="sb2-field" style="--d:.06s"><label>Type</label><input value="📞 Appel téléphonique" readonly/></div><div class="sb2-field" style="--d:.2s"><label>Résumé</label><input value="Banque OK, dossier validé" readonly/></div></div>';}},
+            {title:'Recherche plein texte',text:'Retrouvez n\'importe quelle note en 2 mots. La recherche cherche dans tous les échanges de tous les studios simultanément.',
+             render:function(){return '<div class="sb2-list" style="--ac:#7c3aed;max-width:360px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Résultats pour "banque"</span><span class="val">4 notes</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Lattes · BNP · J-1</span><span class="val">→</span></div></div>';}}
+          ]
+        }
       ]
     }
   ];
 
-  // ── Rendu page principale ─────────────────────────────────────────────
+  // Flatten chapters for search
+  var ALL_CHAPTERS=[];
+  SECTIONS.forEach(function(s){s.chapters.forEach(function(c){ALL_CHAPTERS.push(c);});});
+
+  // ── Quick-start use cases ─────────────────────────────────────────────────
+  var QS=[
+    {ico:'📝',label:'Préparer un RDV banque',ids:['bp','chalandise','financier']},
+    {ico:'🔑',label:'Compromis vient d\'être signé',ids:['engagements','local','collab']},
+    {ico:'📊',label:'Valider un business plan',ids:['bp','simulator','financier']},
+    {ico:'🏗️',label:'Suivre un chantier',ids:['local','engagements','fichiers']},
+    {ico:'👥',label:'Former mon équipe',ids:['collab','echanges','studios']}
+  ];
+
+  // ── State ─────────────────────────────────────────────────────────────────
+  var _search='';
+  var _favOnly=false;
+  var _modal={ov:null,chapter:null,step:0,playing:true,timer:null,_sy:0,_bs:null};
+  var STEP_MS=5500;
+
+  // ── Render page ───────────────────────────────────────────────────────────
   function renderHowItWorks(){
-    _ensureHowStyles();
-    var h='<div class="how-page">';
-    // Hero
-    h+='<div class="how-hero">';
-    for(var i=0;i<8;i++){
-      var top=10+Math.random()*80, left=5+Math.random()*90, dl=Math.random()*3;
-      h+='<span class="how-hero-particle" style="top:'+top+'%;left:'+left+'%;animation-delay:'+dl.toFixed(2)+'s"></span>';
-    }
-    h+='<div class="how-hero-eyebrow">Comment ça marche</div>';
-    h+='<h1 class="how-hero-title">L\u2019app expliquée,<br/>en animations.</h1>';
-    h+='<p class="how-hero-sub">Une démo didactique de chaque rubrique. Cliquez sur un chapitre pour voir la feature en action, puis essayez-la dans la vraie app.</p>';
-    h+='<button class="how-hero-cta" onclick="openHowChapter(\''+CHAPTERS[0].id+'\')">'+IC.play+'Lancer la visite</button>';
+    _ensureStyles();
+    var done=_getProgress();var total=ALL_CHAPTERS.length;
+    var doneCount=Object.keys(done).length;
+    var favs=_getFavs();var favCount=Object.keys(favs).length;
+    var h='<div class="how2">';
+    // ── Hero ──
+    h+='<div class="how2-hero">';
+    h+='<div class="how2-hero-canvas"><div class="how2-orb o1"></div><div class="how2-orb o2"></div><div class="how2-orb o3"></div><div class="how2-grid-lines"></div></div>';
+    h+='<div class="how2-hero-content">';
+    h+='<div class="how2-badge"><span class="how2-badge-dot"></span>Guide interactif</div>';
+    h+='<h1 class="how2-hero-title">Maîtrisez chaque<br/>fonctionnalité.</h1>';
+    h+='<p class="how2-hero-sub">'+total+' modules animés. Chaque rubrique expliquée par la démo. Cliquez, explorez, essayez dans l\'app.</p>';
+    h+='<div class="how2-search-wrap"><input class="how2-search" type="search" placeholder="Rechercher une fonctionnalité…" value="'+_esc(_search)+'" oninput="window._how2Search(this.value)" autocomplete="off" autocorrect="off" spellcheck="false"/><span class="how2-search-ico">'+I.search+'</span></div>';
+    h+='<div class="how2-stats">';
+    h+='<div class="how2-stat"><b>'+total+'</b><span>modules</span></div>';
+    h+='<div class="how2-stat-sep"></div>';
+    h+='<div class="how2-stat"><b>'+doneCount+'/'+total+'</b><span>vus</span></div>';
+    h+='<div class="how2-stat-sep"></div>';
+    h+='<div class="how2-stat"><b>'+(favCount||'—')+'</b><span>favoris</span></div>';
     h+='</div>';
-    // Grille bento
-    h+='<div class="how-grid">';
-    CHAPTERS.forEach(function(c,idx){
-      h+='<div class="how-card '+(c.size||'sz-2')+'" data-how-id="'+c.id+'" onclick="openHowChapter(\''+c.id+'\')" style="--ac:'+c.accent+'">';
-      h+=  '<div class="how-card-tint"></div>';
-      h+=  '<div class="how-card-duration">'+IC.clock+c.steps.length+' étapes</div>';
-      h+=  '<div class="how-card-ico">'+c.icon+'</div>';
-      h+=  '<div class="how-card-eyebrow">'+c.eyebrow+'</div>';
-      h+=  '<h3 class="how-card-title">'+c.title+'</h3>';
-      h+=  '<p class="how-card-desc">'+c.desc+'</p>';
-      h+=  '<span class="how-card-arrow">Voir l\u2019animation '+IC.arrow+'</span>';
-      h+='</div>';
+    h+='</div></div>'; // hero-content / hero
+    // ── Quick start ──
+    h+='<div class="how2-quickstart">';
+    h+='<div class="how2-fav-bar">';
+    h+='<div class="how2-qs-label">Je veux…</div>';
+    h+='<button class="how2-filter-btn'+(favCount>0&&_favOnly?' active':'')+'" onclick="window._how2ToggleFav()">'+(favCount>0&&_favOnly?I.heart:I.heartOutline)+' Favoris'+(favCount?' ('+favCount+')':'')+'</button>';
+    h+='<div class="how2-progress-label"><div class="how2-progress-bar"><div class="how2-progress-fill" style="width:'+(doneCount/total*100).toFixed(1)+'%"></div></div>'+doneCount+'/'+total+'</div>';
+    h+='</div>';
+    h+='<div class="how2-qs-row">';
+    QS.forEach(function(q){
+      h+='<button class="how2-qs-btn" onclick="window._how2QS(\''+q.ids.join(',')+'\')" title="'+_esc(q.label)+'"><span class="how2-qs-ico">'+q.ico+'</span>'+_esc(q.label)+'</button>';
     });
     h+='</div>';
+    h+='</div>';
+    // ── Sections ──
+    var query=_search.trim().toLowerCase();
+    var anyVisible=false;
+    SECTIONS.forEach(function(sec){
+      var visible=sec.chapters.filter(function(c){
+        if(_favOnly&&!_isFav(c.id))return false;
+        if(!query)return true;
+        return (c.title+' '+c.desc+' '+c.eyebrow+' '+(c.tags||[]).join(' ')).toLowerCase().indexOf(query)>=0;
+      });
+      if(!visible.length)return;
+      anyVisible=true;
+      h+='<div class="how2-section" id="how2-sec-'+sec.id+'">';
+      h+='<div class="how2-section-head"><span class="how2-section-title">'+sec.label+'</span><span class="how2-section-count">'+visible.length+' module'+(visible.length>1?'s':'')+'</span></div>';
+      h+='<div class="how2-grid">';
+      visible.forEach(function(c,i){
+        var fav=_isFav(c.id);var done=_isDone(c.id);
+        h+='<div class="how2-card '+(c.span||'how2-c4')+'" data-how2-id="'+c.id+'" style="--ac:'+c.accent+';--cd:'+(0.05+i*0.07)+'s" onclick="window.openHowChapter(\''+c.id+'\')">';
+        h+='<div class="how2-card-glow"></div>';
+        if(done)h+='<div class="how2-card-done">'+I.check+'</div>';
+        h+='<button class="how2-card-fav'+(fav?' active':'')+'" onclick="event.stopPropagation();window._how2Fav(\''+c.id+'\')" aria-label="Favori">'+(fav?I.heart:I.heartOutline)+'</button>';
+        h+='<div class="how2-card-top">';
+        h+='<div class="how2-card-ico">'+c.icon+'</div>';
+        h+='<div class="how2-card-meta"><div class="how2-card-eyebrow">'+c.eyebrow+'</div><h3 class="how2-card-title">'+c.title+'</h3></div>';
+        h+='</div>';
+        h+='<p class="how2-card-desc">'+c.desc+'</p>';
+        h+='<div class="how2-card-footer">';
+        h+='<span class="how2-card-pill">'+I.clock+' '+c.steps.length+' étapes</span>';
+        if(done)h+='<span class="how2-card-pill" style="color:#16a34a;background:rgba(22,163,74,.1)">'+I.check+' Vu</span>';
+        h+='<span class="how2-card-arrow">'+I.arrow+'</span>';
+        h+='</div>';
+        h+='</div>';
+      });
+      h+='</div></div>';
+    });
+    if(!anyVisible){
+      h+='<div class="how2-empty">Aucun résultat pour "<strong>'+_esc(query)+'</strong>".<br/>Essayez BP, adhérents, chalandise…</div>';
+    }
     h+='</div>';
     return h;
   }
 
-  // ── Modal storyboard ───────────────────────────────────────────────────
-  var _modalState={overlay:null,chapter:null,step:0,playing:true,timer:null,_bodyStyles:null,_scrollY:0};
-  var STEP_DURATION=5200; // ms par étape
-
+  // ── Modal ─────────────────────────────────────────────────────────────────
   function openHowChapter(id){
-    _ensureHowStyles();
-    var chap=CHAPTERS.find(function(c){return c.id===id;});
+    _ensureStyles();
+    var chap=ALL_CHAPTERS.find(function(c){return c.id===id;});
     if(!chap)return;
-    if(_modalState.overlay)_closeModalImmediate();
-    _modalState.chapter=chap;_modalState.step=0;_modalState.playing=true;
-    // Lock scroll iOS-safe
-    _modalState._scrollY=window.scrollY||document.documentElement.scrollTop||0;
-    _modalState._bodyStyles={position:document.body.style.position,top:document.body.style.top,left:document.body.style.left,right:document.body.style.right,width:document.body.style.width,overflow:document.body.style.overflow};
-    document.body.style.position='fixed';document.body.style.top='-'+_modalState._scrollY+'px';document.body.style.left='0';document.body.style.right='0';document.body.style.width='100%';document.body.style.overflow='hidden';
+    if(_modal.ov)_closeImmediate();
+    _modal.chapter=chap;_modal.step=0;_modal.playing=true;
+    _modal._sy=window.scrollY||document.documentElement.scrollTop||0;
+    _modal._bs={pos:document.body.style.position,top:document.body.style.top,left:document.body.style.left,right:document.body.style.right,w:document.body.style.width,ov:document.body.style.overflow};
+    document.body.style.cssText='position:fixed;top:-'+_modal._sy+'px;left:0;right:0;width:100%;overflow:hidden';
+    var fav=_isFav(id);
     var ov=document.createElement('div');
-    ov.className='how-modal';
-    ov.setAttribute('role','dialog');ov.setAttribute('aria-modal','true');ov.setAttribute('aria-label',chap.title);
+    ov.className='how2-modal';
     ov.innerHTML=''
-      +'<div class="how-modal-card" style="--ac:'+chap.accent+'">'
-      +  '<div class="how-progress-bar"><div class="how-progress-fill"></div></div>'
-      +  '<div class="how-modal-tint"></div>'
-      +  '<div class="how-modal-header">'
-      +    '<div class="how-modal-ico">'+chap.icon+'</div>'
-      +    '<div class="how-modal-titles"><div class="how-modal-eyebrow">'+chap.eyebrow+'</div><div class="how-modal-title">'+chap.title+'</div></div>'
-      +    '<button class="how-modal-close" aria-label="Fermer">'+IC.close+'</button>'
+      +'<div class="how2-modal-card" style="--ac:'+chap.accent+'">'
+      +  '<div class="how2-modal-prog"><div class="how2-modal-prog-fill" style="width:0%"></div></div>'
+      +  '<div class="how2-modal-tint"></div>'
+      +  '<div class="how2-modal-hdr">'
+      +    '<div class="how2-modal-hdr-ico">'+chap.icon+'</div>'
+      +    '<div class="how2-modal-hdr-text"><div class="how2-modal-hdr-ey">'+chap.eyebrow+'</div><div class="how2-modal-hdr-title">'+chap.title+'</div></div>'
+      +    '<div class="how2-modal-hdr-acts">'
+      +      '<button class="how2-modal-fav'+(fav?' active':'')+'" id="how2mfav" aria-label="Favori">'+(fav?I.heart:I.heartOutline)+'</button>'
+      +      '<button class="how2-modal-close" aria-label="Fermer">'+I.close+'</button>'
+      +    '</div>'
       +  '</div>'
-      +  '<div class="how-modal-body">'
-      +    '<div class="how-stage"></div>'
-      +    '<div class="how-caption"><h4 class="how-caption-title"></h4><p class="how-caption-text"></p></div>'
+      +  '<div class="how2-modal-body">'
+      +    '<div class="how2-stage"></div>'
+      +    '<div class="how2-caption"><div class="how2-caption-row"><span class="how2-caption-num"></span><span class="how2-caption-ttl"></span></div><p class="how2-caption-txt"></p></div>'
+      +    '<div class="how2-key-hint">'
+      +      '<span class="how2-key"><kbd class="how2-kbd">←</kbd><kbd class="how2-kbd">→</kbd> Naviguer</span>'
+      +      '<span class="how2-key"><kbd class="how2-kbd">Espace</kbd> Pause/Play</span>'
+      +      '<span class="how2-key"><kbd class="how2-kbd">Esc</kbd> Fermer</span>'
+      +    '</div>'
       +  '</div>'
-      +  '<div class="how-modal-controls">'
-      +    '<button class="how-ctrl-btn how-prev" aria-label="Précédent">'+IC.prev+'</button>'
-      +    '<button class="how-ctrl-btn how-play" aria-label="Pause/Play">'+IC.pause+'</button>'
-      +    '<div class="how-dots"></div>'
-      +    '<button class="how-ctrl-btn how-next" aria-label="Suivant">'+IC.next+'</button>'
-      +    '<button class="how-cta">'+chap.cta.label+IC.arrow+'</button>'
+      +  '<div class="how2-modal-ctrl">'
+      +    '<button class="how2-ctrl-btn how2-prev" aria-label="Précédent">'+I.prev+'</button>'
+      +    '<button class="how2-ctrl-btn how2-play" aria-label="Pause">'+I.pause+'</button>'
+      +    '<div class="how2-dots"></div>'
+      +    '<button class="how2-ctrl-btn how2-next" aria-label="Suivant">'+I.next+'</button>'
+      +    '<button class="how2-cta-btn">'+_cta(chap).label+I.arrow+'</button>'
       +  '</div>'
       +'</div>';
     document.body.appendChild(ov);
-    _modalState.overlay=ov;
-    ov.querySelector('.how-modal-close').onclick=closeHowChapter;
-    ov.querySelector('.how-prev').onclick=function(){_goto(_modalState.step-1);};
-    ov.querySelector('.how-next').onclick=function(){_goto(_modalState.step+1);};
-    ov.querySelector('.how-play').onclick=_togglePlay;
-    ov.querySelector('.how-cta').onclick=function(){
-      closeHowChapter();
-      setTimeout(function(){try{eval(chap.cta.action);}catch(e){console.warn('[how cta]',e);}},380);
+    _modal.ov=ov;
+    ov.querySelector('.how2-modal-close').onclick=closeHowChapter;
+    ov.querySelector('.how2-prev').onclick=function(){_goto(_modal.step-1);};
+    ov.querySelector('.how2-next').onclick=function(){_goto(_modal.step+1);};
+    ov.querySelector('.how2-play').onclick=_togglePlay;
+    ov.querySelector('#how2mfav').onclick=function(){
+      _toggleFav(id);var f=_isFav(id);
+      this.className='how2-modal-fav'+(f?' active':'');
+      this.innerHTML=f?I.heart:I.heartOutline;
+      var cardFav=document.querySelector('[data-how2-id="'+id+'"] .how2-card-fav');
+      if(cardFav){cardFav.className='how2-card-fav'+(f?' active':'');cardFav.innerHTML=f?I.heart:I.heartOutline;}
+      try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}
     };
-    // Swipe close + nav
-    _bindSwipe(ov.querySelector('.how-modal-card'));
-    // Keyboard
+    ov.querySelector('.how2-cta-btn').onclick=function(){
+      closeHowChapter();
+      var action=_cta(chap).action;
+      if(action)setTimeout(function(){try{eval(action);}catch(e){}},380);
+    };
+    _bindSwipe(ov.querySelector('.how2-modal-card'));
     document.addEventListener('keydown',_onKey);
-    // Initial render
     _renderStep();
     _startTimer();
-    try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}
+    try{if(navigator.vibrate)navigator.vibrate(10);}catch(e){}
   }
 
   function _renderStep(){
-    if(!_modalState.overlay||!_modalState.chapter)return;
-    var chap=_modalState.chapter, step=chap.steps[_modalState.step];
-    var card=_modalState.overlay.querySelector('.how-modal-card');
-    var stage=card.querySelector('.how-stage');
-    var title=card.querySelector('.how-caption-title');
-    var text=card.querySelector('.how-caption-text');
-    var dots=card.querySelector('.how-dots');
-    var prog=card.querySelector('.how-progress-fill');
-    var tint=card.querySelector('.how-modal-tint');
-    if(tint)tint.style.background='radial-gradient(closest-side,'+chap.accent+'66,transparent 70%)';
-    // Render step with transition
-    stage.innerHTML='<div class="how-step active">'+step.render()+'</div>';
-    title.innerHTML='<span class="how-caption-num">'+(_modalState.step+1)+'</span>'+step.title;
-    text.textContent=step.text;
-    // Dots
+    if(!_modal.ov||!_modal.chapter)return;
+    var chap=_modal.chapter,s=chap.steps[_modal.step];
+    var card=_modal.ov.querySelector('.how2-modal-card');
+    var stage=card.querySelector('.how2-stage');
+    var capNum=card.querySelector('.how2-caption-num');
+    var capTtl=card.querySelector('.how2-caption-ttl');
+    var capTxt=card.querySelector('.how2-caption-txt');
+    var dots=card.querySelector('.how2-dots');
+    var prog=card.querySelector('.how2-modal-prog-fill');
+    stage.innerHTML='<div class="how2-step active" style="--ac:'+chap.accent+'">'+s.render()+'</div>';
+    capNum.textContent=_modal.step+1;
+    capTtl.textContent=s.title;
+    capTxt.textContent=s.text;
     dots.innerHTML='';
-    chap.steps.forEach(function(s,i){
+    chap.steps.forEach(function(st,i){
       var d=document.createElement('button');
-      d.className='how-dot'+(i===_modalState.step?' active':'');
+      d.className='how2-dot'+(i===_modal.step?' active':'');
       d.setAttribute('aria-label','Étape '+(i+1));
       d.onclick=function(){_goto(i);};
       dots.appendChild(d);
     });
-    // Progress
-    prog.style.width=((_modalState.step+1)/chap.steps.length*100)+'%';
-    // Prev/Next disabled states
-    card.querySelector('.how-prev').disabled=_modalState.step===0;
-    card.querySelector('.how-next').disabled=_modalState.step===chap.steps.length-1;
+    prog.style.width=((_modal.step+1)/chap.steps.length*100)+'%';
+    card.querySelector('.how2-prev').disabled=_modal.step===0;
+    card.querySelector('.how2-next').disabled=_modal.step===chap.steps.length-1;
   }
 
   function _goto(idx){
-    if(!_modalState.chapter)return;
-    var max=_modalState.chapter.steps.length;
-    if(idx<0||idx>=max||idx===_modalState.step)return;
-    _modalState.step=idx;
-    _renderStep();
+    if(!_modal.chapter)return;
+    if(idx<0||idx>=_modal.chapter.steps.length||idx===_modal.step)return;
+    _modal.step=idx;_renderStep();
     try{if(navigator.vibrate)navigator.vibrate(6);}catch(e){}
     _startTimer();
   }
 
   function _startTimer(){
     _stopTimer();
-    if(!_modalState.playing)return;
-    _modalState.timer=setTimeout(function(){
-      if(!_modalState.chapter)return;
-      var next=_modalState.step+1;
-      if(next>=_modalState.chapter.steps.length){
-        // Fin du storyboard : stop auto-play, reste sur dernière étape
-        _modalState.playing=false;_updatePlayBtn();return;
-      }
-      _goto(next);
-    },STEP_DURATION);
+    if(!_modal.playing)return;
+    _modal.timer=setTimeout(function(){
+      if(!_modal.chapter)return;
+      var n=_modal.step+1;
+      if(n>=_modal.chapter.steps.length){_modal.playing=false;_updatePlay();return;}
+      _goto(n);
+    },STEP_MS);
   }
-  function _stopTimer(){if(_modalState.timer){clearTimeout(_modalState.timer);_modalState.timer=null;}}
+  function _stopTimer(){if(_modal.timer){clearTimeout(_modal.timer);_modal.timer=null;}}
 
   function _togglePlay(){
-    _modalState.playing=!_modalState.playing;
-    _updatePlayBtn();
-    if(_modalState.playing){
-      if(_modalState.step>=_modalState.chapter.steps.length-1){_modalState.step=0;_renderStep();}
+    _modal.playing=!_modal.playing;_updatePlay();
+    if(_modal.playing){
+      if(_modal.step>=_modal.chapter.steps.length-1){_modal.step=0;_renderStep();}
       _startTimer();
-    } else _stopTimer();
+    }else _stopTimer();
   }
-  function _updatePlayBtn(){
-    if(!_modalState.overlay)return;
-    var btn=_modalState.overlay.querySelector('.how-play');
-    if(btn)btn.innerHTML=_modalState.playing?IC.pause:IC.play;
+  function _updatePlay(){
+    if(!_modal.ov)return;
+    var b=_modal.ov.querySelector('.how2-play');
+    if(b)b.innerHTML=_modal.playing?I.pause:I.play;
   }
 
   function _onKey(e){
-    if(!_modalState.overlay)return;
+    if(!_modal.ov)return;
     if(e.key==='Escape')closeHowChapter();
-    else if(e.key==='ArrowRight')_goto(_modalState.step+1);
-    else if(e.key==='ArrowLeft')_goto(_modalState.step-1);
+    else if(e.key==='ArrowRight')_goto(_modal.step+1);
+    else if(e.key==='ArrowLeft')_goto(_modal.step-1);
     else if(e.key===' '){e.preventDefault();_togglePlay();}
   }
 
   function _bindSwipe(el){
-    var sx=0,sy=0,tracking=false;
-    el.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;tracking=true;},{passive:true});
+    var sx=0,sy=0,tk=false;
+    el.addEventListener('touchstart',function(e){var t=e.touches[0];sx=t.clientX;sy=t.clientY;tk=true;},{passive:true});
     el.addEventListener('touchend',function(e){
-      if(!tracking)return;tracking=false;
+      if(!tk)return;tk=false;
       var t=e.changedTouches[0];var dx=t.clientX-sx;var dy=t.clientY-sy;
-      if(Math.abs(dy)>Math.abs(dx)&&dy>80){closeHowChapter();return;}
-      if(Math.abs(dx)<50||Math.abs(dy)>Math.abs(dx)*0.7)return;
-      if(dx<0)_goto(_modalState.step+1);else _goto(_modalState.step-1);
+      if(Math.abs(dy)>Math.abs(dx)&&dy>90){closeHowChapter();return;}
+      if(Math.abs(dx)<44||Math.abs(dy)>Math.abs(dx)*.75)return;
+      if(dx<0)_goto(_modal.step+1);else _goto(_modal.step-1);
     },{passive:true});
   }
 
-  function _closeModalImmediate(){
+  function _closeImmediate(){
     _stopTimer();
-    if(_modalState.overlay&&_modalState.overlay.parentNode)_modalState.overlay.parentNode.removeChild(_modalState.overlay);
-    _modalState.overlay=null;_modalState.chapter=null;
+    if(_modal.ov&&_modal.ov.parentNode)_modal.ov.parentNode.removeChild(_modal.ov);
+    _modal.ov=null;_modal.chapter=null;
     document.removeEventListener('keydown',_onKey);
-    var bs=_modalState._bodyStyles||{};
-    document.body.style.position=bs.position||'';document.body.style.top=bs.top||'';document.body.style.left=bs.left||'';document.body.style.right=bs.right||'';document.body.style.width=bs.width||'';document.body.style.overflow=bs.overflow||'';
-    if(typeof _modalState._scrollY==='number')window.scrollTo(0,_modalState._scrollY);
+    var bs=_modal._bs||{};
+    document.body.style.position=bs.pos||'';document.body.style.top=bs.top||'';
+    document.body.style.left=bs.left||'';document.body.style.right=bs.right||'';
+    document.body.style.width=bs.w||'';document.body.style.overflow=bs.ov||'';
+    if(typeof _modal._sy==='number')window.scrollTo(0,_modal._sy);
   }
 
   function closeHowChapter(){
-    if(!_modalState.overlay)return;
+    if(!_modal.ov)return;
     _stopTimer();
-    _modalState.overlay.style.animation='howFade .3s cubic-bezier(.2,.8,.2,1) reverse forwards';
-    setTimeout(_closeModalImmediate,300);
+    // Mark done
+    if(_modal.chapter)_markDone(_modal.chapter.id);
+    _modal.ov.style.animation='how2Fade .25s cubic-bezier(.2,.8,.2,1) reverse forwards';
+    setTimeout(_closeImmediate,260);
   }
 
-  // Expose
+  // ── Quick start modal — highlight cards for use case ─────────────────────
+  function _how2QS(idsStr){
+    var ids=idsStr.split(',');
+    // Open first chapter immediately, show others highlighted
+    openHowChapter(ids[0]);
+  }
+
+  // ── Search + filter ───────────────────────────────────────────────────────
+  function _how2Search(v){
+    _search=v;
+    var el=document.getElementById('root');
+    if(el)el.innerHTML=renderHowItWorks();
+  }
+  function _how2ToggleFav(){
+    _favOnly=!_favOnly;
+    var el=document.getElementById('root');
+    if(el)el.innerHTML=renderHowItWorks();
+  }
+  function _how2Fav(id){
+    _toggleFav(id);
+    // Refresh page without closing anything
+    var root=document.getElementById('root');
+    if(root){root.innerHTML=renderHowItWorks();}
+  }
+
+  // ── CTA defaults per chapter ──────────────────────────────────────────────
+  var CTA_MAP={
+    accueil:{label:'Ouvrir l\'accueil',action:"setPage('accueil')"},
+    studios:{label:'Voir mes studios',action:"setPage('projets')"},
+    bp:{label:'Ouvrir un BP',action:"setPage('projets')"},
+    simulator:{label:'Lancer le simulateur',action:"setPage('projets')"},
+    financier:{label:'Suivi financier',action:"setPage('projets')"},
+    chalandise:{label:'Explorer une zone',action:"setPage('projets')"},
+    local:{label:'Fiche locale',action:"setPage('projets')"},
+    engagements:{label:'Voir les engagements',action:"setPage('engagements')"},
+    collab:{label:'Ouvrir Collab',action:"setPage('collab')"},
+    fichiers:{label:'Accéder aux fichiers',action:"setPage('projets')"},
+    echanges:{label:'Voir les échanges',action:"setPage('projets')"}
+  };
+  function _cta(chap){return chap.cta||CTA_MAP[chap.id]||{label:'Essayer',action:"setPage('projets')";};}
+
+  // ── Utils ─────────────────────────────────────────────────────────────────
+  function _esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+
+  // ── Expose globals ────────────────────────────────────────────────────────
   window.renderHowItWorks=renderHowItWorks;
   window.openHowChapter=openHowChapter;
   window.closeHowChapter=closeHowChapter;
+  window._how2Search=_how2Search;
+  window._how2ToggleFav=_how2ToggleFav;
+  window._how2Fav=_how2Fav;
+  window._how2QS=_how2QS;
 })();

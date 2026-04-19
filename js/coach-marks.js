@@ -159,9 +159,9 @@
       {selector:'.tabs .tab.active',title:'Ajuster le prévisionnel',text:'Cet onglet sert à faire vivre votre BP : vous créez des scénarios qui recalculent tout (CA, EBITDA, cash) à partir de 3 variables métier simples.',placement:'bottom'},
       {selector:'select[onchange*="chargerScenario"]',title:'Vos scénarios',text:'Le BP de référence reste intact. Vous empilez des scénarios au-dessus (optimiste, réaliste, stress-test…) et basculez de l\u2019un à l\u2019autre pour comparer.',placement:'auto'},
       {selector:'[onclick*="toggleScenarioEditMode"], [onclick*="nouveauScenario"]',title:'Créer un scénario',text:'Un clic pour démarrer un nouveau scénario. Un wizard en 3 étapes vous guide, toutes les modifications sont live.',placement:'auto'},
-      {selector:'[style*="border-left:4px solid #185FA5"]',title:'Variable 1 — Adhérents réels',text:'Saisissez vos adhérents mois par mois (ou laissez le BP par défaut). Chaque mois rempli bascule en « RÉEL » et vient remplacer la projection initiale.',placement:'auto'},
-      {selector:'[style*="border-left:4px solid #0F6E56"], [style*="border-left:4px solid #0f6e56"]',title:'Variable 2 — Répartition forfaits',text:'Ajustez le pack mix : % Pack 4 séances / Pack 8 / Illimité. Le pack mix tire le CA moyen par adhérent (ARPU) à la hausse ou à la baisse.',placement:'auto'},
-      {selector:'[style*="border-left:4px solid #8a5a0e"], [style*="border-left:4px solid #854f0b"]',title:'Variable 3 — Prix des abonnements',text:'Troisième levier : les tarifs HT/mois par pack. L\u2019ARPU final se recalcule instantanément, et toute la cascade financière avec.',placement:'auto'},
+      {selector:'[data-sim-step="1"], [style*="border-left:4px solid #185FA5"]',title:'Variable 1 — Adhérents réels',text:'Saisissez vos adhérents mois par mois (ou laissez le BP par défaut). Chaque mois rempli bascule en « RÉEL » et vient remplacer la projection initiale.',placement:'auto'},
+      {selector:'[data-sim-step="2"], [style*="border-left:4px solid #1D9E75"]',title:'Variable 2 — Répartition des forfaits',text:'Ajustez le pack mix : % Pack 4 séances / Pack 8 / Illimité. Trois curseurs, total = 100%. Le pack mix tire l\u2019ARPU (CA moyen par adhérent) à la hausse ou à la baisse.',placement:'auto'},
+      {selector:'[data-sim-step="3"], [style*="border-left:4px solid #854F0B"]',title:'Variable 3 — Prix des abonnements',text:'Troisième levier : tarifs HT/mois par pack (Pack 4, Pack 8, Illimité). L\u2019ARPU final se recalcule instantanément, et toute la cascade financière avec (CA, EBITDA, cash).',placement:'auto'},
       {selector:'.sim-result, [class*="sim-result"], [class*="simResults"], .kpis',title:'Impact sur le BP',text:'En bas, le récap : écart adhérents, écart CA, écart EBITDA, nouveau break-even. Vous voyez exactement quel input a bougé quel indicateur.',placement:'auto'},
       {selector:'[onclick*="enregistrerScenario"]',title:'Enregistrer le scénario',text:'Validez pour le sauvegarder (nom, auteur, date). Tous les onglets (BP, Workflow) prennent en compte le scénario actif.',placement:'auto'}
     ],
@@ -437,11 +437,13 @@
 
   function _nextStep(){
     _haptic(8);
+    if(!_state.steps)return;
     if(_state.idx+1>=_state.steps.length)return _endCoach();
     _state.idx++;_renderStep();
   }
   function _prevStep(){
     _haptic(6);
+    if(!_state.steps)return;
     if(_state.idx<=0)return;
     _state.idx--;_renderStep();
   }
@@ -482,13 +484,17 @@
 
   function _endCoach(){
     _haptic(5);
-    if(_state.overlay&&_state.overlay.parentNode){
-      _state.overlay.style.animation='cmFade .3s cubic-bezier(.2,.8,.2,1) reverse forwards';
-      setTimeout(function(){if(_state.overlay&&_state.overlay.parentNode)_state.overlay.parentNode.removeChild(_state.overlay);_state.overlay=null;},320);
+    // Capture des refs locales pour le setTimeout (évite que le nettoyage
+    // écrase le _state.overlay d'un nouveau coach relancé juste après).
+    var ov=_state.overlay;
+    var tip=_state.tooltip;
+    if(ov&&ov.parentNode){
+      ov.style.animation='cmFade .3s cubic-bezier(.2,.8,.2,1) reverse forwards';
+      setTimeout(function(){if(ov&&ov.parentNode)ov.parentNode.removeChild(ov);},320);
     }
-    if(_state.tooltip&&_state.tooltip.parentNode){
-      _state.tooltip.style.animation='cmFade .2s cubic-bezier(.2,.8,.2,1) reverse forwards';
-      setTimeout(function(){if(_state.tooltip&&_state.tooltip.parentNode)_state.tooltip.parentNode.removeChild(_state.tooltip);_state.tooltip=null;},220);
+    if(tip&&tip.parentNode){
+      tip.style.animation='cmFade .2s cubic-bezier(.2,.8,.2,1) reverse forwards';
+      setTimeout(function(){if(tip&&tip.parentNode)tip.parentNode.removeChild(tip);},220);
     }
     document.body.classList.remove('cm-active');
     document.removeEventListener('keydown',_onKey);
@@ -497,6 +503,8 @@
       window.removeEventListener('scroll',_state._resizeHandler);
       _state._resizeHandler=null;
     }
+    // Reset synchrone du state : plus de null depuis setTimeout
+    _state.overlay=null;_state.tooltip=null;
     _state.steps=null;_state.idx=0;_state.target=null;
   }
 
