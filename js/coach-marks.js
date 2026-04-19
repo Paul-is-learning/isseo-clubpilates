@@ -149,18 +149,21 @@
 
     // ── Sous-flows par onglet du détail studio ───────────────────────────
     'detail.workflow':[
-      {selector:'.tabs',title:'Les onglets du studio',text:'9 volets pour piloter ce studio : workflow, adhérents, BP, engagements, chalandise, local, fichiers, messages, IA. Swipe gauche/droite sur mobile.',placement:'bottom'},
-      {selector:'.ring-progress, [class*="ring-"], svg[class*="progress"]',title:'Avancement global',text:'Le pourcentage d\u2019étapes validées. Passe du rouge au vert au fur et à mesure que le studio avance vers l\u2019ouverture.',placement:'auto'},
-      {selector:'[data-step-id], .step-dot, .workflow-step, .task-row[data-studio-id]',title:'Étapes à valider',text:'Chaque jalon à cocher. Sur mobile, swipe gauche pour valider en un geste (avec vibration).',placement:'auto'},
-      {selector:'[id*="infographic"], [class*="infographic"], .kpi-card',title:'KPIs prévisionnels 3 ans',text:'Les chiffres attendus à 12, 24 et 36 mois : CA, EBITDA, adhérents. Synthèse visuelle au-dessus du workflow.',placement:'auto'},
-      {selector:'button[onclick*="Export"], [onclick*="export"], [onclick*="generateReport"]',title:'Export rapide',text:'PDF complet, synthèse financière, BP détaillé, adhérents… en un clic, au format qui vous convient.',placement:'auto'}
+      {selector:'[onclick*="S.forecastYear"]',all:true,title:'BP initial — la référence',text:'Les 3 cartes Année 1 / 2 / 3 issues de votre Business Plan d\u2019origine : CA, EBITDA, résultat, cash net. Votre ligne de départ.',placement:'bottom'},
+      {selector:'.sim-card-wf',all:true,title:'BP réel — le terrain',text:'Juste en dessous, les 3 mêmes cartes recalculées à partir des adhérents et prix réellement saisis. Le badge ▲/▼ chiffre l\u2019écart avec le BP initial, en un coup d\u2019œil.',placement:'auto'},
+      {selector:'svg[viewBox="0 0 620 220"], svg[viewBox*="620"]',title:'Impact sur la trajectoire',text:'Le graphique 36 mois superpose CA BP (pointillé) et CA réel (ligne pleine), avec EBITDA et break-even dynamique. Vous voyez immédiatement où le réel diverge du plan.',placement:'auto'},
+      {selector:'.step-dot',all:true,title:'Étapes d\u2019avancement',text:'La check-list du projet : compromis, permis, travaux, formation, ouverture… Cliquez pour cocher, au fur et à mesure. L\u2019anneau de progression en tête suit le rythme.',placement:'auto'},
+      {selector:'[onclick*="ajouterEtape"]',title:'Ajouter une étape',text:'Votre projet a une spécificité ? Ajoutez vos propres jalons (audit architecte, KBIS, réunion bailleur…). L\u2019app s\u2019adapte à votre workflow, pas l\u2019inverse.',placement:'top'}
     ],
     'detail.adherents':[
-      {selector:'.tabs .tab.active',title:'Onglet Adhérents',text:'Ici vous saisissez vos projections : adhérents fin année 1, 2, 3. Le cœur de votre Business Plan.',placement:'bottom'},
-      {selector:'input[type="number"], input[type="range"], .adh-input',title:'Inputs didactiques',text:'Modifiez les adhérents attendus. CA, pack mix et ARPU se recalculent automatiquement sous vos yeux.',placement:'auto'},
-      {selector:'.kpi-card, [class*="hero"], [class*="gauge"]',title:'Conversion visuelle',text:'Vos chiffres deviennent des jauges et KPIs qui parlent : on voit tout de suite si le studio tient la route.',placement:'auto'},
-      {selector:'svg[class*="chart"], svg[class*="curve"], [class*="evolution"]',title:'Courbe de montée en puissance',text:'L\u2019évolution mois par mois du nombre d\u2019adhérents. Utile pour voir si la trajectoire est réaliste.',placement:'auto'},
-      {selector:'[onclick*="setAdherentYear"], .year-selector, .year-btn',title:'Bascule entre années',text:'Passez rapidement de l\u2019année 1 à l\u2019année 2 ou 3 pour comparer les projections.',placement:'auto'}
+      {selector:'.tabs .tab.active',title:'Ajuster le prévisionnel',text:'Cet onglet sert à faire vivre votre BP : vous créez des scénarios qui recalculent tout (CA, EBITDA, cash) à partir de 3 variables métier simples.',placement:'bottom'},
+      {selector:'select[onchange*="chargerScenario"]',title:'Vos scénarios',text:'Le BP de référence reste intact. Vous empilez des scénarios au-dessus (optimiste, réaliste, stress-test…) et basculez de l\u2019un à l\u2019autre pour comparer.',placement:'auto'},
+      {selector:'[onclick*="toggleScenarioEditMode"], [onclick*="nouveauScenario"]',title:'Créer un scénario',text:'Un clic pour démarrer un nouveau scénario. Un wizard en 3 étapes vous guide, toutes les modifications sont live.',placement:'auto'},
+      {selector:'[style*="border-left:4px solid #185FA5"]',title:'Variable 1 — Adhérents réels',text:'Saisissez vos adhérents mois par mois (ou laissez le BP par défaut). Chaque mois rempli bascule en « RÉEL » et vient remplacer la projection initiale.',placement:'auto'},
+      {selector:'[style*="border-left:4px solid #0F6E56"], [style*="border-left:4px solid #0f6e56"]',title:'Variable 2 — Répartition forfaits',text:'Ajustez le pack mix : % Pack 4 séances / Pack 8 / Illimité. Le pack mix tire le CA moyen par adhérent (ARPU) à la hausse ou à la baisse.',placement:'auto'},
+      {selector:'[style*="border-left:4px solid #8a5a0e"], [style*="border-left:4px solid #854f0b"]',title:'Variable 3 — Prix des abonnements',text:'Troisième levier : les tarifs HT/mois par pack. L\u2019ARPU final se recalcule instantanément, et toute la cascade financière avec.',placement:'auto'},
+      {selector:'.sim-result, [class*="sim-result"], [class*="simResults"], .kpis',title:'Impact sur le BP',text:'En bas, le récap : écart adhérents, écart CA, écart EBITDA, nouveau break-even. Vous voyez exactement quel input a bougé quel indicateur.',placement:'auto'},
+      {selector:'[onclick*="enregistrerScenario"]',title:'Enregistrer le scénario',text:'Validez pour le sauvegarder (nom, auteur, date). Tous les onglets (BP, Workflow) prennent en compte le scénario actif.',placement:'auto'}
     ],
     'detail.forecast':[
       {selector:'.tabs .tab.active',title:'Business Plan 36 mois',text:'Le BP complet de ce studio, dérivé automatiquement des adhérents que vous avez saisis dans l\u2019onglet précédent.',placement:'bottom'},
