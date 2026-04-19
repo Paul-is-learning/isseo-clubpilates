@@ -35,6 +35,7 @@ function render(){
       var _sb=document.getElementById('app-sidebar');if(_sb)_sb.style.display='none';
       var _hb=document.getElementById('hamburger-btn');if(_hb)_hb.style.display='none';
       var _btbh=document.getElementById('bottom-tab-bar');if(_btbh)_btbh.style.display='none';
+      if(typeof hideCoachFab==='function')hideCoachFab();
     } else {
       var pageContent='';
       if(S.page==='accueil')pageContent=renderAccueil();
@@ -90,6 +91,8 @@ function render(){
     if(typeof mountNextStepsWidget==='function')mountNextStepsWidget();
     // Montage des file browsers Google Drive (Phase 7) — scan les placeholders
     if(typeof mountGDriveBrowsers==='function')mountGDriveBrowsers();
+    // FAB bouton "tuto de la page" — monté/caché selon auth
+    if(typeof renderCoachFab==='function')renderCoachFab();
   }catch(e){console.error('render() error:',e);}
   _rendering=false;
 }
