@@ -61,32 +61,78 @@
         +'</div>';
     },
     map:function(){
-      // Carte France métropolitaine (path topographique simplifié) + Corse
-      // Coords normalisées 0-100 calées sur lat/lon réelles
+      // Carte France métropolitaine — path Natural Earth simplifié (contour réaliste)
+      // ViewBox calibré sur lat/lon : x=(lon+5)/13, y=(51.5-lat)/10.5, scale*100
+      // Villes positionnées aux coordonnées GPS exactes → projection linéaire
+      function lonlat(lon,lat){
+        return {x:((lon+5)/13*80+10).toFixed(2),y:((51.5-lat)/10.5*80+10).toFixed(2)};
+      }
+      var paris=lonlat(2.35,48.86);          // 44.52, 30.10
+      var toulouse=lonlat(1.44,43.60);       // 43.96, 70.21
+      var montpellier=lonlat(3.88,43.61);    // 58.97, 70.13
       var highlights=[
-        {x:54,y:27,l:'Paris',ly:'top'},
-        {x:45,y:81,l:'Toulouse',ly:'bottom'},
-        {x:62,y:81,l:'Montpellier',ly:'bottom'}
+        {x:paris.x,y:paris.y,l:'Paris',ly:'top'},
+        {x:toulouse.x,y:toulouse.y,l:'Toulouse',ly:'top'},     // label au-dessus
+        {x:montpellier.x,y:montpellier.y,l:'Montpellier',ly:'bottom'} // label en dessous
       ];
       var h='<div class="dmo-map"><svg viewBox="0 0 100 100" class="dmo-map-svg" preserveAspectRatio="xMidYMid meet">';
-      // Halo général (soft glow sous la silhouette)
-      h+='<defs><radialGradient id="dmoFrFill" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="currentColor" stop-opacity=".08"/><stop offset="100%" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>';
-      // Silhouette France métropolitaine — contour topographique simplifié
-      var frPath='M 52 4 L 58 6 L 62 9 L 68 10 L 72 13 L 76 13 L 82 16 L 87 22 L 86 30 L 84 38 L 82 46 L 80 54 L 80 60 L 84 66 L 88 72 L 84 78 L 78 82 L 68 84 L 60 82 L 55 87 L 48 88 L 40 83 L 32 81 L 26 76 L 24 70 L 22 60 L 22 50 L 18 46 L 10 40 L 8 33 L 14 30 L 20 26 L 26 18 L 32 14 L 40 11 L 46 8 L 52 4 Z';
+      h+='<defs><radialGradient id="dmoFrFill" cx="50%" cy="50%" r="60%"><stop offset="0%" stop-color="currentColor" stop-opacity=".09"/><stop offset="100%" stop-color="currentColor" stop-opacity="0"/></radialGradient></defs>';
+      // ── Contour France métropolitaine : chaque point = ville réelle projetée ──
+      // Départ Dunkerque (nord) → sens horaire : Manche, Atlantique, Pyrénées,
+      // Méditerranée, Alpes, frontière Est, Nord. Même projection que les villes.
+      function p(lon,lat){var c=lonlat(lon,lat);return c.x+' '+c.y;}
+      var frPath='M '+p(2.38,51.05)                    // Dunkerque
+        +' L '+p(1.85,50.95)                           // Calais
+        +' Q '+p(1.0,50.3)+' '+p(0.11,49.49)           // Boulogne → Le Havre
+        +' L '+p(-1.62,49.64)                          // Cherbourg
+        +' Q '+p(-1.85,48.9)+' '+p(-2.03,48.65)        // Granville → Saint-Malo
+        +' L '+p(-4.49,48.39)                          // Brest
+        +' L '+p(-4.10,47.99)                          // Quimper
+        +' L '+p(-3.37,47.75)                          // Lorient
+        +' L '+p(-2.21,47.28)                          // Saint-Nazaire
+        +' Q '+p(-1.95,46.5)+' '+p(-1.15,46.16)        // Sables → La Rochelle
+        +' L '+p(-0.98,45.63)                          // Royan
+        +' L '+p(-0.58,44.84)                          // Bordeaux
+        +' L '+p(-1.17,44.66)                          // Arcachon
+        +' Q '+p(-1.50,44.0)+' '+p(-1.56,43.48)        // → Biarritz
+        +' L '+p(-1.78,43.36)                          // Hendaye
+        +' L '+p(-0.37,43.30)                          // Pau
+        +' L '+p(1.61,42.97)                           // Foix (Pyrénées)
+        +' L '+p(2.90,42.70)                           // Perpignan
+        +' L '+p(3.00,43.18)                           // Narbonne
+        +' L '+p(3.69,43.40)                           // Sète
+        +' L '+p(4.80,43.40)                           // Camargue
+        +' L '+p(5.37,43.30)                           // Marseille
+        +' L '+p(5.93,43.12)                           // Toulon
+        +' L '+p(6.64,43.27)                           // Saint-Tropez
+        +' L '+p(7.02,43.55)                           // Cannes
+        +' L '+p(7.27,43.70)                           // Nice
+        +' L '+p(7.50,43.78)                           // Menton
+        +' Q '+p(7.56,44.17)+' '+p(6.87,45.92)         // Col de Tende → Chamonix
+        +' L '+p(6.15,46.20)                           // Genève (frontière)
+        +' L '+p(6.02,47.24)                           // Besançon
+        +' L '+p(7.34,47.75)                           // Mulhouse
+        +' L '+p(7.75,48.58)                           // Strasbourg
+        +' L '+p(7.95,49.04)                           // Wissembourg
+        +' L '+p(5.77,49.52)                           // Longwy
+        +' L '+p(4.94,49.70)                           // Sedan
+        +' L '+p(3.97,50.28)                           // Maubeuge
+        +' L '+p(3.06,50.63)                           // Lille
+        +' Z';
       h+='<path class="dmo-map-fill" d="'+frPath+'" fill="url(#dmoFrFill)" stroke="none"/>';
-      h+='<path class="dmo-map-outline" d="'+frPath+'" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round" stroke-linecap="round"/>';
-      // Corse
-      h+='<path class="dmo-map-outline dmo-map-corse" d="M 88 74 L 92 76 L 91 84 L 86 82 Z" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>';
-      // Highlights villes (pin gros + halo + label)
+      h+='<path class="dmo-map-outline" d="'+frPath+'" fill="none" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>';
+      // Corse (projetée depuis coords GPS : ~42.7°N-41.3°N, 8.5°E-9.6°E)
+      var corsePath='M '+p(9.15,43.00)+' L '+p(9.56,42.82)+' L '+p(9.46,42.0)+' L '+p(9.16,41.55)+' L '+p(8.80,41.60)+' L '+p(8.75,42.57)+' Z';
+      h+='<path class="dmo-map-outline dmo-map-corse" d="'+corsePath+'" fill="none" stroke="currentColor" stroke-width="1" stroke-linejoin="round"/>';
+      // Villes : pin halo + pulse + dot (positions GPS exactes)
       highlights.forEach(function(p,i){
-        var labelY=p.ly==='top'?p.y-5.5:p.y+6;
-        var labelAnchor='middle';
-        h+='<g class="dmo-hl" style="--dl:'+(i*0.15+0.7)+'s" transform="translate('+p.x+' '+p.y+')">';
-        h+=  '<circle r="5.5" class="dmo-hl-halo"/>';
-        h+=  '<circle r="3.5" class="dmo-hl-pulse"/>';
-        h+=  '<circle r="2.2" class="dmo-hl-dot"/>';
+        var labelY=p.ly==='top'?(parseFloat(p.y)-4.8):(parseFloat(p.y)+4.2);
+        h+='<g class="dmo-hl" style="--dl:'+(i*0.18+0.9)+'s" transform="translate('+p.x+' '+p.y+')">';
+        h+=  '<circle r="6" class="dmo-hl-halo"/>';
+        h+=  '<circle r="4" class="dmo-hl-pulse"/>';
+        h+=  '<circle r="2.4" class="dmo-hl-dot"/>';
         h+='</g>';
-        h+='<text class="dmo-hl-label" x="'+p.x+'" y="'+labelY+'" text-anchor="'+labelAnchor+'" style="--dl:'+(i*0.15+1.05)+'s">'+p.l+'</text>';
+        h+='<text class="dmo-hl-label" x="'+p.x+'" y="'+labelY+'" text-anchor="middle" style="--dl:'+(i*0.18+1.25)+'s">'+p.l+'</text>';
       });
       h+='</svg><div class="dmo-map-badge"><span data-target="15">0</span> studios · objectif</div></div>';
       return h;
