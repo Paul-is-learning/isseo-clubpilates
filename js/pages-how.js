@@ -101,11 +101,11 @@
     h+=    '<div class="howl-cta-desc">10 slides animées qui présentent l\'app en 2 minutes. Idéal pour un premier tour d\'horizon.</div>';
     h+=    '<span class="howl-cta-btn">Lancer le tour →</span>';
     h+=  '</button>';
-    // CTA 2 : Coach-marks
-    h+=  '<button class="howl-cta" style="--ac:#7c3aed" onclick="(function(){if(typeof startCoachForCurrentPage===\'function\'){setPage(\'accueil\');setTimeout(startCoachForCurrentPage,350);}})()">';
-    h+=    '<div class="howl-cta-ico">?</div>';
+    // CTA 2 : Coach-marks — bouton play ▶ en bas à gauche de chaque écran
+    h+=  '<button class="howl-cta" style="--ac:#6366f1" onclick="(function(){if(typeof startCoachForCurrentPage===\'function\'){setPage(\'accueil\');setTimeout(startCoachForCurrentPage,350);}})()">';
+    h+=    '<div class="howl-cta-ico"><svg viewBox="0 0 24 24" fill="currentColor" width="22" height="22" style="margin-left:2px"><path d="M8 5v14l11-7z"/></svg></div>';
     h+=    '<div class="howl-cta-title">Tuto contextuel par page</div>';
-    h+=    '<div class="howl-cta-desc">Sur chaque écran, un bouton <b>❓</b> en bas à droite explique les zones importantes. Démarre ici sur l\'Accueil.</div>';
+    h+=    '<div class="howl-cta-desc">Sur chaque écran, un bouton <b>play ▶</b> en bas à gauche (rond indigo) explique les zones importantes. Démarre ici sur l\'Accueil.</div>';
     h+=    '<span class="howl-cta-btn">Ouvrir le tuto Accueil →</span>';
     h+=  '</button>';
     h+='</div>';
@@ -113,7 +113,7 @@
     // ─ Accès rapide aux pages (toutes avec coach-marks disponibles) ─
     h+='<div class="howl-section">';
     h+=  '<div class="howl-section-title">Ou aller directement à une page</div>';
-    h+=  '<div class="howl-section-sub">Une fois sur la page, cliquez sur le <b>❓</b> en bas à droite pour déclencher le tuto contextuel.</div>';
+    h+=  '<div class="howl-section-sub">Une fois sur la page, cliquez sur le <b>bouton play ▶</b> en bas à gauche pour déclencher le tuto contextuel.</div>';
     h+=  '<div class="howl-pages">';
     QUICK_PAGES.forEach(function(p){
       h+='<button class="howl-page" onclick="setPage(\''+p.id+'\')" title="Aller à '+_esc(p.label)+'">';
@@ -127,7 +127,7 @@
     // ─ Hint final ─
     h+='<div class="howl-hint">';
     h+=  '<span class="howl-hint-ico">💡</span>';
-    h+=  '<div>Nouveau venu ? Commencez par le <b>tour guidé</b> (2 min). Puis explorez librement — le bouton <b>❓</b> est là dès que vous en avez besoin.</div>';
+    h+=  '<div>Nouveau venu ? Commencez par le <b>tour guidé</b> (2 min). Puis explorez librement — le <b>bouton play ▶ en bas à gauche</b> est là dès que vous en avez besoin.</div>';
     h+='</div>';
 
     h+='</div>';
