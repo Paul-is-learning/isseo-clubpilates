@@ -63,6 +63,44 @@
       +'.how2-qs-btn:active{transform:scale(.97)}'
       +'body.dark .how2-qs-btn{background:#1c2433;border-color:rgba(255,255,255,.07);color:#e6edf3}'
       +'.how2-qs-btn .how2-qs-ico{font-size:16px;line-height:1}'
+      // ── Pathway cards (parcours guidés) ──
+      +'.how2-path-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px;margin-top:4px}'
+      +'.how2-path-card{position:relative;overflow:hidden;background:#fff;border:.5px solid rgba(10,14,28,.1);border-radius:16px;padding:14px 14px 12px;text-align:left;cursor:pointer;transition:transform .2s cubic-bezier(.34,1.56,.52,1),box-shadow .2s,border-color .2s;box-shadow:0 2px 10px -4px rgba(10,14,28,.12);font-family:inherit;color:inherit;display:flex;flex-direction:column;gap:11px}'
+      +'.how2-path-card:hover{transform:translateY(-3px);box-shadow:0 14px 32px -10px rgba(10,14,28,.2);border-color:rgba(10,14,28,.18)}'
+      +'.how2-path-card:active{transform:scale(.98)}'
+      +'body.dark .how2-path-card{background:#1c2433;border-color:rgba(255,255,255,.07)}'
+      +'.how2-path-head{display:flex;align-items:flex-start;gap:10px}'
+      +'.how2-path-ico{font-size:22px;line-height:1;flex-shrink:0;margin-top:1px}'
+      +'.how2-path-meta{flex:1;min-width:0}'
+      +'.how2-path-label{font:700 14px/1.25 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;letter-spacing:-.2px;margin-bottom:3px}'
+      +'body.dark .how2-path-label{color:#f0f6fc}'
+      +'.how2-path-desc{font:400 11.5px/1.45 -apple-system,system-ui,Inter,sans-serif;color:#64748b;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}'
+      +'body.dark .how2-path-desc{color:#9ba9ba}'
+      +'.how2-path-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto}'
+      +'.how2-path-chips{display:flex;gap:-4px}'
+      +'.how2-path-chip{width:24px;height:24px;border-radius:8px;background:color-mix(in srgb,var(--ac) 14%,#fff);color:var(--ac);display:inline-flex;align-items:center;justify-content:center;border:1.5px solid #fff;margin-left:-5px;box-shadow:0 1px 3px rgba(10,14,28,.08)}'
+      +'.how2-path-chip:first-child{margin-left:0}'
+      +'.how2-path-chip svg{width:12px;height:12px}'
+      +'body.dark .how2-path-chip{background:color-mix(in srgb,var(--ac) 28%,#21262d);border-color:#1c2433}'
+      +'.how2-path-count{font:600 10.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#94a3b8;letter-spacing:.1px}'
+      +'body.dark .how2-path-count{color:#9ba9ba}'
+      +'.how2-path-prog{position:absolute;left:0;right:0;bottom:0;height:3px;background:rgba(120,120,128,.12);overflow:hidden}'
+      +'.how2-path-prog-fill{height:100%;background:linear-gradient(90deg,#6366f1,#8b5cf6);transition:width .6s cubic-bezier(.22,.96,.36,1)}'
+      // ── Modal path bar (breadcrumb parcours) ──
+      +'.how2-path-bar{position:relative;z-index:2;display:flex;align-items:center;gap:10px;padding:10px 22px;background:linear-gradient(90deg,color-mix(in srgb,var(--ac) 10%,transparent),transparent);border-bottom:.5px solid rgba(120,120,128,.1)}'
+      +'body.dark .how2-path-bar{border-bottom-color:rgba(255,255,255,.06)}'
+      +'.how2-path-bar-ico{font-size:15px;flex-shrink:0}'
+      +'.how2-path-bar-label{flex:1;min-width:0;font:600 11.5px/1.2 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      +'body.dark .how2-path-bar-label{color:#f0f6fc}'
+      +'.how2-path-bar-pos{font:700 10.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:.5px;color:var(--ac);background:color-mix(in srgb,var(--ac) 14%,#fff);padding:5px 9px;border-radius:7px;flex-shrink:0}'
+      +'body.dark .how2-path-bar-pos{background:color-mix(in srgb,var(--ac) 24%,#21262d)}'
+      +'.how2-path-exit{background:transparent;border:none;padding:4px 6px;font:500 11px/1 -apple-system,system-ui,Inter,sans-serif;color:#94a3b8;cursor:pointer;border-radius:6px;transition:background .2s}'
+      +'.how2-path-exit:hover{background:rgba(120,120,128,.1);color:#0f1f3d}'
+      +'body.dark .how2-path-exit:hover{color:#f0f6fc}'
+      // ── Nouveau badge ──
+      +'.how2-card-new{position:absolute;top:12px;left:12px;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;font:700 9px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;padding:4px 7px;border-radius:6px;box-shadow:0 2px 6px rgba(245,158,11,.45);z-index:3}'
+      // ── Video slot (vidéo réelle dans la stage) ──
+      +'.how2-video{width:100%;height:100%;object-fit:cover;border-radius:14px;background:#000}'
       // ── Category sections ──
       +'.how2-section{margin-top:36px}'
       +'.how2-section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}'
@@ -290,6 +328,21 @@
       id:'fondamentaux',label:'Fondamentaux',
       chapters:[
         {
+          id:'onboarding',icon:I.play,accent:'#f59e0b',span:'how2-c4',isNew:true,
+          cat:'fondamentaux',
+          eyebrow:'Démarrage',title:'Tour guidé',
+          desc:'Le tuto 10 slides Apple-like + coach-marks contextuels par page. Pour les nouveaux venus comme pour vous.',
+          tags:['onboarding','tuto','démarrage','coach-marks','nouveau'],
+          steps:[
+            {title:'10 slides d\'introduction',text:'Au premier lancement, un tour immersif explique les 10 piliers de l\'app. Swipe horizontal, mobile-first, effets haptiques.',
+             render:function(){return '<div class="sb2-timeline" style="--ac:#f59e0b"><div class="sb2-tl-track"><div class="sb2-tl-fill"></div></div><div class="sb2-tl-node" style="--d:.05s"><div class="sb2-tl-circle">1</div><div class="sb2-tl-lbl">Intro</div></div><div class="sb2-tl-node" style="--d:.18s"><div class="sb2-tl-circle">3</div><div class="sb2-tl-lbl">Studios</div></div><div class="sb2-tl-node" style="--d:.31s"><div class="sb2-tl-circle">6</div><div class="sb2-tl-lbl">BP</div></div><div class="sb2-tl-node" style="--d:.44s"><div class="sb2-tl-circle">8</div><div class="sb2-tl-lbl">Collab</div></div><div class="sb2-tl-node" style="--d:.57s"><div class="sb2-tl-circle">10</div><div class="sb2-tl-lbl">Go</div></div></div>';}},
+            {title:'Coach-marks par page',text:'Sur chaque page, un bouton flottant ? déclenche un tuto contextuel. Les étapes s\'appuient sur les vrais éléments de l\'écran.',
+             render:function(){return '<div class="sb2-list" style="--ac:#f59e0b;max-width:380px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Accueil → 6 coach-marks</span><span class="val">?</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">BP → 9 coach-marks</span><span class="val">?</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Engagements → 7 coach-marks</span><span class="val">?</span></div></div>';}},
+            {title:'Progression sauvegardée',text:'Les pages vues, les favoris et le % de complétion sont stockés localement. Reprenez exactement là où vous en étiez.',
+             render:function(){return '<div style="display:flex;flex-direction:column;align-items:center;gap:14px;max-width:360px;width:100%"><div class="sb2-badge" style="--ac:#f59e0b;--d:.1s">✓ 9 / 13 modules vus</div><div class="how2-progress-bar" style="width:100%;max-width:260px;height:8px;background:rgba(245,158,11,.15)"><div class="how2-progress-fill" style="width:69%;background:linear-gradient(90deg,#f59e0b,#fbbf24)"></div></div></div>';}}
+          ]
+        },
+        {
           id:'accueil',icon:I.dashboard,accent:'#2563eb',span:'how2-c8',
           cat:'fondamentaux',
           eyebrow:'Tableau de bord',title:'Accueil',
@@ -422,6 +475,41 @@
       ]
     },
     {
+      id:'pilotage',label:'Pilotage réseau',
+      chapters:[
+        {
+          id:'bpconsolide',icon:I.bp,accent:'#be185d',span:'how2-c4',isNew:true,
+          cat:'pilotage',
+          eyebrow:'Vue portefeuille',title:'BP consolidé',
+          desc:'La somme de tous vos BPs en un coup d\'œil. CA réseau, EBITDA global, cash-flow agrégé — pour piloter le master-franchise.',
+          tags:['consolidé','portefeuille','réseau','macro','master'],
+          steps:[
+            {title:'CA réseau agrégé',text:'Chaque studio contribue au total. La courbe consolidée montre la progression globale, avec zoom par cohorte si besoin.',
+             render:function(){return '<div class="sb2-chart" style="--ac:#be185d"><svg viewBox="0 0 480 150" preserveAspectRatio="none"><defs><linearGradient id="sbgBPC" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#be185d" stop-opacity=".28"/><stop offset="100%" stop-color="#be185d" stop-opacity="0"/></linearGradient></defs><path d="M0 140 L60 128 L120 110 L180 88 L240 68 L300 48 L360 32 L420 18 L480 8 L480 150 L0 150 Z" fill="url(#sbgBPC)"/><path class="sb2-chart-line" d="M0 140 L60 128 L120 110 L180 88 L240 68 L300 48 L360 32 L420 18 L480 8" fill="none" stroke="#be185d" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';}},
+            {title:'KPIs macro temps réel',text:'CAPEX cumulé engagé, CA A1 réseau, EBITDA moyen, nombre d\'ouvertures. Toujours à jour dès qu\'un BP change.',
+             render:function(){return '<div class="sb2-kpi-row" style="--ac:#be185d"><div class="sb2-kpi" style="--d:.08s"><div class="lbl">CAPEX cumul\u00e9</div><div class="val">4,8 M€</div></div><div class="sb2-kpi" style="--d:.22s"><div class="lbl">CA r\u00e9seau A1</div><div class="val">11,2 M€</div></div><div class="sb2-kpi" style="--d:.36s"><div class="lbl">EBITDA moy.</div><div class="val" style="color:#be185d">18,4%</div></div></div>';}},
+            {title:'Classement performance',text:'Les studios triés par EBITDA, par taux de remplissage, par écart au BP. Identifiez qui performe et qui décroche, en une seconde.',
+             render:function(){return '<div class="sb2-list" style="--ac:#be185d"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">🥇 Garches</span><span class="val" style="color:#16a34a">+12%</span></div><div class="sb2-item" style="--d:.18s"><span class="dot"></span><span class="txt">🥈 Lyon Part-Dieu</span><span class="val" style="color:#16a34a">+4%</span></div><div class="sb2-item" style="--d:.31s"><span class="dot"></span><span class="txt">Lattes</span><span class="val" style="color:#dc2626">-8%</span></div></div>';}}
+          ]
+        },
+        {
+          id:'prospection',icon:I.search,accent:'#ea580c',span:'how2-c4',isNew:true,
+          cat:'pilotage',
+          eyebrow:'CRM',title:'Prospection',
+          desc:'Pipeline des prospects franchisés : chauds · tièdes · froids. Relances automatiques, notes par contact, historique complet.',
+          tags:['prospects','CRM','pipeline','franchisé','relances'],
+          steps:[
+            {title:'Pipeline 3 niveaux',text:'Chaque prospect classé chaud / tiède / froid. Glissez d\'une colonne à l\'autre pour mettre à jour le statut en temps réel.',
+             render:function(){return '<div class="sb2-list" style="--ac:#ea580c"><div class="sb2-item" style="--d:.05s"><span class="dot" style="background:#dc2626;box-shadow:0 0 0 3px rgba(220,38,38,.18)"></span><span class="txt">Prospect chaud</span><span class="val">7</span></div><div class="sb2-item" style="--d:.18s"><span class="dot" style="background:#f59e0b;box-shadow:0 0 0 3px rgba(245,158,11,.18)"></span><span class="txt">Prospect tiède</span><span class="val">12</span></div><div class="sb2-item" style="--d:.31s"><span class="dot" style="background:#94a3b8;box-shadow:0 0 0 3px rgba(148,163,184,.18)"></span><span class="txt">Prospect froid</span><span class="val">23</span></div></div>';}},
+            {title:'Alerte relance à 14j',text:'Un prospect chaud sans relance depuis 14 jours ? Une alerte remonte sur l\'Accueil. Plus aucun lead ne refroidit dans l\'oubli.',
+             render:function(){return '<div class="sb2-phone" style="--ac:#ea580c"><div class="sb2-phone-notch"></div><div class="sb2-phone-card" style="--d:.1s"><div class="plbl">⚠ Relance</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">M. Dupont — 18j sans contact</div></div><div class="sb2-phone-card" style="--d:.28s"><div class="plbl">📞 Aujourd\'hui</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">Relance planifi\u00e9e 14h</div></div></div>';}},
+            {title:'Historique & notes',text:'Chaque appel, chaque email, chaque visite — logué au bon endroit. L\'historique complet d\'un prospect accessible en 2 clics.',
+             render:function(){return '<div class="sb2-chat" style="--ac:#ea580c"><div class="sb2-bubble l" style="--d:.05s"><b>28 mars</b>Premier appel — intéressé par Toulouse</div><div class="sb2-bubble r" style="--d:.28s"><b>2 avril</b>Envoyé dossier franchise + BP-type</div><div class="sb2-bubble l" style="--d:.51s"><b>15 avril</b>Visite locale prévue semaine prochaine</div></div>';}}
+          ]
+        }
+      ]
+    },
+    {
       id:'collab',label:'Collab & Intelligence',
       chapters:[
         {
@@ -468,6 +556,21 @@
             {title:'Recherche plein texte',text:'Retrouvez n\'importe quelle note en 2 mots. La recherche cherche dans tous les échanges de tous les studios simultanément.',
              render:function(){return '<div class="sb2-list" style="--ac:#7c3aed;max-width:360px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Résultats pour "banque"</span><span class="val">4 notes</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Lattes · BNP · J-1</span><span class="val">→</span></div></div>';}}
           ]
+        },
+        {
+          id:'notifications',icon:I.notif,accent:'#0ea5e9',span:'how2-c4',isNew:true,
+          cat:'collab',
+          eyebrow:'Notifications',title:'Push & panneau',
+          desc:'Alertes push mobile en moins de 2s, panneau in-app avec historique complet, badges de compteurs sur la topbar.',
+          tags:['notifications','push','mobile','alertes','temps réel'],
+          steps:[
+            {title:'Push mobile instantanée',text:'Dès qu\'une tâche vous est assignée, qu\'un message vous mentionne, ou qu\'une échéance approche — une push arrive sur iOS / Android.',
+             render:function(){return '<div class="sb2-phone" style="--ac:#0ea5e9"><div class="sb2-phone-notch"></div><div class="sb2-phone-card" style="--d:.1s"><div class="plbl">🔔 Isseo</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">Nouvelle tâche — Lattes</div></div><div class="sb2-phone-card" style="--d:.28s"><div class="plbl">⚠ J-7</div><div class="pval" style="font-size:11px;line-height:1.4;color:rgba(255,255,255,.85);font-weight:500">Compromis Garches dans 7j</div></div></div>';}},
+            {title:'Panneau in-app historique',text:'Cliquez sur la cloche en haut à droite : toutes vos notifs des 30 derniers jours, triées par studio et par type.',
+             render:function(){return '<div class="sb2-list" style="--ac:#0ea5e9"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Nouvelle tâche assignée</span><span class="val">2min</span></div><div class="sb2-item" style="--d:.18s"><span class="dot"></span><span class="txt">@Paul mentionné — Lattes</span><span class="val">1h</span></div><div class="sb2-item" style="--d:.31s"><span class="dot"></span><span class="txt">EBITDA alerte — Garches</span><span class="val">Hier</span></div></div>';}},
+            {title:'Préférences granulaires',text:'Coupez les notifs qui vous saturent, gardez celles qui comptent. Réglages par type : mentions, tâches, alertes EBITDA, échéances.',
+             render:function(){return '<div class="sb2-form" style="--ac:#0ea5e9"><div class="sb2-field" style="--d:.06s"><label>Mentions @</label><input value="✓ Push + Panneau" readonly/></div><div class="sb2-field" style="--d:.2s"><label>Tâches assignées</label><input value="✓ Push" readonly/></div><div class="sb2-field" style="--d:.34s"><label>Alertes EBITDA</label><input value="✓ Push + Email" readonly/></div></div>';}}
+          ]
         }
       ]
     }
@@ -477,19 +580,21 @@
   var ALL_CHAPTERS=[];
   SECTIONS.forEach(function(s){s.chapters.forEach(function(c){ALL_CHAPTERS.push(c);});});
 
-  // ── Quick-start use cases ─────────────────────────────────────────────────
-  var QS=[
-    {ico:'📝',label:'Préparer un RDV banque',ids:['bp','chalandise','financier']},
-    {ico:'🔑',label:'Compromis vient d\'être signé',ids:['engagements','local','collab']},
-    {ico:'📊',label:'Valider un business plan',ids:['bp','simulator','financier']},
-    {ico:'🏗️',label:'Suivre un chantier',ids:['local','engagements','fichiers']},
-    {ico:'👥',label:'Former mon équipe',ids:['collab','echanges','studios']}
+  // ── Parcours guidés multi-chapitres ───────────────────────────────────────
+  var PATHWAYS=[
+    {id:'demarrage',ico:'🚀',label:'Découvrir l\'app',desc:'Le tour guidé complet pour un nouveau venu — 4 chapitres, 8 minutes',chapters:['onboarding','accueil','studios','bp']},
+    {id:'rdv-banque',ico:'🏦',label:'Préparer un RDV banque',desc:'Le combo BP + chalandise + financier que les banquiers demandent',chapters:['bp','chalandise','financier']},
+    {id:'compromis-signe',ico:'🔑',label:'Compromis signé, et maintenant ?',desc:'Les 3 premiers réflexes quand le studio devient réel',chapters:['engagements','local','collab']},
+    {id:'valider-bp',ico:'📊',label:'Valider un business plan',desc:'3 vérifs avant de présenter le BP à un investisseur',chapters:['bp','simulator','financier']},
+    {id:'chantier',ico:'🏗️',label:'Suivre un chantier',desc:'Rester au courant de chaque étape travaux',chapters:['local','engagements','fichiers']},
+    {id:'onboard-equipe',ico:'👥',label:'Former mon équipe',desc:'Mettre tout le monde dans le même rythme en 15 minutes',chapters:['onboarding','collab','echanges']},
+    {id:'pilotage',ico:'📈',label:'Piloter le portefeuille',desc:'Consolidé, alertes, prospects — la vue macro du master-franchisé',chapters:['bpconsolide','prospection','financier']}
   ];
 
   // ── State ─────────────────────────────────────────────────────────────────
   var _search='';
   var _favOnly=false;
-  var _modal={ov:null,chapter:null,step:0,playing:true,timer:null,_sy:0,_bs:null};
+  var _modal={ov:null,chapter:null,step:0,playing:true,timer:null,_sy:0,_bs:null,path:null,pathIdx:0};
   var STEP_MS=5500;
 
   // ── Render page ───────────────────────────────────────────────────────────
@@ -518,13 +623,30 @@
     // ── Quick start ──
     h+='<div class="how2-quickstart">';
     h+='<div class="how2-fav-bar">';
-    h+='<div class="how2-qs-label">Je veux…</div>';
+    h+='<div class="how2-qs-label">Parcours guidés — je veux…</div>';
     h+='<button class="how2-filter-btn'+(favCount>0&&_favOnly?' active':'')+'" onclick="window._how2ToggleFav()">'+(favCount>0&&_favOnly?I.heart:I.heartOutline)+' Favoris'+(favCount?' ('+favCount+')':'')+'</button>';
     h+='<div class="how2-progress-label"><div class="how2-progress-bar"><div class="how2-progress-fill" style="width:'+(doneCount/total*100).toFixed(1)+'%"></div></div>'+doneCount+'/'+total+'</div>';
     h+='</div>';
-    h+='<div class="how2-qs-row">';
-    QS.forEach(function(q){
-      h+='<button class="how2-qs-btn" onclick="window._how2QS(\''+q.ids.join(',')+'\')" title="'+_esc(q.label)+'"><span class="how2-qs-ico">'+q.ico+'</span>'+_esc(q.label)+'</button>';
+    h+='<div class="how2-path-grid">';
+    PATHWAYS.forEach(function(p){
+      // Calcule nb chapitres déjà vus dans le parcours
+      var seen=p.chapters.filter(function(cid){return _isDone(cid);}).length;
+      var pct=Math.round(seen/p.chapters.length*100);
+      // Petits chips avec les icônes des chapitres
+      var chips='';
+      p.chapters.slice(0,4).forEach(function(cid){
+        var ch=ALL_CHAPTERS.find(function(c){return c.id===cid;});
+        if(!ch)return;
+        chips+='<span class="how2-path-chip" style="--ac:'+ch.accent+'" title="'+_esc(ch.title)+'">'+ch.icon+'</span>';
+      });
+      h+='<button class="how2-path-card" onclick="window._how2StartPath(\''+p.id+'\')" title="'+_esc(p.desc)+'">';
+      h+=  '<div class="how2-path-head"><span class="how2-path-ico">'+p.ico+'</span><div class="how2-path-meta"><div class="how2-path-label">'+_esc(p.label)+'</div><div class="how2-path-desc">'+_esc(p.desc)+'</div></div></div>';
+      h+=  '<div class="how2-path-foot">';
+      h+=    '<div class="how2-path-chips">'+chips+'</div>';
+      h+=    '<span class="how2-path-count">'+p.chapters.length+' chap.'+(seen>0?' · '+pct+'%':'')+'</span>';
+      h+=  '</div>';
+      if(seen>0){h+='<div class="how2-path-prog"><div class="how2-path-prog-fill" style="width:'+pct+'%"></div></div>';}
+      h+='</button>';
     });
     h+='</div>';
     h+='</div>';
@@ -546,6 +668,7 @@
         var fav=_isFav(c.id);var done=_isDone(c.id);
         h+='<div class="how2-card '+(c.span||'how2-c4')+'" data-how2-id="'+c.id+'" style="--ac:'+c.accent+';--cd:'+(0.05+i*0.07)+'s" onclick="window.openHowChapter(\''+c.id+'\')">';
         h+='<div class="how2-card-glow"></div>';
+        if(c.isNew&&!done)h+='<div class="how2-card-new">Nouveau</div>';
         if(done)h+='<div class="how2-card-done">'+I.check+'</div>';
         h+='<button class="how2-card-fav'+(fav?' active':'')+'" onclick="event.stopPropagation();window._how2Fav(\''+c.id+'\')" aria-label="Favori">'+(fav?I.heart:I.heartOutline)+'</button>';
         h+='<div class="how2-card-top">';
@@ -570,22 +693,39 @@
   }
 
   // ── Modal ─────────────────────────────────────────────────────────────────
-  function openHowChapter(id){
+  // options: {pathId?: string, pathIdx?: number}
+  function openHowChapter(id,options){
     _ensureStyles();
     var chap=ALL_CHAPTERS.find(function(c){return c.id===id;});
     if(!chap)return;
     if(_modal.ov)_closeImmediate();
+    var opts=options||{};
+    var path=opts.pathId?PATHWAYS.find(function(p){return p.id===opts.pathId;}):null;
+    var pathIdx=path?(opts.pathIdx||0):0;
     _modal.chapter=chap;_modal.step=0;_modal.playing=true;
+    _modal.path=path;_modal.pathIdx=pathIdx;
     _modal._sy=window.scrollY||document.documentElement.scrollTop||0;
     _modal._bs={pos:document.body.style.position,top:document.body.style.top,left:document.body.style.left,right:document.body.style.right,w:document.body.style.width,ov:document.body.style.overflow};
     document.body.style.cssText='position:fixed;top:-'+_modal._sy+'px;left:0;right:0;width:100%;overflow:hidden';
     var fav=_isFav(id);
+    // Path bar HTML (si on est dans un parcours)
+    var pathBar='';
+    if(path){
+      pathBar=''
+        +'<div class="how2-path-bar" style="--ac:'+chap.accent+'">'
+        +  '<span class="how2-path-bar-ico">'+path.ico+'</span>'
+        +  '<span class="how2-path-bar-label">'+_esc(path.label)+'</span>'
+        +  '<span class="how2-path-bar-pos">Chap. '+(pathIdx+1)+' / '+path.chapters.length+'</span>'
+        +  '<button class="how2-path-exit" aria-label="Quitter le parcours">Quitter ✕</button>'
+        +'</div>';
+    }
     var ov=document.createElement('div');
     ov.className='how2-modal';
     ov.innerHTML=''
       +'<div class="how2-modal-card" style="--ac:'+chap.accent+'">'
       +  '<div class="how2-modal-prog"><div class="how2-modal-prog-fill" style="width:0%"></div></div>'
       +  '<div class="how2-modal-tint"></div>'
+      +  pathBar
       +  '<div class="how2-modal-hdr">'
       +    '<div class="how2-modal-hdr-ico">'+chap.icon+'</div>'
       +    '<div class="how2-modal-hdr-text"><div class="how2-modal-hdr-ey">'+chap.eyebrow+'</div><div class="how2-modal-hdr-title">'+chap.title+'</div></div>'
@@ -608,7 +748,7 @@
       +    '<button class="how2-ctrl-btn how2-play" aria-label="Pause">'+I.pause+'</button>'
       +    '<div class="how2-dots"></div>'
       +    '<button class="how2-ctrl-btn how2-next" aria-label="Suivant">'+I.next+'</button>'
-      +    '<button class="how2-cta-btn">'+_cta(chap).label+I.arrow+'</button>'
+      +    '<button class="how2-cta-btn">'+_ctaLabelForModal(chap)+I.arrow+'</button>'
       +  '</div>'
       +'</div>';
     document.body.appendChild(ov);
@@ -625,16 +765,51 @@
       if(cardFav){cardFav.className='how2-card-fav'+(f?' active':'');cardFav.innerHTML=f?I.heart:I.heartOutline;}
       try{if(navigator.vibrate)navigator.vibrate(8);}catch(e){}
     };
-    ov.querySelector('.how2-cta-btn').onclick=function(){
-      closeHowChapter();
-      var action=_cta(chap).action;
-      if(action)setTimeout(function(){try{eval(action);}catch(e){}},380);
-    };
+    // Bouton Quitter parcours
+    var exitBtn=ov.querySelector('.how2-path-exit');
+    if(exitBtn)exitBtn.onclick=function(){_modal.path=null;_modal.pathIdx=0;_refreshPathBar();};
+    // CTA principal : si on est dans un parcours ET qu'il reste des chapitres → "Chapitre suivant"
+    ov.querySelector('.how2-cta-btn').onclick=_onCtaClick;
     _bindSwipe(ov.querySelector('.how2-modal-card'));
     document.addEventListener('keydown',_onKey);
     _renderStep();
     _startTimer();
     try{if(navigator.vibrate)navigator.vibrate(10);}catch(e){}
+  }
+
+  // Label du CTA principal selon le contexte parcours
+  function _ctaLabelForModal(chap){
+    if(_modal.path&&_modal.pathIdx<_modal.path.chapters.length-1){
+      return 'Chapitre suivant';
+    }
+    return _cta(chap).label;
+  }
+
+  // Click sur le CTA principal : soit chapitre suivant du parcours, soit action standard
+  function _onCtaClick(){
+    var chap=_modal.chapter;
+    if(_modal.path&&_modal.pathIdx<_modal.path.chapters.length-1){
+      // Marquer ce chapitre comme vu
+      if(chap)_markDone(chap.id);
+      var nextId=_modal.path.chapters[_modal.pathIdx+1];
+      var pid=_modal.path.id,pidx=_modal.pathIdx+1;
+      // Enchaîner sur le chapitre suivant du parcours (sans fermer / rouvrir visible)
+      setTimeout(function(){openHowChapter(nextId,{pathId:pid,pathIdx:pidx});},60);
+      _closeImmediate();
+      return;
+    }
+    closeHowChapter();
+    var action=_cta(chap).action;
+    if(action)setTimeout(function(){try{eval(action);}catch(e){}},380);
+  }
+
+  // Rafraîchit la path bar quand on quitte un parcours sans fermer le modal
+  function _refreshPathBar(){
+    if(!_modal.ov)return;
+    var bar=_modal.ov.querySelector('.how2-path-bar');
+    if(bar)bar.style.display='none';
+    var cta=_modal.ov.querySelector('.how2-cta-btn');
+    if(cta){cta.innerHTML=_cta(_modal.chapter).label+I.arrow;}
   }
 
   function _renderStep(){
@@ -647,10 +822,21 @@
     var capTxt=card.querySelector('.how2-caption-txt');
     var dots=card.querySelector('.how2-dots');
     var prog=card.querySelector('.how2-modal-prog-fill');
-    stage.innerHTML='<div class="how2-step active" style="--ac:'+chap.accent+'">'+s.render()+'</div>';
+    // ─ Slot vidéo réelle optionnel : si step.videoSrc renseigné → <video>, sinon fallback render() ─
+    var stepContent;
+    if(s.videoSrc){
+      var poster=s.videoPoster?' poster="'+_esc(s.videoPoster)+'"':'';
+      stepContent='<video class="how2-video" src="'+_esc(s.videoSrc)+'"'+poster+' autoplay muted loop playsinline></video>';
+    }else{
+      stepContent=s.render();
+    }
+    stage.innerHTML='<div class="how2-step active" style="--ac:'+chap.accent+'">'+stepContent+'</div>';
     capNum.textContent=_modal.step+1;
     capTtl.textContent=s.title;
     capTxt.textContent=s.text;
+    // Mettre à jour le CTA selon contexte parcours
+    var ctaBtn=card.querySelector('.how2-cta-btn');
+    if(ctaBtn){ctaBtn.innerHTML=_ctaLabelForModal(chap)+I.arrow;}
     dots.innerHTML='';
     chap.steps.forEach(function(st,i){
       var d=document.createElement('button');
@@ -720,7 +906,7 @@
   function _closeImmediate(){
     _stopTimer();
     if(_modal.ov&&_modal.ov.parentNode)_modal.ov.parentNode.removeChild(_modal.ov);
-    _modal.ov=null;_modal.chapter=null;
+    _modal.ov=null;_modal.chapter=null;_modal.path=null;_modal.pathIdx=0;
     document.removeEventListener('keydown',_onKey);
     var bs=_modal._bs||{};
     document.body.style.position=bs.pos||'';document.body.style.top=bs.top||'';
@@ -738,11 +924,11 @@
     setTimeout(_closeImmediate,260);
   }
 
-  // ── Quick start modal — highlight cards for use case ─────────────────────
-  function _how2QS(idsStr){
-    var ids=idsStr.split(',');
-    // Open first chapter immediately, show others highlighted
-    openHowChapter(ids[0]);
+  // ── Démarrer un parcours guidé — ouvre le premier chapitre avec le contexte parcours ─
+  function _how2StartPath(pathId){
+    var p=PATHWAYS.find(function(x){return x.id===pathId;});
+    if(!p||!p.chapters.length)return;
+    openHowChapter(p.chapters[0],{pathId:pathId,pathIdx:0});
   }
 
   // ── Search + filter ───────────────────────────────────────────────────────
@@ -767,17 +953,21 @@
   var CTA_MAP={
     accueil:{label:'Ouvrir l\'accueil',action:"setPage('accueil')"},
     studios:{label:'Voir mes studios',action:"setPage('projets')"},
+    onboarding:{label:'Lancer le tour',action:"if(typeof startOnboardingTour==='function')startOnboardingTour()"},
     bp:{label:'Ouvrir un BP',action:"setPage('projets')"},
     simulator:{label:'Lancer le simulateur',action:"setPage('projets')"},
     financier:{label:'Suivi financier',action:"setPage('projets')"},
+    bpconsolide:{label:'Vue consolidée',action:"setPage('bp')"},
+    prospection:{label:'Voir les prospects',action:"setPage('prospection')"},
     chalandise:{label:'Explorer une zone',action:"setPage('projets')"},
     local:{label:'Fiche locale',action:"setPage('projets')"},
     engagements:{label:'Voir les engagements',action:"setPage('engagements')"},
     collab:{label:'Ouvrir Collab',action:"setPage('collab')"},
     fichiers:{label:'Accéder aux fichiers',action:"setPage('projets')"},
-    echanges:{label:'Voir les échanges',action:"setPage('projets')"}
+    echanges:{label:'Voir les échanges',action:"setPage('projets')"},
+    notifications:{label:'Ouvrir le panneau',action:"if(typeof toggleNotifPanel==='function')toggleNotifPanel()"}
   };
-  function _cta(chap){return chap.cta||CTA_MAP[chap.id]||{label:'Essayer',action:"setPage('projets')";};}
+  function _cta(chap){return chap.cta||CTA_MAP[chap.id]||{label:'Essayer',action:"setPage('projets')"};}
 
   // ── Utils ─────────────────────────────────────────────────────────────────
   function _esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
@@ -789,5 +979,5 @@
   window._how2Search=_how2Search;
   window._how2ToggleFav=_how2ToggleFav;
   window._how2Fav=_how2Fav;
-  window._how2QS=_how2QS;
+  window._how2StartPath=_how2StartPath;
 })();
