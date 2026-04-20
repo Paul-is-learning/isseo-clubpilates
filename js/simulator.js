@@ -624,7 +624,7 @@ function computeSimCA(membres,cfg,ay,sid){
 function renderStepRepartition(sid,ay,cfg){
   var p4=num(cfg.p4,47),p8=num(cfg.p8,50),pi=num(cfg.pi,3);
   var total=p4+p8+pi;
-  var h='<div class="box" style="border-left:4px solid #1D9E75;margin-bottom:12px">';
+  var h='<div class="box" data-sim-step="2" style="border-left:4px solid #1D9E75;margin-bottom:12px">';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
   h+='<div style="width:28px;height:28px;border-radius:50%;background:#1D9E75;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">2</div>';
   h+='<div>';
@@ -662,7 +662,7 @@ function renderStepRepartition(sid,ay,cfg){
 
 // ── Étape 3 : Prix des abonnements ──
 function renderStepPrix(sid,ay,cfg){
-  var h='<div class="box" style="border-left:4px solid #854F0B;margin-bottom:12px">';
+  var h='<div class="box" data-sim-step="3" style="border-left:4px solid #854F0B;margin-bottom:12px">';
   h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
   h+='<div style="width:28px;height:28px;border-radius:50%;background:#854F0B;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">3</div>';
   h+='<div>';

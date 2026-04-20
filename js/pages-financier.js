@@ -509,7 +509,7 @@ function renderAdherents(sid,s){
     for(var _ri=0;_ri<12;_ri++){var _rk='y'+ay+'_m'+_ri;if(actuel[_rk]!=null&&actuel[_rk]!=='')_nbRemplis++;}
 
     // ─── Étape 1 : Adhérents réels ───
-    h+='<div class="box" style="border-left:4px solid #185FA5;margin-bottom:12px">';
+    h+='<div class="box" data-sim-step="1" style="border-left:4px solid #185FA5;margin-bottom:12px">';
     h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">';
     h+='<div style="width:28px;height:28px;border-radius:50%;background:#185FA5;color:#fff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;flex-shrink:0">1</div>';
     h+='<div>';
