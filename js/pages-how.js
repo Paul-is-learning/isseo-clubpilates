@@ -101,6 +101,63 @@
       +'.how2-card-new{position:absolute;top:12px;left:12px;background:linear-gradient(135deg,#f59e0b,#fbbf24);color:#fff;font:700 9px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:1px;text-transform:uppercase;padding:4px 7px;border-radius:6px;box-shadow:0 2px 6px rgba(245,158,11,.45);z-index:3}'
       // ── Video slot (vidéo réelle dans la stage) ──
       +'.how2-video{width:100%;height:100%;object-fit:cover;border-radius:14px;background:#000}'
+      // ── Mockup écran app (ressemble à une capture réelle de l\'app) ──
+      +'.sb2-screen{width:100%;max-width:580px;background:#fff;border:.5px solid rgba(10,14,28,.12);border-radius:14px;overflow:hidden;box-shadow:0 10px 30px -12px rgba(10,14,28,.22),inset 0 1px 0 rgba(255,255,255,.9);opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) .05s forwards;font-family:-apple-system,system-ui,Inter,sans-serif}'
+      +'body.dark .sb2-screen{background:#1c2433;border-color:rgba(255,255,255,.08);box-shadow:0 10px 30px -12px rgba(0,0,0,.6)}'
+      +'.sb2-screen-hdr{display:flex;align-items:center;gap:8px;padding:9px 12px;border-bottom:.5px solid rgba(10,14,28,.08);background:linear-gradient(180deg,#fafbfd,#f3f5f9)}'
+      +'body.dark .sb2-screen-hdr{background:linear-gradient(180deg,#21293a,#1a2130);border-bottom-color:rgba(255,255,255,.06)}'
+      +'.sb2-screen-dots{display:flex;gap:4px;flex-shrink:0}'
+      +'.sb2-screen-dot{width:9px;height:9px;border-radius:50%;background:rgba(120,120,128,.25)}'
+      +'.sb2-screen-dot.r{background:#ff5f57}.sb2-screen-dot.y{background:#febc2e}.sb2-screen-dot.g{background:#28c840}'
+      +'.sb2-screen-title{font:600 11px/1 -apple-system,system-ui,Inter,sans-serif;color:#64748b;flex:1;text-align:center;letter-spacing:.2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}'
+      +'body.dark .sb2-screen-title{color:#9ba9ba}'
+      +'.sb2-screen-tabs{display:flex;gap:2px;padding:8px 10px 0;border-bottom:.5px solid rgba(10,14,28,.06);background:rgba(120,120,128,.04);overflow-x:auto;scrollbar-width:none}'
+      +'.sb2-screen-tabs::-webkit-scrollbar{display:none}'
+      +'body.dark .sb2-screen-tabs{border-bottom-color:rgba(255,255,255,.04);background:rgba(255,255,255,.025)}'
+      +'.sb2-screen-tab{font:600 10.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#94a3b8;padding:7px 10px 9px;border-radius:7px 7px 0 0;white-space:nowrap;letter-spacing:.15px}'
+      +'.sb2-screen-tab.active{color:var(--ac);background:#fff;box-shadow:0 -1px 0 var(--ac) inset}'
+      +'body.dark .sb2-screen-tab.active{background:#1c2433}'
+      +'.sb2-screen-body{padding:14px}'
+      +'.sb2-screen-table{width:100%;border-collapse:separate;border-spacing:0;font:500 11.5px/1.3 -apple-system,system-ui,Inter,sans-serif;font-variant-numeric:tabular-nums}'
+      +'.sb2-screen-table th{font-weight:700;color:#64748b;text-align:left;padding:6px 8px;font-size:9.5px;letter-spacing:.8px;text-transform:uppercase;border-bottom:.5px solid rgba(10,14,28,.08)}'
+      +'body.dark .sb2-screen-table th{color:#9ba9ba;border-bottom-color:rgba(255,255,255,.06)}'
+      +'.sb2-screen-table td{padding:7px 8px;color:#0f1f3d;border-bottom:.5px solid rgba(10,14,28,.04)}'
+      +'body.dark .sb2-screen-table td{color:#e6edf3;border-bottom-color:rgba(255,255,255,.035)}'
+      +'.sb2-screen-table tbody tr{opacity:0;animation:sb2Up .4s cubic-bezier(.34,1.56,.52,1) forwards}'
+      +'.sb2-cell-pos{color:#16a34a;font-weight:700;background:rgba(22,163,74,.08);border-radius:6px}'
+      +'.sb2-cell-neg{color:#dc2626;font-weight:700;background:rgba(220,38,38,.08);border-radius:6px}'
+      +'.sb2-cell-warn{color:#b45309;font-weight:700;background:rgba(245,158,11,.1);border-radius:6px}'
+      +'.sb2-cell-accent{color:var(--ac);font-weight:700}'
+      +'.sb2-screen-input{display:flex;align-items:center;gap:8px;padding:9px 12px;background:rgba(120,120,128,.07);border-radius:10px;margin-bottom:7px;opacity:0;animation:sb2Up .45s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'body.dark .sb2-screen-input{background:rgba(255,255,255,.045)}'
+      +'.sb2-screen-input .k{font:600 10.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#64748b;text-transform:uppercase;letter-spacing:.6px;flex:1;min-width:0}'
+      +'body.dark .sb2-screen-input .k{color:#9ba9ba}'
+      +'.sb2-screen-input .v{font:700 14px/1 -apple-system,system-ui,Inter,sans-serif;color:var(--ac);font-variant-numeric:tabular-nums;background:#fff;border:.5px solid color-mix(in srgb,var(--ac) 28%,transparent);border-radius:7px;padding:5px 9px;min-width:70px;text-align:right}'
+      +'body.dark .sb2-screen-input .v{background:rgba(16,22,34,.7)}'
+      +'.sb2-screen-cta{display:inline-flex;align-items:center;gap:6px;background:var(--ac);color:#fff;border-radius:10px;padding:9px 14px;font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;box-shadow:0 4px 12px -3px color-mix(in srgb,var(--ac) 55%,transparent);opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) var(--d,.3s) forwards;margin-top:6px}'
+      +'.sb2-screen-gauge{display:flex;flex-direction:column;gap:5px;opacity:0;animation:sb2Up .5s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'.sb2-screen-gauge .g-lbl{display:flex;justify-content:space-between;align-items:center;font:600 10.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#64748b}'
+      +'body.dark .sb2-screen-gauge .g-lbl{color:#9ba9ba}'
+      +'.sb2-screen-gauge .g-lbl b{color:var(--ac);font-size:13px;font-variant-numeric:tabular-nums}'
+      +'.sb2-screen-gauge .g-bar{height:7px;border-radius:999px;background:rgba(120,120,128,.15);overflow:hidden}'
+      +'.sb2-screen-gauge .g-fill{height:100%;background:linear-gradient(90deg,var(--ac),color-mix(in srgb,var(--ac) 55%,#fff));border-radius:999px;transform-origin:left;transform:scaleX(0);animation:sb2GaugeFill .9s cubic-bezier(.2,.8,.2,1) calc(var(--d,0s) + .1s) forwards}'
+      +'@keyframes sb2GaugeFill{to{transform:scaleX(var(--pct,1))}}'
+      +'.sb2-screen-alert{display:flex;align-items:flex-start;gap:9px;padding:10px 12px;border-radius:10px;margin-bottom:7px;font:500 12px/1.4 -apple-system,system-ui,Inter,sans-serif;opacity:0;animation:sb2Up .45s cubic-bezier(.34,1.56,.52,1) var(--d,0s) forwards}'
+      +'.sb2-screen-alert.ok{background:rgba(22,163,74,.1);color:#166534;border-left:3px solid #16a34a}'
+      +'.sb2-screen-alert.ko{background:rgba(220,38,38,.08);color:#991b1b;border-left:3px solid #dc2626}'
+      +'.sb2-screen-alert.warn{background:rgba(245,158,11,.1);color:#92400e;border-left:3px solid #f59e0b}'
+      +'.sb2-screen-alert .ico{font-size:15px;line-height:1;flex-shrink:0}'
+      +'.sb2-screen-alert .body{flex:1}'
+      +'.sb2-screen-alert .body b{display:block;font-weight:700;margin-bottom:2px}'
+      +'body.dark .sb2-screen-alert.ok{background:rgba(22,163,74,.16);color:#86efac}'
+      +'body.dark .sb2-screen-alert.ko{background:rgba(220,38,38,.16);color:#fca5a5}'
+      +'body.dark .sb2-screen-alert.warn{background:rgba(245,158,11,.18);color:#fcd34d}'
+      // ── Chart projection (atterrissage fin d\'année) ──
+      +'.sb2-proj{width:100%;max-width:520px;height:170px}'
+      +'.sb2-proj svg{width:100%;height:100%}'
+      +'.sb2-proj-real{stroke-dasharray:640;stroke-dashoffset:640;animation:sb2Draw 1.6s cubic-bezier(.2,.8,.2,1) .1s forwards}'
+      +'.sb2-proj-fcst{stroke-dasharray:3 4;opacity:0;animation:sb2FcstFade .6s cubic-bezier(.2,.8,.2,1) 1.3s forwards}'
+      +'@keyframes sb2FcstFade{to{opacity:.95}}'
       // ── Category sections ──
       +'.how2-section{margin-top:36px}'
       +'.how2-section-head{display:flex;align-items:baseline;gap:10px;margin-bottom:16px}'
@@ -378,48 +435,199 @@
       id:'finance',label:'Finance',
       chapters:[
         {
-          id:'bp',icon:I.bp,accent:'#047857',span:'how2-c4',
+          id:'bp',icon:I.bp,accent:'#047857',span:'how2-c8',
           cat:'finance',
           eyebrow:'Business Plan',title:'BP didactique',
-          desc:'Trois chiffres. Trente-six mois. La puissance du modèle Club Pilates, sans Excel.',
-          tags:['BP','excel','prévisionnel','adhérents'],
+          desc:'De la création du studio à la courbe 36 mois — 5 étapes précises, zéro Excel. Le vrai parcours BP de bout en bout.',
+          tags:['BP','excel','prévisionnel','adhérents','newform','hypothèses'],
           steps:[
-            {title:'3 chiffres suffisent',text:'Saisissez les objectifs adhérents fin A1, A2 et A3. L\'algorithme calcule tout le reste : ARPU, pack mix, EBITDA, cash.',
-             render:function(){return '<div class="sb2-form" style="--ac:#047857"><div class="sb2-field" style="--d:.05s"><label>Adhérents fin A1</label><input value="320" readonly/></div><div class="sb2-field" style="--d:.2s"><label>Adhérents fin A2</label><input value="480" readonly/></div><div class="sb2-field" style="--d:.35s"><label>Adhérents fin A3</label><input value="540" readonly/></div></div>';}},
-            {title:'Courbe CA 36 mois',text:'Chaque mois détaillé : CA mensuel, EBITDA, trésorerie nette. La progression vers la rentabilité, visualisée.',
-             render:function(){return '<div class="sb2-chart" style="--ac:#047857"><svg viewBox="0 0 480 150" preserveAspectRatio="none"><defs><linearGradient id="sbg2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#047857" stop-opacity=".25"/><stop offset="100%" stop-color="#047857" stop-opacity="0"/></linearGradient></defs><path d="M0 145 L60 132 L120 118 L180 94 L240 80 L300 54 L360 38 L420 20 L480 10 L480 150 L0 150 Z" fill="url(#sbg2)"/><path class="sb2-chart-line" d="M0 145 L60 132 L120 118 L180 94 L240 80 L300 54 L360 38 L420 20 L480 10" fill="none" stroke="#047857" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>';}},
-            {title:'Vue réel vs initial',text:'Injectez les vraies données mois par mois. L\'app trace l\'écart entre le BP initial et la réalité terrain.',
-             render:function(){return '<div class="sb2-kpi-row" style="--ac:#047857"><div class="sb2-kpi" style="--d:.08s"><div class="lbl">BP Initial</div><div class="val">320</div></div><div class="sb2-kpi" style="--d:.22s"><div class="lbl">Réel</div><div class="val" style="color:#047857">338</div></div><div class="sb2-kpi" style="--d:.36s"><div class="lbl">Écart</div><div class="val" style="color:#16a34a">+5,6%</div></div></div>';}}
+            {title:'Étape 1 — Enregistrer le nouveau studio',text:'Formulaire newform : nom, ville, cohorte, date d\'ouverture prévue. 4 champs seulement pour créer la fiche. Aucune autre donnée n\'est demandée à ce stade.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#047857">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Nouveau studio — ISSEO</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div class="sb2-screen-input" style="--d:.08s"><span class="k">Nom du studio</span><span class="v">Montpellier — Lattes</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.2s"><span class="k">Ville</span><span class="v">Lattes (34)</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.32s"><span class="k">Cohorte</span><span class="v">Cohorte 3</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.44s"><span class="k">Ouverture prévue</span><span class="v">T2 2026</span></div>'
+               +    '<div style="text-align:right"><span class="sb2-screen-cta" style="--d:.6s">Créer le studio ✓</span></div>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 2 — Saisir les 3 hypothèses du BP',text:'Objectifs adhérents fin A1, A2, A3. Ce sont les SEULES variables métier que vous contrôlez. ARPU, pack-mix (4 séances 47% / 8 séances 50% / illimité 3%) et charges sont figés post-OnAir.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#047857">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Lattes · Business Plan · Hypothèses</div></div>'
+               +  '<div class="sb2-screen-tabs"><span class="sb2-screen-tab">Workflow</span><span class="sb2-screen-tab active">BP</span><span class="sb2-screen-tab">Adhérents</span><span class="sb2-screen-tab">Financier</span></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div class="sb2-screen-input" style="--d:.08s"><span class="k">Adhérents fin A1</span><span class="v">320</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.22s"><span class="k">Adhérents fin A2</span><span class="v">480</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.36s"><span class="k">Adhérents fin A3</span><span class="v">540</span></div>'
+               +    '<div class="sb2-screen-gauge" style="--d:.5s;--pct:.88"><div class="g-lbl"><span>Saturation studio</span><b>88%</b></div><div class="g-bar"><div class="g-fill"></div></div></div>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 3 — Le BP se génère automatiquement',text:'Dès que les 3 chiffres sont posés, l\'algorithme déploie 36 mois de CA, EBITDA et trésorerie nette. ARPU ~157€/mois, pack-mix appliqué, charges figées, seuil de rentabilité calculé.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#047857">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Lattes · BP généré — Courbe 36 mois</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div class="sb2-chart" style="--ac:#047857;max-width:100%"><svg viewBox="0 0 480 150" preserveAspectRatio="none"><defs><linearGradient id="sbgBP3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#047857" stop-opacity=".26"/><stop offset="100%" stop-color="#047857" stop-opacity="0"/></linearGradient></defs><line x1="0" y1="95" x2="480" y2="95" stroke="rgba(10,14,28,.1)" stroke-dasharray="3 3"/><text x="6" y="91" font-size="8" fill="#64748b" font-family="-apple-system,Inter,sans-serif">Seuil rentabilité</text><path d="M0 145 L60 132 L120 118 L180 94 L240 80 L300 54 L360 38 L420 20 L480 10 L480 150 L0 150 Z" fill="url(#sbgBP3)"/><path class="sb2-chart-line" d="M0 145 L60 132 L120 118 L180 94 L240 80 L300 54 L360 38 L420 20 L480 10" fill="none" stroke="#047857" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+               +    '<div style="display:flex;gap:8px;margin-top:10px"><div class="sb2-kpi" style="--d:.8s;flex:1;padding:9px 11px"><div class="lbl">CA A1</div><div class="val" style="font-size:16px">504 K€</div></div><div class="sb2-kpi" style="--d:.95s;flex:1;padding:9px 11px"><div class="lbl">EBITDA A1</div><div class="val" style="font-size:16px">72 K€</div></div><div class="sb2-kpi" style="--d:1.1s;flex:1;padding:9px 11px"><div class="lbl">Break-even</div><div class="val" style="font-size:16px">M14</div></div></div>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 4 — Détail mensuel consultable',text:'Chaque mois du BP détaillé : CA, charges, EBITDA, trésorerie. Tableau scrollable, export Excel possible. L\'app trace aussi adhérents entrants/sortants pour vérifier la cohérence de la courbe d\'acquisition.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#047857">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Lattes · BP mensuel · Année 1</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<table class="sb2-screen-table">'
+               +      '<thead><tr><th>Mois</th><th>Adh.</th><th>CA</th><th>EBITDA</th></tr></thead>'
+               +      '<tbody>'
+               +        '<tr style="animation-delay:.08s"><td>M3</td><td>85</td><td>13 400€</td><td class="sb2-cell-neg">−5 800€</td></tr>'
+               +        '<tr style="animation-delay:.18s"><td>M6</td><td>165</td><td>26 100€</td><td class="sb2-cell-warn">−1 200€</td></tr>'
+               +        '<tr style="animation-delay:.28s"><td>M9</td><td>242</td><td>38 200€</td><td class="sb2-cell-pos">+4 600€</td></tr>'
+               +        '<tr style="animation-delay:.38s"><td>M12</td><td>320</td><td>50 400€</td><td class="sb2-cell-pos">+11 800€</td></tr>'
+               +      '</tbody>'
+               +    '</table>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 5 — Export PDF pour la banque',text:'En un clic, le BP devient un dossier PDF complet : synthèse, courbe 36 mois, tableau mensuel, hypothèses, ratios. Format pro prêt à transmettre au banquier ou à Club Pilates France.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#047857;max-width:420px">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Export — Dossier banque</div></div>'
+               +  '<div class="sb2-screen-body" style="padding:16px 14px">'
+               +    '<div class="sb2-screen-alert ok" style="--d:.1s"><span class="ico">📄</span><div class="body"><b>BP_Lattes_2026.pdf · 8 pages</b>Synthèse · Courbe 36m · Détail mensuel · Ratios</div></div>'
+               +    '<div class="sb2-screen-alert ok" style="--d:.28s"><span class="ico">✓</span><div class="body"><b>Prêt à envoyer</b>Format bancaire standard · Signature numérique</div></div>'
+               +    '<div style="text-align:right;margin-top:6px"><span class="sb2-screen-cta" style="--d:.44s">Télécharger PDF ↓</span></div>'
+               +  '</div>'
+               +'</div>';}}
           ]
         },
         {
           id:'simulator',icon:I.sim,accent:'#0d9488',span:'how2-c4',
           cat:'finance',
           eyebrow:'Simulateur',title:'Scénarios adhérents',
-          desc:'Faites varier loyer, charges et répartition des packs. Voyez l\'impact sur le cash en temps réel.',
-          tags:['simulation','scénarios','cash','packs'],
+          desc:'Faites varier loyer et charges. Voyez l\'impact sur le cash en temps réel. Post-OnAir : pack-mix 47/50/3% et ARPU figés par Club Pilates.',
+          tags:['simulation','scénarios','cash','packs','loyer','charges'],
           steps:[
-            {title:'Étape 1 — Loyer & charges',text:'Renseignez le loyer mensuel et les charges au m². Ce sont les seules variables que vous contrôlez vraiment.',
-             render:function(){return '<div class="sb2-form" style="--ac:#0d9488"><div class="sb2-field" style="--d:.06s"><label>Loyer mensuel</label><input value="6 500 €" readonly/></div><div class="sb2-field" style="--d:.2s"><label>Charges / m²</label><input value="18 €" readonly/></div><div class="sb2-field" style="--d:.34s"><label>Surface</label><input value="320 m²" readonly/></div></div>';}},
-            {title:'Étape 2 — Répartition packs',text:'Premium, Classic, Intro — glissez les curseurs pour tester la distribution. L\'ARPU recalcule en direct.',
-             render:function(){return '<div class="sb2-list" style="--ac:#0d9488;max-width:380px"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Premium (34€/sem)</span><span class="val">45%</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Classic (25€/sem)</span><span class="val">40%</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Intro (18€/sem)</span><span class="val">15%</span></div></div>';}},
-            {title:'Étape 3 — ARPU & résultat',text:'L\'ARPU pondéré et le résultat net s\'affichent instantanément. Comparez les scénarios sans toucher au BP.',
-             render:function(){return '<div class="sb2-kpi-row" style="--ac:#0d9488"><div class="sb2-kpi" style="--d:.08s"><div class="lbl">ARPU</div><div class="val">28,3€</div></div><div class="sb2-kpi" style="--d:.22s"><div class="lbl">CA/mois</div><div class="val">9 056€</div></div><div class="sb2-kpi" style="--d:.36s"><div class="lbl">Résultat net</div><div class="val" style="color:#0d9488">+1 640€</div></div></div>';}}
+            {title:'Étape 1 — Loyer et charges au m²',text:'Les SEULES variables à votre main post-OnAir : loyer mensuel et charges au m². Tout le reste (pack-mix 4/8/illimité, prix, ARPU) est verrouillé par Club Pilates France.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#0d9488">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Simulateur · Étape 1/3 · Locaux</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div class="sb2-screen-input" style="--d:.08s"><span class="k">Loyer mensuel</span><span class="v">6 500€</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.22s"><span class="k">Charges / m²</span><span class="v">18€</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.36s"><span class="k">Surface</span><span class="v">320 m²</span></div>'
+               +    '<div class="sb2-screen-alert warn" style="--d:.5s"><span class="ico">🔒</span><div class="body"><b>Pack-mix verrouillé</b>4 séances 47% / 8 séances 50% / Illimité 3%</div></div>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 2 — Impact sur le seuil de rentabilité',text:'Le simulateur recalcule le nombre d\'adhérents nécessaires pour atteindre l\'équilibre selon votre loyer. Plus le loyer monte, plus il faut d\'adhérents pour être à l\'EBITDA positif.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#0d9488">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Simulateur · Étape 2/3 · Seuil rentabilité</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<table class="sb2-screen-table">'
+               +      '<thead><tr><th>Scénario</th><th>Loyer</th><th>Break-even</th><th>Cash A1</th></tr></thead>'
+               +      '<tbody>'
+               +        '<tr style="animation-delay:.08s"><td>Optimiste</td><td>5 500€</td><td class="sb2-cell-pos">155 adh.</td><td class="sb2-cell-pos">+52 K€</td></tr>'
+               +        '<tr style="animation-delay:.2s"><td>Central</td><td>6 500€</td><td class="sb2-cell-accent">175 adh.</td><td class="sb2-cell-accent">+28 K€</td></tr>'
+               +        '<tr style="animation-delay:.32s"><td>Prudent</td><td>7 500€</td><td class="sb2-cell-warn">198 adh.</td><td class="sb2-cell-neg">−4 K€</td></tr>'
+               +      '</tbody>'
+               +    '</table>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 3 — Synthèse projet',text:'Le résultat net de Année 1, 2 et 3 affichés en live. Changez le loyer — les 3 années recalculent instantanément. Vérifiez que tous vos scénarios restent viables.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#0d9488">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Simulateur · Étape 3/3 · Résultats 3 ans</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div style="display:flex;gap:8px"><div class="sb2-kpi" style="--ac:#0d9488;--d:.08s;flex:1"><div class="lbl">Année 1</div><div class="val" style="color:#dc2626">−8 K€</div></div><div class="sb2-kpi" style="--ac:#0d9488;--d:.22s;flex:1"><div class="lbl">Année 2</div><div class="val" style="color:#0d9488">+42 K€</div></div><div class="sb2-kpi" style="--ac:#0d9488;--d:.36s;flex:1"><div class="lbl">Année 3</div><div class="val" style="color:#0d9488">+78 K€</div></div></div>'
+               +    '<div class="sb2-screen-alert ok" style="--d:.5s;margin-top:10px"><span class="ico">📈</span><div class="body"><b>ARPU pondéré : 28,3€ / séance</b>Cash cumulé 3 ans : +112 K€</div></div>'
+               +  '</div>'
+               +'</div>';}}
           ]
         },
         {
-          id:'financier',icon:I.financier,accent:'#b45309',span:'how2-c4',
+          id:'financier',icon:I.financier,accent:'#b45309',span:'how2-c8',
           cat:'finance',
-          eyebrow:'Suivi financier',title:'Réel vs Prévisionnel',
-          desc:'Comparez chaque mois le réel terrain et le BP initial. Détectez les écarts avant qu\'ils deviennent des problèmes.',
-          tags:['financier','suivi','écarts','mensuel'],
+          eyebrow:'Suivi financier',title:'Réel vs Prévisionnel + Atterrissage',
+          desc:'Saisir le réel mensuel, lire l\'écart BP, projeter l\'atterrissage fin d\'année, réagir sur alerte. Le copilote de gestion de bout en bout.',
+          tags:['financier','suivi','écarts','mensuel','atterrissage','projection','alertes'],
           steps:[
-            {title:'Tableau de bord financier',text:'Chaque ligne : mois, adhérents réels, CA réel, EBITDA. En vert si on est au-dessus du BP, rouge si en dessous.',
-             render:function(){return '<div class="sb2-list" style="--ac:#b45309"><div class="sb2-item" style="--d:.05s"><span class="dot"></span><span class="txt">Mois 6</span><span class="val" style="color:#16a34a">+4%</span></div><div class="sb2-item" style="--d:.16s"><span class="dot"></span><span class="txt">Mois 9</span><span class="val">0%</span></div><div class="sb2-item" style="--d:.27s"><span class="dot"></span><span class="txt">Mois 12</span><span class="val" style="color:#dc2626">-3%</span></div></div>';}},
-            {title:'Saisie mensuelle rapide',text:'Un formulaire ultra-simple : adhérents ce mois, CA encaissé. L\'app calcule l\'écart vs prévisionnel automatiquement.',
-             render:function(){return '<div class="sb2-form" style="--ac:#b45309"><div class="sb2-field" style="--d:.06s"><label>Adhérents réels</label><input value="310" readonly/></div><div class="sb2-field" style="--d:.2s"><label>CA encaissé (€)</label><input value="43 800" readonly/></div></div>';}},
-            {title:'Alertes EBITDA',text:'Si l\'EBITDA glisse sous le seuil de rentabilité, une notification push arrive sur votre téléphone. Réagissez avant la zone rouge.',
-             render:function(){return '<div style="display:flex;flex-direction:column;align-items:center;gap:12px"><div class="sb2-badge" style="--ac:#b45309;--d:.1s">⚠ EBITDA sous seuil — Lattes</div><div class="sb2-badge" style="--ac:#16a34a;--d:.3s">✓ EBITDA OK — Garches</div></div>';}}
+            {title:'Étape 1 — Saisir le réel chaque mois',text:'Chaque fin de mois, 2 champs à remplir : adhérents réels + CA encaissé. L\'écart vs BP se calcule tout seul. 30 secondes par studio, par mois.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#b45309">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Lattes · Financier · Saisie mois M8</div></div>'
+               +  '<div class="sb2-screen-tabs"><span class="sb2-screen-tab">Workflow</span><span class="sb2-screen-tab">BP</span><span class="sb2-screen-tab">Adhérents</span><span class="sb2-screen-tab active">Financier</span></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div class="sb2-screen-input" style="--d:.08s"><span class="k">Adhérents fin mois</span><span class="v">218</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.22s"><span class="k">CA encaissé</span><span class="v">34 200€</span></div>'
+               +    '<div class="sb2-screen-input" style="--d:.36s"><span class="k">Charges variables</span><span class="v">8 400€</span></div>'
+               +    '<div style="text-align:right"><span class="sb2-screen-cta" style="--d:.5s">Enregistrer ✓</span></div>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 2 — L\'écart BP vs réel, mois par mois',text:'Tableau automatique : chaque mois, l\'écart en % et en €. Vert au-dessus, orange légèrement sous, rouge si dérive critique. Vue instantanée sur la santé réelle.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#b45309">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Lattes · Écart BP vs Réel · A1</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<table class="sb2-screen-table">'
+               +      '<thead><tr><th>Mois</th><th>BP</th><th>Réel</th><th>Écart</th></tr></thead>'
+               +      '<tbody>'
+               +        '<tr style="animation-delay:.06s"><td>M5</td><td>22 800€</td><td>24 100€</td><td class="sb2-cell-pos">+5,7%</td></tr>'
+               +        '<tr style="animation-delay:.16s"><td>M6</td><td>26 100€</td><td>26 800€</td><td class="sb2-cell-pos">+2,7%</td></tr>'
+               +        '<tr style="animation-delay:.26s"><td>M7</td><td>30 200€</td><td>29 400€</td><td class="sb2-cell-warn">−2,6%</td></tr>'
+               +        '<tr style="animation-delay:.36s"><td>M8</td><td>34 100€</td><td>34 200€</td><td class="sb2-cell-pos">+0,3%</td></tr>'
+               +        '<tr style="animation-delay:.46s"><td>M9</td><td>38 200€</td><td>32 900€</td><td class="sb2-cell-neg">−13,9%</td></tr>'
+               +      '</tbody>'
+               +    '</table>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 3 — Projection atterrissage fin d\'année',text:'À partir du réel saisi, l\'app extrapole la trajectoire jusqu\'en décembre. Courbe pleine = réel saisi, pointillés = projection. Anticipez l\'écart final avant qu\'il arrive.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#b45309">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Lattes · Atterrissage A1 projeté</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div class="sb2-proj" style="--ac:#b45309;max-width:100%"><svg viewBox="0 0 480 170" preserveAspectRatio="none">'
+               +      '<defs><linearGradient id="sbgFNP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#b45309" stop-opacity=".2"/><stop offset="100%" stop-color="#b45309" stop-opacity="0"/></linearGradient></defs>'
+               +      '<line x1="0" y1="80" x2="480" y2="80" stroke="rgba(10,14,28,.08)" stroke-dasharray="3 4"/>'
+               +      '<text x="6" y="76" font-size="9" fill="#64748b" font-family="-apple-system,Inter,sans-serif">Objectif BP</text>'
+               +      '<line x1="260" y1="10" x2="260" y2="160" stroke="rgba(180,83,9,.25)" stroke-dasharray="4 3"/>'
+               +      '<text x="266" y="22" font-size="9" fill="#b45309" font-weight="700" font-family="-apple-system,Inter,sans-serif">Aujourd\'hui (M8)</text>'
+               +      '<path d="M0 150 L40 138 L80 128 L120 116 L160 102 L200 92 L240 85 L260 82 L260 170 L0 170 Z" fill="url(#sbgFNP)"/>'
+               +      '<path class="sb2-proj-real" d="M0 150 L40 138 L80 128 L120 116 L160 102 L200 92 L240 85 L260 82" fill="none" stroke="#b45309" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
+               +      '<path class="sb2-proj-fcst" d="M260 82 L300 78 L340 68 L380 58 L420 50 L460 42" fill="none" stroke="#b45309" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>'
+               +      '<circle cx="260" cy="82" r="4" fill="#b45309"/><circle cx="260" cy="82" r="7" fill="none" stroke="#b45309" stroke-opacity=".4" stroke-width="2"/>'
+               +      '<circle cx="460" cy="42" r="4" fill="#fff" stroke="#b45309" stroke-width="2"/>'
+               +    '</svg></div>'
+               +    '<div style="display:flex;gap:8px;margin-top:10px"><div class="sb2-kpi" style="--d:.9s;flex:1;padding:9px 11px"><div class="lbl">Atterrissage CA</div><div class="val" style="font-size:16px;color:#b45309">492 K€</div></div><div class="sb2-kpi" style="--d:1.05s;flex:1;padding:9px 11px"><div class="lbl">Écart BP</div><div class="val" style="font-size:16px;color:#dc2626">−2,4%</div></div><div class="sb2-kpi" style="--d:1.2s;flex:1;padding:9px 11px"><div class="lbl">Confiance</div><div class="val" style="font-size:16px;color:#16a34a">82%</div></div></div>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 4 — Alertes intelligentes',text:'Dès qu\'une dérive dépasse 15% sur 2 mois consécutifs, alerte push + flag rouge sur l\'Accueil. Charges qui dérapent, adhérents qui décrochent, CA qui sous-perform — chacun est tracé.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#b45309;max-width:480px">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Centre d\'attention — Accueil</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<div class="sb2-screen-alert ko" style="--d:.08s"><span class="ico">🔻</span><div class="body"><b>Lattes — CA −13,9% vs BP sur M9</b>Sur 2 mois consécutifs · réel 32 900€ vs BP 38 200€</div></div>'
+               +    '<div class="sb2-screen-alert warn" style="--d:.22s"><span class="ico">📉</span><div class="body"><b>Lattes — charges +12% vs BP</b>Dérive légère · à surveiller au M10</div></div>'
+               +    '<div class="sb2-screen-alert ok" style="--d:.36s"><span class="ico">✓</span><div class="body"><b>Garches — EBITDA +8% vs BP</b>Performance au-dessus de l\'objectif</div></div>'
+               +  '</div>'
+               +'</div>';}},
+            {title:'Étape 5 — Synthèse trimestrielle',text:'Vue consolidée par trimestre : adhérents, CA, EBITDA, cash. Comparaison visuelle BP vs réel vs projection. La photo instantanée que vous présentez en comité de pilotage.',
+             render:function(){return ''
+               +'<div class="sb2-screen" style="--ac:#b45309">'
+               +  '<div class="sb2-screen-hdr"><div class="sb2-screen-dots"><span class="sb2-screen-dot r"></span><span class="sb2-screen-dot y"></span><span class="sb2-screen-dot g"></span></div><div class="sb2-screen-title">Lattes · Synthèse trimestrielle A1</div></div>'
+               +  '<div class="sb2-screen-body">'
+               +    '<table class="sb2-screen-table">'
+               +      '<thead><tr><th>Trimestre</th><th>Adh.</th><th>CA</th><th>EBITDA</th><th>Cash</th></tr></thead>'
+               +      '<tbody>'
+               +        '<tr style="animation-delay:.06s"><td>T1</td><td>85</td><td>40 200€</td><td class="sb2-cell-neg">−14 400€</td><td>−8 200€</td></tr>'
+               +        '<tr style="animation-delay:.16s"><td>T2</td><td>165</td><td>74 900€</td><td class="sb2-cell-warn">−2 100€</td><td>+3 600€</td></tr>'
+               +        '<tr style="animation-delay:.26s"><td>T3</td><td>242</td><td>96 500€</td><td class="sb2-cell-pos">+18 200€</td><td>+24 800€</td></tr>'
+               +        '<tr style="animation-delay:.36s"><td>T4 <em style="color:#b45309;font-style:normal;font-size:9px">proj.</em></td><td>298</td><td>124 000€</td><td class="sb2-cell-pos">+32 800€</td><td>+41 200€</td></tr>'
+               +      '</tbody>'
+               +    '</table>'
+               +  '</div>'
+               +'</div>';}}
           ]
         }
       ]
@@ -583,6 +791,7 @@
   // ── Parcours guidés multi-chapitres ───────────────────────────────────────
   var PATHWAYS=[
     {id:'demarrage',ico:'🚀',label:'Découvrir l\'app',desc:'Le tour guidé complet pour un nouveau venu — 4 chapitres, 8 minutes',chapters:['onboarding','accueil','studios','bp']},
+    {id:'finance-az',ico:'💰',label:'Finance A→Z : du studio au reporting',desc:'Le parcours complet : créer le studio, poser le BP, simuler, suivre le réel, projeter l\'atterrissage',chapters:['studios','bp','simulator','financier']},
     {id:'rdv-banque',ico:'🏦',label:'Préparer un RDV banque',desc:'Le combo BP + chalandise + financier que les banquiers demandent',chapters:['bp','chalandise','financier']},
     {id:'compromis-signe',ico:'🔑',label:'Compromis signé, et maintenant ?',desc:'Les 3 premiers réflexes quand le studio devient réel',chapters:['engagements','local','collab']},
     {id:'valider-bp',ico:'📊',label:'Valider un business plan',desc:'3 vérifs avant de présenter le BP à un investisseur',chapters:['bp','simulator','financier']},
