@@ -47,64 +47,8 @@
     return c.label+' '+_formatNiv(niveau||c.levels[0]);
   }
 
-  // ── Planning type Club Pilates : 45h / semaine, Lun-Sam ────────────────────
-  // Matin 7h-14h (principal) + Soir 17h-21h. Total : 45 cours/sem (1h chacun).
-  // Pattern : Lun-Jeu 8 cours/jour + Ven 7 + Sam 6 = 45.
-  // Capacité Reformer = 12, Mat = 16 (Center+Balance, Restore).
-  var STARTER_SCHEDULE=[
-    // ── LUNDI (jour 0) — 8 cours ──
-    {jour:0,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
-    {jour:0,debut:'08:00',fin:'09:00',class:'reformer-flow',niveau:1.5},
-    {jour:0,debut:'09:00',fin:'10:00',class:'cardio-sculpt',niveau:1.5},
-    {jour:0,debut:'10:00',fin:'11:00',class:'center-balance',niveau:1},
-    {jour:0,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
-    {jour:0,debut:'18:00',fin:'19:00',class:'reformer-flow',niveau:1.5},
-    {jour:0,debut:'19:00',fin:'20:00',class:'fit',niveau:2},
-    {jour:0,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2},
-    // ── MARDI (jour 1) — 8 cours ──
-    {jour:1,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
-    {jour:1,debut:'08:00',fin:'09:00',class:'control',niveau:1.5},
-    {jour:1,debut:'09:00',fin:'10:00',class:'reformer-flow',niveau:1.5},
-    {jour:1,debut:'10:00',fin:'11:00',class:'restore',niveau:1},
-    {jour:1,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
-    {jour:1,debut:'18:00',fin:'19:00',class:'cardio-sculpt',niveau:2},
-    {jour:1,debut:'19:00',fin:'20:00',class:'reformer-flow',niveau:1.5},
-    {jour:1,debut:'20:00',fin:'21:00',class:'suspend',niveau:2},
-    // ── MERCREDI (jour 2) — 8 cours ──
-    {jour:2,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1.5},
-    {jour:2,debut:'08:00',fin:'09:00',class:'reformer-flow',niveau:1},
-    {jour:2,debut:'09:00',fin:'10:00',class:'center-balance',niveau:1.5},
-    {jour:2,debut:'10:00',fin:'11:00',class:'reformer-flow',niveau:2},
-    {jour:2,debut:'12:00',fin:'13:00',class:'control',niveau:2},
-    {jour:2,debut:'18:00',fin:'19:00',class:'reformer-flow',niveau:1},
-    {jour:2,debut:'19:00',fin:'20:00',class:'cardio-sculpt',niveau:1.5},
-    {jour:2,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2.5},
-    // ── JEUDI (jour 3) — 8 cours ──
-    {jour:3,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
-    {jour:3,debut:'08:00',fin:'09:00',class:'cardio-sculpt',niveau:1},
-    {jour:3,debut:'09:00',fin:'10:00',class:'reformer-flow',niveau:1.5},
-    {jour:3,debut:'10:00',fin:'11:00',class:'restore',niveau:1.5},
-    {jour:3,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
-    {jour:3,debut:'18:00',fin:'19:00',class:'reformer-flow',niveau:1.5},
-    {jour:3,debut:'19:00',fin:'20:00',class:'fit',niveau:2.5},
-    {jour:3,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2},
-    // ── VENDREDI (jour 4) — 7 cours ──
-    {jour:4,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
-    {jour:4,debut:'08:00',fin:'09:00',class:'reformer-flow',niveau:1.5},
-    {jour:4,debut:'09:00',fin:'10:00',class:'center-balance',niveau:2},
-    {jour:4,debut:'10:00',fin:'11:00',class:'reformer-flow',niveau:2},
-    {jour:4,debut:'18:00',fin:'19:00',class:'cardio-sculpt',niveau:1.5},
-    {jour:4,debut:'19:00',fin:'20:00',class:'reformer-flow',niveau:1.5},
-    {jour:4,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2},
-    // ── SAMEDI (jour 5) — 6 cours (matin uniquement) ──
-    {jour:5,debut:'08:00',fin:'09:00',class:'intro',niveau:1},
-    {jour:5,debut:'09:00',fin:'10:00',class:'reformer-flow',niveau:1},
-    {jour:5,debut:'10:00',fin:'11:00',class:'reformer-flow',niveau:1.5},
-    {jour:5,debut:'11:00',fin:'12:00',class:'cardio-sculpt',niveau:1},
-    {jour:5,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
-    {jour:5,debut:'13:00',fin:'14:00',class:'restore',niveau:1}
-    // → 8 + 8 + 8 + 8 + 7 + 6 = 45 cours / semaine ✓
-  ];
+  // (STARTER_SCHEDULE retiré v3 — remplacé par WEEK_SLOTS + CLASS_POOLS dynamique
+  //  pour génération aléatoire variée par studio dans _seedPlanning)
   var SLOT_PX=30;       // pixels par tranche 30min
   var DAY_START=6;      // heure début affichage
   var DAY_END=22;       // heure fin affichage
@@ -554,6 +498,7 @@
       h+='<option value="'+r+'"'+(rf===r?' selected':'')+'>'+lbl+'</option>';
     });
     h+=  '</select>';
+    h+=  '<button class="eq-btn" onclick="window._eqSeedPlanning()" style="background:linear-gradient(180deg,#7c3aed,#5b21b6);color:#fff;border-color:transparent" title="Pré-remplit 45h/sem × 26 sem pour chaque studio (cours aléatoires variés, à pourvoir, modifiables)">🧘 Pré-remplir planning Club Pilates</button>';
     h+=  '<button class="eq-add-btn" onclick="window._eqOpenShift(null)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nouveau créneau</button>';
     h+='</div>';
 
@@ -826,7 +771,6 @@
     });
     h+=  '</select>';
     h+=  '<button class="eq-btn" onclick="window._eqApplyTemplates()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/></svg>Générer 4 sem.</button>';
-    h+=  '<button class="eq-btn" onclick="window._eqSeedClubPilates()" style="background:linear-gradient(180deg,#7c3aed,#5b21b6);color:#fff;border-color:transparent">🧘 Pré-remplir 45h Club Pilates</button>';
     h+=  '<div class="eq-spacer"></div>';
     h+=  '<button class="eq-add-btn" onclick="window._eqOpenTemplate(null)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nouveau pattern</button>';
     h+='</div>';
@@ -1584,37 +1528,132 @@
     render();
   }
 
-  // Seed le planning type Club Pilates : 45 templates Lun-Sam (matin+soir)
-  function _seedClubPilates(){
+  // ── Time slots fixes pour les 45h hebdo (Lun-Sam · 7-14h + 17-21h) ────────
+  // Lun-Jeu : 8 cours/jour · Ven : 7 · Sam : 6 = 45 ✓
+  var WEEK_SLOTS=(function(){
+    var s=[];
+    [0,1,2,3].forEach(function(d){
+      [{h:'07:00',e:'08:00',pool:'morning_early'},
+       {h:'08:00',e:'09:00',pool:'morning_early'},
+       {h:'09:00',e:'10:00',pool:'morning_mid'},
+       {h:'10:00',e:'11:00',pool:'morning_mid'},
+       {h:'12:00',e:'13:00',pool:'midday'},
+       {h:'18:00',e:'19:00',pool:'evening_early'},
+       {h:'19:00',e:'20:00',pool:'evening_late'},
+       {h:'20:00',e:'21:00',pool:'evening_late'}].forEach(function(sl){
+        s.push({jour:d,debut:sl.h,fin:sl.e,pool:sl.pool});
+      });
+    });
+    // Vendredi (7 cours)
+    [{h:'07:00',e:'08:00',pool:'morning_early'},
+     {h:'08:00',e:'09:00',pool:'morning_early'},
+     {h:'09:00',e:'10:00',pool:'morning_mid'},
+     {h:'10:00',e:'11:00',pool:'morning_mid'},
+     {h:'18:00',e:'19:00',pool:'evening_early'},
+     {h:'19:00',e:'20:00',pool:'evening_late'},
+     {h:'20:00',e:'21:00',pool:'evening_late'}].forEach(function(sl){
+      s.push({jour:4,debut:sl.h,fin:sl.e,pool:sl.pool});
+    });
+    // Samedi (6 cours · matin uniquement, démarre par Intro)
+    s.push({jour:5,debut:'08:00',fin:'09:00',pool:'sat_intro'});
+    s.push({jour:5,debut:'09:00',fin:'10:00',pool:'morning_mid'});
+    s.push({jour:5,debut:'10:00',fin:'11:00',pool:'morning_mid'});
+    s.push({jour:5,debut:'11:00',fin:'12:00',pool:'morning_mid'});
+    s.push({jour:5,debut:'12:00',fin:'13:00',pool:'midday'});
+    s.push({jour:5,debut:'13:00',fin:'14:00',pool:'sat_cooldown'});
+    return s;
+  })();
+
+  // ── Pools de cours par tranche horaire (logique : matin = niveaux bas, ──
+  // ── soir = niveaux hauts ; Reformer Flow = dominant ; FIT/Suspend = soir uniquement)
+  var CLASS_POOLS={
+    morning_early:[ // 7h-9h : public matinal, démarrage doux
+      ['reformer-flow',1],['reformer-flow',1],['reformer-flow',1.5],
+      ['cardio-sculpt',1],['cardio-sculpt',1.5],
+      ['center-balance',1]
+    ],
+    morning_mid:[ // 9h-11h : niveaux variés, cœur de l'offre
+      ['reformer-flow',1.5],['reformer-flow',1.5],['reformer-flow',2],
+      ['cardio-sculpt',1.5],['cardio-sculpt',2],
+      ['center-balance',1],['center-balance',1.5],['center-balance',2],
+      ['control',1.5],['restore',1],['restore',1.5]
+    ],
+    midday:[ // 12h-14h : pause déjeuner, restore + niveaux moyens
+      ['reformer-flow',2],['reformer-flow',1.5],
+      ['restore',1],['restore',1.5],
+      ['control',2],['center-balance',2]
+    ],
+    evening_early:[ // 18h-19h : sortie boulot, niveaux 1.5-2
+      ['reformer-flow',1],['reformer-flow',1.5],['reformer-flow',2],
+      ['cardio-sculpt',1.5],['cardio-sculpt',2],
+      ['center-balance',1.5]
+    ],
+    evening_late:[ // 19h-21h : intensité forte, FIT/Suspend
+      ['reformer-flow',2],['reformer-flow',2],['reformer-flow',2.5],
+      ['fit',2],['fit',2.5],
+      ['suspend',1.5],['suspend',2],
+      ['cardio-sculpt',2],['control',2]
+    ],
+    sat_intro:[['intro',1]], // Samedi 8h fixé sur Intro Class (cours d'essai)
+    sat_cooldown:[['restore',1],['restore',1.5]] // Samedi 13h = récupération
+  };
+
+  function _pickClassFromPool(poolName){
+    var pool=CLASS_POOLS[poolName]||CLASS_POOLS.morning_mid;
+    var pick=pool[Math.floor(Math.random()*pool.length)];
+    return {class_id:pick[0],niveau:pick[1]};
+  }
+
+  // Seed le planning Club Pilates : génère 45 cours/sem × N semaines × M studios
+  // → directement dans S.shifts (visible page Planning), randomisé par studio
+  function _seedPlanning(){
     var sf=_curStudioFilter();
     var sids=sf==='all'?_studioIds():[sf];
     if(sids.length===0){toast('Aucun studio disponible');return;}
+    var nbWeeks=26; // 6 mois à venir
+    var nbShiftsPerWeek=WEEK_SLOTS.length; // 45
+    var totalEstime=sids.length*nbWeeks*nbShiftsPerWeek;
     var sidLabel=sf==='all'?'TOUS les studios ('+sids.length+')':_studioName(sf);
-    if(!confirm('Pré-remplir 45h de cours hebdo Club Pilates pour '+sidLabel+' ?\n\nCela ajoute 45 templates récurrents (Lun-Sam, 7h-14h + 17h-21h) avec les 9 types de cours officiels. Vous pourrez les modifier ensuite ou les supprimer un par un.\n\nAucun coach n\'est assigné — vous le ferez après avec "Proposer à un coach".'))return;
-    var added=0;
+    if(!confirm('Pré-remplir le planning Club Pilates pour '+sidLabel+' ?\n\n• 45h de cours par semaine\n• 26 semaines à venir (6 mois)\n• Lun-Sam, 7h-14h + 17h-21h\n• ~'+totalEstime+' créneaux générés\n• Cours variés et aléatoires (tous "À pourvoir")\n\nVous pourrez modifier chaque créneau (cours, niveau, horaire, coach) en cliquant dessus. Les créneaux déjà existants ne seront pas écrasés.'))return;
+
+    var ws=_weekStart(); // semaine courante
+    var totalAdded=0,skipped=0;
     sids.forEach(function(sid){
-      STARTER_SCHEDULE.forEach(function(item){
-        // Skip si un template existe déjà à ce jour+heure pour ce studio
-        var exists=_templates(sid).some(function(t){return t.jour===item.jour&&t.debut===item.debut&&t.type==='cours';});
-        if(exists)return;
-        var tpl={
-          id:_uid('tpl'),
-          type:'cours',
-          jour:item.jour,
-          debut:item.debut,
-          fin:item.fin,
-          person_id:'',
-          cours_class:item.class,
-          cours_niveau:item.niveau,
-          cours_nom:_coursLabel(item.class,item.niveau),
-          weeks:'all'
-        };
-        _templates(sid).push(tpl);
-        added++;
-      });
-      _saveTemplates(sid);
+      var arr=_shifts(sid);
+      for(var w=0;w<nbWeeks;w++){
+        var weekStart=_addDays(ws,w*7);
+        WEEK_SLOTS.forEach(function(slot){
+          var dt=_addDays(weekStart,slot.jour);
+          var dymd=_ymd(dt);
+          // Skip si shift existant à cette date+heure dans ce studio
+          var exists=arr.some(function(s){return s.date===dymd&&s.debut===slot.debut;});
+          if(exists){skipped++;return;}
+          var pick=_pickClassFromPool(slot.pool);
+          var sh={
+            id:_uid('shift'),
+            type:'cours',
+            date:dymd,
+            debut:slot.debut,
+            fin:slot.fin,
+            person_id:'',
+            statut:'brouillon',
+            date_creation:_now(),
+            cours:{
+              nom:_coursLabel(pick.class_id,pick.niveau),
+              capacite:12,
+              class_id:pick.class_id,
+              niveau:pick.niveau
+            }
+          };
+          arr.push(sh);
+          totalAdded++;
+        });
+      }
+      _saveShifts(sid);
     });
-    toast('✓ '+added+' templates ajoutés · clic sur "Générer 4 sem." pour les déployer');
+    toast('✓ '+totalAdded+' créneaux générés'+(skipped>0?' ('+skipped+' déjà existants ignorés)':''));
+    // Repositionner sur la semaine courante pour que l'utilisateur voie immédiatement
+    S.equipeWeekStart=_ymd(ws);
     render();
   }
 
@@ -1853,7 +1892,7 @@
   window._eqOpenTemplate=_openTemplate;
   window._eqDeleteTemplate=_deleteTemplate;
   window._eqApplyTemplates=_applyTemplates;
-  window._eqSeedClubPilates=_seedClubPilates;
+  window._eqSeedPlanning=_seedPlanning;
   window._eqToggleSelectShift=_toggleSelectShift;
   window._eqClearSelection=_clearSelection;
   window._eqOpenProposeFromSelection=_openProposeFromSelection;
