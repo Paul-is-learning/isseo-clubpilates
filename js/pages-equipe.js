@@ -23,6 +23,88 @@
     admin:{label:'Admin',color:'#f59e0b',bg:'rgba(245,158,11,.18)',border:'#d97706',ico:'📋'}
   };
   var DAYS=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+  // ── Catalogue officiel Club Pilates (cours · niveaux · couleurs) ───────────
+  // Chaque cours = 1h sauf Intro Class (30 min). Niveaux : 1, 1.5, 2, 2.5.
+  // Modifiable côté UI : l'utilisateur peut ajuster nom/horaires/coach par créneau.
+  var COURS_TYPES=[
+    {id:'intro',label:'Intro Class',short:'Intro',desc:'Initiation gratuite 30 min',levels:[1],duration:30,color:'#6366f1'},
+    {id:'reformer-flow',label:'Reformer Flow',short:'Reformer',desc:'Pilates Reformer contemporain',levels:[1,1.5,2,2.5],duration:60,color:'#7c3aed'},
+    {id:'cardio-sculpt',label:'Cardio Sculpt',short:'Cardio',desc:'Cardio low-impact Jumpboard',levels:[1,1.5,2],duration:60,color:'#ef4444'},
+    {id:'center-balance',label:'Center + Balance',short:'C+B',desc:'Étirements profonds',levels:[1,1.5,2],duration:60,color:'#10b981'},
+    {id:'control',label:'Control',short:'Control',desc:'Debout au Springboard',levels:[1.5,2],duration:60,color:'#0ea5e9'},
+    {id:'restore',label:'Restore',short:'Restore',desc:'Rouleaux + myofascial',levels:[1,1.5],duration:60,color:'#a855f7'},
+    {id:'suspend',label:'Suspend',short:'Suspend',desc:'TRX + Reformer',levels:[1.5,2],duration:60,color:'#f59e0b'},
+    {id:'fit',label:'F.I.T.',short:'FIT',desc:'HIIT cardio Pilates',levels:[2,2.5],duration:60,color:'#dc2626'},
+    {id:'teen',label:'Teen',short:'Teen',desc:'Ados 14-19 ans',levels:[1,1.5],duration:60,color:'#06b6d4'}
+  ];
+  function _coursType(id){return COURS_TYPES.find(function(c){return c.id===id;});}
+  function _formatNiv(n){return n===1?'N1':n===1.5?'N1.5':n===2?'N2':n===2.5?'N2.5':'N'+n;}
+  function _coursLabel(classId,niveau){
+    var c=_coursType(classId);
+    if(!c)return '';
+    if(c.levels.length===1)return c.label;
+    return c.label+' '+_formatNiv(niveau||c.levels[0]);
+  }
+
+  // ── Planning type Club Pilates : 45h / semaine, Lun-Sam ────────────────────
+  // Matin 7h-14h (principal) + Soir 17h-21h. Total : 45 cours/sem (1h chacun).
+  // Pattern : Lun-Jeu 8 cours/jour + Ven 7 + Sam 6 = 45.
+  // Capacité Reformer = 12, Mat = 16 (Center+Balance, Restore).
+  var STARTER_SCHEDULE=[
+    // ── LUNDI (jour 0) — 8 cours ──
+    {jour:0,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
+    {jour:0,debut:'08:00',fin:'09:00',class:'reformer-flow',niveau:1.5},
+    {jour:0,debut:'09:00',fin:'10:00',class:'cardio-sculpt',niveau:1.5},
+    {jour:0,debut:'10:00',fin:'11:00',class:'center-balance',niveau:1},
+    {jour:0,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
+    {jour:0,debut:'18:00',fin:'19:00',class:'reformer-flow',niveau:1.5},
+    {jour:0,debut:'19:00',fin:'20:00',class:'fit',niveau:2},
+    {jour:0,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2},
+    // ── MARDI (jour 1) — 8 cours ──
+    {jour:1,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
+    {jour:1,debut:'08:00',fin:'09:00',class:'control',niveau:1.5},
+    {jour:1,debut:'09:00',fin:'10:00',class:'reformer-flow',niveau:1.5},
+    {jour:1,debut:'10:00',fin:'11:00',class:'restore',niveau:1},
+    {jour:1,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
+    {jour:1,debut:'18:00',fin:'19:00',class:'cardio-sculpt',niveau:2},
+    {jour:1,debut:'19:00',fin:'20:00',class:'reformer-flow',niveau:1.5},
+    {jour:1,debut:'20:00',fin:'21:00',class:'suspend',niveau:2},
+    // ── MERCREDI (jour 2) — 8 cours ──
+    {jour:2,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1.5},
+    {jour:2,debut:'08:00',fin:'09:00',class:'reformer-flow',niveau:1},
+    {jour:2,debut:'09:00',fin:'10:00',class:'center-balance',niveau:1.5},
+    {jour:2,debut:'10:00',fin:'11:00',class:'reformer-flow',niveau:2},
+    {jour:2,debut:'12:00',fin:'13:00',class:'control',niveau:2},
+    {jour:2,debut:'18:00',fin:'19:00',class:'reformer-flow',niveau:1},
+    {jour:2,debut:'19:00',fin:'20:00',class:'cardio-sculpt',niveau:1.5},
+    {jour:2,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2.5},
+    // ── JEUDI (jour 3) — 8 cours ──
+    {jour:3,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
+    {jour:3,debut:'08:00',fin:'09:00',class:'cardio-sculpt',niveau:1},
+    {jour:3,debut:'09:00',fin:'10:00',class:'reformer-flow',niveau:1.5},
+    {jour:3,debut:'10:00',fin:'11:00',class:'restore',niveau:1.5},
+    {jour:3,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
+    {jour:3,debut:'18:00',fin:'19:00',class:'reformer-flow',niveau:1.5},
+    {jour:3,debut:'19:00',fin:'20:00',class:'fit',niveau:2.5},
+    {jour:3,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2},
+    // ── VENDREDI (jour 4) — 7 cours ──
+    {jour:4,debut:'07:00',fin:'08:00',class:'reformer-flow',niveau:1},
+    {jour:4,debut:'08:00',fin:'09:00',class:'reformer-flow',niveau:1.5},
+    {jour:4,debut:'09:00',fin:'10:00',class:'center-balance',niveau:2},
+    {jour:4,debut:'10:00',fin:'11:00',class:'reformer-flow',niveau:2},
+    {jour:4,debut:'18:00',fin:'19:00',class:'cardio-sculpt',niveau:1.5},
+    {jour:4,debut:'19:00',fin:'20:00',class:'reformer-flow',niveau:1.5},
+    {jour:4,debut:'20:00',fin:'21:00',class:'reformer-flow',niveau:2},
+    // ── SAMEDI (jour 5) — 6 cours (matin uniquement) ──
+    {jour:5,debut:'08:00',fin:'09:00',class:'intro',niveau:1},
+    {jour:5,debut:'09:00',fin:'10:00',class:'reformer-flow',niveau:1},
+    {jour:5,debut:'10:00',fin:'11:00',class:'reformer-flow',niveau:1.5},
+    {jour:5,debut:'11:00',fin:'12:00',class:'cardio-sculpt',niveau:1},
+    {jour:5,debut:'12:00',fin:'13:00',class:'reformer-flow',niveau:2},
+    {jour:5,debut:'13:00',fin:'14:00',class:'restore',niveau:1}
+    // → 8 + 8 + 8 + 8 + 7 + 6 = 45 cours / semaine ✓
+  ];
   var SLOT_PX=30;       // pixels par tranche 30min
   var DAY_START=6;      // heure début affichage
   var DAY_END=22;       // heure fin affichage
@@ -570,8 +652,21 @@
     return ((p.prenom||'?').charAt(0)+(p.nom||'').charAt(0)).toUpperCase();
   }
 
+  function _shiftColors(sh){
+    var t=SHIFT_TYPE[sh.type]||SHIFT_TYPE.accueil;
+    // Si cours avec class_id défini, utilise la couleur de la classe
+    if(sh.type==='cours'&&sh.cours&&sh.cours.class_id){
+      var c=_coursType(sh.cours.class_id);
+      if(c){
+        return {color:c.color,bg:'color-mix(in srgb,'+c.color+' 18%,transparent)',border:c.color,ico:t.ico};
+      }
+    }
+    return {color:t.color,bg:t.bg,border:t.border,ico:t.ico};
+  }
+
   function _renderShiftDesktop(sh){
     var t=SHIFT_TYPE[sh.type]||SHIFT_TYPE.accueil;
+    var col=_shiftColors(sh);
     var p=_people()[sh.person_id];
     var unassigned=!sh.person_id;
     var statusCls=sh.statut==='confirme'?'confirme':sh.statut==='propose'?'propose':sh.statut==='refuse'?'refuse':'';
@@ -582,13 +677,13 @@
     var avatarHtml='';
     if(p){
       if(p.photo){
-        avatarHtml='<span class="eq-shift-pavatar" style="--c:'+t.color+'"><img src="'+_esc(p.photo)+'" alt=""/></span>';
+        avatarHtml='<span class="eq-shift-pavatar" style="--c:'+col.color+'"><img src="'+_esc(p.photo)+'" alt=""/></span>';
       }else{
-        avatarHtml='<span class="eq-shift-pavatar" style="--c:'+t.color+'">'+_personInitials(p)+'</span>';
+        avatarHtml='<span class="eq-shift-pavatar" style="--c:'+col.color+'">'+_personInitials(p)+'</span>';
       }
     }
     var html='<div class="eq-shift'+(unassigned?' unassigned':'')+(sh.statut==='propose'?' proposed':'')+(sel?' selected':'')+'" '
-      +'style="--bg:'+t.bg+';--c:'+t.color+';border-left-color:'+t.border+';'+_shiftPositionStyle(sh)+'" '
+      +'style="--bg:'+col.bg+';--c:'+col.color+';border-left-color:'+col.border+';'+_shiftPositionStyle(sh)+'" '
       +'onclick="event.stopPropagation();window._eqOpenShift(\''+sh.id+'\',\''+sh._sid+'\')" '
       +'oncontextmenu="event.preventDefault();window._eqToggleSelectShift(\''+sh.id+'\')">';
     if(statusCls)html+='<span class="eq-shift-status '+statusCls+'">'+(sh.statut==='confirme'?'✓':sh.statut==='propose'?'…':'✕')+'</span>';
@@ -601,6 +696,7 @@
 
   function _renderShiftMobile(sh){
     var t=SHIFT_TYPE[sh.type]||SHIFT_TYPE.accueil;
+    var col=_shiftColors(sh);
     var p=_people()[sh.person_id];
     var unassigned=!sh.person_id;
     var label=sh.cours&&sh.cours.nom?sh.cours.nom:t.label;
@@ -611,9 +707,9 @@
     else if(p&&p.photo)avatarContent='<img src="'+_esc(p.photo)+'" alt=""/>';
     else avatarContent=_personInitials(p);
     return '<div class="eq-shift-mobile'+(unassigned?' unassigned':'')+'" '
-      +'style="--bg:'+t.bg+';--c:'+t.color+'" '
+      +'style="--bg:'+col.bg+';--c:'+col.color+'" '
       +'onclick="window._eqOpenShift(\''+sh.id+'\',\''+sh._sid+'\')">'
-      +'<div class="eq-shift-mobile-avatar'+(unassigned?' unassigned':'')+'" style="--c:'+t.color+'">'+avatarContent+'</div>'
+      +'<div class="eq-shift-mobile-avatar'+(unassigned?' unassigned':'')+'" style="--c:'+col.color+'">'+avatarContent+'</div>'
       +'<div class="eq-shift-mobile-meta">'
       +'<div class="eq-shift-mobile-title">'+t.ico+' '+_esc(label)+' · '+sh.debut+'–'+sh.fin+'</div>'
       +'<div class="eq-shift-mobile-person">'+_esc(personLbl)+' · '+_esc(_studioName(sh._sid))+'</div>'
@@ -730,6 +826,7 @@
     });
     h+=  '</select>';
     h+=  '<button class="eq-btn" onclick="window._eqApplyTemplates()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 4 23 10 17 10"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10"/></svg>Générer 4 sem.</button>';
+    h+=  '<button class="eq-btn" onclick="window._eqSeedClubPilates()" style="background:linear-gradient(180deg,#7c3aed,#5b21b6);color:#fff;border-color:transparent">🧘 Pré-remplir 45h Club Pilates</button>';
     h+=  '<div class="eq-spacer"></div>';
     h+=  '<button class="eq-add-btn" onclick="window._eqOpenTemplate(null)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nouveau pattern</button>';
     h+='</div>';
@@ -748,10 +845,15 @@
       var meta=SHIFT_TYPE[t.type]||SHIFT_TYPE.accueil;
       var p=ppl[t.person_id];
       var personLbl=p?(p.prenom+' '+p.nom):'<span style="color:#dc2626">⚠ À pourvoir</span>';
+      // Affichage : si type=cours et class_id défini, utiliser couleur classe + label spécifique
+      var coursTypeObj=t.cours_class?_coursType(t.cours_class):null;
+      var pillBg=coursTypeObj?'color-mix(in srgb,'+coursTypeObj.color+' 14%,#fff)':meta.bg;
+      var pillColor=coursTypeObj?coursTypeObj.color:meta.color;
+      var pillLabel=coursTypeObj?(meta.ico+' '+t.cours_nom):(meta.ico+' '+meta.label);
       h+='<tr>';
       h+=  '<td><b>'+DAYS[t.jour]+'</b></td>';
       h+=  '<td style="font-variant-numeric:tabular-nums">'+t.debut+' → '+t.fin+'</td>';
-      h+=  '<td><span class="eq-pill" style="background:'+meta.bg+';color:'+meta.color+'">'+meta.ico+' '+meta.label+'</span></td>';
+      h+=  '<td><span class="eq-pill" style="background:'+pillBg+';color:'+pillColor+'">'+_esc(pillLabel)+'</span></td>';
       h+=  '<td>'+personLbl+'</td>';
       h+=  '<td>'+_esc(_studioName(t._sid))+'</td>';
       h+=  '<td style="text-align:right;white-space:nowrap"><button class="eq-icon-btn" onclick="window._eqOpenTemplate(\''+t.id+'\',\''+t._sid+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button> <button class="eq-icon-btn danger" onclick="window._eqDeleteTemplate(\''+t.id+'\',\''+t._sid+'\')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-2 14a2 2 0 0 1-2 2H9a2 2 0 0 1-2-2L5 6"/></svg></button></td>';
@@ -1126,7 +1228,14 @@
       +    '</select></div>'
       +    '<div id="eq-cours-fields" style="'+(sh.type==='cours'?'':'display:none')+'">'
       +      '<div class="eq-field-row">'
-      +        '<div class="eq-field"><label>Nom du cours</label><input id="eq-cours-nom" value="'+_esc(sh.cours&&sh.cours.nom||'')+'" placeholder="Reformer Niv 2"/></div>'
+      +        '<div class="eq-field"><label>Type de cours</label><select id="eq-cours-class">'
+      +          '<option value="">— Personnalisé —</option>'
+      +          COURS_TYPES.map(function(c){return '<option value="'+c.id+'"'+(sh.cours&&sh.cours.class_id===c.id?' selected':'')+'>'+_esc(c.label)+'</option>';}).join('')
+      +        '</select></div>'
+      +        '<div class="eq-field"><label>Niveau</label><select id="eq-cours-niveau"></select></div>'
+      +      '</div>'
+      +      '<div class="eq-field-row">'
+      +        '<div class="eq-field"><label>Nom affiché</label><input id="eq-cours-nom" value="'+_esc(sh.cours&&sh.cours.nom||'')+'" placeholder="Reformer Flow N1.5"/></div>'
       +        '<div class="eq-field"><label>Capacité</label><input id="eq-cours-cap" type="number" value="'+_esc(sh.cours&&sh.cours.capacite||12)+'"/></div>'
       +      '</div>'
       +    '</div>'
@@ -1156,6 +1265,41 @@
       ov.querySelector('#eq-cours-fields').style.display=e.target.value==='cours'?'':'none';
     });
 
+    // Sélecteur classe → restreint les niveaux + auto-fill nom + ajuste durée
+    function _populateNiveaux(classId,selectedNiveau){
+      var nivSel=ov.querySelector('#eq-cours-niveau');
+      var c=_coursType(classId);
+      if(!c){
+        nivSel.innerHTML='<option value="">—</option>';
+        nivSel.disabled=true;
+        return;
+      }
+      nivSel.disabled=false;
+      nivSel.innerHTML=c.levels.map(function(n){
+        return '<option value="'+n+'"'+(selectedNiveau==n?' selected':'')+'>'+_formatNiv(n)+'</option>';
+      }).join('');
+    }
+    var classSel=ov.querySelector('#eq-cours-class');
+    if(classSel){
+      _populateNiveaux(classSel.value,sh.cours&&sh.cours.niveau);
+      classSel.addEventListener('change',function(){
+        var c=_coursType(classSel.value);
+        _populateNiveaux(classSel.value);
+        // Auto-fill nom et durée si c'est un type catalogue
+        if(c){
+          var niv=ov.querySelector('#eq-cours-niveau').value;
+          ov.querySelector('#eq-cours-nom').value=_coursLabel(classSel.value,niv);
+          // Ajuste fin selon durée du cours (ex: Intro = 30 min)
+          var debut=ov.querySelector('#eq-debut').value;
+          if(debut){ov.querySelector('#eq-fin').value=_addTime(debut,c.duration);}
+        }
+      });
+      ov.querySelector('#eq-cours-niveau').addEventListener('change',function(e){
+        var c=_coursType(classSel.value);
+        if(c)ov.querySelector('#eq-cours-nom').value=_coursLabel(classSel.value,e.target.value);
+      });
+    }
+
     var delBtn=ov.querySelector('[data-eq-delete]');
     if(delBtn){
       delBtn.onclick=function(){
@@ -1181,9 +1325,13 @@
         notes:ov.querySelector('#eq-notes').value.trim()
       };
       if(rec.type==='cours'){
+        var classId=ov.querySelector('#eq-cours-class').value;
+        var niveau=parseFloat(ov.querySelector('#eq-cours-niveau').value)||null;
         rec.cours={
           nom:ov.querySelector('#eq-cours-nom').value.trim()||'Cours',
-          capacite:parseInt(ov.querySelector('#eq-cours-cap').value)||12
+          capacite:parseInt(ov.querySelector('#eq-cours-cap').value)||12,
+          class_id:classId||'',
+          niveau:niveau
         };
       }
       if(_hm(rec.fin)<=_hm(rec.debut)){toast('Heure de fin doit être après début');return;}
@@ -1269,7 +1417,16 @@
                 }).join('')
       +      '</select></div>'
       +    '</div>'
-      +    '<div class="eq-field"><label>Nom du cours (si type cours)</label><input id="eq-cours-nom" value="'+_esc(tpl.cours_nom||'')+'" placeholder="Reformer Niv 2"/></div>'
+      +    '<div id="eq-tpl-cours-fields" style="'+(tpl.type==='cours'?'':'display:none')+'">'
+      +      '<div class="eq-field-row">'
+      +        '<div class="eq-field"><label>Type de cours</label><select id="eq-cours-class">'
+      +          '<option value="">— Personnalisé —</option>'
+      +          COURS_TYPES.map(function(c){return '<option value="'+c.id+'"'+(tpl.cours_class===c.id?' selected':'')+'>'+_esc(c.label)+'</option>';}).join('')
+      +        '</select></div>'
+      +        '<div class="eq-field"><label>Niveau</label><select id="eq-cours-niveau"></select></div>'
+      +      '</div>'
+      +      '<div class="eq-field"><label>Nom affiché</label><input id="eq-cours-nom" value="'+_esc(tpl.cours_nom||'')+'" placeholder="Reformer Flow N1.5"/></div>'
+      +    '</div>'
       +    '<div class="eq-field"><label>Récurrence</label>'
       +      '<div class="eq-checks">'
       +        '<label class="eq-check'+(tpl.weeks==='all'?' active':'')+'"><input type="radio" name="eq-weeks" value="all"'+(tpl.weeks==='all'?' checked':'')+'/>Toutes semaines</label>'
@@ -1297,9 +1454,42 @@
         });
       });
     });
+    // Toggle cours fields selon type
+    ov.querySelector('#eq-type').addEventListener('change',function(e){
+      var f=ov.querySelector('#eq-tpl-cours-fields');
+      if(f)f.style.display=e.target.value==='cours'?'':'none';
+    });
+    // Sélecteur classe → restreint niveaux + auto-fill nom + ajuste durée
+    function _populateNiveauxTpl(classId,selNiv){
+      var nivSel=ov.querySelector('#eq-cours-niveau');if(!nivSel)return;
+      var c=_coursType(classId);
+      if(!c){nivSel.innerHTML='<option value="">—</option>';nivSel.disabled=true;return;}
+      nivSel.disabled=false;
+      nivSel.innerHTML=c.levels.map(function(n){return '<option value="'+n+'"'+(selNiv==n?' selected':'')+'>'+_formatNiv(n)+'</option>';}).join('');
+    }
+    var tplClassSel=ov.querySelector('#eq-cours-class');
+    if(tplClassSel){
+      _populateNiveauxTpl(tplClassSel.value,tpl.cours_niveau);
+      tplClassSel.addEventListener('change',function(){
+        var c=_coursType(tplClassSel.value);
+        _populateNiveauxTpl(tplClassSel.value);
+        if(c){
+          var niv=ov.querySelector('#eq-cours-niveau').value;
+          ov.querySelector('#eq-cours-nom').value=_coursLabel(tplClassSel.value,niv);
+          var debut=ov.querySelector('#eq-debut').value;
+          if(debut)ov.querySelector('#eq-fin').value=_addTime(debut,c.duration);
+        }
+      });
+      ov.querySelector('#eq-cours-niveau').addEventListener('change',function(e){
+        var c=_coursType(tplClassSel.value);
+        if(c)ov.querySelector('#eq-cours-nom').value=_coursLabel(tplClassSel.value,e.target.value);
+      });
+    }
 
     ov.querySelector('[data-eq-save]').onclick=function(){
       var newSid=ov.querySelector('#eq-sid').value;
+      var coursClassEl=ov.querySelector('#eq-cours-class');
+      var coursNivEl=ov.querySelector('#eq-cours-niveau');
       var rec={
         type:ov.querySelector('#eq-type').value,
         jour:parseInt(ov.querySelector('#eq-jour').value),
@@ -1307,6 +1497,8 @@
         fin:ov.querySelector('#eq-fin').value,
         person_id:ov.querySelector('#eq-person').value,
         cours_nom:ov.querySelector('#eq-cours-nom').value.trim(),
+        cours_class:coursClassEl?coursClassEl.value:'',
+        cours_niveau:coursNivEl?(parseFloat(coursNivEl.value)||null):null,
         weeks:(ov.querySelector('input[name=eq-weeks]:checked')||{}).value||'all'
       };
       if(_hm(rec.fin)<=_hm(rec.debut)){toast('Heure de fin doit être après début');return;}
@@ -1374,7 +1566,14 @@
             date_creation:_now(),
             from_template:tpl.id
           };
-          if(tpl.type==='cours'&&tpl.cours_nom)sh.cours={nom:tpl.cours_nom,capacite:12};
+          if(tpl.type==='cours'){
+            sh.cours={
+              nom:tpl.cours_nom||_coursLabel(tpl.cours_class,tpl.cours_niveau)||'Cours',
+              capacite:12,
+              class_id:tpl.cours_class||'',
+              niveau:tpl.cours_niveau||null
+            };
+          }
           _shifts(sid).push(sh);
           created++;
         });
@@ -1382,6 +1581,40 @@
       _saveShifts(sid);
     });
     toast('✓ '+created+' créneaux générés');
+    render();
+  }
+
+  // Seed le planning type Club Pilates : 45 templates Lun-Sam (matin+soir)
+  function _seedClubPilates(){
+    var sf=_curStudioFilter();
+    var sids=sf==='all'?_studioIds():[sf];
+    if(sids.length===0){toast('Aucun studio disponible');return;}
+    var sidLabel=sf==='all'?'TOUS les studios ('+sids.length+')':_studioName(sf);
+    if(!confirm('Pré-remplir 45h de cours hebdo Club Pilates pour '+sidLabel+' ?\n\nCela ajoute 45 templates récurrents (Lun-Sam, 7h-14h + 17h-21h) avec les 9 types de cours officiels. Vous pourrez les modifier ensuite ou les supprimer un par un.\n\nAucun coach n\'est assigné — vous le ferez après avec "Proposer à un coach".'))return;
+    var added=0;
+    sids.forEach(function(sid){
+      STARTER_SCHEDULE.forEach(function(item){
+        // Skip si un template existe déjà à ce jour+heure pour ce studio
+        var exists=_templates(sid).some(function(t){return t.jour===item.jour&&t.debut===item.debut&&t.type==='cours';});
+        if(exists)return;
+        var tpl={
+          id:_uid('tpl'),
+          type:'cours',
+          jour:item.jour,
+          debut:item.debut,
+          fin:item.fin,
+          person_id:'',
+          cours_class:item.class,
+          cours_niveau:item.niveau,
+          cours_nom:_coursLabel(item.class,item.niveau),
+          weeks:'all'
+        };
+        _templates(sid).push(tpl);
+        added++;
+      });
+      _saveTemplates(sid);
+    });
+    toast('✓ '+added+' templates ajoutés · clic sur "Générer 4 sem." pour les déployer');
     render();
   }
 
@@ -1620,6 +1853,7 @@
   window._eqOpenTemplate=_openTemplate;
   window._eqDeleteTemplate=_deleteTemplate;
   window._eqApplyTemplates=_applyTemplates;
+  window._eqSeedClubPilates=_seedClubPilates;
   window._eqToggleSelectShift=_toggleSelectShift;
   window._eqClearSelection=_clearSelection;
   window._eqOpenProposeFromSelection=_openProposeFromSelection;
