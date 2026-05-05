@@ -62,7 +62,18 @@ var S={
   prospectSort:'date',        // 'date' | 'loyer' | 'note'
   prospectSortDir:'desc',     // 'asc' | 'desc'
   prospectFilter:'',          // texte libre filtre ville/adresse
-  prospectStatutFilter:'all'  // 'all' | 'chaud' | 'tiede' | 'froid'
+  prospectStatutFilter:'all', // 'all' | 'chaud' | 'tiede' | 'froid'
+  // ── Équipe (employés + coachs) ──
+  people:{},                  // {personId: {type,prenom,nom,...}} — annuaire global
+  shifts:{},                  // {sid: [shifts...]} — par studio
+  shiftTemplates:{},          // {sid: [templates...]} — par studio
+  shiftProposals:{},          // {sid: [proposals...]} — par studio
+  equipeSubTab:'planning',    // 'planning' | 'trombi' | 'templates' | 'propositions' | 'costs'
+  equipeWeekStart:null,       // 'YYYY-MM-DD' — lundi de la semaine affichée
+  equipeStudioFilter:'all',   // 'all' | sid
+  equipeRoleFilter:'all',     // 'all' | 'accueil' | 'cours' | 'menage' | 'admin'
+  equipeSelectedShifts:[],    // ids des shifts sélectionnés (pour propositions)
+  equipeCostYear:null,equipeCostMonth:null
 };
 
 async function loadAll(){
@@ -71,6 +82,7 @@ async function loadAll(){
   var data=res.data||[];
   var studios={};
   S.files={};S.depenses={};S.messages={};S.adherents={};S.topics={};S.todos={};
+  S.people={};S.shifts={};S.shiftTemplates={};S.shiftProposals={};
   data.forEach(function(r){
     var id=r.id;
     if(id.endsWith('_files')){S.files[id.slice(0,-6)]=r.data&&r.data.files||[];}
@@ -84,6 +96,10 @@ async function loadAll(){
     else if(id.endsWith('_todos')){S.todos[id.slice(0,-6)]=r.data&&r.data.todos||[];}
     else if(id.endsWith('_adherents')){S.adherents[id.slice(0,-10)]=r.data&&r.data.actuel||{};}
     else if(id.endsWith('_scenarios')){S.scenarios[id.slice(0,-10)]=r.data&&r.data.scenarios||[];}
+    else if(id==='_people'){S.people=r.data&&r.data.people||{};}
+    else if(id.endsWith('_shifts')){S.shifts[id.slice(0,-7)]=r.data&&r.data.shifts||[];}
+    else if(id.endsWith('_shift_templates')){S.shiftTemplates[id.slice(0,-16)]=r.data&&r.data.templates||[];}
+    else if(id.endsWith('_shift_proposals')){S.shiftProposals[id.slice(0,-16)]=r.data&&r.data.proposals||[];}
     else if(id.endsWith('_simconfig')){
       var sc=r.data&&r.data.config||{};
       if(Object.keys(sc).length>0){

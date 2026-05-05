@@ -37,6 +37,30 @@ function _handleRowChange(r){
         }
       }catch(e){}
     }
+  } else if(id==='_people'){
+    var nv=r.data&&r.data.people||{};
+    if(JSON.stringify(nv)!==JSON.stringify(S.people||{})){S.people=nv;changed=true;}
+  } else if(id.endsWith('_shifts')&&!id.endsWith('_shift_templates')&&!id.endsWith('_shift_proposals')){
+    var sid=id.slice(0,-7);
+    var nv=r.data&&r.data.shifts||[];
+    if(JSON.stringify(nv)!==JSON.stringify(S.shifts[sid]||[])){
+      if(!S.shifts)S.shifts={};
+      S.shifts[sid]=nv;changed=true;
+    }
+  } else if(id.endsWith('_shift_templates')){
+    var sid=id.slice(0,-16);
+    var nv=r.data&&r.data.templates||[];
+    if(JSON.stringify(nv)!==JSON.stringify(S.shiftTemplates[sid]||[])){
+      if(!S.shiftTemplates)S.shiftTemplates={};
+      S.shiftTemplates[sid]=nv;changed=true;
+    }
+  } else if(id.endsWith('_shift_proposals')){
+    var sid=id.slice(0,-16);
+    var nv=r.data&&r.data.proposals||[];
+    if(JSON.stringify(nv)!==JSON.stringify(S.shiftProposals[sid]||[])){
+      if(!S.shiftProposals)S.shiftProposals={};
+      S.shiftProposals[sid]=nv;changed=true;
+    }
   } else if(id.endsWith('_simconfig')){
     var nv=r.data&&r.data.config||{};
     if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[id.slice(0,-10)]||{})){
