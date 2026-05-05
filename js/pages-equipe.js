@@ -221,6 +221,16 @@
       +'.eq-add-btn{background:linear-gradient(180deg,#2563eb,#1e40af);color:#fff;border:none;padding:10px 16px;border-radius:10px;font:700 13px/1 -apple-system,system-ui,Inter,sans-serif;cursor:pointer;display:inline-flex;align-items:center;gap:7px;box-shadow:0 4px 12px -3px rgba(37,99,235,.5);transition:transform .15s cubic-bezier(.34,1.56,.52,1)}'
       +'.eq-add-btn:hover{transform:translateY(-1px)}.eq-add-btn:active{transform:scale(.97)}'
       +'.eq-add-btn svg{width:14px;height:14px}'
+      // ── Légende couleurs cours ──
+      +'.eq-legend{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0 0 12px;padding:10px 14px;background:rgba(255,255,255,.7);border:.5px solid rgba(10,14,28,.06);border-radius:12px;backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px)}'
+      +'body.dark .eq-legend{background:rgba(28,36,51,.7);border-color:rgba(255,255,255,.05)}'
+      +'.eq-legend-label{font:700 10.5px/1 -apple-system,system-ui,Inter,sans-serif;color:#64748b;letter-spacing:.6px;text-transform:uppercase;margin-right:4px}'
+      +'body.dark .eq-legend-label{color:#9ba9ba}'
+      +'.eq-legend-item{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 8px;border-radius:8px;font:600 12px/1 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;background:color-mix(in srgb,var(--c) 14%,#fff);border:.5px solid color-mix(in srgb,var(--c) 30%,transparent);transition:transform .18s cubic-bezier(.34,1.56,.52,1),background .15s}'
+      +'body.dark .eq-legend-item{background:color-mix(in srgb,var(--c) 26%,#21293a);color:#f0f6fc;border-color:color-mix(in srgb,var(--c) 50%,transparent)}'
+      +'.eq-legend-item:hover{transform:translateY(-1px);background:color-mix(in srgb,var(--c) 22%,#fff)}'
+      +'body.dark .eq-legend-item:hover{background:color-mix(in srgb,var(--c) 36%,#21293a)}'
+      +'.eq-legend-dot{width:9px;height:9px;border-radius:50%;background:var(--c);box-shadow:0 0 0 2px color-mix(in srgb,var(--c) 18%,transparent),0 1px 2px rgba(0,0,0,.1)}'
       // ── Planning grid ──
       +'.eq-plan{background:#fff;border:.5px solid rgba(10,14,28,.07);border-radius:16px;overflow:hidden;box-shadow:0 4px 16px -6px rgba(10,14,28,.1)}'
       +'body.dark .eq-plan{background:#1c2433;border-color:rgba(255,255,255,.06)}'
@@ -254,13 +264,16 @@
       // ── Mobile elements cachés par défaut (desktop) ──
       +'.eq-day-col-mobile-hdr,.eq-day-col-mobile-list{display:none}'
       // ── Shift cards ──
-      +'.eq-shift{position:absolute;left:3px;right:3px;border-radius:8px;padding:5px 7px;font-family:-apple-system,system-ui,Inter,sans-serif;cursor:pointer;overflow:hidden;transition:transform .15s,box-shadow .15s,filter .15s;border-left:3px solid;background:var(--bg);color:var(--c);box-shadow:0 1px 3px rgba(10,14,28,.08);animation:eqShiftIn .35s cubic-bezier(.34,1.56,.52,1)}'
+      +'.eq-shift{position:absolute;left:3px;right:3px;border-radius:8px;padding:5px 8px;font-family:-apple-system,system-ui,Inter,sans-serif;cursor:pointer;overflow:hidden;transition:transform .15s,box-shadow .15s,filter .15s;border-left:5px solid;background:var(--bg);color:var(--c);box-shadow:0 1px 3px rgba(10,14,28,.08);animation:eqShiftIn .35s cubic-bezier(.34,1.56,.52,1)}'
       +'@keyframes eqShiftIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}'
       +'.eq-shift:hover{transform:translateY(-1px) scale(1.01);box-shadow:0 4px 12px -2px rgba(10,14,28,.18);z-index:3;filter:brightness(1.04)}'
       +'.eq-shift.proposed{opacity:.65;border-left-style:dashed}'
-      +'.eq-shift.unassigned{background:rgba(220,38,38,.1)!important;color:#991b1b!important;border-left-color:#dc2626!important;animation:eqUnassPulse 2.4s ease-in-out infinite}'
-      +'@keyframes eqUnassPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.4)}50%{box-shadow:0 0 0 4px rgba(220,38,38,0)}}'
-      +'body.dark .eq-shift.unassigned{color:#fca5a5!important}'
+      // Unassigned : on garde la couleur de classe en fond (pour que le code couleur reste lisible),
+      // on marque visuellement par : border rouge épais, texte "À pourvoir" en rouge, pulse glow rouge subtil
+      +'.eq-shift.unassigned{border-left-color:#dc2626!important;animation:eqUnassPulse 2.4s ease-in-out infinite}'
+      +'.eq-shift.unassigned .eq-shift-person{color:#dc2626;font-weight:700}'
+      +'body.dark .eq-shift.unassigned .eq-shift-person{color:#fca5a5}'
+      +'@keyframes eqUnassPulse{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,.35)}50%{box-shadow:0 0 0 3px rgba(220,38,38,0)}}'
       +'.eq-shift-time{font-size:9.5px;font-weight:700;letter-spacing:.2px;font-variant-numeric:tabular-nums;opacity:.85;margin-bottom:1px}'
       +'.eq-shift-title{font-size:11.5px;font-weight:700;letter-spacing:-.1px;line-height:1.15;margin-bottom:1px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}'
       +'.eq-shift-person{font-size:10.5px;font-weight:600;opacity:.85;display:flex;align-items:center;gap:3px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}'
@@ -538,6 +551,14 @@
     h+=  '<button class="eq-add-btn" onclick="window._eqOpenShift(null)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Nouveau créneau</button>';
     h+='</div>';
 
+    // ── Légende des couleurs (code visuel cours) ──
+    h+='<div class="eq-legend">';
+    h+=  '<div class="eq-legend-label">Code couleur cours :</div>';
+    COURS_TYPES.forEach(function(c){
+      h+='<span class="eq-legend-item" style="--c:'+c.color+'" title="'+_esc(c.desc)+'"><span class="eq-legend-dot"></span>'+_esc(c.short||c.label)+'</span>';
+    });
+    h+='</div>';
+
     // ── Grille ──
     h+='<div class="eq-plan">';
     // Header (desktop only via CSS)
@@ -635,14 +656,19 @@
 
   function _shiftColors(sh){
     var t=SHIFT_TYPE[sh.type]||SHIFT_TYPE.accueil;
-    // Si cours avec class_id défini, utilise la couleur de la classe
+    // Mix opaque (avec #fff ou #21293a en dark) → couleur de classe distincte sur n'importe quel fond
+    var dark=S&&S.darkMode;
+    var base=dark?'#21293a':'#fff';
+    var pct=dark?32:24; // % de couleur dans le pastel — assez vivant pour distinguer
+    // Si cours avec class_id, utilise la couleur de la classe
     if(sh.type==='cours'&&sh.cours&&sh.cours.class_id){
       var c=_coursType(sh.cours.class_id);
       if(c){
-        return {color:c.color,bg:'color-mix(in srgb,'+c.color+' 18%,transparent)',border:c.color,ico:t.ico};
+        return {color:c.color,bg:'color-mix(in srgb,'+c.color+' '+pct+'%,'+base+')',border:c.color,ico:t.ico};
       }
     }
-    return {color:t.color,bg:t.bg,border:t.border,ico:t.ico};
+    // Pour les autres types (accueil/menage/admin), même traitement
+    return {color:t.color,bg:'color-mix(in srgb,'+t.color+' '+pct+'%,'+base+')',border:t.border,ico:t.ico};
   }
 
   function _renderShiftDesktop(sh){
@@ -1779,7 +1805,8 @@
 
   // Seed le planning Club Pilates : génère 45 cours/sem × N semaines × M studios
   // → directement dans S.shifts (visible page Planning), randomisé par studio
-  function _seedPlanning(){
+  // Await toutes les saves Supabase pour garantir persistance (vs perdre des données)
+  async function _seedPlanning(){
     var sf=_curStudioFilter();
     var sids=sf==='all'?_studioIds():[sf];
     if(sids.length===0){toast('Aucun studio disponible');return;}
@@ -1789,8 +1816,11 @@
     var sidLabel=sf==='all'?'TOUS les studios ('+sids.length+')':_studioName(sf);
     if(!confirm('Pré-remplir le planning Club Pilates pour '+sidLabel+' ?\n\n• 45h de cours par semaine\n• 26 semaines à venir (6 mois)\n• Lun-Sam, 7h-14h + 17h-21h\n• ~'+totalEstime+' créneaux générés\n• Cours variés et aléatoires (tous "À pourvoir")\n\nVous pourrez modifier chaque créneau (cours, niveau, horaire, coach) en cliquant dessus. Les créneaux déjà existants ne seront pas écrasés.'))return;
 
+    toast('Génération en cours…',2000);
     var ws=_weekStart(); // semaine courante
     var totalAdded=0,skipped=0;
+    var savedStudios=0,failedStudios=[];
+    // Build local d'abord pour chaque studio
     sids.forEach(function(sid){
       var arr=_shifts(sid);
       for(var w=0;w<nbWeeks;w++){
@@ -1798,7 +1828,6 @@
         WEEK_SLOTS.forEach(function(slot){
           var dt=_addDays(weekStart,slot.jour);
           var dymd=_ymd(dt);
-          // Skip si shift existant à cette date+heure dans ce studio
           var exists=arr.some(function(s){return s.date===dymd&&s.debut===slot.debut;});
           if(exists){skipped++;return;}
           var pick=_pickClassFromPool(slot.pool);
@@ -1822,10 +1851,18 @@
           totalAdded++;
         });
       }
-      _saveShifts(sid);
     });
-    toast('✓ '+totalAdded+' créneaux générés'+(skipped>0?' ('+skipped+' déjà existants ignorés)':''));
-    // Repositionner sur la semaine courante pour que l'utilisateur voie immédiatement
+    // Save séquentiel (await) chaque studio pour garantir persistance complète
+    for(var i=0;i<sids.length;i++){
+      var ok=await _saveShifts(sids[i]);
+      if(ok)savedStudios++;
+      else failedStudios.push(_studioName(sids[i]));
+    }
+    if(failedStudios.length===0){
+      toast('✓ '+totalAdded+' créneaux générés et enregistrés ('+savedStudios+' studio'+(savedStudios>1?'s':'')+(skipped>0?' · '+skipped+' déjà existants ignorés':'')+')',4000);
+    }else{
+      toast('⚠ Sauvegarde partielle : '+savedStudios+'/'+sids.length+' studios OK · échec : '+failedStudios.join(', '),5000);
+    }
     S.equipeWeekStart=_ymd(ws);
     render();
   }
