@@ -995,7 +995,7 @@
       +      '</div>'
       +      '<div class="eq-photo-meta">'
       +        '<div class="eq-photo-title">Photo</div>'
-      +        '<div class="eq-photo-sub">JPG / PNG · max 2 Mo · idéal carré</div>'
+      +        '<div class="eq-photo-sub">JPG / PNG · max 8 Mo · idéal carré (auto redim 800px)</div>'
       +        '<div class="eq-photo-actions">'
       +          '<label class="eq-btn" style="cursor:pointer"><input type="file" id="eq-photo-input" accept="image/*" style="display:none"/>📷 '+(data.photo?'Changer':'Téléverser')+'</label>'
       +          (data.photo?'<button class="eq-btn ghost" data-eq-photo-clear style="color:#dc2626">Retirer</button>':'')
@@ -1059,27 +1059,57 @@
         if(preview)preview.style.setProperty('--ac',(ROLE_META[newType]||ROLE_META.employe).color);
       });
     });
-    // Photo upload : file → base64 (max 2 Mo, redimensionné côté navigateur)
+    // Photo upload : file → base64 redimensionné qualité haute (lightbox-friendly)
+    // Max source 8 Mo · downscale 800px max · JPEG q=0.9 + smoothing 'high'
+    // Pour très grandes photos : downscale en 2 passes pour préserver la netteté
     var photoInput=ov.querySelector('#eq-photo-input');
     if(photoInput){
       photoInput.addEventListener('change',function(e){
         var f=e.target.files&&e.target.files[0];if(!f)return;
-        if(f.size>2*1024*1024){toast('Photo trop lourde (max 2 Mo)');return;}
+        if(f.size>8*1024*1024){toast('Photo trop lourde (max 8 Mo)');return;}
         var reader=new FileReader();
         reader.onload=function(ev){
-          // Redimensionne à 240px max via canvas pour limiter la taille en base64
           var img=new Image();
           img.onload=function(){
-            var max=240;
+            var TARGET=800; // taille suffisante pour lightbox ~640px en retina
             var w=img.width,h=img.height;
-            if(w>max||h>max){var r=w>h?max/w:max/h;w=Math.round(w*r);h=Math.round(h*r);}
-            var c=document.createElement('canvas');c.width=w;c.height=h;
-            c.getContext('2d').drawImage(img,0,0,w,h);
-            var dataUrl=c.toDataURL('image/jpeg',0.82);
+            // Calcul taille finale (préserve ratio, ne grossit jamais)
+            var scale=1;
+            if(w>TARGET||h>TARGET)scale=w>h?TARGET/w:TARGET/h;
+            var finalW=Math.round(w*scale),finalH=Math.round(h*scale);
+            // Downscale en plusieurs passes si réduction > 50% (preserve netteté)
+            var srcCanvas=document.createElement('canvas');
+            srcCanvas.width=w;srcCanvas.height=h;
+            var srcCtx=srcCanvas.getContext('2d');
+            srcCtx.imageSmoothingEnabled=true;
+            srcCtx.imageSmoothingQuality='high';
+            srcCtx.drawImage(img,0,0,w,h);
+            var curCanvas=srcCanvas,curW=w,curH=h;
+            while(curW>finalW*2){
+              var nextW=Math.round(curW/2),nextH=Math.round(curH/2);
+              var next=document.createElement('canvas');
+              next.width=nextW;next.height=nextH;
+              var nctx=next.getContext('2d');
+              nctx.imageSmoothingEnabled=true;
+              nctx.imageSmoothingQuality='high';
+              nctx.drawImage(curCanvas,0,0,nextW,nextH);
+              curCanvas=next;curW=nextW;curH=nextH;
+            }
+            // Pass finale → taille cible
+            var c=document.createElement('canvas');
+            c.width=finalW;c.height=finalH;
+            var cx=c.getContext('2d');
+            cx.imageSmoothingEnabled=true;
+            cx.imageSmoothingQuality='high';
+            cx.drawImage(curCanvas,0,0,finalW,finalH);
+            var dataUrl=c.toDataURL('image/jpeg',0.9);
             data.photo=dataUrl;
             // Refresh preview
             var preview=ov.querySelector('#eq-photo-preview');
             if(preview)preview.innerHTML='<img src="'+dataUrl+'" alt=""/>';
+            // Feedback poids final pour l'utilisateur
+            var sizeKB=Math.round(dataUrl.length*0.75/1024); // base64 → bytes approx
+            toast('✓ Photo prête ('+finalW+'×'+finalH+'px · ~'+sizeKB+' Ko)',2500);
           };
           img.src=ev.target.result;
         };
