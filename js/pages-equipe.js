@@ -88,21 +88,38 @@
   function _uid(p){return (p||'p')+'_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);}
   function _now(){return new Date().toISOString();}
 
-  function _savePeople(){
-    if(typeof sb==='undefined')return;
-    sb.from('studios').upsert({id:'_people',data:{people:S.people||{}},updated_at:_now()});
+  // ── Saves async avec error handling (sinon les modifs disparaissent au sync) ─
+  async function _savePeople(){
+    if(typeof sb==='undefined')return false;
+    try{
+      var res=await sb.from('studios').upsert({id:'_people',data:{people:S.people||{}},updated_at:_now()});
+      if(res.error){console.error('[Équipe] _savePeople:',res.error);toast('⚠ Erreur sauvegarde équipe : '+res.error.message);return false;}
+      return true;
+    }catch(e){console.error('[Équipe] _savePeople exception:',e);toast('⚠ Erreur sauvegarde équipe : '+(e.message||e));return false;}
   }
-  function _saveShifts(sid){
-    if(typeof sb==='undefined')return;
-    sb.from('studios').upsert({id:sid+'_shifts',data:{shifts:_shifts(sid)},updated_at:_now()});
+  async function _saveShifts(sid){
+    if(typeof sb==='undefined')return false;
+    try{
+      var res=await sb.from('studios').upsert({id:sid+'_shifts',data:{shifts:_shifts(sid)},updated_at:_now()});
+      if(res.error){console.error('[Équipe] _saveShifts ('+sid+'):',res.error);toast('⚠ Erreur sauvegarde planning : '+res.error.message);return false;}
+      return true;
+    }catch(e){console.error('[Équipe] _saveShifts exception:',e);toast('⚠ Erreur sauvegarde planning : '+(e.message||e));return false;}
   }
-  function _saveTemplates(sid){
-    if(typeof sb==='undefined')return;
-    sb.from('studios').upsert({id:sid+'_shift_templates',data:{templates:_templates(sid)},updated_at:_now()});
+  async function _saveTemplates(sid){
+    if(typeof sb==='undefined')return false;
+    try{
+      var res=await sb.from('studios').upsert({id:sid+'_shift_templates',data:{templates:_templates(sid)},updated_at:_now()});
+      if(res.error){console.error('[Équipe] _saveTemplates ('+sid+'):',res.error);toast('⚠ Erreur sauvegarde templates : '+res.error.message);return false;}
+      return true;
+    }catch(e){console.error('[Équipe] _saveTemplates exception:',e);toast('⚠ Erreur sauvegarde templates : '+(e.message||e));return false;}
   }
-  function _saveProposals(sid){
-    if(typeof sb==='undefined')return;
-    sb.from('studios').upsert({id:sid+'_shift_proposals',data:{proposals:_proposals(sid)},updated_at:_now()});
+  async function _saveProposals(sid){
+    if(typeof sb==='undefined')return false;
+    try{
+      var res=await sb.from('studios').upsert({id:sid+'_shift_proposals',data:{proposals:_proposals(sid)},updated_at:_now()});
+      if(res.error){console.error('[Équipe] _saveProposals ('+sid+'):',res.error);toast('⚠ Erreur sauvegarde propositions : '+res.error.message);return false;}
+      return true;
+    }catch(e){console.error('[Équipe] _saveProposals exception:',e);toast('⚠ Erreur sauvegarde propositions : '+(e.message||e));return false;}
   }
 
   // ── Studios accessibles ────────────────────────────────────────────────────
@@ -1067,14 +1084,16 @@
 
     var archBtn=ov.querySelector('[data-eq-archive]');
     if(archBtn){
-      archBtn.onclick=function(){
-        if(p.statut==='archive')p.statut='actif';
-        else p.statut='archive';
-        _savePeople();render();close();
+      archBtn.onclick=async function(){
+        var prev=p.statut;
+        p.statut=p.statut==='archive'?'actif':'archive';
+        var ok=await _savePeople();
+        if(ok){render();close();}
+        else{p.statut=prev;} // rollback
       };
     }
 
-    ov.querySelector('[data-eq-save]').onclick=function(){
+    ov.querySelector('[data-eq-save]').onclick=async function(){
       var prenom=ov.querySelector('#eq-prenom').value.trim();
       var nom=ov.querySelector('#eq-nom').value.trim();
       if(!prenom||!nom){toast('Prénom et nom requis');return;}
@@ -1095,23 +1114,40 @@
         statut:data.statut||'actif',
         date_modif:_now()
       };
+      // Snapshot pour rollback en cas d'échec save Supabase
+      var rollback;
       if(isNew){
         rec.id=_uid('person');
         rec.date_entree=_now();
         ppl[rec.id]=rec;
+        rollback=function(){delete ppl[rec.id];};
       }else{
+        var prev=JSON.parse(JSON.stringify(p));
         Object.assign(p,rec);
+        rollback=function(){Object.keys(p).forEach(function(k){delete p[k];});Object.assign(p,prev);};
       }
-      _savePeople();
-      toast('✓ '+(isNew?'Personne ajoutée':'Mise à jour'));
-      close();render();
+      // Save Supabase + await pour s'assurer que les modifs persistent
+      var saveBtn=this;saveBtn.disabled=true;saveBtn.textContent='Enregistrement…';
+      var ok=await _savePeople();
+      saveBtn.disabled=false;
+      if(ok){
+        toast('✓ '+(isNew?'Personne ajoutée':'Mise à jour'));
+        close();render();
+      }else{
+        // L'erreur a déjà été toastée par _savePeople — on rollback et on garde le modal ouvert
+        rollback();
+        saveBtn.textContent=isNew?'Créer':'Enregistrer';
+      }
     };
   }
 
-  function _archivePerson(id){
+  async function _archivePerson(id){
     var p=_people()[id];if(!p)return;
+    var prev=p.statut;
     p.statut=p.statut==='archive'?'actif':'archive';
-    _savePeople();render();
+    var ok=await _savePeople();
+    if(ok)render();
+    else{p.statut=prev;}
   }
 
   // ════════════════════════════════════════════════════════════════════════════
@@ -1246,18 +1282,19 @@
 
     var delBtn=ov.querySelector('[data-eq-delete]');
     if(delBtn){
-      delBtn.onclick=function(){
+      delBtn.onclick=async function(){
         if(!confirm('Supprimer ce créneau ?'))return;
         var arr=_shifts(sid);
         var idx=arr.findIndex(function(x){return x.id===shiftId;});
-        if(idx>=0)arr.splice(idx,1);
-        _saveShifts(sid);
-        toast('✓ Créneau supprimé');
-        close();render();
+        if(idx<0)return;
+        var removed=arr.splice(idx,1)[0];
+        var ok=await _saveShifts(sid);
+        if(ok){toast('✓ Créneau supprimé');close();render();}
+        else{arr.splice(idx,0,removed);} // rollback
       };
     }
 
-    ov.querySelector('[data-eq-save]').onclick=function(){
+    ov.querySelector('[data-eq-save]').onclick=async function(){
       var newSid=ov.querySelector('#eq-sid').value;
       var rec={
         type:ov.querySelector('#eq-type').value,
@@ -1280,28 +1317,44 @@
       }
       if(_hm(rec.fin)<=_hm(rec.debut)){toast('Heure de fin doit être après début');return;}
 
+      var saveBtn=this;saveBtn.disabled=true;saveBtn.textContent='Enregistrement…';
+      var ok=true;
       if(isNew){
         rec.id=_uid('shift');
         rec.date_creation=_now();
         _shifts(newSid).push(rec);
-        _saveShifts(newSid);
+        ok=await _saveShifts(newSid);
+        if(!ok){_shifts(newSid).pop();} // rollback
       }else{
         // Si studio changé : retirer ancien, ajouter nouveau
         if(newSid!==sid){
           var oldArr=_shifts(sid);
           var idx=oldArr.findIndex(function(x){return x.id===shiftId;});
-          if(idx>=0)oldArr.splice(idx,1);
-          _saveShifts(sid);
+          var removed=idx>=0?oldArr.splice(idx,1)[0]:null;
           rec.id=shiftId;
           _shifts(newSid).push(rec);
-          _saveShifts(newSid);
+          var ok1=await _saveShifts(sid);
+          var ok2=await _saveShifts(newSid);
+          ok=ok1&&ok2;
+          if(!ok){
+            // Rollback : remettre dans l'ancien studio
+            _shifts(newSid).pop();
+            if(removed)_shifts(sid).push(removed);
+          }
         }else{
+          var prev=JSON.parse(JSON.stringify(sh));
           Object.assign(sh,rec);
-          _saveShifts(sid);
+          ok=await _saveShifts(sid);
+          if(!ok){Object.keys(sh).forEach(function(k){delete sh[k];});Object.assign(sh,prev);}
         }
       }
-      toast('✓ '+(isNew?'Créneau créé':'Mis à jour'));
-      close();render();
+      saveBtn.disabled=false;
+      if(ok){
+        toast('✓ '+(isNew?'Créneau créé':'Mis à jour'));
+        close();render();
+      }else{
+        saveBtn.textContent=isNew?'Créer':'Enregistrer';
+      }
     };
   }
 
@@ -1430,7 +1483,7 @@
       });
     }
 
-    ov.querySelector('[data-eq-save]').onclick=function(){
+    ov.querySelector('[data-eq-save]').onclick=async function(){
       var newSid=ov.querySelector('#eq-sid').value;
       var coursClassEl=ov.querySelector('#eq-cours-class');
       var coursNivEl=ov.querySelector('#eq-cours-niveau');
@@ -1446,36 +1499,50 @@
         weeks:(ov.querySelector('input[name=eq-weeks]:checked')||{}).value||'all'
       };
       if(_hm(rec.fin)<=_hm(rec.debut)){toast('Heure de fin doit être après début');return;}
+      var saveBtn=this;saveBtn.disabled=true;saveBtn.textContent='Enregistrement…';
+      var ok=true;
       if(isNew){
         rec.id=_uid('tpl');
         _templates(newSid).push(rec);
-        _saveTemplates(newSid);
+        ok=await _saveTemplates(newSid);
+        if(!ok)_templates(newSid).pop();
       }else{
         if(newSid!==sid){
           var oldArr=_templates(sid);
           var idx=oldArr.findIndex(function(t){return t.id===tplId;});
-          if(idx>=0)oldArr.splice(idx,1);
-          _saveTemplates(sid);
+          var removed=idx>=0?oldArr.splice(idx,1)[0]:null;
           rec.id=tplId;
           _templates(newSid).push(rec);
-          _saveTemplates(newSid);
+          var ok1=await _saveTemplates(sid);
+          var ok2=await _saveTemplates(newSid);
+          ok=ok1&&ok2;
+          if(!ok){_templates(newSid).pop();if(removed)_templates(sid).push(removed);}
         }else{
+          var prev=JSON.parse(JSON.stringify(tpl));
           Object.assign(tpl,rec);
-          _saveTemplates(sid);
+          ok=await _saveTemplates(sid);
+          if(!ok){Object.keys(tpl).forEach(function(k){delete tpl[k];});Object.assign(tpl,prev);}
         }
       }
-      toast('✓ Template '+(isNew?'créé':'mis à jour'));
-      close();render();
+      saveBtn.disabled=false;
+      if(ok){
+        toast('✓ Template '+(isNew?'créé':'mis à jour'));
+        close();render();
+      }else{
+        saveBtn.textContent=isNew?'Créer':'Enregistrer';
+      }
     };
   }
 
-  function _deleteTemplate(tplId,sid){
+  async function _deleteTemplate(tplId,sid){
     if(!confirm('Supprimer ce template ?'))return;
     var arr=_templates(sid);
     var idx=arr.findIndex(function(t){return t.id===tplId;});
-    if(idx>=0)arr.splice(idx,1);
-    _saveTemplates(sid);
-    render();
+    if(idx<0)return;
+    var removed=arr.splice(idx,1)[0];
+    var ok=await _saveTemplates(sid);
+    if(ok)render();
+    else arr.splice(idx,0,removed);
   }
 
   function _applyTemplates(){
@@ -1522,7 +1589,7 @@
           created++;
         });
       }
-      _saveShifts(sid);
+      _saveShifts(sid); // fire-and-forget OK ici (batch)
     });
     toast('✓ '+created+' créneaux générés');
     render();
@@ -1750,7 +1817,7 @@
     ov.querySelector('[data-eq-cancel]').onclick=close;
     ov.addEventListener('click',function(e){if(e.target===ov)close();});
 
-    ov.querySelector('[data-eq-send]').onclick=function(){
+    ov.querySelector('[data-eq-send]').onclick=async function(){
       var coachId=ov.querySelector('#eq-coach').value;
       var coach=ppl[coachId];if(!coach){toast('Coach invalide');return;}
       var msg=ov.querySelector('#eq-msg').value.trim();
@@ -1787,22 +1854,21 @@
         total_cost:totalRevenu
       };
       _proposals(sid).push(prop);
-      _saveProposals(sid);
 
       // Marquer les shifts comme proposés
       shifts.forEach(function(sh){
         var src=_shifts(sid).find(function(x){return x.id===sh.id;});
         if(src){src.statut='propose';src.person_id=coachId;}
       });
-      _saveShifts(sid);
+      // Save async + await pour s'assurer que ça persiste
+      var ok1=await _saveProposals(sid);var ok2=await _saveShifts(sid);
       S.equipeSelectedShifts=[];
-
-      toast('✓ Email ouvert · proposition enregistrée');
-      close();render();
+      if(ok1&&ok2){toast('✓ Email ouvert · proposition enregistrée');close();render();}
+      else{close();render();} // au moins fermer le modal — l'erreur est déjà toastée
     };
   }
 
-  function _markProposal(propId,sid,statut){
+  async function _markProposal(propId,sid,statut){
     var arr=_proposals(sid);
     var pr=arr.find(function(p){return p.id===propId;});
     if(!pr)return;
@@ -1813,18 +1879,19 @@
       var sh=_shifts(sid).find(function(x){return x.id===shId;});
       if(sh)sh.statut=statut==='accepte'?'confirme':'refuse';
     });
-    _saveProposals(sid);_saveShifts(sid);
-    toast('✓ Proposition marquée comme '+statut);
-    render();
+    var ok1=await _saveProposals(sid);var ok2=await _saveShifts(sid);
+    if(ok1&&ok2){toast('✓ Proposition marquée comme '+statut);render();}
   }
 
-  function _deleteProposal(propId,sid){
+  async function _deleteProposal(propId,sid){
     if(!confirm('Supprimer cette proposition ?'))return;
     var arr=_proposals(sid);
     var idx=arr.findIndex(function(p){return p.id===propId;});
-    if(idx>=0)arr.splice(idx,1);
-    _saveProposals(sid);
-    render();
+    if(idx<0)return;
+    var removed=arr.splice(idx,1)[0];
+    var ok=await _saveProposals(sid);
+    if(ok)render();
+    else arr.splice(idx,0,removed);
   }
 
   // ════════════════════════════════════════════════════════════════════════════
