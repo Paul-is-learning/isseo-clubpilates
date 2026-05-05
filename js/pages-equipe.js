@@ -208,6 +208,8 @@
       +'.eq-day-slot:hover{background:rgba(37,99,235,.06)}'
       +'.eq-day-slot.h-major{border-top-color:rgba(10,14,28,.05)}'
       +'body.dark .eq-day-slot.h-major{border-top-color:rgba(255,255,255,.035)}'
+      // ── Mobile elements cachés par défaut (desktop) ──
+      +'.eq-day-col-mobile-hdr,.eq-day-col-mobile-list{display:none}'
       // ── Shift cards ──
       +'.eq-shift{position:absolute;left:3px;right:3px;border-radius:8px;padding:5px 7px;font-family:-apple-system,system-ui,Inter,sans-serif;cursor:pointer;overflow:hidden;transition:transform .15s,box-shadow .15s,filter .15s;border-left:3px solid;background:var(--bg);color:var(--c);box-shadow:0 1px 3px rgba(10,14,28,.08);animation:eqShiftIn .35s cubic-bezier(.34,1.56,.52,1)}'
       +'@keyframes eqShiftIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}'
@@ -230,11 +232,13 @@
         +'.eq-plan-hours{display:none}'
         +'.eq-day-col{border-right:none;border-bottom:.5px solid rgba(10,14,28,.07);min-height:auto;padding:8px 0}'
         +'body.dark .eq-day-col{border-bottom-color:rgba(255,255,255,.05)}'
-        +'.eq-day-col-mobile-hdr{display:flex;align-items:center;justify-content:space-between;padding:8px 14px 6px;font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;color:#64748b;text-transform:uppercase;letter-spacing:.6px}'
+        +'.eq-day-slot{display:none}' // pas de slots cliquables vides en mobile
+        +'.eq-shift{display:none}' // les shifts desktop sont aussi cachés (utilise versions mobile)
+        +'.eq-day-col-mobile-hdr{display:flex!important;align-items:center;justify-content:space-between;padding:8px 14px 6px;font:700 12px/1 -apple-system,system-ui,Inter,sans-serif;color:#64748b;text-transform:uppercase;letter-spacing:.6px}'
         +'.eq-day-col-mobile-hdr.today{color:#2563eb}'
         +'.eq-day-col-mobile-hdr .num{font-size:16px;color:#0f1f3d;letter-spacing:-.3px}'
         +'body.dark .eq-day-col-mobile-hdr .num{color:#f0f6fc}'
-        +'.eq-day-col-mobile-list{padding:0 12px 8px;display:flex;flex-direction:column;gap:6px}'
+        +'.eq-day-col-mobile-list{padding:0 12px 8px;display:flex!important;flex-direction:column;gap:6px}'
         +'.eq-shift-mobile{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:var(--bg);border-left:3px solid var(--c);cursor:pointer}'
         +'.eq-shift-mobile-time{font:700 11.5px/1 -apple-system,system-ui,Inter,sans-serif;color:var(--c);min-width:74px;font-variant-numeric:tabular-nums}'
         +'.eq-shift-mobile-meta{flex:1;min-width:0}'
@@ -317,6 +321,25 @@
       +'.eq-modal-body{flex:1;overflow-y:auto;padding:18px 22px;-webkit-overflow-scrolling:touch}'
       +'.eq-modal-foot{padding:14px 22px max(18px,env(safe-area-inset-bottom));border-top:.5px solid rgba(120,120,128,.13);display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap}'
       +'body.dark .eq-modal-foot{border-top-color:rgba(255,255,255,.07)}'
+      // ── Photo upload (modal personne) ──
+      +'.eq-photo-upload{display:flex;align-items:center;gap:14px;padding:14px;background:rgba(120,120,128,.05);border:.5px solid rgba(10,14,28,.06);border-radius:12px;margin-bottom:18px}'
+      +'body.dark .eq-photo-upload{background:rgba(255,255,255,.03);border-color:rgba(255,255,255,.05)}'
+      +'.eq-photo-preview{width:72px;height:72px;border-radius:18px;background:linear-gradient(135deg,var(--ac,#2563eb),color-mix(in srgb,var(--ac,#2563eb) 65%,#000));display:flex;align-items:center;justify-content:center;color:#fff;flex-shrink:0;overflow:hidden;box-shadow:0 8px 18px -6px color-mix(in srgb,var(--ac,#2563eb) 50%,transparent)}'
+      +'.eq-photo-preview svg{width:34px;height:34px;opacity:.85}'
+      +'.eq-photo-preview img{width:100%;height:100%;object-fit:cover;border-radius:18px}'
+      +'.eq-photo-meta{flex:1;min-width:0}'
+      +'.eq-photo-title{font:700 14px/1 -apple-system,system-ui,Inter,sans-serif;color:#0f1f3d;margin-bottom:3px}'
+      +'body.dark .eq-photo-title{color:#f0f6fc}'
+      +'.eq-photo-sub{font:500 11.5px/1.4 -apple-system,system-ui,Inter,sans-serif;color:#94a3b8;margin-bottom:8px}'
+      +'.eq-photo-actions{display:flex;gap:6px;flex-wrap:wrap}'
+      +'.eq-photo-actions .eq-btn{padding:7px 12px;font-size:12px}'
+      // ── Avatar dans shift card (desktop) ──
+      +'.eq-shift-pavatar{display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:var(--c,#3b82f6);color:#fff;font:700 9px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:-.3px;flex-shrink:0;overflow:hidden;border:1.5px solid rgba(255,255,255,.6)}'
+      +'.eq-shift-pavatar img{width:100%;height:100%;object-fit:cover;border-radius:50%}'
+      // ── Avatar dans shift card mobile ──
+      +'.eq-shift-mobile-avatar{width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,var(--c),color-mix(in srgb,var(--c) 65%,#000));color:#fff;display:flex;align-items:center;justify-content:center;font:700 14px/1 -apple-system,system-ui,Inter,sans-serif;flex-shrink:0;overflow:hidden;box-shadow:0 4px 10px -3px color-mix(in srgb,var(--c) 50%,transparent)}'
+      +'.eq-shift-mobile-avatar img{width:100%;height:100%;object-fit:cover;border-radius:12px}'
+      +'.eq-shift-mobile-avatar.unassigned{background:linear-gradient(135deg,#dc2626,#991b1b);font-size:18px}'
       // ── Form ──
       +'.eq-field{margin-bottom:14px}'
       +'.eq-field label{display:block;font:700 10.5px/1 -apple-system,system-ui,Inter,sans-serif;letter-spacing:.7px;text-transform:uppercase;color:#64748b;margin-bottom:6px}'
@@ -542,6 +565,11 @@
     return 'top:'+top+'px;height:'+height+'px';
   }
 
+  function _personInitials(p){
+    if(!p)return '?';
+    return ((p.prenom||'?').charAt(0)+(p.nom||'').charAt(0)).toUpperCase();
+  }
+
   function _renderShiftDesktop(sh){
     var t=SHIFT_TYPE[sh.type]||SHIFT_TYPE.accueil;
     var p=_people()[sh.person_id];
@@ -550,6 +578,15 @@
     var label=sh.cours&&sh.cours.nom?sh.cours.nom:t.label;
     var personLbl=unassigned?'⚠ À pourvoir':(p?(p.prenom+(p.nom?' '+p.nom.charAt(0)+'.':'')):'???');
     var sel=(S.equipeSelectedShifts||[]).indexOf(sh.id)>=0;
+    // Avatar (photo ou initiales) — uniquement si personne assignée
+    var avatarHtml='';
+    if(p){
+      if(p.photo){
+        avatarHtml='<span class="eq-shift-pavatar" style="--c:'+t.color+'"><img src="'+_esc(p.photo)+'" alt=""/></span>';
+      }else{
+        avatarHtml='<span class="eq-shift-pavatar" style="--c:'+t.color+'">'+_personInitials(p)+'</span>';
+      }
+    }
     var html='<div class="eq-shift'+(unassigned?' unassigned':'')+(sh.statut==='propose'?' proposed':'')+(sel?' selected':'')+'" '
       +'style="--bg:'+t.bg+';--c:'+t.color+';border-left-color:'+t.border+';'+_shiftPositionStyle(sh)+'" '
       +'onclick="event.stopPropagation();window._eqOpenShift(\''+sh.id+'\',\''+sh._sid+'\')" '
@@ -557,7 +594,7 @@
     if(statusCls)html+='<span class="eq-shift-status '+statusCls+'">'+(sh.statut==='confirme'?'✓':sh.statut==='propose'?'…':'✕')+'</span>';
     html+='<div class="eq-shift-time">'+sh.debut+'–'+sh.fin+'</div>';
     html+='<div class="eq-shift-title">'+_esc(label)+'</div>';
-    html+='<div class="eq-shift-person">'+_esc(personLbl)+'</div>';
+    html+='<div class="eq-shift-person" style="display:flex;align-items:center;gap:4px">'+avatarHtml+'<span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+_esc(personLbl)+'</span></div>';
     html+='</div>';
     return html;
   }
@@ -568,13 +605,18 @@
     var unassigned=!sh.person_id;
     var label=sh.cours&&sh.cours.nom?sh.cours.nom:t.label;
     var personLbl=unassigned?'⚠ À pourvoir':(p?(p.prenom+' '+p.nom):'???');
+    // Avatar mobile : grand cube avec photo ou initiales (ou ⚠ si à pourvoir)
+    var avatarContent;
+    if(unassigned)avatarContent='⚠';
+    else if(p&&p.photo)avatarContent='<img src="'+_esc(p.photo)+'" alt=""/>';
+    else avatarContent=_personInitials(p);
     return '<div class="eq-shift-mobile'+(unassigned?' unassigned':'')+'" '
       +'style="--bg:'+t.bg+';--c:'+t.color+'" '
       +'onclick="window._eqOpenShift(\''+sh.id+'\',\''+sh._sid+'\')">'
-      +'<div class="eq-shift-mobile-time">'+sh.debut+'–'+sh.fin+'</div>'
+      +'<div class="eq-shift-mobile-avatar'+(unassigned?' unassigned':'')+'" style="--c:'+t.color+'">'+avatarContent+'</div>'
       +'<div class="eq-shift-mobile-meta">'
-      +'<div class="eq-shift-mobile-title">'+t.ico+' '+_esc(label)+'</div>'
-      +'<div class="eq-shift-mobile-person">'+_esc(personLbl)+(t!==SHIFT_TYPE[sh.type]?'':' · '+_esc(_studioName(sh._sid)))+'</div>'
+      +'<div class="eq-shift-mobile-title">'+t.ico+' '+_esc(label)+' · '+sh.debut+'–'+sh.fin+'</div>'
+      +'<div class="eq-shift-mobile-person">'+_esc(personLbl)+' · '+_esc(_studioName(sh._sid))+'</div>'
       +'</div>'
       +'</div>';
   }
@@ -865,6 +907,19 @@
       +    '<button class="eq-modal-close"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>'
       +  '</div>'
       +  '<div class="eq-modal-body">'
+      +    '<div class="eq-photo-upload">'
+      +      '<div class="eq-photo-preview" id="eq-photo-preview" style="--ac:'+(ROLE_META[data.type]||ROLE_META.employe).color+'">'
+      +        (data.photo?'<img src="'+_esc(data.photo)+'" alt=""/>':'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>')
+      +      '</div>'
+      +      '<div class="eq-photo-meta">'
+      +        '<div class="eq-photo-title">Photo</div>'
+      +        '<div class="eq-photo-sub">JPG / PNG · max 2 Mo · idéal carré</div>'
+      +        '<div class="eq-photo-actions">'
+      +          '<label class="eq-btn" style="cursor:pointer"><input type="file" id="eq-photo-input" accept="image/*" style="display:none"/>📷 '+(data.photo?'Changer':'Téléverser')+'</label>'
+      +          (data.photo?'<button class="eq-btn ghost" data-eq-photo-clear style="color:#dc2626">Retirer</button>':'')
+      +        '</div>'
+      +      '</div>'
+      +    '</div>'
       +    '<div class="eq-field"><label>Type</label>'
       +      '<div class="eq-checks">'
       +        '<label class="eq-check'+(data.type==='employe'?' active':'')+'"><input type="radio" name="eq-type" value="employe"'+(data.type==='employe'?' checked':'')+'/>🛎️ Employé accueil</label>'
@@ -910,14 +965,55 @@
     ov.querySelector('[data-eq-cancel]').onclick=close;
     ov.addEventListener('click',function(e){if(e.target===ov)close();});
 
-    // Type radios visual
+    // Type radios visual + recolore le preview photo
     Array.from(ov.querySelectorAll('input[name=eq-type]')).forEach(function(r){
       r.addEventListener('change',function(){
         Array.from(ov.querySelectorAll('label.eq-check')).filter(function(l){return l.querySelector('input[name=eq-type]');}).forEach(function(l){
           l.classList.toggle('active',l.querySelector('input').checked);
         });
+        // Update photo preview accent color
+        var newType=ov.querySelector('input[name=eq-type]:checked').value;
+        var preview=ov.querySelector('#eq-photo-preview');
+        if(preview)preview.style.setProperty('--ac',(ROLE_META[newType]||ROLE_META.employe).color);
       });
     });
+    // Photo upload : file → base64 (max 2 Mo, redimensionné côté navigateur)
+    var photoInput=ov.querySelector('#eq-photo-input');
+    if(photoInput){
+      photoInput.addEventListener('change',function(e){
+        var f=e.target.files&&e.target.files[0];if(!f)return;
+        if(f.size>2*1024*1024){toast('Photo trop lourde (max 2 Mo)');return;}
+        var reader=new FileReader();
+        reader.onload=function(ev){
+          // Redimensionne à 240px max via canvas pour limiter la taille en base64
+          var img=new Image();
+          img.onload=function(){
+            var max=240;
+            var w=img.width,h=img.height;
+            if(w>max||h>max){var r=w>h?max/w:max/h;w=Math.round(w*r);h=Math.round(h*r);}
+            var c=document.createElement('canvas');c.width=w;c.height=h;
+            c.getContext('2d').drawImage(img,0,0,w,h);
+            var dataUrl=c.toDataURL('image/jpeg',0.82);
+            data.photo=dataUrl;
+            // Refresh preview
+            var preview=ov.querySelector('#eq-photo-preview');
+            if(preview)preview.innerHTML='<img src="'+dataUrl+'" alt=""/>';
+          };
+          img.src=ev.target.result;
+        };
+        reader.readAsDataURL(f);
+      });
+    }
+    var photoClearBtn=ov.querySelector('[data-eq-photo-clear]');
+    if(photoClearBtn){
+      photoClearBtn.addEventListener('click',function(e){
+        e.preventDefault();
+        data.photo='';
+        var preview=ov.querySelector('#eq-photo-preview');
+        if(preview)preview.innerHTML='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>';
+        photoClearBtn.style.display='none';
+      });
+    }
     // Studios checks visual
     Array.from(ov.querySelectorAll('input[data-eq-studio]')).forEach(function(c){
       c.addEventListener('change',function(){c.closest('label').classList.toggle('active',c.checked);});
@@ -941,6 +1037,7 @@
       if(studios.length===0){toast('Au moins un studio requis');return;}
       var rec={
         type:type,prenom:prenom,nom:nom,
+        photo:data.photo||'',
         tel:ov.querySelector('#eq-tel').value.trim(),
         email:ov.querySelector('#eq-email').value.trim(),
         contrat:ov.querySelector('#eq-contrat').value,
