@@ -131,6 +131,35 @@ function renderPageEngagements(){
   });
   var maxActTotal=Math.max.apply(null,actData.map(function(a){return a.total;}));
 
+  // ── Pré-calcul Créances ISSEO par associé (Niveau 3 — synthèse Excel 19/05/2026) ──
+  // Quote-parts par périmètre :
+  //   OCCITANIE → ISSEO 50% / P&W Studios 50%
+  //   COBE      → ISSEO 20% / Paul B. 20% / Pilatine 20% / Coquel 40%
+  //   SACOBE    → ISSEO 20% / P&W Studios 20% (structure incomplète, à compléter)
+  //   STUDIOS   → 100% P&W Studios (holding personnelle Tom Bécaud)
+  var QUOTES_PERIMETRE={
+    OCCITANIE:{isseo:0.5, pwStudios:0.5, paul:0,    pilatine:0,   coquel:0   },
+    COBE:     {isseo:0.2, pwStudios:0,   paul:0.2,  pilatine:0.2, coquel:0.4 },
+    SACOBE:   {isseo:0.2, pwStudios:0.2, paul:0,    pilatine:0,   coquel:0   },
+    STUDIOS:  {isseo:0,   pwStudios:1.0, paul:0,    pilatine:0,   coquel:0   }
+  };
+  var creancesPaye  ={isseo:0,pwStudios:0,paul:0,pilatine:0,coquel:0,total:0};
+  var creancesEngage={isseo:0,pwStudios:0,paul:0,pilatine:0,coquel:0,total:0};
+  allDeps.forEach(function(e){
+    var p=e.dep._perimetre;
+    var s=e.dep._statut_paiement;
+    if(!p||!QUOTES_PERIMETRE[p])return; // dépense sans périmètre → ignorée (legacy)
+    var ttc=num(e.dep.ttc);
+    var q=QUOTES_PERIMETRE[p];
+    var bucket=(s==='Engagé')?creancesEngage:creancesPaye;
+    bucket.isseo+=ttc*q.isseo;
+    bucket.pwStudios+=ttc*q.pwStudios;
+    bucket.paul+=ttc*q.paul;
+    bucket.pilatine+=ttc*q.pilatine;
+    bucket.coquel+=ttc*q.coquel;
+    bucket.total+=ttc;
+  });
+
   // ── Header gradient gold ──
   h+='<div style="background:linear-gradient(135deg,#92630a 0%,#b8860b 50%,#d4a843 100%);border-radius:16px;padding:24px 28px;margin-bottom:20px;position:relative;overflow:hidden">';
   h+='<div style="position:absolute;top:-20px;right:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,0.08)"></div>';
@@ -164,6 +193,48 @@ function renderPageEngagements(){
     h+='</div></div>';
   }
   h+='</div>';
+
+  // ══ Carte Creances ISSEO par associe (Niveau 3 — replique onglet Excel Avances ISSEO) ══
+  if(creancesPaye.total>0||creancesEngage.total>0){
+    h+='<div style="background:'+cardBg+';border:1px solid '+borderC+';border-radius:14px;padding:18px 22px;margin-bottom:20px">';
+    h+='<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">';
+    h+='<div style="display:flex;align-items:center;gap:8px">';
+    h+='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0F6E56" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="6" x2="12" y2="12"/><circle cx="12" cy="17" r="0.5" fill="#0F6E56"/></svg>';
+    h+='<span style="font-size:14px;font-weight:700;color:'+txtMain+'">Créances ISSÉO par associé</span>';
+    h+='</div>';
+    h+='<div style="font-size:10px;color:'+txtSub+';text-transform:uppercase;letter-spacing:0.5px">Quote-parts OCCITANIE 50/50 · COBE 20/20/20/40 · STUDIOS 100% P&W</div>';
+    h+='</div>';
+    var ASSOC_LIST=[
+      {label:'SAS Isséo',                key:'isseo',     color:'#0F6E56'},
+      {label:'P&W Studios (Tom Bécaud)', key:'pwStudios', color:'#1a3a6b'},
+      {label:'Paul Bécaud',              key:'paul',      color:'#854F0B'},
+      {label:'Pilatine',                       key:'pilatine',  color:'#7C3AED'},
+      {label:'Coquel',                         key:'coquel',    color:'#a16207'}
+    ];
+    h+='<div style="overflow-x:auto"><table style="width:100%;border-collapse:collapse;font-size:12.5px;min-width:480px">';
+    h+='<thead><tr style="border-bottom:1px solid '+borderC+'">';
+    h+='<th style="text-align:left;padding:8px 4px;font-weight:600;color:'+txtSub+';font-size:11px;text-transform:uppercase;letter-spacing:0.4px">Associé</th>';
+    h+='<th style="text-align:right;padding:8px 4px;font-weight:600;color:'+txtSub+';font-size:11px;text-transform:uppercase;letter-spacing:0.4px">Créance Payé</th>';
+    h+='<th style="text-align:right;padding:8px 4px;font-weight:600;color:'+txtSub+';font-size:11px;text-transform:uppercase;letter-spacing:0.4px">+ future (Engagé)</th>';
+    h+='</tr></thead><tbody>';
+    ASSOC_LIST.forEach(function(a){
+      var paye=creancesPaye[a.key];
+      var futur=creancesEngage[a.key];
+      if(paye===0&&futur===0)return;
+      h+='<tr style="border-bottom:1px solid '+(dm?'#21262d':'#f5f5f0')+'">';
+      h+='<td style="padding:10px 4px;color:'+txtMain+';font-weight:600"><span style="display:inline-block;width:8px;height:8px;border-radius:2px;background:'+a.color+';margin-right:8px;vertical-align:middle"></span>'+a.label+'</td>';
+      h+='<td style="text-align:right;padding:10px 4px;color:'+a.color+';font-weight:700">'+fmt(paye)+'</td>';
+      h+='<td style="text-align:right;padding:10px 4px;color:'+txtSub+';font-style:italic">'+(futur?'+ '+fmt(futur):'—')+'</td>';
+      h+='</tr>';
+    });
+    h+='<tr style="border-top:2px solid '+borderC+'">';
+    h+='<td style="padding:12px 4px;color:'+txtMain+';font-weight:800;font-size:13px">TOTAL</td>';
+    h+='<td style="text-align:right;padding:12px 4px;color:'+txtMain+';font-weight:800;font-size:14px">'+fmt(creancesPaye.total)+'</td>';
+    h+='<td style="text-align:right;padding:12px 4px;color:'+txtSub+';font-weight:700">'+(creancesEngage.total?'+ '+fmt(creancesEngage.total):'—')+'</td>';
+    h+='</tr></tbody></table></div>';
+    h+='<div style="margin-top:10px;font-size:10.5px;color:'+txtSub+';line-height:1.5">Statut <strong>Payé</strong> = décaissé par ISSÉO → génère la créance immédiatement.&nbsp;&nbsp;Statut <strong>Engagé</strong> = signé non décaissé → comptabilisé en colonne future.</div>';
+    h+='</div>';
+  }
 
   // ── Toggle Soci\u00e9t\u00e9s / Actionnaires ──
   h+='<div style="display:flex;align-items:center;gap:6px;margin-bottom:14px">';
