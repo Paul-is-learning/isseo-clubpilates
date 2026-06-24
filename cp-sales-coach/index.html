@@ -243,6 +243,57 @@ header{position:sticky;top:0;z-index:40;background:var(--cp-dark);color:#fff;pad
 .strat-box ul{list-style:none;margin:0;padding:0}
 .strat-box li{font-size:12px;color:#7a4400;padding:2px 0 2px 16px;position:relative}
 .strat-box li::before{content:'⚡';position:absolute;left:-2px;font-size:11px}
+
+/* ── Toggle Objectif de l'appel (Essai vs Abo) ── */
+.goal-toggle{display:flex;gap:8px;margin-bottom:14px}
+.goal-opt{flex:1;border:1.5px solid var(--line);border-radius:13px;padding:13px 12px;text-align:left;transition:.18s;background:#fff;cursor:pointer}
+.goal-opt:hover{border-color:var(--cp-soft)}
+.goal-opt.sel{border-color:transparent;color:#fff}
+.goal-opt.sel.trial{background:linear-gradient(135deg,#1F9E75,#0F6E56)}
+.goal-opt.sel.membership{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark))}
+.goal-opt .gt{font-size:14px;font-weight:900;display:flex;align-items:center;gap:7px;letter-spacing:-.01em}
+.goal-opt .gd{font-size:11px;margin-top:3px;color:var(--ink-mid);line-height:1.3}
+.goal-opt.sel .gd{color:rgba(255,255,255,.85)}
+
+/* ── Reframing prix (cartes valeur) ── */
+.reframe{display:grid;gap:8px;margin-top:12px}
+.rf{display:flex;align-items:center;gap:11px;background:var(--cp-pale);border-radius:11px;padding:11px 13px}
+.rf .ic{width:34px;height:34px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:17px;flex:0 0 auto}
+.rf .big{font-weight:900;color:var(--cp-deep);font-size:16px;letter-spacing:-.01em;line-height:1.1}
+.rf .lab{font-size:11.5px;color:var(--ink-soft);line-height:1.35;margin-top:1px}
+.rf .lab b{color:var(--cp-deep)}
+
+/* ── Mode Téléprompteur ── */
+.tp-launch{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:45;background:linear-gradient(135deg,var(--cp-blue),var(--cp-deep));color:#fff;border-radius:14px;padding:13px 16px;font-weight:800;font-size:13px;box-shadow:0 8px 24px -6px rgba(79,111,160,.5);display:flex;align-items:center;gap:8px}
+.tp-launch:hover{filter:brightness(1.06)}
+.tp{position:fixed;inset:0;z-index:120;background:radial-gradient(circle at 50% 30%,#34507a,#1a2740 70%);color:#fff;display:none;flex-direction:column;animation:fade .25s}
+.tp.on{display:flex}
+.tp-top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 8px}
+.tp-step{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cp-soft)}
+.tp-x{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:20px;color:#fff}
+.tp-prog{display:flex;gap:4px;padding:0 18px 4px;flex-wrap:wrap}
+.tp-dot{height:4px;flex:1;min-width:6px;border-radius:3px;background:rgba(255,255,255,.16);transition:.3s}
+.tp-dot.done{background:var(--cp-soft)}
+.tp-dot.cur{background:#fff}
+.tp-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:10px 26px;position:relative;overflow-y:auto}
+.tp-tag{display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:rgba(255,255,255,.12);border-radius:9px;padding:6px 13px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-soft);margin-bottom:20px}
+.tp-tag.say{background:rgba(31,158,117,.25);color:#9fe7cd}
+.tp-tag.ask{background:rgba(111,140,184,.3);color:#cfe0f5}
+.tp-tag.listen{background:rgba(201,135,31,.28);color:#f0c68a}
+.tp-tag.close{background:rgba(255,255,255,.2);color:#fff}
+.tp-text{font-size:clamp(26px,6.5vw,40px);font-weight:800;line-height:1.18;letter-spacing:-.02em;animation:tpin .3s}
+.tp-text b{color:var(--cp-soft)}
+.tp-text em{font-family:var(--serif);font-style:italic;font-weight:400;color:#fff}
+@keyframes tpin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.tp-hint{font-size:13px;color:rgba(255,255,255,.5);margin-top:18px;font-style:italic;line-height:1.45}
+.tp-nav{display:flex;gap:10px;padding:14px 18px calc(20px + env(safe-area-inset-bottom))}
+.tp-btn{flex:1;padding:18px;border-radius:14px;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s}
+.tp-prev{background:rgba(255,255,255,.12);color:#fff;flex:0 0 30%}
+.tp-prev:active{background:rgba(255,255,255,.2)}
+.tp-next{background:#fff;color:var(--cp-dark)}
+.tp-next:active{transform:scale(.98)}
+.tp-tapzones{position:absolute;inset:0;display:flex}
+.tp-tapzones>div{flex:1}
 </style>
 </head>
 <body>
@@ -307,11 +358,40 @@ header{position:sticky;top:0;z-index:40;background:var(--cp-dark);color:#fff;pad
       <div class="field"><label>Pack 2× / sem (€ / mois)</label><input id="set-p2" type="number" inputmode="decimal"/><div class="hint">Studio : 235 €/mois (~29 €/séance).</div></div>
     </div>
     <div class="field"><label>Pack illimité (€ / mois)</label><input id="set-p3" type="number" inputmode="decimal"/><div class="hint">Studio : 330 €/mois.</div></div>
+    <div class="grid2">
+      <div class="field"><label>Séance privée (€)</label><input id="set-priv" type="number" inputmode="decimal"/><div class="hint">Pour le reframing « X× moins cher qu'en privé ».</div></div>
+      <div class="field"><label>Places fondateur restantes</label><input id="set-spots" type="number" inputmode="numeric"/><div class="hint">Levier d'urgence au closing.</div></div>
+    </div>
     <div class="field"><label>Remise membre fondateur (%)</label><input id="set-founding" type="number" inputmode="decimal"/><div class="hint">Plaquette : -20 % à vie (50 premiers membres) + frais d'inscription offerts.</div></div>
     <div class="nav">
       <button class="btn btn-ghost" onclick="closeSettings()">Annuler</button>
       <button class="btn btn-primary" onclick="saveSettings()">Enregistrer</button>
     </div>
+  </div>
+</div>
+
+<!-- Bouton lancement Téléprompteur (mode appel uniquement) -->
+<button class="tp-launch" id="tpLaunch" onclick="openTP()">
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
+  Prompteur
+</button>
+
+<!-- Overlay Téléprompteur -->
+<div class="tp" id="tp">
+  <div class="tp-top">
+    <div class="tp-step" id="tpStep">Mode mains-libres</div>
+    <button class="tp-x" onclick="closeTP()">×</button>
+  </div>
+  <div class="tp-prog" id="tpProg"></div>
+  <div class="tp-body">
+    <div class="tp-tapzones"><div onclick="tpPrev()"></div><div onclick="tpNext()"></div></div>
+    <div id="tpTag"></div>
+    <div class="tp-text" id="tpText"></div>
+    <div class="tp-hint" id="tpHint"></div>
+  </div>
+  <div class="tp-nav">
+    <button class="tp-btn tp-prev" onclick="tpPrev()">‹</button>
+    <button class="tp-btn tp-next" onclick="tpNext()"><span id="tpNextLbl">Suivant ›</span></button>
   </div>
 </div>
 
@@ -330,7 +410,9 @@ const DEFAULT_CFG={
   p1:135,             // Pack 1×/sem — 135 €/mois (~4 séances → 33,75 €/séance)
   p2:235,             // Pack 2×/sem — 235 €/mois (~8 séances → 29 €/séance, plaquette)
   p3:330,             // Pack illimité — 330 €/mois (à volonté)
-  founding:20         // -20 % à vie membre fondateur — plaquette
+  founding:20,        // -20 % à vie membre fondateur — plaquette
+  privateSession:95,  // séance privée — pour le reframing "X fois moins cher qu'en privé"
+  spotsLeft:50        // places membre fondateur restantes (levier d'urgence)
 };
 const SESSIONS_PER_MONTH={1:4,2:8,3:null}; // null = illimité (pas de €/séance fixe)
 let CFG=Object.assign({},DEFAULT_CFG,JSON.parse(localStorage.getItem('cpcoach_cfg')||'{}'));
@@ -338,6 +420,7 @@ let CFG=Object.assign({},DEFAULT_CFG,JSON.parse(localStorage.getItem('cpcoach_cf
 /* ── État de l'appel ── */
 let st={
   mode:'call',                  // 'call' (mode appel) ou 'academy' (formation)
+  callGoal:'membership',        // 'trial' (booker l'essai gratuit) ou 'membership' (closer l'abo)
   step:0,
   ageBand:null,                 // 30-40 / 40-55 / 55-70
   connait:null,                 // connait CP ? oui/non
@@ -811,6 +894,131 @@ function buildPricePitch(pack){
 }
 
 /* ════════════════════════════════════════════════════════════════
+   1 · MOTEUR DE REFRAMING PRIX — transforme le prix en valeur
+   ════════════════════════════════════════════════════════════════ */
+function buildReframe(pack){
+  const monthly=foundingMonthly(pack)!=null?foundingMonthly(pack):packMonthly(pack);
+  const n=parseFloat(monthly);
+  if(isNaN(n))return [];
+  const out=[];
+  // a) Coût par jour
+  const perDay=n/30;
+  let dayCompare='';
+  if(perDay<2.5)dayCompare='Moins qu\'un café par jour';
+  else if(perDay<6)dayCompare='Le prix d\'un café et d\'un croissant';
+  else if(perDay<12)dayCompare='Moins qu\'un déjeuner par jour';
+  else dayCompare='Le prix d\'un déjeuner';
+  out.push({ic:'☕',big:fmtEur(perDay)+' / jour',lab:`<b>${dayCompare}</b> pour transformer votre corps.`});
+  // b) Vs séance privée
+  const priv=parseFloat(CFG.privateSession);
+  const ps=foundingPerSession(pack)!=null?foundingPerSession(pack):packPerSession(pack);
+  if(!isNaN(priv)&&ps!=null){
+    const ratio=priv/ps;
+    out.push({ic:'🎯',big:ratio.toFixed(1).replace('.0','')+'× moins cher',lab:`Qu'un coaching privé (${fmtEur(priv)}/séance) — pour le même Reformer, le même coach.`});
+  } else if(!isNaN(priv)&&pack===3){
+    out.push({ic:'🎯',big:'Illimité',lab:`Une séance privée coûte ${fmtEur(priv)}. Ici, venez autant que vous voulez pour ${fmtEur(n)}/mois.`});
+  }
+  // c) ROI sur 3 mois d'engagement
+  const sess=SESSIONS_PER_MONTH[pack];
+  if(sess){
+    const total3=sess*3;
+    out.push({ic:'📈',big:total3+' séances',lab:`Sur vos 3 mois d'engagement. <b>10 séances vous le sentez, 20 vous le voyez, 30 vous êtes différent.</b>`});
+  } else if(pack===3){
+    out.push({ic:'📈',big:'Sans limite',lab:`À 3×/sem, c'est 36 séances en 3 mois. <b>30 séances suffisent à vous transformer</b> (Joseph Pilates).`});
+  }
+  // d) Coût de l'inaction (anti-objection)
+  out.push({ic:'⏳',big:'0 € = 0 résultat',lab:`Continuer comme aujourd'hui, c'est gratuit… et sans changement. <b>L'investissement, c'est ce qui crée l'engagement.</b>`});
+  return out;
+}
+function buildReframePitch(pack){
+  const rf=buildReframe(pack);
+  if(!rf.length)return '';
+  const perDay=rf[0].big, vsP=rf.find(x=>x.ic==='🎯');
+  let s=`« Si on ramène ça au quotidien, c'est ${perDay}`;
+  if(vsP)s+=` — ${vsP.big.toLowerCase()} qu'un cours particulier`;
+  s+=`. Et en 3 mois, vous aurez le temps de vraiment voir la différence sur votre corps. C'est un investissement sur vous, pas une dépense. »`;
+  return s;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   2 · OBJECTIF DE L'APPEL — Essai gratuit (soft) vs Abonnement (hard)
+   ════════════════════════════════════════════════════════════════ */
+function buildTrialPitch(){
+  const ageP=ageBand();
+  let s=`« Le mieux, pour bien commencer, c'est de venir faire un <b>cours d'introduction gratuit de 30 minutes</b>. Vous découvrez le Reformer, vous rencontrez votre coach, et vous voyez par vous-même si ça vous correspond — sans aucun engagement.`;
+  if(st.pain.length)s+=` Vu ce que vous m'avez partagé, c'est exactement le moment de tester dans de bonnes conditions.`;
+  s+=` Vous préférez plutôt en début ou en fin de semaine ? »`;
+  return s;
+}
+function buildTrialClose(){
+  return `« Parfait. Je vous bloque votre cours découverte — c'est gratuit et sans suite obligée. On dit ${'<b>mardi 18h ou jeudi 19h</b>'} ? Vous repartez avec votre ressenti, et on voit ensemble la formule idéale après. »`;
+}
+
+/* ════════════════════════════════════════════════════════════════
+   3 · TÉLÉPROMPTEUR — séquence de phrases personnalisée
+   ════════════════════════════════════════════════════════════════ */
+function buildScript(){
+  const rep=CFG.rep||'[prénom]';
+  const studio=CFG.studio?' '+CFG.studio:'';
+  const pack=recommendPack();
+  const recos=recommendClasses(pack);
+  const ageP=ageBand();
+  const painTxt=st.pain.length?st.pain.map(p=>lbl(PAINS,p).toLowerCase()).join(', '):'ce qui vous a freiné avant';
+  const goalTxt=st.goals.length?st.goals.map(g=>lbl(GOALS,g).toLowerCase()).join(', '):'vos objectifs';
+  const c1=CLASSES[recos[0].id].nm, c2=recos[1]?CLASSES[recos[1].id].nm:'';
+  const seq=[];
+  // OUVERTURE
+  seq.push({t:'say',tag:'Ouverture',text:`Bonjour, <b>${rep}</b> de Club Pilates${studio}. Je vous appelle suite à votre demande d'informations.`,hint:'Souriez — le ton s\'entend.'});
+  seq.push({t:'ask',tag:'Permission',text:`Vous avez quelques minutes ? Je vais vous proposer <b>la meilleure offre adaptée à votre besoin</b>.`,hint:'Laisse-le dire oui — ça l\'engage.'});
+  // DÉCOUVERTE (le O)
+  seq.push({t:'ask',tag:'Douleur',text:`Qu'est-ce qui vous amène vers le Pilates <b>aujourd'hui</b> ?`,hint:'Question ouverte. Puis SILENCE 3 sec.'});
+  seq.push({t:'ask',tag:'Douleur',text:`Vous aviez une activité avant ? Qu'est-ce qui n'a pas continué ?`,hint:'C\'est LA vraie douleur à capter.'});
+  seq.push({t:'listen',tag:'Écoute',text:`Reformulez : « Donc si je comprends bien, ce qui vous a manqué, c'est… »`,hint:'Montre que vous écoutez vraiment.'});
+  // OBJECTIFS (le G)
+  seq.push({t:'ask',tag:'Objectif',text:`Et concrètement, qu'est-ce que vous aimeriez réussir dans les <b>3 prochains mois</b> ?`,hint:'Projetez-le dans le futur.'});
+  if(ageP)seq.push({t:'say',tag:`Levier ${ageP.label}`,text:`<em>${ageP.phrases[0]}</em>`,hint:'Phrase clé adaptée à sa tranche d\'âge.'});
+  // RECO (le M)
+  seq.push({t:'say',tag:'Recommandation',text:`En me basant sur ce que vous m'avez partagé — ${painTxt}, et votre objectif ${goalTxt} — je vous recommande le <b>${PACK_META[pack].name}</b>${c2?`, avec ${c1} et ${c2}`:`, autour du ${c1}`}.`,hint:'La reco paraît évidente : il l\'a nourrie.'});
+  // PRIX + REFRAMING
+  if(st.callGoal==='membership'){
+    const fmF=fmtEur(foundingMonthly(pack)), fpsF=fmtEur(foundingPerSession(pack));
+    seq.push({t:'say',tag:'Le prix',text:`C'est <b>${fmF||fmtEur(packMonthly(pack))}/mois</b>${fpsF?`, soit ${fpsF} la séance`:''}. Frais d'inscription offerts.`,hint:'Annoncez, puis TAISEZ-VOUS.'});
+    const rf=buildReframe(pack);
+    if(rf[0])seq.push({t:'say',tag:'Valeur',text:`Ramené au quotidien : <b>${rf[0].big}</b>. ${rf[0].lab.replace(/<\/?b>/g,'')}`,hint:'Reframe : du prix vers la valeur.'});
+    const vsP=rf.find(x=>x.ic==='🎯');
+    if(vsP)seq.push({t:'say',tag:'Vs privé',text:`Et c'est <b>${vsP.big.toLowerCase()}</b> qu'un coaching particulier, pour le même Reformer.`,hint:'Ancre la comparaison de valeur.'});
+  } else {
+    seq.push({t:'say',tag:'Essai gratuit',text:`Le mieux pour commencer : un <b>cours d'introduction gratuit de 30 min</b>. Vous découvrez le Reformer, sans aucun engagement.`,hint:'Barrière basse = oui facile.'});
+  }
+  // URGENCE
+  if(CFG.spotsLeft)seq.push({t:'say',tag:'Urgence',text:`On lance le studio : <b>les ${CFG.spotsLeft} premiers membres fondateurs</b> ont -${CFG.founding}% à vie. Les places partent vite.`,hint:'Rareté réelle = décision maintenant.'});
+  // CLOSING
+  if(st.callGoal==='membership'){
+    seq.push({t:'close',tag:'Closing',text:`Qu'est-ce que vous en pensez ? <b>On y va ?</b>`,hint:'« On y va ? » — closing assumé.'});
+    seq.push({t:'close',tag:'Closing',text:`Vous préférez démarrer plutôt <b>en semaine ou le week-end</b> ?`,hint:'Closing alternatif : pas « si » mais « quand ».'});
+  } else {
+    seq.push({t:'close',tag:'Closing essai',text:`Je vous bloque votre cours découverte ? <b>Mardi 18h ou jeudi 19h</b> ?`,hint:'Verrouille un créneau précis.'});
+  }
+  return seq;
+}
+let tpIdx=0;
+function openTP(){tpIdx=0;renderTP();$('#tp').classList.add('on')}
+function closeTP(){$('#tp').classList.remove('on')}
+function tpNext(){const s=buildScript();if(tpIdx<s.length-1){tpIdx++;renderTP()}else{closeTP()}}
+function tpPrev(){if(tpIdx>0){tpIdx--;renderTP()}}
+const TP_TAGCLASS={say:'say',ask:'ask',listen:'listen',close:'close'};
+function renderTP(){
+  const s=buildScript();
+  const cur=s[Math.min(tpIdx,s.length-1)];
+  $('#tpStep').textContent=`${tpIdx+1} / ${s.length}`;
+  $('#tpProg').innerHTML=s.map((_,i)=>`<div class="tp-dot ${i<tpIdx?'done':(i===tpIdx?'cur':'')}"></div>`).join('');
+  $('#tpTag').innerHTML=`<div class="tp-tag ${TP_TAGCLASS[cur.t]||''}">${cur.t==='ask'?'❓ '+cur.tag:cur.t==='listen'?'👂 '+cur.tag:cur.t==='close'?'✅ '+cur.tag:'🗣️ '+cur.tag}</div>`;
+  $('#tpText').innerHTML=cur.text;
+  $('#tpHint').textContent=cur.hint||'';
+  $('#tpNextLbl').textContent=(tpIdx>=s.length-1)?'Terminer ✓':'Suivant ›';
+}
+
+/* ════════════════════════════════════════════════════════════════
    RENDU DES VUES
    ════════════════════════════════════════════════════════════════ */
 function renderStepper(){
@@ -839,6 +1047,20 @@ function viewAccueil(){
   const rep=CFG.rep||'[votre prénom]';
   const studioTxt=CFG.studio?` <b>${esc(CFG.studio)}</b>`:'';
   return `
+  <div class="card">
+    <div class="eyebrow"><span class="dot"></span>Objectif de cet appel</div>
+    <div class="q-sub" style="margin-bottom:10px">Choisissez la stratégie. Le script, le prix et le closing s'adaptent.</div>
+    <div class="goal-toggle">
+      <button class="goal-opt trial ${st.callGoal==='trial'?'sel':''}" onclick="setGoal('trial')">
+        <div class="gt">🎟️ Booker l'essai</div>
+        <div class="gd">Cours découverte gratuit. Barrière basse, on close en studio. <b>Idéal appel à froid.</b></div>
+      </button>
+      <button class="goal-opt membership ${st.callGoal==='membership'?'sel':''}" onclick="setGoal('membership')">
+        <div class="gt">💳 Closer l'abo</div>
+        <div class="gd">Vente directe de l'abonnement au téléphone. <b>Prospect déjà chaud.</b></div>
+      </button>
+    </div>
+  </div>
   ${tipsCard('accueil')}
   <div class="card">
     <div class="eyebrow"><span class="dot"></span>Phase 1 · Prise de contact</div>
@@ -1009,10 +1231,22 @@ function viewReco(){
   </div>
 
   <div class="card">
+    <div class="eyebrow"><span class="dot"></span>💎 Reframing prix — du coût vers la valeur</div>
+    <div class="q-sub">Ne dites jamais le prix "tout sec". Ramenez-le à ces angles.</div>
+    <div class="reframe">
+      ${buildReframe(pack).map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div><div class="big">${r.big}</div><div class="lab">${r.lab}</div></div></div>`).join('')}
+    </div>
+    <div class="say" style="margin-top:12px">${esc(buildReframePitch(pack))}</div>
+  </div>
+
+  <div class="card">
     <div class="eyebrow"><span class="dot"></span>À dire — recommandation</div>
     <div class="say">${esc(buildPitch(pack,recos))}</div>
-    <div class="eyebrow" style="margin-top:14px"><span class="dot"></span>À dire — le prix</div>
-    <div class="say">${esc(buildPricePitch(pack))}</div>
+    ${st.callGoal==='membership'?`
+      <div class="eyebrow" style="margin-top:14px"><span class="dot"></span>À dire — le prix</div>
+      <div class="say">${esc(buildPricePitch(pack))}</div>`:`
+      <div class="eyebrow" style="margin-top:14px"><span class="dot" style="background:var(--ok)"></span>À dire — proposer l'essai gratuit</div>
+      <div class="say" style="background:#E6F5EE">${buildTrialPitch()}</div>`}
     <div class="say listen">Qu'est-ce que vous pensez de ma recommandation ? <span style="color:var(--ink-mid)">(ouvre la porte à un changement de pack / cours, ou à plus de challenge)</span></div>
     <div class="note" style="margin-top:10px;font-style:italic">« En 10 séances vous sentirez la différence, en 20 vous la verrez, en 30 vous serez différent. » — Joseph Pilates</div>
   </div>
@@ -1055,16 +1289,18 @@ function buildRecapText(){
 
 function viewClosing(){
   const pack=recommendPack();
+  const isTrial=st.callGoal==='trial';
   return `
   ${tipsCard('closing')}
   <div class="card">
-    <div class="eyebrow"><span class="dot"></span>Phase 6 · Closing — Récap & engagement</div>
-    <div class="q-title">Projetez le client</div>
-    <div class="say">${esc(buildPricePitch(pack))}</div>
+    <div class="eyebrow"><span class="dot" style="background:${isTrial?'var(--ok)':'var(--cp-blue)'}"></span>Phase 6 · Closing — ${isTrial?'Booker l\'essai gratuit':'Closer l\'abonnement'}</div>
+    <div class="q-title">${isTrial?'Verrouillez le cours découverte':'Projetez le client'}</div>
+    <div class="say"${isTrial?' style="background:#E6F5EE"':''}>${isTrial?buildTrialClose():esc(buildPricePitch(pack))}</div>
+    ${CFG.spotsLeft?`<div class="rf" style="margin:10px 0;background:#FFF6E9"><div class="ic">🔥</div><div><div class="big" style="color:var(--warn)">Plus que ${CFG.spotsLeft} places</div><div class="lab">Membres fondateurs -${CFG.founding}% à vie. <b>Créez l'urgence sans mentir.</b></div></div></div>`:''}
     <div class="note" style="margin-bottom:6px">Rappels closing :</div>
-    <div class="adv"><span class="ck">✓</span><span>Remise <b>50 premiers membres fondateurs</b> + frais d'inscription offerts.</span></div>
+    <div class="adv"><span class="ck">✓</span><span>Remise <b>${CFG.spotsLeft||50} premiers membres fondateurs</b> + frais d'inscription offerts.</span></div>
     <div class="adv"><span class="ck">✓</span><span>Tout se gère depuis l'<b>application</b> (réservation jusqu'à 3 semaines avant).</span></div>
-    <div class="adv"><span class="ck">✓</span><span>On ne vend pas un abonnement, mais <b>une solution à une déception passée</b>.</span></div>
+    <div class="adv"><span class="ck">✓</span><span>${isTrial?'L\'essai gratuit ne ferme rien — il <b>ouvre</b> la conversation en studio.':'On ne vend pas un abonnement, mais <b>une solution à une déception passée</b>.'}</span></div>
   </div>
 
   <div class="card">
@@ -1164,6 +1400,8 @@ function render(){
   $('#mode-call').classList.toggle('on',st.mode==='call');
   $('#mode-academy').classList.toggle('on',st.mode==='academy');
   $('#steps-row').style.display=(st.mode==='call'?'block':'none');
+  // Le bouton prompteur n'apparaît qu'en mode appel (sinon caché)
+  const tpl=$('#tpLaunch'); if(tpl)tpl.style.display=(st.mode==='call'?'flex':'none');
   if(st.mode==='academy'){$('#app').innerHTML=viewAcademy();window.scrollTo({top:0,behavior:'smooth'});return;}
   const views=[viewAccueil,viewProfil,viewDouleur,viewObjectifs,viewReco,viewClosing];
   $('#app').innerHTML=views[st.step]();
@@ -1172,6 +1410,7 @@ function render(){
 
 /* ── Pickers ── */
 function setMode(m){st.mode=m;render()}
+function setGoal(g){st.callGoal=g;render();toast(g==='trial'?'Objectif : booker l\'essai':'Objectif : closer l\'abo')}
 function pickAge(id){st.ageBand=(st.ageBand===id?null:id);render()}
 function pickConnait(id){st.connait=id;render()}
 function pickReason(id){toggle(st.reason,id);render()}
@@ -1201,11 +1440,18 @@ function copyRecap(){
 
 /* ── Objection sheet ── */
 function renderSheet(){
-  $('#objList').innerHTML=OBJECTIONS.map(o=>`
+  // Reframing live injecté dans l'objection « C'est cher »
+  const pack=recommendPack();
+  const rf=buildReframe(pack);
+  const rfLines=rf.slice(0,3).map(r=>`💎 <b>${r.big}</b> — ${r.lab.replace(/<\/?b>/g,'')}`);
+  $('#objList').innerHTML=OBJECTIONS.map(o=>{
+    let lines=o.lines.slice();
+    if(o.id==='prix'&&rfLines.length)lines=lines.concat(rfLines);
+    return `
     <div class="obj">
-      <div class="obj-h"><span class="ic">${o.ic}</span>${o.t}</div>
-      <div class="obj-b">${o.lines.map(l=>`<div class="line">${l}</div>`).join('')}</div>
-    </div>`).join('');
+      <div class="obj-h"><span class="ic">${o.ic}</span>${o.t}${o.id==='prix'?' <span style="font-size:10px;font-weight:700;color:var(--ok);margin-left:6px">+ reframing live</span>':''}</div>
+      <div class="obj-b">${lines.map(l=>`<div class="line">${l}</div>`).join('')}</div>
+    </div>`;}).join('');
   $('#refPanels').innerHTML=`
     <div class="obj"><div class="obj-h"><span class="ic">⭐</span>Avantages Club Pilates</div><div class="obj-b">${AVANTAGES.map(a=>`<div class="adv"><span class="ck">✓</span>${a}</div>`).join('')}</div></div>`;
 }
@@ -1220,6 +1466,8 @@ function openSettings(){
   $('#set-p1').value=CFG.p1??'';
   $('#set-p2').value=CFG.p2??'';
   $('#set-p3').value=CFG.p3??'';
+  $('#set-priv').value=CFG.privateSession??'';
+  $('#set-spots').value=CFG.spotsLeft??'';
   $('#set-founding').value=CFG.founding??'';
   $('#settingsBg').classList.add('on');
 }
@@ -1231,6 +1479,8 @@ function saveSettings(){
   CFG.p1=$('#set-p1').value===''?null:parseFloat($('#set-p1').value);
   CFG.p2=$('#set-p2').value===''?null:parseFloat($('#set-p2').value);
   CFG.p3=$('#set-p3').value===''?null:parseFloat($('#set-p3').value);
+  CFG.privateSession=$('#set-priv').value===''?null:parseFloat($('#set-priv').value);
+  CFG.spotsLeft=$('#set-spots').value===''?null:parseInt($('#set-spots').value,10);
   CFG.founding=$('#set-founding').value===''?0:parseFloat($('#set-founding').value);
   localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
   closeSettings();render();toast('Réglages enregistrés ✓');
