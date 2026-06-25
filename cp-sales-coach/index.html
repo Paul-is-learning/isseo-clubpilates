@@ -141,6 +141,9 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .rf-say{margin-top:8px;background:var(--cp-veil);border-left:3px solid var(--cp-blue);border-radius:8px;padding:8px 11px;font-size:13px;line-height:1.5;color:var(--cp-dark);font-weight:600}
 .rf-anchor{background:#FBEFD8;border-radius:11px;padding:10px 13px;font-size:12px;line-height:1.45;color:var(--warn);font-weight:600;margin-bottom:12px}
 .rf-anchor b{color:#7a4400}
+.rf-proof{margin-top:14px;background:var(--cp-veil);border-radius:14px;padding:13px 14px}
+.rf-proof-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--cp-deep);margin-bottom:9px}
+.rf-chip{display:inline-block;background:#fff;border:1px solid var(--line);border-radius:999px;padding:6px 11px;font-size:11.5px;font-weight:600;color:var(--cp-dark);margin:0 6px 6px 0;line-height:1.3}
 
 .flex-note{display:flex;align-items:flex-start;gap:10px;background:var(--cp-pale);border-radius:13px;padding:12px 14px;margin-top:10px;font-size:12.5px;line-height:1.45;color:var(--cp-deep)}
 .flex-note .fic{font-size:17px;flex:0 0 auto}
@@ -662,24 +665,49 @@ function buildPitchBeats(pack,recos){
 function buildReframe(pack){
   const monthly=foundingMonthly(pack)!=null?foundingMonthly(pack):packMonthly(pack);
   const n=parseFloat(monthly);if(isNaN(n))return [];
+  const mEur=fmtEur(n);
   const out=[];const perDay=n/30;
-  let dc=perDay<2.5?'Moins qu\'un café par jour':perDay<6?'Le prix d\'un café et d\'un croissant':perDay<12?'Moins qu\'un déjeuner par jour':'Le prix d\'un déjeuner';
-  out.push({ic:'☕',big:fmtEur(perDay)+' / jour',lab:`<b>${dc}</b> pour transformer votre corps.`,
-    say:`« Ramené à la journée, on parle de ${fmtEur(perDay)} — ${dc.toLowerCase()}. Sauf que ça, ça change votre corps et votre énergie. »`});
   const priv=parseFloat(CFG.privateSession),ps=foundingPerSession(pack)!=null?foundingPerSession(pack):packPerSession(pack);
-  if(!isNaN(priv)&&ps!=null){const x=(priv/ps).toFixed(1).replace('.0','');out.push({ic:'🎯',big:x+'× moins cher',lab:`Qu'un coaching privé (${fmtEur(priv)}/séance) — même Reformer, même coach.`,
-    say:`« La même séance, même Reformer, même coach diplômé, en privé c'est ${fmtEur(priv)}. Ici, vous l'avez ${x} fois moins cher — pour ${fmtEur(ps)} la séance. »`});}
-  else if(!isNaN(priv)&&pack===3)out.push({ic:'🎯',big:'Illimité',lab:`Une séance privée coûte ${fmtEur(priv)}. Ici, venez autant que vous voulez.`,
-    say:`« Un cours particulier, c'est ${fmtEur(priv)} la séance. Là, c'est illimité : plus vous venez, moins ça vous coûte par séance. Faites le calcul. »`});
   const sess=SESSIONS_PER_MONTH[pack];
-  if(sess)out.push({ic:'📈',big:sess*3+' séances',lab:`Sur vos 3 mois. <b>10 vous le sentez, 20 vous le voyez, 30 vous êtes différent.</b>`,
-    say:`« Sur vos 3 mois, ça fait ${sess*3} séances. 10, vous le sentez. 20, vous le voyez. 30, vous êtes différent. C'est ça que vous achetez, pas un abonnement. »`});
+
+  // 1 · Le coût réel par jour (sans gimmick)
+  out.push({ic:'📅',big:fmtEur(perDay)+' / jour',lab:`Le coût réel ramené à la journée.`,
+    say:`« Ramené à la journée, c'est ${fmtEur(perDay)}. Pour un accompagnement encadré qui agit sur votre posture, votre dos et votre énergie — chaque semaine, toute l'année. »`});
+
+  // 2 · LE comparatif coaching privé (chiffré depuis vos tarifs — le plus crédible)
+  if(!isNaN(priv)){
+    if(sess){const tot=priv*sess;out.push({ic:'👨‍🏫',big:'≈ '+fmtEur(tot)+' en coaching privé',lab:`Le même suivi ${sess}×/mois avec un coach rien que pour vous.`,
+      say:`« Pour le même encadrement en privé — un coach individuel ${sess} fois par mois — comptez environ ${fmtEur(tot)} (${fmtEur(priv)} la séance). Ici : coach diplômé, Reformer, 12 personnes maximum… pour ${mEur}. Le même résultat, une fraction du prix. »`});}
+    else out.push({ic:'👨‍🏫',big:fmtEur(priv)+' la séance privée',lab:`Ici en illimité : plus vous venez, plus chaque séance devient dérisoire.`,
+      say:`« Un coach particulier, c'est ${fmtEur(priv)} la séance. En illimité, dès que vous venez régulièrement, vous descendez très en dessous d'un suivi privé — pour un encadrement équivalent. »`});
+  }
+
+  // 3 · Coach inclus / quasi-privé (valeur CP, crédible)
+  out.push({ic:'👥',big:'Coach inclus · 12 max',lab:`Un coach diplômé vous corrige à chaque cours.`,
+    say:`« Dans une salle classique, le coaching est un supplément qu'on prend rarement. Ici, un coach diplômé vous corrige à CHAQUE séance, dans un groupe de 12 maximum. C'est du quasi-privé, déjà inclus dans le prix. »`});
+
+  // 4 · Prévention > réparation (qualitatif)
+  out.push({ic:'🩺',big:'Prévention, pas réparation',lab:`Renforcer avant que le corps ne lâche coûte toujours moins cher que réparer.`,
+    say:`« Un dos qui coince, c'est des séances de kiné ou d'ostéo à répétition — et on y retourne sans fin. Le Pilates fait l'inverse : il renforce en profondeur, en amont. Vous n'achetez pas une dépense de plus, vous évitez toutes les suivantes. »`});
+
+  // 5 · ≠ une salle de sport (value / abandon)
+  out.push({ic:'🏋️',big:'≠ une salle de sport',lab:`Moins cher ailleurs… mais sans cadre, on abandonne.`,
+    say:`« Une salle classique coûte moins cher, c'est vrai. Mais sans coach, sans rendez-vous, sans correction, la plupart des gens y vont trois fois puis lâchent. Le vrai gaspillage, c'est de payer un abonnement qu'on n'utilise jamais. Ici, vous avez un cadre — donc des résultats. »`});
+
+  // 6 · Séances → transformation
+  if(sess)out.push({ic:'📈',big:sess*3+' séances en 3 mois',lab:`<b>10 vous le sentez · 20 vous le voyez · 30 vous êtes différent.</b>`,
+    say:`« Sur vos 3 mois, ça fait ${sess*3} séances. 10, vous le sentez. 20, vous le voyez. 30, vous êtes différent. C'est ça que vous payez — un résultat, pas un abonnement. »`});
   else if(pack===3)out.push({ic:'📈',big:'Sans limite',lab:`<b>30 séances suffisent à vous transformer</b> (Joseph Pilates).`,
-    say:`« Joseph Pilates le disait : 30 séances suffisent à transformer un corps. En illimité, vous les atteignez en quelques semaines — et vous continuez. »`});
+    say:`« Joseph Pilates le disait : 30 séances suffisent à transformer un corps. En illimité, vous les atteignez en quelques semaines — et vous continuez sur votre lancée. »`});
+
+  // 7 · Coût de l'inaction (le closer)
   out.push({ic:'⏳',big:'0 € = 0 résultat',lab:`Continuer comme aujourd'hui, c'est gratuit… et sans changement.`,
     say:`« Ne rien faire, c'est gratuit, je vous l'accorde. Mais dans 3 mois, ce sera exactement pareil qu'aujourd'hui. Le vrai coût, ce n'est pas l'abonnement — c'est l'inaction. »`});
+
   return out;
 }
+// Preuves qui justifient le prix (faits CP vérifiés — plaquette)
+const PRICE_PROOF=['🎓 Coach diplômé à chaque cours','👥 12 personnes max','📊 5 niveaux (0.5 → 2.5)','📅 Réservation 3 semaines à l\'avance','🔁 8+ formats, zéro redondance','💪 Reformer pro conçu pour CP'];
 function buildPricePitch(pack){
   const base=fmtEur(CFG.base),m=packMonthly(pack),mF=fmtEur(m),psF=fmtEur(packPerSession(pack)),fmF=fmtEur(foundingMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack));
   if(mF==null)return `« De base, ${base||'—'} la séance. Avec le pack et la remise membre fondateur (-${CFG.founding}% à vie + inscription offerte), on descend bien en dessous. » ⚠️ Renseignez le prix dans Réglages.`;
@@ -798,7 +826,7 @@ function renderScreen(){
     const pack=recommendPack();
     const mF=foundingMonthly(pack)!=null?fmtEur(foundingMonthly(pack)):fmtEur(packMonthly(pack));
     const priceTip=mF?`<div class="rf-anchor">💬 Prix réel : <b>${mF}/mois</b>${foundingMonthly(pack)!=null?` (membre fondateur, -${CFG.founding}% à vie)`:''} — annoncé juste après. Ici, on installe la valeur d'abord.</div>`:'';
-    h=`<div class="scr-tag say">💎 Reframing prix — du coût vers la valeur</div><div class="scr-sub">Ne dites jamais le prix « tout sec ». Déroulez ces angles, puis annoncez.</div>${priceTip}${buildReframe(pack).map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div style="flex:1;min-width:0"><div class="big">${r.big}</div><div class="lab">${r.lab}</div>${r.say?`<div class="rf-say">🗣️ ${r.say}</div>`:''}</div></div>`).join('')}`;
+    h=`<div class="scr-tag say">💎 Reframing prix — du coût vers la valeur</div><div class="scr-sub">Ne dites jamais le prix « tout sec ». <b>Piochez 2-3 angles</b> selon le client, puis annoncez.</div>${priceTip}${buildReframe(pack).map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div style="flex:1;min-width:0"><div class="big">${r.big}</div><div class="lab">${r.lab}</div>${r.say?`<div class="rf-say">🗣️ ${r.say}</div>`:''}</div></div>`).join('')}<div class="rf-proof"><div class="rf-proof-h">🛡️ Ce qui justifie ce prix</div>${PRICE_PROOF.map(p=>`<span class="rf-chip">${p}</span>`).join('')}</div>`;
     nav=navHTML(true);
   }
   else if(s.t==='price'){
