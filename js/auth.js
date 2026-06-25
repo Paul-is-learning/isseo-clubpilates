@@ -172,6 +172,8 @@ function renderAuth(){
     +'<div id="aerr" style="font-size:12px;color:#ef4444;margin-bottom:10px;display:none;background:rgba(239,68,68,0.1);padding:8px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2)"></div>'
     // Bouton
     +'<button onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#fff,#e8e8e8);color:#0a0a0a;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s ease;letter-spacing:0.5px;margin-top:4px" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 8px 25px rgba(255,255,255,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">Se connecter</button>'
+    // Mot de passe oublié
+    +'<div style="text-align:center;margin-top:16px"><button id="forgot-pwd-btn" onclick="doForgotPassword()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;transition:color .15s" onmouseover="this.style.color=\'rgba(255,255,255,0.85)\'" onmouseout="this.style.color=\'rgba(255,255,255,0.5)\'">Mot de passe oubli&eacute; ?</button></div>'
     // Footer
     +'<div style="text-align:center;margin-top:24px;font-size:10px;color:rgba(255,255,255,0.15)">ISSEO × Club Pilates · Espace sécurisé</div>'
     +'</div></div>';
@@ -418,6 +420,35 @@ function copyUserPwd(uid){
   if(navigator.clipboard&&navigator.clipboard.writeText){
     navigator.clipboard.writeText(pwd).then(done).catch(function(){_copyFallback(pwd);done();});
   } else {_copyFallback(pwd);done();}
+}
+
+// ── "Mot de passe oublié ?" depuis la page de login ──────────────────────────
+// Envoie l'email de réinitialisation. Le lien reçu ramène sur l'app et déclenche
+// PASSWORD_RECOVERY → écran "Définir un nouveau mot de passe".
+async function doForgotPassword(){
+  var emailEl=document.getElementById('ae');
+  var email=((emailEl&&emailEl.value)||'').trim().toLowerCase();
+  var err=document.getElementById('aerr');
+  function showErr(m){if(err){err.style.display='block';err.textContent=m;}}
+  if(!email||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){
+    showErr('Saisissez d\'abord votre email ci-dessus, puis cliquez « Mot de passe oublié ? ».');
+    if(emailEl)emailEl.focus();
+    return;
+  }
+  var btn=document.getElementById('forgot-pwd-btn');
+  var orig=btn?btn.textContent:'';
+  if(btn){btn.textContent='Envoi en cours…';btn.disabled=true;btn.style.opacity='0.6';}
+  try{
+    var res=await sb.auth.resetPasswordForEmail(email,{redirectTo:location.origin});
+    if(res.error){showErr('Erreur : '+res.error.message);return;}
+    if(err)err.style.display='none';
+    if(btn){btn.textContent='✓ Email envoyé';btn.style.color='rgba(255,255,255,0.85)';}
+    toast('📧 Email de réinitialisation envoyé à '+email+' — pensez à vérifier les spams.');
+  }catch(e){
+    showErr('Échec de l\'envoi : '+(e.message||'réessayez'));
+  }finally{
+    if(btn){setTimeout(function(){btn.disabled=false;btn.style.opacity='1';if(btn.textContent==='Envoi en cours…')btn.textContent=orig;},800);}
+  }
 }
 
 // ── Écran "Définir un nouveau mot de passe" (lien email de récupération) ──────
