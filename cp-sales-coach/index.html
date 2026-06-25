@@ -152,6 +152,10 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pres-line{font-size:13.5px;line-height:1.55;color:var(--ink-soft);padding:7px 0;border-top:1px dashed var(--line)}
 .pres-line:first-child{border-top:0;padding-top:0}
 .pres-line b{color:var(--cp-dark);font-weight:700}
+.testi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px;border-left:3px solid var(--cp-blue)}
+.testi-q{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1.45;color:var(--cp-dark)}
+.testi-a{font-size:11px;color:var(--ink-mid);margin-top:6px;font-weight:600}
+.testi-note{background:var(--cp-pale);border-radius:10px;padding:9px 12px;font-size:11px;line-height:1.45;color:var(--cp-deep);margin-top:4px}
 /* card générique */
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 
@@ -445,8 +449,8 @@ const AVANTAGES=[
 ];
 
 /* ── Fiche de présentation (affichée si le client ne connaît PAS CP) ── */
-const CP_PITCH_INTRO='« Club Pilates, c\'est le <b>n°1 mondial du Pilates sur Reformer</b>. Une méthode centenaire, des studios dernier cri, et un accompagnement qu\'on ne trouve nulle part ailleurs. Laissez-moi vous présenter en 30 secondes. »';
-const CP_PITCH_RECALL='« Vous connaissez déjà Club Pilates, parfait. Laissez-moi juste vous <b>rappeler pourquoi c\'est l\'enseigne n°1</b> et ce qui rend nos studios uniques — c\'est important pour la suite. »';
+const CP_PITCH_INTRO='« Laissez-moi vous présenter la maison en quelques mots. Club Pilates, c\'est le <b>n°1 mondial du Pilates sur Reformer</b> : une méthode centenaire, des studios pensés dans le moindre détail, et un accompagnement attentionné que vous ne trouverez nulle part ailleurs. »';
+const CP_PITCH_RECALL='« Vous connaissez déjà la maison, c\'est un plaisir. Permettez-moi simplement de vous <b>rappeler pourquoi c\'est l\'enseigne de référence</b> et ce qui rend l\'expérience de nos studios si particulière. »';
 const CP_KPIS=[
   {ic:'🌍',big:'N°1 mondial',lab:'Le plus grand réseau de Pilates au monde.'},
   {ic:'🏢',big:'1 500+ studios',lab:'Présent dans 24 pays, sur 4 continents.'},
@@ -467,6 +471,20 @@ const CP_EQUIPMENT=[
   {ic:'⚪',nm:'Bosu',ds:'Demi-ballon d\'équilibre & proprioception.'},
   {ic:'🎯',nm:'TriggerPoint',ds:'Rouleaux d\'auto-massage & récupération.'},
   {ic:'➰',nm:'Barre & Tapis',ds:'Pour varier à l\'infini, jamais la même séance.'}
+];
+/* ── Réassurance : engagement qualité (faits CP vrais) ── */
+const CP_TRUST=[
+  {ic:'🎓',t:'Coachs certifiés Club Pilates',d:'Tous formés à la méthode et à la pédagogie maison.'},
+  {ic:'👥',t:'12 personnes maximum',d:'Un suivi attentif, jamais un numéro dans la foule.'},
+  {ic:'🎁',t:'1er cours offert, sans engagement',d:'Vous essayez en toute liberté avant de décider.'},
+  {ic:'🧼',t:'Matériel professionnel entretenu',d:'Reformers haut de gamme, studios soignés.'},
+  {ic:'📅',t:'Réservation souple, 3 semaines à l\'avance',d:'Votre planning reste maître.'}
+];
+/* ── Témoignages : EXEMPLES à remplacer par de vrais avis Google du studio ── */
+const CP_TESTIMONIALS=[
+  {q:'En 3 mois, mon dos ne me réveille plus la nuit. Je ne pensais pas que ce serait aussi rapide.',a:'— exemple à personnaliser'},
+  {q:'L\'ambiance est bienveillante, les coachs connaissent mon prénom et mes objectifs. On se sent suivi.',a:'— exemple à personnaliser'},
+  {q:'J\'avais peur de ne pas être à la hauteur. On commence à son rythme, je me suis sentie à l\'aise dès le premier cours.',a:'— exemple à personnaliser'}
 ];
 
 /* ── Guide des cours (didactique) — données officielles + bienfaits corps/esprit ── */
@@ -657,9 +675,9 @@ function classBenefit(id){
 function triggerClause(t){const m={event:'parce qu\'un événement important approche',sante:'suite à un signal santé qu\'il ne faut pas ignorer',poids:'parce que vous avez pris du poids et que ça vous pèse',grossesse:'pour retrouver votre corps et votre énergie après bébé',douleur:'parce qu\'une douleur commence à s\'installer et à vous gêner',raslebol:'parce que vous en avez vraiment assez de l\'état actuel',resolution:'parce que vous voulez un vrai nouveau départ',proche:'parce qu\'un proche vous a montré que c\'était possible'};return m[t.id]||t.label.toLowerCase();}
 function buildPitchBeats(pack,recos){
   const beats=[],e=emo(),t=trig();
-  if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez partagé : ce qui vous a freiné avant, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris.',text:m});}
-  if(t)beats.push({label:'Le bon moment',hint:'Exploitez son déclencheur.',text:`« Et si vous nous appelez aujourd'hui, c'est ${triggerClause(t)}. Honnêtement, c'est exactement LE bon moment pour agir — pas dans 6 mois. »`});
-  if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Le Reformer Club Pilates, c'est une autre approche : un coach qui vous corrige, 12 personnes maximum, un cadre qui vous fait revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent.',text:c});}
+  if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez confié : ce qui vous a freiné jusqu'ici, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` J'ai bien entendu — c'est précisément là-dessus que je vais vous accompagner. »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris. Reformulez ses mots.',text:m});}
+  if(t)beats.push({label:'Le bon moment',hint:'Valorisez sa démarche, sans pousser.',text:`« Et si vous faites cette démarche aujourd'hui, c'est ${triggerClause(t)}. C'est précisément le bon moment pour prendre soin de vous — et vous le méritez. »`});
+  if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Chez Club Pilates, l'approche est différente : un coach diplômé qui veille sur chacun de vos mouvements, 12 personnes maximum, un cadre bienveillant qui donne tout simplement envie de revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent — sans dénigrer.',text:c});}
   // Flexibilité & 5 niveaux — toujours en phase, à son rythme
   const beginnerProfile=st.pain.includes('jamais')||st.ageBand==='55-70'||st.health.includes('senior')||activeHealth().length>0;
   const perfProfile=st.goals.includes('perf')||st.dispo==='high';
@@ -667,13 +685,14 @@ function buildPitchBeats(pack,recos){
   if(beginnerProfile)flex+=`Vous démarrez tout en douceur, au niveau 0.5 ou 1, sans aucune pression`;
   else if(perfProfile)flex+=`Vous avez tout de suite de quoi vous challenger, et les niveaux 2 et 2.5 vous attendent pour aller plus loin`;
   else flex+=`Vous démarrez exactement là où vous en êtes, et vous montez de niveau quand VOUS êtes prêt(e)`;
-  flex+=` — toujours en phase, jamais largué(e), jamais à l'arrêt. Quel que soit votre niveau ou votre forme du jour, il y a un cours fait pour vous. »`;
-  beats.push({label:'Flexibilité & niveaux',hint:'L\'argument qui rassure ET retient sur la durée.',text:flex});
+  flex+=` — toujours à votre rythme, jamais bousculé(e). Quel que soit votre niveau ou votre forme du jour, il y a une place faite pour vous. »`;
+  beats.push({label:'Flexibilité & niveaux',hint:'L\'argument qui rassure ET fidélise sur la durée.',text:flex});
   const goalTxt=st.goals.length?frList(st.goals.map(g=>lbl(GOALS,g).toLowerCase())):'vos objectifs';
-  let reco=`« Concrètement, pour ${goalTxt}, je vous oriente vers le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Avec 3 mois d'engagement — le temps que votre corps installe vraiment le changement. »`;
-  beats.push({label:'La reco',hint:'Chaque cours a une raison.',text:reco});
-  let proj=`« Imaginez dans 3 mois : `+((t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir transformé(e)`))+`. C'est exactement ce qu'on va construire ensemble, séance après séance. On y va ? »`;
-  beats.push({label:'Projection',hint:'Faites-le se projeter.',text:proj});
+  let reco=`« Au vu de ce que vous me partagez, pour ${goalTxt}, je vous accompagne sur le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Sur 3 mois — le temps que votre corps installe durablement le changement, en douceur. »`;
+  beats.push({label:'La reco',hint:'Un accompagnement sur-mesure. Chaque cours a sa raison.',text:reco});
+  beats.push({label:'Réassurance',hint:'Levez le risque avant la projection — en douceur.',text:`« Et vous ne vous lancez pas seul(e) : vous rejoignez la plus grande communauté Pilates au monde — près de <b>8 millions de séances par an</b>, une enseigne primée 8 années de suite. Coachs certifiés, 12 personnes maximum, et votre premier cours offert sans engagement. Vous avez tout le temps de vous sentir à l'aise avant de vous décider. »`});
+  let proj=`« Imaginez-vous dans 3 mois : `+((t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir véritablement transformé(e)`))+`. C'est exactement ce que nous allons construire ensemble, séance après séance. Je serais ravi(e) de vous y accompagner. »`;
+  beats.push({label:'Projection',hint:'Faites-le se projeter, avec vous à ses côtés.',text:proj});
   return beats;
 }
 function buildReframe(pack){
@@ -724,14 +743,14 @@ function buildReframe(pack){
 const PRICE_PROOF=['🎓 Coach diplômé à chaque cours','👥 12 personnes max','📊 5 niveaux (0.5 → 2.5)','📅 Réservation 3 semaines à l\'avance','🔁 8+ formats, zéro redondance','💪 Reformer pro conçu pour CP'];
 function buildPricePitch(pack){
   const base=fmtEur(CFG.base),m=packMonthly(pack),mF=fmtEur(m),psF=fmtEur(packPerSession(pack)),fmF=fmtEur(foundingMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack));
-  if(mF==null)return `« De base, ${base||'—'} la séance. Avec le pack et la remise membre fondateur (-${CFG.founding}% à vie + inscription offerte), on descend bien en dessous. » ⚠️ Renseignez le prix dans Réglages.`;
+  if(mF==null)return `« Votre accompagnement revient à ${base||'—'} la séance. Avec votre formule et le statut de membre fondateur (-${CFG.founding}% à vie + inscription offerte), nous descendons bien en dessous. » ⚠️ Renseignez le prix dans Réglages.`;
   const pn=PACK_META[pack].name.toLowerCase();let s;
-  if(pack===3){s=`« De base, ${base||'—'} la séance. Avec le ${pn}, c'est ${mF}/mois en illimité — moins de ${psF||fmtEur(m/8)}/séance si vous venez 2×/sem, et bien moins au-delà.`;if(fmF)s+=` Avec la remise fondateur (-${CFG.founding}% à vie), ${fmF}/mois.`;}
-  else {s=`« De base, ${base||'—'} la séance. Avec le ${pn}, c'est ${mF}/mois — soit ${psF}/séance.`;if(fpsF)s+=` Et avec la remise membre fondateur (-${CFG.founding}% à vie), ${fmF}/mois, soit ${fpsF}/séance.`;}
-  return s+` Frais d'inscription offerts. On y va ? »`;
+  if(pack===3){s=`« Je vous propose le ${pn} : ${mF}/mois en illimité — soit moins de ${psF||fmtEur(m/8)} la séance dès 2 venues/semaine, et bien moins ensuite.`;if(fmF)s+=` Et comme membre fondateur, ${fmF}/mois — un tarif préférentiel que vous gardez à vie.`;}
+  else {s=`« Je vous propose le ${pn} : ${mF}/mois, soit ${psF} la séance, tout compris.`;if(fpsF)s+=` Et comme membre fondateur, ${fmF}/mois — soit ${fpsF} la séance, un tarif préférentiel conservé à vie.`;}
+  return s+` Les frais d'inscription vous sont offerts. Qu'en dites-vous ? »`;
 }
-function buildTrialPitch(){let s=`« Le mieux pour bien commencer : venir faire un <b>cours d'introduction gratuit de 30 minutes</b>. Vous découvrez le Reformer, vous rencontrez votre coach, sans aucun engagement.`;if(st.pain.length)s+=` Vu ce que vous m'avez partagé, c'est exactement le moment de tester.`;return s+` Plutôt en début ou en fin de semaine ? »`;}
-function buildTrialClose(){return `« Parfait. Je vous bloque votre cours découverte — gratuit, sans suite obligée. On dit <b>mardi 18h ou jeudi 19h</b> ? Vous repartez avec votre ressenti, et on voit la formule idéale après. »`;}
+function buildTrialPitch(){let s=`« La plus belle façon de découvrir, c'est de venir le vivre. Je vous offre un <b>cours d'introduction de 30 minutes</b> : vous découvrez le Reformer, vous rencontrez votre coach, en toute liberté et sans le moindre engagement.`;if(st.pain.length)s+=` Vu ce que vous m'avez confié, c'est exactement ce qu'il vous faut pour vous faire votre propre idée.`;return s+` Vous préférez plutôt en début ou en fin de semaine ? »`;}
+function buildTrialClose(){return `« Avec plaisir. Je vous réserve votre cours découverte — offert, et sans aucune suite obligée. Disons <b>mardi 18h ou jeudi 19h</b> ? Vous repartez avec votre ressenti, et nous verrons ensemble la formule qui vous convient le mieux. »`;}
 
 /* ════════════════════════════════════════════════════════════════
    FLUX CONVERSATIONNEL — 1 écran = 1 chose
@@ -740,7 +759,7 @@ const Q_CONNAIT=[{id:'oui',ic:'👍',label:'Oui, déjà entendu'},{id:'non',ic:'
 function buildFlow(){
   const f=[];
   f.push({t:'goal',phase:'Démarrage'});
-  f.push({t:'say',phase:'Accueil',tag:'Ouverture',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b> de Club Pilates${s}. Je vous appelle suite à votre <b>demande d'informations</b>. Vous avez quelques minutes ?`;},hint:'Souriez avant de décrocher — le ton s\'entend.'});
+  f.push({t:'say',phase:'Accueil',tag:'Ouverture',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées — je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},hint:'Souriez avant de décrocher — le ton s\'entend. Posé, jamais pressé.'});
   f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
   if(st.connait)f.push({t:'present',phase:st.connait==='oui'?'Rappel':'Présentation'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
@@ -816,7 +835,12 @@ function renderScreen(){
       <div class="card" style="margin-bottom:14px">${CP_STORY.map(t=>`<div class="pres-line">${t}</div>`).join('')}</div>
       <div class="pres-h">🏋️ Un studio = une salle ultra-complète</div>
       <div class="scr-sub" style="margin-top:-2px;margin-bottom:12px">« Vous ne trouverez pas ça ailleurs : un seul lieu, tout le matériel, zéro routine. »</div>
-      <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>`;
+      <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>
+      <div class="pres-h">🤝 Notre engagement qualité</div>
+      <div class="card" style="margin-bottom:14px">${CP_TRUST.map(t=>`<div class="cls"><div class="n" style="font-size:15px">${t.ic}</div><div><div class="nm">${t.t}</div><div class="ds">${t.d}</div></div></div>`).join('')}</div>
+      <div class="pres-h">💬 Ce qu'en disent nos membres</div>
+      ${CP_TESTIMONIALS.map(t=>`<div class="testi"><div class="testi-q">“${t.q}”</div><div class="testi-a">${t.a}</div></div>`).join('')}
+      <div class="testi-note">✎ Remplacez ces exemples par de vrais avis Google de votre studio (Réglages à venir) — un témoignage authentique vaut dix arguments.</div>`;
     nav=navHTML(true,known?'Rappelé ✓ →':'Présenté ✓ →');
   }
   else if(s.t==='beat'){
@@ -848,16 +872,16 @@ function renderScreen(){
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='trial'){
-    h=`<div class="say-card"><div class="scr-tag say">🗣️ Proposer l'essai gratuit</div><div class="say-big quote">${buildTrialPitch()}</div><div class="say-hint"><span class="b">💡</span><span>Barrière basse = oui facile. On close en studio après.</span></div></div>`;
+    h=`<div class="say-card"><div class="scr-tag say">🗣️ Proposer l'essai offert</div><div class="say-big quote">${buildTrialPitch()}</div><div class="say-hint"><span class="b">💡</span><span>Une invitation, pas une vente. Le « oui » vient naturellement.</span></div></div>`;
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='urgency'){
-    h=`<div class="say-card"><div class="scr-tag warn">🔥 Créer l'urgence</div><div class="say-big quote">« On lance le studio : les <b>${CFG.spotsLeft} premiers membres fondateurs</b> ont -${CFG.founding}% à vie et l'inscription offerte. Honnêtement, les places partent vite. »</div><div class="say-hint"><span class="b">💡</span><span>Rareté réelle = décision maintenant. Ne mentez jamais sur le nombre.</span></div></div>`;
+    h=`<div class="say-card"><div class="scr-tag warn">✨ Le privilège fondateur</div><div class="say-big quote">« Nous ouvrons nos portes à un nombre limité de <b>membres fondateurs</b> : ${CFG.spotsLeft} places, avec -${CFG.founding}% à vie et l'inscription offerte. C'est un statut que l'on n'obtient qu'une fois — et ces places ne reviendront pas. »</div><div class="say-hint"><span class="b">💡</span><span>Rareté réelle = appartenance, pas pression. Ne surjouez jamais le nombre.</span></div></div>`;
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='closing'){
     const isTrial=st.callGoal==='trial';
-    h=`<div class="say-card"><div class="scr-tag say">✅ Closing</div><div class="say-big quote">${isTrial?buildTrialClose():'« Qu\'est-ce que vous en pensez ? <b>On y va ?</b> »'}</div><div class="say-hint"><span class="b">💡</span><span>${isTrial?'Verrouillez un créneau précis (date + heure).':'« On y va ? » assumé. Puis : « Plutôt en semaine ou le week-end pour démarrer ? »'}</span></div></div>`;
+    h=`<div class="say-card"><div class="scr-tag say">✅ Closing</div><div class="say-big quote">${isTrial?buildTrialClose():'« Honnêtement, je pense sincèrement que c\'est ce qui vous correspond. <b>Je vous réserve votre place ?</b> »'}</div><div class="say-hint"><span class="b">💡</span><span>${isTrial?'Verrouillez un créneau précis (date + heure), avec le sourire.':'Proposez, puis laissez le silence. Enchaînez : « Plutôt en semaine ou le week-end pour débuter ? »'}</span></div></div>`;
     nav=navHTML(true,'Voir la fiche →');
   }
   else if(s.t==='final'){
