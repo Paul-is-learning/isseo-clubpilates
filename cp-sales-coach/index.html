@@ -464,7 +464,7 @@ const CP_STORY=[
   'Aujourd\'hui c\'est <b>l\'enseigne de référence</b> qui a démocratisé le Reformer dans le monde entier.'
 ];
 const CP_EQUIPMENT=[
-  {ic:'🛟',nm:'Reformer',ds:'L\'appareil signature, conçu exclusivement pour CP.'},
+  {ic:'🛟',nm:'Reformer',ds:'Le Reformer le plus abouti du marché, conçu exclusivement pour Club Pilates.'},
   {ic:'🧗',nm:'Springboard',ds:'Le « Cadillac » mural à ressorts — force & mobilité.'},
   {ic:'🪑',nm:'EXO Chair',ds:'La chaise Pilates pour le renforcement ciblé.'},
   {ic:'🎗️',nm:'TRX',ds:'Sangles de suspension — gainage & stabilité.'},
@@ -477,7 +477,7 @@ const CP_TRUST=[
   {ic:'🎓',t:'Coachs certifiés Club Pilates',d:'Tous formés à la méthode et à la pédagogie maison.'},
   {ic:'👥',t:'12 personnes maximum',d:'Un suivi attentif, jamais un numéro dans la foule.'},
   {ic:'🎁',t:'1er cours offert, sans engagement',d:'Vous essayez en toute liberté avant de décider.'},
-  {ic:'🧼',t:'Matériel professionnel entretenu',d:'Reformers haut de gamme, studios soignés.'},
+  {ic:'🧼',t:'Le meilleur équipement du marché',d:'Reformers dernier cri, haut de gamme, entretenus avec soin.'},
   {ic:'📅',t:'Réservation souple, 3 semaines à l\'avance',d:'Votre planning reste maître.'}
 ];
 /* ── Témoignages : EXEMPLES à remplacer par de vrais avis Google du studio ── */
@@ -677,7 +677,7 @@ function buildPitchBeats(pack,recos){
   const beats=[],e=emo(),t=trig();
   if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez confié : ce qui vous a freiné jusqu'ici, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` J'ai bien entendu — c'est précisément là-dessus que je vais vous accompagner. »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris. Reformulez ses mots.',text:m});}
   if(t)beats.push({label:'Le bon moment',hint:'Valorisez sa démarche, sans pousser.',text:`« Et si vous faites cette démarche aujourd'hui, c'est ${triggerClause(t)}. C'est précisément le bon moment pour prendre soin de vous — et vous le méritez. »`});
-  if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Chez Club Pilates, l'approche est différente : un coach diplômé qui veille sur chacun de vos mouvements, 12 personnes maximum, un cadre bienveillant qui donne tout simplement envie de revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent — sans dénigrer.',text:c});}
+  if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Chez Club Pilates, l'approche est différente : le meilleur équipement du marché, un coach diplômé qui veille sur chacun de vos mouvements, 12 personnes maximum, un cadre bienveillant qui donne tout simplement envie de revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent — sans dénigrer.',text:c});}
   // Flexibilité & 5 niveaux — toujours en phase, à son rythme
   const beginnerProfile=st.pain.includes('jamais')||st.ageBand==='55-70'||st.health.includes('senior')||activeHealth().length>0;
   const perfProfile=st.goals.includes('perf')||st.dispo==='high';
@@ -834,7 +834,7 @@ function renderScreen(){
       <div class="pres-h">📖 L'histoire en 3 phrases</div>
       <div class="card" style="margin-bottom:14px">${CP_STORY.map(t=>`<div class="pres-line">${t}</div>`).join('')}</div>
       <div class="pres-h">🏋️ Un studio = une salle ultra-complète</div>
-      <div class="scr-sub" style="margin-top:-2px;margin-bottom:12px">« Vous ne trouverez pas ça ailleurs : un seul lieu, tout le matériel, zéro routine. »</div>
+      <div class="scr-sub" style="margin-top:-2px;margin-bottom:12px">« Et pas n'importe quel matériel : le <b>meilleur équipement disponible sur le marché</b>, réuni en un seul lieu. Vous ne trouverez pas ça ailleurs. »</div>
       <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>
       <div class="pres-h">🤝 Notre engagement qualité</div>
       <div class="card" style="margin-bottom:14px">${CP_TRUST.map(t=>`<div class="cls"><div class="n" style="font-size:15px">${t.ic}</div><div><div class="nm">${t.t}</div><div class="ds">${t.d}</div></div></div>`).join('')}</div>
