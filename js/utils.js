@@ -140,10 +140,10 @@ function isViewer(){
 
 var _inactivityTimer=null;
 var _inactivityWarnTimer=null;
-var _INACTIVITY_MS=5*60*1000; // 5 minutes
+var _INACTIVITY_MS=30*60*1000; // 30 minutes
 
 // Mobile / touch device → on garde l'utilisateur connecté (pas de logout automatique d'inactivité).
-// Sur desktop on conserve la sécurité : auto-logout après 5 min d'inactivité + tab caché.
+// Sur desktop on conserve la sécurité : auto-logout après 30 min d'inactivité + tab caché.
 function _isMobileDevice(){
   try{
     var coarse=window.matchMedia&&window.matchMedia('(pointer: coarse)').matches;
@@ -176,7 +176,7 @@ function _resetInactivityTimer(){
     w.innerHTML='<div style="font-weight:600;margin-bottom:3px">Session bient\u00f4t expir\u00e9e</div><div style="font-size:11.5px;color:rgba(255,255,255,0.55)">Inactivit\u00e9 d\u00e9tect\u00e9e. D\u00e9connexion automatique dans <b style="color:#c8a84b">1 minute</b>.</div><div style="margin-top:8px"><button onclick="_resetInactivityTimer()" style="background:#4d7a5c;color:#fff;border:none;border-radius:6px;padding:4px 12px;font-size:11px;cursor:pointer">Rester connect\u00e9</button></div>';
     document.body.appendChild(w);
   },_INACTIVITY_MS-60000);
-  // Déconnexion effective à 5 min
+  // Déconnexion effective à 30 min
   _inactivityTimer=setTimeout(function(){
     if(!S.user)return;
     _removeInactivityWarn();
