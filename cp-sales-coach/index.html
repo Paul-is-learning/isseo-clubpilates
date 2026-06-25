@@ -730,7 +730,7 @@ function classBenefit(id){
     default:return CLASSES[id]?CLASSES[id].ds.replace(/\.$/,'').toLowerCase():'';
   }
 }
-function triggerClause(t){const m={event:'parce qu\'un événement important approche',sante:'suite à un signal santé qu\'il ne faut pas ignorer',poids:'parce que vous avez pris du poids et que ça vous pèse',grossesse:'pour retrouver votre corps et votre énergie après bébé',douleur:'parce qu\'une douleur commence à s\'installer et à vous gêner',raslebol:'parce que vous en avez vraiment assez de l\'état actuel',resolution:'parce que vous voulez un vrai nouveau départ',proche:'parce qu\'un proche vous a montré que c\'était possible'};return m[t.id]||t.label.toLowerCase();}
+function triggerClause(t){const m={event:'parce qu\'un événement important approche',sante:'parce que vous voulez prendre soin de votre santé',poids:'parce que vous avez pris du poids et que ça vous pèse',grossesse:'pour retrouver votre corps et votre énergie après bébé',douleur:'parce qu\'une douleur commence à s\'installer et à vous gêner',raslebol:'parce que vous en avez vraiment assez de l\'état actuel',resolution:'parce que vous voulez un vrai nouveau départ',proche:'parce qu\'un proche vous a montré que c\'était possible'};return m[t.id]||t.label.toLowerCase();}
 // ── Rythme & résultats : ce que 1× / 2× / illimité apportent pour SON objectif ──
 const GOAL_VERB={poids:'perdre du poids durablement',mobilite:'retrouver de la mobilité',douleur:'soulager vos douleurs',tonus:'vous tonifier et vous renforcer',energie:'retrouver de l\'énergie',stress:'évacuer le stress',posture:'corriger votre posture',perf:'progresser et vous dépasser'};
 function primaryGoalVerb(){const g=(st.goals&&st.goals[0])||null;return (g&&GOAL_VERB[g])||'atteindre vos objectifs';}
@@ -751,7 +751,7 @@ function buildRhythmPitch(pack){
 function buildPitchBeats(pack,recos){
   const beats=[],e=emo(),t=trig();
   if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez confié : ce qui vous a freiné jusqu'ici, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` J'ai bien entendu — c'est précisément là-dessus que je vais vous accompagner. »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris. Reformulez ses mots.',text:m});}
-  if(t)beats.push({label:'Le bon moment',hint:'Valorisez sa démarche, sans pousser.',text:`« Et si vous faites cette démarche aujourd'hui, c'est ${triggerClause(t)}. C'est précisément le bon moment pour prendre soin de vous — et vous le méritez. »`});
+  if(t)beats.push({label:'Le bon moment',hint:'Valorisez sa démarche, sans en rajouter.',text:`« Et si vous nous appelez maintenant, c'est ${triggerClause(t)}. Autant avancer pendant que la motivation est là. »`});
   if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Chez Club Pilates, l'approche est différente : le meilleur équipement du marché, un coach diplômé qui veille sur chacun de vos mouvements, 12 personnes maximum, un cadre bienveillant qui donne tout simplement envie de revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent — sans dénigrer.',text:c});}
   // Flexibilité & 5 niveaux — toujours en phase, à son rythme
   const beginnerProfile=st.pain.includes('jamais')||st.ageBand==='55-70'||st.health.includes('senior')||activeHealth().length>0;
