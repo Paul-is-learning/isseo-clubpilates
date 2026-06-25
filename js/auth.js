@@ -231,9 +231,12 @@ function renderAdminPanel(){
   h+='<div style="background:#fff;border-bottom:1px solid #e8eaf0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
   h+='<div><div style="color:#0f1f3d;font-weight:700;font-size:14px">⚙ Gestion des accès utilisateurs</div>';
   h+='<div style="color:#888;font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
+  var _nbPwds=Object.keys(S.adminSettings.passwords||{}).length;
   h+='<div style="display:flex;gap:8px">';
   h+='<button onclick="showCreateUserModal()" style="background:#0f1f3d;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:600">+ Nouveau compte</button>';
   if(_adminUsers.length>0)h+='<button onclick="generateAllPasswords()" title="Générer un nouveau mot de passe pour tous les utilisateurs" style="background:#854F0B;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:600">🔑 Régénérer tous les mdp</button>';
+  if(_nbPwds>0)h+='<button onclick="copyAllPasswords()" title="Copier la liste des identifiants (nom + email + mot de passe)" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">📋 Copier la liste</button>';
+  if(_nbPwds>0)h+='<button onclick="toggleAllPwd()" title="Afficher / masquer tous les mots de passe" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">👁 Tout afficher</button>';
   h+='<button onclick="loadAdminUsers();loadPresence()" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
   h+='</div>';
   h+='</div>';
@@ -299,7 +302,7 @@ function renderAdminPanel(){
         h+='<span style="font-size:11px;color:#aaa">—</span>';
       } else {
         h+='<div style="display:flex;align-items:center;gap:6px">';
-        h+='<div id="pwd-display-'+uid+'" style="font-size:12px;font-family:monospace;color:#555;background:#f8f9fb;padding:4px 8px;border-radius:6px;border:1px solid #e8eaf0;min-width:80px">';
+        h+='<div id="pwd-display-'+uid+'"'+(_curPwd?' onclick="copyUserPwd(\''+uid+'\')" title="Cliquer pour copier le mot de passe"':'')+' style="font-size:12px;font-family:monospace;color:#555;background:#f8f9fb;padding:4px 8px;border-radius:6px;border:1px solid #e8eaf0;min-width:80px'+(_curPwd?';cursor:pointer':'')+'">';
         if(_curPwd){
           h+='<span id="pwd-text-'+uid+'" style="letter-spacing:1px">••••••</span>';
         } else {
@@ -404,6 +407,17 @@ function toggleShowPwd(uid){
     el.style.letterSpacing='0';
     el.dataset.visible='1';
   }
+}
+
+// Copie le mot de passe d'un utilisateur dans le presse-papier.
+function copyUserPwd(uid){
+  var pwds=S.adminSettings.passwords||{};
+  var pwd=decodePwd(pwds[uid]||'');
+  if(!pwd)return;
+  function done(){toast('Mot de passe copié ✓');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(pwd).then(done).catch(function(){_copyFallback(pwd);done();});
+  } else {_copyFallback(pwd);done();}
 }
 
 // ── Écran "Définir un nouveau mot de passe" (lien email de récupération) ──────
@@ -564,11 +578,49 @@ async function generateAllPasswords(){
   }
   await saveAdminSettings();
   render();
-  if(fail===0)toast('✓ '+ok+' mot(s) de passe régénéré(s). Cliquez l\'œil pour les voir.');
+  // Révéler automatiquement tous les nouveaux mots de passe
+  setTimeout(function(){toggleAllPwd(true);},60);
+  if(fail===0)toast('✓ '+ok+' mot(s) de passe régénéré(s) — « 📋 Copier la liste » pour tout récupérer.');
   else{
-    toast('⚠ '+ok+' OK, '+fail+' échec(s)');
+    toast('⚠ '+ok+' OK, '+fail+' échec(s) — voir console');
     console.warn('[generateAllPasswords] échecs:',failNames);
   }
+}
+
+// Affiche / masque TOUS les mots de passe mémorisés d'un coup.
+// show=true force l'affichage, undefined => bascule.
+function toggleAllPwd(show){
+  var pwds=S.adminSettings.passwords||{};
+  Object.keys(pwds).forEach(function(uid){
+    var el=document.getElementById('pwd-text-'+uid);
+    if(!el)return;
+    var visible=el.dataset.visible==='1';
+    var want=(show===undefined)?!visible:!!show;
+    if(want!==visible)toggleShowPwd(uid);
+  });
+}
+
+// Copie dans le presse-papier la liste des identifiants (nom · email · mot de passe).
+function copyAllPasswords(){
+  if(!isSuperAdmin())return;
+  var pwds=S.adminSettings.passwords||{};
+  var byId={};(_adminUsers||[]).forEach(function(u){byId[u.id]=u;});
+  var lines=[];
+  Object.keys(pwds).forEach(function(uid){
+    var p=decodePwd(pwds[uid]||'');if(!p)return;
+    var u=byId[uid]||{};
+    lines.push((u.nom||uid)+' · '+(u.email||'')+' · '+p);
+  });
+  if(!lines.length){toast('Aucun mot de passe à copier');return;}
+  lines.sort(function(a,b){return a.localeCompare(b,'fr');});
+  var txt='Identifiants Club Pilates ISSEO\n'+'https://clubpilates.isseo-dev.com\n\n'+lines.join('\n');
+  function done(){toast('✓ '+lines.length+' identifiant(s) copié(s) dans le presse-papier');}
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(txt).then(done).catch(function(){_copyFallback(txt);done();});
+  } else {_copyFallback(txt);done();}
+}
+function _copyFallback(txt){
+  try{var ta=document.createElement('textarea');ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();}catch(e){}
 }
 
 // ── Avatar utilisateur connecté ──────────────────────────────────────────────
