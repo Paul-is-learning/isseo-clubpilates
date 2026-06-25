@@ -151,6 +151,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 /* Comparatif rythme 1x / 2x / illimité */
 .rythme{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px}
 .rythme-h{font-size:12.5px;font-weight:800;color:var(--cp-deep);margin-bottom:10px;line-height:1.3}
+.rythme-age{display:inline-block;background:var(--cp-pale);color:var(--cp-deep);font-size:10px;font-weight:700;padding:2px 7px;border-radius:6px;margin-left:4px;white-space:nowrap}
 .rythme-row{border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;transition:all .15s}
 .rythme-row.cur{border-color:var(--cp-blue);background:var(--cp-veil);box-shadow:0 2px 10px rgba(111,140,184,.18)}
 .rr-freq{font-size:14px;font-weight:800;color:var(--cp-dark)}
@@ -734,15 +735,19 @@ function triggerClause(t){const m={event:'parce qu\'un événement important app
 // ── Rythme & résultats : ce que 1× / 2× / illimité apportent pour SON objectif ──
 const GOAL_VERB={poids:'perdre du poids durablement',mobilite:'retrouver de la mobilité',douleur:'soulager vos douleurs',tonus:'vous tonifier et vous renforcer',energie:'retrouver de l\'énergie',stress:'évacuer le stress',posture:'corriger votre posture',perf:'progresser et vous dépasser'};
 function primaryGoalVerb(){const g=(st.goals&&st.goals[0])||null;return (g&&GOAL_VERB[g])||'atteindre vos objectifs';}
-// 30 séances = « vous êtes différent » (Joseph Pilates) → temps selon la fréquence
-function rhythmRows(){return [
-  {pack:1,freq:'1× / semaine',time:'~7 mois',lab:'Vous entretenez et gardez le lien. Le changement vient, mais lentement.'},
-  {pack:2,freq:'2× / semaine',time:'~3-4 mois',lab:'LE seuil où le corps se transforme visiblement. Le rythme idéal.'},
-  {pack:3,freq:'Illimité',time:'~6-8 sem.',lab:'Vous accélérez et variez les formats. Les résultats les plus rapides.'}
+// Délai pour une TRANSFORMATION VISIBLE (≈30 séances, J. Pilates) — pondéré par l'âge.
+// Les premières SENSATIONS arrivent bien plus tôt (quelques semaines), quel que soit l'âge.
+function ageFactor(){return st.ageBand==='30-40'?0.85:st.ageBand==='55-70'?1.2:1;}
+function ageLabel(){return st.ageBand?st.ageBand+' ans':'profil moyen';}
+function fmtWeeks(w){if(w<=10){var r=Math.round(w);return '~'+(r-1)+'-'+(r+1)+' sem.';}var m=w/4.33,lo=Math.floor(m),hi=Math.ceil(m);if(lo===hi)hi=lo+1;return '~'+lo+'-'+hi+' mois';}
+function rhythmRows(){const f=ageFactor();return [
+  {pack:1,freq:'1× / semaine',time:fmtWeeks(30*f),lab:'Vous entretenez et gardez le lien. Le changement vient, mais lentement.'},
+  {pack:2,freq:'2× / semaine',time:fmtWeeks(15*f),lab:'LE seuil où le corps se transforme visiblement. Le rythme idéal.'},
+  {pack:3,freq:'Illimité',time:fmtWeeks(7*f),lab:'Vous accélérez et variez les formats. Les résultats les plus rapides.'}
 ];}
 function buildRhythmPitch(pack){
   const verb=primaryGoalVerb();
-  let s=`« Et sur le rythme, soyons précis — parce que pour ${verb}, ça change tout. À <b>1 fois par semaine</b>, vous entretenez et gardez le lien, mais le changement reste lent. À <b>2 fois par semaine</b>, c'est le seuil où le corps se transforme vraiment : on le ressent en quelques semaines, on le voit en 3 à 4 mois. En <b>illimité</b>, vous accélérez encore et variez les formats, pour les résultats les plus rapides. `;
+  let s=`« Et sur le rythme, soyons précis — parce que pour ${verb}, ça change tout. À <b>1 fois par semaine</b>, vous entretenez et gardez le lien, mais le changement reste lent. À <b>2 fois par semaine</b>, c'est le seuil où le corps se transforme vraiment : les premières sensations arrivent dès les premières semaines, et la transformation s'installe ensuite (le délai dépend un peu de l'âge, c'est normal). En <b>illimité</b>, vous accélérez encore et variez les formats, pour les résultats les plus rapides. `;
   if(pack===3)s+=`Vu votre motivation, l'illimité est vraiment fait pour vous : vous avancez à pleine vitesse, sans jamais vous lasser. »`;
   else if(pack===1)s+=`On démarre en douceur à 1×/semaine pour bien s'installer — et on montera dès que vous vous sentirez prêt(e). »`;
   else s+=`Le 2×/semaine, c'est le juste équilibre pour vous : assez pour transformer, et parfaitement tenable dans la durée. C'est celui que je vous recommande. »`;
@@ -934,7 +939,7 @@ function renderScreen(){
     h=`<div class="scr-tag reco">${s.phase} · le match</div>
       <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore(pack)}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
       <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
-      <div class="rythme"><div class="rythme-h">⏱️ Le bon rythme pour ${primaryGoalVerb()}</div>${rhythmRows().map(r=>`<div class="rythme-row${r.pack===pack?' cur':''}"><div class="rr-freq">${r.freq}</div><div class="rr-time">${r.time}<small>pour vous transformer</small></div><div class="rr-lab">${r.lab}</div></div>`).join('')}<div class="rythme-foot">Base : 30 séances pour une vraie transformation (J. Pilates).</div></div>
+      <div class="rythme"><div class="rythme-h">⏱️ Le bon rythme pour ${primaryGoalVerb()} <span class="rythme-age">ajusté pour ${ageLabel()}</span></div>${rhythmRows().map(r=>`<div class="rythme-row${r.pack===pack?' cur':''}"><div class="rr-freq">${r.freq}</div><div class="rr-time">${r.time}<small>transformation visible</small></div><div class="rr-lab">${r.lab}</div></div>`).join('')}<div class="rythme-foot">Premières sensations dès les 1ères semaines · transformation ≈ 30 séances (J. Pilates), modulée par l'âge.</div></div>
       <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div style="flex:1;min-width:0"><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div>${CLASSES[r.id].bienfaits?`<ul class="biens">${CLASSES[r.id].bienfaits.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}${CLASSES[r.id].pourqui?`<div class="pourqui">👤 Idéal pour : ${CLASSES[r.id].pourqui}</div>`:''}</div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>
       <div class="flex-note"><span class="fic">🔄</span><span><b>5 niveaux (0.5 → 2.5)</b> : on démarre à son niveau, on progresse à son rythme. Toujours en phase, jamais largué.</span></div>`;
     nav=navHTML(true,'Dérouler l\'argumentaire →');
