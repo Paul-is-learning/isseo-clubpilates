@@ -591,14 +591,15 @@ function emo(){return EMOTIONS.find(e=>e.id===st.emotion)||null}
 function activeHealth(){return st.health.filter(h=>h!=='aucun')}
 function frList(arr){if(!arr.length)return '';if(arr.length===1)return arr[0];return arr.slice(0,-1).join(', ')+' et '+arr[arr.length-1];}
 
-function recommendPack(){
-  if(st.packChoice)return st.packChoice;
+// Pack idéal selon le profil (indépendant du choix manuel du commercial)
+function idealPack(){
   const g=st.goals,pain=st.pain;let score=2;
   if(st.dispo==='high')score=3;
   if(g.includes('perf')&&st.dispo!=='low')score=3;
   if(st.dispo==='low'){score=(pain.includes('temps')&&st.reason.includes('reprise'))?1:2;if(pain.includes('resultats'))score=2;}
   return score;
 }
+function recommendPack(){return st.packChoice||idealPack();}
 function recommendClasses(pack){
   const g=st.goals,health=activeHealth(),pain=st.pain;
   const blocked=id=>CLASSES[id].restr.some(r=>r==='blessure_prolongee'?(health.includes('genou')||health.includes('chirurgie')):health.includes(r));
@@ -621,7 +622,20 @@ function classWarnings(recos){
   recos.forEach(r=>{const hit=CLASSES[r.id].restr.filter(x=>x==='blessure_prolongee'?(health.includes('genou')||health.includes('chirurgie')):health.includes(x));if(hit.length)w.push(`${CLASSES[r.id].nm} : prudence — ${hit.map(h=>lbl(HEALTH,h)||h).join(', ')}. Valider avec le coach.`);});
   return w;
 }
-function matchScore(){let s=55;s+=Math.min(st.goals.length,3)*6;if(st.pain.length)s+=8;if(st.trigger)s+=8;if(st.emotion)s+=6;if(st.dispo)s+=6;if(st.tried.length)s+=4;return Math.max(40,Math.min(99,s));}
+function matchScore(pack){
+  pack=pack||recommendPack();
+  // 1) Confiance : plus la découverte est riche, plus on est sûr.
+  let s=46;
+  s+=Math.min(st.goals.length,3)*4;
+  if(st.pain.length)s+=5;if(st.trigger)s+=5;if(st.emotion)s+=4;if(st.dispo)s+=5;if(st.tried.length)s+=3;if(st.reason.length)s+=3;
+  // 2) Adéquation du pack choisi avec le profil.
+  const ideal=idealPack();
+  if(pack===ideal)s+=12; else s-=Math.abs(pack-ideal)*7;
+  if(pack===3){ if(st.dispo==='high'||st.goals.includes('perf'))s+=6; if(st.dispo==='low')s-=10; }
+  if(pack===1){ if(st.dispo==='low')s+=5; else s-=5; }
+  if(pack===2&&st.dispo&&st.dispo!=='low')s+=3;
+  return Math.max(35,Math.min(99,Math.round(s)));
+}
 function packMonthly(p){return p===1?CFG.p1:p===2?CFG.p2:p===3?CFG.p3:null;}
 function packPerSession(p){const m=packMonthly(p),s=SESSIONS_PER_MONTH[p];if(m==null||s==null)return null;const n=parseFloat(m);return isNaN(n)?null:n/s;}
 function fmtEur(v){if(v==null||v==='')return null;const n=parseFloat(v);if(isNaN(n))return null;return n.toLocaleString('fr-FR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})+' €';}
@@ -816,7 +830,7 @@ function renderScreen(){
     if(mF){priceHtml=`<div class="reco-price"><span class="now">${fmF||mF}</span><span class="un">/ mois</span></div><div class="reco-foot">${pack===3?'Illimité':'Soit '+(fpsF||psF)+'/séance'} · fondateur -${CFG.founding}% · inscription offerte</div>`;}
     else priceHtml=`<div class="reco-foot" style="margin-top:10px">⚠️ Prix à renseigner dans Réglages</div>`;
     h=`<div class="scr-tag reco">${s.phase} · le match</div>
-      <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore()}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
+      <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore(pack)}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
       <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
       <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div style="flex:1;min-width:0"><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div>${CLASSES[r.id].bienfaits?`<ul class="biens">${CLASSES[r.id].bienfaits.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}${CLASSES[r.id].pourqui?`<div class="pourqui">👤 Idéal pour : ${CLASSES[r.id].pourqui}</div>`:''}</div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>
       <div class="flex-note"><span class="fic">🔄</span><span><b>5 niveaux (0.5 → 2.5)</b> : on démarre à son niveau, on progresse à son rythme. Toujours en phase, jamais largué.</span></div>`;
@@ -893,7 +907,7 @@ function buildRecap(){
   L.push(`Cours : ${recos.map(r=>CLASSES[r.id].nm).join(' + ')}`);
   const mF=fmtEur(packMonthly(pack)),fmF=fmtEur(foundingMonthly(pack));
   if(mF)L.push(`Tarif : ${mF}/mois${fmF?` → ${fmF}/mois fondateur`:''}`);
-  L.push(`Match : ${matchScore()}%`);
+  L.push(`Match : ${matchScore(recommendPack())}%`);
   return L.join('\n');
 }
 function copyRecap(){const t=buildRecap();navigator.clipboard?.writeText(t).then(()=>toast('Fiche copiée ✓')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Fiche copiée ✓');});}
