@@ -112,6 +112,10 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .flex-note{display:flex;align-items:flex-start;gap:10px;background:var(--cp-pale);border-radius:13px;padding:12px 14px;margin-top:10px;font-size:12.5px;line-height:1.45;color:var(--cp-deep)}
 .flex-note .fic{font-size:17px;flex:0 0 auto}
 .flex-note b{font-weight:800}
+.pres-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--cp-deep);margin:18px 0 10px}
+.pres-line{font-size:13.5px;line-height:1.55;color:var(--ink-soft);padding:7px 0;border-top:1px dashed var(--line)}
+.pres-line:first-child{border-top:0;padding-top:0}
+.pres-line b{color:var(--cp-dark);font-weight:700}
 /* card générique */
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 
@@ -393,6 +397,30 @@ const AVANTAGES=[
   'Accompagnement souple : 5 niveaux (0.5 → 2.5), toujours à votre rythme',
   'Zéro redondance : Reformer + TRX + Chair + Bosu…','Reformer conçu exclusivement pour Club Pilates'
 ];
+
+/* ── Fiche de présentation (affichée si le client ne connaît PAS CP) ── */
+const CP_PITCH_INTRO='« Club Pilates, c\'est le <b>n°1 mondial du Pilates sur Reformer</b>. Une méthode centenaire, des studios dernier cri, et un accompagnement qu\'on ne trouve nulle part ailleurs. Laissez-moi vous présenter en 30 secondes. »';
+const CP_KPIS=[
+  {ic:'🌍',big:'N°1 mondial',lab:'Le plus grand réseau de Pilates au monde.'},
+  {ic:'🏢',big:'1 500+ studios',lab:'Présent dans 24 pays, sur 4 continents.'},
+  {ic:'📅',big:'8 M+ séances/an',lab:'Des millions de membres entraînés chaque année.'},
+  {ic:'🏆',big:'Franchise 500 ×8',lab:'Classé 8 années de suite par le magazine Entrepreneur.'},
+  {ic:'📈',big:'+30 %/an',lab:'Croissance de la clientèle masculine — un sport pour tous.'}
+];
+const CP_STORY=[
+  'La <b>méthode Pilates</b> a été créée il y a plus d\'un siècle par Joseph Pilates — ancien boxeur — pour la <b>rééducation et la performance</b> des athlètes et des soldats.',
+  'Club Pilates a rendu cette méthode <b>premium accessible à tous</b>, en cours collectifs de 12 personnes maximum, encadrés par des coachs diplômés.',
+  'Aujourd\'hui c\'est <b>l\'enseigne de référence</b> qui a démocratisé le Reformer dans le monde entier.'
+];
+const CP_EQUIPMENT=[
+  {ic:'🛟',nm:'Reformer',ds:'L\'appareil signature, conçu exclusivement pour CP.'},
+  {ic:'🧗',nm:'Springboard',ds:'Le « Cadillac » mural à ressorts — force & mobilité.'},
+  {ic:'🪑',nm:'EXO Chair',ds:'La chaise Pilates pour le renforcement ciblé.'},
+  {ic:'🎗️',nm:'TRX',ds:'Sangles de suspension — gainage & stabilité.'},
+  {ic:'⚪',nm:'Bosu',ds:'Demi-ballon d\'équilibre & proprioception.'},
+  {ic:'🎯',nm:'TriggerPoint',ds:'Rouleaux d\'auto-massage & récupération.'},
+  {ic:'➰',nm:'Barre & Tapis',ds:'Pour varier à l\'infini, jamais la même séance.'}
+];
 const OBJECTIONS=[
   {id:'prix',ic:'💶',t:'« C\'est cher »',kw:'cher prix budget coute argent euro',lines:['Reviens aux <b>objectifs</b> : « Si par le passé ça n\'a pas fonctionné, c\'est que le budget investi n\'était pas adapté à vos objectifs. »','« Si dans 3 mois, <b>aucun changement</b> avec votre routine actuelle, comment allez-vous vous sentir ? »','« Est-ce que ça ne vaut pas le coût d\'investir <b>60 € de plus</b> sur une activité qui va fonctionner et vous plaire ? »']},
   {id:'temps',ic:'⏳',t:'« Je n\'ai pas le temps »',kw:'temps occupe agenda horaire dispo',lines:['Si c\'est en <b>complément</b> d\'une autre activité → proposer le <b>Pack 1×/sem</b>.','Sinon → le Pack 1×/sem donne des <b>résultats à plus long terme</b>, et toujours revenir aux objectifs.','Le bon rythme reste <b>2×/sem</b> pour des résultats visibles.']},
@@ -534,6 +562,7 @@ function buildFlow(){
   f.push({t:'goal',phase:'Démarrage'});
   f.push({t:'say',phase:'Accueil',tag:'Ouverture',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b> de Club Pilates${s}. Je vous appelle suite à votre <b>demande d'informations</b>. Vous avez quelques minutes ?`;},hint:'Souriez avant de décrocher — le ton s\'entend.'});
   f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
+  if(st.connait==='non')f.push({t:'present',phase:'Présentation'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
   f.push({t:'q',phase:'Découverte',q:'Pourquoi vous appelle-t-il aujourd\'hui ?',sub:'Laissez parler. Plusieurs réponses possibles.',data:REASONS,field:'reason',multi:true});
   f.push({t:'q',phase:'Découverte',q:'⏱️ Pourquoi MAINTENANT ? Le déclencheur.',sub:'Le levier de closing le plus puissant.',data:TRIGGERS,field:'trigger',single:true,dig:true});
@@ -596,6 +625,18 @@ function renderScreen(){
   else if(s.t==='say'){
     h=`<div class="say-card"><div class="scr-tag say">🗣️ ${s.tag}</div><div class="say-big quote">${s.getText?s.getText():s.text}</div>${s.hint?`<div class="say-hint"><span class="b">💡</span><span>${s.hint}</span></div>`:''}</div>`;
     nav=navHTML(true,'Dit ✓');
+  }
+  else if(s.t==='present'){
+    h=`<div class="scr-tag say">🗣️ Présenter Club Pilates</div>
+      <div class="say-big quote" style="font-size:18px;margin-bottom:18px">${CP_PITCH_INTRO}</div>
+      <div class="pres-h">📊 Les chiffres qui rassurent</div>
+      ${CP_KPIS.map(k=>`<div class="rf"><div class="ic">${k.ic}</div><div><div class="big">${k.big}</div><div class="lab">${k.lab}</div></div></div>`).join('')}
+      <div class="pres-h">📖 L'histoire en 3 phrases</div>
+      <div class="card" style="margin-bottom:14px">${CP_STORY.map(t=>`<div class="pres-line">${t}</div>`).join('')}</div>
+      <div class="pres-h">🏋️ Un studio = une salle ultra-complète</div>
+      <div class="scr-sub" style="margin-top:-2px;margin-bottom:12px">« Vous ne trouverez pas ça ailleurs : un seul lieu, tout le matériel, zéro routine. »</div>
+      <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>`;
+    nav=navHTML(true,'Présenté ✓ →');
   }
   else if(s.t==='beat'){
     h=`<div class="say-card"><div class="scr-tag say">🗣️ ${s.n}. ${s.beat.label}</div><div class="say-big quote">${s.beat.text}</div>${s.beat.hint?`<div class="say-hint"><span class="b">💡</span><span>${s.beat.hint}</span></div>`:''}</div>`;
