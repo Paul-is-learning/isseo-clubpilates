@@ -109,6 +109,9 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .rf .lab{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
 .rf .lab b{color:var(--cp-deep)}
 
+.flex-note{display:flex;align-items:flex-start;gap:10px;background:var(--cp-pale);border-radius:13px;padding:12px 14px;margin-top:10px;font-size:12.5px;line-height:1.45;color:var(--cp-deep)}
+.flex-note .fic{font-size:17px;flex:0 0 auto}
+.flex-note b{font-weight:800}
 /* card générique */
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 
@@ -387,6 +390,7 @@ const AGE_BANDS=[
 const AVANTAGES=[
   'Réservation des cours jusqu\'à 3 semaines à l\'avance','Coachs diplômés + formation interne CP',
   'Seulement 12 ateliers en simultané, espacés','Pas d\'annulation de cours','Accompagnement 100 % personnalisé',
+  'Accompagnement souple : 5 niveaux (0.5 → 2.5), toujours à votre rythme',
   'Zéro redondance : Reformer + TRX + Chair + Bosu…','Reformer conçu exclusivement pour Club Pilates'
 ];
 const OBJECTIONS=[
@@ -479,6 +483,15 @@ function buildPitchBeats(pack,recos){
   if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez partagé : ce qui vous a freiné avant, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris.',text:m});}
   if(t)beats.push({label:'Le bon moment',hint:'Exploitez son déclencheur.',text:`« Et si vous nous appelez aujourd'hui, c'est ${triggerClause(t)}. Honnêtement, c'est exactement LE bon moment pour agir — pas dans 6 mois. »`});
   if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Le Reformer Club Pilates, c'est une autre approche : un coach qui vous corrige, 12 personnes maximum, un cadre qui vous fait revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent.',text:c});}
+  // Flexibilité & 5 niveaux — toujours en phase, à son rythme
+  const beginnerProfile=st.pain.includes('jamais')||st.ageBand==='55-70'||st.health.includes('senior')||activeHealth().length>0;
+  const perfProfile=st.goals.includes('perf')||st.dispo==='high';
+  let flex=`« Et ce qui change tout chez Club Pilates, c'est la souplesse de l'accompagnement : <b>5 niveaux de cours, du 0.5 initiation au 2.5 expert</b>. `;
+  if(beginnerProfile)flex+=`Vous démarrez tout en douceur, au niveau 0.5 ou 1, sans aucune pression`;
+  else if(perfProfile)flex+=`Vous avez tout de suite de quoi vous challenger, et les niveaux 2 et 2.5 vous attendent pour aller plus loin`;
+  else flex+=`Vous démarrez exactement là où vous en êtes, et vous montez de niveau quand VOUS êtes prêt(e)`;
+  flex+=` — toujours en phase, jamais largué(e), jamais à l'arrêt. Quel que soit votre niveau ou votre forme du jour, il y a un cours fait pour vous. »`;
+  beats.push({label:'Flexibilité & niveaux',hint:'L\'argument qui rassure ET retient sur la durée.',text:flex});
   const goalTxt=st.goals.length?frList(st.goals.map(g=>lbl(GOALS,g).toLowerCase())):'vos objectifs';
   let reco=`« Concrètement, pour ${goalTxt}, je vous oriente vers le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Avec 3 mois d'engagement — le temps que votre corps installe vraiment le changement. »`;
   beats.push({label:'La reco',hint:'Chaque cours a une raison.',text:reco});
@@ -597,7 +610,8 @@ function renderScreen(){
     h=`<div class="scr-tag reco">${s.phase} · le match</div>
       <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore()}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
       <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
-      <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div></div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>`;
+      <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div></div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>
+      <div class="flex-note"><span class="fic">🔄</span><span><b>5 niveaux (0.5 → 2.5)</b> : on démarre à son niveau, on progresse à son rythme. Toujours en phase, jamais largué.</span></div>`;
     nav=navHTML(true,'Dérouler l\'argumentaire →');
   }
   else if(s.t==='reframe'){
