@@ -400,6 +400,7 @@ const AVANTAGES=[
 
 /* ── Fiche de présentation (affichée si le client ne connaît PAS CP) ── */
 const CP_PITCH_INTRO='« Club Pilates, c\'est le <b>n°1 mondial du Pilates sur Reformer</b>. Une méthode centenaire, des studios dernier cri, et un accompagnement qu\'on ne trouve nulle part ailleurs. Laissez-moi vous présenter en 30 secondes. »';
+const CP_PITCH_RECALL='« Vous connaissez déjà Club Pilates, parfait. Laissez-moi juste vous <b>rappeler pourquoi c\'est l\'enseigne n°1</b> et ce qui rend nos studios uniques — c\'est important pour la suite. »';
 const CP_KPIS=[
   {ic:'🌍',big:'N°1 mondial',lab:'Le plus grand réseau de Pilates au monde.'},
   {ic:'🏢',big:'1 500+ studios',lab:'Présent dans 24 pays, sur 4 continents.'},
@@ -562,7 +563,7 @@ function buildFlow(){
   f.push({t:'goal',phase:'Démarrage'});
   f.push({t:'say',phase:'Accueil',tag:'Ouverture',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b> de Club Pilates${s}. Je vous appelle suite à votre <b>demande d'informations</b>. Vous avez quelques minutes ?`;},hint:'Souriez avant de décrocher — le ton s\'entend.'});
   f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
-  if(st.connait==='non')f.push({t:'present',phase:'Présentation'});
+  if(st.connait)f.push({t:'present',phase:st.connait==='oui'?'Rappel':'Présentation'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
   f.push({t:'q',phase:'Découverte',q:'Pourquoi vous appelle-t-il aujourd\'hui ?',sub:'Laissez parler. Plusieurs réponses possibles.',data:REASONS,field:'reason',multi:true});
   f.push({t:'q',phase:'Découverte',q:'⏱️ Pourquoi MAINTENANT ? Le déclencheur.',sub:'Le levier de closing le plus puissant.',data:TRIGGERS,field:'trigger',single:true,dig:true});
@@ -627,8 +628,9 @@ function renderScreen(){
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='present'){
-    h=`<div class="scr-tag say">🗣️ Présenter Club Pilates</div>
-      <div class="say-big quote" style="font-size:18px;margin-bottom:18px">${CP_PITCH_INTRO}</div>
+    const known=st.connait==='oui';
+    h=`<div class="scr-tag say">🗣️ ${known?'Rappeler les points forts':'Présenter Club Pilates'}</div>
+      <div class="say-big quote" style="font-size:18px;margin-bottom:18px">${known?CP_PITCH_RECALL:CP_PITCH_INTRO}</div>
       <div class="pres-h">📊 Les chiffres qui rassurent</div>
       ${CP_KPIS.map(k=>`<div class="rf"><div class="ic">${k.ic}</div><div><div class="big">${k.big}</div><div class="lab">${k.lab}</div></div></div>`).join('')}
       <div class="pres-h">📖 L'histoire en 3 phrases</div>
@@ -636,7 +638,7 @@ function renderScreen(){
       <div class="pres-h">🏋️ Un studio = une salle ultra-complète</div>
       <div class="scr-sub" style="margin-top:-2px;margin-bottom:12px">« Vous ne trouverez pas ça ailleurs : un seul lieu, tout le matériel, zéro routine. »</div>
       <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>`;
-    nav=navHTML(true,'Présenté ✓ →');
+    nav=navHTML(true,known?'Rappelé ✓ →':'Présenté ✓ →');
   }
   else if(s.t==='beat'){
     h=`<div class="say-card"><div class="scr-tag say">🗣️ ${s.n}. ${s.beat.label}</div><div class="say-big quote">${s.beat.text}</div>${s.beat.hint?`<div class="say-hint"><span class="b">💡</span><span>${s.beat.hint}</span></div>`:''}</div>`;
@@ -744,12 +746,14 @@ function closeObj(){$('#objBg').classList.remove('on');$('#objSheet').classList.
 function openMenu(){
   $('#menuBody').innerHTML=`
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
+    <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;
   $('#menuBg').classList.add('on');$('#menuSheet').classList.add('on');
 }
 function closeMenu(){$('#menuBg').classList.remove('on');$('#menuSheet').classList.remove('on');}
+function showPresentation(){closeMenu();if(!st.connait)st.connait='oui';const flow=buildFlow();const i=flow.findIndex(s=>s.t==='present');if(i>=0){st.idx=i;renderScreen();}}
 function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;st={callGoal:g,idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
 
 /* ── Académie ── */
