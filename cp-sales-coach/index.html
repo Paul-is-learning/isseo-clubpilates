@@ -1124,79 +1124,70 @@ function showScience(){
   $('#bar').style.width='100%';
 }
 
-/* ── Impression du livret (PDF hors-ligne) ── */
+/* ── Impression du livret (PDF hors-ligne) — copie fidèle des pages de l'app ── */
+function _capScreen(fn){
+  var scr=document.getElementById('screen');
+  var a=scr.innerHTML,b=$('#topPhase').innerHTML,c=$('#nav').innerHTML,d=$('#bar').style.width;
+  try{fn();}catch(e){console.warn('[cap]',e);}
+  var html=scr.innerHTML;
+  scr.innerHTML=a;$('#topPhase').innerHTML=b;$('#nav').innerHTML=c;$('#bar').style.width=d;
+  return html;
+}
 function buildPrintDoc(){
   const studio=CFG.studio?esc(CFG.studio):'Club Pilates',rep=CFG.rep?esc(CFG.rep):'';
-  const sec=(n,t,sub,body)=>`<section class="sec"><div class="sec-h"><span class="sec-n">${n}</span><span class="sec-t">${t}</span></div>${sub?`<div class="sec-sub">${sub}</div>`:''}${body}</section>`;
-  const card=(inner,pale)=>`<div class="card${pale?' pale':''}">${inner}</div>`;
-  // 1 · État d'esprit
-  const esprit=card(`<div class="quote" style="margin-bottom:8px">« Le bien-être du client et la vente vont ensemble : le rythme qui transforme, c'est 2 à 3 séances/semaine. »</div><ul><li>Recommandez le bon rythme avec conviction : 2 à 3×/semaine, c'est lui rendre service.</li><li>Convainquez par la valeur et les résultats — sincère, jamais alarmiste.</li><li>Chaque appel vise un engagement : un essai booké ou un abo signé.</li><li>Un client qui obtient des résultats reste, revient et nous recommande.</li></ul>`,true);
-  // 2 · Méthode + règles d'or
-  const omg=card(`<div class="nm">La méthode OMG — ne vendez jamais avant d'avoir creusé</div><ul><li><b>O</b>rigine de la douleur — « qu'est-ce qui n'a pas marché avant ? »</li><li><b>G</b>oal — « que voulez-vous réussir dans 3 mois ? »</li><li><b>M</b>embership — « vu ce que vous m'avez partagé, je vous recommande… »</li></ul>`)+card(`<div class="nm">5 réflexes gagnants</div><ul><li>Souriez avant de décrocher — le ton s'entend.</li><li>Le silence est votre allié : 3 secondes après une question.</li><li>Pack 2 par défaut, Pack 3 sur upsell motivé, Pack 1 en repli.</li><li>« On y va ? » plutôt que « Voulez-vous ? ».</li><li>Jamais sans engagement : abo ferme OU rappel daté.</li></ul>`);
-  // 3 · Niveaux + arme 0.5
-  const niveaux=NIVEAUX.map(n=>card(`<span class="tag" style="background:${n.color};color:#fff">${n.n}</span> <b class="nm" style="display:inline">${n.t}</b><div class="ds">${n.d}${n.badge?` — <b>${n.badge}</b>`:''}</div>`)).join('')+card(`<div class="nm">⭐ ${esc(STRAT_LEVEL05.title)}</div><div class="ds">${esc(STRAT_LEVEL05.when)}</div><div class="quote" style="margin-top:6px">${esc(STRAT_LEVEL05.pitch)}</div>`,true);
-  // 4 · Leviers par âge
-  const ages=AGE_BANDS.map(b=>card(`<div class="nm" style="color:${b.color}">${b.ic} ${b.label}</div><div class="ds"><b>Leviers :</b> ${b.leviers.slice(0,4).join(' · ')}<br><b>Peurs :</b> ${b.peurs.join(' · ')}<br><b>Phrase :</b> <i>${b.phrases[0]}</i></div>`)).join('');
-  // 5 · Cours en détail
-  const cours=COURSE_GUIDE.map(c=>card(`<div class="nm">${c.nm} <span class="tag">Niv. ${c.lvl} · ${c.tag}</span></div><div class="ds" style="margin:4px 0">${c.quoi}</div><div class="ds"><b>Avantages :</b> ${c.avantages}</div><div class="grid2" style="margin-top:5px"><div><b class="ds">💪 Corps</b><ul>${c.corps.map(x=>`<li>${x}</li>`).join('')}</ul></div><div><b class="ds">🧠 Esprit</b><ul>${c.esprit.map(x=>`<li>${x}</li>`).join('')}</ul></div></div><div class="ds" style="margin-top:5px"><b>Prérequis :</b> ${c.capacite} · <b>Restrictions :</b> ${c.restr}</div>`)).join('');
-  // 6 · Présentation
-  const presentation=`<div class="nm" style="margin-bottom:6px">Chiffres clés</div>`+CP_KPIS.map(k=>card(`<b class="nm" style="display:inline">${k.ic} ${k.big}</b> <span class="ds">${k.lab}</span>`,true)).join('')
-    +`<div class="nm" style="margin:10px 0 6px">L'histoire</div>`+card(CP_STORY.map(t=>`<div class="ds" style="margin-bottom:4px">${t}</div>`).join(''))
-    +`<div class="nm" style="margin:10px 0 6px">Le studio — meilleur équipement du marché</div>`+card(CP_EQUIPMENT.map(e=>`<div class="ds">${e.ic} <b>${e.nm}</b> — ${e.ds}</div>`).join(''))
-    +`<div class="nm" style="margin:10px 0 6px">Engagement qualité</div>`+card(CP_TRUST.map(t=>`<div class="ds">${t.ic} <b>${t.t}</b> — ${t.d}</div>`).join(''))
-    +`<div class="nm" style="margin:10px 0 6px">Dans la presse</div>`+CP_PRESS.map(p=>card(`<b>${p.src}</b> — <span class="quote">« ${p.quote} »</span>`,true)).join('');
-  // 7 · Science
-  const science=card(`<ul>${SCI_ESSENTIAL.map(e=>`<li>${e}</li>`).join('')}</ul>`,true)
-    +card(`<div class="nm">⭐ ${SCI_DIFF.t}</div><div class="ds">${SCI_DIFF.d}</div><ul>${SCI_DIFF.pts.map(p=>`<li>${p}</li>`).join('')}</ul>`)
-    +`<div class="nm" style="margin:10px 0 6px">Le niveau de preuve</div>`+SCI_PROOF.map(s=>card(`<b class="nm" style="display:inline">${s.big}</b><div class="ds">${s.lab}</div>`)).join('')
-    +`<div class="nm" style="margin:10px 0 6px">Conditions pour des résultats</div>`+card(SCI_CONDITIONS.map(c=>`<div class="ds">${c.ic} <b>${c.t}</b> — ${c.d}</div>`).join(''))
-    +card(`<div class="ds"><b>La nuance honnête :</b> ${SCI_NUANCE}</div>`,true)
-    +card(`<div class="ds"><b>Sources :</b><br>${SCI_SOURCES.map(s=>'• '+s).join('<br>')}</div>`);
-  // 8 · Reframing prix (exemple Pack 2)
+  const APPCSS=[...document.querySelectorAll('style')].map(s=>s.innerHTML).join('\n');
+  const sec=(title,inner)=>`<section class="pf-sec"><h2 class="pf-h">${title}</h2>${inner}</section>`;
+  // Présentation — markup identique à l'écran
+  const presentation=`<div class="pres-h">📊 Les chiffres qui rassurent</div>
+    ${CP_KPIS.map(k=>`<div class="rf"><div class="ic">${k.ic}</div><div style="flex:1;min-width:0"><div class="big">${k.big}</div><div class="lab">${k.lab}</div></div></div>`).join('')}
+    <div class="pres-h">📖 L'histoire</div>
+    <div class="card">${CP_STORY.map(t=>`<div class="pres-line">${t}</div>`).join('')}</div>
+    <div class="pres-h">🏋️ Le studio — le meilleur équipement du marché</div>
+    <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>
+    <div class="pres-h">🤝 Notre engagement qualité</div>
+    <div class="card">${CP_TRUST.map(t=>`<div class="cls"><div class="n" style="font-size:15px">${t.ic}</div><div><div class="nm">${t.t}</div><div class="ds">${t.d}</div></div></div>`).join('')}</div>
+    <div class="pres-h">📰 Vu dans la presse</div>
+    ${CP_PRESS.map(p=>`<div class="press"><div class="press-src">${p.src}</div><div class="press-q">« ${p.quote} »</div><div class="press-note">${p.note}</div></div>`).join('')}
+    <div class="pres-h">💬 Témoignages (à personnaliser avec vos vrais avis)</div>
+    ${CP_TESTIMONIALS.map(t=>`<div class="testi"><div class="testi-q">“${t.q}”</div><div class="testi-a">${t.a}</div></div>`).join('')}`;
+  // Reframing prix — exemple Pack 2
   const rf=buildReframe(2);
-  const reframe=`<div class="sec-sub">Exemple basé sur le Pack 2× (tarifs studio actuels). Piochez 2-3 angles selon le client.</div>`+(rf.length?rf.map(r=>card(`<b class="nm" style="display:inline">${r.ic} ${r.big}</b><div class="quote" style="margin-top:4px">${r.say}</div>`)).join(''):card('<div class="ds">⚠️ Renseignez les tarifs dans les Réglages pour générer les angles chiffrés.</div>'));
-  // 9 · Objections
-  const obj=OBJECTIONS.map(o=>card(`<div class="nm">${o.ic} ${o.t}</div><ul>${o.lines.map(l=>`<li>${l}</li>`).join('')}</ul>`)).join('');
-  const body=sec('1','Notre état d\'esprit','Le socle : famille, bien-être du client, sincérité.',esprit)
-    +sec('2','La méthode & les règles d\'or','',omg)
-    +sec('3','Les 5 niveaux (0.5 → 2.5)','',niveaux)
-    +sec('4','Leviers par tranche d\'âge','Adaptez votre discours de 30 à 70 ans.',ages)
-    +sec('5','Les cours en détail','Bienfaits corps & esprit, prérequis, restrictions.',cours)
-    +sec('6','Présenter Club Pilates','Chiffres, histoire, studio, engagement, presse.',presentation)
-    +sec('7','Ce que dit la science','Sources fiables. Le différenciant = l\'encadrement.',science)
-    +sec('8','Reframing prix','Du coût vers la valeur — la phrase à dire.',reframe)
-    +sec('9','Réponses aux objections','Les 15 objections les plus fréquentes.',obj);
+  const reframe=`<div class="scr-sub">Exemple Pack 2× (tarifs studio actuels). Piochez 2-3 angles selon le client.</div>${rf.length?rf.map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div style="flex:1;min-width:0"><div class="big" style="font-size:16px">${r.big}</div><div class="rf-say">🗣️ ${r.say}</div></div></div>`).join(''):`<div class="card">⚠️ Renseignez les tarifs dans Réglages.</div>`}`;
+  // Objections — toutes, dépliées
+  const obj=OBJECTIONS.map(o=>`<div class="card"><div class="nm" style="margin-bottom:4px">${o.ic} ${o.t}</div>${o.lines.map(l=>`<div class="ds" style="margin-top:5px">▸ ${l}</div>`).join('')}</div>`).join('');
+  const body=sec('1 · Notre état d\'esprit & méthode',_capScreen(showAca))
+    +sec('2 · Présenter Club Pilates',presentation)
+    +sec('3 · Les cours en détail',_capScreen(showCourseGuide))
+    +sec('4 · Ce que dit la science',_capScreen(showScience))
+    +sec('5 · Reframing prix — du coût vers la valeur',reframe)
+    +sec('6 · Réponses aux 15 objections',obj);
+  const overrides=`
+    html,body{height:auto !important;overflow:visible !important;background:#fff !important}
+    body{font-size:13px}
+    *{-webkit-print-color-adjust:exact !important;print-color-adjust:exact !important;animation:none !important}
+    .pf-cover{min-height:94vh;background:linear-gradient(155deg,var(--cp-dark),var(--cp-deep));color:#fff;display:flex;flex-direction:column;justify-content:center;padding:48px 42px;page-break-after:always}
+    .pf-cover .logo{font-size:30px;font-weight:900;letter-spacing:6px}
+    .pf-cover .k{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.65);margin-top:32px}
+    .pf-cover h1{font-family:var(--serif);font-style:italic;font-weight:600;font-size:50px;line-height:1.04;margin:10px 0 0}
+    .pf-cover .meta{margin-top:30px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.9}
+    .pf-cover .foot{margin-top:auto;font-size:10px;color:rgba(255,255,255,.45);letter-spacing:1px}
+    .pf-sec{page-break-before:always;padding:2px 0 0}
+    .pf-h{font-size:23px;font-weight:800;color:var(--cp-dark);border-bottom:2px solid var(--cp-deep);padding-bottom:9px;margin:0 0 18px}
+    .pf-sec .aca-h{margin-bottom:10px}.pf-sec .aca-h h2{display:none}.pf-sec .aca-h p{font-size:12.5px;color:var(--ink-soft);font-style:italic;margin:0}
+    .pf-sec .scr-tag{display:none}
+    .card,.cls,.rf,.cg-card,.testi,.press,.sci-diff,.aca-l,.rythme,.flex-note,.pres-line,.biens li,.lvls .lvl,.obj{page-break-inside:avoid}
+    .cg-grid{grid-template-columns:1fr 1fr !important}
+    .rf,.cls{break-inside:avoid}
+    @page{margin:13mm}
+  `;
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Guide du conseiller — Club Pilates</title>
   <link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital,wght@1,500;1,600&display=swap" rel="stylesheet">
-  <style>
-  *{box-sizing:border-box;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  body{font-family:'Montserrat',system-ui,sans-serif;color:#2A3142;margin:0;font-size:12px;line-height:1.5}
-  .cover{min-height:96vh;background:linear-gradient(155deg,#2A3E5F 0%,#4F6FA0 100%);color:#fff;display:flex;flex-direction:column;justify-content:center;padding:46px 40px;page-break-after:always}
-  .cover .logo{font-size:30px;font-weight:900;letter-spacing:6px}
-  .cover .k{font-size:12px;letter-spacing:3px;text-transform:uppercase;color:rgba(255,255,255,.65);margin-top:30px}
-  .cover h1{font-family:'Cormorant Garamond',serif;font-style:italic;font-weight:600;font-size:48px;line-height:1.05;margin:10px 0 0}
-  .cover .meta{margin-top:30px;font-size:13px;color:rgba(255,255,255,.85);line-height:1.9}
-  .cover .foot{margin-top:auto;font-size:10px;color:rgba(255,255,255,.45);letter-spacing:1px}
-  .sec{page-break-before:always;padding:6px 2px 0}
-  .sec-h{display:flex;align-items:baseline;gap:12px;border-bottom:2px solid #4F6FA0;padding-bottom:7px;margin-bottom:6px}
-  .sec-n{font-size:12px;font-weight:900;color:#fff;background:#6F8CB8;border-radius:6px;padding:3px 9px}
-  .sec-t{font-size:21px;font-weight:800;color:#2A3E5F}
-  .sec-sub{font-size:11.5px;color:#525B70;margin:8px 0 12px;font-style:italic}
-  .card{border:1px solid rgba(111,140,184,.22);border-radius:10px;padding:10px 13px;margin-bottom:8px;page-break-inside:avoid;background:#fff}
-  .card.pale{background:#F4F7FB}
-  .nm{font-weight:800;color:#2A3E5F;font-size:13px}
-  .ds{color:#525B70;font-size:11.5px;margin-top:1px;line-height:1.45}
-  .quote{font-family:'Cormorant Garamond',serif;font-style:italic;font-size:15px;color:#2A3E5F;line-height:1.4}
-  ul{margin:5px 0 0;padding-left:16px}li{font-size:11.5px;margin-bottom:2px;color:#525B70}
-  li b,.ds b{color:#2A3E5F}
-  .tag{display:inline-block;background:#E8EEF5;color:#4F6FA0;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;padding:2px 7px;border-radius:5px;vertical-align:middle}
-  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  @page{margin:14mm}
-  </style></head><body>
-  <div class="cover"><div class="logo">CP × ISSEO</div><div class="k">Guide du conseiller</div><h1>L'art de vendre<br>Club Pilates</h1><div class="meta">${studio}${rep?`<br>Conseiller : ${rep}`:''}<br>Document interne — à consulter hors ligne</div><div class="foot">Sincérité · Bien-être du client · Esprit famille</div></div>
+  <style>${APPCSS}\n${overrides}</style></head><body>
+  <div class="pf-cover"><div class="logo">CP × ISSEO</div><div class="k">Guide du conseiller</div><h1>L'art de vendre<br>Club Pilates</h1><div class="meta">${studio}${rep?`<br>Conseiller : ${rep}`:''}<br>Document interne — à consulter hors ligne</div><div class="foot">Sincérité · Bien-être du client · Esprit famille</div></div>
   ${body}
   </body></html>`;
 }
+
 function printGuide(){
   closeMenu();
   var html=buildPrintDoc();
