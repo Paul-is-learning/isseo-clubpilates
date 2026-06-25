@@ -955,7 +955,7 @@ function renderScreen(){
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='urgency'){
-    h=`<div class="say-card"><div class="scr-tag warn">✨ Le privilège fondateur</div><div class="say-big quote">« Nous ouvrons nos portes à un nombre limité de <b>membres fondateurs</b> : ${CFG.spotsLeft} places, avec -${CFG.founding}% à vie et l'inscription offerte. C'est un statut que l'on n'obtient qu'une fois — et ces places ne reviendront pas. »</div><div class="say-hint"><span class="b">💡</span><span>Rareté réelle = appartenance, pas pression. Ne surjouez jamais le nombre.</span></div></div>`;
+    h=`<div class="say-card"><div class="scr-tag warn">✨ Le privilège fondateur</div><div class="say-big quote">« Pour le lancement, nous offrons un statut de <b>membre fondateur</b> à nos premiers membres : -${CFG.founding}% à vie et l'inscription offerte. C'est notre façon de remercier celles et ceux qui nous font confiance dès le début. Si le cœur vous en dit, c'est vraiment le bon moment. »</div><div class="say-hint"><span class="b">💡</span><span>Un cadeau de bienvenue sincère, pas une pression. Ne survendez jamais la rareté.</span></div></div>`;
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='closing'){
@@ -1047,7 +1047,8 @@ function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche
 /* ── Académie ── */
 function showAca(){
   const h=`<div class="aca">
-    <div class="aca-h"><h2>Maîtrisez la vente CP</h2><p>5 micro-leçons. À relire entre 2 appels — votre meilleur entraînement.</p></div>
+    <div class="aca-h"><h2>Maîtrisez la vente CP</h2><p>Notre état d'esprit, puis 5 micro-leçons. À relire entre 2 appels.</p></div>
+    <div class="sci-diff"><div class="sci-diff-h">❤️ Notre état d'esprit</div><div class="sci-diff-d">On est une famille, pas une machine à vendre. Le bien-être du client passe avant le chiffre — et un client bien conseillé revient et parle de nous.</div><ul class="biens"><li>D'abord son bien-être : on écoute avant de proposer.</li><li>Toujours sincère : on ne survend jamais, on conseille juste.</li><li>Si ce n'est pas le bon moment ou la bonne formule, on le dit.</li><li>On vend par la confiance, pas par la pression.</li></ul></div>
     <div class="aca-l"><div class="nb">LEÇON 1 · OMG</div><h3>La méthode, votre boussole</h3><div class="ld">Ne vendez jamais avant d'avoir creusé.</div>
       <div class="aca-row"><span class="ck">O</span><span>Origine de la douleur — « qu'est-ce qui n'a pas marché avant ? »</span></div>
       <div class="aca-row"><span class="ck">G</span><span>Goal — « que voulez-vous réussir dans 3 mois ? »</span></div>
