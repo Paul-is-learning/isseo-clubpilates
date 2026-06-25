@@ -2,8 +2,8 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>CP Sales Coach — Assistant d'appel commercial</title>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
+<title>CP Sales Coach — Assistant d'appel</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
 <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Cormorant+Garamond:ital@1&display=swap" rel="stylesheet"/>
@@ -11,396 +11,256 @@
 :root{
   --cp-blue:#6F8CB8; --cp-deep:#4F6FA0; --cp-dark:#2A3E5F; --cp-soft:#B8C8DD;
   --cp-pale:#E8EEF5; --cp-veil:#F4F7FB; --ink:#2A3142; --ink-soft:#525B70;
-  --ink-mid:#8C95A8; --line:rgba(111,140,184,.18); --line-soft:rgba(111,140,184,.10);
+  --ink-mid:#8C95A8; --line:rgba(111,140,184,.18);
   --ok:#1F9E75; --warn:#C9871F; --danger:#C0492F;
   --sans:'Montserrat',system-ui,-apple-system,sans-serif;
   --serif:'Cormorant Garamond',Georgia,serif;
 }
-*{box-sizing:border-box;margin:0;padding:0}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
 html{-webkit-text-size-adjust:100%}
-body{font-family:var(--sans);background:var(--cp-veil);color:var(--ink);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;padding-bottom:90px}
+body{font-family:var(--sans);background:var(--cp-veil);color:var(--ink);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow:hidden}
 button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
-.wrap{max-width:680px;margin:0 auto;padding:0 16px}
 
-/* ── Header ── */
-header{position:sticky;top:0;z-index:40;background:var(--cp-dark);color:#fff;padding:env(safe-area-inset-top) 0 0}
-.hd{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;max-width:680px;margin:0 auto}
-.hd-brand{display:flex;align-items:center;gap:10px}
-.hd-logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--cp-blue),var(--cp-deep));display:grid;place-items:center;font-weight:900;font-size:15px;color:#fff;letter-spacing:-.5px}
-.hd-t{font-size:14px;font-weight:800;letter-spacing:.02em;line-height:1.1}
-.hd-s{font-size:10.5px;color:var(--cp-soft);font-weight:600;letter-spacing:.06em;text-transform:uppercase}
-.hd-set{width:36px;height:36px;border-radius:10px;background:rgba(255,255,255,.1);display:grid;place-items:center;transition:.2s}
-.hd-set:hover{background:rgba(255,255,255,.2)}
+/* ── App shell : 3 zones (topbar / écran / nav) ── */
+#app{display:flex;flex-direction:column;height:100dvh;max-width:560px;margin:0 auto;position:relative}
 
-/* ── Progress stepper ── */
-.steps{background:var(--cp-dark);padding:0 16px 12px}
-.steps-in{max-width:680px;margin:0 auto;display:flex;gap:5px}
-.step-pill{flex:1;display:flex;flex-direction:column;gap:5px;cursor:pointer}
-.step-bar{height:4px;border-radius:3px;background:rgba(255,255,255,.16);transition:.3s}
-.step-pill.done .step-bar{background:var(--cp-soft)}
-.step-pill.active .step-bar{background:#fff}
-.step-lbl{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:rgba(255,255,255,.45);text-align:center;transition:.2s}
-.step-pill.active .step-lbl{color:#fff}
-.step-pill.done .step-lbl{color:var(--cp-soft)}
-@media(max-width:480px){.step-lbl{font-size:8px}}
+/* topbar */
+.top{flex:0 0 auto;background:var(--cp-dark);color:#fff;padding:env(safe-area-inset-top) 0 0}
+.top-in{display:flex;align-items:center;gap:12px;padding:11px 16px}
+.top-logo{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,var(--cp-blue),var(--cp-deep));display:grid;place-items:center;font-weight:900;font-size:13px;flex:0 0 auto}
+.top-mid{flex:1;min-width:0}
+.top-phase{font-size:12.5px;font-weight:800;letter-spacing:.02em;line-height:1.1}
+.top-sub{font-size:10px;color:var(--cp-soft);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-top:1px}
+.top-btn{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);display:grid;place-items:center;flex:0 0 auto;transition:.15s}
+.top-btn:active{background:rgba(255,255,255,.24)}
+.bar{height:4px;background:rgba(255,255,255,.14)}
+.bar-fill{height:100%;background:linear-gradient(90deg,var(--cp-soft),#fff);border-radius:0 3px 3px 0;transition:width .35s cubic-bezier(.3,.8,.3,1)}
 
-/* ── Cards / sections ── */
-.view{padding:18px 0 24px;animation:fade .35s}
-@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
-.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:20px;margin-bottom:14px;box-shadow:0 1px 2px rgba(42,62,95,.03)}
-.eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:10.5px;font-weight:700;letter-spacing:.16em;text-transform:uppercase;color:var(--cp-blue);margin-bottom:12px}
-.eyebrow .dot{width:7px;height:7px;border-radius:50%;background:var(--cp-blue)}
-.q-title{font-size:17px;font-weight:800;color:var(--cp-dark);line-height:1.25;margin-bottom:4px;letter-spacing:-.01em}
-.q-sub{font-size:12.5px;color:var(--ink-mid);margin-bottom:14px}
+/* écran central */
+.screen{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 18px 24px;display:flex;flex-direction:column;animation:slidein .28s cubic-bezier(.25,.8,.3,1)}
+@keyframes slidein{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
+.scr-tag{display:inline-flex;align-self:flex-start;align-items:center;gap:7px;padding:6px 13px;border-radius:9px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px}
+.scr-tag.ask{background:var(--cp-pale);color:var(--cp-deep)}
+.scr-tag.say{background:#dff2ea;color:var(--ok)}
+.scr-tag.warn{background:#FBEFD8;color:var(--warn)}
+.scr-tag.reco{background:#e7e0f5;color:#6b40b8}
+.scr-q{font-size:23px;font-weight:800;color:var(--cp-dark);line-height:1.22;letter-spacing:-.01em;margin-bottom:6px}
+.scr-sub{font-size:13.5px;color:var(--ink-mid);line-height:1.5;margin-bottom:18px}
 
-/* Script-to-read block */
-.say{position:relative;background:var(--cp-pale);border-radius:12px;padding:13px 15px 13px 42px;margin:10px 0;font-size:14px;line-height:1.55;color:var(--cp-dark)}
-.say::before{content:'“';position:absolute;left:12px;top:4px;font-family:var(--serif);font-style:italic;font-size:34px;color:var(--cp-blue);line-height:1}
-.say b{font-weight:700;color:var(--cp-deep)}
-.say.listen{background:#FFF6E9}
-.say.listen::before{content:'👂';font-size:16px;top:13px;left:14px}
-.say.listen{padding-left:42px}
+/* options (gros boutons tap) */
+.opts{display:flex;flex-direction:column;gap:9px}
+.opts.grid2{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+.opt{display:flex;align-items:center;gap:12px;min-height:56px;padding:12px 16px;border:2px solid var(--line);border-radius:15px;background:#fff;font-size:15.5px;font-weight:600;color:var(--ink);text-align:left;transition:.14s;line-height:1.25}
+.opt:active{transform:scale(.985)}
+.opt.sel{border-color:var(--cp-deep);background:var(--cp-deep);color:#fff;box-shadow:0 8px 20px -8px rgba(79,111,160,.55)}
+.opt .oic{font-size:21px;flex:0 0 auto;width:26px;text-align:center}
+.opt .ock{margin-left:auto;font-size:18px;opacity:0;transition:.15s}
+.opt.sel .ock{opacity:1}
+.opt small{display:block;font-weight:600;font-size:11.5px;color:var(--ink-mid);margin-top:1px}
+.opt.sel small{color:rgba(255,255,255,.8)}
 
-/* Option chips */
-.opts{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
-.opt{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border:1.5px solid var(--line);border-radius:11px;background:#fff;font-size:13.5px;font-weight:600;color:var(--ink-soft);transition:.18s;line-height:1.2}
-.opt:hover{border-color:var(--cp-soft)}
-.opt.sel{background:var(--cp-deep);border-color:var(--cp-deep);color:#fff;box-shadow:0 4px 12px -4px rgba(79,111,160,.5)}
-.opt .ic{font-size:15px}
-.opt.warnflag.sel{background:var(--warn);border-color:var(--warn)}
+/* bloc à demander (dig) */
+.ask-box{margin-top:16px;background:linear-gradient(180deg,#fff8ec,#fdeed3);border:1.5px solid #f0cd8a;border-radius:14px;padding:14px 16px;animation:pop .3s}
+@keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.ask-box .h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9a6608;margin-bottom:7px;display:flex;align-items:center;gap:6px}
+.ask-box .q{font-size:15px;color:#5a4216;line-height:1.5;font-weight:500}
 
-/* nav buttons */
-.nav{display:flex;gap:10px;margin-top:18px}
-.btn{flex:1;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:15px;border-radius:13px;font-weight:800;font-size:14px;letter-spacing:.02em;transition:.2s}
-.btn-primary{background:var(--cp-deep);color:#fff}
-.btn-primary:hover{background:var(--cp-dark)}
-.btn-primary:disabled{opacity:.4;cursor:not-allowed}
-.btn-ghost{background:#fff;border:1.5px solid var(--line);color:var(--ink-soft);flex:0 0 auto;padding:15px 18px}
-.btn-ghost:hover{border-color:var(--cp-soft);color:var(--cp-deep)}
+/* phrase clé levier (âge) */
+.lever{margin-top:14px;background:#fff;border-left:4px solid var(--cp-blue);border-radius:0 12px 12px 0;padding:12px 15px;font-family:var(--serif);font-style:italic;font-size:16px;color:var(--cp-dark);line-height:1.4}
 
-/* fiche client recap chip */
-.fiche{background:var(--cp-dark);color:#fff;border-radius:16px;padding:16px 18px;margin-bottom:14px}
-.fiche-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
-.fiche-h .t{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--cp-soft)}
-.fiche-row{display:flex;gap:8px;font-size:13px;padding:5px 0;border-top:1px solid rgba(255,255,255,.1);line-height:1.4}
-.fiche-row .k{color:var(--cp-soft);min-width:78px;font-weight:600;font-size:11.5px;text-transform:uppercase;letter-spacing:.04em;padding-top:1px}
-.fiche-row .v{flex:1;font-weight:600}
-.fiche-tags{display:flex;flex-wrap:wrap;gap:5px}
-.ftag{background:rgba(255,255,255,.12);border-radius:7px;padding:3px 9px;font-size:11.5px;font-weight:600}
-.ftag.warn{background:rgba(201,135,31,.28)}
+/* écran SCRIPT (à dire) */
+.say-card{flex:1;display:flex;flex-direction:column;justify-content:center}
+.say-big{font-size:clamp(22px,5.4vw,30px);font-weight:700;line-height:1.32;color:var(--cp-dark);letter-spacing:-.01em}
+.say-big.quote{position:relative;padding-left:6px}
+.say-big b{color:var(--cp-deep);font-weight:800}
+.say-big em{font-family:var(--serif);font-style:italic;font-weight:500}
+.say-hint{margin-top:20px;font-size:13.5px;color:var(--ink-mid);font-style:italic;line-height:1.5;display:flex;gap:8px;align-items:flex-start}
+.say-hint .b{flex:0 0 auto}
 
-/* Recommendation */
-.reco-pack{border-radius:16px;padding:20px;color:#fff;position:relative;overflow:hidden;margin-bottom:12px}
-.reco-pack.p2{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark))}
-.reco-pack.p3{background:linear-gradient(135deg,#3a2f6b,#2A3E5F)}
-.reco-pack.p1{background:linear-gradient(135deg,#5a6b82,#3f4a5f)}
-.reco-badge{display:inline-block;background:rgba(255,255,255,.2);border-radius:7px;padding:4px 10px;font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:10px}
-.reco-name{font-size:24px;font-weight:900;letter-spacing:-.02em;line-height:1.05}
+/* reco card */
+.reco-card{border-radius:20px;padding:24px 22px;color:#fff;position:relative;overflow:hidden;margin-bottom:14px}
+.reco-card.p2{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark))}
+.reco-card.p3{background:linear-gradient(135deg,#3a2f6b,#2A3E5F)}
+.reco-card.p1{background:linear-gradient(135deg,#5a6b82,#3f4a5f)}
+.reco-badge{display:inline-block;background:rgba(255,255,255,.22);border-radius:8px;padding:5px 11px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;margin-bottom:12px}
+.reco-name{font-size:27px;font-weight:900;letter-spacing:-.02em;line-height:1.05}
 .reco-freq{font-size:13px;color:rgba(255,255,255,.8);margin-top:3px;font-weight:600}
-.reco-tag{font-family:var(--serif);font-style:italic;font-size:18px;color:var(--cp-soft);margin-top:8px}
-.reco-price{display:flex;align-items:baseline;gap:8px;margin-top:14px;flex-wrap:wrap}
-.reco-price .now{font-size:30px;font-weight:900;letter-spacing:-.02em}
-.reco-price .unit{font-size:12px;color:rgba(255,255,255,.7);font-weight:600}
-.reco-price .old{font-size:15px;text-decoration:line-through;color:rgba(255,255,255,.5);font-weight:600}
-.reco-founding{font-size:11px;color:var(--cp-soft);margin-top:4px;font-weight:600}
+.reco-price{display:flex;align-items:baseline;gap:9px;margin-top:16px;flex-wrap:wrap}
+.reco-price .now{font-size:34px;font-weight:900;letter-spacing:-.02em}
+.reco-price .un{font-size:13px;color:rgba(255,255,255,.75);font-weight:600}
+.reco-price .old{font-size:15px;text-decoration:line-through;color:rgba(255,255,255,.5)}
+.reco-foot{font-size:11.5px;color:var(--cp-soft);margin-top:6px;font-weight:600}
+.cls{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
+.cls:first-child{border-top:0}
+.cls .n{width:26px;height:26px;border-radius:8px;background:var(--cp-pale);color:var(--cp-deep);font-weight:800;font-size:12px;display:grid;place-items:center;flex:0 0 auto}
+.cls .nm{font-weight:800;color:var(--cp-dark);font-size:14.5px}
+.cls .ds{font-size:12px;color:var(--ink-soft);margin-top:1px;line-height:1.4}
+.cls-warn{background:#FBEFD8;border-radius:10px;padding:9px 12px;font-size:12px;color:var(--warn);font-weight:600;margin-top:8px;line-height:1.4}
+.pack-switch{display:flex;gap:7px;margin-top:6px}
+.pack-switch button{flex:1;padding:9px 6px;border:1.5px solid var(--line);border-radius:11px;font-size:11.5px;font-weight:700;color:var(--ink-soft);background:#fff;line-height:1.2}
+.pack-switch button.cur{background:var(--cp-pale);border-color:var(--cp-blue);color:var(--cp-deep)}
+.pack-switch small{display:block;font-size:9.5px;color:var(--ink-mid);font-weight:600;margin-top:1px}
 
-.gauge{display:flex;align-items:center;gap:12px;margin:12px 0 4px}
-.gauge-track{flex:1;height:9px;border-radius:5px;background:var(--cp-pale);overflow:hidden}
-.gauge-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--cp-blue),var(--ok));transition:width .6s}
-.gauge-val{font-size:13px;font-weight:800;color:var(--cp-deep);min-width:42px;text-align:right}
-
-.classpill{display:flex;align-items:flex-start;gap:11px;padding:11px 0;border-top:1px solid var(--line-soft)}
-.classpill:first-of-type{border-top:0}
-.classpill .num{width:26px;height:26px;border-radius:8px;background:var(--cp-pale);color:var(--cp-deep);font-weight:800;font-size:12px;display:grid;place-items:center;flex:0 0 auto}
-.classpill .nm{font-weight:800;color:var(--cp-dark);font-size:14px}
-.classpill .ds{font-size:12px;color:var(--ink-soft);margin-top:1px;line-height:1.4}
-.classpill .why{font-size:11.5px;color:var(--cp-blue);font-weight:700;margin-top:2px}
-.classwarn{background:#FFF6E9;border-radius:9px;padding:8px 11px;font-size:11.5px;color:var(--warn);font-weight:600;margin-top:7px;line-height:1.4}
-
-.alt{display:flex;gap:8px;margin-top:10px}
-.altbtn{flex:1;padding:11px;border:1.5px solid var(--line);border-radius:11px;text-align:center;font-size:12px;font-weight:700;color:var(--ink-soft);transition:.18s;line-height:1.3}
-.altbtn:hover{border-color:var(--cp-soft);color:var(--cp-deep)}
-.altbtn.cur{background:var(--cp-pale);border-color:var(--cp-blue);color:var(--cp-deep)}
-.altbtn small{display:block;font-size:10px;color:var(--ink-mid);font-weight:600;margin-top:1px}
-
-/* objection FAB + sheet */
-.fab{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:45;background:var(--cp-dark);color:#fff;border-radius:14px;padding:13px 18px;font-weight:800;font-size:13px;box-shadow:0 8px 24px -6px rgba(42,62,95,.5);display:flex;align-items:center;gap:8px}
-.fab:hover{background:var(--cp-deep)}
-.sheet-bg{position:fixed;inset:0;background:rgba(42,49,66,.55);z-index:50;opacity:0;pointer-events:none;transition:.25s}
-.sheet-bg.on{opacity:1;pointer-events:auto}
-.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--cp-veil);border-radius:20px 20px 0 0;max-height:86vh;overflow-y:auto;transform:translateY(100%);transition:transform .3s cubic-bezier(.3,.8,.3,1);padding-bottom:calc(20px + env(safe-area-inset-bottom))}
-.sheet.on{transform:translateY(0)}
-.sheet-h{position:sticky;top:0;background:var(--cp-veil);padding:16px 18px 10px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid var(--line)}
-.sheet-h .t{font-size:16px;font-weight:900;color:var(--cp-dark)}
-.sheet-close{width:34px;height:34px;border-radius:10px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:18px;color:var(--ink-soft)}
-.obj{background:#fff;border:1px solid var(--line);border-radius:14px;margin:12px 18px;overflow:hidden}
-.obj-h{display:flex;align-items:center;gap:10px;padding:14px 16px;font-weight:800;color:var(--cp-dark);font-size:14px}
-.obj-h .ic{width:30px;height:30px;border-radius:9px;background:var(--cp-pale);display:grid;place-items:center;font-size:15px;flex:0 0 auto}
-.obj-b{padding:0 16px 15px;font-size:13px;line-height:1.6;color:var(--ink-soft)}
-.obj-b .line{padding:8px 0;border-top:1px dashed var(--line)}
-.obj-b .line:first-child{border-top:0}
-.obj-b b{color:var(--cp-deep);font-weight:700}
-
-/* reference panels (niveaux / avantages) */
-.ref-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-@media(max-width:480px){.ref-grid{grid-template-columns:1fr}}
-.lvl{background:#fff;border:1px solid var(--line);border-radius:12px;padding:13px}
-.lvl .n{font-size:11px;font-weight:800;color:var(--cp-blue);letter-spacing:.05em;text-transform:uppercase}
-.lvl .t{font-size:15px;font-weight:900;color:var(--cp-dark);margin:2px 0 5px}
-.lvl .d{font-size:12px;color:var(--ink-soft);line-height:1.45}
-.adv{display:flex;gap:9px;padding:8px 0;font-size:13px;color:var(--ink-soft);line-height:1.45;border-top:1px solid var(--line-soft)}
-.adv:first-child{border-top:0}
-.adv .ck{color:var(--ok);font-weight:900;flex:0 0 auto}
-
-/* closing recap */
-.recap-box{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;color:var(--ink);font-family:var(--sans)}
-
-/* settings modal */
-.modal-bg{position:fixed;inset:0;background:rgba(42,49,66,.55);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:24px 16px;overflow-y:auto}
-.modal-bg.on{display:flex}
-.modal{background:#fff;border-radius:18px;max-width:480px;width:100%;padding:22px;margin:auto}
-.modal h3{font-size:18px;font-weight:900;color:var(--cp-dark);margin-bottom:4px}
-.modal p.sub{font-size:12.5px;color:var(--ink-mid);margin-bottom:16px}
-.field{margin-bottom:14px}
-.field label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px}
-.field input{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font:inherit;font-size:14px;color:var(--ink)}
-.field input:focus{outline:0;border-color:var(--cp-blue)}
-.field .hint{font-size:11px;color:var(--ink-mid);margin-top:4px}
-.field .hint.flag{color:var(--warn);font-weight:600}
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-.priceflag{display:inline-block;background:#FFF6E9;color:var(--warn);border-radius:6px;padding:2px 7px;font-size:10px;font-weight:700;margin-left:6px;vertical-align:middle}
-
-.note{font-size:11.5px;color:var(--ink-mid);line-height:1.5;margin-top:8px}
-.divider{height:1px;background:var(--line);margin:16px 0}
-.miniref{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
-.miniref button{font-size:11.5px;font-weight:700;color:var(--cp-deep);background:var(--cp-pale);border-radius:9px;padding:7px 12px}
-.toast{position:fixed;left:50%;bottom:calc(80px + env(safe-area-inset-bottom));transform:translateX(-50%) translateY(20px);background:var(--cp-dark);color:#fff;padding:11px 18px;border-radius:12px;font-size:13px;font-weight:700;z-index:70;opacity:0;pointer-events:none;transition:.3s}
-.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* ── Mode toggle (Appel / Académie) ── */
-.mode-toggle{display:inline-flex;background:rgba(255,255,255,.1);border-radius:9px;padding:2px;gap:1px}
-.mode-toggle button{padding:6px 9px;border-radius:7px;font-size:11px;font-weight:700;color:rgba(255,255,255,.6);transition:.2s;letter-spacing:0;line-height:1;white-space:nowrap;display:inline-flex;align-items:center;gap:4px}
-.mode-toggle button.on{background:#fff;color:var(--cp-dark)}
-.hd{flex-wrap:wrap;gap:8px}
-.hd-brand{flex:0 1 auto}
-@media(max-width:380px){.mode-toggle button{padding:6px 7px;font-size:10.5px}.hd-t{font-size:13px}}
-
-/* ── Pro Tips card (coaching live) ── */
-.tips{background:linear-gradient(180deg,#fff6e9,#fdebcd);border:1px solid #f0d090;border-radius:14px;padding:14px 16px;margin-bottom:14px;animation:fade .4s}
-.tips-h{display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer}
-.tips-h .l{display:flex;align-items:center;gap:9px;flex:1}
-.tips-h .ic{width:30px;height:30px;border-radius:9px;background:#f0a93e;display:grid;place-items:center;color:#fff;font-size:14px;font-weight:900;flex:0 0 auto}
-.tips-h .t{font-size:13px;font-weight:800;color:#7a4400;line-height:1.25}
-.tips-h .x{font-size:13px;color:#a06200;font-weight:800;transition:.2s}
-.tips.col .x{transform:rotate(-90deg)}
-.tips-b{margin-top:10px;display:grid;gap:10px}
-.tips.col .tips-b{display:none}
-.tip-block{background:rgba(255,255,255,.6);border-radius:9px;padding:10px 12px}
-.tip-block .h{display:flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px}
-.tip-block.say .h{color:#0F6E56}
-.tip-block.avoid .h{color:#C0492F}
-.tip-block.listen .h{color:#7C3AED}
-.tip-block ul{list-style:none;margin:0;padding:0}
-.tip-block li{font-size:12.5px;color:#5a4419;line-height:1.5;padding:2px 0 2px 14px;position:relative}
-.tip-block.say li::before{content:'✓';position:absolute;left:0;color:#0F6E56;font-weight:900}
-.tip-block.avoid li::before{content:'✗';position:absolute;left:0;color:#C0492F;font-weight:900}
-.tip-block.listen li::before{content:'👂';position:absolute;left:-1px;font-size:10px;top:3px}
-
-/* ── Age band cards ── */
-.age-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
-@media(max-width:480px){.age-grid{grid-template-columns:1fr}}
-.age-card{background:#fff;border:1.5px solid var(--line);border-radius:13px;padding:13px;text-align:left;transition:.2s;cursor:pointer}
-.age-card:hover{border-color:var(--cp-soft);transform:translateY(-1px)}
-.age-card.sel{border-color:transparent;color:#fff;box-shadow:0 6px 16px -6px rgba(42,62,95,.4)}
-.age-card .ic{font-size:22px;line-height:1;margin-bottom:6px;display:block}
-.age-card .ttl{font-size:13.5px;font-weight:900;letter-spacing:-.01em}
-.age-card .sub{font-size:10.5px;font-weight:600;margin-top:3px;opacity:.7;text-transform:uppercase;letter-spacing:.04em}
-.age-card.sel .sub{opacity:.85}
-
-/* ── Leviers psy pour l'âge sélectionné ── */
-.leviers{display:grid;gap:6px;margin-top:12px}
-.lev{background:var(--cp-pale);border-radius:9px;padding:8px 11px;font-size:12.5px;font-weight:600;color:var(--cp-deep);display:flex;align-items:center;gap:8px;line-height:1.35}
-.lev .d{width:5px;height:5px;border-radius:50%;background:var(--cp-blue);flex:0 0 auto}
-.phrases{margin-top:10px;display:grid;gap:7px}
-.phrase{background:#fff;border-left:3px solid var(--cp-blue);padding:9px 12px;font-style:italic;font-size:13px;color:var(--cp-dark);font-family:var(--serif);line-height:1.4;border-radius:0 9px 9px 0}
-
-/* ── Niveau badges (5 niveaux 0.5 → 2.5) ── */
-.lvl-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 9px;border-radius:7px;font-size:10.5px;font-weight:800;color:#fff;letter-spacing:.04em}
-
-/* ── Hero académie (mode formation) ── */
-.aca-hero{background:linear-gradient(135deg,var(--cp-dark),#1c2c47);color:#fff;border-radius:16px;padding:22px;margin-bottom:14px;position:relative;overflow:hidden}
-.aca-hero::before{content:'';position:absolute;top:-30px;right:-30px;width:140px;height:140px;border-radius:50%;background:rgba(184,200,221,.1)}
-.aca-hero .eyebrow{color:var(--cp-soft);margin-bottom:6px;display:inline-flex}
-.aca-hero h2{font-size:22px;font-weight:900;letter-spacing:-.02em;margin:2px 0 8px;position:relative}
-.aca-hero p{font-size:13px;color:rgba(255,255,255,.85);line-height:1.5;position:relative}
-.aca-lesson{background:#fff;border:1px solid var(--line);border-radius:14px;padding:16px 18px;margin-bottom:12px}
-.aca-lesson .nb{display:inline-block;background:var(--cp-pale);color:var(--cp-deep);font-size:10.5px;font-weight:800;letter-spacing:.06em;padding:3px 9px;border-radius:6px;margin-bottom:8px}
-.aca-lesson h3{font-size:16px;font-weight:900;color:var(--cp-dark);margin-bottom:4px;line-height:1.2}
-.aca-lesson .lead{font-size:12.5px;color:var(--ink-soft);margin-bottom:10px;line-height:1.45}
-.strat-box{background:linear-gradient(135deg,#fef3c7,#fdebcd);border:1px solid #f0d090;border-radius:13px;padding:14px 16px}
-.strat-box .label{font-size:10px;font-weight:800;color:#7a4400;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
-.strat-box .pitch{font-size:13px;color:#5a4419;line-height:1.5;font-family:var(--serif);font-style:italic;margin:6px 0 8px}
-.strat-box ul{list-style:none;margin:0;padding:0}
-.strat-box li{font-size:12px;color:#7a4400;padding:2px 0 2px 16px;position:relative}
-.strat-box li::before{content:'⚡';position:absolute;left:-2px;font-size:11px}
-
-/* ── Toggle Objectif de l'appel (Essai vs Abo) ── */
-.goal-toggle{display:flex;gap:8px;margin-bottom:14px}
-.goal-opt{flex:1;border:1.5px solid var(--line);border-radius:13px;padding:13px 12px;text-align:left;transition:.18s;background:#fff;cursor:pointer}
-.goal-opt:hover{border-color:var(--cp-soft)}
-.goal-opt.sel{border-color:transparent;color:#fff}
-.goal-opt.sel.trial{background:linear-gradient(135deg,#1F9E75,#0F6E56)}
-.goal-opt.sel.membership{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark))}
-.goal-opt .gt{font-size:14px;font-weight:900;display:flex;align-items:center;gap:7px;letter-spacing:-.01em}
-.goal-opt .gd{font-size:11px;margin-top:3px;color:var(--ink-mid);line-height:1.3}
-.goal-opt.sel .gd{color:rgba(255,255,255,.85)}
-
-/* ── Reframing prix (cartes valeur) ── */
-.reframe{display:grid;gap:8px;margin-top:12px}
-.rf{display:flex;align-items:center;gap:11px;background:var(--cp-pale);border-radius:11px;padding:11px 13px}
-.rf .ic{width:34px;height:34px;border-radius:10px;background:#fff;display:grid;place-items:center;font-size:17px;flex:0 0 auto}
-.rf .big{font-weight:900;color:var(--cp-deep);font-size:16px;letter-spacing:-.01em;line-height:1.1}
-.rf .lab{font-size:11.5px;color:var(--ink-soft);line-height:1.35;margin-top:1px}
+/* reframe value cards */
+.rf{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px}
+.rf .ic{width:40px;height:40px;border-radius:11px;background:var(--cp-pale);display:grid;place-items:center;font-size:19px;flex:0 0 auto}
+.rf .big{font-weight:900;color:var(--cp-deep);font-size:18px;letter-spacing:-.01em;line-height:1.1}
+.rf .lab{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
 .rf .lab b{color:var(--cp-deep)}
 
-/* ── Bloc "À creuser" (questions à poser au client) ── */
-.dig{background:linear-gradient(180deg,#eef4fb,#e3edf8);border:1px solid var(--cp-soft);border-radius:12px;padding:12px 14px;margin-top:12px;animation:fade .3s}
-.dig-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-deep);margin-bottom:8px;display:flex;align-items:center;gap:6px}
-.dig-q{font-size:13px;color:var(--ink);line-height:1.5;padding:6px 0 6px 16px;position:relative;border-top:1px dashed var(--cp-soft)}
-.dig-q:first-of-type{border-top:0}
-.dig-q::before{content:'→';position:absolute;left:0;color:var(--cp-blue);font-weight:900}
-.dig-q b{color:var(--cp-deep);font-weight:700}
-.optional-tag{font-size:10px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.04em;margin-left:6px}
+/* card générique */
+.card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 
-/* ── Mode Téléprompteur ── */
-.tp-launch{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:45;background:linear-gradient(135deg,var(--cp-blue),var(--cp-deep));color:#fff;border-radius:14px;padding:13px 16px;font-weight:800;font-size:13px;box-shadow:0 8px 24px -6px rgba(79,111,160,.5);display:flex;align-items:center;gap:8px}
-.tp-launch:hover{filter:brightness(1.06)}
-.tp{position:fixed;inset:0;z-index:120;background:radial-gradient(circle at 50% 30%,#34507a,#1a2740 70%);color:#fff;display:none;flex-direction:column;animation:fade .25s}
-.tp.on{display:flex}
-.tp-top{display:flex;align-items:center;justify-content:space-between;padding:calc(14px + env(safe-area-inset-top)) 18px 8px}
-.tp-step{font-size:11px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--cp-soft)}
-.tp-x{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);display:grid;place-items:center;font-size:20px;color:#fff}
-.tp-prog{display:flex;gap:4px;padding:0 18px 4px;flex-wrap:wrap}
-.tp-dot{height:4px;flex:1;min-width:6px;border-radius:3px;background:rgba(255,255,255,.16);transition:.3s}
-.tp-dot.done{background:var(--cp-soft)}
-.tp-dot.cur{background:#fff}
-.tp-body{flex:1;display:flex;flex-direction:column;justify-content:center;padding:10px 26px;position:relative;overflow-y:auto}
-.tp-tag{display:inline-flex;align-self:flex-start;align-items:center;gap:7px;background:rgba(255,255,255,.12);border-radius:9px;padding:6px 13px;font-size:12px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-soft);margin-bottom:20px}
-.tp-tag.say{background:rgba(31,158,117,.25);color:#9fe7cd}
-.tp-tag.ask{background:rgba(111,140,184,.3);color:#cfe0f5}
-.tp-tag.listen{background:rgba(201,135,31,.28);color:#f0c68a}
-.tp-tag.close{background:rgba(255,255,255,.2);color:#fff}
-.tp-text{font-size:clamp(26px,6.5vw,40px);font-weight:800;line-height:1.18;letter-spacing:-.02em;animation:tpin .3s}
-.tp-text b{color:var(--cp-soft)}
-.tp-text em{font-family:var(--serif);font-style:italic;font-weight:400;color:#fff}
-@keyframes tpin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
-.tp-hint{font-size:13px;color:rgba(255,255,255,.5);margin-top:18px;font-style:italic;line-height:1.45}
-.tp-nav{display:flex;gap:10px;padding:14px 18px calc(20px + env(safe-area-inset-bottom))}
-.tp-btn{flex:1;padding:18px;border-radius:14px;font-weight:800;font-size:15px;display:flex;align-items:center;justify-content:center;gap:8px;transition:.15s}
-.tp-prev{background:rgba(255,255,255,.12);color:#fff;flex:0 0 30%}
-.tp-prev:active{background:rgba(255,255,255,.2)}
-.tp-next{background:#fff;color:var(--cp-dark)}
-.tp-next:active{transform:scale(.98)}
-.tp-tapzones{position:absolute;inset:0;display:flex}
-.tp-tapzones>div{flex:1}
+/* recap final */
+.recap{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px;font-size:13.5px;line-height:1.6;white-space:pre-wrap;color:var(--ink);max-height:38vh;overflow-y:auto}
+
+/* nav bas */
+.nav{flex:0 0 auto;display:flex;gap:10px;padding:12px 16px calc(14px + env(safe-area-inset-bottom));background:#fff;border-top:1px solid var(--line)}
+.nav .back{flex:0 0 auto;width:58px;border-radius:14px;background:var(--cp-veil);color:var(--ink-soft);font-size:22px;font-weight:700;display:grid;place-items:center}
+.nav .back:active{background:var(--cp-pale)}
+.nav .go{flex:1;border-radius:14px;background:var(--cp-deep);color:#fff;font-weight:800;font-size:16px;letter-spacing:.01em;display:flex;align-items:center;justify-content:center;gap:8px;min-height:54px}
+.nav .go:active{background:var(--cp-dark)}
+.nav .go.ok{background:var(--ok)}
+
+/* bouton objections flottant */
+.fab{position:absolute;right:14px;bottom:calc(78px + env(safe-area-inset-bottom));z-index:30;background:var(--cp-dark);color:#fff;border-radius:50%;width:56px;height:56px;display:grid;place-items:center;box-shadow:0 10px 26px -8px rgba(42,62,95,.6)}
+.fab:active{transform:scale(.94)}
+.fab .lbl{position:absolute;right:64px;background:var(--cp-dark);color:#fff;font-size:12px;font-weight:700;padding:6px 11px;border-radius:9px;white-space:nowrap;opacity:0;pointer-events:none}
+
+/* sheets (objections / menu) */
+.sheet-bg{position:fixed;inset:0;background:rgba(42,49,66,.5);z-index:50;opacity:0;pointer-events:none;transition:.22s}
+.sheet-bg.on{opacity:1;pointer-events:auto}
+.sheet{position:fixed;left:0;right:0;bottom:0;z-index:51;background:var(--cp-veil);border-radius:22px 22px 0 0;max-height:90vh;display:flex;flex-direction:column;transform:translateY(100%);transition:transform .3s cubic-bezier(.3,.85,.3,1);max-width:560px;margin:0 auto}
+.sheet.on{transform:translateY(0)}
+.sheet-h{flex:0 0 auto;padding:16px 18px 10px;display:flex;align-items:center;justify-content:space-between;gap:10px}
+.sheet-h .t{font-size:17px;font-weight:900;color:var(--cp-dark)}
+.sheet-x{width:36px;height:36px;border-radius:11px;background:#fff;border:1px solid var(--line);display:grid;place-items:center;font-size:19px;color:var(--ink-soft);flex:0 0 auto}
+.sheet-body{flex:1 1 auto;overflow-y:auto;padding:0 18px calc(18px + env(safe-area-inset-bottom))}
+.search{width:100%;padding:13px 15px;border:1.5px solid var(--line);border-radius:13px;font:inherit;font-size:15px;margin-bottom:12px;background:#fff}
+.search:focus{outline:0;border-color:var(--cp-blue)}
+.obj{background:#fff;border:1px solid var(--line);border-radius:14px;margin-bottom:10px;overflow:hidden}
+.obj-h{display:flex;align-items:center;gap:10px;padding:13px 15px;font-weight:800;color:var(--cp-dark);font-size:14.5px;cursor:pointer}
+.obj-h .ic{width:30px;height:30px;border-radius:9px;background:var(--cp-pale);display:grid;place-items:center;font-size:15px;flex:0 0 auto}
+.obj-h .ch{margin-left:auto;color:var(--ink-mid);transition:.2s}
+.obj.open .obj-h .ch{transform:rotate(180deg)}
+.obj-b{display:none;padding:0 15px 14px}
+.obj.open .obj-b{display:block}
+.obj-b .ln{padding:9px 0;border-top:1px dashed var(--line);font-size:13.5px;line-height:1.55;color:var(--ink-soft)}
+.obj-b .ln:first-child{border-top:0}
+.obj-b b{color:var(--cp-deep);font-weight:700}
+.menu-item{display:flex;align-items:center;gap:13px;width:100%;background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:9px;font-size:15.5px;font-weight:700;color:var(--ink);text-align:left}
+.menu-item:active{background:var(--cp-pale)}
+.menu-item .mic{width:34px;height:34px;border-radius:10px;background:var(--cp-pale);display:grid;place-items:center;font-size:17px;flex:0 0 auto}
+.menu-item small{display:block;font-size:11.5px;font-weight:600;color:var(--ink-mid);margin-top:1px}
+
+/* académie */
+.aca{padding:4px 0}
+.aca-h{background:linear-gradient(135deg,var(--cp-dark),#1c2c47);color:#fff;border-radius:16px;padding:20px;margin-bottom:12px}
+.aca-h h2{font-size:20px;font-weight:900;margin-bottom:6px}
+.aca-h p{font-size:13px;color:rgba(255,255,255,.85);line-height:1.5}
+.aca-l{background:#fff;border:1px solid var(--line);border-radius:14px;padding:15px 16px;margin-bottom:10px}
+.aca-l .nb{display:inline-block;background:var(--cp-pale);color:var(--cp-deep);font-size:10px;font-weight:800;letter-spacing:.05em;padding:3px 9px;border-radius:6px;margin-bottom:7px}
+.aca-l h3{font-size:15.5px;font-weight:900;color:var(--cp-dark);margin-bottom:5px}
+.aca-l .ld{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin-bottom:8px}
+.aca-row{display:flex;gap:8px;font-size:13px;color:var(--ink-soft);line-height:1.45;padding:6px 0}
+.aca-row .ck{color:var(--ok);font-weight:900;flex:0 0 auto}
+.lvls{display:grid;gap:8px}
+.lvl{border:1px solid var(--line);border-radius:11px;padding:11px 13px}
+.lvl .bg{display:inline-block;font-size:10.5px;font-weight:800;color:#fff;padding:3px 9px;border-radius:7px;letter-spacing:.03em}
+.lvl .lt{font-size:14.5px;font-weight:900;color:var(--cp-dark);margin:5px 0 3px}
+.lvl .ld{font-size:12px;color:var(--ink-soft);line-height:1.45}
+.strat{background:linear-gradient(135deg,#fef3c7,#fdebcd);border:1px solid #f0d090;border-radius:13px;padding:14px}
+.strat .pq{font-family:var(--serif);font-style:italic;font-size:14px;color:#5a4419;line-height:1.5;margin:6px 0 8px}
+.strat ul{list-style:none}
+.strat li{font-size:12px;color:#7a4400;padding:2px 0 2px 16px;position:relative}
+.strat li::before{content:'⚡';position:absolute;left:-2px;font-size:11px}
+
+/* settings modal */
+.modal-bg{position:fixed;inset:0;background:rgba(42,49,66,.55);z-index:60;display:none;align-items:flex-start;justify-content:center;padding:20px 14px;overflow-y:auto}
+.modal-bg.on{display:flex}
+.modal{background:#fff;border-radius:18px;max-width:480px;width:100%;padding:20px;margin:auto}
+.modal h3{font-size:18px;font-weight:900;color:var(--cp-dark);margin-bottom:14px}
+.fld{margin-bottom:13px}
+.fld label{display:block;font-size:11.5px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.03em;margin-bottom:5px}
+.fld input{width:100%;padding:11px 13px;border:1.5px solid var(--line);border-radius:11px;font:inherit;font-size:15px}
+.fld input:focus{outline:0;border-color:var(--cp-blue)}
+.fld .hint{font-size:11px;color:var(--ink-mid);margin-top:4px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.modal .nav2{display:flex;gap:10px;margin-top:8px}
+.modal .nav2 button{flex:1;padding:13px;border-radius:12px;font-weight:800}
+.modal .nav2 .cx{background:var(--cp-veil);color:var(--ink-soft)}
+.modal .nav2 .sv{background:var(--cp-deep);color:#fff}
+.toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%) translateY(20px);background:var(--cp-dark);color:#fff;padding:11px 18px;border-radius:12px;font-size:13.5px;font-weight:700;z-index:80;opacity:0;pointer-events:none;transition:.3s}
+.toast.on{opacity:1;transform:translateX(-50%) translateY(0)}
+.divider{height:1px;background:var(--line);margin:14px 0}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="hd">
-    <div class="hd-brand">
-      <div class="hd-logo">CP</div>
-      <div>
-        <div class="hd-t">Sales Coach</div>
-        <div class="hd-s" id="hd-studio">Club Pilates</div>
+<div id="app">
+  <div class="top">
+    <div class="top-in">
+      <div class="top-logo">CP</div>
+      <div class="top-mid">
+        <div class="top-phase" id="topPhase">Sales Coach</div>
+        <div class="top-sub" id="topSub">Club Pilates</div>
       </div>
-    </div>
-    <div style="display:flex;align-items:center;gap:8px">
-      <div class="mode-toggle">
-        <button id="mode-call" class="on" onclick="setMode('call')">📞 Appel</button>
-        <button id="mode-academy" onclick="setMode('academy')">🎓 Académie</button>
-      </div>
-      <button class="hd-set" onclick="openSettings()" aria-label="Réglages">
-        <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+      <button class="top-btn" onclick="openMenu()" aria-label="Menu">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
     </div>
+    <div class="bar"><div class="bar-fill" id="bar" style="width:0%"></div></div>
   </div>
-  <div class="steps" id="steps-row">
-    <div class="steps-in" id="stepper"></div>
-  </div>
-</header>
 
-<main class="wrap" id="app"></main>
+  <div class="screen" id="screen"></div>
 
-<button class="fab" onclick="openSheet()">
-  <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="M9 9a3 3 0 1 1 4 2.83c-.5.27-1 .73-1 1.67v.5"/><circle cx="12" cy="17.5" r=".6" fill="#fff"/></svg>
-  Objections
-</button>
+  <div class="nav" id="nav"></div>
 
-<!-- Objection sheet -->
-<div class="sheet-bg" id="sheetBg" onclick="closeSheet()"></div>
-<div class="sheet" id="sheet">
-  <div class="sheet-h">
-    <div class="t">Réponses aux objections</div>
-    <button class="sheet-close" onclick="closeSheet()">×</button>
-  </div>
-  <div id="objList"></div>
-  <div class="divider" style="margin:6px 18px"></div>
-  <div class="sheet-h" style="border:0;padding-bottom:4px"><div class="t" style="font-size:14px">Mémo rapide</div></div>
-  <div id="refPanels" style="padding:0 18px"></div>
+  <button class="fab" onclick="openObj()" aria-label="Objections">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.8.5-1.6 1.2-1.6 2.4"/><circle cx="12" cy="17.5" r=".7" fill="#fff"/></svg>
+  </button>
 </div>
 
-<!-- Settings modal -->
-<div class="modal-bg" id="settingsBg">
+<!-- Objections sheet -->
+<div class="sheet-bg" id="objBg" onclick="closeObj()"></div>
+<div class="sheet" id="objSheet">
+  <div class="sheet-h"><div class="t">Réponses aux objections</div><button class="sheet-x" onclick="closeObj()">×</button></div>
+  <div class="sheet-body">
+    <input class="search" id="objSearch" placeholder="🔎 Tapez l'objection (ex : cher, temps, dos…)" oninput="renderObj(this.value)"/>
+    <div id="objList"></div>
+  </div>
+</div>
+
+<!-- Menu sheet -->
+<div class="sheet-bg" id="menuBg" onclick="closeMenu()"></div>
+<div class="sheet" id="menuSheet">
+  <div class="sheet-h"><div class="t">Menu</div><button class="sheet-x" onclick="closeMenu()">×</button></div>
+  <div class="sheet-body" id="menuBody"></div>
+</div>
+
+<!-- Settings -->
+<div class="modal-bg" id="setBg">
   <div class="modal">
     <h3>Réglages du studio</h3>
-    <p class="sub">Personnalisez et renseignez les tarifs réels de votre grille.</p>
-    <div class="grid2">
-      <div class="field"><label>Studio</label><input id="set-studio" placeholder="La Garenne-Colombes"/></div>
-      <div class="field"><label>Commercial(e)</label><input id="set-rep" placeholder="Caroline"/></div>
+    <div class="g2">
+      <div class="fld"><label>Studio</label><input id="set-studio" placeholder="La Garenne"/></div>
+      <div class="fld"><label>Commercial(e)</label><input id="set-rep" placeholder="Caroline"/></div>
     </div>
-    <div class="field"><label>Prix de base (€ / séance)</label><input id="set-base" type="number" inputmode="decimal"/><div class="hint">Tarif unitaire hors pack — référence affichée au prospect.</div></div>
-    <div class="divider"></div>
-    <div class="grid2">
-      <div class="field"><label>Pack 1× / sem (€ / mois)</label><input id="set-p1" type="number" inputmode="decimal"/><div class="hint">Studio : 135 €/mois (~4 séances).</div></div>
-      <div class="field"><label>Pack 2× / sem (€ / mois)</label><input id="set-p2" type="number" inputmode="decimal"/><div class="hint">Studio : 235 €/mois (~29 €/séance).</div></div>
+    <div class="fld"><label>Prix de base (€/séance)</label><input id="set-base" type="number" inputmode="decimal"/></div>
+    <div class="g2">
+      <div class="fld"><label>Pack 1×/sem (€/mois)</label><input id="set-p1" type="number" inputmode="decimal"/></div>
+      <div class="fld"><label>Pack 2×/sem (€/mois)</label><input id="set-p2" type="number" inputmode="decimal"/></div>
     </div>
-    <div class="field"><label>Pack illimité (€ / mois)</label><input id="set-p3" type="number" inputmode="decimal"/><div class="hint">Studio : 330 €/mois.</div></div>
-    <div class="grid2">
-      <div class="field"><label>Séance privée (€)</label><input id="set-priv" type="number" inputmode="decimal"/><div class="hint">Pour le reframing « X× moins cher qu'en privé ».</div></div>
-      <div class="field"><label>Places fondateur restantes</label><input id="set-spots" type="number" inputmode="numeric"/><div class="hint">Levier d'urgence au closing.</div></div>
+    <div class="g2">
+      <div class="fld"><label>Illimité (€/mois)</label><input id="set-p3" type="number" inputmode="decimal"/></div>
+      <div class="fld"><label>Séance privée (€)</label><input id="set-priv" type="number" inputmode="decimal"/></div>
     </div>
-    <div class="field"><label>Remise membre fondateur (%)</label><input id="set-founding" type="number" inputmode="decimal"/><div class="hint">Plaquette : -20 % à vie (50 premiers membres) + frais d'inscription offerts.</div></div>
-    <div class="nav">
-      <button class="btn btn-ghost" onclick="closeSettings()">Annuler</button>
-      <button class="btn btn-primary" onclick="saveSettings()">Enregistrer</button>
+    <div class="g2">
+      <div class="fld"><label>Places fondateur</label><input id="set-spots" type="number" inputmode="numeric"/></div>
+      <div class="fld"><label>Remise fondateur (%)</label><input id="set-founding" type="number" inputmode="decimal"/></div>
     </div>
-  </div>
-</div>
-
-<!-- Bouton lancement Téléprompteur (mode appel uniquement) -->
-<button class="tp-launch" id="tpLaunch" onclick="openTP()">
-  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg>
-  Prompteur
-</button>
-
-<!-- Overlay Téléprompteur -->
-<div class="tp" id="tp">
-  <div class="tp-top">
-    <div class="tp-step" id="tpStep">Mode mains-libres</div>
-    <button class="tp-x" onclick="closeTP()">×</button>
-  </div>
-  <div class="tp-prog" id="tpProg"></div>
-  <div class="tp-body">
-    <div class="tp-tapzones"><div onclick="tpPrev()"></div><div onclick="tpNext()"></div></div>
-    <div id="tpTag"></div>
-    <div class="tp-text" id="tpText"></div>
-    <div class="tp-hint" id="tpHint"></div>
-  </div>
-  <div class="tp-nav">
-    <button class="tp-btn tp-prev" onclick="tpPrev()">‹</button>
-    <button class="tp-btn tp-next" onclick="tpNext()"><span id="tpNextLbl">Suivant ›</span></button>
+    <div class="nav2"><button class="cx" onclick="closeSet()">Annuler</button><button class="sv" onclick="saveSet()">Enregistrer</button></div>
   </div>
 </div>
 
@@ -408,47 +268,18 @@ header{position:sticky;top:0;z-index:40;background:var(--cp-dark);color:#fff;pad
 
 <script>
 /* ════════════════════════════════════════════════════════════════
-   CONFIG — éditable via Réglages, persisté en localStorage.
-   Prix : seuls ceux fournis par la plaquette sont pré-remplis.
+   CONFIG + DONNÉES + MOTEUR  (inchangés — toute l'intelligence)
    ════════════════════════════════════════════════════════════════ */
-/* Prix MENSUELS communiqués par le studio. Pack 2 = 235 €/mois ≈ 29 €/séance
-   (8 séances/mois), cohérent avec la plaquette. Membre fondateur = -20 % à vie. */
-const DEFAULT_CFG={
-  studio:'', rep:'',
-  base:40,            // 40 € / séance — plaquette (référence non-pack)
-  p1:135,             // Pack 1×/sem — 135 €/mois (~4 séances → 33,75 €/séance)
-  p2:235,             // Pack 2×/sem — 235 €/mois (~8 séances → 29 €/séance, plaquette)
-  p3:330,             // Pack illimité — 330 €/mois (à volonté)
-  founding:20,        // -20 % à vie membre fondateur — plaquette
-  privateSession:95,  // séance privée — pour le reframing "X fois moins cher qu'en privé"
-  spotsLeft:50        // places membre fondateur restantes (levier d'urgence)
-};
-const SESSIONS_PER_MONTH={1:4,2:8,3:null}; // null = illimité (pas de €/séance fixe)
+const DEFAULT_CFG={studio:'',rep:'',base:40,p1:135,p2:235,p3:330,founding:20,privateSession:95,spotsLeft:50};
+const SESSIONS_PER_MONTH={1:4,2:8,3:null};
 let CFG=Object.assign({},DEFAULT_CFG,JSON.parse(localStorage.getItem('cpcoach_cfg')||'{}'));
 
-/* ── État de l'appel ── */
 let st={
-  mode:'call',                  // 'call' (mode appel) ou 'academy' (formation)
-  callGoal:'membership',        // 'trial' (booker l'essai gratuit) ou 'membership' (closer l'abo)
-  step:0,
-  ageBand:null,                 // 30-40 / 40-55 / 55-70
-  connait:null,                 // connait CP ? oui/non
-  reason:[],                    // pourquoi nous contacte
-  pastSport:null,               // a fait du sport ?
-  trigger:null,                 // déclencheur — pourquoi maintenant
-  tried:[],                     // tentatives passées (contraste)
-  pain:[],                      // pourquoi a arrêté = la vraie douleur (le O)
-  goals:[],                     // objectifs (le G)
-  emotion:null,                 // enjeu émotionnel profond (le why du why)
-  health:[],                    // contre-indications
-  dispo:null,                   // disponibilité hebdo perçue
-  packChoice:null,              // override manuel du pack par le commercial
-  showTips:true                 // afficher les pro tips contextuels
+  callGoal:'membership',
+  idx:0,
+  ageBand:null, connait:null, reason:[], trigger:null, tried:[], pain:[], goals:[], emotion:null, health:[], dispo:null, packChoice:null
 };
 
-/* ════════════════════════════════════════════════════════════════
-   DONNÉES PLAQUETTE
-   ════════════════════════════════════════════════════════════════ */
 const REASONS=[
   {id:'reprise',ic:'🔄',label:'Reprendre le sport'},
   {id:'poids',ic:'⚖️',label:'Perte de poids'},
@@ -458,7 +289,7 @@ const REASONS=[
   {id:'reco',ic:'🗣️',label:'On m\'a recommandé'},
   {id:'curieux',ic:'❓',label:'Simple curiosité'}
 ];
-const PAINS=[ // le O — pourquoi ça n'a pas marché avant. dig = la question à creuser.
+const PAINS=[
   {id:'temps',ic:'⏳',label:'Manque de temps',dig:'C\'était quoi le vrai frein — le trajet, les horaires, la durée des séances ? Combien de temps réaliste vous pourriez dégager ?'},
   {id:'resultats',ic:'📉',label:'Pas de résultats',dig:'Vous attendiez quel résultat précis ? En combien de temps ? Qu\'est-ce qui vous a fait dire « ça ne sert à rien » ?'},
   {id:'motivation',ic:'😮‍💨',label:'Manque de motivation',dig:'Qu\'est-ce qui vous démotivait — la solitude, l\'ennui, personne pour vous pousser ? Vous tenez mieux quand on vous attend ?'},
@@ -467,7 +298,7 @@ const PAINS=[ // le O — pourquoi ça n'a pas marché avant. dig = la question 
   {id:'jamais',ic:'🌱',label:'Jamais fait de sport',dig:'Qu\'est-ce qui vous a retenu jusqu\'ici — la peur du regard, ne pas savoir par où commencer, le niveau ?'},
   {id:'ennui',ic:'🥱',label:'Lassitude / routine',dig:'Qu\'est-ce qui vous lassait — toujours la même chose, aucune progression, l\'ambiance ?'}
 ];
-const GOALS=[ // le G. dig = la question à creuser pour qualifier en profondeur.
+const GOALS=[
   {id:'poids',ic:'⚖️',label:'Perte de poids',dig:'Combien de kilos en tête ? Pour une occasion précise ? Qu\'avez-vous déjà tenté et pourquoi ça n\'a pas tenu ?'},
   {id:'mobilite',ic:'🤸',label:'Mobilité / souplesse',dig:'Où ça coince — dos, hanches, épaules ? Ça vous limite dans quoi concrètement au quotidien ?'},
   {id:'douleur',ic:'🩹',label:'Soulager douleurs',dig:'Où précisément ? Depuis quand ? Ça vous réveille la nuit, ça gêne au travail ? Vous avez consulté ?'},
@@ -477,7 +308,7 @@ const GOALS=[ // le G. dig = la question à creuser pour qualifier en profondeur
   {id:'posture',ic:'🧍',label:'Posture / dos',dig:'Vous travaillez assis(e) combien d\'heures par jour ? Vous avez déjà des tensions cervicales / lombaires ?'},
   {id:'perf',ic:'🏆',label:'Me dépasser / perf',dig:'Vous pratiquez quoi à côté ? Vous voulez progresser sur quoi exactement — force, gainage, souplesse ?'}
 ];
-const HEALTH=[ // contre-indications — warnings
+const HEALTH=[
   {id:'aucun',ic:'✅',label:'Rien à signaler',clear:true},
   {id:'grossesse',ic:'🤰',label:'Grossesse'},
   {id:'respi',ic:'🫁',label:'Problème respiratoire'},
@@ -489,11 +320,10 @@ const HEALTH=[ // contre-indications — warnings
   {id:'senior',ic:'🎂',label:'Senior'}
 ];
 const DISPO=[
-  {id:'low',ic:'1',label:'Plutôt 1× / sem',note:'agenda serré'},
-  {id:'mid',ic:'2',label:'2× / sem possible',note:'le bon rythme'},
-  {id:'high',ic:'3',label:'3× et +',note:'très motivé(e)'}
+  {id:'low',ic:'1️⃣',label:'Plutôt 1× / sem',note:'agenda serré'},
+  {id:'mid',ic:'2️⃣',label:'2× / sem possible',note:'le bon rythme'},
+  {id:'high',ic:'3️⃣',label:'3× et +',note:'très motivé(e)'}
 ];
-/* DÉCLENCHEUR — « pourquoi maintenant ? » : la question qui révèle l'urgence réelle */
 const TRIGGERS=[
   {id:'event',ic:'📅',label:'Un événement à venir',dig:'Lequel — mariage, vacances, photo, retrouvailles ? Pour quand exactement ?',proj:'arriver à votre événement en pleine forme et fier(e) de vous'},
   {id:'sante',ic:'🩺',label:'Conseil / bilan santé',dig:'Le médecin a dit quoi précisément ? C\'est de la prévention ou déjà un souci installé ?',proj:'reprendre la main sur votre santé avant que ça ne s\'aggrave'},
@@ -504,7 +334,6 @@ const TRIGGERS=[
   {id:'resolution',ic:'🎯',label:'Nouveau départ / résolution',dig:'Qu\'est-ce qui rend CE moment différent des fois précédentes où vous avez essayé ?',proj:'faire de cette fois LA bonne, celle qui tient'},
   {id:'proche',ic:'👥',label:'Un proche s\'y est mis',dig:'Qui ? Qu\'est-ce que ça lui a apporté qui vous donne envie ?',proj:'vivre la même transformation que votre proche'}
 ];
-/* ENJEU ÉMOTIONNEL — le « why » derrière le « why », ce qui fait vraiment agir */
 const EMOTIONS=[
   {id:'confiance',ic:'✨',label:'Confiance en soi',phrase:'vous regarder dans le miroir avec fierté'},
   {id:'sante',ic:'❤️',label:'Santé long terme',phrase:'rester en bonne santé pour les années qui comptent'},
@@ -514,7 +343,6 @@ const EMOTIONS=[
   {id:'proches',ic:'👨‍👩‍👧',label:'En forme pour ses proches',phrase:'être là, en forme, pour ceux que vous aimez'},
   {id:'mental',ic:'🧠',label:'Tête plus claire',phrase:'avoir l\'esprit plus clair et moins de stress'}
 ];
-/* TENTATIVES PASSÉES — pour positionner CP en contraste (le « pont vers la solution ») */
 const TRIED=[
   {id:'salle',ic:'🏋️',label:'Salle de sport',contrast:'des machines, mais personne pour vous guider — on finit par décrocher'},
   {id:'coach',ic:'🧑‍🏫',label:'Coach perso',contrast:'efficace, mais cher et difficile à tenir dans la durée'},
@@ -523,1098 +351,381 @@ const TRIED=[
   {id:'maison',ic:'📱',label:'Sport à la maison / apps',contrast:'zéro régularité sans cadre ni rendez-vous — la motivation retombe'},
   {id:'rien',ic:'🌱',label:'Jamais rien de structuré',contrast:'c\'est une page blanche — exactement pour ça qu\'un cadre rassurant change tout'}
 ];
-
-/* COURS — depuis slides 3-5 + Foundation 0.5 ajouté */
 const CLASSES={
-  foundation05:{nm:'Foundation 0.5',sub:'initiation · 1er pas',ds:'Cours d\'introduction au Reformer pour les vrais débutants. Apprentissage des bases en très petit comité, sans pression.',prereq:'Aucun — pas même besoin d\'avoir entendu parler de Pilates.',restr:[],lvl:'0.5',isIntro:true},
-  flow1:{nm:'Flow 1',sub:'allongé · signature',ds:'Entraînement sûr et complet : gainage, posture, respiration, travail bilatéral.',prereq:'Aucun — 0 expérience requise.',restr:[],lvl:'1'},
-  flow15:{nm:'Flow 1.5',sub:'à genoux',ds:'Même travail complet, en progression.',prereq:'Flow 1 requis.',restr:[],lvl:'1.5'},
-  flow2:{nm:'Flow 2',sub:'debout',ds:'Entraînement complet debout.',prereq:'Flow 1.5 requis.',restr:['equilibre','blessure_prolongee'],lvl:'2'},
-  cs1:{nm:'Cardio Sculpt 1',sub:'cardio doux',ds:'Cardio à faible impact basé Pilates. Endurance et souplesse renforcées.',prereq:'Expérience fondamentale du Pilates requise.',restr:['respi','grossesse','genou','chirurgie'],lvl:'1'},
-  cb:{nm:'Center & Balance',sub:'rééquilibrage',ds:'Étirements assistés par appareils pour (ré)équilibrer le corps. Idéal personne âgée ou en surpoids.',prereq:'0 expérience.',restr:[],lvl:'1'},
-  restore:{nm:'Restore',sub:'récupération',ds:'Auto-relâchement pour courbatures et contractures.',prereq:'Pouvoir se lever/relever du sol et supporter son poids sur les poignets.',restr:['grossesse','osteo','tension','senior'],lvl:'1'},
-  fit2:{nm:'FIT 2',sub:'haute intensité',ds:'Functional Interval Training. Haute intensité, idéal perte de poids.',prereq:'Approche athlétique du Pilates.',restr:['blessure_prolongee','genou','chirurgie','respi'],lvl:'2'},
-  suspend2:{nm:'Suspend 2',sub:'TRX',ds:'TRX pour un entraînement dynamique, équilibre et stabilité.',prereq:'Suspend 1.5 requis.',restr:['equilibre'],lvl:'2'},
-  control2:{nm:'Control 2',sub:'barre fusion',ds:'Pilates debout fonctionnel sur barre fusion.',prereq:'Control 1.5 requis.',restr:['equilibre'],lvl:'2'}
+  foundation05:{nm:'Foundation 0.5',sub:'initiation · 1er pas',ds:'Cours d\'introduction au Reformer pour les vrais débutants, sans pression.',restr:[],lvl:'0.5'},
+  flow1:{nm:'Flow 1',sub:'allongé · signature',ds:'Entraînement sûr et complet : gainage, posture, respiration.',restr:[],lvl:'1'},
+  flow15:{nm:'Flow 1.5',sub:'à genoux',ds:'Même travail complet, en progression.',restr:[],lvl:'1.5'},
+  flow2:{nm:'Flow 2',sub:'debout',ds:'Entraînement complet debout.',restr:['equilibre','blessure_prolongee'],lvl:'2'},
+  cs1:{nm:'Cardio Sculpt 1',sub:'cardio doux',ds:'Cardio à faible impact basé Pilates. Endurance et souplesse.',restr:['respi','grossesse','genou','chirurgie'],lvl:'1'},
+  cb:{nm:'Center & Balance',sub:'rééquilibrage',ds:'Étirements assistés pour rééquilibrer le corps. Idéal débutant/senior.',restr:[],lvl:'1'},
+  restore:{nm:'Restore',sub:'récupération',ds:'Auto-relâchement pour courbatures et contractures.',restr:['grossesse','osteo','tension','senior'],lvl:'1'},
+  fit2:{nm:'FIT 2',sub:'haute intensité',ds:'Functional Interval Training. Haute intensité, idéal perte de poids.',restr:['blessure_prolongee','genou','chirurgie','respi'],lvl:'2'},
+  suspend2:{nm:'Suspend 2',sub:'TRX',ds:'TRX pour un entraînement dynamique, équilibre et stabilité.',restr:['equilibre'],lvl:'2'},
+  control2:{nm:'Control 2',sub:'barre fusion',ds:'Pilates debout fonctionnel sur barre fusion.',restr:['equilibre'],lvl:'2'}
 };
-
 const NIVEAUX=[
-  {n:'Level 0.5',t:'Initiation',d:'Cours d\'introduction pour les vrais débutants. Aucune expérience requise — rassurant et accessible 100 %.',color:'#2C7A4B',badge:'★ Levée d\'objection clé'},
-  {n:'Level 1',t:'Fondation',d:'Tous démarrent ici, même les initiés. Découverte + fondations solides. Le cours signature.',color:'#0F6E56'},
-  {n:'Level 1.5',t:'Progression',d:'Pour la majorité des membres qui veulent se challenger en sécurité.',color:'#1a3a6b'},
-  {n:'Level 2',t:'Évolution',d:'Challenge +++. Au moins 30-60 classes derrière soi. Possible après 6 mois d\'ouverture.',color:'#854F0B'},
-  {n:'Level 2.5',t:'Mastery',d:'Membres très avancés (stabilité/coordination/articulation +++). Possible après 2 ans + 2×/sem.',color:'#7C3AED'}
+  {n:'Level 0.5',t:'Initiation',d:'Pour les vrais débutants. Aucune expérience requise — rassurant et accessible 100 %.',color:'#2C7A4B',badge:'★ Levée d\'objection clé'},
+  {n:'Level 1',t:'Fondation',d:'Tous démarrent ici, même les initiés. Le cours signature.',color:'#0F6E56'},
+  {n:'Level 1.5',t:'Progression',d:'Pour se challenger en sécurité.',color:'#1a3a6b'},
+  {n:'Level 2',t:'Évolution',d:'Challenge +++. Après 30-60 classes.',color:'#854F0B'},
+  {n:'Level 2.5',t:'Mastery',d:'Membres très avancés. Après 2 ans + 2×/sem.',color:'#7C3AED'}
 ];
-
-/* ── Tranches d'âge (cible large 30-70 ans) avec leviers psychologiques ── */
 const AGE_BANDS=[
   {id:'30-40',ic:'🚀',label:'30-40 ans',color:'#0F6E56',
-   leviers:['Esthétique & confiance corps','Anti-stress pro / charge mentale','Reprise après grossesse','Performance & temps optimisé','Communauté & lien social','Investir tôt = capital santé long terme'],
-   peurs:['Pas le temps','Trop fatiguée le soir','Engagement long','Salle = juste un coût de plus'],
-   phrases:['« À 35 ans, ce que vous construisez maintenant, vous le récolterez à 50, 60, 70. »','« 2 cours/semaine = 1h30 sur vos 168h hebdo. C\'est 0,9 %. »','« Les meilleurs investissements ne sont pas financiers. »'],
-   packTilt:2  // tendance naturelle vers Pack 2 (rythme + temps limité)
-  },
+   leviers:['Esthétique & confiance','Anti-stress / charge mentale','Reprise post-grossesse','Performance & temps optimisé','Investir tôt = capital santé'],
+   peurs:['Pas le temps','Trop fatiguée le soir','Engagement long'],
+   phrases:['« À 35 ans, ce que vous construisez maintenant, vous le récolterez à 50, 60, 70. »','« 2 cours/semaine = 1h30 sur vos 168h. C\'est 0,9 % de votre temps. »']},
   {id:'40-55',ic:'⚡',label:'40-55 ans',color:'#1a3a6b',
-   leviers:['Maintien du capital santé','Peri-ménopause / hormonal (femmes)','Dos sédentaire / posture','Anti-âge & tonicité','Modèle pour les enfants','Période charnière = moment d\'agir'],
-   peurs:['Trop tard pour commencer','Peur de la blessure','Ne plus avoir le niveau','Manque de temps (famille + travail)'],
-   phrases:['« 40-55 ans = la fenêtre OR pour reprendre. Vous n\'êtes ni trop jeune, ni trop avancé(e). »','« Tout ce qu\'on installe maintenant, c\'est ce qui fera la différence à 60 ans. »','« La méthode Pilates a été créée pour soigner les corps usés, pas pour les jeunes athlètes. »'],
-   packTilt:2
-  },
+   leviers:['Maintien du capital santé','Peri-ménopause / hormonal','Dos sédentaire / posture','Anti-âge & tonicité','Modèle pour les enfants'],
+   peurs:['Trop tard pour commencer','Peur de la blessure','Plus le niveau'],
+   phrases:['« 40-55 ans = la fenêtre OR. Ni trop jeune, ni trop avancé(e). »','« Tout ce qu\'on installe maintenant fera la différence à 60 ans. »']},
   {id:'55-70',ic:'🌳',label:'55-70 ans',color:'#854F0B',
-   leviers:['Autonomie & maintien mobilité','Prévention chutes & équilibre','Soulager douleurs articulaires','Retraite active & vitalité','Lien social du studio','Suivi médical doux'],
-   peurs:['« Je suis trop âgé(e) »','Peur de se blesser','Peur du regard des plus jeunes','Le sport "ça me fatigue"'],
-   phrases:['« À 60 ans, ce que vous travaillez, c\'est votre autonomie pour les 20 prochaines années. »','« Joseph Pilates a créé sa méthode pour les corps fragilisés. Vous êtes pile dans la cible. »','« Center & Balance ou Restore = aucun impact, juste du bien. »','« Vous serez entouré(e) de gens de votre génération qui ont les mêmes objectifs. »'],
-   packTilt:2  // 2×/sem rassurant + résultats durables
-  }
+   leviers:['Autonomie & mobilité','Prévention chutes & équilibre','Soulager les articulations','Retraite active & vitalité','Lien social'],
+   peurs:['« Je suis trop âgé(e) »','Peur de se blesser','Le regard des plus jeunes'],
+   phrases:['« À 60 ans, ce que vous travaillez, c\'est votre autonomie pour 20 ans. »','« Joseph Pilates a créé sa méthode pour les corps fragilisés. Vous êtes pile la cible. »']}
 ];
 const AVANTAGES=[
-  'Réservation des cours jusqu\'à 3 semaines à l\'avance',
-  'Coachs diplômés + formation interne Club Pilates',
-  'Seulement 12 ateliers en simultané, espacés et adossés au mur',
-  'Pas d\'annulation de cours',
-  'Un accompagnement 100 % personnalisé',
-  'Zéro redondance : Reformer + TRX + Chair + Bosu + Springboard…',
-  'Reformer conçu exclusivement pour Club Pilates'
+  'Réservation des cours jusqu\'à 3 semaines à l\'avance','Coachs diplômés + formation interne CP',
+  'Seulement 12 ateliers en simultané, espacés','Pas d\'annulation de cours','Accompagnement 100 % personnalisé',
+  'Zéro redondance : Reformer + TRX + Chair + Bosu…','Reformer conçu exclusivement pour Club Pilates'
 ];
 const OBJECTIONS=[
-  {id:'prix',ic:'💶',t:'« C\'est cher »',lines:[
-    'Reviens aux <b>objectifs</b> : « Si par le passé ça n\'a pas fonctionné, c\'est que le budget investi n\'était pas adapté à vos objectifs. »',
-    '« Si dans 3 mois, <b>aucun changement</b> avec votre routine actuelle, comment allez-vous vous sentir ? »',
-    '« Est-ce que ça ne vaut pas le coût d\'investir <b>60 € de plus</b> sur une activité qui va fonctionner et vous plaire ? »'
-  ]},
-  {id:'temps',ic:'⏳',t:'« Je n\'ai pas le temps »',lines:[
-    'Si c\'est en <b>complément</b> d\'une autre activité sportive → proposer le <b>Pack 1×/sem</b>.',
-    'Si ce n\'est pas un complément → expliquer que le Pack 1×/sem donne des <b>résultats à plus long terme</b>, et toujours revenir aux objectifs.',
-    'Le bon rythme reste <b>2×/sem</b> pour des résultats visibles.'
-  ]},
-  {id:'timing',ic:'📅',t:'« J\'attends (vacances / ouverture) »',lines:[
-    '« Pourquoi nous appeler <b>aujourd\'hui</b> alors ? »',
-    '« Si dans 3 mois, aucun changement avec votre routine actuelle, comment allez-vous vous sentir ? »',
-    'Créer l\'urgence douce : remise <b>50 premiers membres fondateurs</b>.'
-  ]},
-  {id:'acces',ic:'🚉',t:'« C\'est loin / pas pratique »',lines:[
-    'Lister les options : <b>train, tram, voiture, vélo, trottinette, co-voiturage entre membres, bus, métro</b>.',
-    'Recentrer sur la valeur : un studio qu\'on aime, on y va.'
-  ]},
-  {id:'abo',ic:'🔗',t:'« Je préfère payer à la séance »',lines:[
-    'À la séance = <b>pas de régularité = pas de motivation = pas de résultat</b>.',
-    'Abonnement = <b>encadrement = régularité = communauté = résultat</b>.',
-    'Joseph Pilates : « 10 séances vous sentez, 20 séances vous voyez, 30 séances vous êtes différent. »'
-  ]},
-  {id:'infos',ic:'📩',t:'« Juste des infos / le tarif par mail »',lines:[
-    'Reviens au <b>script d\'accueil</b> et à l\'identification du besoin.',
-    'Analogie opticien : « Il ne vous envoie pas un prix, il conseille le verre + traitement adaptés à VOS yeux. »',
-    'Si blocage persistant : envoyer les tarifs (ils ne seront pas adaptés), puis <b>lâcher l\'affaire</b> proprement.'
-  ]},
-  {id:'niveau',ic:'🌱',t:'« Je n\'ai jamais fait, j\'ai peur de ne pas suivre »',lines:[
-    '<b>Tous nos membres démarrent par le Level 1 Fondation</b>, même ceux qui pratiquent depuis 10 ans. C\'est la règle.',
-    'Cours en <b>petit comité (12 max)</b>, espacés et adossés au mur — le coach voit chacun et corrige individuellement.',
-    'Le Flow 1 est <b>sans aucun prérequis</b>, c\'est notre cours signature pour ça. La méthode est progressive : on monte au niveau 1.5 quand VOUS êtes prêt(e).',
-    'En fait, ne <b>jamais avoir fait</b> est même un avantage : aucune mauvaise habitude à corriger.'
-  ]},
-  {id:'engagement',ic:'📝',t:'« 3 mois c\'est long / je veux essayer avant »',lines:[
-    'Reviens à la <b>douleur</b> : « Si vous avez déjà arrêté une activité par le passé, c\'est souvent parce qu\'il n\'y avait pas d\'engagement structurant. Ne refaisons pas la même erreur. »',
-    'Joseph Pilates : <b>« 10 séances vous le sentez, 20 vous le voyez, 30 vous êtes différent. »</b> 3 mois = c\'est le temps minimum pour que la méthode délivre.',
-    'À l\'échelle de votre santé sur les 10 prochaines années, <b>3 mois c\'est très court</b>.',
-    'Sans engagement = sans régularité = sans résultat. Le pack vous engage envers <b>vous-même</b>, pas envers nous.'
-  ]},
-  {id:'conjoint',ic:'👫',t:'« Je dois en parler à mon conjoint(e) »',lines:[
-    'Tout à fait normal. Mais c\'est <b>VOUS qui ressentez le besoin</b>, c\'est votre corps, votre santé — la décision finale vous appartient.',
-    'Proposez de <b>bloquer la place fondateur</b> aujourd\'hui (zéro engagement ce soir, on confirme demain matin après la discussion). Les 50 premiers se remplissent vite.',
-    'Inviter le ou la conjoint(e) à venir <b>découvrir le studio</b> ensemble — souvent ils tombent sous le charme et veulent s\'inscrire aussi (offres binôme possibles).'
-  ]},
-  {id:'blessure',ic:'🩹',t:'« J\'ai mal au dos / j\'ai peur de me blesser »',lines:[
-    '<b>Le Pilates a été inventé pour la rééducation.</b> Joseph Pilates l\'a créé pour soigner les soldats blessés.',
-    'Le Reformer fonctionne par <b>résistance contrôlée, sans choc ni impact</b> — l\'inverse du risque de blessure.',
-    '<b>Travail postural, gainage, renforcement profond</b> = la solution n°1 contre les douleurs lombaires.',
-    '4 niveaux progressifs + coachs diplômés CP = sécurité maximale. Idéal : faire valider par le médecin pour vous rassurer, mais le Flow 1 est <b>sans contre-indication</b> sur le dos.'
-  ]},
-  {id:'concurrent',ic:'🏋️',t:'« Pourquoi pas la salle de sport / le yoga ? »',lines:[
-    'Reviens à la <b>douleur</b> : « Vous avez déjà essayé la salle/le yoga ? Qu\'est-ce qui n\'a pas fonctionné ? »',
-    'Salle classique = <b>matériel sans méthode</b>. 0 encadrement, 0 progression. Vous serez seul(e) face aux machines = retour case départ.',
-    'Yoga = excellent pour la souplesse, mais <b>0 renforcement musculaire profond ni cardio</b>. C\'est complémentaire, pas équivalent.',
-    'Pilates Reformer CP = <b>posture + gainage + cardio + souplesse + renforcement</b>. La seule méthode qui combine tout, avec un Reformer conçu exclusivement pour CP.',
-    '<b>9 formats, 4 niveaux</b>, jamais la même séance — zéro routine, zéro plateau.'
-  ]},
-  {id:'genre',ic:'💪',t:'« Le Pilates c\'est pour les femmes / les seniors »',lines:[
-    '<b>Joseph Pilates était boxeur.</b> Il a créé la méthode pour entraîner des athlètes professionnels et des soldats.',
-    'Nos cours <b>FIT 2, Cardio Sculpt, Bootcamp, Suspend 2 (TRX)</b> sont d\'une intensité athlétique très élevée.',
-    'Tom Brady, LeBron James, des joueurs de rugby et tennis pros s\'entraînent en Pilates pour la <b>prévention blessures + performance</b>.',
-    'La part masculine de notre clientèle croît de <b>+30 % par an</b> mondialement.',
-    'Pour les seniors : la méthode est <b>infiniment adaptable</b>. Mais c\'est aussi le sport n°1 des trentenaires/quadras qui veulent un corps tonique sans blessure.'
-  ]},
-  {id:'voyage',ic:'✈️',t:'« Et si je voyage / je déménage ? »',lines:[
-    'Votre abonnement est <b>valable dans tous les Club Pilates du monde</b> — 1500 studios, 4 continents.',
-    'Vous partez en vacances en France ? Réservez votre cours à Paris, Bordeaux, Lyon, etc. via l\'application.',
-    'À l\'étranger ? US, UK, Espagne, Japon, Australie… <b>vous gardez votre rythme partout</b>.',
-    'En cas de long déplacement (>1 mois) ou souci personnel : <b>gel temporaire possible</b> sur demande (à confirmer avec le studio).',
-    'Déménagement définitif : <b>transfert simple</b> vers le studio CP le plus proche.'
-  ]},
-  {id:'capacite',ic:'👥',t:'« Vous êtes combien dans le cours ? »',lines:[
-    '<b>12 personnes maximum</b>, pas une de plus. C\'est la promesse Club Pilates dans le monde entier.',
-    'Les 12 Reformers sont <b>espacés et adossés au mur</b> : aucune sensation d\'être les uns sur les autres.',
-    'Le coach voit tout le monde, <b>passe à votre poste, corrige individuellement</b>. C\'est l\'attention d\'un cours particulier dans un cadre collectif.',
-    'Idéal : ni l\'anonymat d\'une grande salle, ni le tarif élevé d\'un coach 1-to-1.'
-  ]},
-  {id:'preuve',ic:'📊',t:'« Est-ce que ça marche vraiment ? »',lines:[
-    '<b>1500 studios, 24 pays, 8 millions de séances par an</b> — si ça ne marchait pas, le réseau n\'existerait pas.',
-    'Classement <b>Franchise 500 (magazine Entrepreneur) pendant 8 années consécutives</b>.',
-    'Témoignages locaux : « St-Maur a déjà 291 membres pour des soft-openings mi-janvier » — la demande explose.',
-    'Reviens à la <b>preuve perso</b> : « En 10 séances vous sentirez la différence, en 20 vous la verrez, en 30 vous serez différent. »',
-    'Proposer une <b>visite du studio</b> pour rencontrer les membres en activité — la meilleure preuve sociale.'
-  ]}
+  {id:'prix',ic:'💶',t:'« C\'est cher »',kw:'cher prix budget coute argent euro',lines:['Reviens aux <b>objectifs</b> : « Si par le passé ça n\'a pas fonctionné, c\'est que le budget investi n\'était pas adapté à vos objectifs. »','« Si dans 3 mois, <b>aucun changement</b> avec votre routine actuelle, comment allez-vous vous sentir ? »','« Est-ce que ça ne vaut pas le coût d\'investir <b>60 € de plus</b> sur une activité qui va fonctionner et vous plaire ? »']},
+  {id:'temps',ic:'⏳',t:'« Je n\'ai pas le temps »',kw:'temps occupe agenda horaire dispo',lines:['Si c\'est en <b>complément</b> d\'une autre activité → proposer le <b>Pack 1×/sem</b>.','Sinon → le Pack 1×/sem donne des <b>résultats à plus long terme</b>, et toujours revenir aux objectifs.','Le bon rythme reste <b>2×/sem</b> pour des résultats visibles.']},
+  {id:'timing',ic:'📅',t:'« J\'attends (vacances / ouverture) »',kw:'attendre plus tard vacances timing reflechir',lines:['« Pourquoi nous appeler <b>aujourd\'hui</b> alors ? »','« Si dans 3 mois, aucun changement, comment allez-vous vous sentir ? »','Urgence douce : remise <b>50 premiers membres fondateurs</b>.']},
+  {id:'acces',ic:'🚉',t:'« C\'est loin / pas pratique »',kw:'loin acces transport distance parking',lines:['Lister : <b>train, tram, voiture, vélo, trottinette, co-voiturage, bus, métro</b>.','Recentrer sur la valeur : un studio qu\'on aime, on y va.']},
+  {id:'abo',ic:'🔗',t:'« Je préfère payer à la séance »',kw:'seance unite carnet engagement abonnement',lines:['À la séance = <b>pas de régularité = pas de motivation = pas de résultat</b>.','Abonnement = <b>encadrement = régularité = communauté = résultat</b>.','Joseph Pilates : « 10 séances vous sentez, 20 vous voyez, 30 vous êtes différent. »']},
+  {id:'infos',ic:'📩',t:'« Juste des infos / le tarif par mail »',kw:'infos mail email tarif renseignement',lines:['Reviens au <b>script d\'accueil</b> et à l\'identification du besoin.','Analogie opticien : « Il ne vous envoie pas un prix, il conseille le verre adapté à VOS yeux. »','Si blocage : envoyer les tarifs (pas adaptés), puis <b>lâcher l\'affaire</b> proprement.']},
+  {id:'niveau',ic:'🌱',t:'« J\'ai peur de ne pas suivre »',kw:'niveau debutant peur jamais dur difficile suivre',lines:['<b>Tous démarrent par le Level 0.5 / Flow 1</b>, même les initiés. C\'est la règle.','Cours en <b>petit comité (12 max)</b> — le coach corrige individuellement.','Le Flow 1 est <b>sans aucun prérequis</b>. On progresse quand VOUS êtes prêt(e).','Ne <b>jamais avoir fait</b> est même un avantage : aucune mauvaise habitude.']},
+  {id:'engagement',ic:'📝',t:'« 3 mois c\'est long »',kw:'engagement 3 mois long essayer avant duree',lines:['Reviens à la <b>douleur</b> : « Si vous avez déjà arrêté avant, c\'est qu\'il n\'y avait pas d\'engagement structurant. »','Joseph Pilates : <b>10 / 20 / 30 séances</b>. 3 mois = le temps minimum pour délivrer.','À l\'échelle de votre santé, <b>3 mois c\'est très court</b>.','Le pack vous engage envers <b>vous-même</b>, pas envers nous.']},
+  {id:'conjoint',ic:'👫',t:'« J\'en parle à mon conjoint »',kw:'conjoint mari femme epoux couple decision parler',lines:['Normal. Mais c\'est <b>VOUS qui ressentez le besoin</b> — la décision finale vous appartient.','Proposez de <b>bloquer la place fondateur</b> aujourd\'hui (on confirme demain). Les 50 partent vite.','Invitez le/la conjoint(e) à <b>découvrir le studio</b> ensemble (offres binôme possibles).']},
+  {id:'blessure',ic:'🩹',t:'« J\'ai mal au dos / peur de me blesser »',kw:'dos blessure mal douleur peur articulation',lines:['<b>Le Pilates a été inventé pour la rééducation</b> — pour soigner les soldats blessés.','Le Reformer = <b>résistance contrôlée, sans choc ni impact</b>.','<b>Posture, gainage, renforcement profond</b> = solution n°1 contre les lombaires.','Le Flow 1 est <b>sans contre-indication</b> sur le dos. Faire valider par le médecin pour rassurer.']},
+  {id:'concurrent',ic:'🏋️',t:'« Pourquoi pas la salle / le yoga ? »',kw:'salle gym yoga concurrent comparaison fitness',lines:['« Vous avez déjà essayé ? Qu\'est-ce qui n\'a pas fonctionné ? »','Salle = <b>matériel sans méthode</b>, 0 encadrement = retour case départ.','Yoga = souplesse, mais <b>0 renforcement profond ni cardio</b>. Complémentaire, pas équivalent.','CP = <b>posture + gainage + cardio + souplesse + renforcement</b>, Reformer exclusif.']},
+  {id:'genre',ic:'💪',t:'« C\'est pour les femmes / seniors »',kw:'femme homme senior age stereotype masculin',lines:['<b>Joseph Pilates était boxeur</b> — méthode créée pour athlètes et soldats.','<b>FIT 2, Cardio Sculpt, Bootcamp, TRX</b> = intensité athlétique élevée.','Tom Brady, LeBron… s\'entraînent en Pilates : <b>prévention + performance</b>.','Clientèle masculine <b>+30 %/an</b> mondialement.']},
+  {id:'voyage',ic:'✈️',t:'« Et si je voyage / déménage ? »',kw:'voyage demenagement deplacement absence gel',lines:['Abonnement <b>valable dans tous les Club Pilates du monde</b> (1500 studios).','En vacances en France ? Réservez à Paris, Bordeaux, Lyon via l\'app.','Long déplacement / souci : <b>gel temporaire possible</b> (à confirmer studio).','Déménagement : <b>transfert simple</b> vers le studio le plus proche.']},
+  {id:'capacite',ic:'👥',t:'« Vous êtes combien ? »',kw:'combien capacite monde nombre place cours',lines:['<b>12 personnes maximum</b>, pas une de plus.','Reformers <b>espacés et adossés au mur</b> — aucune promiscuité.','Le coach <b>passe à votre poste, corrige individuellement</b>.','L\'attention d\'un cours particulier dans un cadre collectif.']},
+  {id:'preuve',ic:'📊',t:'« Est-ce que ça marche ? »',kw:'marche preuve resultat efficace serieux temoignage',lines:['<b>1500 studios, 24 pays, 8 M de séances/an</b>.','Classé <b>Franchise 500 (Entrepreneur) 8 années de suite</b>.','« St-Maur : 291 membres dès le soft-opening » — la demande explose.','<b>10 / 20 / 30 séances</b> + proposer une <b>visite du studio</b>.']}
 ];
-
-/* ════════════════════════════════════════════════════════════════
-   ÉTAPES — flow OMG enrichi avec Profil (âge)
-   ════════════════════════════════════════════════════════════════ */
-const STEPS=[
-  {key:'accueil',  lbl:'Accueil'},
-  {key:'profil',   lbl:'Profil'},
-  {key:'douleur',  lbl:'Douleur'},
-  {key:'objectifs',lbl:'Objectifs'},
-  {key:'reco',     lbl:'Reco'},
-  {key:'closing',  lbl:'Closing'}
-];
-
-/* ════════════════════════════════════════════════════════════════
-   PRO TIPS — coaching live du commercial à chaque étape
-   ════════════════════════════════════════════════════════════════ */
-const PRO_TIPS={
-  accueil:{
-    title:'Les 30 premières secondes scellent l\'appel',
-    say:['Ton sourire S\'ENTEND. Souriez avant de décrocher.','Donnez votre prénom (pas Mme/M.) : crée la connexion.','« Avez-vous quelques minutes ? » donne le contrôle au prospect — il dit oui plus facilement.'],
-    avoid:['Réciter le script comme un robot.','Vendre dès la 2e phrase.','Couper le prospect quand il parle.'],
-    listen:['Le ton de voix : enjoué/fatigué/pressé ?','S\'il dit « j\'attendais votre appel » → chaud.','S\'il dit « ah oui le formulaire… » → tiède, ré-engager.']
-  },
-  profil:{
-    title:'Capter l\'âge sans le demander frontalement',
-    say:['« Pour quelle tranche d\'âge nous contactez-vous ? » se demande rarement — DÉDUISEZ.','Indices : voix, vocabulaire (« mon époux », « les enfants », « la retraite »), références culturelles.','Adaptez votre vocabulaire à la tranche d\'âge captée.'],
-    avoid:['Demander l\'âge directement (intrusif).','Faire des suppositions sexistes ou stéréotypées.','Survendre la performance à un 65 ans / la prévention à un 32 ans.'],
-    listen:['Bruits de fond (enfants, télé, bureau) = indices de mode de vie.','Vitesse de parole = énergie disponible.']
-  },
-  douleur:{
-    title:'Le « O » : creuser sans interroger comme un flic',
-    say:['« Racontez-moi… », « comment c\'était… », « qu\'est-ce qui vous manquait… » — questions OUVERTES.','SILENCE après chaque réponse : 3 sec. Ils en disent plus.','Reformulez : « Donc si je comprends bien, ce qui vous a manqué c\'est X… ».'],
-    avoid:['« Pourquoi ça n\'a pas marché ? » → accusatoire. Préférer « qu\'est-ce qui aurait pu être différent ? ».','Sauter cette étape pour passer au prix.','Juger ou commenter ce qu\'il dit.'],
-    listen:['Mots-clés émotionnels (« déçu(e) », « frustré(e) », « j\'ai abandonné »).','Le SOUPIR = douleur réelle révélée.','Les répétitions = priorité absolue pour le prospect.']
-  },
-  objectifs:{
-    title:'Le « G » : transformer un objectif en vision',
-    say:['« Et pourquoi est-ce important pour vous ? » → creuse la motivation profonde.','« Imaginez dans 3 mois… » → projection.','Reliez chaque objectif à un cours précis (vous montrez votre expertise).'],
-    avoid:['Lister vos cours sans les relier à l\'objectif.','Survendre quand 1-2 objectifs suffisent.','Ignorer les contre-indications santé.'],
-    listen:['« Je voudrais juste… » → souvent un objectif plus profond derrière.','Hésitation = objectif non assumé (poids, douleur).','« Mes enfants », « mon conjoint », « ma santé » = vraies motivations.']
-  },
-  reco:{
-    title:'Le « M » : la reco doit PARAÎTRE évidente',
-    say:['« En me basant sur ce que vous m\'avez partagé… » → ils ont ALIMENTÉ la reco.','Visez TOUJOURS le Pack 2 par défaut. Le Pack 1 = repli, le Pack 3 = upsell motivé.','« On y va ? » à la fin du pitch prix — claire et engageante.'],
-    avoid:['Présenter les 3 packs côte à côte (paralyse).','Justifier le prix avant de l\'annoncer.','Hésiter à proposer l\'illimité aux 3×+ motivés.'],
-    listen:['« Combien… ? » avant la fin du pitch = signal d\'achat.','Silence après le prix = il calcule, ne pas combler.','« Et si… » = il se projette = vous avez gagné.']
-  },
-  closing:{
-    title:'Verrouiller maintenant ou perdre',
-    say:['« On bloque votre place fondateur ? » — engagement doux.','« Quand voulez-vous démarrer ? » — pas « voulez-vous démarrer ? ».','Récap clair : pack + cours + prix + 1er rdv.'],
-    avoid:['Laisser partir sans engagement (« je vous rappelle »).','Multiplier les options à la fin.','Oublier de copier la fiche dans le CRM.'],
-    listen:['« Je vais réfléchir » → revenir aux objectifs OU verrouiller un rappel précis (date+heure).']
-  }
-};
-
-/* ════════════════════════════════════════════════════════════════
-   STRATÉGIE LEVEL 0.5 — arme anti-objection majeure
-   ════════════════════════════════════════════════════════════════ */
 const STRAT_LEVEL05={
   title:'Le Level 0.5, votre arme commerciale',
-  when:'Sortez-le quand le prospect dit : « je n\'ai jamais fait », « j\'ai peur », « je suis débutant(e) », « je suis senior », « j\'ai mal au dos », « ça a l\'air dur ».',
-  pitch:'« Chez nous, vous ne sautez pas dans le bain. Vous démarrez par le Level 0.5 — un cours d\'initiation conçu PILE pour les gens qui n\'ont jamais touché un Reformer. Aucune pression, aucun prérequis, juste apprendre la base à votre rythme. »',
-  killers:[
-    'Transforme la peur du débutant en confort.','Justifie l\'engagement 3 mois (vous avez le TEMPS d\'apprendre).','Différencie de la salle de sport classique (qui balance sans accompagnement).','Rassure les 55-70 ans + les blessés + les sédentaires de longue date.'
-  ]
+  when:'Sortez-le quand il dit : « je n\'ai jamais fait », « j\'ai peur », « je suis débutant », « senior », « mal au dos », « ça a l\'air dur ».',
+  pitch:'« Chez nous, vous ne sautez pas dans le bain. Vous démarrez par le Level 0.5 — un cours d\'initiation conçu PILE pour ceux qui n\'ont jamais touché un Reformer. Aucune pression, à votre rythme. »',
+  killers:['Transforme la peur du débutant en confort.','Justifie l\'engagement 3 mois.','Différencie de la salle classique.','Rassure 55-70 ans + blessés + sédentaires.']
 };
 
-/* ── Helpers ── */
+/* ── Helpers + moteur (inchangés) ── */
 const $=s=>document.querySelector(s);
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
-function toggle(arr,id,single){
-  if(single)return [id];
-  const i=arr.indexOf(id);
-  if(i>=0)arr.splice(i,1); else arr.push(id);
-  return arr;
-}
 function lbl(list,id){const o=list.find(x=>x.id===id);return o?o.label:id}
-function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1800)}
-
-/* chips renderer */
-function chips(list,sel,onpick,opts={}){
-  return '<div class="opts">'+list.map(o=>{
-    const on=sel.indexOf(o.id)>=0;
-    const warnCls=(opts.warnIds&&opts.warnIds.indexOf(o.id)>=0)?' warnflag':'';
-    return `<button class="opt${on?' sel':''}${warnCls}" onclick="${onpick}('${o.id}')"><span class="ic">${o.ic}</span>${o.label}</button>`;
-  }).join('')+'</div>';
-}
-
-/* Pro Tips card — coaching live à chaque étape */
-function tipsCard(stepKey){
-  if(!st.showTips)return '';
-  const t=PRO_TIPS[stepKey];if(!t)return '';
-  return `<div class="tips" id="tips-${stepKey}">
-    <div class="tips-h" onclick="toggleTips('${stepKey}')">
-      <div class="l"><div class="ic">!</div><div class="t">${esc(t.title)}</div></div>
-      <div class="x">▾</div>
-    </div>
-    <div class="tips-b">
-      <div class="tip-block say"><div class="h">✓ À DIRE</div><ul>${t.say.map(s=>`<li>${s}</li>`).join('')}</ul></div>
-      <div class="tip-block avoid"><div class="h">✗ À ÉVITER</div><ul>${t.avoid.map(s=>`<li>${s}</li>`).join('')}</ul></div>
-      <div class="tip-block listen"><div class="h">👂 À ÉCOUTER</div><ul>${t.listen.map(s=>`<li>${s}</li>`).join('')}</ul></div>
-    </div>
-  </div>`;
-}
-function toggleTips(key){const el=document.getElementById('tips-'+key);if(el)el.classList.toggle('col')}
-
-/* récupère la tranche d'âge active */
+function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1700)}
 function ageBand(){return AGE_BANDS.find(b=>b.id===st.ageBand)||null}
-
-/* Bloc "À creuser" — affiche les questions à poser pour les chips sélectionnés */
-function digCard(items,selIds){
-  const ds=(selIds||[]).map(id=>{const o=items.find(x=>x.id===id);return o&&o.dig?o:null;}).filter(Boolean);
-  if(!ds.length)return '';
-  return `<div class="dig"><div class="dig-h">🔍 À creuser maintenant — posez ces questions</div>${ds.map(d=>`<div class="dig-q"><b>${d.label} :</b> ${d.dig}</div>`).join('')}</div>`;
-}
 function trig(){return TRIGGERS.find(t=>t.id===st.trigger)||null}
 function emo(){return EMOTIONS.find(e=>e.id===st.emotion)||null}
-
-/* ════════════════════════════════════════════════════════════════
-   MOTEUR DE RECOMMANDATION
-   ════════════════════════════════════════════════════════════════ */
 function activeHealth(){return st.health.filter(h=>h!=='aucun')}
-
-function recommendPack(){
-  if(st.packChoice)return st.packChoice; // override commercial
-  const g=st.goals, pain=st.pain;
-  let score=2; // défaut = Pack 2 (2×/sem) — le rythme des résultats, sweet spot
-  // Upgrade vers illimité (3) : on ne le propose que si le client EN A LA DISPO,
-  // ou s'il exprime explicitement un objectif de dépassement. Jamais en force.
-  if(st.dispo==='high')score=3;                          // 3×+ revendiqué → illimité crédible
-  if(g.includes('perf')&&st.dispo!=='low')score=3;       // objectif perf assumé
-  // Downgrade vers 1 — uniquement contrainte temps explicite + complément d'un autre sport
-  if(st.dispo==='low'){
-    score=(pain.includes('temps')&&st.reason.includes('reprise'))?1:2;
-    if(pain.includes('resultats'))score=2; // douleur = pas de résultats → régularité = clé, on garde 2
-  }
-  return score;
-}
-
-function recommendClasses(pack){
-  const g=st.goals, health=activeHealth(), pain=st.pain;
-  const blocked=id=>{
-    const c=CLASSES[id];
-    return c.restr.some(r=>{
-      if(r==='blessure_prolongee')return health.includes('genou')||health.includes('chirurgie');
-      return health.includes(r);
-    });
-  };
-  const out=[];
-  // 0) Foundation 0.5 si vrai débutant / senior / blessé / peur de ne pas suivre
-  const veryBeginner=pain.includes('jamais')||(st.ageBand==='55-70')||health.includes('senior');
-  if(veryBeginner){
-    out.push({id:'foundation05',why:'Initiation rassurante — aucune expérience requise. Lève la peur de ne pas suivre.'});
-  }
-  // 1) Toujours Flow 1
-  out.push({id:'flow1',why:'Le point de départ de tous les membres : sûr, complet, sans prérequis.'});
-  // 2) 2e cours selon objectif principal, filtré contre-indications
-  let second=null,why2='';
-  if(g.includes('poids')){
-    if(!blocked('cs1')){second='cs1';why2='Cardio doux pour accélérer la perte de poids.';}
-    else if(!blocked('cb')){second='cb';why2='Travail doux adapté à vos contraintes santé, en attendant le cardio.';}
-  }
-  if(!second&&(g.includes('mobilite')||g.includes('posture'))){second='cb';why2='Rééquilibrage et mobilité en douceur.';}
-  if(!second&&(g.includes('douleur')||g.includes('stress'))){
-    if(!blocked('restore')){second='restore';why2='Récupération et relâchement des tensions.';}
-    else {second='cb';why2='Mobilité douce adaptée à vos contraintes.';}
-  }
-  if(!second&&g.includes('tonus')){second=!blocked('cs1')?'cs1':'cb';why2='Renforcement et tonicité.';}
-  if(!second){second=!blocked('cs1')?'cs1':'cb';why2='Complément idéal du cours signature.';}
-  out.push({id:second,why:why2});
-  // 3) Pour illimité : 3e cours variété
-  if(pack===3){
-    let third=null,why3='';
-    const used=out.map(o=>o.id);
-    const candidates=['cb','restore','cs1'].filter(c=>!used.includes(c)&&!blocked(c));
-    if(candidates.length){third=candidates[0];why3='Variété pour progresser sur tous les plans et éviter la routine.';}
-    if(third)out.push({id:third,why:why3});
-  }
-  return out;
-}
-
-/* warnings de contre-indication sur les cours recommandés */
-function classWarnings(recos){
-  const health=activeHealth();
-  const w=[];
-  recos.forEach(r=>{
-    const c=CLASSES[r.id];
-    const hit=c.restr.filter(x=>{
-      if(x==='blessure_prolongee')return health.includes('genou')||health.includes('chirurgie');
-      return health.includes(x);
-    });
-    if(hit.length)w.push(`${c.nm} : prudence — ${hit.map(h=>lbl(HEALTH,h)||h).join(', ')}. Valider avec le coach.`);
-  });
-  return w;
-}
-
-function matchScore(){
-  let s=55;
-  s+=Math.min(st.goals.length,3)*7;     // objectifs clairs
-  if(st.pain.length)s+=10;               // douleur identifiée
-  if(st.reason.length)s+=6;
-  if(st.dispo)s+=8;
-  if(st.health.length)s+=6;              // profil santé connu
-  if(st.connait==='oui')s+=4;
-  return Math.max(40,Math.min(98,s));
-}
-
-/* prix par pack — prix MENSUEL */
-function packMonthly(p){
-  if(p===1)return CFG.p1;
-  if(p===2)return CFG.p2;
-  if(p===3)return CFG.p3;
-  return null;
-}
-function packPerSession(p){
-  const m=packMonthly(p), s=SESSIONS_PER_MONTH[p];
-  if(m==null||s==null)return null;
-  const n=parseFloat(m);
-  if(isNaN(n))return null;
-  return n/s;
-}
-function fmtEur(v){
-  if(v==null||v==='')return null;
-  const n=parseFloat(v);
-  if(isNaN(n))return null;
-  return n.toLocaleString('fr-FR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})+' €';
-}
-function foundingMonthly(p){
-  const m=packMonthly(p);
-  const n=parseFloat(m);
-  if(isNaN(n))return null;
-  return n*(1-(parseFloat(CFG.founding)||0)/100);
-}
-function foundingPerSession(p){
-  const f=foundingMonthly(p), s=SESSIONS_PER_MONTH[p];
-  if(f==null||s==null)return null;
-  return f/s;
-}
-
-const PACK_META={
-  1:{cls:'p1',badge:'Complément',name:'Pack 1× / semaine',freq:'≈ 4 séances / mois',tag:'Pour accompagner une autre activité'},
-  2:{cls:'p2',badge:'★ Recommandé',name:'Pack 2× / semaine',freq:'≈ 8 séances / mois',tag:'Le rythme des résultats'},
-  3:{cls:'p3',badge:'Transformation',name:'Pack illimité',freq:'À volonté',tag:'La transformation accélérée'}
-};
-
-/* pitch personnalisé (le M) */
-/* énumération française avec « et » final */
 function frList(arr){if(!arr.length)return '';if(arr.length===1)return arr[0];return arr.slice(0,-1).join(', ')+' et '+arr[arr.length-1];}
 
-/* bénéfice d'un cours, personnalisé selon les objectifs du prospect */
-function classBenefit(id){
-  const g=st.goals, has=x=>g.includes(x);
-  switch(id){
-    case 'foundation05': return 'vous met en confiance dès la première séance, à votre rythme et sans aucune pression';
-    case 'flow1':
-      if(has('posture')||has('douleur')) return 'reconstruit votre posture et soulage votre dos en profondeur';
-      if(has('poids')||has('tonus')) return 'gaine et tonifie tout le corps, en sécurité totale';
-      if(has('stress')) return 'reconnecte le corps et la respiration — un vrai sas de décompression';
-      return 'pose des bases solides : gainage, posture, respiration et contrôle';
-    case 'cs1':
-      if(has('poids')) return 'fait grimper la dépense calorique, sans aucun impact sur les articulations';
-      return 'booste votre cardio et votre énergie, tout en douceur';
-    case 'cb':
-      if(has('mobilite')||has('posture')) return 'redonne de la mobilité et rééquilibre les tensions du quotidien';
-      return 'libère vos articulations et installe un vrai mieux-être';
-    case 'restore':
-      if(has('stress')) return 'relâche les tensions et apaise le mental';
-      return 'soulage les contractures et accélère la récupération';
-    case 'fit2': return 'maximise la combustion des graisses dans un format athlétique et stimulant';
-    default: return CLASSES[id]?CLASSES[id].ds.replace(/\.$/,'').toLowerCase():'';
-  }
+function recommendPack(){
+  if(st.packChoice)return st.packChoice;
+  const g=st.goals,pain=st.pain;let score=2;
+  if(st.dispo==='high')score=3;
+  if(g.includes('perf')&&st.dispo!=='low')score=3;
+  if(st.dispo==='low'){score=(pain.includes('temps')&&st.reason.includes('reprise'))?1:2;if(pain.includes('resultats'))score=2;}
+  return score;
 }
-function triggerClause(t){
-  const m={event:'parce qu\'un événement important approche',sante:'suite à un signal santé qu\'il ne faut pas ignorer',poids:'parce que vous avez pris du poids et que ça vous pèse',grossesse:'pour retrouver votre corps et votre énergie après bébé',douleur:'parce qu\'une douleur commence à s\'installer et à vous gêner',raslebol:'parce que vous en avez vraiment assez de l\'état actuel',resolution:'parce que vous voulez un vrai nouveau départ',proche:'parce qu\'un proche vous a montré que c\'était possible'};
-  return m[t.id]||t.label.toLowerCase();
-}
-
-/* ARGUMENTAIRE NARRATIF — temps par temps (miroir → moment → contraste → reco → projection) */
-function buildPitchBeats(pack,recos){
-  const beats=[]; const e=emo(), t=trig();
-  // 1 · MIROIR empathique
-  if(st.pain.length){
-    const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());
-    let m=`« Si je résume ce que vous m'avez partagé : ce qui vous a freiné avant, c'est ${frList(pains)}.`;
-    if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;
-    m+=` »`;
-    beats.push({label:'Miroir — montrez que vous avez compris',text:m});
-  }
-  // 2 · LE BON MOMENT (déclencheur)
-  if(t){
-    beats.push({label:'Le bon moment',text:`« Et si vous nous appelez aujourd'hui, c'est ${triggerClause(t)}. Honnêtement, c'est exactement LE bon moment pour agir — pas dans 6 mois. »`});
-  }
-  // 3 · CONTRASTE (tentatives passées)
-  if(st.tried.length){
-    const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);
-    let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}.`;
-    c+=` Le Reformer Club Pilates, c'est une autre approche : un coach qui vous corrige, 12 personnes maximum, un cadre qui vous fait revenir. »`;
-    beats.push({label:'Contraste — pourquoi CP est différent',text:c});
-  }
-  // 4 · LA RECO (cours justifiés un par un)
-  const goalTxt=st.goals.length?frList(st.goals.map(g=>lbl(GOALS,g).toLowerCase())):'vos objectifs';
-  let reco=`« Concrètement, pour ${goalTxt}, je vous oriente vers le ${PACK_META[pack].name} : `;
-  reco+=recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ');
-  reco+=`. Avec 3 mois d'engagement — le temps que votre corps installe vraiment le changement. »`;
-  beats.push({label:'La reco — chaque cours a une raison',text:reco});
-  // 5 · PROJECTION
-  let proj=`« Imaginez dans 3 mois : `;
-  proj+=(t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir transformé(e)`);
-  proj+=`. C'est exactement ce qu'on va construire ensemble, séance après séance. On y va ? »`;
-  beats.push({label:'Projection — faites-le se projeter',text:proj});
-  return beats;
-}
-/* version texte (compat — téléprompteur, recap) */
-function buildPitch(pack,recos){
-  return buildPitchBeats(pack,recos).map(b=>b.text).join(' ');
-}
-function buildPricePitch(pack){
-  const base=fmtEur(CFG.base);
-  const m=packMonthly(pack), mF=fmtEur(m);
-  const ps=packPerSession(pack), psF=fmtEur(ps);
-  const fm=foundingMonthly(pack), fmF=fmtEur(fm);
-  const fps=foundingPerSession(pack), fpsF=fmtEur(fps);
-  if(mF==null){
-    return `« Connaissez-vous le tarif Club Pilates ? De base, ${base||'—'} la séance. Avec le pack recommandé et la remise membre fondateur (-${CFG.founding}% à vie pour les 50 premiers + frais d'inscription offerts), on descend bien en dessous. » ⚠️ Renseignez le prix mensuel dans les Réglages.`;
-  }
-  const packName=PACK_META[pack].name.toLowerCase();
-  let s;
-  if(pack===3){
-    // Illimité : pas de €/séance fixe — uniquement mensuel
-    s=`« De base, ${base||'—'} la séance. Suite à ma recommandation du ${packName}, c'est ${mF}/mois en pratique illimitée — ce qui revient en moyenne à moins de ${psF||fmtEur(m/8)}/séance si vous venez 2 fois par semaine, et beaucoup moins si vous venez plus.`;
-    if(fmF)s+=` Avec la remise membre fondateur (-${CFG.founding}% à vie), vous tombez à ${fmF}/mois.`;
-  } else {
-    s=`« De base, ${base||'—'} la séance. Suite à ma recommandation du ${packName}, c'est ${mF}/mois — soit ${psF}/séance.`;
-    if(fpsF)s+=` Et avec la remise membre fondateur (-${CFG.founding}% à vie), vous passez à ${fmF}/mois, soit ${fpsF}/séance.`;
-  }
-  s+=` Frais d'inscription offerts. On y va ? »`;
-  return s;
-}
-
-/* ════════════════════════════════════════════════════════════════
-   1 · MOTEUR DE REFRAMING PRIX — transforme le prix en valeur
-   ════════════════════════════════════════════════════════════════ */
-function buildReframe(pack){
-  const monthly=foundingMonthly(pack)!=null?foundingMonthly(pack):packMonthly(pack);
-  const n=parseFloat(monthly);
-  if(isNaN(n))return [];
+function recommendClasses(pack){
+  const g=st.goals,health=activeHealth(),pain=st.pain;
+  const blocked=id=>CLASSES[id].restr.some(r=>r==='blessure_prolongee'?(health.includes('genou')||health.includes('chirurgie')):health.includes(r));
   const out=[];
-  // a) Coût par jour
-  const perDay=n/30;
-  let dayCompare='';
-  if(perDay<2.5)dayCompare='Moins qu\'un café par jour';
-  else if(perDay<6)dayCompare='Le prix d\'un café et d\'un croissant';
-  else if(perDay<12)dayCompare='Moins qu\'un déjeuner par jour';
-  else dayCompare='Le prix d\'un déjeuner';
-  out.push({ic:'☕',big:fmtEur(perDay)+' / jour',lab:`<b>${dayCompare}</b> pour transformer votre corps.`});
-  // b) Vs séance privée
-  const priv=parseFloat(CFG.privateSession);
-  const ps=foundingPerSession(pack)!=null?foundingPerSession(pack):packPerSession(pack);
-  if(!isNaN(priv)&&ps!=null){
-    const ratio=priv/ps;
-    out.push({ic:'🎯',big:ratio.toFixed(1).replace('.0','')+'× moins cher',lab:`Qu'un coaching privé (${fmtEur(priv)}/séance) — pour le même Reformer, le même coach.`});
-  } else if(!isNaN(priv)&&pack===3){
-    out.push({ic:'🎯',big:'Illimité',lab:`Une séance privée coûte ${fmtEur(priv)}. Ici, venez autant que vous voulez pour ${fmtEur(n)}/mois.`});
-  }
-  // c) ROI sur 3 mois d'engagement
-  const sess=SESSIONS_PER_MONTH[pack];
-  if(sess){
-    const total3=sess*3;
-    out.push({ic:'📈',big:total3+' séances',lab:`Sur vos 3 mois d'engagement. <b>10 séances vous le sentez, 20 vous le voyez, 30 vous êtes différent.</b>`});
-  } else if(pack===3){
-    out.push({ic:'📈',big:'Sans limite',lab:`À 3×/sem, c'est 36 séances en 3 mois. <b>30 séances suffisent à vous transformer</b> (Joseph Pilates).`});
-  }
-  // d) Coût de l'inaction (anti-objection)
-  out.push({ic:'⏳',big:'0 € = 0 résultat',lab:`Continuer comme aujourd'hui, c'est gratuit… et sans changement. <b>L'investissement, c'est ce qui crée l'engagement.</b>`});
+  const veryBeginner=pain.includes('jamais')||st.ageBand==='55-70'||health.includes('senior');
+  if(veryBeginner)out.push({id:'foundation05'});
+  out.push({id:'flow1'});
+  let second=null;
+  if(g.includes('poids')){if(!blocked('cs1'))second='cs1';else if(!blocked('cb'))second='cb';}
+  if(!second&&(g.includes('mobilite')||g.includes('posture')))second='cb';
+  if(!second&&(g.includes('douleur')||g.includes('stress')))second=!blocked('restore')?'restore':'cb';
+  if(!second&&g.includes('tonus'))second=!blocked('cs1')?'cs1':'cb';
+  if(!second)second=!blocked('cs1')?'cs1':'cb';
+  out.push({id:second});
+  if(pack===3){const used=out.map(o=>o.id);const c=['cb','restore','cs1'].filter(x=>!used.includes(x)&&!blocked(x));if(c.length)out.push({id:c[0]});}
   return out;
 }
-function buildReframePitch(pack){
-  const rf=buildReframe(pack);
-  if(!rf.length)return '';
-  const perDay=rf[0].big, vsP=rf.find(x=>x.ic==='🎯');
-  let s=`« Si on ramène ça au quotidien, c'est ${perDay}`;
-  if(vsP)s+=` — ${vsP.big.toLowerCase()} qu'un cours particulier`;
-  s+=`. Et en 3 mois, vous aurez le temps de vraiment voir la différence sur votre corps. C'est un investissement sur vous, pas une dépense. »`;
-  return s;
+function classWarnings(recos){
+  const health=activeHealth(),w=[];
+  recos.forEach(r=>{const hit=CLASSES[r.id].restr.filter(x=>x==='blessure_prolongee'?(health.includes('genou')||health.includes('chirurgie')):health.includes(x));if(hit.length)w.push(`${CLASSES[r.id].nm} : prudence — ${hit.map(h=>lbl(HEALTH,h)||h).join(', ')}. Valider avec le coach.`);});
+  return w;
 }
+function matchScore(){let s=55;s+=Math.min(st.goals.length,3)*6;if(st.pain.length)s+=8;if(st.trigger)s+=8;if(st.emotion)s+=6;if(st.dispo)s+=6;if(st.tried.length)s+=4;return Math.max(40,Math.min(99,s));}
+function packMonthly(p){return p===1?CFG.p1:p===2?CFG.p2:p===3?CFG.p3:null;}
+function packPerSession(p){const m=packMonthly(p),s=SESSIONS_PER_MONTH[p];if(m==null||s==null)return null;const n=parseFloat(m);return isNaN(n)?null:n/s;}
+function fmtEur(v){if(v==null||v==='')return null;const n=parseFloat(v);if(isNaN(n))return null;return n.toLocaleString('fr-FR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})+' €';}
+function foundingMonthly(p){const n=parseFloat(packMonthly(p));return isNaN(n)?null:n*(1-(parseFloat(CFG.founding)||0)/100);}
+function foundingPerSession(p){const f=foundingMonthly(p),s=SESSIONS_PER_MONTH[p];if(f==null||s==null)return null;return f/s;}
+const PACK_META={1:{cls:'p1',badge:'Complément',name:'Pack 1× / semaine',freq:'≈ 4 séances / mois'},2:{cls:'p2',badge:'★ Recommandé',name:'Pack 2× / semaine',freq:'≈ 8 séances / mois'},3:{cls:'p3',badge:'Transformation',name:'Pack illimité',freq:'À volonté'}};
+function classBenefit(id){
+  const g=st.goals,has=x=>g.includes(x);
+  switch(id){
+    case 'foundation05':return 'vous met en confiance dès la première séance, à votre rythme et sans aucune pression';
+    case 'flow1':if(has('posture')||has('douleur'))return 'reconstruit votre posture et soulage votre dos en profondeur';if(has('poids')||has('tonus'))return 'gaine et tonifie tout le corps, en sécurité totale';if(has('stress'))return 'reconnecte le corps et la respiration — un vrai sas de décompression';return 'pose des bases solides : gainage, posture, respiration et contrôle';
+    case 'cs1':if(has('poids'))return 'fait grimper la dépense calorique, sans aucun impact sur les articulations';return 'booste votre cardio et votre énergie, tout en douceur';
+    case 'cb':if(has('mobilite')||has('posture'))return 'redonne de la mobilité et rééquilibre les tensions du quotidien';return 'libère vos articulations et installe un vrai mieux-être';
+    case 'restore':if(has('stress'))return 'relâche les tensions et apaise le mental';return 'soulage les contractures et accélère la récupération';
+    case 'fit2':return 'maximise la combustion des graisses dans un format athlétique et stimulant';
+    default:return CLASSES[id]?CLASSES[id].ds.replace(/\.$/,'').toLowerCase():'';
+  }
+}
+function triggerClause(t){const m={event:'parce qu\'un événement important approche',sante:'suite à un signal santé qu\'il ne faut pas ignorer',poids:'parce que vous avez pris du poids et que ça vous pèse',grossesse:'pour retrouver votre corps et votre énergie après bébé',douleur:'parce qu\'une douleur commence à s\'installer et à vous gêner',raslebol:'parce que vous en avez vraiment assez de l\'état actuel',resolution:'parce que vous voulez un vrai nouveau départ',proche:'parce qu\'un proche vous a montré que c\'était possible'};return m[t.id]||t.label.toLowerCase();}
+function buildPitchBeats(pack,recos){
+  const beats=[],e=emo(),t=trig();
+  if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez partagé : ce qui vous a freiné avant, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris.',text:m});}
+  if(t)beats.push({label:'Le bon moment',hint:'Exploitez son déclencheur.',text:`« Et si vous nous appelez aujourd'hui, c'est ${triggerClause(t)}. Honnêtement, c'est exactement LE bon moment pour agir — pas dans 6 mois. »`});
+  if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Le Reformer Club Pilates, c'est une autre approche : un coach qui vous corrige, 12 personnes maximum, un cadre qui vous fait revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent.',text:c});}
+  const goalTxt=st.goals.length?frList(st.goals.map(g=>lbl(GOALS,g).toLowerCase())):'vos objectifs';
+  let reco=`« Concrètement, pour ${goalTxt}, je vous oriente vers le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Avec 3 mois d'engagement — le temps que votre corps installe vraiment le changement. »`;
+  beats.push({label:'La reco',hint:'Chaque cours a une raison.',text:reco});
+  let proj=`« Imaginez dans 3 mois : `+((t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir transformé(e)`))+`. C'est exactement ce qu'on va construire ensemble, séance après séance. On y va ? »`;
+  beats.push({label:'Projection',hint:'Faites-le se projeter.',text:proj});
+  return beats;
+}
+function buildReframe(pack){
+  const monthly=foundingMonthly(pack)!=null?foundingMonthly(pack):packMonthly(pack);
+  const n=parseFloat(monthly);if(isNaN(n))return [];
+  const out=[];const perDay=n/30;
+  let dc=perDay<2.5?'Moins qu\'un café par jour':perDay<6?'Le prix d\'un café et d\'un croissant':perDay<12?'Moins qu\'un déjeuner par jour':'Le prix d\'un déjeuner';
+  out.push({ic:'☕',big:fmtEur(perDay)+' / jour',lab:`<b>${dc}</b> pour transformer votre corps.`});
+  const priv=parseFloat(CFG.privateSession),ps=foundingPerSession(pack)!=null?foundingPerSession(pack):packPerSession(pack);
+  if(!isNaN(priv)&&ps!=null)out.push({ic:'🎯',big:(priv/ps).toFixed(1).replace('.0','')+'× moins cher',lab:`Qu'un coaching privé (${fmtEur(priv)}/séance) — même Reformer, même coach.`});
+  else if(!isNaN(priv)&&pack===3)out.push({ic:'🎯',big:'Illimité',lab:`Une séance privée coûte ${fmtEur(priv)}. Ici, venez autant que vous voulez.`});
+  const sess=SESSIONS_PER_MONTH[pack];
+  if(sess)out.push({ic:'📈',big:sess*3+' séances',lab:`Sur vos 3 mois. <b>10 vous le sentez, 20 vous le voyez, 30 vous êtes différent.</b>`});
+  else if(pack===3)out.push({ic:'📈',big:'Sans limite',lab:`<b>30 séances suffisent à vous transformer</b> (Joseph Pilates).`});
+  out.push({ic:'⏳',big:'0 € = 0 résultat',lab:`Continuer comme aujourd'hui, c'est gratuit… et sans changement.`});
+  return out;
+}
+function buildPricePitch(pack){
+  const base=fmtEur(CFG.base),m=packMonthly(pack),mF=fmtEur(m),psF=fmtEur(packPerSession(pack)),fmF=fmtEur(foundingMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack));
+  if(mF==null)return `« De base, ${base||'—'} la séance. Avec le pack et la remise membre fondateur (-${CFG.founding}% à vie + inscription offerte), on descend bien en dessous. » ⚠️ Renseignez le prix dans Réglages.`;
+  const pn=PACK_META[pack].name.toLowerCase();let s;
+  if(pack===3){s=`« De base, ${base||'—'} la séance. Avec le ${pn}, c'est ${mF}/mois en illimité — moins de ${psF||fmtEur(m/8)}/séance si vous venez 2×/sem, et bien moins au-delà.`;if(fmF)s+=` Avec la remise fondateur (-${CFG.founding}% à vie), ${fmF}/mois.`;}
+  else {s=`« De base, ${base||'—'} la séance. Avec le ${pn}, c'est ${mF}/mois — soit ${psF}/séance.`;if(fpsF)s+=` Et avec la remise membre fondateur (-${CFG.founding}% à vie), ${fmF}/mois, soit ${fpsF}/séance.`;}
+  return s+` Frais d'inscription offerts. On y va ? »`;
+}
+function buildTrialPitch(){let s=`« Le mieux pour bien commencer : venir faire un <b>cours d'introduction gratuit de 30 minutes</b>. Vous découvrez le Reformer, vous rencontrez votre coach, sans aucun engagement.`;if(st.pain.length)s+=` Vu ce que vous m'avez partagé, c'est exactement le moment de tester.`;return s+` Plutôt en début ou en fin de semaine ? »`;}
+function buildTrialClose(){return `« Parfait. Je vous bloque votre cours découverte — gratuit, sans suite obligée. On dit <b>mardi 18h ou jeudi 19h</b> ? Vous repartez avec votre ressenti, et on voit la formule idéale après. »`;}
 
 /* ════════════════════════════════════════════════════════════════
-   2 · OBJECTIF DE L'APPEL — Essai gratuit (soft) vs Abonnement (hard)
+   FLUX CONVERSATIONNEL — 1 écran = 1 chose
    ════════════════════════════════════════════════════════════════ */
-function buildTrialPitch(){
-  const ageP=ageBand();
-  let s=`« Le mieux, pour bien commencer, c'est de venir faire un <b>cours d'introduction gratuit de 30 minutes</b>. Vous découvrez le Reformer, vous rencontrez votre coach, et vous voyez par vous-même si ça vous correspond — sans aucun engagement.`;
-  if(st.pain.length)s+=` Vu ce que vous m'avez partagé, c'est exactement le moment de tester dans de bonnes conditions.`;
-  s+=` Vous préférez plutôt en début ou en fin de semaine ? »`;
-  return s;
-}
-function buildTrialClose(){
-  return `« Parfait. Je vous bloque votre cours découverte — c'est gratuit et sans suite obligée. On dit ${'<b>mardi 18h ou jeudi 19h</b>'} ? Vous repartez avec votre ressenti, et on voit ensemble la formule idéale après. »`;
+const Q_CONNAIT=[{id:'oui',ic:'👍',label:'Oui, déjà entendu'},{id:'non',ic:'🆕',label:'Non, à présenter'}];
+function buildFlow(){
+  const f=[];
+  f.push({t:'goal',phase:'Démarrage'});
+  f.push({t:'say',phase:'Accueil',tag:'Ouverture',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b> de Club Pilates${s}. Je vous appelle suite à votre <b>demande d'informations</b>. Vous avez quelques minutes ?`;},hint:'Souriez avant de décrocher — le ton s\'entend.'});
+  f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
+  f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
+  f.push({t:'q',phase:'Découverte',q:'Pourquoi vous appelle-t-il aujourd\'hui ?',sub:'Laissez parler. Plusieurs réponses possibles.',data:REASONS,field:'reason',multi:true});
+  f.push({t:'q',phase:'Découverte',q:'⏱️ Pourquoi MAINTENANT ? Le déclencheur.',sub:'Le levier de closing le plus puissant.',data:TRIGGERS,field:'trigger',single:true,dig:true});
+  f.push({t:'q',phase:'Découverte',q:'Qu\'a-t-il déjà essayé ?',sub:'Pour positionner le Reformer en contraste.',data:TRIED,field:'tried',multi:true});
+  f.push({t:'q',phase:'Découverte',q:'Qu\'est-ce qui n\'a pas marché avant ?',sub:'LA vraie douleur qu\'on va résoudre.',data:PAINS,field:'pain',multi:true,dig:true});
+  f.push({t:'q',phase:'Objectifs',q:'Ses objectifs ?',sub:'On reliera chaque objectif à un cours.',data:GOALS,field:'goals',multi:true,dig:true});
+  f.push({t:'q',phase:'Objectifs',q:'💗 Pourquoi c\'est important, au fond ?',sub:'Le « why du why ». Creusez jusqu\'à l\'émotion.',data:EMOTIONS,field:'emotion',single:true});
+  f.push({t:'q',phase:'Objectifs',q:'Quelque chose côté santé ?',sub:'Filtre les cours adaptés.',data:HEALTH,field:'health',multi:true,clearable:true});
+  f.push({t:'q',phase:'Objectifs',q:'Sa disponibilité ressentie ?',sub:'Calibre la reco. Déduisez-la, ne la demandez pas frontalement.',data:DISPO,field:'dispo',single:true});
+  f.push({t:'reco',phase:'Reco'});
+  const pack=recommendPack(),recos=recommendClasses(pack);
+  buildPitchBeats(pack,recos).forEach((b,i)=>f.push({t:'beat',phase:'Argumentaire',beat:b,n:i+1}));
+  f.push({t:'reframe',phase:'Argumentaire'});
+  f.push({t:st.callGoal==='membership'?'price':'trial',phase:'Argumentaire'});
+  if(CFG.spotsLeft)f.push({t:'urgency',phase:'Closing'});
+  f.push({t:'closing',phase:'Closing'});
+  f.push({t:'final',phase:'Closing'});
+  return f;
 }
 
-/* ════════════════════════════════════════════════════════════════
-   3 · TÉLÉPROMPTEUR — séquence de phrases personnalisée
-   ════════════════════════════════════════════════════════════════ */
-function buildScript(){
-  const rep=CFG.rep||'[prénom]';
-  const studio=CFG.studio?' '+CFG.studio:'';
-  const pack=recommendPack();
-  const recos=recommendClasses(pack);
-  const ageP=ageBand();
-  const painTxt=st.pain.length?st.pain.map(p=>lbl(PAINS,p).toLowerCase()).join(', '):'ce qui vous a freiné avant';
-  const goalTxt=st.goals.length?st.goals.map(g=>lbl(GOALS,g).toLowerCase()).join(', '):'vos objectifs';
-  const c1=CLASSES[recos[0].id].nm, c2=recos[1]?CLASSES[recos[1].id].nm:'';
-  const seq=[];
-  // OUVERTURE
-  seq.push({t:'say',tag:'Ouverture',text:`Bonjour, <b>${rep}</b> de Club Pilates${studio}. Je vous appelle suite à votre demande d'informations.`,hint:'Souriez — le ton s\'entend.'});
-  seq.push({t:'ask',tag:'Permission',text:`Vous avez quelques minutes ? Je vais vous proposer <b>la meilleure offre adaptée à votre besoin</b>.`,hint:'Laisse-le dire oui — ça l\'engage.'});
-  // DÉCOUVERTE (le O) — creuser en profondeur
-  seq.push({t:'ask',tag:'Douleur',text:`Qu'est-ce qui vous amène vers le Pilates <b>aujourd'hui</b> ?`,hint:'Question ouverte. Puis SILENCE 3 sec.'});
-  // question à creuser dynamique sur la douleur principale
-  if(st.pain.length){const pd=PAINS.find(p=>p.id===st.pain[0]); if(pd&&pd.dig)seq.push({t:'ask',tag:'Creuser la douleur',text:pd.dig,hint:'Plus vous creusez, plus la reco sera forte.'});}
-  seq.push({t:'ask',tag:'Pourquoi maintenant',text:`Et <b>pourquoi maintenant</b> ? Qu'est-ce qui fait que c'est le moment, là ?`,hint:'Le déclencheur = votre meilleur levier de closing.'});
-  seq.push({t:'ask',tag:'Tentatives',text:`Vous aviez déjà tenté quelque chose avant ? Qu'est-ce qui a coincé ?`,hint:'Sert à positionner le Reformer en contraste.'});
-  seq.push({t:'listen',tag:'Écoute',text:`Reformulez : « Donc si je comprends bien, ce qui vous a manqué, c'est… »`,hint:'Montrez que vous écoutez vraiment.'});
-  // OBJECTIFS (le G) + enjeu profond
-  seq.push({t:'ask',tag:'Objectif',text:`Qu'est-ce que vous aimeriez réussir dans les <b>3 prochains mois</b> ?`,hint:'Projetez-le dans le futur.'});
-  seq.push({t:'ask',tag:'Le why du why',text:`Et <b>pourquoi est-ce important pour vous</b>, au fond ?`,hint:'Creusez jusqu\'à l\'émotion. C\'est l\'or du closing.'});
-  if(ageP)seq.push({t:'say',tag:`Levier ${ageP.label}`,text:`<em>${ageP.phrases[0]}</em>`,hint:'Phrase clé adaptée à sa tranche d\'âge.'});
-  // RECO (le M) — argumentaire narratif temps par temps
-  buildPitchBeats(pack,recos).forEach(b=>seq.push({t:'say',tag:b.label.split('—')[0].trim(),text:b.text.replace(/^«\s*/,'').replace(/\s*»$/,''),hint:b.label.includes('—')?b.label.split('—')[1].trim():''}));
-  // PRIX + REFRAMING
-  if(st.callGoal==='membership'){
-    const fmF=fmtEur(foundingMonthly(pack)), fpsF=fmtEur(foundingPerSession(pack));
-    seq.push({t:'say',tag:'Le prix',text:`C'est <b>${fmF||fmtEur(packMonthly(pack))}/mois</b>${fpsF?`, soit ${fpsF} la séance`:''}. Frais d'inscription offerts.`,hint:'Annoncez, puis TAISEZ-VOUS.'});
-    const rf=buildReframe(pack);
-    if(rf[0])seq.push({t:'say',tag:'Valeur',text:`Ramené au quotidien : <b>${rf[0].big}</b>. ${rf[0].lab.replace(/<\/?b>/g,'')}`,hint:'Reframe : du prix vers la valeur.'});
-    const vsP=rf.find(x=>x.ic==='🎯');
-    if(vsP)seq.push({t:'say',tag:'Vs privé',text:`Et c'est <b>${vsP.big.toLowerCase()}</b> qu'un coaching particulier, pour le même Reformer.`,hint:'Ancre la comparaison de valeur.'});
-  } else {
-    seq.push({t:'say',tag:'Essai gratuit',text:`Le mieux pour commencer : un <b>cours d'introduction gratuit de 30 min</b>. Vous découvrez le Reformer, sans aucun engagement.`,hint:'Barrière basse = oui facile.'});
+/* helpers de rendu */
+function optChips(data,field,single){
+  const sel=single?(st[field]?[st[field]]:[]):st[field];
+  return '<div class="opts">'+data.map(o=>{
+    const on=sel.indexOf(o.id)>=0;
+    return `<button class="opt${on?' sel':''}" onclick="pick('${field}','${o.id}',${single})"><span class="oic">${o.ic}</span><span>${o.label}${o.note?`<small>${o.note}</small>`:''}</span><span class="ock">✓</span></button>`;
+  }).join('')+'</div>';
+}
+function digFor(data,ids){
+  const ds=(ids||[]).map(id=>{const o=data.find(x=>x.id===id);return o&&o.dig?o:null;}).filter(Boolean);
+  if(!ds.length)return '';
+  return `<div class="ask-box"><div class="h">🔍 À demander maintenant</div>${ds.map(d=>`<div class="q">${d.dig}</div>`).join('')}</div>`;
+}
+
+function renderScreen(){
+  const flow=buildFlow();
+  st.idx=Math.max(0,Math.min(st.idx,flow.length-1));
+  const s=flow[st.idx];
+  $('#topPhase').textContent=s.phase||'Sales Coach';
+  $('#topSub').textContent=(CFG.studio||'Club Pilates');
+  $('#bar').style.width=Math.round((st.idx+1)/flow.length*100)+'%';
+  const scr=$('#screen');let h='';let nav='';
+
+  if(s.t==='goal'){
+    h=`<div class="scr-tag ask">Avant de commencer</div>
+      <div class="scr-q">Objectif de cet appel ?</div>
+      <div class="scr-sub">Le script, le prix et le closing s'adaptent à ce choix.</div>
+      <div class="opts">
+        <button class="opt${st.callGoal==='trial'?' sel':''}" onclick="setGoal('trial')"><span class="oic">🎟️</span><span>Booker un essai gratuit<small>Barrière basse · idéal appel à froid</small></span><span class="ock">✓</span></button>
+        <button class="opt${st.callGoal==='membership'?' sel':''}" onclick="setGoal('membership')"><span class="oic">💳</span><span>Closer l'abonnement<small>Vente directe · prospect chaud</small></span><span class="ock">✓</span></button>
+      </div>`;
+    nav=navHTML(false,'Commencer l\'appel');
   }
-  // URGENCE
-  if(CFG.spotsLeft)seq.push({t:'say',tag:'Urgence',text:`On lance le studio : <b>les ${CFG.spotsLeft} premiers membres fondateurs</b> ont -${CFG.founding}% à vie. Les places partent vite.`,hint:'Rareté réelle = décision maintenant.'});
-  // CLOSING
-  if(st.callGoal==='membership'){
-    seq.push({t:'close',tag:'Closing',text:`Qu'est-ce que vous en pensez ? <b>On y va ?</b>`,hint:'« On y va ? » — closing assumé.'});
-    seq.push({t:'close',tag:'Closing',text:`Vous préférez démarrer plutôt <b>en semaine ou le week-end</b> ?`,hint:'Closing alternatif : pas « si » mais « quand ».'});
-  } else {
-    seq.push({t:'close',tag:'Closing essai',text:`Je vous bloque votre cours découverte ? <b>Mardi 18h ou jeudi 19h</b> ?`,hint:'Verrouille un créneau précis.'});
+  else if(s.t==='q'){
+    h=`<div class="scr-tag ask">${s.phase}</div><div class="scr-q">${s.q}</div>${s.sub?`<div class="scr-sub">${s.sub}</div>`:''}${optChips(s.data,s.field,s.single)}`;
+    if(s.dig){const ids=s.single?(st[s.field]?[st[s.field]]:[]):st[s.field];h+=digFor(s.data,ids);}
+    if(s.lever&&ageBand()){const b=ageBand();h+=`<div class="lever">${b.phrases[0]}</div>`;}
+    nav=navHTML(true);
   }
-  return seq;
-}
-let tpIdx=0;
-function openTP(){tpIdx=0;renderTP();$('#tp').classList.add('on')}
-function closeTP(){$('#tp').classList.remove('on')}
-function tpNext(){const s=buildScript();if(tpIdx<s.length-1){tpIdx++;renderTP()}else{closeTP()}}
-function tpPrev(){if(tpIdx>0){tpIdx--;renderTP()}}
-const TP_TAGCLASS={say:'say',ask:'ask',listen:'listen',close:'close'};
-function renderTP(){
-  const s=buildScript();
-  const cur=s[Math.min(tpIdx,s.length-1)];
-  $('#tpStep').textContent=`${tpIdx+1} / ${s.length}`;
-  $('#tpProg').innerHTML=s.map((_,i)=>`<div class="tp-dot ${i<tpIdx?'done':(i===tpIdx?'cur':'')}"></div>`).join('');
-  $('#tpTag').innerHTML=`<div class="tp-tag ${TP_TAGCLASS[cur.t]||''}">${cur.t==='ask'?'❓ '+cur.tag:cur.t==='listen'?'👂 '+cur.tag:cur.t==='close'?'✅ '+cur.tag:'🗣️ '+cur.tag}</div>`;
-  $('#tpText').innerHTML=cur.text;
-  $('#tpHint').textContent=cur.hint||'';
-  $('#tpNextLbl').textContent=(tpIdx>=s.length-1)?'Terminer ✓':'Suivant ›';
-}
-
-/* ════════════════════════════════════════════════════════════════
-   RENDU DES VUES
-   ════════════════════════════════════════════════════════════════ */
-function renderStepper(){
-  $('#stepper').innerHTML=STEPS.map((s,i)=>{
-    const cls=i<st.step?'done':(i===st.step?'active':'');
-    return `<div class="step-pill ${cls}" onclick="goStep(${i})"><div class="step-bar"></div><div class="step-lbl">${s.lbl}</div></div>`;
-  }).join('');
-}
-
-function renderFiche(){
-  const rows=[];
-  const b=ageBand();
-  if(b)rows.push(['Âge',`<span class="ftag" style="background:${b.color};color:#fff">${b.ic} ${b.label}</span>`]);
-  if(st.connait!=null)rows.push(['Connaît CP',st.connait==='oui'?'Oui':'Non, à présenter']);
-  if(st.reason.length)rows.push(['Motif',st.reason.map(r=>lbl(REASONS,r)).join(' · ')]);
-  if(st.trigger)rows.push(['Déclencheur',`<span class="ftag" style="background:var(--warn);color:#fff">${lbl(TRIGGERS,st.trigger)}</span>`]);
-  if(st.tried.length)rows.push(['A essayé',`<span class="fiche-tags">${st.tried.map(t=>`<span class="ftag">${lbl(TRIED,t)}</span>`).join('')}</span>`]);
-  if(st.pain.length)rows.push(['Douleur',`<span class="fiche-tags">${st.pain.map(p=>`<span class="ftag">${lbl(PAINS,p)}</span>`).join('')}</span>`]);
-  if(st.goals.length)rows.push(['Objectifs',`<span class="fiche-tags">${st.goals.map(g=>`<span class="ftag">${lbl(GOALS,g)}</span>`).join('')}</span>`]);
-  if(st.emotion)rows.push(['Enjeu',`<span class="ftag" style="background:var(--cp-blue);color:#fff">${lbl(EMOTIONS,st.emotion)}</span>`]);
-  const ah=activeHealth();
-  if(ah.length)rows.push(['Santé',`<span class="fiche-tags">${ah.map(h=>`<span class="ftag warn">${lbl(HEALTH,h)}</span>`).join('')}</span>`]);
-  if(st.dispo)rows.push(['Dispo',lbl(DISPO,st.dispo)]);
-  if(!rows.length)return '';
-  return `<div class="fiche"><div class="fiche-h"><div class="t">Fiche prospect (en direct)</div></div>${rows.map(r=>`<div class="fiche-row"><div class="k">${r[0]}</div><div class="v">${r[1]}</div></div>`).join('')}</div>`;
-}
-
-function viewAccueil(){
-  const rep=CFG.rep||'[votre prénom]';
-  const studioTxt=CFG.studio?` <b>${esc(CFG.studio)}</b>`:'';
-  return `
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>Objectif de cet appel</div>
-    <div class="q-sub" style="margin-bottom:10px">Choisissez la stratégie. Le script, le prix et le closing s'adaptent.</div>
-    <div class="goal-toggle">
-      <button class="goal-opt trial ${st.callGoal==='trial'?'sel':''}" onclick="setGoal('trial')">
-        <div class="gt">🎟️ Booker l'essai</div>
-        <div class="gd">Cours découverte gratuit. Barrière basse, on close en studio. <b>Idéal appel à froid.</b></div>
-      </button>
-      <button class="goal-opt membership ${st.callGoal==='membership'?'sel':''}" onclick="setGoal('membership')">
-        <div class="gt">💳 Closer l'abo</div>
-        <div class="gd">Vente directe de l'abonnement au téléphone. <b>Prospect déjà chaud.</b></div>
-      </button>
-    </div>
-  </div>
-  ${tipsCard('accueil')}
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>Phase 1 · Prise de contact</div>
-    <div class="q-title">Ouvrez l'appel</div>
-    <div class="say">Bonjour, <b>${esc(rep)}</b> de Club Pilates${studioTxt}.</div>
-    <div class="say">Je vous contacte suite à votre <b>demande d'informations</b>.</div>
-    <div class="say">Avez-vous quelques minutes ? Je vais vous proposer <b>la meilleure offre adaptée à votre besoin</b> et répondre à vos questions.</div>
-  </div>
-  <div class="card">
-    <div class="q-title">Connaissez-vous Club Pilates ?</div>
-    <div class="q-sub">Si non, présentez brièvement la marque (mémo « Avantages » en bas) ou proposez un RDV téléphonique.</div>
-    ${chips([{id:'oui',ic:'👍',label:'Oui, déjà entendu'},{id:'non',ic:'🆕',label:'Non, à découvrir'}],st.connait?[st.connait]:[],'pickConnait')}
-    ${st.connait==='non'?`<div class="say listen" style="margin-top:12px">Présentez l'histoire (San Diego 2007, 1500 studios, n°1 mondial) et 2-3 <b>avantages clés</b>. Si pas dispo : <b>programmez un RDV téléphonique</b>.</div>`:''}
-  </div>
-  <div class="nav">
-    <button class="btn btn-primary" onclick="goStep(1)">Profil du prospect →</button>
-  </div>`;
-}
-
-function viewProfil(){
-  const b=ageBand();
-  return `
-  ${renderFiche()}
-  ${tipsCard('profil')}
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>Phase 2 · Profil prospect</div>
-    <div class="q-title">À quelle tranche d'âge appartient-il/elle ?</div>
-    <div class="q-sub">Déduisez-le pendant l'échange. Adapte automatiquement vos leviers psy.</div>
-    <div class="age-grid">${AGE_BANDS.map(a=>`
-      <button class="age-card ${st.ageBand===a.id?'sel':''}" style="${st.ageBand===a.id?`background:${a.color}`:''}" onclick="pickAge('${a.id}')">
-        <span class="ic">${a.ic}</span>
-        <div class="ttl">${a.label}</div>
-        <div class="sub">${st.ageBand===a.id?'Sélectionné':'Cliquez'}</div>
-      </button>`).join('')}</div>
-    ${b?`
-      <div style="margin-top:14px">
-        <div style="font-size:11px;font-weight:800;color:${b.color};text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px">⚡ Leviers psychologiques à actionner</div>
-        <div class="leviers">${b.leviers.map(l=>`<div class="lev"><span class="d" style="background:${b.color}"></span>${esc(l)}</div>`).join('')}</div>
-        <div style="font-size:11px;font-weight:800;color:${b.color};text-transform:uppercase;letter-spacing:.08em;margin:14px 0 8px">🎯 Phrases clés pour cette tranche</div>
-        <div class="phrases">${b.phrases.map(p=>`<div class="phrase" style="border-left-color:${b.color}">${esc(p)}</div>`).join('')}</div>
-        <div style="font-size:11px;font-weight:800;color:#C0492F;text-transform:uppercase;letter-spacing:.08em;margin:14px 0 6px">⚠️ Peurs à anticiper</div>
-        <div style="font-size:12.5px;color:var(--ink-soft);line-height:1.55">${b.peurs.map(p=>'« '+p+' »').join(' · ')}</div>
-      </div>`:''}
-  </div>
-  <div class="nav">
-    <button class="btn btn-ghost" onclick="goStep(0)">←</button>
-    <button class="btn btn-primary" onclick="goStep(2)" ${st.ageBand?'':'disabled'}>Identifier la douleur →</button>
-  </div>`;
-}
-
-function viewDouleur(){
-  return `
-  ${renderFiche()}
-  ${tipsCard('douleur')}
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>Phase 3 · Le « O » de OMG — la vraie douleur</div>
-    <div class="q-title">Pourquoi nous contactez-vous aujourd'hui ?</div>
-    <div class="q-sub">Plusieurs choix possibles. Laissez parler, reformulez.</div>
-    ${chips(REASONS,st.reason,'pickReason')}
-  </div>
-  <div class="card">
-    <div class="q-title">⏱️ Le déclencheur — pourquoi MAINTENANT ?<span class="optional-tag">clé du closing</span></div>
-    <div class="q-sub">La raison la plus puissante de vendre : ce qui le pousse à agir aujourd'hui plutôt qu'il y a 6 mois.</div>
-    ${chips(TRIGGERS,st.trigger?[st.trigger]:[],'pickTrigger')}
-    ${st.trigger?digCard(TRIGGERS,[st.trigger]):''}
-  </div>
-  <div class="card">
-    <div class="q-title">Qu'a-t-il/elle déjà essayé ?<span class="optional-tag">contraste</span></div>
-    <div class="q-sub">Pour positionner le Reformer comme LA solution à ce qui n'a pas marché.</div>
-    ${chips(TRIED,st.tried,'pickTried')}
-    <div class="say listen">Qu'est-ce qui vous plaisait ? Qu'est-ce qui a fini par coincer ?</div>
-  </div>
-  <div class="card">
-    <div class="q-title">Qu'est-ce qui n'a pas fonctionné / pourquoi avoir arrêté ?</div>
-    <div class="q-sub">C'est <b>LE point clé</b> : la vraie douleur qu'on va résoudre. On ne vend pas un abonnement, mais une solution à une déception passée.</div>
-    ${chips(PAINS,st.pain,'pickPain')}
-    ${digCard(PAINS,st.pain)}
-  </div>
-  <div class="nav">
-    <button class="btn btn-ghost" onclick="goStep(1)">←</button>
-    <button class="btn btn-primary" onclick="goStep(3)">Objectifs →</button>
-  </div>`;
-}
-
-function viewObjectifs(){
-  return `
-  ${renderFiche()}
-  ${tipsCard('objectifs')}
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>Phase 4 · Le « G » de OMG — les objectifs</div>
-    <div class="q-title">Quels sont vos objectifs ?</div>
-    <div class="q-sub">Plusieurs choix possibles.</div>
-    ${chips(GOALS,st.goals,'pickGoal')}
-    ${digCard(GOALS,st.goals)}
-  </div>
-  <div class="card">
-    <div class="q-title">💗 L'enjeu profond — pourquoi c'est important ?<span class="optional-tag">le why du why</span></div>
-    <div class="q-sub">« Et pourquoi est-ce important pour VOUS ? » → creusez jusqu'à l'émotion. C'est ça qu'on revend au closing.</div>
-    ${chips(EMOTIONS,st.emotion?[st.emotion]:[],'pickEmotion')}
-  </div>
-  <div class="card">
-    <div class="q-title">Quelque chose à signaler côté santé ?</div>
-    <div class="q-sub">Filtre les cours adaptés. « Rien à signaler » efface les autres.</div>
-    ${chips(HEALTH,st.health,'pickHealth')}
-  </div>
-  <div class="card">
-    <div class="q-title">Disponibilité ressentie</div>
-    <div class="q-sub">Sert à calibrer la reco. Ne la posez pas frontalement — déduisez-la de l'échange.</div>
-    ${chips(DISPO,st.dispo?[st.dispo]:[],'pickDispo')}
-  </div>
-  <div class="nav">
-    <button class="btn btn-ghost" onclick="goStep(2)">←</button>
-    <button class="btn btn-primary" onclick="goStep(4)">Voir la reco →</button>
-  </div>`;
-}
-
-function viewReco(){
-  const pack=recommendPack();
-  const meta=PACK_META[pack];
-  const recos=recommendClasses(pack);
-  const warns=classWarnings(recos);
-  const ms=matchScore();
-  const m=packMonthly(pack), mF=fmtEur(m);
-  const ps=packPerSession(pack), psF=fmtEur(ps);
-  const fm=foundingMonthly(pack), fmF=fmtEur(fm);
-  const fps=foundingPerSession(pack), fpsF=fmtEur(fps);
-  const baseF=fmtEur(CFG.base);
-
-  let priceHtml='';
-  if(mF!=null){
-    // Prix principal : €/mois (post fondateur si applicable)
-    const mainAmount=fmF||mF;
-    const subline=[];
-    if(pack===3){
-      // Illimité — pas de €/séance fixe
-      if(fmF)subline.push(`<span style="text-decoration:line-through;opacity:.55">${mF}/mois</span> · membre fondateur -${CFG.founding}%`);
-      subline.push('Pratique illimitée · frais d\'inscription offerts');
-    } else {
-      // Pack 1 ou 2 — afficher €/séance en sublabel
-      const psMain=fpsF||psF;
-      subline.push(`Soit ${psMain}/séance${baseF?` <span style="text-decoration:line-through;opacity:.55">(${baseF} hors pack)</span>`:''}`);
-      if(fmF)subline.push(`<span style="opacity:.7">Avant remise membre fondateur : ${mF}/mois (${psF}/séance)</span>`);
-      subline.push('Frais d\'inscription offerts');
-    }
-    priceHtml=`<div class="reco-price"><span class="now">${mainAmount}</span><span class="unit">/ mois</span></div>`;
-    priceHtml+=`<div class="reco-founding">${subline.join(' · ')}</div>`;
-  } else {
-    priceHtml=`<div class="reco-founding" style="margin-top:12px">⚠️ Prix non renseigné — complétez la grille dans <b>Réglages</b>.</div>`;
+  else if(s.t==='say'){
+    h=`<div class="say-card"><div class="scr-tag say">🗣️ ${s.tag}</div><div class="say-big quote">${s.getText?s.getText():s.text}</div>${s.hint?`<div class="say-hint"><span class="b">💡</span><span>${s.hint}</span></div>`:''}</div>`;
+    nav=navHTML(true,'Dit ✓');
   }
-
-  return `
-  ${renderFiche()}
-  ${tipsCard('reco')}
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>Phase 5 · Le « M » de OMG — la recommandation</div>
-    <div class="gauge">
-      <div class="gauge-track"><div class="gauge-fill" style="width:${ms}%"></div></div>
-      <div class="gauge-val">${ms}%</div>
-    </div>
-    <div class="note">Niveau de qualification du besoin — plus c'est haut, plus la reco est sur-mesure.</div>
-
-    <div class="reco-pack ${meta.cls}" style="margin-top:14px">
-      <span class="reco-badge">${meta.badge}</span>
-      <div class="reco-name">${meta.name}</div>
-      <div class="reco-freq">${meta.freq}</div>
-      <div class="reco-tag">${meta.tag}</div>
-      ${priceHtml}
-    </div>
-
-    <div class="alt">
-      ${[1,2,3].map(p=>`<button class="altbtn ${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':(p===3?'illimité':'complément')}</small></button>`).join('')}
-    </div>
-    <div class="note">${st.packChoice?'Choix forcé manuellement. ':''}Le moteur oriente vers le <b>2×/sem</b> (rythme des résultats) ou l'<b>illimité</b> selon la motivation — jamais en force, toujours par la valeur.</div>
-  </div>
-
-  <div class="card">
-    <div class="q-title">Les cours sur-mesure</div>
-    ${recos.map((r,i)=>{const c=CLASSES[r.id];return `<div class="classpill"><div class="num">${i+1}</div><div><div class="nm">${c.nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11.5px">· ${c.sub}</span></div><div class="ds">${c.ds}</div><div class="why">→ ${r.why}</div></div></div>`;}).join('')}
-    ${warns.length?warns.map(w=>`<div class="classwarn">⚠️ ${w}</div>`).join(''):''}
-  </div>
-
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>💎 Reframing prix — du coût vers la valeur</div>
-    <div class="q-sub">Ne dites jamais le prix "tout sec". Ramenez-le à ces angles.</div>
-    <div class="reframe">
-      ${buildReframe(pack).map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div><div class="big">${r.big}</div><div class="lab">${r.lab}</div></div></div>`).join('')}
-    </div>
-    <div class="say" style="margin-top:12px">${esc(buildReframePitch(pack))}</div>
-  </div>
-
-  <div class="card">
-    <div class="eyebrow"><span class="dot"></span>🎙️ L'argumentaire — déroulez-le dans l'ordre</div>
-    <div class="q-sub">Chaque temps a un rôle. Ne récitez pas : adaptez avec ses mots à lui.</div>
-    ${buildPitchBeats(pack,recos).map((b,i)=>`
-      <div style="margin-top:${i?14:8}px">
-        <div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cp-blue);margin-bottom:5px">${i+1}. ${b.label}</div>
-        <div class="say">${b.text}</div>
-      </div>`).join('')}
-    ${st.callGoal==='membership'?`
-      <div style="margin-top:14px"><div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cp-blue);margin-bottom:5px">6. Le prix (après le reframing ci-dessus)</div>
-      <div class="say">${esc(buildPricePitch(pack))}</div></div>`:`
-      <div style="margin-top:14px"><div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ok);margin-bottom:5px">6. Proposer l'essai gratuit</div>
-      <div class="say" style="background:#E6F5EE">${buildTrialPitch()}</div></div>`}
-    <div class="say listen" style="margin-top:12px">Puis écoutez : « Qu'est-ce que vous en pensez ? » <span style="color:var(--ink-mid)">— laissez le silence travailler.</span></div>
-  </div>
-
-  <div class="nav">
-    <button class="btn btn-ghost" onclick="goStep(3)">←</button>
-    <button class="btn btn-primary" onclick="goStep(5)">Closing →</button>
-  </div>`;
+  else if(s.t==='beat'){
+    h=`<div class="say-card"><div class="scr-tag say">🗣️ ${s.n}. ${s.beat.label}</div><div class="say-big quote">${s.beat.text}</div>${s.beat.hint?`<div class="say-hint"><span class="b">💡</span><span>${s.beat.hint}</span></div>`:''}</div>`;
+    nav=navHTML(true,'Dit ✓');
+  }
+  else if(s.t==='reco'){
+    const pack=recommendPack(),meta=PACK_META[pack],recos=recommendClasses(pack),warns=classWarnings(recos);
+    const fmF=fmtEur(foundingMonthly(pack)),mF=fmtEur(packMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack)),psF=fmtEur(packPerSession(pack));
+    let priceHtml='';
+    if(mF){priceHtml=`<div class="reco-price"><span class="now">${fmF||mF}</span><span class="un">/ mois</span></div><div class="reco-foot">${pack===3?'Illimité':'Soit '+(fpsF||psF)+'/séance'} · fondateur -${CFG.founding}% · inscription offerte</div>`;}
+    else priceHtml=`<div class="reco-foot" style="margin-top:10px">⚠️ Prix à renseigner dans Réglages</div>`;
+    h=`<div class="scr-tag reco">${s.phase} · le match</div>
+      <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore()}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
+      <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
+      <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div></div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>`;
+    nav=navHTML(true,'Dérouler l\'argumentaire →');
+  }
+  else if(s.t==='reframe'){
+    const pack=recommendPack();
+    h=`<div class="scr-tag say">💎 Reframing prix — du coût vers la valeur</div><div class="scr-sub">Ne dites jamais le prix « tout sec ». Ancrez ces angles d'abord.</div>${buildReframe(pack).map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div><div class="big">${r.big}</div><div class="lab">${r.lab}</div></div></div>`).join('')}`;
+    nav=navHTML(true);
+  }
+  else if(s.t==='price'){
+    h=`<div class="say-card"><div class="scr-tag say">🗣️ Annoncer le prix</div><div class="say-big quote">${buildPricePitch(recommendPack())}</div><div class="say-hint"><span class="b">💡</span><span>Annoncez le prix… puis TAISEZ-VOUS. Laissez le silence travailler.</span></div></div>`;
+    nav=navHTML(true,'Dit ✓');
+  }
+  else if(s.t==='trial'){
+    h=`<div class="say-card"><div class="scr-tag say">🗣️ Proposer l'essai gratuit</div><div class="say-big quote">${buildTrialPitch()}</div><div class="say-hint"><span class="b">💡</span><span>Barrière basse = oui facile. On close en studio après.</span></div></div>`;
+    nav=navHTML(true,'Dit ✓');
+  }
+  else if(s.t==='urgency'){
+    h=`<div class="say-card"><div class="scr-tag warn">🔥 Créer l'urgence</div><div class="say-big quote">« On lance le studio : les <b>${CFG.spotsLeft} premiers membres fondateurs</b> ont -${CFG.founding}% à vie et l'inscription offerte. Honnêtement, les places partent vite. »</div><div class="say-hint"><span class="b">💡</span><span>Rareté réelle = décision maintenant. Ne mentez jamais sur le nombre.</span></div></div>`;
+    nav=navHTML(true,'Dit ✓');
+  }
+  else if(s.t==='closing'){
+    const isTrial=st.callGoal==='trial';
+    h=`<div class="say-card"><div class="scr-tag say">✅ Closing</div><div class="say-big quote">${isTrial?buildTrialClose():'« Qu\'est-ce que vous en pensez ? <b>On y va ?</b> »'}</div><div class="say-hint"><span class="b">💡</span><span>${isTrial?'Verrouillez un créneau précis (date + heure).':'« On y va ? » assumé. Puis : « Plutôt en semaine ou le week-end pour démarrer ? »'}</span></div></div>`;
+    nav=navHTML(true,'Voir la fiche →');
+  }
+  else if(s.t==='final'){
+    h=`<div class="scr-tag reco">Fiche prospect</div><div class="scr-q" style="font-size:20px">Récap de l'appel</div><div class="recap" id="recapBox">${esc(buildRecap())}</div>`;
+    nav=`<button class="back" onclick="prev()">‹</button><button class="go ok" onclick="copyRecap()">📋 Copier la fiche</button>`;
+  }
+  scr.innerHTML=h;scr.scrollTop=0;
+  $('#nav').innerHTML=nav;
+}
+function navHTML(showBack,goLabel){
+  const back=showBack?`<button class="back" onclick="prev()">‹</button>`:'';
+  return back+`<button class="go" onclick="next()">${goLabel||'Continuer'} ${goLabel&&goLabel.includes('→')?'':'→'}</button>`;
 }
 
-function buildRecapText(){
-  const pack=recommendPack();
-  const recos=recommendClasses(pack);
-  const ah=activeHealth();
-  const L=[];
+/* navigation + sélection */
+function pick(field,id,single){
+  if(single){st[field]=(st[field]===id?null:id);}
+  else if(field==='health'){
+    if(id==='aucun')st.health=['aucun'];
+    else{const i=st.health.indexOf('aucun');if(i>=0)st.health.splice(i,1);const j=st.health.indexOf(id);if(j>=0)st.health.splice(j,1);else st.health.push(id);}
+  } else {
+    const a=st[field],i=a.indexOf(id);if(i>=0)a.splice(i,1);else a.push(id);
+  }
+  renderScreen();
+}
+function pickPack(p){st.packChoice=(st.packChoice===p?null:p);renderScreen();}
+function setGoal(g){st.callGoal=g;renderScreen();}
+function next(){const len=buildFlow().length;if(st.idx<len-1){st.idx++;renderScreen();}}
+function prev(){if(st.idx>0){st.idx--;renderScreen();}}
+
+function buildRecap(){
+  const pack=recommendPack(),recos=recommendClasses(pack),ah=activeHealth(),L=[];
   L.push(`FICHE PROSPECT — ${('Club Pilates '+(CFG.studio||'')).trim()}`);
-  if(CFG.rep)L.push(`Commercial : ${CFG.rep}`);
-  L.push('');
-  L.push(`Connaît CP : ${st.connait==='oui'?'Oui':(st.connait==='non'?'Non':'—')}`);
-  if(st.reason.length)L.push(`Motif d'appel : ${st.reason.map(r=>lbl(REASONS,r)).join(', ')}`);
-  if(st.trigger)L.push(`Déclencheur (pourquoi maintenant) : ${lbl(TRIGGERS,st.trigger)}`);
-  if(st.tried.length)L.push(`A déjà essayé : ${st.tried.map(t=>lbl(TRIED,t)).join(', ')}`);
-  if(st.pain.length)L.push(`Douleur / déception : ${st.pain.map(p=>lbl(PAINS,p)).join(', ')}`);
+  if(CFG.rep)L.push(`Commercial : ${CFG.rep}`);L.push('');
+  const b=ageBand();if(b)L.push(`Âge : ${b.label}`);
+  L.push(`Connaît CP : ${st.connait==='oui'?'Oui':st.connait==='non'?'Non':'—'}`);
+  if(st.reason.length)L.push(`Motif : ${st.reason.map(r=>lbl(REASONS,r)).join(', ')}`);
+  if(st.trigger)L.push(`Déclencheur : ${lbl(TRIGGERS,st.trigger)}`);
+  if(st.tried.length)L.push(`A essayé : ${st.tried.map(t=>lbl(TRIED,t)).join(', ')}`);
+  if(st.pain.length)L.push(`Douleur : ${st.pain.map(p=>lbl(PAINS,p)).join(', ')}`);
   if(st.goals.length)L.push(`Objectifs : ${st.goals.map(g=>lbl(GOALS,g)).join(', ')}`);
   if(st.emotion)L.push(`Enjeu profond : ${lbl(EMOTIONS,st.emotion)}`);
   if(ah.length)L.push(`Santé : ${ah.map(h=>lbl(HEALTH,h)).join(', ')}`);
-  if(st.dispo)L.push(`Disponibilité : ${lbl(DISPO,st.dispo)}`);
-  L.push('');
+  if(st.dispo)L.push(`Dispo : ${lbl(DISPO,st.dispo)}`);L.push('');
+  L.push(`Objectif appel : ${st.callGoal==='trial'?'Essai gratuit':'Abonnement'}`);
   L.push(`RECO : ${PACK_META[pack].name} (${PACK_META[pack].freq})`);
   L.push(`Cours : ${recos.map(r=>CLASSES[r.id].nm).join(' + ')}`);
-  const m=packMonthly(pack), mF=fmtEur(m);
-  const ps=packPerSession(pack), psF=fmtEur(ps);
-  const fmF=fmtEur(foundingMonthly(pack)), fpsF=fmtEur(foundingPerSession(pack));
-  if(mF){
-    let line=`Tarif : ${mF}/mois`;
-    if(psF)line+=` (${psF}/séance)`;
-    if(fmF)line+=` → ${fmF}/mois${fpsF?` (${fpsF}/séance)`:''} membre fondateur`;
-    L.push(line);
-  }
-  L.push(`Niveau de match : ${matchScore()}%`);
+  const mF=fmtEur(packMonthly(pack)),fmF=fmtEur(foundingMonthly(pack));
+  if(mF)L.push(`Tarif : ${mF}/mois${fmF?` → ${fmF}/mois fondateur`:''}`);
+  L.push(`Match : ${matchScore()}%`);
   return L.join('\n');
 }
+function copyRecap(){const t=buildRecap();navigator.clipboard?.writeText(t).then(()=>toast('Fiche copiée ✓')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Fiche copiée ✓');});}
 
-function viewClosing(){
-  const pack=recommendPack();
-  const isTrial=st.callGoal==='trial';
-  return `
-  ${tipsCard('closing')}
-  <div class="card">
-    <div class="eyebrow"><span class="dot" style="background:${isTrial?'var(--ok)':'var(--cp-blue)'}"></span>Phase 6 · Closing — ${isTrial?'Booker l\'essai gratuit':'Closer l\'abonnement'}</div>
-    <div class="q-title">${isTrial?'Verrouillez le cours découverte':'Projetez le client'}</div>
-    <div class="say"${isTrial?' style="background:#E6F5EE"':''}>${isTrial?buildTrialClose():esc(buildPricePitch(pack))}</div>
-    ${CFG.spotsLeft?`<div class="rf" style="margin:10px 0;background:#FFF6E9"><div class="ic">🔥</div><div><div class="big" style="color:var(--warn)">Plus que ${CFG.spotsLeft} places</div><div class="lab">Membres fondateurs -${CFG.founding}% à vie. <b>Créez l'urgence sans mentir.</b></div></div></div>`:''}
-    <div class="note" style="margin-bottom:6px">Rappels closing :</div>
-    <div class="adv"><span class="ck">✓</span><span>Remise <b>${CFG.spotsLeft||50} premiers membres fondateurs</b> + frais d'inscription offerts.</span></div>
-    <div class="adv"><span class="ck">✓</span><span>Tout se gère depuis l'<b>application</b> (réservation jusqu'à 3 semaines avant).</span></div>
-    <div class="adv"><span class="ck">✓</span><span>${isTrial?'L\'essai gratuit ne ferme rien — il <b>ouvre</b> la conversation en studio.':'On ne vend pas un abonnement, mais <b>une solution à une déception passée</b>.'}</span></div>
-  </div>
+/* ── Objections (avec recherche) ── */
+let objOpen=null;
+function renderObj(q){
+  q=(q||'').toLowerCase().trim();
+  const list=OBJECTIONS.filter(o=>!q||o.t.toLowerCase().includes(q)||(o.kw||'').includes(q));
+  $('#objList').innerHTML=list.length?list.map(o=>`<div class="obj${objOpen===o.id?' open':''}" id="obj-${o.id}"><div class="obj-h" onclick="toggleObj('${o.id}')"><span class="ic">${o.ic}</span><span>${o.t}</span><span class="ch">▾</span></div><div class="obj-b">${o.lines.map(l=>`<div class="ln">${l}</div>`).join('')}</div></div>`).join(''):`<div style="text-align:center;color:var(--ink-mid);padding:30px;font-size:14px">Aucune objection trouvée pour « ${esc(q)} »</div>`;
+}
+function toggleObj(id){objOpen=objOpen===id?null:id;document.querySelectorAll('.obj').forEach(e=>e.classList.toggle('open',e.id==='obj-'+id&&objOpen===id));}
+function openObj(){objOpen=null;$('#objSearch').value='';renderObj('');$('#objBg').classList.add('on');$('#objSheet').classList.add('on');}
+function closeObj(){$('#objBg').classList.remove('on');$('#objSheet').classList.remove('on');}
 
-  <div class="card">
-    <div class="q-title">Fiche à copier (CRM)</div>
-    <div class="recap-box" id="recapBox">${esc(buildRecapText())}</div>
-    <div class="nav">
-      <button class="btn btn-primary" onclick="copyRecap()">📋 Copier la fiche</button>
-      <button class="btn btn-ghost" onclick="resetCall()">Nouvel appel</button>
-    </div>
-  </div>
+/* ── Menu (réglages / académie / fiche / nouvel appel) ── */
+function openMenu(){
+  $('#menuBody').innerHTML=`
+    <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
+    <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
+    <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;
+  $('#menuBg').classList.add('on');$('#menuSheet').classList.add('on');
+}
+function closeMenu(){$('#menuBg').classList.remove('on');$('#menuSheet').classList.remove('on');}
+function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;st={callGoal:g,idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
 
-  <div class="card">
-    <div class="q-title" style="margin-bottom:10px">Mémo — les 4 niveaux</div>
-    <div class="ref-grid">${NIVEAUX.map(n=>`<div class="lvl"><div class="n">${n.n}</div><div class="t">${n.t}</div><div class="d">${n.d}</div></div>`).join('')}</div>
-  </div>
-
-  <div class="nav"><button class="btn btn-ghost" onclick="goStep(4)" style="flex:1">← Retour reco</button></div>`;
+/* ── Académie ── */
+function showAca(){
+  const h=`<div class="aca">
+    <div class="aca-h"><h2>Maîtrisez la vente CP</h2><p>5 micro-leçons. À relire entre 2 appels — votre meilleur entraînement.</p></div>
+    <div class="aca-l"><div class="nb">LEÇON 1 · OMG</div><h3>La méthode, votre boussole</h3><div class="ld">Ne vendez jamais avant d'avoir creusé.</div>
+      <div class="aca-row"><span class="ck">O</span><span>Origine de la douleur — « qu'est-ce qui n'a pas marché avant ? »</span></div>
+      <div class="aca-row"><span class="ck">G</span><span>Goal — « que voulez-vous réussir dans 3 mois ? »</span></div>
+      <div class="aca-row"><span class="ck">M</span><span>Membership — « vu ce que vous m'avez partagé, je vous recommande… »</span></div></div>
+    <div class="aca-l"><div class="nb">LEÇON 2 · NIVEAUX</div><h3>Les 5 niveaux 0.5 → 2.5</h3><div class="lvls">${NIVEAUX.map(n=>`<div class="lvl"><span class="bg" style="background:${n.color}">${n.n}</span><div class="lt">${n.t}</div><div class="ld">${n.d}</div>${n.badge?`<div style="margin-top:5px;font-size:10.5px;font-weight:800;color:${n.color}">${n.badge}</div>`:''}</div>`).join('')}</div></div>
+    <div class="aca-l"><div class="nb">LEÇON 3 · ARME</div><h3>${esc(STRAT_LEVEL05.title)}</h3><div class="ld">${esc(STRAT_LEVEL05.when)}</div><div class="strat"><div style="font-size:10px;font-weight:800;color:#7a4400;text-transform:uppercase">Pitch type</div><div class="pq">${esc(STRAT_LEVEL05.pitch)}</div><ul>${STRAT_LEVEL05.killers.map(k=>`<li>${esc(k)}</li>`).join('')}</ul></div></div>
+    <div class="aca-l"><div class="nb">LEÇON 4 · 30-70 ANS</div><h3>Leviers psy par âge</h3>${AGE_BANDS.map(b=>`<div style="background:var(--cp-veil);border-radius:11px;padding:11px;margin-top:9px;border-left:4px solid ${b.color}"><b style="color:${b.color}">${b.ic} ${b.label}</b><div style="font-size:11.5px;color:var(--ink-soft);line-height:1.6;margin-top:4px"><b style="color:var(--cp-deep)">Leviers :</b> ${b.leviers.slice(0,3).join(' · ')}<br><b style="color:var(--cp-deep)">Phrase :</b> <i>${b.phrases[0]}</i></div></div>`).join('')}</div>
+    <div class="aca-l"><div class="nb">LEÇON 5 · RÈGLES D'OR</div><h3>5 réflexes gagnants</h3>
+      <div class="aca-row"><span class="ck">1</span><span>Souriez avant de décrocher. Le ton s'entend.</span></div>
+      <div class="aca-row"><span class="ck">2</span><span>SILENCE = votre allié. 3 sec après une question, ils en disent plus.</span></div>
+      <div class="aca-row"><span class="ck">3</span><span>Pack 2 par défaut, Pack 3 sur upsell motivé, Pack 1 en repli.</span></div>
+      <div class="aca-row"><span class="ck">4</span><span>« On y va ? » plutôt que « Voulez-vous ? ».</span></div>
+      <div class="aca-row"><span class="ck">5</span><span>Jamais lâcher sans engagement : ferme OU rappel daté.</span></div></div>
+  </div>`;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#topPhase').textContent='Académie';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';
 }
 
-/* ════════════════════════════════════════════════════════════════
-   MODE ACADÉMIE — Formation interactive du commercial
-   ════════════════════════════════════════════════════════════════ */
-function viewAcademy(){
-  return `
-  <div class="aca-hero">
-    <div class="eyebrow"><span class="dot" style="background:var(--cp-soft)"></span>Académie · Formation flash</div>
-    <h2>Maîtrisez l'art de vendre Club Pilates</h2>
-    <p>5 micro-leçons pour passer de bon à excellent. À relire entre 2 appels — votre meilleur entraînement.</p>
-  </div>
-
-  <div class="aca-lesson">
-    <div class="nb">LEÇON 1 · 2 min</div>
-    <h3>La méthode OMG — votre boussole</h3>
-    <div class="lead">Ne vendez jamais avant d'avoir creusé. 3 lettres, 3 étapes, 0 raccourci.</div>
-    <div style="display:grid;gap:8px">
-      <div class="lev"><span class="d"></span><b style="color:var(--cp-deep)">O — Origine de la douleur</b>&nbsp;: « Qu'est-ce qui n'a pas fonctionné avant ? »</div>
-      <div class="lev"><span class="d"></span><b style="color:var(--cp-deep)">G — Goal/Objectif</b>&nbsp;: « Que voulez-vous réussir dans 3 mois ? »</div>
-      <div class="lev"><span class="d"></span><b style="color:var(--cp-deep)">M — Membership/Recommandation</b>&nbsp;: « Vu ce que vous m'avez partagé, je vous recommande… »</div>
-    </div>
-    <div class="note" style="margin-top:10px;font-style:italic">Règle d'or : vous ne vendez pas un abonnement, vous résolvez une déception passée.</div>
-  </div>
-
-  <div class="aca-lesson">
-    <div class="nb">LEÇON 2 · 3 min</div>
-    <h3>Les 5 niveaux 0.5 → 2.5</h3>
-    <div class="lead">Connaître les niveaux = répondre aux objections "j'ai peur de ne pas suivre".</div>
-    <div class="ref-grid">${NIVEAUX.map(n=>`
-      <div class="lvl">
-        <div class="n" style="color:${n.color}"><span class="lvl-badge" style="background:${n.color}">${n.n}</span></div>
-        <div class="t" style="margin-top:6px">${n.t}</div>
-        <div class="d">${n.d}</div>
-        ${n.badge?`<div style="margin-top:6px;font-size:10.5px;font-weight:800;color:${n.color}">${n.badge}</div>`:''}
-      </div>`).join('')}</div>
-  </div>
-
-  <div class="aca-lesson">
-    <div class="nb">LEÇON 3 · ARME COMMERCIALE</div>
-    <h3>${esc(STRAT_LEVEL05.title)}</h3>
-    <div class="lead">${esc(STRAT_LEVEL05.when)}</div>
-    <div class="strat-box">
-      <div class="label">Pitch type</div>
-      <div class="pitch">${esc(STRAT_LEVEL05.pitch)}</div>
-      <div class="label" style="margin-top:8px">Pourquoi ça marche</div>
-      <ul>${STRAT_LEVEL05.killers.map(k=>`<li>${esc(k)}</li>`).join('')}</ul>
-    </div>
-  </div>
-
-  <div class="aca-lesson">
-    <div class="nb">LEÇON 4 · CIBLE 30-70 ANS</div>
-    <h3>Les leviers psy par tranche d'âge</h3>
-    <div class="lead">Les mots qui touchent un 35 ans ne touchent pas un 65 ans. Adaptez.</div>
-    ${AGE_BANDS.map(b=>`
-      <div style="background:var(--cp-veil);border-radius:11px;padding:12px;margin-top:10px;border-left:4px solid ${b.color}">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="font-size:18px">${b.ic}</span><b style="color:${b.color};font-size:14px">${b.label}</b></div>
-        <div style="font-size:11.5px;color:var(--ink-soft);line-height:1.6"><b style="color:var(--cp-deep)">Leviers :</b> ${b.leviers.slice(0,3).join(' · ')}<br><b style="color:var(--cp-deep)">Phrase clé :</b> <i>${b.phrases[0]}</i></div>
-      </div>`).join('')}
-  </div>
-
-  <div class="aca-lesson">
-    <div class="nb">LEÇON 5 · RÈGLES D'OR</div>
-    <h3>5 choses qui font la différence</h3>
-    <div style="display:grid;gap:9px">
-      <div class="adv"><span class="ck">1</span><span>Souriez avant de décrocher. Le ton s'entend.</span></div>
-      <div class="adv"><span class="ck">2</span><span>SILENCE = votre meilleur allié. 3 secondes après une question, ils en disent plus.</span></div>
-      <div class="adv"><span class="ck">3</span><span>Pack 2 par défaut, Pack 3 sur upsell motivé, Pack 1 en repli uniquement.</span></div>
-      <div class="adv"><span class="ck">4</span><span>« On y va ? » à la place de « Voulez-vous démarrer ? » — closing assumé.</span></div>
-      <div class="adv"><span class="ck">5</span><span>Jamais lâcher sans engagement : ferme OU rappel précis (date+heure).</span></div>
-    </div>
-  </div>
-
-  <div class="nav"><button class="btn btn-primary" onclick="setMode('call')" style="flex:1">📞 Lancer un appel →</button></div>`;
-}
-
-function render(){
-  renderStepper();
-  $('#hd-studio').textContent=CFG.studio||'Club Pilates';
-  $('#mode-call').classList.toggle('on',st.mode==='call');
-  $('#mode-academy').classList.toggle('on',st.mode==='academy');
-  $('#steps-row').style.display=(st.mode==='call'?'block':'none');
-  // Le bouton prompteur n'apparaît qu'en mode appel (sinon caché)
-  const tpl=$('#tpLaunch'); if(tpl)tpl.style.display=(st.mode==='call'?'flex':'none');
-  if(st.mode==='academy'){$('#app').innerHTML=viewAcademy();window.scrollTo({top:0,behavior:'smooth'});return;}
-  const views=[viewAccueil,viewProfil,viewDouleur,viewObjectifs,viewReco,viewClosing];
-  $('#app').innerHTML=views[st.step]();
-  window.scrollTo({top:0,behavior:'smooth'});
-}
-
-/* ── Pickers ── */
-function setMode(m){st.mode=m;render()}
-function setGoal(g){st.callGoal=g;render();toast(g==='trial'?'Objectif : booker l\'essai':'Objectif : closer l\'abo')}
-function pickAge(id){st.ageBand=(st.ageBand===id?null:id);render()}
-function pickConnait(id){st.connait=id;render()}
-function pickReason(id){toggle(st.reason,id);render()}
-function pickPast(id){st.pastSport=id;render()}
-function pickTrigger(id){st.trigger=(st.trigger===id?null:id);render()}
-function pickTried(id){toggle(st.tried,id);render()}
-function pickEmotion(id){st.emotion=(st.emotion===id?null:id);render()}
-function pickPain(id){toggle(st.pain,id);render()}
-function pickGoal(id){toggle(st.goals,id);render()}
-function pickHealth(id){
-  if(id==='aucun'){st.health=['aucun'];}
-  else{const i=st.health.indexOf('aucun');if(i>=0)st.health.splice(i,1);toggle(st.health,id);}
-  render();
-}
-function pickDispo(id){st.dispo=id;render()}
-function pickPack(p){st.packChoice=(st.packChoice===p?null:p);render()}
-function goStep(i){st.step=i;render()}
-
-function resetCall(){
-  if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;
-  const keepMode=st.mode, keepGoal=st.callGoal, keepTips=st.showTips;
-  st={mode:keepMode,callGoal:keepGoal,step:0,ageBand:null,connait:null,reason:[],pastSport:null,trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null,showTips:keepTips};
-  render();toast('Nouvel appel');
-}
-function copyRecap(){
-  const t=buildRecapText();
-  navigator.clipboard?.writeText(t).then(()=>toast('Fiche copiée ✓')).catch(()=>{
-    const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Fiche copiée ✓');
-  });
-}
-
-/* ── Objection sheet ── */
-function renderSheet(){
-  // Reframing live injecté dans l'objection « C'est cher »
-  const pack=recommendPack();
-  const rf=buildReframe(pack);
-  const rfLines=rf.slice(0,3).map(r=>`💎 <b>${r.big}</b> — ${r.lab.replace(/<\/?b>/g,'')}`);
-  $('#objList').innerHTML=OBJECTIONS.map(o=>{
-    let lines=o.lines.slice();
-    if(o.id==='prix'&&rfLines.length)lines=lines.concat(rfLines);
-    return `
-    <div class="obj">
-      <div class="obj-h"><span class="ic">${o.ic}</span>${o.t}${o.id==='prix'?' <span style="font-size:10px;font-weight:700;color:var(--ok);margin-left:6px">+ reframing live</span>':''}</div>
-      <div class="obj-b">${lines.map(l=>`<div class="line">${l}</div>`).join('')}</div>
-    </div>`;}).join('');
-  $('#refPanels').innerHTML=`
-    <div class="obj"><div class="obj-h"><span class="ic">⭐</span>Avantages Club Pilates</div><div class="obj-b">${AVANTAGES.map(a=>`<div class="adv"><span class="ck">✓</span>${a}</div>`).join('')}</div></div>`;
-}
-function openSheet(){renderSheet();$('#sheetBg').classList.add('on');$('#sheet').classList.add('on')}
-function closeSheet(){$('#sheetBg').classList.remove('on');$('#sheet').classList.remove('on')}
-
-/* ── Settings ── */
-function openSettings(){
-  $('#set-studio').value=CFG.studio||'';
-  $('#set-rep').value=CFG.rep||'';
-  $('#set-base').value=CFG.base??'';
-  $('#set-p1').value=CFG.p1??'';
-  $('#set-p2').value=CFG.p2??'';
-  $('#set-p3').value=CFG.p3??'';
-  $('#set-priv').value=CFG.privateSession??'';
-  $('#set-spots').value=CFG.spotsLeft??'';
-  $('#set-founding').value=CFG.founding??'';
-  $('#settingsBg').classList.add('on');
-}
-function closeSettings(){$('#settingsBg').classList.remove('on')}
-function saveSettings(){
-  CFG.studio=$('#set-studio').value.trim();
-  CFG.rep=$('#set-rep').value.trim();
+/* ── Réglages ── */
+function openSet(){['studio','rep','base','p1','p2','p3','founding'].forEach(k=>$('#set-'+k).value=CFG[k]??'');$('#set-priv').value=CFG.privateSession??'';$('#set-spots').value=CFG.spotsLeft??'';$('#setBg').classList.add('on');}
+function closeSet(){$('#setBg').classList.remove('on');}
+function saveSet(){
+  CFG.studio=$('#set-studio').value.trim();CFG.rep=$('#set-rep').value.trim();
   CFG.base=parseFloat($('#set-base').value)||DEFAULT_CFG.base;
   CFG.p1=$('#set-p1').value===''?null:parseFloat($('#set-p1').value);
   CFG.p2=$('#set-p2').value===''?null:parseFloat($('#set-p2').value);
@@ -1622,11 +733,10 @@ function saveSettings(){
   CFG.privateSession=$('#set-priv').value===''?null:parseFloat($('#set-priv').value);
   CFG.spotsLeft=$('#set-spots').value===''?null:parseInt($('#set-spots').value,10);
   CFG.founding=$('#set-founding').value===''?0:parseFloat($('#set-founding').value);
-  localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
-  closeSettings();render();toast('Réglages enregistrés ✓');
+  localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));closeSet();renderScreen();toast('Réglages enregistrés ✓');
 }
 
-render();
+renderScreen();
 </script>
 </body>
 </html>
