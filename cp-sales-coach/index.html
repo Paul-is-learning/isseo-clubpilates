@@ -133,11 +133,14 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pack-switch small{display:block;font-size:9.5px;color:var(--ink-mid);font-weight:600;margin-top:1px}
 
 /* reframe value cards */
-.rf{display:flex;align-items:center;gap:12px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px}
+.rf{display:flex;align-items:flex-start;gap:12px;background:#fff;border:1.5px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px}
 .rf .ic{width:40px;height:40px;border-radius:11px;background:var(--cp-pale);display:grid;place-items:center;font-size:19px;flex:0 0 auto}
 .rf .big{font-weight:900;color:var(--cp-deep);font-size:18px;letter-spacing:-.01em;line-height:1.1}
 .rf .lab{font-size:12.5px;color:var(--ink-soft);line-height:1.4;margin-top:2px}
 .rf .lab b{color:var(--cp-deep)}
+.rf-say{margin-top:8px;background:var(--cp-veil);border-left:3px solid var(--cp-blue);border-radius:8px;padding:8px 11px;font-size:13px;line-height:1.5;color:var(--cp-dark);font-weight:600}
+.rf-anchor{background:#FBEFD8;border-radius:11px;padding:10px 13px;font-size:12px;line-height:1.45;color:var(--warn);font-weight:600;margin-bottom:12px}
+.rf-anchor b{color:#7a4400}
 
 .flex-note{display:flex;align-items:flex-start;gap:10px;background:var(--cp-pale);border-radius:13px;padding:12px 14px;margin-top:10px;font-size:12.5px;line-height:1.45;color:var(--cp-deep)}
 .flex-note .fic{font-size:17px;flex:0 0 auto}
@@ -661,14 +664,20 @@ function buildReframe(pack){
   const n=parseFloat(monthly);if(isNaN(n))return [];
   const out=[];const perDay=n/30;
   let dc=perDay<2.5?'Moins qu\'un café par jour':perDay<6?'Le prix d\'un café et d\'un croissant':perDay<12?'Moins qu\'un déjeuner par jour':'Le prix d\'un déjeuner';
-  out.push({ic:'☕',big:fmtEur(perDay)+' / jour',lab:`<b>${dc}</b> pour transformer votre corps.`});
+  out.push({ic:'☕',big:fmtEur(perDay)+' / jour',lab:`<b>${dc}</b> pour transformer votre corps.`,
+    say:`« Ramené à la journée, on parle de ${fmtEur(perDay)} — ${dc.toLowerCase()}. Sauf que ça, ça change votre corps et votre énergie. »`});
   const priv=parseFloat(CFG.privateSession),ps=foundingPerSession(pack)!=null?foundingPerSession(pack):packPerSession(pack);
-  if(!isNaN(priv)&&ps!=null)out.push({ic:'🎯',big:(priv/ps).toFixed(1).replace('.0','')+'× moins cher',lab:`Qu'un coaching privé (${fmtEur(priv)}/séance) — même Reformer, même coach.`});
-  else if(!isNaN(priv)&&pack===3)out.push({ic:'🎯',big:'Illimité',lab:`Une séance privée coûte ${fmtEur(priv)}. Ici, venez autant que vous voulez.`});
+  if(!isNaN(priv)&&ps!=null){const x=(priv/ps).toFixed(1).replace('.0','');out.push({ic:'🎯',big:x+'× moins cher',lab:`Qu'un coaching privé (${fmtEur(priv)}/séance) — même Reformer, même coach.`,
+    say:`« La même séance, même Reformer, même coach diplômé, en privé c'est ${fmtEur(priv)}. Ici, vous l'avez ${x} fois moins cher — pour ${fmtEur(ps)} la séance. »`});}
+  else if(!isNaN(priv)&&pack===3)out.push({ic:'🎯',big:'Illimité',lab:`Une séance privée coûte ${fmtEur(priv)}. Ici, venez autant que vous voulez.`,
+    say:`« Un cours particulier, c'est ${fmtEur(priv)} la séance. Là, c'est illimité : plus vous venez, moins ça vous coûte par séance. Faites le calcul. »`});
   const sess=SESSIONS_PER_MONTH[pack];
-  if(sess)out.push({ic:'📈',big:sess*3+' séances',lab:`Sur vos 3 mois. <b>10 vous le sentez, 20 vous le voyez, 30 vous êtes différent.</b>`});
-  else if(pack===3)out.push({ic:'📈',big:'Sans limite',lab:`<b>30 séances suffisent à vous transformer</b> (Joseph Pilates).`});
-  out.push({ic:'⏳',big:'0 € = 0 résultat',lab:`Continuer comme aujourd'hui, c'est gratuit… et sans changement.`});
+  if(sess)out.push({ic:'📈',big:sess*3+' séances',lab:`Sur vos 3 mois. <b>10 vous le sentez, 20 vous le voyez, 30 vous êtes différent.</b>`,
+    say:`« Sur vos 3 mois, ça fait ${sess*3} séances. 10, vous le sentez. 20, vous le voyez. 30, vous êtes différent. C'est ça que vous achetez, pas un abonnement. »`});
+  else if(pack===3)out.push({ic:'📈',big:'Sans limite',lab:`<b>30 séances suffisent à vous transformer</b> (Joseph Pilates).`,
+    say:`« Joseph Pilates le disait : 30 séances suffisent à transformer un corps. En illimité, vous les atteignez en quelques semaines — et vous continuez. »`});
+  out.push({ic:'⏳',big:'0 € = 0 résultat',lab:`Continuer comme aujourd'hui, c'est gratuit… et sans changement.`,
+    say:`« Ne rien faire, c'est gratuit, je vous l'accorde. Mais dans 3 mois, ce sera exactement pareil qu'aujourd'hui. Le vrai coût, ce n'est pas l'abonnement — c'est l'inaction. »`});
   return out;
 }
 function buildPricePitch(pack){
@@ -787,7 +796,9 @@ function renderScreen(){
   }
   else if(s.t==='reframe'){
     const pack=recommendPack();
-    h=`<div class="scr-tag say">💎 Reframing prix — du coût vers la valeur</div><div class="scr-sub">Ne dites jamais le prix « tout sec ». Ancrez ces angles d'abord.</div>${buildReframe(pack).map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div><div class="big">${r.big}</div><div class="lab">${r.lab}</div></div></div>`).join('')}`;
+    const mF=foundingMonthly(pack)!=null?fmtEur(foundingMonthly(pack)):fmtEur(packMonthly(pack));
+    const priceTip=mF?`<div class="rf-anchor">💬 Prix réel : <b>${mF}/mois</b>${foundingMonthly(pack)!=null?` (membre fondateur, -${CFG.founding}% à vie)`:''} — annoncé juste après. Ici, on installe la valeur d'abord.</div>`:'';
+    h=`<div class="scr-tag say">💎 Reframing prix — du coût vers la valeur</div><div class="scr-sub">Ne dites jamais le prix « tout sec ». Déroulez ces angles, puis annoncez.</div>${priceTip}${buildReframe(pack).map(r=>`<div class="rf"><div class="ic">${r.ic}</div><div style="flex:1;min-width:0"><div class="big">${r.big}</div><div class="lab">${r.lab}</div>${r.say?`<div class="rf-say">🗣️ ${r.say}</div>`:''}</div></div>`).join('')}`;
     nav=navHTML(true);
   }
   else if(s.t==='price'){
