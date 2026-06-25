@@ -102,6 +102,31 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .biens li{position:relative;padding:3px 0 3px 18px;font-size:12.5px;line-height:1.4;color:var(--ink)}
 .biens li::before{content:'✓';position:absolute;left:0;color:var(--ok);font-weight:800;font-size:12px}
 .pourqui{margin-top:8px;background:var(--cp-pale);border-radius:9px;padding:7px 10px;font-size:11.5px;line-height:1.4;color:var(--cp-deep);font-weight:600}
+/* Guide des cours */
+.cg{padding-bottom:10px}
+.cg-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,40,80,.04)}
+.cg-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.cg-nm{font-size:17px;font-weight:800;color:var(--cp-dark)}
+.cg-fam{font-size:11px;font-weight:600;color:var(--ink-mid)}
+.cg-quoi{font-size:13.5px;line-height:1.55;color:var(--ink-soft);margin-bottom:12px}
+.cg-sec{margin-bottom:11px}
+.cg-lab{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--cp-deep);margin-bottom:3px}
+.cg-txt{font-size:12.5px;line-height:1.45;color:var(--ink)}
+.cg-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:11px}
+@media(max-width:430px){.cg-grid{grid-template-columns:1fr}}
+.cg-box{border-radius:12px;padding:10px 12px}
+.cg-box.body{background:#EAF4EF}
+.cg-box.mind{background:#EDF0FA}
+.cg-bh{font-size:11.5px;font-weight:800;margin-bottom:6px;color:var(--cp-dark)}
+.cg-box ul{list-style:none;margin:0;padding:0}
+.cg-box li{position:relative;padding:2px 0 2px 15px;font-size:12px;line-height:1.4;color:var(--ink)}
+.cg-box li::before{content:'•';position:absolute;left:2px;font-weight:800}
+.cg-box.body li::before{color:var(--ok)}
+.cg-box.mind li::before{color:var(--cp-deep)}
+.cg-foot{border-top:1px dashed var(--line);padding-top:9px;display:flex;flex-direction:column;gap:5px}
+.cg-pre,.cg-restr{font-size:11.5px;line-height:1.45;color:var(--ink-soft)}
+.cg-pre b,.cg-restr b{color:var(--cp-dark);font-weight:700}
+.cg-note{background:#FBEFD8;border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.5;color:var(--warn);font-weight:600;margin-top:4px}
 .pack-switch{display:flex;gap:7px;margin-top:6px}
 .pack-switch button{flex:1;padding:9px 6px;border:1.5px solid var(--line);border-radius:11px;font-size:11.5px;font-weight:700;color:var(--ink-soft);background:#fff;line-height:1.2}
 .pack-switch button.cur{background:var(--cp-pale);border-color:var(--cp-blue);color:var(--cp-deep)}
@@ -437,6 +462,94 @@ const CP_EQUIPMENT=[
   {ic:'🎯',nm:'TriggerPoint',ds:'Rouleaux d\'auto-massage & récupération.'},
   {ic:'➰',nm:'Barre & Tapis',ds:'Pour varier à l\'infini, jamais la même séance.'}
 ];
+
+/* ── Guide des cours (didactique) — données officielles + bienfaits corps/esprit ── */
+const COURSE_GUIDE=[
+  {nm:'Foundation 0.5',lvl:'0.5',fam:'Flow',tag:'Initiation',
+   quoi:'Le tout premier pas sur le Reformer. On découvre l\'appareil, les réglages et les mouvements de base, sans aucune pression.',
+   avantages:'Découverte du Reformer, apprentissage des fondamentaux à son rythme.',
+   capacite:'Aucune expérience requise.',
+   restr:'Accessible à 100 % — idéal grands débutants, seniors, ou en cas d\'appréhension.',
+   corps:['Réveil musculaire en douceur','Apprentissage des appuis & du placement','Conscience du corps'],
+   esprit:['Mise en confiance','On lève le « je ne saurai pas faire »','Plaisir dès la 1ère séance']},
+  {nm:'Flow 1',lvl:'1',fam:'Flow',tag:'Cours signature · allongé',
+   quoi:'Le cours signature de Club Pilates, allongé sur le Reformer. La base de tout : tout le monde commence ici.',
+   avantages:'Entraînement sûr et complet : gainage, posture, respiration, travail bilatéral (gauche/droite).',
+   capacite:'Corps en bonne santé. 0 expérience requise.',
+   restr:'Peu ou pas de contre-indication — adapté à tout le monde.',
+   corps:['Gainage profond & sangle abdominale','Posture redressée, dos soulagé','Renforcement complet en sécurité','Souplesse & mobilité'],
+   esprit:['Ancrage par la respiration','Connexion corps-esprit','Sentiment d\'accomplissement']},
+  {nm:'Flow 1.5',lvl:'1.5',fam:'Flow',tag:'à genoux',
+   quoi:'La progression naturelle du Flow 1 : même travail complet, mais avec plus d\'intensité (positions à genoux).',
+   avantages:'Entraînement sûr et complet : gainage, posture, respiration, travail bilatéral.',
+   capacite:'Flow 1 requis.',
+   restr:'Peu ou pas de contre-indication — adapté à tout le monde.',
+   corps:['Renforcement plus intense','Stabilité du tronc','Coordination'],
+   esprit:['Dépassement progressif','Confiance qui grandit']},
+  {nm:'Flow 2',lvl:'2',fam:'Flow',tag:'debout',
+   quoi:'Le travail complet, désormais debout : on transfère la force du Pilates dans des mouvements fonctionnels du quotidien.',
+   avantages:'Entraînement sûr et complet : gainage, posture, respiration, travail bilatéral.',
+   capacite:'Flow 1.5 requis.',
+   restr:'Déconseillé en cas de blessures prolongées ou de problèmes d\'équilibre.',
+   corps:['Équilibre & proprioception','Puissance fonctionnelle','Transfert dans les gestes du quotidien'],
+   esprit:['Maîtrise du corps dans l\'espace','Sentiment de force']},
+  {nm:'Flow 2.5',lvl:'2.5',fam:'Flow',tag:'avancé',
+   quoi:'Le niveau expert du Flow : un entraînement avancé et complet pour les membres très à l\'aise.',
+   avantages:'Entraînement avancé et complet.',
+   capacite:'Autorisation du coach conseillée.',
+   restr:'Déconseillé en cas de blessures prolongées ou de problèmes d\'équilibre.',
+   corps:['Performance & contrôle avancé','Force et endurance musculaire','Fluidité experte'],
+   esprit:['Maîtrise totale du geste','Défi mental stimulant']},
+  {nm:'Cardio Sculpt 1',lvl:'1',fam:'Cardio',tag:'cardio doux',
+   quoi:'Un cardio à faible impact basé sur le Pilates : on fait grimper le rythme sans jamais brusquer les articulations.',
+   avantages:'Cardio à faible impact basé sur le Pilates. Endurance et souplesse renforcées.',
+   capacite:'Expérience fondamentale du Pilates requise.',
+   restr:'Problème respiratoire, grossesse, blessure active (genou, cheville, hanche), chirurgie récente.',
+   corps:['Dépense calorique sans impact articulaire','Endurance cardio','Tonification de tout le corps'],
+   esprit:['Énergie & vitalité','Endorphines = bonne humeur','Anti-stress par l\'effort']},
+  {nm:'Cardio Sculpt 1.5',lvl:'1.5',fam:'Cardio',tag:'cardio doux +',
+   quoi:'La version plus soutenue du Cardio Sculpt, pour aller plus loin dans l\'endurance.',
+   avantages:'Cardio à faible impact basé sur le Pilates. Endurance renforcée.',
+   capacite:'Expérience fondamentale du Pilates + Cardio Sculpt 1 requis.',
+   restr:'Problème respiratoire, grossesse, blessure active (genou, cheville, hanche), chirurgie récente.',
+   corps:['Cardio plus soutenu','Combustion accrue','Tonus'],
+   esprit:['Dynamisme','Confiance physique']},
+  {nm:'Center & Balance',lvl:'1',fam:'Mobilité',tag:'rééquilibrage',
+   quoi:'Des étirements assistés par les appareils pour rééquilibrer le corps : stretching et exercices unilatéraux (un côté après l\'autre).',
+   avantages:'Étirements assistés pour (ré)équilibrer le corps. Stretching, exercices unilatéraux.',
+   capacite:'Corps en bonne santé, 0 expérience. Idéal pour personne âgée ou en surpoids.',
+   restr:'Aucune restriction particulière.',
+   corps:['Mobilité articulaire retrouvée','Rééquilibrage postural (gauche/droite)','Tensions relâchées','Souplesse'],
+   esprit:['Détente profonde','Reconnexion à son corps','Apaisement']},
+  {nm:'Restore',lvl:'1',fam:'Récupération',tag:'récupération',
+   quoi:'Une séance d\'auto-relâchement, pensée pour les personnes qui souffrent de courbatures et de contractures.',
+   avantages:'Auto-relâchement. Pour les personnes souffrant de courbatures et contractures.',
+   capacite:'Être capable de se lever/relever du sol et de supporter son poids sur les poignets.',
+   restr:'Grossesse, ostéoporose, diabète, hypertension, personne âgée, blessures actives.',
+   corps:['Relâchement myofascial profond','Récupération musculaire','Moins de courbatures'],
+   esprit:['Lâcher-prise','Réduction du stress','Sommeil amélioré']},
+  {nm:'FIT 2',lvl:'2',fam:'Intensité',tag:'Functional Interval Training',
+   quoi:'Du Functional Interval Training : un entraînement haute intensité, l\'approche la plus athlétique du Pilates. Idéal perte de poids.',
+   avantages:'Entraînement haute intensité. Idéal perte de poids.',
+   capacite:'Approche plus athlétique du Pilates.',
+   restr:'Déconseillé en cas de blessures actives.',
+   corps:['Combustion maximale des graisses','Cardio + renforcement combinés','Tonus athlétique'],
+   esprit:['Défoulement','Dépassement de soi','Fierté de l\'effort']},
+  {nm:'Suspend 2',lvl:'2',fam:'TRX',tag:'TRX',
+   quoi:'Un entraînement dynamique au TRX (sangles de suspension) qui stimule l\'équilibre et la stabilité.',
+   avantages:'TRX pour un entraînement dynamique, stimulant équilibre et stabilité.',
+   capacite:'Expérience Suspend 1.5 requise.',
+   restr:'Blessures articulaires ou sensibilité.',
+   corps:['Force au poids du corps','Stabilité du tronc','Coordination'],
+   esprit:['Challenge ludique','Confiance gestuelle']},
+  {nm:'Control 2',lvl:'2',fam:'Barre',tag:'barre fusion',
+   quoi:'Du Pilates debout sur barre fusion : on adapte le travail Pilates à une application fonctionnelle et quotidienne.',
+   avantages:'Barre fusion : exercices Pilates debout pour une application fonctionnelle.',
+   capacite:'Expérience Control 1.5 requise.',
+   restr:'Blessures articulaires ou sensibilité.',
+   corps:['Renforcement fonctionnel debout','Posture','Coordination fine'],
+   esprit:['Élégance du geste','Maîtrise posturale']}
+];
 const OBJECTIONS=[
   {id:'prix',ic:'💶',t:'« C\'est cher »',kw:'cher prix budget coute argent euro',lines:['Reviens aux <b>objectifs</b> : « Si par le passé ça n\'a pas fonctionné, c\'est que le budget investi n\'était pas adapté à vos objectifs. »','« Si dans 3 mois, <b>aucun changement</b> avec votre routine actuelle, comment allez-vous vous sentir ? »','« Est-ce que ça ne vaut pas le coût d\'investir <b>60 € de plus</b> sur une activité qui va fonctionner et vous plaire ? »']},
   {id:'temps',ic:'⏳',t:'« Je n\'ai pas le temps »',kw:'temps occupe agenda horaire dispo',lines:['Si c\'est en <b>complément</b> d\'une autre activité → proposer le <b>Pack 1×/sem</b>.','Sinon → le Pack 1×/sem donne des <b>résultats à plus long terme</b>, et toujours revenir aux objectifs.','Le bon rythme reste <b>2×/sem</b> pour des résultats visibles.']},
@@ -762,6 +875,7 @@ function openMenu(){
   $('#menuBody').innerHTML=`
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
     <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showCourseGuide()"><span class="mic">📚</span><span>Les cours en détail<small>Bienfaits corps & esprit, prérequis, restrictions</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;
@@ -791,6 +905,30 @@ function showAca(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=0;
   $('#topPhase').textContent='Académie';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';
+}
+
+/* ── Guide des cours (didactique) ── */
+function showCourseGuide(){
+  const card=c=>{const nv=NIVEAUX.find(n=>n.n==='Level '+c.lvl);const col=nv?nv.color:'var(--cp-deep)';
+    return `<div class="cg-card">
+      <div class="cg-head"><div class="cg-nm">${c.nm}</div><span class="lvl-tag" style="background:${col}">Niv. ${c.lvl}</span><span class="cg-fam">${c.tag}</span></div>
+      <div class="cg-quoi">${c.quoi}</div>
+      <div class="cg-sec"><div class="cg-lab">✨ Avantages</div><div class="cg-txt">${c.avantages}</div></div>
+      <div class="cg-grid">
+        <div class="cg-box body"><div class="cg-bh">💪 Bienfaits corps</div><ul>${c.corps.map(b=>`<li>${b}</li>`).join('')}</ul></div>
+        <div class="cg-box mind"><div class="cg-bh">🧠 Bienfaits esprit</div><ul>${c.esprit.map(b=>`<li>${b}</li>`).join('')}</ul></div>
+      </div>
+      <div class="cg-foot"><div class="cg-pre"><b>🎟️ Prérequis :</b> ${c.capacite}</div><div class="cg-restr"><b>⚠️ Restrictions :</b> ${c.restr}</div></div>
+    </div>`;};
+  const h=`<div class="cg">
+    <div class="aca-h"><h2>Les cours en détail</h2><p>Pour chaque cours : ses bienfaits sur le corps ET l'esprit, son niveau, ses prérequis et ses restrictions. Votre antisèche pour conseiller juste.</p></div>
+    ${COURSE_GUIDE.map(card).join('')}
+    <div class="cg-note">💡 Conseillez toujours selon l'objectif ET la santé du client. En cas de doute médical, orientez vers un avis du coach ou du médecin.</div>
+  </div>`;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#topPhase').textContent='Les cours';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
 }
