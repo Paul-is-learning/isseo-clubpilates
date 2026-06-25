@@ -148,6 +148,17 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .flex-note{display:flex;align-items:flex-start;gap:10px;background:var(--cp-pale);border-radius:13px;padding:12px 14px;margin-top:10px;font-size:12.5px;line-height:1.45;color:var(--cp-deep)}
 .flex-note .fic{font-size:17px;flex:0 0 auto}
 .flex-note b{font-weight:800}
+/* Comparatif rythme 1x / 2x / illimité */
+.rythme{margin-top:12px;background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 14px}
+.rythme-h{font-size:12.5px;font-weight:800;color:var(--cp-deep);margin-bottom:10px;line-height:1.3}
+.rythme-row{border:1.5px solid var(--line);border-radius:11px;padding:10px 12px;margin-bottom:8px;transition:all .15s}
+.rythme-row.cur{border-color:var(--cp-blue);background:var(--cp-veil);box-shadow:0 2px 10px rgba(111,140,184,.18)}
+.rr-freq{font-size:14px;font-weight:800;color:var(--cp-dark)}
+.rythme-row.cur .rr-freq{color:var(--cp-deep)}
+.rr-time{font-size:13px;font-weight:700;color:var(--cp-blue);margin:2px 0 4px}
+.rr-time small{font-weight:600;color:var(--ink-mid);font-size:10.5px;margin-left:5px}
+.rr-lab{font-size:12px;line-height:1.4;color:var(--ink-soft)}
+.rythme-foot{font-size:10.5px;color:var(--ink-mid);text-align:center;margin-top:4px;font-style:italic}
 .pres-h{font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:var(--cp-deep);margin:18px 0 10px}
 .pres-line{font-size:13.5px;line-height:1.55;color:var(--ink-soft);padding:7px 0;border-top:1px dashed var(--line)}
 .pres-line:first-child{border-top:0;padding-top:0}
@@ -673,6 +684,23 @@ function classBenefit(id){
   }
 }
 function triggerClause(t){const m={event:'parce qu\'un événement important approche',sante:'suite à un signal santé qu\'il ne faut pas ignorer',poids:'parce que vous avez pris du poids et que ça vous pèse',grossesse:'pour retrouver votre corps et votre énergie après bébé',douleur:'parce qu\'une douleur commence à s\'installer et à vous gêner',raslebol:'parce que vous en avez vraiment assez de l\'état actuel',resolution:'parce que vous voulez un vrai nouveau départ',proche:'parce qu\'un proche vous a montré que c\'était possible'};return m[t.id]||t.label.toLowerCase();}
+// ── Rythme & résultats : ce que 1× / 2× / illimité apportent pour SON objectif ──
+const GOAL_VERB={poids:'perdre du poids durablement',mobilite:'retrouver de la mobilité',douleur:'soulager vos douleurs',tonus:'vous tonifier et vous renforcer',energie:'retrouver de l\'énergie',stress:'évacuer le stress',posture:'corriger votre posture',perf:'progresser et vous dépasser'};
+function primaryGoalVerb(){const g=(st.goals&&st.goals[0])||null;return (g&&GOAL_VERB[g])||'atteindre vos objectifs';}
+// 30 séances = « vous êtes différent » (Joseph Pilates) → temps selon la fréquence
+function rhythmRows(){return [
+  {pack:1,freq:'1× / semaine',time:'~7 mois',lab:'Vous entretenez et gardez le lien. Le changement vient, mais lentement.'},
+  {pack:2,freq:'2× / semaine',time:'~3-4 mois',lab:'LE seuil où le corps se transforme visiblement. Le rythme idéal.'},
+  {pack:3,freq:'Illimité',time:'~6-8 sem.',lab:'Vous accélérez et variez les formats. Les résultats les plus rapides.'}
+];}
+function buildRhythmPitch(pack){
+  const verb=primaryGoalVerb();
+  let s=`« Et sur le rythme, soyons précis — parce que pour ${verb}, ça change tout. À <b>1 fois par semaine</b>, vous entretenez et gardez le lien, mais le changement reste lent. À <b>2 fois par semaine</b>, c'est le seuil où le corps se transforme vraiment : on le ressent en quelques semaines, on le voit en 3 à 4 mois. En <b>illimité</b>, vous accélérez encore et variez les formats, pour les résultats les plus rapides. `;
+  if(pack===3)s+=`Vu votre motivation, l'illimité est vraiment fait pour vous : vous avancez à pleine vitesse, sans jamais vous lasser. »`;
+  else if(pack===1)s+=`On démarre en douceur à 1×/semaine pour bien s'installer — et on montera dès que vous vous sentirez prêt(e). »`;
+  else s+=`Le 2×/semaine, c'est le juste équilibre pour vous : assez pour transformer, et parfaitement tenable dans la durée. C'est celui que je vous recommande. »`;
+  return s;
+}
 function buildPitchBeats(pack,recos){
   const beats=[],e=emo(),t=trig();
   if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez confié : ce qui vous a freiné jusqu'ici, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` J'ai bien entendu — c'est précisément là-dessus que je vais vous accompagner. »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris. Reformulez ses mots.',text:m});}
@@ -690,6 +718,7 @@ function buildPitchBeats(pack,recos){
   const goalTxt=st.goals.length?frList(st.goals.map(g=>lbl(GOALS,g).toLowerCase())):'vos objectifs';
   let reco=`« Au vu de ce que vous me partagez, pour ${goalTxt}, je vous accompagne sur le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Sur 3 mois — le temps que votre corps installe durablement le changement, en douceur. »`;
   beats.push({label:'La reco',hint:'Un accompagnement sur-mesure. Chaque cours a sa raison.',text:reco});
+  beats.push({label:'Le bon rythme',hint:'1× vs 2× vs illimité, lié à SON objectif. La clé du pack.',text:buildRhythmPitch(pack)});
   beats.push({label:'Réassurance',hint:'Levez le risque avant la projection — en douceur.',text:`« Et vous ne vous lancez pas seul(e) : vous rejoignez la plus grande communauté Pilates au monde — près de <b>8 millions de séances par an</b>, une enseigne primée 8 années de suite. Coachs certifiés, 12 personnes maximum, et votre premier cours offert sans engagement. Vous avez tout le temps de vous sentir à l'aise avant de vous décider. »`});
   let proj=`« Imaginez-vous dans 3 mois : `+((t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir véritablement transformé(e)`))+`. C'est exactement ce que nous allons construire ensemble, séance après séance. Je serais ravi(e) de vous y accompagner. »`;
   beats.push({label:'Projection',hint:'Faites-le se projeter, avec vous à ses côtés.',text:proj});
@@ -856,6 +885,7 @@ function renderScreen(){
     h=`<div class="scr-tag reco">${s.phase} · le match</div>
       <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore(pack)}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
       <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
+      <div class="rythme"><div class="rythme-h">⏱️ Le bon rythme pour ${primaryGoalVerb()}</div>${rhythmRows().map(r=>`<div class="rythme-row${r.pack===pack?' cur':''}"><div class="rr-freq">${r.freq}</div><div class="rr-time">${r.time}<small>pour vous transformer</small></div><div class="rr-lab">${r.lab}</div></div>`).join('')}<div class="rythme-foot">Base : 30 séances pour une vraie transformation (J. Pilates).</div></div>
       <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div style="flex:1;min-width:0"><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div>${CLASSES[r.id].bienfaits?`<ul class="biens">${CLASSES[r.id].bienfaits.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}${CLASSES[r.id].pourqui?`<div class="pourqui">👤 Idéal pour : ${CLASSES[r.id].pourqui}</div>`:''}</div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>
       <div class="flex-note"><span class="fic">🔄</span><span><b>5 niveaux (0.5 → 2.5)</b> : on démarre à son niveau, on progresse à son rythme. Toujours en phase, jamais largué.</span></div>`;
     nav=navHTML(true,'Dérouler l\'argumentaire →');
@@ -881,7 +911,9 @@ function renderScreen(){
   }
   else if(s.t==='closing'){
     const isTrial=st.callGoal==='trial';
-    h=`<div class="say-card"><div class="scr-tag say">✅ Closing</div><div class="say-big quote">${isTrial?buildTrialClose():'« Honnêtement, je pense sincèrement que c\'est ce qui vous correspond. <b>Je vous réserve votre place ?</b> »'}</div><div class="say-hint"><span class="b">💡</span><span>${isTrial?'Verrouillez un créneau précis (date + heure), avec le sourire.':'Proposez, puis laissez le silence. Enchaînez : « Plutôt en semaine ou le week-end pour débuter ? »'}</span></div></div>`;
+    const cp=recommendPack(),freq=cp===1?'1 séance par semaine':cp===3?'un accès illimité':'2 séances par semaine';
+    const closeAbo=`« Pour résumer : pour <b>${primaryGoalVerb()}</b>, le bon rythme c'est <b>${freq}</b>, et le ${PACK_META[cp].name} est vraiment ce qui vous correspond. Je vous réserve votre place ? »`;
+    h=`<div class="say-card"><div class="scr-tag say">✅ Closing</div><div class="say-big quote">${isTrial?buildTrialClose():closeAbo}</div><div class="say-hint"><span class="b">💡</span><span>${isTrial?'Verrouillez un créneau précis (date + heure), avec le sourire.':'Reboucle sur SON objectif, propose, puis laisse le silence. Enchaîne : « Plutôt en semaine ou le week-end pour débuter ? »'}</span></div></div>`;
     nav=navHTML(true,'Voir la fiche →');
   }
   else if(s.t==='final'){
