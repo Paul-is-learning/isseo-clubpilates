@@ -97,6 +97,11 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .cls .nm{font-weight:800;color:var(--cp-dark);font-size:14.5px}
 .cls .ds{font-size:12px;color:var(--ink-soft);margin-top:1px;line-height:1.4}
 .cls-warn{background:#FBEFD8;border-radius:10px;padding:9px 12px;font-size:12px;color:var(--warn);font-weight:600;margin-top:8px;line-height:1.4}
+.lvl-tag{display:inline-block;font-size:9.5px;font-weight:800;color:#fff;padding:2px 7px;border-radius:6px;letter-spacing:.02em;vertical-align:middle}
+.biens{list-style:none;margin:7px 0 0;padding:0}
+.biens li{position:relative;padding:3px 0 3px 18px;font-size:12.5px;line-height:1.4;color:var(--ink)}
+.biens li::before{content:'✓';position:absolute;left:0;color:var(--ok);font-weight:800;font-size:12px}
+.pourqui{margin-top:8px;background:var(--cp-pale);border-radius:9px;padding:7px 10px;font-size:11.5px;line-height:1.4;color:var(--cp-deep);font-weight:600}
 .pack-switch{display:flex;gap:7px;margin-top:6px}
 .pack-switch button{flex:1;padding:9px 6px;border:1.5px solid var(--line);border-radius:11px;font-size:11.5px;font-weight:700;color:var(--ink-soft);background:#fff;line-height:1.2}
 .pack-switch button.cur{background:var(--cp-pale);border-color:var(--cp-blue);color:var(--cp-deep)}
@@ -359,16 +364,26 @@ const TRIED=[
   {id:'rien',ic:'🌱',label:'Jamais rien de structuré',contrast:'c\'est une page blanche — exactement pour ça qu\'un cadre rassurant change tout'}
 ];
 const CLASSES={
-  foundation05:{nm:'Foundation 0.5',sub:'initiation · 1er pas',ds:'Cours d\'introduction au Reformer pour les vrais débutants, sans pression.',restr:[],lvl:'0.5'},
-  flow1:{nm:'Flow 1',sub:'allongé · signature',ds:'Entraînement sûr et complet : gainage, posture, respiration.',restr:[],lvl:'1'},
-  flow15:{nm:'Flow 1.5',sub:'à genoux',ds:'Même travail complet, en progression.',restr:[],lvl:'1.5'},
-  flow2:{nm:'Flow 2',sub:'debout',ds:'Entraînement complet debout.',restr:['equilibre','blessure_prolongee'],lvl:'2'},
-  cs1:{nm:'Cardio Sculpt 1',sub:'cardio doux',ds:'Cardio à faible impact basé Pilates. Endurance et souplesse.',restr:['respi','grossesse','genou','chirurgie'],lvl:'1'},
-  cb:{nm:'Center & Balance',sub:'rééquilibrage',ds:'Étirements assistés pour rééquilibrer le corps. Idéal débutant/senior.',restr:[],lvl:'1'},
-  restore:{nm:'Restore',sub:'récupération',ds:'Auto-relâchement pour courbatures et contractures.',restr:['grossesse','osteo','tension','senior'],lvl:'1'},
-  fit2:{nm:'FIT 2',sub:'haute intensité',ds:'Functional Interval Training. Haute intensité, idéal perte de poids.',restr:['blessure_prolongee','genou','chirurgie','respi'],lvl:'2'},
-  suspend2:{nm:'Suspend 2',sub:'TRX',ds:'TRX pour un entraînement dynamique, équilibre et stabilité.',restr:['equilibre'],lvl:'2'},
-  control2:{nm:'Control 2',sub:'barre fusion',ds:'Pilates debout fonctionnel sur barre fusion.',restr:['equilibre'],lvl:'2'}
+  foundation05:{nm:'Foundation 0.5',sub:'initiation · 1er pas',ds:'Cours d\'introduction au Reformer pour les vrais débutants, sans pression.',restr:[],lvl:'0.5',
+    bienfaits:['Apprentissage des bases à votre rythme, sans pression','Familiarisation avec le Reformer et les réglages','Prise de confiance dès la 1ère séance'],pourqui:'Vrais débutants, seniors, ou si appréhension de « ne pas suivre ».'},
+  flow1:{nm:'Flow 1',sub:'allongé · signature',ds:'Entraînement sûr et complet : gainage, posture, respiration.',restr:[],lvl:'1',
+    bienfaits:['Gainage profond & sangle abdominale','Posture redressée, dos soulagé','Renforcement complet du corps en sécurité totale','Respiration et contrôle du mouvement'],pourqui:'TOUT le monde — le point de départ de chaque membre.'},
+  flow15:{nm:'Flow 1.5',sub:'à genoux',ds:'Même travail complet, en progression.',restr:[],lvl:'1.5',
+    bienfaits:['Même travail complet, intensité augmentée','Plus de challenge en gardant la sécurité','Progression naturelle après le Flow 1'],pourqui:'Membres à l\'aise sur le Flow 1 qui veulent monter d\'un cran.'},
+  flow2:{nm:'Flow 2',sub:'debout',ds:'Entraînement complet debout.',restr:['equilibre','blessure_prolongee'],lvl:'2',
+    bienfaits:['Travail debout fonctionnel & équilibre','Intensité élevée, transferts dans le quotidien','Coordination et stabilité avancées'],pourqui:'Membres confirmés (30-60 séances derrière soi).'},
+  cs1:{nm:'Cardio Sculpt 1',sub:'cardio doux',ds:'Cardio à faible impact basé Pilates. Endurance et souplesse.',restr:['respi','grossesse','genou','chirurgie'],lvl:'1',
+    bienfaits:['Dépense calorique sans aucun impact articulaire','Endurance et souffle améliorés','Tonification dynamique de tout le corps'],pourqui:'Perte de poids, regain d\'énergie, sans choc sur les articulations.'},
+  cb:{nm:'Center & Balance',sub:'rééquilibrage',ds:'Étirements assistés pour rééquilibrer le corps. Idéal débutant/senior.',restr:[],lvl:'1',
+    bienfaits:['Mobilité articulaire retrouvée','Rééquilibrage postural, tensions relâchées','Gestes du quotidien plus fluides'],pourqui:'Raideurs, posture, mobilité — parfait débutants et seniors.'},
+  restore:{nm:'Restore',sub:'récupération',ds:'Auto-relâchement pour courbatures et contractures.',restr:['grossesse','osteo','tension','senior'],lvl:'1',
+    bienfaits:['Relâchement myofascial profond','Récupération musculaire accélérée','Apaisement du mental, anti-stress'],pourqui:'Stress, contractures, jours de récupération.'},
+  fit2:{nm:'FIT 2',sub:'haute intensité',ds:'Functional Interval Training. Haute intensité, idéal perte de poids.',restr:['blessure_prolongee','genou','chirurgie','respi'],lvl:'2',
+    bienfaits:['Combustion maximale des graisses','Format athlétique stimulant (intervalles)','Cardio + renforcement en une séance'],pourqui:'Perte de poids accélérée, profils sportifs et motivés.'},
+  suspend2:{nm:'Suspend 2',sub:'TRX',ds:'TRX pour un entraînement dynamique, équilibre et stabilité.',restr:['equilibre'],lvl:'2',
+    bienfaits:['Force fonctionnelle au poids du corps','Équilibre et stabilité du tronc','Entraînement dynamique et complet'],pourqui:'Membres confirmés cherchant un format athlétique.'},
+  control2:{nm:'Control 2',sub:'barre fusion',ds:'Pilates debout fonctionnel sur barre fusion.',restr:['equilibre'],lvl:'2',
+    bienfaits:['Posture et contrôle debout','Renforcement fonctionnel ciblé','Coordination fine'],pourqui:'Membres avancés, travail postural debout.'}
 };
 const NIVEAUX=[
   {n:'Level 0.5',t:'Initiation',d:'Pour les vrais débutants. Aucune expérience requise — rassurant et accessible 100 %.',color:'#2C7A4B',badge:'★ Levée d\'objection clé'},
@@ -653,7 +668,7 @@ function renderScreen(){
     h=`<div class="scr-tag reco">${s.phase} · le match</div>
       <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore()}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
       <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
-      <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div></div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>
+      <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div style="flex:1;min-width:0"><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div>${CLASSES[r.id].bienfaits?`<ul class="biens">${CLASSES[r.id].bienfaits.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}${CLASSES[r.id].pourqui?`<div class="pourqui">👤 Idéal pour : ${CLASSES[r.id].pourqui}</div>`:''}</div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>
       <div class="flex-note"><span class="fic">🔄</span><span><b>5 niveaux (0.5 → 2.5)</b> : on démarre à son niveau, on progresse à son rythme. Toujours en phase, jamais largué.</span></div>`;
     nav=navHTML(true,'Dérouler l\'argumentaire →');
   }
