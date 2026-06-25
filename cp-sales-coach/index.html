@@ -167,6 +167,22 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .testi-q{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1.45;color:var(--cp-dark)}
 .testi-a{font-size:11px;color:var(--ink-mid);margin-top:6px;font-weight:600}
 .testi-note{background:var(--cp-pale);border-radius:10px;padding:9px 12px;font-size:11px;line-height:1.45;color:var(--cp-deep);margin-top:4px}
+.press{background:var(--cp-dark);color:#fff;border-radius:14px;padding:14px 16px;margin-bottom:9px;text-align:center}
+.press-src{font-size:13px;font-weight:900;letter-spacing:.22em;text-transform:uppercase;opacity:.85}
+.press-q{font-family:var(--serif);font-style:italic;font-size:19px;line-height:1.35;margin:7px 0 6px}
+.press-note{font-size:11px;color:rgba(255,255,255,.65);line-height:1.4}
+/* La science */
+.sci-tl{padding:9px 0;border-top:1px dashed var(--line)}
+.sci-tl:first-child{border-top:0;padding-top:0}
+.sci-tl-t{font-size:12.5px;font-weight:800;color:var(--cp-deep)}
+.sci-tl-f{font-size:12.5px;line-height:1.45;color:var(--ink-soft);margin-top:2px}
+.sci-src{font-size:11.5px;line-height:1.6;color:var(--ink-soft)}
+.sci-diff{background:var(--cp-dark);color:#fff;border-radius:16px;padding:16px;margin-bottom:14px}
+.sci-diff-h{font-size:15px;font-weight:800;margin-bottom:7px;line-height:1.3}
+.sci-diff-d{font-size:13px;line-height:1.55;color:rgba(255,255,255,.82)}
+.sci-diff .biens{margin-top:9px}
+.sci-diff .biens li{color:#fff;font-weight:600}
+.sci-diff .biens li::before{color:#9ec5a8}
 /* card générique */
 .card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:18px;margin-bottom:12px}
 
@@ -491,12 +507,43 @@ const CP_TRUST=[
   {ic:'🧼',t:'Le meilleur équipement du marché',d:'Reformers dernier cri, haut de gamme, entretenus avec soin.'},
   {ic:'📅',t:'Réservation souple, 3 semaines à l\'avance',d:'Votre planning reste maître.'}
 ];
+/* ── Dans la presse : citations réelles (vérifiées) ── */
+const CP_PRESS=[
+  {src:'ELLE',quote:'La discipline en vogue qui tonifie le corps',note:'Le Pilates Reformer mis à l\'honneur par la presse féminine.'}
+];
 /* ── Témoignages : EXEMPLES à remplacer par de vrais avis Google du studio ── */
 const CP_TESTIMONIALS=[
   {q:'En 3 mois, mon dos ne me réveille plus la nuit. Je ne pensais pas que ce serait aussi rapide.',a:'— exemple à personnaliser'},
   {q:'L\'ambiance est bienveillante, les coachs connaissent mon prénom et mes objectifs. On se sent suivi.',a:'— exemple à personnaliser'},
   {q:'J\'avais peur de ne pas être à la hauteur. On commence à son rythme, je me suis sentie à l\'aise dès le premier cours.',a:'— exemple à personnaliser'}
 ];
+
+/* ── La science : sources fiables (revues à comité de lecture, portail médical, praticien identifié) ── */
+const SCI_ESSENTIAL=[
+  'La recherche soutient le Pilates (Reformer compris) sur la lombalgie chronique, la posture, le gainage profond et la souplesse.',
+  'Niveau de preuve modéré : effet réel, mais pas démontré « supérieur » à d\'autres exercices encadrés. Ce n\'est pas une méthode miracle — et on ne la survend jamais.',
+  'LE différenciant validé par la science, c\'est la qualité de l\'encadrement. Et c\'est exactement le modèle Club Pilates.'
+];
+const SCI_PROOF=[
+  {ic:'🏛️',big:'Revue Cochrane (2015)',lab:'10 essais randomisés, 510 participants. Le Pilates réduit la douleur et l\'incapacité à court et moyen terme dans la lombalgie chronique. La référence du domaine. (PMID 26133923)'},
+  {ic:'📊',big:'Méta-analyse IJERPH (2023)',lab:'Amélioration statistiquement significative de la douleur et des indices d\'incapacité (ODI, RMDQ) chez les patients lombalgiques chroniques.'},
+  {ic:'🩺',big:'Univadis — portail médical',lab:'Relaie une étude clinique : amélioration significative du handicap fonctionnel, de la douleur et de la kinésiophobie (la peur du mouvement).'},
+  {ic:'👨‍⚕️',big:'Avis kiné-ostéo (S. Benarbia)',lab:'Le Reformer travaille les muscles profonds ; ses ressorts guident le mouvement et adaptent l\'effort à la pathologie — précieux en rééducation.'}
+];
+const SCI_DIFF={t:'Le seul différenciant vraiment prouvé : l\'encadrement',d:'Les études les plus probantes sont toutes supervisées par des instructeurs certifiés qui corrigent la posture, ajustent la résistance et font progresser. Mal encadré, le Reformer perd l\'essentiel de ses bénéfices. C\'est précisément là que Club Pilates fait la différence.',pts:['Coachs certifiés à chaque cours','12 personnes maximum — un vrai suivi','Progression personnalisée sur 5 niveaux']};
+const SCI_WHY=[
+  {ic:'🔧',t:'Résistance progressive',d:'Les ressorts assistent OU résistent le mouvement — impossible au sol. Progression précise, articulations protégées.'},
+  {ic:'↔️',t:'Amplitude amplifiée',d:'Le chariot coulissant ouvre des amplitudes inaccessibles au tapis : colonne, chaînes postérieures, hanches.'},
+  {ic:'🛡️',t:'Sécurité articulaire',d:'Travail allongé ou soutenu : bien moins de stress sur genoux, hanches et bas du dos. C\'est pourquoi les kinés l\'intègrent en rééducation.'}
+];
+const SCI_CONDITIONS=[
+  {ic:'📅',t:'2 séances/semaine minimum',d:'Le seuil où les effets deviennent significatifs et se maintiennent.'},
+  {ic:'⏳',t:'6 à 8 semaines',d:'Les bénéfices se construisent à court / moyen terme. La régularité prime sur l\'intensité.'},
+  {ic:'🎓',t:'Encadrement certifié',d:'Toutes les études probantes sont supervisées — la technique fait le résultat.'},
+  {ic:'📈',t:'Progressivité',d:'On progresse par la précision et la résistance, jamais en forçant.'}
+];
+const SCI_NUANCE='En toute transparence : certaines revues, sur de faibles effectifs, ne montrent pas d\'effet net. La tendance récente va clairement vers l\'efficacité, mais on ne survend pas. Le commercial qui assume cette nuance inspire confiance — et désamorce les objections « est-ce que ça marche vraiment ? ».';
+const SCI_SOURCES=['Revue Cochrane — Yamato et al., 2015 (PMID 26133923)','Méta-analyse — IJERPH 2023, 20(4):2850','Univadis — portail réservé aux professionnels de santé','Interview S. Benarbia, kiné-ostéo — Curieux!, 2026','Nuance : Actukine.com (kinésithérapie). Blogs de studios commerciaux volontairement écartés.'];
 
 /* ── Guide des cours (didactique) — données officielles + bienfaits corps/esprit ── */
 const COURSE_GUIDE=[
@@ -719,7 +766,7 @@ function buildPitchBeats(pack,recos){
   let reco=`« Au vu de ce que vous me partagez, pour ${goalTxt}, je vous accompagne sur le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Sur 3 mois — le temps que votre corps installe durablement le changement, en douceur. »`;
   beats.push({label:'La reco',hint:'Un accompagnement sur-mesure. Chaque cours a sa raison.',text:reco});
   beats.push({label:'Le bon rythme',hint:'1× vs 2× vs illimité, lié à SON objectif. La clé du pack.',text:buildRhythmPitch(pack)});
-  beats.push({label:'Réassurance',hint:'Levez le risque avant la projection — en douceur.',text:`« Et vous ne vous lancez pas seul(e) : vous rejoignez la plus grande communauté Pilates au monde — près de <b>8 millions de séances par an</b>, une enseigne primée 8 années de suite. Coachs certifiés, 12 personnes maximum, et votre premier cours offert sans engagement. Vous avez tout le temps de vous sentir à l'aise avant de vous décider. »`});
+  beats.push({label:'Réassurance',hint:'Levez le risque avant la projection — en douceur.',text:`« Et vous ne vous lancez pas seul(e) : vous rejoignez la plus grande communauté Pilates au monde — près de <b>8 millions de séances par an</b>, une enseigne primée 8 années de suite. Coachs certifiés, 12 personnes maximum, et votre premier cours offert sans engagement. Et ce n'est pas qu'une mode : la recherche — jusqu'à la revue Cochrane — confirme les bienfaits du Pilates sur le dos, la posture et le gainage profond. Ce que les études soulignent surtout, c'est que <b>le résultat dépend de la qualité de l'encadrement</b>… et c'est précisément notre force : des coachs certifiés, 12 personnes maximum, une progression pensée pour vous. Vous avez tout le temps de vous sentir à l'aise avant de vous décider. »`});
   let proj=`« Imaginez-vous dans 3 mois : `+((t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir véritablement transformé(e)`))+`. C'est exactement ce que nous allons construire ensemble, séance après séance. Je serais ravi(e) de vous y accompagner. »`;
   beats.push({label:'Projection',hint:'Faites-le se projeter, avec vous à ses côtés.',text:proj});
   return beats;
@@ -867,6 +914,8 @@ function renderScreen(){
       <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>
       <div class="pres-h">🤝 Notre engagement qualité</div>
       <div class="card" style="margin-bottom:14px">${CP_TRUST.map(t=>`<div class="cls"><div class="n" style="font-size:15px">${t.ic}</div><div><div class="nm">${t.t}</div><div class="ds">${t.d}</div></div></div>`).join('')}</div>
+      <div class="pres-h">📰 Vu dans la presse</div>
+      ${CP_PRESS.map(p=>`<div class="press"><div class="press-src">${p.src}</div><div class="press-q">« ${p.quote} »</div><div class="press-note">${p.note}</div></div>`).join('')}
       <div class="pres-h">💬 Ce qu'en disent nos membres</div>
       ${CP_TESTIMONIALS.map(t=>`<div class="testi"><div class="testi-q">“${t.q}”</div><div class="testi-a">${t.a}</div></div>`).join('')}
       <div class="testi-note">✎ Remplacez ces exemples par de vrais avis Google de votre studio (Réglages à venir) — un témoignage authentique vaut dix arguments.</div>`;
@@ -985,6 +1034,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
     <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
     <button class="menu-item" onclick="closeMenu();showCourseGuide()"><span class="mic">📚</span><span>Les cours en détail<small>Bienfaits corps & esprit, prérequis, restrictions</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showScience()"><span class="mic">🔬</span><span>La science le confirme<small>Études cliniques, résultats par objectif, sources</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;
@@ -1038,6 +1088,31 @@ function showCourseGuide(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=0;
   $('#topPhase').textContent='Les cours';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';
+}
+
+/* ── La science ── */
+function showScience(){
+  const h=`<div class="cg">
+    <div class="aca-h"><h2>Ce que dit la science</h2><p>Pas des témoignages ni des influenceurs — des sources fiables : revues à comité de lecture, portail médical, praticien identifié.</p></div>
+    <div class="pres-h">🎯 L'essentiel</div>
+    <div class="card" style="margin-bottom:14px">${SCI_ESSENTIAL.map((e,i)=>`<div class="sci-tl"><div class="sci-tl-f"><b style="color:var(--cp-deep)">${i+1}.</b> ${e}</div></div>`).join('')}</div>
+    <div class="sci-diff"><div class="sci-diff-h">⭐ ${SCI_DIFF.t}</div><div class="sci-diff-d">${SCI_DIFF.d}</div><ul class="biens">${SCI_DIFF.pts.map(p=>`<li>${p}</li>`).join('')}</ul></div>
+    <div class="pres-h">🔬 Le niveau de preuve</div>
+    ${SCI_PROOF.map(s=>`<div class="rf"><div class="ic">${s.ic}</div><div style="flex:1;min-width:0"><div class="big" style="font-size:15px">${s.big}</div><div class="lab">${s.lab}</div></div></div>`).join('')}
+    <div class="pres-h">🏆 Pourquoi le Reformer &gt; le tapis</div>
+    <div class="card" style="margin-bottom:14px">${SCI_WHY.map(w=>`<div class="cls"><div class="n" style="font-size:15px">${w.ic}</div><div><div class="nm">${w.t}</div><div class="ds">${w.d}</div></div></div>`).join('')}</div>
+    <div class="pres-h">✅ Les conditions pour des résultats</div>
+    <div class="card" style="margin-bottom:14px">${SCI_CONDITIONS.map(c=>`<div class="cls"><div class="n" style="font-size:15px">${c.ic}</div><div><div class="nm">${c.t}</div><div class="ds">${c.d}</div></div></div>`).join('')}</div>
+    <div class="flex-note"><span class="fic">💡</span><span><b>L'argument qui vend, et qui est vrai :</b> la science dit que le résultat dépend de l'encadrement. C'est exactement notre force — coachs certifiés, 12 max, progression sur-mesure.</span></div>
+    <div class="pres-h">🛡️ La nuance qui inspire confiance</div>
+    <div class="cg-note">${SCI_NUANCE}</div>
+    <div class="pres-h">📚 Sources</div>
+    <div class="card">${SCI_SOURCES.map(s=>`<div class="sci-src">• ${s}</div>`).join('')}</div>
+  </div>`;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#topPhase').textContent='La science';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
 }
