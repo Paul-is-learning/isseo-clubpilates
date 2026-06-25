@@ -955,7 +955,7 @@ function renderScreen(){
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='urgency'){
-    h=`<div class="say-card"><div class="scr-tag warn">✨ Le privilège fondateur</div><div class="say-big quote">« Pour le lancement, nous offrons un statut de <b>membre fondateur</b> à nos premiers membres : -${CFG.founding}% à vie et l'inscription offerte. C'est notre façon de remercier celles et ceux qui nous font confiance dès le début. Si le cœur vous en dit, c'est vraiment le bon moment. »</div><div class="say-hint"><span class="b">💡</span><span>Un cadeau de bienvenue sincère, pas une pression. Ne survendez jamais la rareté.</span></div></div>`;
+    h=`<div class="say-card"><div class="scr-tag warn">✨ Le privilège fondateur</div><div class="say-big quote">« Et franchement, c'est le <b>meilleur moment</b> pour nous rejoindre : nos premiers membres deviennent <b>membres fondateurs</b> — -${CFG.founding}% à vie et l'inscription offerte. C'est un vrai avantage, réservé au lancement. Je vous réserve votre place ? »</div><div class="say-hint"><span class="b">💡</span><span>Avantage réel et limité dans le temps : donnez envie d'en profiter maintenant, avec le sourire.</span></div></div>`;
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='closing'){
@@ -1049,7 +1049,7 @@ function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche
 function showAca(){
   const h=`<div class="aca">
     <div class="aca-h"><h2>Maîtrisez la vente CP</h2><p>Notre état d'esprit, puis 5 micro-leçons. À relire entre 2 appels.</p></div>
-    <div class="sci-diff"><div class="sci-diff-h">❤️ Notre état d'esprit</div><div class="sci-diff-d">On est une famille, pas une machine à vendre. Le bien-être du client passe avant le chiffre — et un client bien conseillé revient et parle de nous.</div><ul class="biens"><li>D'abord son bien-être : on écoute avant de proposer.</li><li>Toujours sincère : on ne survend jamais, on conseille juste.</li><li>Si ce n'est pas le bon moment ou la bonne formule, on le dit.</li><li>On vend par la confiance, pas par la pression.</li></ul></div>
+    <div class="sci-diff"><div class="sci-diff-h">❤️ Notre état d'esprit</div><div class="sci-diff-d">On veut le bien-être du client <b>et</b> on est là pour vendre — et les deux vont ensemble. Le rythme qui transforme vraiment, c'est <b>2 à 3 séances/semaine</b> : le meilleur pour lui, et le meilleur pour le studio.</div><ul class="biens"><li>Recommandez le bon rythme avec conviction : 2 à 3×/semaine, c'est lui rendre service.</li><li>Convainquez par la valeur et les résultats — sincère, jamais alarmiste.</li><li>Chaque appel vise un engagement : un essai booké ou un abo signé.</li><li>Un client qui obtient des résultats reste, revient et nous recommande.</li></ul></div>
     <div class="aca-l"><div class="nb">LEÇON 1 · OMG</div><h3>La méthode, votre boussole</h3><div class="ld">Ne vendez jamais avant d'avoir creusé.</div>
       <div class="aca-row"><span class="ck">O</span><span>Origine de la douleur — « qu'est-ce qui n'a pas marché avant ? »</span></div>
       <div class="aca-row"><span class="ck">G</span><span>Goal — « que voulez-vous réussir dans 3 mois ? »</span></div>
@@ -1125,7 +1125,7 @@ function buildPrintDoc(){
   const sec=(n,t,sub,body)=>`<section class="sec"><div class="sec-h"><span class="sec-n">${n}</span><span class="sec-t">${t}</span></div>${sub?`<div class="sec-sub">${sub}</div>`:''}${body}</section>`;
   const card=(inner,pale)=>`<div class="card${pale?' pale':''}">${inner}</div>`;
   // 1 · État d'esprit
-  const esprit=card(`<div class="quote" style="margin-bottom:8px">« On est une famille, pas une machine à vendre. Le bien-être du client passe avant le chiffre. »</div><ul><li>D'abord son bien-être : on écoute avant de proposer.</li><li>Toujours sincère : on ne survend jamais, on conseille juste.</li><li>Si ce n'est pas le bon moment ou la bonne formule, on le dit.</li><li>On vend par la confiance, pas par la pression.</li></ul>`,true);
+  const esprit=card(`<div class="quote" style="margin-bottom:8px">« Le bien-être du client et la vente vont ensemble : le rythme qui transforme, c'est 2 à 3 séances/semaine. »</div><ul><li>Recommandez le bon rythme avec conviction : 2 à 3×/semaine, c'est lui rendre service.</li><li>Convainquez par la valeur et les résultats — sincère, jamais alarmiste.</li><li>Chaque appel vise un engagement : un essai booké ou un abo signé.</li><li>Un client qui obtient des résultats reste, revient et nous recommande.</li></ul>`,true);
   // 2 · Méthode + règles d'or
   const omg=card(`<div class="nm">La méthode OMG — ne vendez jamais avant d'avoir creusé</div><ul><li><b>O</b>rigine de la douleur — « qu'est-ce qui n'a pas marché avant ? »</li><li><b>G</b>oal — « que voulez-vous réussir dans 3 mois ? »</li><li><b>M</b>embership — « vu ce que vous m'avez partagé, je vous recommande… »</li></ul>`)+card(`<div class="nm">5 réflexes gagnants</div><ul><li>Souriez avant de décrocher — le ton s'entend.</li><li>Le silence est votre allié : 3 secondes après une question.</li><li>Pack 2 par défaut, Pack 3 sur upsell motivé, Pack 1 en repli.</li><li>« On y va ? » plutôt que « Voulez-vous ? ».</li><li>Jamais sans engagement : abo ferme OU rappel daté.</li></ul>`);
   // 3 · Niveaux + arme 0.5
