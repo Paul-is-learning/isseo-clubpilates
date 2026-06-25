@@ -65,6 +65,11 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .ask-box .h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#9a6608;margin-bottom:7px;display:flex;align-items:center;gap:6px}
 .ask-box .q{font-size:15px;color:#5a4216;line-height:1.5;font-weight:500}
+.catch-box{margin-top:14px;background:linear-gradient(180deg,#effaf4,#e2f5ea);border:1.5px solid #aee0c6;border-radius:14px;padding:14px 16px;animation:pop .3s}
+.catch-box .h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ok);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+.catch-box .ln{display:flex;align-items:flex-start;gap:9px;font-size:15px;color:#1d5b41;line-height:1.5;font-weight:600;padding:6px 0;border-top:1px dashed #aee0c6}
+.catch-box .ln:first-of-type{border-top:0;padding-top:0}
+.catch-box .ci{font-size:17px;flex:0 0 auto;line-height:1.4}
 
 /* phrase clé levier (âge) */
 .lever{margin-top:14px;background:#fff;border-left:4px solid var(--cp-blue);border-radius:0 12px 12px 0;padding:12px 15px;font-family:var(--serif);font-style:italic;font-size:16px;color:var(--cp-dark);line-height:1.4}
@@ -356,32 +361,32 @@ let st={
 };
 
 const REASONS=[
-  {id:'reprise',ic:'🔄',label:'Reprendre le sport'},
-  {id:'poids',ic:'⚖️',label:'Perte de poids'},
-  {id:'douleur',ic:'🩹',label:'Douleurs / posture'},
-  {id:'bienetre',ic:'🌿',label:'Bien-être / stress'},
-  {id:'tonus',ic:'💪',label:'Se tonifier'},
-  {id:'reco',ic:'🗣️',label:'On m\'a recommandé'},
-  {id:'curieux',ic:'❓',label:'Simple curiosité'}
+  {id:'reprise',ic:'🔄',label:'Reprendre le sport',catch:'« Le Reformer est parfait pour ça : on reprend tout en douceur, au niveau 0.5, à votre rythme. »'},
+  {id:'poids',ic:'⚖️',label:'Perte de poids',catch:'« Ici on tonifie en profondeur et on relance le métabolisme — c\'est ce qui affine durablement. »'},
+  {id:'douleur',ic:'🩹',label:'Douleurs / posture',catch:'« Vous frappez à la bonne porte : on renforce les muscles profonds qui soulagent le dos, sans impact. »'},
+  {id:'bienetre',ic:'🌿',label:'Bien-être / stress',catch:'« Respiration, concentration, mouvement fluide — beaucoup repartent d\'ici l\'esprit plus léger. »'},
+  {id:'tonus',ic:'💪',label:'Se tonifier',catch:'« C\'est exactement ce que fait le Reformer : un corps gainé et dessiné, sans prise de volume. »'},
+  {id:'reco',ic:'🗣️',label:'On m\'a recommandé',catch:'« On vous a bien conseillé ! Nos membres sont notre meilleure publicité. »'},
+  {id:'curieux',ic:'❓',label:'Simple curiosité',catch:'« Vous avez raison d\'être curieux(se) — le plus simple, c\'est de venir l\'essayer une fois pour comprendre. »'}
 ];
 const PAINS=[
-  {id:'temps',ic:'⏳',label:'Manque de temps',dig:'C\'était quoi le vrai frein — le trajet, les horaires, la durée des séances ? Combien de temps réaliste vous pourriez dégager ?'},
-  {id:'resultats',ic:'📉',label:'Pas de résultats',dig:'Vous attendiez quel résultat précis ? En combien de temps ? Qu\'est-ce qui vous a fait dire « ça ne sert à rien » ?'},
-  {id:'motivation',ic:'😮‍💨',label:'Manque de motivation',dig:'Qu\'est-ce qui vous démotivait — la solitude, l\'ennui, personne pour vous pousser ? Vous tenez mieux quand on vous attend ?'},
-  {id:'encadrement',ic:'🧭',label:'Pas d\'encadrement',dig:'Vous auriez aimé quoi — être corrigé(e), un vrai programme, un coach qui vous connaît ?'},
-  {id:'blessure',ic:'🤕',label:'Blessure / santé',dig:'Quelle blessure exactement ? Vous êtes rétabli(e) ? Le médecin a dit quoi ? Ça vous fait peur de reprendre ?'},
-  {id:'jamais',ic:'🌱',label:'Jamais fait de sport',dig:'Qu\'est-ce qui vous a retenu jusqu\'ici — la peur du regard, ne pas savoir par où commencer, le niveau ?'},
-  {id:'ennui',ic:'🥱',label:'Lassitude / routine',dig:'Qu\'est-ce qui vous lassait — toujours la même chose, aucune progression, l\'ambiance ?'}
+  {id:'temps',ic:'⏳',label:'Manque de temps',dig:'C\'était quoi le vrai frein — le trajet, les horaires, la durée des séances ? Combien de temps réaliste vous pourriez dégager ?',catch:'« Je comprends. Les séances font ~50 min et se réservent 3 sem à l\'avance — ça se cale vraiment dans un agenda chargé. »'},
+  {id:'resultats',ic:'📉',label:'Pas de résultats',dig:'Vous attendiez quel résultat précis ? En combien de temps ? Qu\'est-ce qui vous a fait dire « ça ne sert à rien » ?',catch:'« Normal de douter. La différence ici : un coach qui ajuste et un vrai rythme — c\'est ça qui produit des résultats visibles. »'},
+  {id:'motivation',ic:'😮‍💨',label:'Manque de motivation',dig:'Qu\'est-ce qui vous démotivait — la solitude, l\'ennui, personne pour vous pousser ? Vous tenez mieux quand on vous attend ?',catch:'« C\'est humain. Avec un créneau réservé et un coach qui vous attend, on lâche beaucoup moins facilement. »'},
+  {id:'encadrement',ic:'🧭',label:'Pas d\'encadrement',dig:'Vous auriez aimé quoi — être corrigé(e), un vrai programme, un coach qui vous connaît ?',catch:'« C\'est exactement notre force : un coach diplômé vous corrige à chaque séance, en groupe de 12 maximum. »'},
+  {id:'blessure',ic:'🤕',label:'Blessure / santé',dig:'Quelle blessure exactement ? Vous êtes rétabli(e) ? Le médecin a dit quoi ? Ça vous fait peur de reprendre ?',catch:'« On est faits pour ça : on renforce en douceur, sans impact — beaucoup de kinés utilisent le Reformer en rééducation. »'},
+  {id:'jamais',ic:'🌱',label:'Jamais fait de sport',dig:'Qu\'est-ce qui vous a retenu jusqu\'ici — la peur du regard, ne pas savoir par où commencer, le niveau ?',catch:'« Vous êtes au bon endroit : le niveau 0.5 est conçu PILE pour ceux qui n\'ont jamais touché un Reformer. »'},
+  {id:'ennui',ic:'🥱',label:'Lassitude / routine',dig:'Qu\'est-ce qui vous lassait — toujours la même chose, aucune progression, l\'ambiance ?',catch:'« Ici vous ne vous ennuierez pas : 8 formats différents, 5 niveaux — jamais deux séances identiques. »'}
 ];
 const GOALS=[
-  {id:'poids',ic:'⚖️',label:'Perte de poids',dig:'Combien de kilos en tête ? Pour une occasion précise ? Qu\'avez-vous déjà tenté et pourquoi ça n\'a pas tenu ?'},
-  {id:'mobilite',ic:'🤸',label:'Mobilité / souplesse',dig:'Où ça coince — dos, hanches, épaules ? Ça vous limite dans quoi concrètement au quotidien ?'},
-  {id:'douleur',ic:'🩹',label:'Soulager douleurs',dig:'Où précisément ? Depuis quand ? Ça vous réveille la nuit, ça gêne au travail ? Vous avez consulté ?'},
-  {id:'tonus',ic:'💪',label:'Tonicité / renforcement',dig:'Quelle zone en priorité ? Vous vous trouvez comment aujourd\'hui face au miroir ?'},
-  {id:'energie',ic:'⚡',label:'Énergie / forme',dig:'Vous vous sentez vidé(e) à quel moment — le matin, le coup de barre de l\'après-midi, le soir ?'},
-  {id:'stress',ic:'🧘',label:'Gérer le stress',dig:'Le stress vient d\'où — le boulot, la charge mentale ? Ça impacte votre sommeil, votre humeur ?'},
-  {id:'posture',ic:'🧍',label:'Posture / dos',dig:'Vous travaillez assis(e) combien d\'heures par jour ? Vous avez déjà des tensions cervicales / lombaires ?'},
-  {id:'perf',ic:'🏆',label:'Me dépasser / perf',dig:'Vous pratiquez quoi à côté ? Vous voulez progresser sur quoi exactement — force, gainage, souplesse ?'}
+  {id:'poids',ic:'⚖️',label:'Perte de poids',dig:'Combien de kilos en tête ? Pour une occasion précise ? Qu\'avez-vous déjà tenté et pourquoi ça n\'a pas tenu ?',catch:'« Le Reformer tonifie en profondeur et relance le métabolisme — à 2 séances/sem, c\'est là que la silhouette change vraiment. »'},
+  {id:'mobilite',ic:'🤸',label:'Mobilité / souplesse',dig:'Où ça coince — dos, hanches, épaules ? Ça vous limite dans quoi concrètement au quotidien ?',catch:'« Le chariot coulissant ouvre des amplitudes impossibles au sol — c\'est l\'outil idéal pour retrouver de la mobilité. »'},
+  {id:'douleur',ic:'🩹',label:'Soulager douleurs',dig:'Où précisément ? Depuis quand ? Ça vous réveille la nuit, ça gêne au travail ? Vous avez consulté ?',catch:'« On va renforcer les muscles profonds qui stabilisent et soulagent, sans aucun impact. Très efficace sur le dos. »'},
+  {id:'tonus',ic:'💪',label:'Tonicité / renforcement',dig:'Quelle zone en priorité ? Vous vous trouvez comment aujourd\'hui face au miroir ?',catch:'« Gainage profond et renforcement complet : un corps ferme et dessiné, sans gonfler. »'},
+  {id:'energie',ic:'⚡',label:'Énergie / forme',dig:'Vous vous sentez vidé(e) à quel moment — le matin, le coup de barre de l\'après-midi, le soir ?',catch:'« Respiration, circulation, réveil musculaire — on ressort d\'une séance reboosté(e). »'},
+  {id:'stress',ic:'🧘',label:'Gérer le stress',dig:'Le stress vient d\'où — le boulot, la charge mentale ? Ça impacte votre sommeil, votre humeur ?',catch:'« Concentration + respiration contrôlée : la séance agit comme une vraie bulle anti-stress. »'},
+  {id:'posture',ic:'🧍',label:'Posture / dos',dig:'Vous travaillez assis(e) combien d\'heures par jour ? Vous avez déjà des tensions cervicales / lombaires ?',catch:'« La correction posturale, c\'est LE point fort du Reformer — on rééquilibre côté par côté. »'},
+  {id:'perf',ic:'🏆',label:'Me dépasser / perf',dig:'Vous pratiquez quoi à côté ? Vous voulez progresser sur quoi exactement — force, gainage, souplesse ?',catch:'« Et quand vous serez prêt(e), les niveaux 2 et 2.5 vous attendent pour vous challenger vraiment. »'}
 ];
 const HEALTH=[
   {id:'aucun',ic:'✅',label:'Rien à signaler',clear:true},
@@ -400,31 +405,31 @@ const DISPO=[
   {id:'high',ic:'3️⃣',label:'3× et +',note:'très motivé(e)'}
 ];
 const TRIGGERS=[
-  {id:'event',ic:'📅',label:'Un événement à venir',dig:'Lequel — mariage, vacances, photo, retrouvailles ? Pour quand exactement ?',proj:'arriver à votre événement en pleine forme et fier(e) de vous'},
-  {id:'sante',ic:'🩺',label:'Conseil / bilan santé',dig:'Le médecin a dit quoi précisément ? C\'est de la prévention ou déjà un souci installé ?',proj:'reprendre la main sur votre santé avant que ça ne s\'aggrave'},
-  {id:'poids',ic:'⚖️',label:'Pris du poids récemment',dig:'Depuis quand ? Lié à quoi — un changement de vie, le télétravail, l\'arrêt du sport ?',proj:'retrouver le corps dans lequel vous vous sentiez bien'},
-  {id:'grossesse',ic:'🤱',label:'Post-grossesse',dig:'À combien de mois êtes-vous ? Vous avez le feu vert médical pour reprendre ?',proj:'retrouver votre tonicité et votre énergie de jeune parent'},
-  {id:'douleur',ic:'⚡',label:'Douleur qui s\'installe',dig:'Où ? Depuis combien de temps ? Ça vous gêne dans quels gestes du quotidien ?',proj:'bouger sans cette douleur qui vous suit partout'},
-  {id:'raslebol',ic:'😤',label:'Ras-le-bol de l\'état actuel',dig:'Qu\'est-ce qui a fait déborder le vase, là, maintenant ? Pourquoi pas il y a 6 mois ?',proj:'enfin vous sentir aligné(e) avec la personne que vous voulez être'},
-  {id:'resolution',ic:'🎯',label:'Nouveau départ / résolution',dig:'Qu\'est-ce qui rend CE moment différent des fois précédentes où vous avez essayé ?',proj:'faire de cette fois LA bonne, celle qui tient'},
-  {id:'proche',ic:'👥',label:'Un proche s\'y est mis',dig:'Qui ? Qu\'est-ce que ça lui a apporté qui vous donne envie ?',proj:'vivre la même transformation que votre proche'}
+  {id:'event',ic:'📅',label:'Un événement à venir',dig:'Lequel — mariage, vacances, photo, retrouvailles ? Pour quand exactement ?',proj:'arriver à votre événement en pleine forme et fier(e) de vous',catch:'« Raison de plus pour s\'y mettre maintenant : on a le temps de voir de vrais résultats d\'ici là. »'},
+  {id:'sante',ic:'🩺',label:'Conseil / bilan santé',dig:'Le médecin a dit quoi précisément ? C\'est de la prévention ou déjà un souci installé ?',proj:'reprendre la main sur votre santé avant que ça ne s\'aggrave',catch:'« Vous faites le bon choix en prenant les devants — la prévention, c\'est exactement ce qu\'on fait ici. »'},
+  {id:'poids',ic:'⚖️',label:'Pris du poids récemment',dig:'Depuis quand ? Lié à quoi — un changement de vie, le télétravail, l\'arrêt du sport ?',proj:'retrouver le corps dans lequel vous vous sentiez bien',catch:'« On va inverser la tendance ensemble — en douceur, mais efficacement. »'},
+  {id:'grossesse',ic:'🤱',label:'Post-grossesse',dig:'À combien de mois êtes-vous ? Vous avez le feu vert médical pour reprendre ?',proj:'retrouver votre tonicité et votre énergie de jeune parent',catch:'« On adapte tout à l\'après-grossesse : renforcement profond, dos, en sécurité. »'},
+  {id:'douleur',ic:'⚡',label:'Douleur qui s\'installe',dig:'Où ? Depuis combien de temps ? Ça vous gêne dans quels gestes du quotidien ?',proj:'bouger sans cette douleur qui vous suit partout',catch:'« Agissons avant que ça s\'installe : on renforce ce qui doit l\'être, sans jamais forcer. »'},
+  {id:'raslebol',ic:'😤',label:'Ras-le-bol de l\'état actuel',dig:'Qu\'est-ce qui a fait déborder le vase, là, maintenant ? Pourquoi pas il y a 6 mois ?',proj:'enfin vous sentir aligné(e) avec la personne que vous voulez être',catch:'« Je vous comprends — et vous tenez là le déclic pour que ça change vraiment. »'},
+  {id:'resolution',ic:'🎯',label:'Nouveau départ / résolution',dig:'Qu\'est-ce qui rend CE moment différent des fois précédentes où vous avez essayé ?',proj:'faire de cette fois LA bonne, celle qui tient',catch:'« Cette fois sera la bonne : un cadre, un coach, un rythme — c\'est ce qui fait tenir. »'},
+  {id:'proche',ic:'👥',label:'Un proche s\'y est mis',dig:'Qui ? Qu\'est-ce que ça lui a apporté qui vous donne envie ?',proj:'vivre la même transformation que votre proche',catch:'« Et vous pouvez vivre la même chose — venir ensemble, c\'est encore plus motivant. »'}
 ];
 const EMOTIONS=[
-  {id:'confiance',ic:'✨',label:'Confiance en soi',phrase:'vous regarder dans le miroir avec fierté'},
-  {id:'sante',ic:'❤️',label:'Santé long terme',phrase:'rester en bonne santé pour les années qui comptent'},
-  {id:'energie',ic:'🔋',label:'Énergie au quotidien',phrase:'avoir l\'énergie de profiter de vos journées à fond'},
-  {id:'image',ic:'🪞',label:'Bien dans son corps',phrase:'vous sentir enfin bien dans votre corps'},
-  {id:'autonomie',ic:'🦅',label:'Rester autonome',phrase:'garder votre autonomie et votre mobilité longtemps'},
-  {id:'proches',ic:'👨‍👩‍👧',label:'En forme pour ses proches',phrase:'être là, en forme, pour ceux que vous aimez'},
-  {id:'mental',ic:'🧠',label:'Tête plus claire',phrase:'avoir l\'esprit plus clair et moins de stress'}
+  {id:'confiance',ic:'✨',label:'Confiance en soi',phrase:'vous regarder dans le miroir avec fierté',catch:'« C\'est exactement ce qu\'on construit ici : on se tient plus droit, on se sent plus solide. »'},
+  {id:'sante',ic:'❤️',label:'Santé long terme',phrase:'rester en bonne santé pour les années qui comptent',catch:'« Investir dans votre corps maintenant, c\'est des années de santé en plus. »'},
+  {id:'energie',ic:'🔋',label:'Énergie au quotidien',phrase:'avoir l\'énergie de profiter de vos journées à fond',catch:'« Vous sentirez la différence sur votre énergie dès les premières séances. »'},
+  {id:'image',ic:'🪞',label:'Bien dans son corps',phrase:'vous sentir enfin bien dans votre corps',catch:'« Se sentir bien dans son corps, c\'est le plus beau des objectifs — et c\'est atteignable. »'},
+  {id:'autonomie',ic:'🦅',label:'Rester autonome',phrase:'garder votre autonomie et votre mobilité longtemps',catch:'« Équilibre, force, mobilité : c\'est précisément ce qui préserve l\'autonomie. »'},
+  {id:'proches',ic:'👨‍👩‍👧',label:'En forme pour ses proches',phrase:'être là, en forme, pour ceux que vous aimez',catch:'« Être en forme pour les siens, il n\'y a pas de plus belle motivation. »'},
+  {id:'mental',ic:'🧠',label:'Tête plus claire',phrase:'avoir l\'esprit plus clair et moins de stress',catch:'« Le mouvement et la respiration apaisent vraiment le mental — beaucoup le découvrent ici. »'}
 ];
 const TRIED=[
-  {id:'salle',ic:'🏋️',label:'Salle de sport',contrast:'des machines, mais personne pour vous guider — on finit par décrocher'},
-  {id:'coach',ic:'🧑‍🏫',label:'Coach perso',contrast:'efficace, mais cher et difficile à tenir dans la durée'},
-  {id:'yoga',ic:'🧘',label:'Yoga / Pilates au sol',contrast:'doux et agréable, mais sans le renforcement profond que donne le Reformer'},
-  {id:'running',ic:'🏃',label:'Course / cardio',contrast:'beaucoup d\'impact sur les articulations, et vite la lassitude'},
-  {id:'maison',ic:'📱',label:'Sport à la maison / apps',contrast:'zéro régularité sans cadre ni rendez-vous — la motivation retombe'},
-  {id:'rien',ic:'🌱',label:'Jamais rien de structuré',contrast:'c\'est une page blanche — exactement pour ça qu\'un cadre rassurant change tout'}
+  {id:'salle',ic:'🏋️',label:'Salle de sport',contrast:'des machines, mais personne pour vous guider — on finit par décrocher',catch:'« Ici c\'est tout l\'inverse : un coach vous guide à chaque mouvement, vous n\'êtes jamais seul(e). »'},
+  {id:'coach',ic:'🧑‍🏫',label:'Coach perso',contrast:'efficace, mais cher et difficile à tenir dans la durée',catch:'« L\'efficacité du coaching, mais en petit groupe : le même suivi pour une fraction du prix. »'},
+  {id:'yoga',ic:'🧘',label:'Yoga / Pilates au sol',contrast:'doux et agréable, mais sans le renforcement profond que donne le Reformer',catch:'« Vous allez adorer : on garde la fluidité, on ajoute le renforcement profond du Reformer. »'},
+  {id:'running',ic:'🏃',label:'Course / cardio',contrast:'beaucoup d\'impact sur les articulations, et vite la lassitude',catch:'« Ici zéro impact pour les articulations — et on ne se lasse pas : 8 formats différents. »'},
+  {id:'maison',ic:'📱',label:'Sport à la maison / apps',contrast:'zéro régularité sans cadre ni rendez-vous — la motivation retombe',catch:'« Le souci à la maison, c\'est la régularité. Ici : un créneau réservé et un coach qui vous attend. »'},
+  {id:'rien',ic:'🌱',label:'Jamais rien de structuré',contrast:'c\'est une page blanche — exactement pour ça qu\'un cadre rassurant change tout',catch:'« Page blanche = aucune mauvaise habitude. On construit du bon dès le départ, en douceur. »'}
 ];
 const CLASSES={
   foundation05:{nm:'Foundation 0.5',sub:'initiation · 1er pas',ds:'Cours d\'introduction au Reformer pour les vrais débutants, sans pression.',restr:[],lvl:'0.5',
@@ -876,6 +881,12 @@ function digFor(data,ids){
   if(!ds.length)return '';
   return `<div class="ask-box"><div class="h">🔍 À demander maintenant</div>${ds.map(d=>`<div class="q">${d.dig}</div>`).join('')}</div>`;
 }
+// Catch-lines en direct : ce que le commercial RÉPOND quand le client coche cette réponse.
+function catchFor(data,ids){
+  const cs=(ids||[]).map(id=>{const o=data.find(x=>x.id===id);return o&&o.catch?o:null;}).filter(Boolean);
+  if(!cs.length)return '';
+  return `<div class="catch-box"><div class="h">💬 À répondre, là, maintenant</div>${cs.map(c=>`<div class="ln"><span class="ci">${c.ic}</span><span>${c.catch}</span></div>`).join('')}</div>`;
+}
 
 function renderScreen(){
   const flow=buildFlow();
@@ -897,8 +908,10 @@ function renderScreen(){
     nav=navHTML(false,'Commencer l\'appel');
   }
   else if(s.t==='q'){
+    const selIds=s.single?(st[s.field]?[st[s.field]]:[]):st[s.field];
     h=`<div class="scr-tag ask">${s.phase}</div><div class="scr-q">${s.q}</div>${s.sub?`<div class="scr-sub">${s.sub}</div>`:''}${optChips(s.data,s.field,s.single)}`;
-    if(s.dig){const ids=s.single?(st[s.field]?[st[s.field]]:[]):st[s.field];h+=digFor(s.data,ids);}
+    h+=catchFor(s.data,selIds);
+    if(s.dig){h+=digFor(s.data,selIds);}
     if(s.lever&&ageBand()){const b=ageBand();h+=`<div class="lever">${b.phrases[0]}</div>`;}
     nav=navHTML(true);
   }
