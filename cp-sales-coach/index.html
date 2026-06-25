@@ -263,6 +263,15 @@ header{position:sticky;top:0;z-index:40;background:var(--cp-dark);color:#fff;pad
 .rf .lab{font-size:11.5px;color:var(--ink-soft);line-height:1.35;margin-top:1px}
 .rf .lab b{color:var(--cp-deep)}
 
+/* ── Bloc "À creuser" (questions à poser au client) ── */
+.dig{background:linear-gradient(180deg,#eef4fb,#e3edf8);border:1px solid var(--cp-soft);border-radius:12px;padding:12px 14px;margin-top:12px;animation:fade .3s}
+.dig-h{font-size:11px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--cp-deep);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.dig-q{font-size:13px;color:var(--ink);line-height:1.5;padding:6px 0 6px 16px;position:relative;border-top:1px dashed var(--cp-soft)}
+.dig-q:first-of-type{border-top:0}
+.dig-q::before{content:'→';position:absolute;left:0;color:var(--cp-blue);font-weight:900}
+.dig-q b{color:var(--cp-deep);font-weight:700}
+.optional-tag{font-size:10px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.04em;margin-left:6px}
+
 /* ── Mode Téléprompteur ── */
 .tp-launch{position:fixed;left:16px;bottom:calc(16px + env(safe-area-inset-bottom));z-index:45;background:linear-gradient(135deg,var(--cp-blue),var(--cp-deep));color:#fff;border-radius:14px;padding:13px 16px;font-weight:800;font-size:13px;box-shadow:0 8px 24px -6px rgba(79,111,160,.5);display:flex;align-items:center;gap:8px}
 .tp-launch:hover{filter:brightness(1.06)}
@@ -426,8 +435,11 @@ let st={
   connait:null,                 // connait CP ? oui/non
   reason:[],                    // pourquoi nous contacte
   pastSport:null,               // a fait du sport ?
+  trigger:null,                 // déclencheur — pourquoi maintenant
+  tried:[],                     // tentatives passées (contraste)
   pain:[],                      // pourquoi a arrêté = la vraie douleur (le O)
   goals:[],                     // objectifs (le G)
+  emotion:null,                 // enjeu émotionnel profond (le why du why)
   health:[],                    // contre-indications
   dispo:null,                   // disponibilité hebdo perçue
   packChoice:null,              // override manuel du pack par le commercial
@@ -446,24 +458,24 @@ const REASONS=[
   {id:'reco',ic:'🗣️',label:'On m\'a recommandé'},
   {id:'curieux',ic:'❓',label:'Simple curiosité'}
 ];
-const PAINS=[ // le O — pourquoi ça n'a pas marché avant
-  {id:'temps',ic:'⏳',label:'Manque de temps'},
-  {id:'resultats',ic:'📉',label:'Pas de résultats'},
-  {id:'motivation',ic:'😮‍💨',label:'Manque de motivation'},
-  {id:'encadrement',ic:'🧭',label:'Pas d\'encadrement'},
-  {id:'blessure',ic:'🤕',label:'Blessure / santé'},
-  {id:'jamais',ic:'🌱',label:'Jamais fait de sport'},
-  {id:'ennui',ic:'🥱',label:'Lassitude / routine'}
+const PAINS=[ // le O — pourquoi ça n'a pas marché avant. dig = la question à creuser.
+  {id:'temps',ic:'⏳',label:'Manque de temps',dig:'C\'était quoi le vrai frein — le trajet, les horaires, la durée des séances ? Combien de temps réaliste vous pourriez dégager ?'},
+  {id:'resultats',ic:'📉',label:'Pas de résultats',dig:'Vous attendiez quel résultat précis ? En combien de temps ? Qu\'est-ce qui vous a fait dire « ça ne sert à rien » ?'},
+  {id:'motivation',ic:'😮‍💨',label:'Manque de motivation',dig:'Qu\'est-ce qui vous démotivait — la solitude, l\'ennui, personne pour vous pousser ? Vous tenez mieux quand on vous attend ?'},
+  {id:'encadrement',ic:'🧭',label:'Pas d\'encadrement',dig:'Vous auriez aimé quoi — être corrigé(e), un vrai programme, un coach qui vous connaît ?'},
+  {id:'blessure',ic:'🤕',label:'Blessure / santé',dig:'Quelle blessure exactement ? Vous êtes rétabli(e) ? Le médecin a dit quoi ? Ça vous fait peur de reprendre ?'},
+  {id:'jamais',ic:'🌱',label:'Jamais fait de sport',dig:'Qu\'est-ce qui vous a retenu jusqu\'ici — la peur du regard, ne pas savoir par où commencer, le niveau ?'},
+  {id:'ennui',ic:'🥱',label:'Lassitude / routine',dig:'Qu\'est-ce qui vous lassait — toujours la même chose, aucune progression, l\'ambiance ?'}
 ];
-const GOALS=[ // le G
-  {id:'poids',ic:'⚖️',label:'Perte de poids'},
-  {id:'mobilite',ic:'🤸',label:'Mobilité / souplesse'},
-  {id:'douleur',ic:'🩹',label:'Soulager douleurs'},
-  {id:'tonus',ic:'💪',label:'Tonicité / renforcement'},
-  {id:'energie',ic:'⚡',label:'Énergie / forme'},
-  {id:'stress',ic:'🧘',label:'Gérer le stress'},
-  {id:'posture',ic:'🧍',label:'Posture / dos'},
-  {id:'perf',ic:'🏆',label:'Me dépasser / perf'}
+const GOALS=[ // le G. dig = la question à creuser pour qualifier en profondeur.
+  {id:'poids',ic:'⚖️',label:'Perte de poids',dig:'Combien de kilos en tête ? Pour une occasion précise ? Qu\'avez-vous déjà tenté et pourquoi ça n\'a pas tenu ?'},
+  {id:'mobilite',ic:'🤸',label:'Mobilité / souplesse',dig:'Où ça coince — dos, hanches, épaules ? Ça vous limite dans quoi concrètement au quotidien ?'},
+  {id:'douleur',ic:'🩹',label:'Soulager douleurs',dig:'Où précisément ? Depuis quand ? Ça vous réveille la nuit, ça gêne au travail ? Vous avez consulté ?'},
+  {id:'tonus',ic:'💪',label:'Tonicité / renforcement',dig:'Quelle zone en priorité ? Vous vous trouvez comment aujourd\'hui face au miroir ?'},
+  {id:'energie',ic:'⚡',label:'Énergie / forme',dig:'Vous vous sentez vidé(e) à quel moment — le matin, le coup de barre de l\'après-midi, le soir ?'},
+  {id:'stress',ic:'🧘',label:'Gérer le stress',dig:'Le stress vient d\'où — le boulot, la charge mentale ? Ça impacte votre sommeil, votre humeur ?'},
+  {id:'posture',ic:'🧍',label:'Posture / dos',dig:'Vous travaillez assis(e) combien d\'heures par jour ? Vous avez déjà des tensions cervicales / lombaires ?'},
+  {id:'perf',ic:'🏆',label:'Me dépasser / perf',dig:'Vous pratiquez quoi à côté ? Vous voulez progresser sur quoi exactement — force, gainage, souplesse ?'}
 ];
 const HEALTH=[ // contre-indications — warnings
   {id:'aucun',ic:'✅',label:'Rien à signaler',clear:true},
@@ -480,6 +492,36 @@ const DISPO=[
   {id:'low',ic:'1',label:'Plutôt 1× / sem',note:'agenda serré'},
   {id:'mid',ic:'2',label:'2× / sem possible',note:'le bon rythme'},
   {id:'high',ic:'3',label:'3× et +',note:'très motivé(e)'}
+];
+/* DÉCLENCHEUR — « pourquoi maintenant ? » : la question qui révèle l'urgence réelle */
+const TRIGGERS=[
+  {id:'event',ic:'📅',label:'Un événement à venir',dig:'Lequel — mariage, vacances, photo, retrouvailles ? Pour quand exactement ?',proj:'arriver à votre événement en pleine forme et fier(e) de vous'},
+  {id:'sante',ic:'🩺',label:'Conseil / bilan santé',dig:'Le médecin a dit quoi précisément ? C\'est de la prévention ou déjà un souci installé ?',proj:'reprendre la main sur votre santé avant que ça ne s\'aggrave'},
+  {id:'poids',ic:'⚖️',label:'Pris du poids récemment',dig:'Depuis quand ? Lié à quoi — un changement de vie, le télétravail, l\'arrêt du sport ?',proj:'retrouver le corps dans lequel vous vous sentiez bien'},
+  {id:'grossesse',ic:'🤱',label:'Post-grossesse',dig:'À combien de mois êtes-vous ? Vous avez le feu vert médical pour reprendre ?',proj:'retrouver votre tonicité et votre énergie de jeune parent'},
+  {id:'douleur',ic:'⚡',label:'Douleur qui s\'installe',dig:'Où ? Depuis combien de temps ? Ça vous gêne dans quels gestes du quotidien ?',proj:'bouger sans cette douleur qui vous suit partout'},
+  {id:'raslebol',ic:'😤',label:'Ras-le-bol de l\'état actuel',dig:'Qu\'est-ce qui a fait déborder le vase, là, maintenant ? Pourquoi pas il y a 6 mois ?',proj:'enfin vous sentir aligné(e) avec la personne que vous voulez être'},
+  {id:'resolution',ic:'🎯',label:'Nouveau départ / résolution',dig:'Qu\'est-ce qui rend CE moment différent des fois précédentes où vous avez essayé ?',proj:'faire de cette fois LA bonne, celle qui tient'},
+  {id:'proche',ic:'👥',label:'Un proche s\'y est mis',dig:'Qui ? Qu\'est-ce que ça lui a apporté qui vous donne envie ?',proj:'vivre la même transformation que votre proche'}
+];
+/* ENJEU ÉMOTIONNEL — le « why » derrière le « why », ce qui fait vraiment agir */
+const EMOTIONS=[
+  {id:'confiance',ic:'✨',label:'Confiance en soi',phrase:'vous regarder dans le miroir avec fierté'},
+  {id:'sante',ic:'❤️',label:'Santé long terme',phrase:'rester en bonne santé pour les années qui comptent'},
+  {id:'energie',ic:'🔋',label:'Énergie au quotidien',phrase:'avoir l\'énergie de profiter de vos journées à fond'},
+  {id:'image',ic:'🪞',label:'Bien dans son corps',phrase:'vous sentir enfin bien dans votre corps'},
+  {id:'autonomie',ic:'🦅',label:'Rester autonome',phrase:'garder votre autonomie et votre mobilité longtemps'},
+  {id:'proches',ic:'👨‍👩‍👧',label:'En forme pour ses proches',phrase:'être là, en forme, pour ceux que vous aimez'},
+  {id:'mental',ic:'🧠',label:'Tête plus claire',phrase:'avoir l\'esprit plus clair et moins de stress'}
+];
+/* TENTATIVES PASSÉES — pour positionner CP en contraste (le « pont vers la solution ») */
+const TRIED=[
+  {id:'salle',ic:'🏋️',label:'Salle de sport',contrast:'des machines, mais personne pour vous guider — on finit par décrocher'},
+  {id:'coach',ic:'🧑‍🏫',label:'Coach perso',contrast:'efficace, mais cher et difficile à tenir dans la durée'},
+  {id:'yoga',ic:'🧘',label:'Yoga / Pilates au sol',contrast:'doux et agréable, mais sans le renforcement profond que donne le Reformer'},
+  {id:'running',ic:'🏃',label:'Course / cardio',contrast:'beaucoup d\'impact sur les articulations, et vite la lassitude'},
+  {id:'maison',ic:'📱',label:'Sport à la maison / apps',contrast:'zéro régularité sans cadre ni rendez-vous — la motivation retombe'},
+  {id:'rien',ic:'🌱',label:'Jamais rien de structuré',contrast:'c\'est une page blanche — exactement pour ça qu\'un cadre rassurant change tout'}
 ];
 
 /* COURS — depuis slides 3-5 + Foundation 0.5 ajouté */
@@ -731,6 +773,15 @@ function toggleTips(key){const el=document.getElementById('tips-'+key);if(el)el.
 /* récupère la tranche d'âge active */
 function ageBand(){return AGE_BANDS.find(b=>b.id===st.ageBand)||null}
 
+/* Bloc "À creuser" — affiche les questions à poser pour les chips sélectionnés */
+function digCard(items,selIds){
+  const ds=(selIds||[]).map(id=>{const o=items.find(x=>x.id===id);return o&&o.dig?o:null;}).filter(Boolean);
+  if(!ds.length)return '';
+  return `<div class="dig"><div class="dig-h">🔍 À creuser maintenant — posez ces questions</div>${ds.map(d=>`<div class="dig-q"><b>${d.label} :</b> ${d.dig}</div>`).join('')}</div>`;
+}
+function trig(){return TRIGGERS.find(t=>t.id===st.trigger)||null}
+function emo(){return EMOTIONS.find(e=>e.id===st.emotion)||null}
+
 /* ════════════════════════════════════════════════════════════════
    MOTEUR DE RECOMMANDATION
    ════════════════════════════════════════════════════════════════ */
@@ -859,16 +910,75 @@ const PACK_META={
 };
 
 /* pitch personnalisé (le M) */
+/* énumération française avec « et » final */
+function frList(arr){if(!arr.length)return '';if(arr.length===1)return arr[0];return arr.slice(0,-1).join(', ')+' et '+arr[arr.length-1];}
+
+/* bénéfice d'un cours, personnalisé selon les objectifs du prospect */
+function classBenefit(id){
+  const g=st.goals, has=x=>g.includes(x);
+  switch(id){
+    case 'foundation05': return 'vous met en confiance dès la première séance, à votre rythme et sans aucune pression';
+    case 'flow1':
+      if(has('posture')||has('douleur')) return 'reconstruit votre posture et soulage votre dos en profondeur';
+      if(has('poids')||has('tonus')) return 'gaine et tonifie tout le corps, en sécurité totale';
+      if(has('stress')) return 'reconnecte le corps et la respiration — un vrai sas de décompression';
+      return 'pose des bases solides : gainage, posture, respiration et contrôle';
+    case 'cs1':
+      if(has('poids')) return 'fait grimper la dépense calorique, sans aucun impact sur les articulations';
+      return 'booste votre cardio et votre énergie, tout en douceur';
+    case 'cb':
+      if(has('mobilite')||has('posture')) return 'redonne de la mobilité et rééquilibre les tensions du quotidien';
+      return 'libère vos articulations et installe un vrai mieux-être';
+    case 'restore':
+      if(has('stress')) return 'relâche les tensions et apaise le mental';
+      return 'soulage les contractures et accélère la récupération';
+    case 'fit2': return 'maximise la combustion des graisses dans un format athlétique et stimulant';
+    default: return CLASSES[id]?CLASSES[id].ds.replace(/\.$/,'').toLowerCase():'';
+  }
+}
+function triggerClause(t){
+  const m={event:'parce qu\'un événement important approche',sante:'suite à un signal santé qu\'il ne faut pas ignorer',poids:'parce que vous avez pris du poids et que ça vous pèse',grossesse:'pour retrouver votre corps et votre énergie après bébé',douleur:'parce qu\'une douleur commence à s\'installer et à vous gêner',raslebol:'parce que vous en avez vraiment assez de l\'état actuel',resolution:'parce que vous voulez un vrai nouveau départ',proche:'parce qu\'un proche vous a montré que c\'était possible'};
+  return m[t.id]||t.label.toLowerCase();
+}
+
+/* ARGUMENTAIRE NARRATIF — temps par temps (miroir → moment → contraste → reco → projection) */
+function buildPitchBeats(pack,recos){
+  const beats=[]; const e=emo(), t=trig();
+  // 1 · MIROIR empathique
+  if(st.pain.length){
+    const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());
+    let m=`« Si je résume ce que vous m'avez partagé : ce qui vous a freiné avant, c'est ${frList(pains)}.`;
+    if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;
+    m+=` »`;
+    beats.push({label:'Miroir — montrez que vous avez compris',text:m});
+  }
+  // 2 · LE BON MOMENT (déclencheur)
+  if(t){
+    beats.push({label:'Le bon moment',text:`« Et si vous nous appelez aujourd'hui, c'est ${triggerClause(t)}. Honnêtement, c'est exactement LE bon moment pour agir — pas dans 6 mois. »`});
+  }
+  // 3 · CONTRASTE (tentatives passées)
+  if(st.tried.length){
+    const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);
+    let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}.`;
+    c+=` Le Reformer Club Pilates, c'est une autre approche : un coach qui vous corrige, 12 personnes maximum, un cadre qui vous fait revenir. »`;
+    beats.push({label:'Contraste — pourquoi CP est différent',text:c});
+  }
+  // 4 · LA RECO (cours justifiés un par un)
+  const goalTxt=st.goals.length?frList(st.goals.map(g=>lbl(GOALS,g).toLowerCase())):'vos objectifs';
+  let reco=`« Concrètement, pour ${goalTxt}, je vous oriente vers le ${PACK_META[pack].name} : `;
+  reco+=recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ');
+  reco+=`. Avec 3 mois d'engagement — le temps que votre corps installe vraiment le changement. »`;
+  beats.push({label:'La reco — chaque cours a une raison',text:reco});
+  // 5 · PROJECTION
+  let proj=`« Imaginez dans 3 mois : `;
+  proj+=(t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir transformé(e)`);
+  proj+=`. C'est exactement ce qu'on va construire ensemble, séance après séance. On y va ? »`;
+  beats.push({label:'Projection — faites-le se projeter',text:proj});
+  return beats;
+}
+/* version texte (compat — téléprompteur, recap) */
 function buildPitch(pack,recos){
-  const painTxt=st.pain.length?st.pain.map(p=>lbl(PAINS,p).toLowerCase()).join(', '):'votre besoin';
-  const goalTxt=st.goals.length?st.goals.map(g=>lbl(GOALS,g).toLowerCase()).join(', '):'vos objectifs';
-  const c1=CLASSES[recos[0].id].nm, c2=recos[1]?CLASSES[recos[1].id].nm:'';
-  const meta=PACK_META[pack];
-  let p=`« En me basant sur ce que vous m'avez partagé — vous m'avez parlé de ${painTxt}, et votre objectif c'est ${goalTxt} — je vous recommande le ${meta.name}`;
-  if(c2)p+=`, composé du cours signature ${c1} et de ${c2}`;
-  else p+=`, autour du cours signature ${c1}`;
-  p+=`, avec 3 mois d'engagement. Cela vous fait ${pack===3?'autant de séances que vous voulez':(pack===2?'en moyenne 2 cours par semaine':'1 cours par semaine')}. Depuis l'application, vous gérez vos classes en toute autonomie. Quelles sont vos disponibilités ? »`;
-  return p;
+  return buildPitchBeats(pack,recos).map(b=>b.text).join(' ');
 }
 function buildPricePitch(pack){
   const base=fmtEur(CFG.base);
@@ -970,15 +1080,19 @@ function buildScript(){
   // OUVERTURE
   seq.push({t:'say',tag:'Ouverture',text:`Bonjour, <b>${rep}</b> de Club Pilates${studio}. Je vous appelle suite à votre demande d'informations.`,hint:'Souriez — le ton s\'entend.'});
   seq.push({t:'ask',tag:'Permission',text:`Vous avez quelques minutes ? Je vais vous proposer <b>la meilleure offre adaptée à votre besoin</b>.`,hint:'Laisse-le dire oui — ça l\'engage.'});
-  // DÉCOUVERTE (le O)
+  // DÉCOUVERTE (le O) — creuser en profondeur
   seq.push({t:'ask',tag:'Douleur',text:`Qu'est-ce qui vous amène vers le Pilates <b>aujourd'hui</b> ?`,hint:'Question ouverte. Puis SILENCE 3 sec.'});
-  seq.push({t:'ask',tag:'Douleur',text:`Vous aviez une activité avant ? Qu'est-ce qui n'a pas continué ?`,hint:'C\'est LA vraie douleur à capter.'});
-  seq.push({t:'listen',tag:'Écoute',text:`Reformulez : « Donc si je comprends bien, ce qui vous a manqué, c'est… »`,hint:'Montre que vous écoutez vraiment.'});
-  // OBJECTIFS (le G)
-  seq.push({t:'ask',tag:'Objectif',text:`Et concrètement, qu'est-ce que vous aimeriez réussir dans les <b>3 prochains mois</b> ?`,hint:'Projetez-le dans le futur.'});
+  // question à creuser dynamique sur la douleur principale
+  if(st.pain.length){const pd=PAINS.find(p=>p.id===st.pain[0]); if(pd&&pd.dig)seq.push({t:'ask',tag:'Creuser la douleur',text:pd.dig,hint:'Plus vous creusez, plus la reco sera forte.'});}
+  seq.push({t:'ask',tag:'Pourquoi maintenant',text:`Et <b>pourquoi maintenant</b> ? Qu'est-ce qui fait que c'est le moment, là ?`,hint:'Le déclencheur = votre meilleur levier de closing.'});
+  seq.push({t:'ask',tag:'Tentatives',text:`Vous aviez déjà tenté quelque chose avant ? Qu'est-ce qui a coincé ?`,hint:'Sert à positionner le Reformer en contraste.'});
+  seq.push({t:'listen',tag:'Écoute',text:`Reformulez : « Donc si je comprends bien, ce qui vous a manqué, c'est… »`,hint:'Montrez que vous écoutez vraiment.'});
+  // OBJECTIFS (le G) + enjeu profond
+  seq.push({t:'ask',tag:'Objectif',text:`Qu'est-ce que vous aimeriez réussir dans les <b>3 prochains mois</b> ?`,hint:'Projetez-le dans le futur.'});
+  seq.push({t:'ask',tag:'Le why du why',text:`Et <b>pourquoi est-ce important pour vous</b>, au fond ?`,hint:'Creusez jusqu\'à l\'émotion. C\'est l\'or du closing.'});
   if(ageP)seq.push({t:'say',tag:`Levier ${ageP.label}`,text:`<em>${ageP.phrases[0]}</em>`,hint:'Phrase clé adaptée à sa tranche d\'âge.'});
-  // RECO (le M)
-  seq.push({t:'say',tag:'Recommandation',text:`En me basant sur ce que vous m'avez partagé — ${painTxt}, et votre objectif ${goalTxt} — je vous recommande le <b>${PACK_META[pack].name}</b>${c2?`, avec ${c1} et ${c2}`:`, autour du ${c1}`}.`,hint:'La reco paraît évidente : il l\'a nourrie.'});
+  // RECO (le M) — argumentaire narratif temps par temps
+  buildPitchBeats(pack,recos).forEach(b=>seq.push({t:'say',tag:b.label.split('—')[0].trim(),text:b.text.replace(/^«\s*/,'').replace(/\s*»$/,''),hint:b.label.includes('—')?b.label.split('—')[1].trim():''}));
   // PRIX + REFRAMING
   if(st.callGoal==='membership'){
     const fmF=fmtEur(foundingMonthly(pack)), fpsF=fmtEur(foundingPerSession(pack));
@@ -1034,8 +1148,11 @@ function renderFiche(){
   if(b)rows.push(['Âge',`<span class="ftag" style="background:${b.color};color:#fff">${b.ic} ${b.label}</span>`]);
   if(st.connait!=null)rows.push(['Connaît CP',st.connait==='oui'?'Oui':'Non, à présenter']);
   if(st.reason.length)rows.push(['Motif',st.reason.map(r=>lbl(REASONS,r)).join(' · ')]);
+  if(st.trigger)rows.push(['Déclencheur',`<span class="ftag" style="background:var(--warn);color:#fff">${lbl(TRIGGERS,st.trigger)}</span>`]);
+  if(st.tried.length)rows.push(['A essayé',`<span class="fiche-tags">${st.tried.map(t=>`<span class="ftag">${lbl(TRIED,t)}</span>`).join('')}</span>`]);
   if(st.pain.length)rows.push(['Douleur',`<span class="fiche-tags">${st.pain.map(p=>`<span class="ftag">${lbl(PAINS,p)}</span>`).join('')}</span>`]);
   if(st.goals.length)rows.push(['Objectifs',`<span class="fiche-tags">${st.goals.map(g=>`<span class="ftag">${lbl(GOALS,g)}</span>`).join('')}</span>`]);
+  if(st.emotion)rows.push(['Enjeu',`<span class="ftag" style="background:var(--cp-blue);color:#fff">${lbl(EMOTIONS,st.emotion)}</span>`]);
   const ah=activeHealth();
   if(ah.length)rows.push(['Santé',`<span class="fiche-tags">${ah.map(h=>`<span class="ftag warn">${lbl(HEALTH,h)}</span>`).join('')}</span>`]);
   if(st.dispo)rows.push(['Dispo',lbl(DISPO,st.dispo)]);
@@ -1122,15 +1239,22 @@ function viewDouleur(){
     ${chips(REASONS,st.reason,'pickReason')}
   </div>
   <div class="card">
-    <div class="q-title">Aviez-vous une pratique sportive avant ?</div>
-    ${chips([{id:'oui',ic:'🏃',label:'Oui'},{id:'non',ic:'🌱',label:'Non / très peu'}],st.pastSport?[st.pastSport]:[],'pickPast')}
-    <div class="say listen">Qu'est-ce qui vous plaisait ? Combien de temps ?</div>
+    <div class="q-title">⏱️ Le déclencheur — pourquoi MAINTENANT ?<span class="optional-tag">clé du closing</span></div>
+    <div class="q-sub">La raison la plus puissante de vendre : ce qui le pousse à agir aujourd'hui plutôt qu'il y a 6 mois.</div>
+    ${chips(TRIGGERS,st.trigger?[st.trigger]:[],'pickTrigger')}
+    ${st.trigger?digCard(TRIGGERS,[st.trigger]):''}
+  </div>
+  <div class="card">
+    <div class="q-title">Qu'a-t-il/elle déjà essayé ?<span class="optional-tag">contraste</span></div>
+    <div class="q-sub">Pour positionner le Reformer comme LA solution à ce qui n'a pas marché.</div>
+    ${chips(TRIED,st.tried,'pickTried')}
+    <div class="say listen">Qu'est-ce qui vous plaisait ? Qu'est-ce qui a fini par coincer ?</div>
   </div>
   <div class="card">
     <div class="q-title">Qu'est-ce qui n'a pas fonctionné / pourquoi avoir arrêté ?</div>
     <div class="q-sub">C'est <b>LE point clé</b> : la vraie douleur qu'on va résoudre. On ne vend pas un abonnement, mais une solution à une déception passée.</div>
     ${chips(PAINS,st.pain,'pickPain')}
-    <div class="say listen">Que pouvons-nous faire <b>différemment aujourd'hui</b> pour que ça fonctionne pour vous ?</div>
+    ${digCard(PAINS,st.pain)}
   </div>
   <div class="nav">
     <button class="btn btn-ghost" onclick="goStep(1)">←</button>
@@ -1147,7 +1271,12 @@ function viewObjectifs(){
     <div class="q-title">Quels sont vos objectifs ?</div>
     <div class="q-sub">Plusieurs choix possibles.</div>
     ${chips(GOALS,st.goals,'pickGoal')}
-    <div class="say listen">Pourquoi est-ce important pour vous ? (Confiance, énergie, se sentir bien…)</div>
+    ${digCard(GOALS,st.goals)}
+  </div>
+  <div class="card">
+    <div class="q-title">💗 L'enjeu profond — pourquoi c'est important ?<span class="optional-tag">le why du why</span></div>
+    <div class="q-sub">« Et pourquoi est-ce important pour VOUS ? » → creusez jusqu'à l'émotion. C'est ça qu'on revend au closing.</div>
+    ${chips(EMOTIONS,st.emotion?[st.emotion]:[],'pickEmotion')}
   </div>
   <div class="card">
     <div class="q-title">Quelque chose à signaler côté santé ?</div>
@@ -1240,15 +1369,19 @@ function viewReco(){
   </div>
 
   <div class="card">
-    <div class="eyebrow"><span class="dot"></span>À dire — recommandation</div>
-    <div class="say">${esc(buildPitch(pack,recos))}</div>
+    <div class="eyebrow"><span class="dot"></span>🎙️ L'argumentaire — déroulez-le dans l'ordre</div>
+    <div class="q-sub">Chaque temps a un rôle. Ne récitez pas : adaptez avec ses mots à lui.</div>
+    ${buildPitchBeats(pack,recos).map((b,i)=>`
+      <div style="margin-top:${i?14:8}px">
+        <div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cp-blue);margin-bottom:5px">${i+1}. ${b.label}</div>
+        <div class="say">${b.text}</div>
+      </div>`).join('')}
     ${st.callGoal==='membership'?`
-      <div class="eyebrow" style="margin-top:14px"><span class="dot"></span>À dire — le prix</div>
-      <div class="say">${esc(buildPricePitch(pack))}</div>`:`
-      <div class="eyebrow" style="margin-top:14px"><span class="dot" style="background:var(--ok)"></span>À dire — proposer l'essai gratuit</div>
-      <div class="say" style="background:#E6F5EE">${buildTrialPitch()}</div>`}
-    <div class="say listen">Qu'est-ce que vous pensez de ma recommandation ? <span style="color:var(--ink-mid)">(ouvre la porte à un changement de pack / cours, ou à plus de challenge)</span></div>
-    <div class="note" style="margin-top:10px;font-style:italic">« En 10 séances vous sentirez la différence, en 20 vous la verrez, en 30 vous serez différent. » — Joseph Pilates</div>
+      <div style="margin-top:14px"><div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cp-blue);margin-bottom:5px">6. Le prix (après le reframing ci-dessus)</div>
+      <div class="say">${esc(buildPricePitch(pack))}</div></div>`:`
+      <div style="margin-top:14px"><div style="font-size:10.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--ok);margin-bottom:5px">6. Proposer l'essai gratuit</div>
+      <div class="say" style="background:#E6F5EE">${buildTrialPitch()}</div></div>`}
+    <div class="say listen" style="margin-top:12px">Puis écoutez : « Qu'est-ce que vous en pensez ? » <span style="color:var(--ink-mid)">— laissez le silence travailler.</span></div>
   </div>
 
   <div class="nav">
@@ -1267,8 +1400,11 @@ function buildRecapText(){
   L.push('');
   L.push(`Connaît CP : ${st.connait==='oui'?'Oui':(st.connait==='non'?'Non':'—')}`);
   if(st.reason.length)L.push(`Motif d'appel : ${st.reason.map(r=>lbl(REASONS,r)).join(', ')}`);
+  if(st.trigger)L.push(`Déclencheur (pourquoi maintenant) : ${lbl(TRIGGERS,st.trigger)}`);
+  if(st.tried.length)L.push(`A déjà essayé : ${st.tried.map(t=>lbl(TRIED,t)).join(', ')}`);
   if(st.pain.length)L.push(`Douleur / déception : ${st.pain.map(p=>lbl(PAINS,p)).join(', ')}`);
   if(st.goals.length)L.push(`Objectifs : ${st.goals.map(g=>lbl(GOALS,g)).join(', ')}`);
+  if(st.emotion)L.push(`Enjeu profond : ${lbl(EMOTIONS,st.emotion)}`);
   if(ah.length)L.push(`Santé : ${ah.map(h=>lbl(HEALTH,h)).join(', ')}`);
   if(st.dispo)L.push(`Disponibilité : ${lbl(DISPO,st.dispo)}`);
   L.push('');
@@ -1415,6 +1551,9 @@ function pickAge(id){st.ageBand=(st.ageBand===id?null:id);render()}
 function pickConnait(id){st.connait=id;render()}
 function pickReason(id){toggle(st.reason,id);render()}
 function pickPast(id){st.pastSport=id;render()}
+function pickTrigger(id){st.trigger=(st.trigger===id?null:id);render()}
+function pickTried(id){toggle(st.tried,id);render()}
+function pickEmotion(id){st.emotion=(st.emotion===id?null:id);render()}
 function pickPain(id){toggle(st.pain,id);render()}
 function pickGoal(id){toggle(st.goals,id);render()}
 function pickHealth(id){
@@ -1428,7 +1567,8 @@ function goStep(i){st.step=i;render()}
 
 function resetCall(){
   if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;
-  st={step:0,connait:null,reason:[],pastSport:null,pain:[],goals:[],health:[],dispo:null,packChoice:null};
+  const keepMode=st.mode, keepGoal=st.callGoal, keepTips=st.showTips;
+  st={mode:keepMode,callGoal:keepGoal,step:0,ageBand:null,connait:null,reason:[],pastSport:null,trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null,showTips:keepTips};
   render();toast('Nouvel appel');
 }
 function copyRecap(){
