@@ -235,6 +235,12 @@ async function _uploadSharedFilesToStudio(sid,files){
 
 // ── Init session ────────────────────────────────────────────────────────────
 sb.auth.getSession().then(function(res){
+  // Flux de réinitialisation de mot de passe (lien email) : on n'entre PAS dans
+  // l'app, on affiche l'écran "définir un nouveau mot de passe".
+  if(window._isseoRecovery){
+    if(typeof renderRecoveryScreen==='function')renderRecoveryScreen();
+    return;
+  }
   var session=res.data&&res.data.session;
   if(session){
     // Mobile / PWA : on skip le check d'inactivité — l'utilisateur reste connecté

@@ -233,6 +233,7 @@ function renderAdminPanel(){
   h+='<div style="color:#888;font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
   h+='<div style="display:flex;gap:8px">';
   h+='<button onclick="showCreateUserModal()" style="background:#0f1f3d;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:600">+ Nouveau compte</button>';
+  if(_adminUsers.length>0)h+='<button onclick="generateAllPasswords()" title="Générer un nouveau mot de passe pour tous les utilisateurs" style="background:#854F0B;color:#fff;border:none;border-radius:6px;padding:6px 14px;font-size:11px;cursor:pointer;font-weight:600">🔑 Régénérer tous les mdp</button>';
   h+='<button onclick="loadAdminUsers();loadPresence()" style="background:#f0f0ea;border:1px solid #dce1ea;color:#444;border-radius:6px;padding:5px 11px;font-size:11px;cursor:pointer">↻ Actualiser</button>';
   h+='</div>';
   h+='</div>';
@@ -312,6 +313,9 @@ function renderAdminPanel(){
         }
         h+='<button onclick="editUserPassword(\''+uid+'\',\''+(u.nom||'').replace(/'/g,"\\'")+'\')" title="Modifier le mot de passe" style="background:none;border:none;cursor:pointer;padding:2px;color:#888;transition:color .15s" onmouseover="this.style.color=\'#1a3a6b\'" onmouseout="this.style.color=\'#888\'">';
         h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 3a2.83 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z"/></svg>';
+        h+='</button>';
+        h+='<button onclick="generateUserPassword(\''+uid+'\',\''+(u.nom||'').replace(/'/g,"\\'")+'\')" title="Générer un nouveau mot de passe aléatoire" style="background:none;border:none;cursor:pointer;padding:2px;color:#888;transition:color .15s" onmouseover="this.style.color=\'#854F0B\'" onmouseout="this.style.color=\'#888\'">';
+        h+='<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/></svg>';
         h+='</button>';
         h+='</div>';
       }
@@ -402,43 +406,118 @@ function toggleShowPwd(uid){
   }
 }
 
-async function editUserPassword(uid,nom){
-  var pwds=S.adminSettings.passwords||{};
-  var current=decodePwd(pwds[uid]||'');
-  var newPwd=prompt('Nouveau mot de passe pour '+nom+' :'+(current?'\n(actuel : '+current+')':''),current);
-  if(newPwd===null)return;
-  newPwd=newPwd.trim();
-  if(!newPwd){toast('Mot de passe vide non autorisé');return;}
-  if(newPwd.length<6){toast('Le mot de passe doit contenir au moins 6 caractères');return;}
-  toast('Mise à jour du mot de passe…');
+// ── Écran "Définir un nouveau mot de passe" (lien email de récupération) ──────
+// Affiché quand Supabase émet PASSWORD_RECOVERY (cf. index.html). L'utilisateur
+// arrive ici via le lien reçu par email : il définit son nouveau mot de passe,
+// puis entre dans l'app normalement.
+function renderRecoveryScreen(){
+  window._isseoRecovery=true;
+  var root=document.getElementById('root');
+  if(!root)return;
+  // Masquer le chrome de l'app (sidebar, hamburger, barre d'onglets)
+  ['app-sidebar','hamburger-btn','bottom-tab-bar','sidebar-overlay'].forEach(function(id){
+    var e=document.getElementById(id);if(e)e.style.display='none';
+  });
+  var h='<div class="auth-wrap">'
+    +'<div class="auth-bg-overlay"></div>'
+    +'<div class="auth-box">'
+    +'<div class="auth-logos">'
+    +'<div class="auth-logo-wrap isseo-wrap"><div class="auth-logo-halo"></div><img src="logo-black.png" class="auth-logo" alt="Isseo"></div>'
+    +'<span class="auth-sep">&times;</span>'
+    +'<div class="auth-logo-wrap cp-wrap"><div class="auth-logo-halo"></div><img src="logo-cp.webp" class="auth-logo auth-logo-cp" alt="Club Pilates"></div>'
+    +'</div>'
+    +'<div style="text-align:center;font-size:13px;font-weight:700;color:#fff;margin-bottom:4px;letter-spacing:1px">Nouveau mot de passe</div>'
+    +'<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.35);margin-bottom:24px">Choisissez le mot de passe qui sécurisera votre compte</div>'
+    +'<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin-bottom:24px"></div>'
+    +'<label style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Nouveau mot de passe</label>'
+    +'<input id="rec-new" type="password" placeholder="••••••••" autocomplete="new-password"/>'
+    +'<label style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Confirmer le mot de passe</label>'
+    +'<input id="rec-confirm" type="password" placeholder="••••••••" autocomplete="new-password" onkeydown="if(event.key===\'Enter\')doRecoverySetPassword()"/>'
+    +'<div id="rec-err" style="font-size:12px;color:#ef4444;margin-bottom:10px;display:none;background:rgba(239,68,68,0.1);padding:8px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2)"></div>'
+    +'<button id="rec-btn" onclick="doRecoverySetPassword()" style="width:100%;padding:14px;background:linear-gradient(135deg,#fff,#e8e8e8);color:#0a0a0a;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s ease;letter-spacing:0.5px;margin-top:4px">Définir mon mot de passe</button>'
+    +'<div style="text-align:center;margin-top:24px;font-size:10px;color:rgba(255,255,255,0.15)">ISSEO × Club Pilates · Espace sécurisé</div>'
+    +'</div></div>';
+  root.innerHTML=h;
+  setTimeout(function(){var i=document.getElementById('rec-new');if(i)i.focus();},80);
+}
+
+async function doRecoverySetPassword(){
+  var errEl=document.getElementById('rec-err');
+  var btn=document.getElementById('rec-btn');
+  var n=(document.getElementById('rec-new')||{}).value||'';
+  var c=(document.getElementById('rec-confirm')||{}).value||'';
+  function showErr(m){if(errEl){errEl.textContent=m;errEl.style.display='block';}}
+  if(errEl)errEl.style.display='none';
+  if(n.length<8){showErr('Le mot de passe doit contenir au moins 8 caractères.');return;}
+  if(n!==c){showErr('Les deux mots de passe ne correspondent pas.');return;}
+  btn.textContent='Enregistrement…';btn.disabled=true;btn.style.opacity='0.6';
+  var upd=await sb.auth.updateUser({password:n});
+  if(upd.error){
+    showErr('Erreur : '+upd.error.message);
+    btn.textContent='Définir mon mot de passe';btn.disabled=false;btn.style.opacity='1';
+    return;
+  }
+  window._isseoRecovery=false;
+  // Nettoyer l'URL (retirer le token de récupération) puis entrer dans l'app
+  try{history.replaceState(null,'',location.origin+location.pathname);}catch(e){}
+  toast('Mot de passe défini ✓ Bienvenue !');
+  setTimeout(function(){location.replace(location.origin+location.pathname);},600);
+}
+
+// ── Génération de mots de passe (admin) ──────────────────────────────────────
+// Mot de passe fort mais lisible : 12 caractères, sans caractères ambigus.
+function _isseoGenPwd(){
+  var chars='ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+  var specials='!@#$%&*';
+  var out='';
+  var rnd=function(max){
+    if(window.crypto&&crypto.getRandomValues){var a=new Uint32Array(1);crypto.getRandomValues(a);return a[0]%max;}
+    return Math.floor(Math.random()*max);
+  };
+  for(var i=0;i<11;i++)out+=chars[rnd(chars.length)];
+  // garantir au moins un caractère spécial
+  out+=specials[rnd(specials.length)];
+  return out;
+}
+
+// Applique un mot de passe à un utilisateur via l'Edge Function manage-user.
+// Renvoie {ok:true} ou {ok:false,error:'...'}.
+async function _applyUserPassword(uid,newPwd){
   try{
-    // Appel fetch direct pour contrôler l'extraction du message d'erreur
     var sess=await sb.auth.getSession();
     var token=sess.data&&sess.data.session&&sess.data.session.access_token;
-    if(!token){toast('Échec : session expirée, reconnecte-toi');return;}
+    if(!token)return {ok:false,error:'session expirée, reconnecte-toi'};
     var r=await fetch(SURL+'/functions/v1/manage-user',{
       method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'Authorization':'Bearer '+token,
-        'apikey':SKEY
-      },
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token,'apikey':SKEY},
       body:JSON.stringify({action:'reset-password',userId:uid,password:newPwd})
     });
     var bodyText=await r.text();
     var bodyJson={};try{bodyJson=JSON.parse(bodyText);}catch(e){}
     if(!r.ok){
-      var msg=bodyJson.error||bodyJson.message||bodyText||('HTTP '+r.status);
       console.error('[resetPassword]',r.status,bodyText);
-      toast('Échec ('+r.status+') : '+msg);
-      return;
+      return {ok:false,error:bodyJson.error||bodyJson.message||bodyText||('HTTP '+r.status)};
     }
-    if(bodyJson.error){toast('Échec : '+bodyJson.error);return;}
+    if(bodyJson.error)return {ok:false,error:bodyJson.error};
+    return {ok:true};
   }catch(err){
     console.error('[resetPassword] exception',err);
-    toast('Échec : '+(err.message||'Edge Function indisponible'));
-    return;
+    return {ok:false,error:err.message||'Edge Function indisponible'};
   }
+}
+
+async function editUserPassword(uid,nom){
+  if(!isSuperAdmin())return;
+  var pwds=S.adminSettings.passwords||{};
+  var current=decodePwd(pwds[uid]||'');
+  var newPwd=prompt('Nouveau mot de passe pour '+nom+' :'+(current?'\n(actuel : '+current+')':'')+'\n\nLaissez vide et validez pour en générer un automatiquement.',current);
+  if(newPwd===null)return;
+  newPwd=newPwd.trim();
+  if(!newPwd)newPwd=_isseoGenPwd();
+  if(newPwd.length<6){toast('Le mot de passe doit contenir au moins 6 caractères');return;}
+  toast('Mise à jour du mot de passe…');
+  var res=await _applyUserPassword(uid,newPwd);
+  if(!res.ok){toast('Échec : '+res.error);return;}
   // Mise à jour du mémo local (affichage dans le panneau admin)
   if(!S.adminSettings.passwords)S.adminSettings.passwords={};
   S.adminSettings.passwords[uid]=encodePwd(newPwd);
@@ -446,6 +525,50 @@ async function editUserPassword(uid,nom){
     if(ok){toast('Mot de passe mis à jour pour '+nom+' ✓');render();}
     else{toast('Mot de passe changé côté auth mais mémo non sauvegardé');}
   });
+}
+
+// Génère + applique un nouveau mot de passe aléatoire pour UN utilisateur.
+async function generateUserPassword(uid,nom){
+  if(!isSuperAdmin())return;
+  var newPwd=_isseoGenPwd();
+  toast('Génération pour '+nom+'…');
+  var res=await _applyUserPassword(uid,newPwd);
+  if(!res.ok){toast('Échec : '+res.error);return;}
+  if(!S.adminSettings.passwords)S.adminSettings.passwords={};
+  S.adminSettings.passwords[uid]=encodePwd(newPwd);
+  await saveAdminSettings();
+  // Révéler automatiquement le nouveau mot de passe dans le panneau
+  render();
+  setTimeout(function(){
+    var el=document.getElementById('pwd-text-'+uid);
+    if(el&&el.dataset.visible!=='1')toggleShowPwd(uid);
+  },60);
+  toast('Nouveau mot de passe généré pour '+nom+' ✓');
+}
+
+// Génère + applique un nouveau mot de passe pour TOUS les utilisateurs (sauf soi).
+async function generateAllPasswords(){
+  if(!isSuperAdmin())return;
+  var targets=(_adminUsers||[]).filter(function(u){return u.id&&!(S.user&&S.user.id===u.id);});
+  if(!targets.length){toast('Aucun utilisateur à traiter');return;}
+  if(!confirm('Générer un NOUVEAU mot de passe pour '+targets.length+' utilisateur(s) ?\n\nLeurs anciens mots de passe seront immédiatement invalidés. Les nouveaux seront affichés dans ce tableau (icône œil) pour que vous puissiez les communiquer.'))return;
+  if(!S.adminSettings.passwords)S.adminSettings.passwords={};
+  var ok=0,fail=0,failNames=[];
+  for(var i=0;i<targets.length;i++){
+    var u=targets[i];
+    toast('Génération '+(i+1)+'/'+targets.length+' — '+(u.nom||u.email||'')+'…');
+    var newPwd=_isseoGenPwd();
+    var res=await _applyUserPassword(u.id,newPwd);
+    if(res.ok){S.adminSettings.passwords[u.id]=encodePwd(newPwd);ok++;}
+    else{fail++;failNames.push((u.nom||u.email||u.id)+' : '+res.error);}
+  }
+  await saveAdminSettings();
+  render();
+  if(fail===0)toast('✓ '+ok+' mot(s) de passe régénéré(s). Cliquez l\'œil pour les voir.');
+  else{
+    toast('⚠ '+ok+' OK, '+fail+' échec(s)');
+    console.warn('[generateAllPasswords] échecs:',failNames);
+  }
 }
 
 // ── Avatar utilisateur connecté ──────────────────────────────────────────────
