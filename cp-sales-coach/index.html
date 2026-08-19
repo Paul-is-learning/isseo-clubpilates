@@ -831,7 +831,7 @@ function buildPricePitch(pack){
   const base=fmtEur(CFG.base),m=packMonthly(pack),mF=fmtEur(m),psF=fmtEur(packPerSession(pack)),fmF=fmtEur(foundingMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack));
   if(mF==null)return `« Votre accompagnement revient à ${base||'—'} la séance. Avec votre formule et le statut de membre fondateur (-${CFG.founding}% à vie + inscription offerte), nous descendons bien en dessous. » ⚠️ Renseignez le prix dans Réglages.`;
   const pn=PACK_META[pack].name.toLowerCase();let s;
-  if(pack===3){s=`« Je vous propose le ${pn} : ${mF}/mois en illimité — soit moins de ${psF||fmtEur(m/8)} la séance dès 2 venues/semaine, et bien moins ensuite.`;if(fmF)s+=` Et comme membre fondateur, ${fmF}/mois — un tarif préférentiel que vous gardez à vie.`;}
+  if(pack===3){const wk=4.333,r=f=>Math.round(m/(f*wk))+' €',ps3=r(3),ps4=r(4),ps5=r(5);s=`« Je vous propose l'illimité : ${mF}/mois. Et là, plus vous venez, plus c'est imbattable : à 3 fois par semaine ça revient à ~${ps3} la séance, à 4 fois ~${ps4}, à 5 fois à peine ~${ps5}. L'illimité, c'est fait pour celles et ceux qui veulent des résultats vite.`;if(fmF)s+=` Et comme membre fondateur, ${fmF}/mois — un tarif préférentiel gardé à vie, donc c'est encore moins.`;}
   else {s=`« Je vous propose le ${pn} : ${mF}/mois, soit ${psF} la séance, tout compris.`;if(fpsF)s+=` Et comme membre fondateur, ${fmF}/mois — soit ${fpsF} la séance, un tarif préférentiel conservé à vie.`;}
   return s+` Les frais d'inscription vous sont offerts. Qu'en dites-vous ? »`;
 }
