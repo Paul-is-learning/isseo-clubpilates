@@ -3526,3 +3526,90 @@ body.dark .accueil-topbar-date{color:#8b949e}
   body.dark .tab{color:#c9d1d9}
   body.dark .tab.active{background:#2d333b!important;color:#e2e8f0!important;box-shadow:0 1px 2px rgba(0,0,0,.25),0 3px 8px rgba(0,0,0,.3)}
 }
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   Y2K & POLISH LAYER — Accueil chrome/iridescent + finitions globales
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Palette Y2K ── */
+:root{
+  --y2k-cyan:#7df3ff; --y2k-violet:#9a8cff; --y2k-rose:#ff8ad8; --y2k-mint:#7dffc4;
+}
+
+/* ── 1 · HERO — bord iridescent animé (liseré holographique) ── */
+.hero-banner{border-radius:22px !important;isolation:isolate}
+.hero-banner::before{
+  content:'';position:absolute;inset:-1.5px;border-radius:24px;padding:1.5px;z-index:3;
+  background:conic-gradient(from 210deg,var(--y2k-cyan),var(--y2k-violet),var(--y2k-rose),var(--y2k-mint),var(--y2k-cyan));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  opacity:.55;pointer-events:none;
+  animation:y2kHue 9s linear infinite;
+}
+@keyframes y2kHue{to{filter:hue-rotate(360deg)}}
+/* Étoile Y2K scintillante */
+.hero-banner .y2k-star{position:absolute;top:14px;right:22px;z-index:2;font-size:22px;color:#dff3ff;
+  text-shadow:0 0 10px rgba(125,243,255,.9),0 0 26px rgba(154,140,255,.6);
+  animation:y2kTwinkle 2.6s ease-in-out infinite;pointer-events:none}
+.hero-banner .y2k-star.s2{top:auto;bottom:18px;right:34%;font-size:13px;animation-delay:-1.2s;opacity:.8}
+.hero-banner .y2k-star.s3{top:30px;right:14%;font-size:10px;animation-delay:-.6s;opacity:.6}
+@keyframes y2kTwinkle{0%,100%{transform:scale(1) rotate(0deg);opacity:.85}50%{transform:scale(1.35) rotate(18deg);opacity:1}}
+
+/* ── 2 · Titre chrome (effet métal poli 2000s) ── */
+.y2k-chrome{
+  background:linear-gradient(180deg,#ffffff 0%,#d6e6fa 34%,#8fb0d9 49%,#eaf5ff 58%,#b9d1ee 78%,#f4faff 100%);
+  -webkit-background-clip:text;background-clip:text;
+  -webkit-text-fill-color:transparent;color:transparent;
+  filter:drop-shadow(0 2px 5px rgba(10,25,60,.55));
+  letter-spacing:-0.3px;
+}
+
+/* ── 3 · Cartes KPI — glossy « aqua » + reflet holographique au survol ── */
+.kpi-card{position:relative;overflow:hidden;transition:transform .28s cubic-bezier(.2,.85,.25,1),box-shadow .28s ease,border-color .28s ease}
+.kpi-card::before{
+  content:'';position:absolute;left:5%;right:5%;top:0;height:44%;border-radius:0 0 50% 50%/0 0 100% 100%;
+  background:linear-gradient(180deg,rgba(255,255,255,.34),rgba(255,255,255,.02));
+  pointer-events:none;z-index:0;
+}
+body.dark .kpi-card::before{background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,0))}
+.kpi-card::after{
+  content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
+  background:linear-gradient(115deg,transparent 32%,rgba(125,243,255,.18) 45%,rgba(255,138,216,.15) 55%,transparent 68%);
+  transform:translateX(-130%) skewX(-8deg);transition:transform .65s ease;
+}
+.kpi-card:hover{transform:translateY(-3px) scale(1.012);box-shadow:0 16px 36px -14px rgba(50,85,160,.38),0 0 0 1px rgba(125,180,255,.30);}
+.kpi-card:hover::after{transform:translateX(130%) skewX(-8deg)}
+body.dark .kpi-card:hover{box-shadow:0 16px 36px -14px rgba(0,0,0,.6),0 0 0 1px rgba(125,180,255,.22)}
+
+/* ── 4 · Carrousel héro — dots glossy + barres avec glow ── */
+.hero-carousel-dot{transition:transform .2s ease,background .2s ease,box-shadow .2s ease}
+.hero-carousel-dot.active{box-shadow:0 0 8px rgba(125,243,255,.75),0 0 18px rgba(154,140,255,.4);transform:scale(1.15)}
+.hero-bar-fill{background-image:linear-gradient(90deg,rgba(125,243,255,.85),rgba(154,140,255,.9)) !important;box-shadow:0 0 10px rgba(125,243,255,.45)}
+
+/* ── 5 · Pills « focus du jour » — bulles glossy ── */
+.focus-today-pill{position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.2,.85,.25,1),box-shadow .22s}
+.focus-today-pill::before{content:'';position:absolute;left:8%;right:8%;top:2px;height:40%;border-radius:999px;background:linear-gradient(180deg,rgba(255,255,255,.35),rgba(255,255,255,0));pointer-events:none}
+body.dark .focus-today-pill::before{background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,0))}
+.focus-today-pill:hover{transform:translateY(-2px);box-shadow:0 10px 22px -10px rgba(50,85,160,.35)}
+
+/* ── 6 · Polish global : cartes, toast, scrollbar, focus ── */
+.box{transition:box-shadow .25s ease,border-color .25s ease}
+.box:hover{box-shadow:0 8px 26px -16px rgba(26,58,107,.22)}
+body.dark .box:hover{box-shadow:0 8px 26px -16px rgba(0,0,0,.55)}
+
+.toast{background:rgba(18,24,38,.88);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);
+  border:1px solid rgba(125,180,255,.25);border-radius:12px;box-shadow:0 10px 30px -10px rgba(0,0,0,.45)}
+
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#b9c8e2,#8fa8cf);border-radius:8px;border:2px solid rgba(0,0,0,0);background-clip:padding-box}
+::-webkit-scrollbar-thumb:hover{background:linear-gradient(180deg,#a5b8d8,#7a96c2);background-clip:padding-box}
+body.dark ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#3a4258,#2a3040);background-clip:padding-box}
+
+:focus-visible{outline:2px solid rgba(125,168,232,.9);outline-offset:2px}
+
+/* ── 7 · Accessibilité : on coupe tout si l'utilisateur le demande ── */
+@media (prefers-reduced-motion:reduce){
+  .hero-banner::before,.hero-banner .y2k-star{animation:none}
+  .kpi-card,.kpi-card::after,.focus-today-pill,.box{transition:none}
+}
