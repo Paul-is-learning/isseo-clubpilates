@@ -946,6 +946,9 @@ function updateSimRep(sid,field,val,ay){
   S.simConfig[sid][field]=num(val);
   var lbl=document.getElementById('sim-lbl-'+field);
   if(lbl)lbl.textContent=Math.round(num(val))+'%';
+  // Tuile KPI mix (bandeau haut de page) — reflète le scénario affiché en direct
+  var kpiMix=document.getElementById('kpi-mix');
+  if(kpiMix){var c=S.simConfig[sid];kpiMix.textContent=Math.round(num(c.p4,47))+'% / '+Math.round(num(c.p8,50))+'% / '+Math.round(num(c.pi,3))+'%';}
   markDirty('sim',sid);
   _refreshSimCA(sid,ay);
 }

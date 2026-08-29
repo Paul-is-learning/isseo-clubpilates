@@ -422,7 +422,8 @@ function renderAdherents(sid,s){
   h+='<div class="kpi"><div class="kpi-label">Membres reels</div><div class="kpi-val" style="color:#185FA5" id="kpi-adh-real">'+(lastReal!==null?lastReal+'':'--')+'</div></div>';
   h+='<div class="kpi"><div class="kpi-label">Ecart vs BP</div><div class="kpi-val" id="kpi-adh-ecart" style="color:'+(ecart!==null?(ecart>=0?'#3B6D11':'#A32D2D'):'#888')+'">'+(ecart!==null?(ecart>=0?'+':'')+ecart:'--')+'</div></div>';
   h+='<div class="kpi"><div class="kpi-label">Seuil rentabilite</div><div class="kpi-val">150-200</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Pack4/Pack8/Illim.</div><div class="kpi-val" style="font-size:11px">47% / 50% / 3%</div></div>';
+  var _mixCfg=S.simConfig&&S.simConfig[sid]||{p4:47,p8:50,pi:3};
+  h+='<div class="kpi"><div class="kpi-label">Pack4/Pack8/Illim.</div><div class="kpi-val" style="font-size:11px" id="kpi-mix">'+Math.round(num(_mixCfg.p4,47))+'% / '+Math.round(num(_mixCfg.p8,50))+'% / '+Math.round(num(_mixCfg.pi,3))+'%</div></div>';
   h+='</div>';
   h+=renderAdherentChart(moisLabels,bpArr,realArr,annee);
   h+='<div class="box" style="background:#f5f5f0;margin-bottom:12px">';
