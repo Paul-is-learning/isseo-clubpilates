@@ -1454,6 +1454,26 @@ function _submitCommentFromModal(sid,taskId){
 }
 
 function _handleCommentKeydown(e,sid,taskId){
+  // Navigation clavier du picker de mentions (↑↓ pour choisir, Entrée/Tab pour valider, Échap pour fermer)
+  var picker=document.getElementById('mention-picker');
+  if(picker){
+    var items=picker.querySelectorAll('.mention-picker-item');
+    if(items.length){
+      if(e.key==='ArrowDown'||e.key==='ArrowUp'){
+        e.preventDefault();
+        _mentionActiveIdx=(_mentionActiveIdx+(e.key==='ArrowDown'?1:items.length-1))%items.length;
+        items.forEach(function(it,i){it.classList.toggle('active',i===_mentionActiveIdx);});
+        return;
+      }
+      if((e.key==='Enter'&&!e.metaKey&&!e.ctrlKey)||e.key==='Tab'){
+        e.preventDefault();
+        var it=items[Math.min(_mentionActiveIdx,items.length-1)];
+        if(it&&it.dataset.nom){_insertMention(it.dataset.nom);}
+        return;
+      }
+      if(e.key==='Escape'){e.preventDefault();_closeMentionPicker();return;}
+    }
+  }
   if((e.metaKey||e.ctrlKey) && e.key==='Enter'){
     e.preventDefault();
     _submitCommentFromModal(sid,taskId);
@@ -1482,8 +1502,10 @@ function _handleMentionInput(ev,sid,taskId){
   if(!m){_closeMentionPicker();return;}
   var query=m[2]||'';
   var startPos=caret-query.length-1; // position du @
-  _mentionInsertPos=startPos;
+  // IMPORTANT : ouvrir le picker AVANT de fixer la position — _openMentionPicker
+  // commence par _closeMentionPicker() qui remet _mentionInsertPos à -1.
   _openMentionPicker(sid,taskId,query,ta);
+  _mentionInsertPos=startPos;
 }
 
 function _openMentionPicker(sid,taskId,query,anchorEl){
@@ -1508,7 +1530,7 @@ function _openMentionPicker(sid,taskId,query,anchorEl){
         ?'<img class="mp-avatar" src="'+avatarUrl+'" alt="">'
         :'<div class="mp-avatar-fallback">'+_escHtml(initials)+'</div>';
       var safe=nom.replace(/'/g,"\\'");
-      menu.innerHTML+='<div class="mention-picker-item'+(i===0?' active':'')+'" onmousedown="event.preventDefault();_insertMention(\''+safe+'\')">'+avatarHtml+'<div class="mp-name">'+_escHtml(nom)+'</div></div>';
+      menu.innerHTML+='<div class="mention-picker-item'+(i===0?' active':'')+'" data-nom="'+nom.replace(/"/g,'&quot;')+'" onmousedown="event.preventDefault();_insertMention(\''+safe+'\')">'+avatarHtml+'<div class="mp-name">'+_escHtml(nom)+'</div></div>';
     });
   }
   document.body.appendChild(menu);
