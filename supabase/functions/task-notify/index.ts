@@ -115,7 +115,7 @@ serve(async (req) => {
     // tolérant : "Pascal Bécaud" matche "Pascal Bécaud (ISSEO)" et vice-versa.
     const { data: allProfiles, error: profErr } = await admin
       .from("profiles")
-      .select("nom, email");
+      .select("id, nom, email");
     if (profErr) console.error("[task-notify] profiles err:", profErr);
 
     // Normalise un nom : minuscules, accents enlevés, parenthèses enlevées, trim, espaces collapsés
@@ -139,7 +139,17 @@ serve(async (req) => {
           return n.includes(target) || target.includes(n);
         });
       }
-      if (match && match.email) byNom.set(recipient, match.email);
+      if (match && match.email) {
+        byNom.set(recipient, match.email);
+      } else if (match && match.id) {
+        // Profil sans email : fallback sur l'email du compte auth (source de vérité)
+        try {
+          const { data: au } = await admin.auth.admin.getUserById(match.id);
+          if (au?.user?.email) byNom.set(recipient, au.user.email);
+        } catch (e) {
+          console.error("[task-notify] auth fallback err for", recipient, e);
+        }
+      }
     }
     const profiles = allProfiles;
     console.log("[task-notify] event:", event, "recipients:", recipients, "profiles found:", profiles?.length || 0, "byNom:", Array.from(byNom.keys()));

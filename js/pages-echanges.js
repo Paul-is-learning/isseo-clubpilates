@@ -1412,7 +1412,12 @@ async function addCommentToTache(sid,taskId,body){
     mentions.filter(function(n){return n && !_namesMatch(n,moi);}).forEach(function(nom){
       notifyUserByNom(nom,{type:'mention',studio_id:sid,title:'@mention — '+t.titre,body:moi.split(' ')[0]+' t\'a mentionné : "'+trimmed.slice(0,120)+'"'});
     });
-    try{sb.functions.invoke('task-notify',{body:{sid:sid,taskId:taskId,event:'mentioned',actorName:moi,extra:{body:trimmed,mentions:mentions}}}).catch(function(e){console.warn('[task-notify mention]',e);});}catch(e){}
+    try{sb.functions.invoke('task-notify',{body:{sid:sid,taskId:taskId,event:'mentioned',actorName:moi,extra:{body:trimmed,mentions:mentions}}}).then(function(r){
+      var d=r&&r.data;console.log('[task-notify mention] réponse:',d);
+      if(d&&d.error){toast('⚠ Email de mention non envoyé : '+d.error);return;}
+      var fails=(d&&d.results||[]).filter(function(x){return x.skipped||x.error;});
+      if(fails.length)toast('⚠ Email non envoyé à '+fails.map(function(f){return f.nom+(f.skipped==='no-email'?' (email introuvable)':f.error?' ('+f.error+')':'');}).join(', '));
+    }).catch(function(e){console.warn('[task-notify mention]',e);toast('⚠ Email de mention : échec de l\'envoi');});}catch(e){}
   }
   // Email classique "commented" pour les assignés (inchangé V1)
   try{sb.functions.invoke('task-notify',{body:{sid:sid,taskId:taskId,event:'commented',actorName:moi,extra:{body:trimmed}}}).catch(function(e){console.warn('[task-notify]',e);});}catch(e){}
