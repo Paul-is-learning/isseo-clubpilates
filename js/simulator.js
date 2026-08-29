@@ -280,6 +280,8 @@ function saisirAdherentLive(sid,year,moisIdx,val){
   var key='y'+year+'_m'+moisIdx;
   if(val===''||val===null){delete S.adherents[sid][key];}
   else{S.adherents[sid][key]=num(val);}
+  // Marque la saisie comme non enregistrée : protège du clobber sync + affiche la barre
+  markDirty('adherents',sid);
 
   // Redessine uniquement le SVG du graphique (sans toucher aux inputs)
   var s=S.studios[sid];
@@ -933,6 +935,8 @@ function _startScenarioWithName(sid){
   if(modal)modal.remove();
   // Initialiser le scénario avec le nom
   S._scenarioName=name;
+  clearDirty('adherents',sid);
+  clearDirty('sim',sid);
   S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   S.adherents[sid]={};
   S.activeScenarioId[sid]='bp_default';

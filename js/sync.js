@@ -17,8 +17,11 @@ function _handleRowChange(r){
     var nv=r.data&&r.data.depenses||[];
     if(JSON.stringify(nv)!==JSON.stringify(S.depenses[id.slice(0,-9)]||[])){S.depenses[id.slice(0,-9)]=nv;changed=true;}
   } else if(id.endsWith('_adherents')){
+    var _sidAdh=id.slice(0,-10);
+    // Ne jamais écraser une saisie locale non enregistrée
+    if(S.dirty&&S.dirty['adherents_'+_sidAdh])return false;
     var nv=r.data&&r.data.actuel||{};
-    if(JSON.stringify(nv)!==JSON.stringify(S.adherents[id.slice(0,-10)]||{})){S.adherents[id.slice(0,-10)]=nv;changed=true;}
+    if(JSON.stringify(nv)!==JSON.stringify(S.adherents[_sidAdh]||{})){S.adherents[_sidAdh]=nv;changed=true;}
   } else if(id.endsWith('_scenarios')){
     var nv=r.data&&r.data.scenarios||[];
     if(JSON.stringify(nv)!==JSON.stringify(S.scenarios[id.slice(0,-10)]||[])){S.scenarios[id.slice(0,-10)]=nv;changed=true;}
@@ -62,10 +65,13 @@ function _handleRowChange(r){
       S.shiftProposals[sid]=nv;changed=true;
     }
   } else if(id.endsWith('_simconfig')){
+    var _sidCfg=id.slice(0,-10);
+    // Ne jamais écraser un réglage local non enregistré (curseurs/prix en cours)
+    if(S.dirty&&S.dirty['sim_'+_sidCfg])return false;
     var nv=r.data&&r.data.config||{};
-    if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[id.slice(0,-10)]||{})){
-      S.simConfig[id.slice(0,-10)]=nv;
-      try{localStorage.setItem('isseo_sim_'+id.slice(0,-10),JSON.stringify(nv));}catch(e){}
+    if(JSON.stringify(nv)!==JSON.stringify(S.simConfig[_sidCfg]||{})){
+      S.simConfig[_sidCfg]=nv;
+      try{localStorage.setItem('isseo_sim_'+_sidCfg,JSON.stringify(nv));}catch(e){}
       changed=true;
     }
   } else if(id==='_admin_settings'){

@@ -542,6 +542,11 @@ async function setStudioStatut(sid,val){
 async function saveDepenses(sid){
   await rpcPatch(sid+'_depenses',{merge:{depenses:S.depenses[sid]}});
 }
+// Remplacement COMPLET de la ligne adhérents (opérations de scénario : charger,
+// enregistrer, supprimer). Contrairement au merge, les mois effacés le restent.
+async function replaceAdherents(sid){
+  await sb.from('studios').upsert({id:sid+'_adherents',data:{actuel:S.adherents[sid]||{}},updated_at:new Date().toISOString()});
+}
 async function saveAdherents(sid){
   // Atomic merge via RPC — chaque utilisateur ne modifie que ses champs
   var result=await rpcPatch(sid+'_adherents',{merge:{actuel:S.adherents[sid]||{}}});

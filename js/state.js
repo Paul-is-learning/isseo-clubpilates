@@ -289,7 +289,7 @@ async function saveAllDirty(){
     var keys=Object.keys(S.dirty).filter(function(k){return S.dirty[k];});
     for(var i=0;i<keys.length;i++){
       var parts=keys[i].split('_');var type=parts[0];var sid=parts.slice(1).join('_');
-      if(type==='adherents')await saveAdherents(sid);
+      if(type==='adherents')await replaceAdherents(sid);
       if(type==='sim'){saveSimConfig(sid);}
       if(type==='taux'){_tauxPending[sid]=false;await rpcPatch(sid,{merge:{tauxInteret:S.studios[sid].tauxInteret}});}
       if(type==='loyer'){await rpcPatch(sid,{merge:{loyer_mensuel:S.studios[sid].loyer_mensuel}});}
@@ -340,20 +340,37 @@ async function saveScenarios(sid){
   await sb.from('studios').upsert({id:sid+'_scenarios',data:{scenarios:S.scenarios[sid]||[]},updated_at:new Date().toISOString()});
 }
 
+// Sauvegarde immédiate du simConfig (annule le debounce en attente)
+function flushSimConfig(sid){
+  try{localStorage.setItem('isseo_sim_'+sid,JSON.stringify(S.simConfig[sid]));}catch(e){}
+  if(_simSaveTimeout[sid]){clearTimeout(_simSaveTimeout[sid]);delete _simSaveTimeout[sid];}
+  return sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
+}
+
 function enregistrerScenario(sid){
-  // Modale pour saisir un commentaire obligatoire
+  // Modale : mettre à jour le scénario actif OU créer un nouveau
+  var _activeId=S.activeScenarioId[sid];
+  var _activeSc=_activeId&&_activeId!=='bp_default'?(S.scenarios[sid]||[]).find(function(s){return s.id===_activeId;}):null;
   var overlay=document.createElement('div');
   overlay.id='scenario-modal';
   overlay.className='modal-backdrop-anim';
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
-  var box='<div class="modal-spring" style="background:#fff;border-radius:14px;padding:24px 28px;width:420px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
+  var box='<div class="modal-spring" style="background:#fff;border-radius:14px;padding:24px 28px;width:440px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,0.18)">';
   box+='<div style="display:flex;align-items:center;gap:8px;margin-bottom:16px"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#1a3a6b" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg><span style="font-size:15px;font-weight:700;color:#1a1a1a">Enregistrer le scénario</span></div>';
-  var _scName=S._scenarioName||'';
+  // Choix : mise à jour du scénario actif (par défaut) ou nouveau scénario
+  if(_activeSc){
+    var _an=(_activeSc.name||'Sans nom').replace(/</g,'&lt;');
+    box+='<div style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px">';
+    box+='<label style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1.5px solid #1a3a6b;border-radius:9px;cursor:pointer;background:#f0f7ff"><input type="radio" name="sc-mode" value="update" checked onchange="var i=document.getElementById(\'scenario-name-final\');if(i)i.value=this.dataset.n" data-n="'+_an.replace(/"/g,'&quot;')+'" style="accent-color:#1a3a6b"/><span style="font-size:12px;font-weight:600;color:#1a3a6b">Mettre à jour « '+_an+' »</span></label>';
+    box+='<label style="display:flex;align-items:center;gap:8px;padding:9px 12px;border:1.5px solid #dde;border-radius:9px;cursor:pointer"><input type="radio" name="sc-mode" value="new" onchange="var i=document.getElementById(\'scenario-name-final\');if(i){i.value=\'\';i.focus();}" style="accent-color:#1a3a6b"/><span style="font-size:12px;font-weight:600;color:#555">Créer un nouveau scénario</span></label>';
+    box+='</div>';
+  }
+  var _scName=(_activeSc&&_activeSc.name)||S._scenarioName||'';
   box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Nom du scénario</label>';
   box+='<input id="scenario-name-final" type="text" value="'+_scName.replace(/"/g,'&quot;')+'" style="width:100%;padding:8px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;outline:none;font-family:inherit;box-sizing:border-box;margin-bottom:10px;font-weight:600;color:#1a3a6b" placeholder="Nom du scénario"/>';
   box+='<label style="font-size:12px;font-weight:600;color:#555;display:block;margin-bottom:6px">Description / hypothèses <span style="font-weight:400;color:#aaa">(optionnel)</span></label>';
-  box+='<textarea id="scenario-comment" rows="3" placeholder="Ex: Prix augmentés de 15%, adhérents conservateurs…" style="width:100%;padding:10px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box"></textarea>';
+  box+='<textarea id="scenario-comment" rows="3" placeholder="Ex: Prix augmentés de 15%, adhérents conservateurs…" style="width:100%;padding:10px 12px;border:1px solid #dde;border-radius:8px;font-size:12px;resize:vertical;outline:none;font-family:inherit;box-sizing:border-box">'+((_activeSc&&_activeSc.comment&&_activeSc.comment.indexOf(' — ')>=0?_activeSc.comment.split(' — ').slice(1).join(' — '):'')||'').replace(/</g,'&lt;')+'</textarea>';
   box+='<div id="scenario-err" style="font-size:11px;color:#A32D2D;margin-top:4px;min-height:16px"></div>';
   box+='<div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px">';
   box+='<button onclick="document.getElementById(\'scenario-modal\').remove()" style="padding:8px 16px;border:1px solid #dde;border-radius:8px;background:#fff;color:#555;font-size:12px;font-weight:600;cursor:pointer">Annuler</button>';
@@ -372,33 +389,50 @@ async function _confirmerScenario(sid){
     if(err)err.textContent='Le nom du scénario est obligatoire.';
     return;
   }
+  var mode=(document.querySelector('input[name="sc-mode"]:checked')||{}).value||'new';
   var fullComment=scenarioName.trim()+(comment.trim()?' — '+comment.trim():'');
   var cfg=S.simConfig[sid]||{p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
   var now=new Date();
-  var sc={
-    id:'sc_'+Date.now(),
-    auteur:(S.profile&&S.profile.nom)||'Admin',
-    name:scenarioName.trim(),
-    comment:fullComment,
-    date:now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}),
-    ts:now.toISOString(),
-    config:JSON.parse(JSON.stringify(cfg)),
-    adherents:JSON.parse(JSON.stringify(S.adherents[sid]||{}))
-  };
+  var _dateStr=now.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' '+now.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+  var _auteur=(S.profile&&S.profile.nom)||'Admin';
   if(!S.scenarios[sid])S.scenarios[sid]=[];
-  S.scenarios[sid].push(sc);
-  S.activeScenarioId[sid]=sc.id;
+  var sc=null;
+  if(mode==='update'){
+    var _aid=S.activeScenarioId[sid];
+    sc=(S.scenarios[sid]||[]).find(function(s){return s.id===_aid;});
+  }
+  if(sc){
+    // Mise à jour EN PLACE du scénario actif (même id, nouvelle version)
+    sc.name=scenarioName.trim();sc.comment=fullComment;sc.auteur=_auteur;sc.date=_dateStr;sc.ts=now.toISOString();
+    sc.config=JSON.parse(JSON.stringify(cfg));
+    sc.adherents=JSON.parse(JSON.stringify(S.adherents[sid]||{}));
+  } else {
+    sc={id:'sc_'+Date.now(),auteur:_auteur,name:scenarioName.trim(),comment:fullComment,date:_dateStr,ts:now.toISOString(),
+        config:JSON.parse(JSON.stringify(cfg)),adherents:JSON.parse(JSON.stringify(S.adherents[sid]||{}))};
+    S.scenarios[sid].push(sc);
+    S.activeScenarioId[sid]=sc.id;
+  }
   S._scenarioName=null;
+  // Persistance COMPLÈTE : scénarios + adhérents (copie de travail) + simconfig — sinon le sync ramène les anciennes valeurs
   await saveScenarios(sid);
-  saveSimConfig(sid);
+  await replaceAdherents(sid);
+  await flushSimConfig(sid);
+  clearDirty('adherents',sid);
+  clearDirty('sim',sid);
   var modal=document.getElementById('scenario-modal');
   if(modal)modal.remove();
-  toast('Scénario "'+sc.name+'" enregistré');
+  toast('Scénario "'+sc.name+'" '+(mode==='update'?'mis à jour':'enregistré')+' ✓');
   if(typeof confettiBurst==='function')confettiBurst();
   render();
 }
 
 function chargerScenario(sid,scenarioId){
+  // Modifs en cours non enregistrées ? On demande avant d'écraser.
+  if((S.dirty['adherents_'+sid]||S.dirty['sim_'+sid])&&!confirm('⚠ Vous avez des modifications non enregistrées sur ce scénario.\n\nCharger un autre scénario les remplacera. Continuer ?')){
+    render();return;
+  }
+  clearDirty('adherents',sid);
+  clearDirty('sim',sid);
   if(scenarioId==='bp_default'){
     S.simConfig[sid]={p4:47,p8:50,pi:3,prix4:110,prix8:193.33,prixi:276.67};
     S.activeScenarioId[sid]='bp_default';
@@ -416,7 +450,7 @@ function chargerScenario(sid,scenarioId){
   // Sauvegarder immédiatement (pas de debounce) pour éviter les conflits
   try{localStorage.setItem('isseo_sim_'+sid,JSON.stringify(S.simConfig[sid]));}catch(e){}
   sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
-  saveAdherents(sid);
+  replaceAdherents(sid);
   toast(scenarioId==='bp_default'?'Valeurs BP par défaut restaurées':'Scénario chargé');
   render();
 }
@@ -438,7 +472,9 @@ async function supprimerScenario(sid,scenarioId){
       S.scenarioEditMode[sid]=false;
     }
     saveSimConfig(sid);
-    saveAdherents(sid);
+    replaceAdherents(sid);
+    clearDirty('adherents',sid);
+    clearDirty('sim',sid);
   }
   await saveScenarios(sid);
   toast('Scénario supprimé');
