@@ -607,8 +607,11 @@ function renderAccueil(){
   h+='<div class="hero-banner" style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);border-radius:20px;padding:22px 28px 18px;margin-bottom:18px;color:#fff;overflow:hidden">';
   // Shine sweep
   h+='<div class="hero-shine"></div>';
-  // Y2K : étoiles scintillantes
+  // Y2K cold-culture : scanlines + étoiles + marquee
+  h+='<div class="y2k-scan"></div>';
   h+='<span class="y2k-star">✦</span><span class="y2k-star s2">✦</span><span class="y2k-star s3">✦</span>';
+  var _mq='ISSÉO × CLUB PILATES&nbsp;&nbsp;·&nbsp;&nbsp;PORTFOLIO SYSTEM&nbsp;&nbsp;·&nbsp;&nbsp;EST. 2026&nbsp;&nbsp;·&nbsp;&nbsp;REFORMER PILATES&nbsp;&nbsp;·&nbsp;&nbsp;';
+  h+='<div class="y2k-marquee"><span>'+_mq+_mq+'</span></div>';
   // Éléments décoratifs — orbes lumineuses
   h+='<div class="hero-orb" style="position:absolute;top:-60px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(45,90,142,0.4) 0%,transparent 70%);border-radius:50%"></div>';
   h+='<div class="hero-orb b" style="position:absolute;bottom:-80px;left:20%;width:220px;height:220px;background:radial-gradient(circle,rgba(29,158,117,0.22) 0%,transparent 70%);border-radius:50%"></div>';
@@ -617,12 +620,14 @@ function renderAccueil(){
   h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px"></div>';
   // Contenu
   h+='<div style="position:relative;z-index:1">';
+  // Micro-label système (Gentle Monster style)
+  h+='<div class="y2k-syslabel">SYS.001 · PORTFOLIO OVERVIEW</div>';
   // Titre
   h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">';
   h+='<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>';
   h+='<div>';
   h+='<div class="y2k-chrome" style="font-size:19px;font-weight:800">Tableau de bord Isséo × Club Pilates</div>';
-  h+='<div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:1px">Vue d\'ensemble de vos projets et activités</div>';
+  h+='<div class="y2k-sub">Vue d\'ensemble de vos projets et activités</div>';
   h+='</div></div>';
   // Calcul "Prochaines étapes" par projet actif (widget intégré dans la grille ci-dessous)
   var _nextSteps=[];

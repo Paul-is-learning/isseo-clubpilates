@@ -3533,20 +3533,36 @@ body.dark .accueil-topbar-date{color:#8b949e}
 
 /* ── Palette Y2K ── */
 :root{
-  --y2k-cyan:#7df3ff; --y2k-violet:#9a8cff; --y2k-rose:#ff8ad8; --y2k-mint:#7dffc4;
+  --y2k-cyan:#9fd8ff; --y2k-violet:#8ea4c8; --y2k-rose:#e6ecf5; --y2k-mint:#c9d6e6;
+  --y2k-chrome-hi:#ffffff; --y2k-chrome-mid:#b9c8d8; --y2k-chrome-low:#5d6f86;
 }
 
 /* ── 1 · HERO — bord iridescent animé (liseré holographique) ── */
 .hero-banner{border-radius:22px !important;isolation:isolate}
 .hero-banner::before{
   content:'';position:absolute;inset:-1.5px;border-radius:24px;padding:1.5px;z-index:3;
-  background:conic-gradient(from 210deg,var(--y2k-cyan),var(--y2k-violet),var(--y2k-rose),var(--y2k-mint),var(--y2k-cyan));
+  background:conic-gradient(from 210deg,var(--y2k-chrome-hi),var(--y2k-chrome-mid) 18%,var(--y2k-chrome-low) 34%,var(--y2k-chrome-hi) 52%,var(--y2k-cyan) 64%,var(--y2k-chrome-mid) 78%,var(--y2k-chrome-hi));
   -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
   -webkit-mask-composite:xor;mask-composite:exclude;
-  opacity:.55;pointer-events:none;
-  animation:y2kHue 9s linear infinite;
+  opacity:.7;pointer-events:none;
+  animation:y2kPulse 5.5s ease-in-out infinite;
 }
-@keyframes y2kHue{to{filter:hue-rotate(360deg)}}
+@keyframes y2kPulse{0%,100%{opacity:.45}50%{opacity:.85}}
+/* Scanlines cold-culture sur le hero */
+.hero-banner .y2k-scan{position:absolute;inset:0;z-index:2;pointer-events:none;opacity:.5;mix-blend-mode:overlay;
+  background:repeating-linear-gradient(180deg,rgba(255,255,255,.05) 0 1px,transparent 1px 4px)}
+/* Micro-label technique (Gentle Monster style) */
+.y2k-syslabel{font-size:8.5px;font-weight:700;letter-spacing:.34em;text-transform:uppercase;
+  color:rgba(159,216,255,.75);margin-bottom:10px;display:flex;align-items:center;gap:10px}
+.y2k-syslabel::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(159,216,255,.4),transparent)}
+/* Sous-titre uppercase tracké */
+.y2k-sub{font-size:9px !important;letter-spacing:.28em;text-transform:uppercase;color:rgba(255,255,255,.4) !important;margin-top:3px}
+/* Marquee défilant bas de hero */
+.y2k-marquee{position:absolute;left:0;right:0;bottom:0;z-index:2;overflow:hidden;white-space:nowrap;
+  border-top:1px solid rgba(255,255,255,.08);padding:5px 0 4px;pointer-events:none}
+.y2k-marquee span{display:inline-block;font-size:8.5px;font-weight:700;letter-spacing:.4em;text-transform:uppercase;
+  color:rgba(255,255,255,.30);animation:y2kMarquee 36s linear infinite}
+@keyframes y2kMarquee{to{transform:translateX(-50%)}}
 /* Étoile Y2K scintillante */
 .hero-banner .y2k-star{position:absolute;top:14px;right:22px;z-index:2;font-size:22px;color:#dff3ff;
   text-shadow:0 0 10px rgba(125,243,255,.9),0 0 26px rgba(154,140,255,.6);
@@ -3557,11 +3573,11 @@ body.dark .accueil-topbar-date{color:#8b949e}
 
 /* ── 2 · Titre chrome (effet métal poli 2000s) ── */
 .y2k-chrome{
-  background:linear-gradient(180deg,#ffffff 0%,#d6e6fa 34%,#8fb0d9 49%,#eaf5ff 58%,#b9d1ee 78%,#f4faff 100%);
+  text-transform:uppercase;letter-spacing:.14em;font-weight:900 !important;
+  background:linear-gradient(180deg,#ffffff 0%,#e8eef5 30%,#8194ab 48%,#f2f7fd 56%,#9db0c6 80%,#ffffff 100%);
   -webkit-background-clip:text;background-clip:text;
   -webkit-text-fill-color:transparent;color:transparent;
-  filter:drop-shadow(0 2px 5px rgba(10,25,60,.55));
-  letter-spacing:-0.3px;
+  filter:drop-shadow(0 2px 6px rgba(5,15,35,.65));
 }
 
 /* ── 3 · Cartes KPI — glossy « aqua » + reflet holographique au survol ── */
@@ -3574,17 +3590,17 @@ body.dark .accueil-topbar-date{color:#8b949e}
 body.dark .kpi-card::before{background:linear-gradient(180deg,rgba(255,255,255,.09),rgba(255,255,255,0))}
 .kpi-card::after{
   content:'';position:absolute;inset:0;pointer-events:none;z-index:1;
-  background:linear-gradient(115deg,transparent 32%,rgba(125,243,255,.18) 45%,rgba(255,138,216,.15) 55%,transparent 68%);
+  background:linear-gradient(115deg,transparent 32%,rgba(220,240,255,.22) 45%,rgba(159,216,255,.16) 55%,transparent 68%);
   transform:translateX(-130%) skewX(-8deg);transition:transform .65s ease;
 }
-.kpi-card:hover{transform:translateY(-3px) scale(1.012);box-shadow:0 16px 36px -14px rgba(50,85,160,.38),0 0 0 1px rgba(125,180,255,.30);}
+.kpi-card:hover{transform:translateY(-3px) scale(1.012);box-shadow:0 16px 36px -14px rgba(40,60,100,.45),0 0 0 1px rgba(220,238,255,.45);}
 .kpi-card:hover::after{transform:translateX(130%) skewX(-8deg)}
 body.dark .kpi-card:hover{box-shadow:0 16px 36px -14px rgba(0,0,0,.6),0 0 0 1px rgba(125,180,255,.22)}
 
 /* ── 4 · Carrousel héro — dots glossy + barres avec glow ── */
 .hero-carousel-dot{transition:transform .2s ease,background .2s ease,box-shadow .2s ease}
-.hero-carousel-dot.active{box-shadow:0 0 8px rgba(125,243,255,.75),0 0 18px rgba(154,140,255,.4);transform:scale(1.15)}
-.hero-bar-fill{background-image:linear-gradient(90deg,rgba(125,243,255,.85),rgba(154,140,255,.9)) !important;box-shadow:0 0 10px rgba(125,243,255,.45)}
+.hero-carousel-dot.active{box-shadow:0 0 8px rgba(220,240,255,.9),0 0 18px rgba(159,216,255,.5);transform:scale(1.15)}
+.hero-bar-fill{background-image:linear-gradient(90deg,rgba(230,242,255,.95),rgba(159,216,255,.85)) !important;box-shadow:0 0 10px rgba(200,230,255,.5)}
 
 /* ── 5 · Pills « focus du jour » — bulles glossy ── */
 .focus-today-pill{position:relative;overflow:hidden;transition:transform .22s cubic-bezier(.2,.85,.25,1),box-shadow .22s}
@@ -3610,6 +3626,6 @@ body.dark ::-webkit-scrollbar-thumb{background:linear-gradient(180deg,#3a4258,#2
 
 /* ── 7 · Accessibilité : on coupe tout si l'utilisateur le demande ── */
 @media (prefers-reduced-motion:reduce){
-  .hero-banner::before,.hero-banner .y2k-star{animation:none}
+  .hero-banner::before,.hero-banner .y2k-star,.y2k-marquee span{animation:none}
   .kpi-card,.kpi-card::after,.focus-today-pill,.box{transition:none}
 }
