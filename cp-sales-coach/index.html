@@ -107,6 +107,23 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .biens li{position:relative;padding:3px 0 3px 18px;font-size:12.5px;line-height:1.4;color:var(--ink)}
 .biens li::before{content:'✓';position:absolute;left:0;color:var(--ok);font-weight:800;font-size:12px}
 .pourqui{margin-top:8px;background:var(--cp-pale);border-radius:9px;padding:7px 10px;font-size:11.5px;line-height:1.4;color:var(--cp-deep);font-weight:600}
+/* Idée + toggle parole */
+.idea-pill{display:flex;align-items:flex-start;gap:8px;background:#FDF6E3;border:1px solid #ecd9a0;border-radius:11px;padding:9px 12px;margin-bottom:12px;font-size:12.5px;line-height:1.45;color:#7a5a10}
+.idea-pill b{color:#5a4210}
+.idea-pill .ip-ic{flex:0 0 auto}
+.sp-toggle{display:inline-flex;background:var(--cp-pale);border-radius:10px;padding:3px;gap:3px;margin-bottom:12px}
+.sp-toggle button{padding:5px 13px;border-radius:8px;font-size:11.5px;font-weight:700;color:var(--ink-mid);transition:.15s}
+.sp-toggle button.on{background:#fff;color:var(--cp-deep);box-shadow:0 1px 4px rgba(20,40,80,.15)}
+/* Banque d'arguments */
+.arg-legend{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.arg-src{display:inline-block;font-size:10px;font-weight:700;padding:3px 9px;border-radius:999px;border:1px solid;line-height:1.4;white-space:nowrap}
+.arg-axis{display:flex;align-items:center;gap:10px;font-size:11px;font-weight:800;color:var(--cp-deep);margin-bottom:14px}
+.arg-axis-bar{flex:1;height:5px;border-radius:3px;background:linear-gradient(90deg,#185FA5,#0F6E56,#854F0B,#6b40b8)}
+.arg-card{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:10px}
+.arg-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px;font-size:13.5px;color:var(--cp-dark)}
+.arg-spec{position:relative;height:5px;border-radius:3px;background:linear-gradient(90deg,#185FA522,#0F6E5622,#854F0B22,#6b40b822);margin-bottom:10px}
+.arg-spec-bar{position:absolute;inset:0;border-radius:3px;background:linear-gradient(90deg,#185FA5,#0F6E56,#854F0B,#6b40b8);opacity:.25}
+.arg-spec-dot{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--cp-deep);transform:translate(-50%,-50%);box-shadow:0 1px 5px rgba(20,40,80,.3)}
 /* Guide des cours */
 .cg{padding-bottom:10px}
 .cg-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,40,80,.04)}
@@ -638,6 +655,23 @@ const COURSE_GUIDE=[
    corps:['Renforcement fonctionnel debout','Posture','Coordination fine'],
    esprit:['Élégance du geste','Maîtrise posturale']}
 ];
+/* ── Banque d'arguments : du plus logique au plus inattendu — toujours crédible et sourcé.
+   x = position sur le spectre (0 logique → 100 inattendu). src = type de source. ── */
+const ARG_SRC={bp:{ic:'📋',lbl:'BP / tarifs studio',c:'#185FA5'},sci:{ic:'🔬',lbl:'Études (Cochrane…)',c:'#0F6E56'},hist:{ic:'📜',lbl:'Fait historique vérifiable',c:'#854F0B'},mec:{ic:'⚙️',lbl:'Mécanique du produit',c:'#4F6FA0'},sens:{ic:'🧠',lbl:'Bon sens assumé',c:'#6b40b8'}};
+const ARG_BANK=[
+  {x:4,src:'bp',t:'Le calcul coaching privé',say:()=>{const priv=fmtEur(CFG.privateSession)||'—';return `« Une séance avec un coach rien que pour vous coûte ${priv}. Ici : même Reformer, coach diplômé, 12 personnes max — pour une fraction de ce prix. Faites le calcul. »`;}},
+  {x:12,src:'sci',t:'Le seuil des 2 séances',say:()=>`« Les études cliniques utilisent quasiment toutes le même protocole : 2 à 3 séances par semaine pendant 6 à 8 semaines. C'est LE rythme où les effets deviennent mesurables. On ne l'a pas inventé. »`},
+  {x:20,src:'sci',t:'L\'encadrement, seul différenciant prouvé',say:()=>`« Ce que la recherche montre — jusqu'à la revue Cochrane — c'est que le résultat dépend surtout de la qualité de l'encadrement. Coach certifié, correction à chaque mouvement : c'est exactement notre modèle. »`},
+  {x:28,src:'mec',t:'Zéro impact articulaire',say:()=>`« Les ressorts du Reformer peuvent aider le mouvement ou le résister. On se renforce en profondeur SANS choc pour les genoux, les hanches, le dos. C'est pour ça que les kinés l'utilisent en rééducation. »`},
+  {x:38,src:'sens',t:'L\'abonnement le moins cher…',say:()=>`« …c'est celui qu'on utilise vraiment. Une salle pas chère où on ne va jamais, c'est de l'argent jeté tous les mois. Un studio où on VIENT, c'est un investissement qui rend. »`},
+  {x:46,src:'mec',t:'Le rendez-vous de 50 minutes',say:()=>`« Une séance, c'est 50 minutes, cadrées, réservées à l'avance. Pas d'attente aux machines, pas d'improvisation : vous arrivez, on s'occupe de tout, vous repartez. C'est ça qui rend la régularité facile. »`},
+  {x:56,src:'hist',t:'Née dans un hôpital de guerre',say:()=>`« Petite histoire vraie : pendant la Première Guerre mondiale, Joseph Pilates a monté des ressorts sur des lits d'hôpital pour rééduquer les blessés qui ne pouvaient pas se lever. C'est l'ancêtre direct du Reformer. Cette machine est née pour réparer les corps. »`},
+  {x:64,src:'hist',t:'Le secret des danseurs depuis 1930',say:()=>`« Quand Joseph Pilates a ouvert son studio à New York, ce sont les danseurs professionnels qui ont adopté sa méthode en premier — pour la force ET la ligne. Presque un siècle plus tard, c'est toujours leur secret le mieux gardé. »`},
+  {x:74,src:'sens',t:'L\'effet « rendez-vous coiffeur »',say:()=>`« Vous annulez rarement le coiffeur ou le dentiste, non ? C'est pareil ici : un créneau réservé, un coach qui vous attend et vous connaît. C'est exactement ce qui manque au sport en solo — et c'est assumé, c'est notre méthode anti-abandon. »`},
+  {x:84,src:'mec',t:'Le seul sport qu\'on commence allongé',say:()=>`« Honnêtement, c'est le seul sport où la première chose qu'on vous dit, c'est \"allongez-vous\". Et pourtant vous ressortez gainé(e) comme jamais. Déroutant la première fois — et après, on ne veut plus rien d'autre. »`},
+  {x:92,src:'hist',t:'Un nom d\'inventeur, pas une marque',say:()=>`« Pilates, ce n'est pas un concept marketing : c'est le nom d'un homme, Joseph Pilates, qui a passé sa vie à perfectionner cette méthode. Une technique centenaire — pas une mode fitness qui disparaîtra l'an prochain. »`},
+  {x:98,src:'hist',t:'Le pari des 30 séances',say:()=>`« Joseph Pilates avait une formule restée célèbre : en 10 séances vous sentez la différence, en 20 vous la voyez, en 30 vous avez un corps tout neuf. C'est un pari qui a presque cent ans — et nos membres le vérifient encore. »`}
+];
 const OBJECTIONS=[
   {id:'prix',ic:'💶',t:'« C\'est cher »',kw:'cher prix budget coute argent euro',lines:['Reviens aux <b>objectifs</b> : « Si par le passé ça n\'a pas fonctionné, c\'est que le budget investi n\'était pas adapté à vos objectifs. »','« Si dans 3 mois, <b>aucun changement</b> avec votre routine actuelle, comment allez-vous vous sentir ? »','« Est-ce que ça ne vaut pas le coût d\'investir <b>60 € de plus</b> sur une activité qui va fonctionner et vous plaire ? »']},
   {id:'temps',ic:'⏳',t:'« Je n\'ai pas le temps »',kw:'temps occupe agenda horaire dispo',lines:['Si c\'est en <b>complément</b> d\'une autre activité → proposer le <b>Pack 1×/sem</b>.','Sinon → le Pack 1×/sem donne des <b>résultats à plus long terme</b>, et toujours revenir aux objectifs.','Le bon rythme reste <b>2×/sem</b> pour des résultats visibles.']},
@@ -758,11 +792,23 @@ function buildRhythmPitch(pack){
   else s+=`Le 2×/semaine, c'est le juste équilibre pour vous : assez pour transformer, et parfaitement tenable dans la durée. C'est celui que je vous recommande. »`;
   return s;
 }
+/* ── Mode de parole : « naturel » (défaut, pour parler avec ses mots) ou « soigné » ──
+   L'outil donne d'abord L'IDÉE à faire passer ; le script n'est qu'un exemple. */
+let SPEECH=localStorage.getItem('cpcoach_speech')||'naturel';
+function setSpeech(m){SPEECH=m;try{localStorage.setItem('cpcoach_speech',m);}catch(e){}renderScreen();}
+function speechToggle(){return `<div class="sp-toggle"><button class="${SPEECH==='naturel'?'on':''}" onclick="setSpeech('naturel')">😎 Naturel</button><button class="${SPEECH==='soigne'?'on':''}" onclick="setSpeech('soigne')">✨ Soigné</button></div>`;}
+function pickSay(o){return (SPEECH==='naturel'&&o.casual)?o.casual:(o.text||'');}
+function sayCard(tag,o,cls){
+  const idea=o.idea?`<div class="idea-pill"><span class="ip-ic">🎯</span><span><b>L'idée à faire passer :</b> ${o.idea}</span></div>`:'';
+  const tg=o.casual?speechToggle():'';
+  return `<div class="say-card"><div class="scr-tag ${cls||'say'}">${tag}</div>${idea}${tg}<div class="say-big quote">${pickSay(o)}</div>${o.hint?`<div class="say-hint"><span class="b">💡</span><span>${o.hint}</span></div>`:''}</div>`;
+}
+
 function buildPitchBeats(pack,recos){
   const beats=[],e=emo(),t=trig();
-  if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez confié : ce qui vous a freiné jusqu'ici, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` J'ai bien entendu — c'est précisément là-dessus que je vais vous accompagner. »`;beats.push({label:'Miroir',hint:'Montrez que vous avez tout compris. Reformulez ses mots.',text:m});}
-  if(t)beats.push({label:'Le bon moment',hint:'Valorisez sa démarche, sans en rajouter.',text:`« Et si vous nous appelez maintenant, c'est ${triggerClause(t)}. Autant avancer pendant que la motivation est là. »`});
-  if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Chez Club Pilates, l'approche est différente : le meilleur équipement du marché, un coach diplômé qui veille sur chacun de vos mouvements, 12 personnes maximum, un cadre bienveillant qui donne tout simplement envie de revenir. »`;beats.push({label:'Contraste',hint:'Pourquoi CP est différent — sans dénigrer.',text:c});}
+  if(st.pain.length){const pains=st.pain.map(p=>lbl(PAINS,p).toLowerCase());let m=`« Si je résume ce que vous m'avez confié : ce qui vous a freiné jusqu'ici, c'est ${frList(pains)}.`;if(e)m+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;m+=` J'ai bien entendu — c'est précisément là-dessus que je vais vous accompagner. »`;let mc=`« Ok, donc si j'ai bien compris : ce qui vous a bloqué avant, c'est ${frList(pains)}.`;if(e)mc+=` Et au fond, ce qui compte vraiment pour vous, c'est de ${e.phrase}.`;mc+=` C'est noté — on va bosser exactement là-dessus. »`;beats.push({label:'Miroir',idea:'Reformuler SES mots pour lui prouver qu\'on a écouté.',hint:'Montrez que vous avez tout compris. Reformulez ses mots.',text:m,casual:mc});}
+  if(t)beats.push({label:'Le bon moment',idea:'Son déclencheur = SA raison d\'agir maintenant.',hint:'Valorisez sa démarche, sans en rajouter.',text:`« Et si vous nous appelez maintenant, c'est ${triggerClause(t)}. Autant avancer pendant que la motivation est là. »`,casual:`« Et là, vous appelez ${triggerClause(t)} — franchement, c'est le bon timing. Autant y aller pendant que l'envie est là, non ? »`});
+  if(st.tried.length){const tr=st.tried.map(id=>TRIED.find(x=>x.id===id)).filter(Boolean);let c=`« Vous avez déjà essayé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Chez Club Pilates, l'approche est différente : le meilleur équipement du marché, un coach diplômé qui veille sur chacun de vos mouvements, 12 personnes maximum, un cadre bienveillant qui donne tout simplement envie de revenir. »`;let cc=`« Vous avez déjà testé ${frList(tr.map(x=>x.label.toLowerCase()))} — et ${tr[0].contrast}. Ici, c'est vraiment autre chose : le meilleur matériel du marché, un coach qui vous corrige à chaque mouvement, et 12 personnes max. On revient parce qu'on s'y sent bien. »`;beats.push({label:'Contraste',idea:'Pourquoi CP ≠ tout ce qu\'il a déjà essayé.',hint:'Pourquoi CP est différent — sans dénigrer.',text:c,casual:cc});}
   // Flexibilité & 5 niveaux — toujours en phase, à son rythme
   const beginnerProfile=st.pain.includes('jamais')||st.ageBand==='55-70'||st.health.includes('senior')||activeHealth().length>0;
   const perfProfile=st.goals.includes('perf')||st.dispo==='high';
@@ -771,14 +817,25 @@ function buildPitchBeats(pack,recos){
   else if(perfProfile)flex+=`Vous avez tout de suite de quoi vous challenger, et les niveaux 2 et 2.5 vous attendent pour aller plus loin`;
   else flex+=`Vous démarrez exactement là où vous en êtes, et vous montez de niveau quand VOUS êtes prêt(e)`;
   flex+=` — toujours à votre rythme, jamais bousculé(e). Quel que soit votre niveau ou votre forme du jour, il y a une place faite pour vous. »`;
-  beats.push({label:'Flexibilité & niveaux',hint:'L\'argument qui rassure ET fidélise sur la durée.',text:flex});
+  let flexc=`« Et le truc bien pensé ici : il y a 5 niveaux de cours, de 0.5 pour débuter à 2.5 pour les experts. `;
+  if(beginnerProfile)flexc+=`Vous commencez tout doux, zéro pression`;
+  else if(perfProfile)flexc+=`Vous aurez direct de quoi vous challenger, et encore de la marge au-dessus`;
+  else flexc+=`Vous démarrez pile à votre niveau et vous montez quand VOUS le sentez`;
+  flexc+=` — impossible d'être largué, impossible de s'ennuyer. »`;
+  beats.push({label:'Flexibilité & niveaux',idea:'5 niveaux = jamais largué, jamais lassé. Rassure ET fidélise.',hint:'L\'argument qui rassure ET fidélise sur la durée.',text:flex,casual:flexc});
   const goalTxt=st.goals.length?frList(st.goals.map(g=>lbl(GOALS,g).toLowerCase())):'vos objectifs';
   let reco=`« Au vu de ce que vous me partagez, pour ${goalTxt}, je vous accompagne sur le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Sur 3 mois — le temps que votre corps installe durablement le changement, en douceur. »`;
-  beats.push({label:'La reco',hint:'Un accompagnement sur-mesure. Chaque cours a sa raison.',text:reco});
-  beats.push({label:'Le bon rythme',hint:'1× vs 2× vs illimité, lié à SON objectif. La clé du pack.',text:buildRhythmPitch(pack)});
-  beats.push({label:'Réassurance',hint:'Levez le risque avant la projection — en douceur.',text:`« Et vous ne vous lancez pas seul(e) : vous rejoignez la plus grande communauté Pilates au monde — près de <b>8 millions de séances par an</b>, une enseigne primée 8 années de suite. Coachs certifiés, 12 personnes maximum, et votre premier cours offert sans engagement. Et ce n'est pas qu'une mode : la recherche — jusqu'à la revue Cochrane — confirme les bienfaits du Pilates sur le dos, la posture et le gainage profond. Ce que les études soulignent surtout, c'est que <b>le résultat dépend de la qualité de l'encadrement</b>… et c'est précisément notre force : des coachs certifiés, 12 personnes maximum, une progression pensée pour vous. Vous avez tout le temps de vous sentir à l'aise avant de vous décider. »`});
+  let recoc=`« Du coup, pour ${goalTxt}, moi je partirais sur le ${PACK_META[pack].name} : `+recos.map(r=>`le <b>${CLASSES[r.id].nm}</b> qui ${classBenefit(r.id)}`).join(', et ')+`. Sur 3 mois, le temps que le corps s'installe vraiment. »`;
+  beats.push({label:'La reco',idea:'Chaque cours recommandé a une raison liée à SES objectifs.',hint:'Un accompagnement sur-mesure. Chaque cours a sa raison.',text:reco,casual:recoc});
+  let rytc=`« Pour être cash sur le rythme : 1 fois par semaine, ça entretient. 2 fois par semaine, c'est là que le corps change vraiment — c'est LE bon tempo. Et en illimité, ça va encore plus vite. `;
+  if(pack===3)rytc+=`Vu votre motivation, l'illimité c'est clairement pour vous. »`;
+  else if(pack===1)rytc+=`On démarre tranquille à 1 fois, et on montera quand vous serez lancé(e). »`;
+  else rytc+=`2 fois par semaine, c'est le juste milieu parfait pour vous : efficace et tenable. »`;
+  beats.push({label:'Le bon rythme',idea:'2×/sem = le seuil où le corps change. Lié à SON objectif.',hint:'1× vs 2× vs illimité, lié à SON objectif. La clé du pack.',text:buildRhythmPitch(pack),casual:rytc});
+  beats.push({label:'Réassurance',idea:'Lever le risque : n°1 mondial + science (encadrement) + 1er cours offert.',hint:'Levez le risque avant la projection — en douceur.',casual:`« Et vous ne partez pas dans l'inconnu : c'est le plus grand réseau de Pilates au monde — 8 millions de séances par an. Même la recherche, jusqu'à la revue Cochrane, valide les effets sur le dos et la posture. Et ce qui fait vraiment la différence d'après les études, c'est la qualité de l'encadrement… pile notre point fort. En plus, le premier cours est offert, sans engagement : vous testez tranquille. »`,text:`« Et vous ne vous lancez pas seul(e) : vous rejoignez la plus grande communauté Pilates au monde — près de <b>8 millions de séances par an</b>, une enseigne primée 8 années de suite. Coachs certifiés, 12 personnes maximum, et votre premier cours offert sans engagement. Et ce n'est pas qu'une mode : la recherche — jusqu'à la revue Cochrane — confirme les bienfaits du Pilates sur le dos, la posture et le gainage profond. Ce que les études soulignent surtout, c'est que <b>le résultat dépend de la qualité de l'encadrement</b>… et c'est précisément notre force : des coachs certifiés, 12 personnes maximum, une progression pensée pour vous. Vous avez tout le temps de vous sentir à l'aise avant de vous décider. »`});
   let proj=`« Imaginez-vous dans 3 mois : `+((t&&t.proj)?t.proj:(e?e.phrase:`vous voir et vous sentir véritablement transformé(e)`))+`. C'est exactement ce que nous allons construire ensemble, séance après séance. Je serais ravi(e) de vous y accompagner. »`;
-  beats.push({label:'Projection',hint:'Faites-le se projeter, avec vous à ses côtés.',text:proj});
+  let projc=`« Imaginez-vous dans 3 mois : `+((t&&t.proj)?t.proj:(e?e.phrase:`vous sentir vraiment transformé(e)`))+`. C'est ça qu'on va construire ensemble. Et franchement, j'ai hâte de vous voir au studio. »`;
+  beats.push({label:'Projection',idea:'Le faire se projeter dans le résultat, avec vous à ses côtés.',hint:'Faites-le se projeter, avec vous à ses côtés.',text:proj,casual:projc});
   return beats;
 }
 function buildReframe(pack){
@@ -835,6 +892,16 @@ function buildPricePitch(pack){
   else {s=`« Je vous propose le ${pn} : ${mF}/mois, soit ${psF} la séance, tout compris.`;if(fpsF)s+=` Et comme membre fondateur, ${fmF}/mois — soit ${fpsF} la séance, un tarif préférentiel conservé à vie.`;}
   return s+` Les frais d'inscription vous sont offerts. Qu'en dites-vous ? »`;
 }
+function buildPricePitchCasual(pack){
+  const base=fmtEur(CFG.base),m=packMonthly(pack),mF=fmtEur(m),psF=fmtEur(packPerSession(pack)),fmF=fmtEur(foundingMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack));
+  if(mF==null)return buildPricePitch(pack);
+  const pn=PACK_META[pack].name.toLowerCase();let s;
+  if(pack===3){const wk=4.333,r=f=>Math.round(m/(f*wk))+' €';s=`« Alors le tarif : l'illimité, c'est ${mF} par mois. Et plus vous venez, plus c'est rentable : à 3 séances par semaine ça tombe à ~${r(3)} la séance, à 4 fois ~${r(4)}, à 5 fois ~${r(5)}.`;if(fmF)s+=` Et en membre fondateur, ${fmF} par mois — un tarif que vous gardez à vie.`;}
+  else {s=`« Alors le tarif : le ${pn}, c'est ${mF} par mois — ça fait ${psF} la séance, tout compris.`;if(fpsF)s+=` Et en membre fondateur, ${fmF} par mois, soit ${fpsF} la séance — et ce tarif-là, vous le gardez à vie.`;}
+  return s+` L'inscription, on vous l'offre. Ça vous va ? »`;
+}
+function buildTrialPitchCasual(){let s=`« Le plus simple pour vous faire une idée : venez essayer. Un cours d'intro de 30 minutes, offert, zéro engagement. Vous voyez le studio, vous testez le Reformer, vous rencontrez le coach — et on en reparle après.`;if(st.pain.length)s+=` Vu ce que vous m'avez raconté, c'est vraiment fait pour vous.`;return s+` Plutôt début ou fin de semaine ? »`;}
+function buildTrialCloseCasual(){return `« Top ! Je vous cale votre cours découverte — offert, sans suite obligée. On dit mardi 18h ou jeudi 19h ? »`;}
 function buildTrialPitch(){let s=`« La plus belle façon de découvrir, c'est de venir le vivre. Je vous offre un <b>cours d'introduction de 30 minutes</b> : vous découvrez le Reformer, vous rencontrez votre coach, en toute liberté et sans le moindre engagement.`;if(st.pain.length)s+=` Vu ce que vous m'avez confié, c'est exactement ce qu'il vous faut pour vous faire votre propre idée.`;return s+` Vous préférez plutôt en début ou en fin de semaine ? »`;}
 function buildTrialClose(){return `« Avec plaisir. Je vous réserve votre cours découverte — offert, et sans aucune suite obligée. Disons <b>mardi 18h ou jeudi 19h</b> ? Vous repartez avec votre ressenti, et nous verrons ensemble la formule qui vous convient le mieux. »`;}
 
@@ -845,7 +912,7 @@ const Q_CONNAIT=[{id:'oui',ic:'👍',label:'Oui, déjà entendu'},{id:'non',ic:'
 function buildFlow(){
   const f=[];
   f.push({t:'goal',phase:'Démarrage'});
-  f.push({t:'say',phase:'Accueil',tag:'Ouverture',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées — je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},hint:'Souriez avant de décrocher — le ton s\'entend. Posé, jamais pressé.'});
+  f.push({t:'say',phase:'Accueil',tag:'Ouverture',idea:'Un rappel personnel et chaleureux — pas un centre d\'appels.',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées — je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},getCasual:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour ! C'est <b>${esc(r)}</b>, de Club Pilates${s}. Vous nous avez laissé vos coordonnées, alors je vous appelle en direct — pour faire connaissance et voir ce qui vous ferait du bien. Vous avez deux minutes ?`;},hint:'Souriez avant de décrocher — le ton s\'entend. Posé, jamais pressé.'});
   f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
   if(st.connait)f.push({t:'present',phase:st.connait==='oui'?'Rappel':'Présentation'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
@@ -916,7 +983,7 @@ function renderScreen(){
     nav=navHTML(true);
   }
   else if(s.t==='say'){
-    h=`<div class="say-card"><div class="scr-tag say">🗣️ ${s.tag}</div><div class="say-big quote">${s.getText?s.getText():s.text}</div>${s.hint?`<div class="say-hint"><span class="b">💡</span><span>${s.hint}</span></div>`:''}</div>`;
+    h=sayCard(`🗣️ ${s.tag}`,{idea:s.idea,text:s.getText?s.getText():s.text,casual:s.getCasual?s.getCasual():s.casual,hint:s.hint});
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='present'){
@@ -940,7 +1007,7 @@ function renderScreen(){
     nav=navHTML(true,known?'Rappelé ✓ →':'Présenté ✓ →');
   }
   else if(s.t==='beat'){
-    h=`<div class="say-card"><div class="scr-tag say">🗣️ ${s.n}. ${s.beat.label}</div><div class="say-big quote">${s.beat.text}</div>${s.beat.hint?`<div class="say-hint"><span class="b">💡</span><span>${s.beat.hint}</span></div>`:''}</div>`;
+    h=sayCard(`🗣️ ${s.n}. ${s.beat.label}`,s.beat);
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='reco'){
@@ -965,22 +1032,29 @@ function renderScreen(){
     nav=navHTML(true);
   }
   else if(s.t==='price'){
-    h=`<div class="say-card"><div class="scr-tag say">🗣️ Annoncer le prix</div><div class="say-big quote">${buildPricePitch(recommendPack())}</div><div class="say-hint"><span class="b">💡</span><span>Annoncez le prix… puis TAISEZ-VOUS. Laissez le silence travailler.</span></div></div>`;
+    h=sayCard('🗣️ Annoncer le prix',{idea:'Prix simple, ramené à la séance, avantage fondateur — puis silence.',text:buildPricePitch(recommendPack()),casual:buildPricePitchCasual(recommendPack()),hint:'Annoncez le prix… puis TAISEZ-VOUS. Laissez le silence travailler.'});
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='trial'){
-    h=`<div class="say-card"><div class="scr-tag say">🗣️ Proposer l'essai offert</div><div class="say-big quote">${buildTrialPitch()}</div><div class="say-hint"><span class="b">💡</span><span>Une invitation, pas une vente. Le « oui » vient naturellement.</span></div></div>`;
+    h=sayCard('🗣️ Proposer l\'essai offert',{idea:'Barrière zéro : cours d\'intro offert, sans engagement, créneau au choix.',text:buildTrialPitch(),casual:buildTrialPitchCasual(),hint:'Une invitation, pas une vente. Le « oui » vient naturellement.'});
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='urgency'){
-    h=`<div class="say-card"><div class="scr-tag warn">✨ Le privilège fondateur</div><div class="say-big quote">« Et franchement, c'est le <b>meilleur moment</b> pour nous rejoindre : nos premiers membres deviennent <b>membres fondateurs</b> — -${CFG.founding}% à vie et l'inscription offerte. C'est un vrai avantage, réservé au lancement. Je vous réserve votre place ? »</div><div class="say-hint"><span class="b">💡</span><span>Avantage réel et limité dans le temps : donnez envie d'en profiter maintenant, avec le sourire.</span></div></div>`;
+    h=sayCard('✨ Le privilège fondateur',{idea:'Avantage réel du lancement : -'+CFG.founding+'% à vie + inscription offerte.',
+      text:`« Et franchement, c'est le <b>meilleur moment</b> pour nous rejoindre : nos premiers membres deviennent <b>membres fondateurs</b> — -${CFG.founding}% à vie et l'inscription offerte. C'est un vrai avantage, réservé au lancement. Je vous réserve votre place ? »`,
+      casual:`« Et petit bonus : on lance le studio, donc les premiers membres ont le statut fondateur — -${CFG.founding}% à vie et l'inscription offerte. Honnêtement, c'est le bon wagon à prendre. Je vous garde une place ? »`,
+      hint:'Avantage réel et limité dans le temps : donnez envie d\'en profiter maintenant, avec le sourire.'},'warn');
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='closing'){
     const isTrial=st.callGoal==='trial';
     const cp=recommendPack(),freq=cp===1?'1 séance par semaine':cp===3?'un accès illimité':'2 séances par semaine';
     const closeAbo=`« Pour résumer : pour <b>${primaryGoalVerb()}</b>, le bon rythme c'est <b>${freq}</b>, et le ${PACK_META[cp].name} est vraiment ce qui vous correspond. Je vous réserve votre place ? »`;
-    h=`<div class="say-card"><div class="scr-tag say">✅ Closing</div><div class="say-big quote">${isTrial?buildTrialClose():closeAbo}</div><div class="say-hint"><span class="b">💡</span><span>${isTrial?'Verrouillez un créneau précis (date + heure), avec le sourire.':'Reboucle sur SON objectif, propose, puis laisse le silence. Enchaîne : « Plutôt en semaine ou le week-end pour débuter ? »'}</span></div></div>`;
+    const closeAboCasual=`« Bon, on récapitule : pour ${primaryGoalVerb()}, le bon rythme c'est ${freq}, et le ${PACK_META[cp].name} colle parfaitement. On part là-dessus ? »`;
+    h=sayCard('✅ Closing',{idea:isTrial?'Verrouiller un créneau précis, tout de suite.':'Reboucler sur SON objectif + le rythme, puis proposer.',
+      text:isTrial?buildTrialClose():closeAbo,
+      casual:isTrial?buildTrialCloseCasual():closeAboCasual,
+      hint:isTrial?'Verrouillez un créneau précis (date + heure), avec le sourire.':'Reboucle sur SON objectif, propose, puis laisse le silence. Enchaîne : « Plutôt en semaine ou le week-end pour débuter ? »'});
     nav=navHTML(true,'Voir la fiche →');
   }
   else if(s.t==='final'){
@@ -1052,6 +1126,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
     <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
     <button class="menu-item" onclick="closeMenu();showCourseGuide()"><span class="mic">📚</span><span>Les cours en détail<small>Bienfaits corps & esprit, prérequis, restrictions</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showArgBank()"><span class="mic">🧭</span><span>Banque d'arguments<small>Du plus logique au plus inattendu — sourcé</small></span></button>
     <button class="menu-item" onclick="closeMenu();showScience()"><span class="mic">🔬</span><span>La science le confirme<small>Études cliniques, résultats par objectif, sources</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
@@ -1068,6 +1143,11 @@ function showAca(){
   const h=`<div class="aca">
     <div class="aca-h"><h2>Maîtrisez la vente CP</h2><p>Notre état d'esprit, puis 5 micro-leçons. À relire entre 2 appels.</p></div>
     <div class="sci-diff"><div class="sci-diff-h">❤️ Notre état d'esprit</div><div class="sci-diff-d">On veut le bien-être du client <b>et</b> on est là pour vendre — et les deux vont ensemble. Le rythme qui transforme vraiment, c'est <b>2 à 3 séances/semaine</b> : le meilleur pour lui, et le meilleur pour le studio.</div><ul class="biens"><li>Recommandez le bon rythme avec conviction : 2 à 3×/semaine, c'est lui rendre service.</li><li>Convainquez par la valeur et les résultats — sincère, jamais alarmiste.</li><li>Chaque appel vise un engagement : un essai booké ou un abo signé.</li><li>Un client qui obtient des résultats reste, revient et nous recommande.</li></ul></div>
+    <div class="aca-l" style="border-left:4px solid #6b40b8"><div class="nb" style="background:#efe9fb;color:#6b40b8">LEÇON 0 · TA VOIX</div><h3>Parle naturel — l'idée avant le mot-à-mot</h3><div class="ld">Les scripts sont des exemples, pas des textes à réciter. Un client entend tout de suite quand on lit une fiche.</div>
+      <div class="aca-row"><span class="ck">1</span><span><b>Comprends l'idée</b> de chaque écran (le bandeau 🎯) — c'est elle qu'il faut faire passer, pas la phrase exacte.</span></div>
+      <div class="aca-row"><span class="ck">2</span><span><b>Dis-le comme à un ami</b> : le bouton 😎 Naturel te donne une version parlée de chaque script. Pioche, mélange, fais-le tien.</span></div>
+      <div class="aca-row"><span class="ck">3</span><span><b>Les chiffres et les faits, eux, ne changent JAMAIS</b> : prix, études, histoire — tu improvises la forme, jamais le fond.</span></div>
+      <div class="aca-row"><span class="ck">4</span><span>À court d'idées ? Ouvre la <b>🧭 Banque d'arguments</b> : du plus logique au plus inattendu, tout est vrai et sourcé.</span></div></div>
     <div class="aca-l"><div class="nb">LEÇON 1 · OMG</div><h3>La méthode, votre boussole</h3><div class="ld">Ne vendez jamais avant d'avoir creusé.</div>
       <div class="aca-row"><span class="ck">O</span><span>Origine de la douleur — « qu'est-ce qui n'a pas marché avant ? »</span></div>
       <div class="aca-row"><span class="ck">G</span><span>Goal — « que voulez-vous réussir dans 3 mois ? »</span></div>
@@ -1108,6 +1188,26 @@ function showCourseGuide(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=0;
   $('#topPhase').textContent='Les cours';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';
+}
+
+/* ── Banque d'arguments (du logique à l'inattendu) ── */
+function showArgBank(){
+  const srcBadge=k=>{const s=ARG_SRC[k];return `<span class="arg-src" style="color:${s.c};border-color:${s.c}44;background:${s.c}12">${s.ic} ${s.lbl}</span>`;};
+  const h=`<div class="cg">
+    <div class="aca-h"><h2>Banque d'arguments</h2><p>Du plus logique au plus inattendu — mais toujours crédible et sourcé. Piochez selon le client : cartésien en haut, joueur en bas.</p></div>
+    <div class="arg-legend">${Object.keys(ARG_SRC).map(k=>srcBadge(k)).join('')}</div>
+    <div class="arg-axis"><span>🧮 Logique</span><span class="arg-axis-bar"></span><span>🎨 Inattendu</span></div>
+    ${ARG_BANK.map(a=>`<div class="arg-card">
+      <div class="arg-head"><b>${a.t}</b>${srcBadge(a.src)}</div>
+      <div class="arg-spec"><div class="arg-spec-bar"></div><div class="arg-spec-dot" style="left:${a.x}%"></div></div>
+      <div class="rf-say">🗣️ ${typeof a.say==='function'?a.say():a.say}</div>
+    </div>`).join('')}
+    <div class="cg-note">🎯 Règle d'or : un argument à la fois, choisi pour CE client. L'inattendu marche parce qu'il est vrai — ne jamais broder au-delà de la carte.</div>
+  </div>`;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#topPhase').textContent='Arguments';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
 }
@@ -1172,8 +1272,9 @@ function buildPrintDoc(){
     +sec('2 · Présenter Club Pilates',presentation)
     +sec('3 · Les cours en détail',_capScreen(showCourseGuide))
     +sec('4 · Ce que dit la science',_capScreen(showScience))
-    +sec('5 · Reframing prix — du coût vers la valeur',reframe)
-    +sec('6 · Réponses aux 15 objections',obj);
+    +sec('5 · Banque d\'arguments — du logique à l\'inattendu',ARG_BANK.map(a=>`<div class="card"><div class="nm" style="margin-bottom:4px">${a.t} <span class="tag">${ARG_SRC[a.src].ic} ${ARG_SRC[a.src].lbl}</span></div><div class="rf-say">🗣️ ${typeof a.say==='function'?a.say():a.say}</div></div>`).join(''))
+    +sec('6 · Reframing prix — du coût vers la valeur',reframe)
+    +sec('7 · Réponses aux 15 objections',obj);
   const overrides=`
     html,body{height:auto !important;overflow:visible !important;background:#fff !important}
     body{font-size:13px}
