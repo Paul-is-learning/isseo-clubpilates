@@ -510,6 +510,9 @@ const STATUT_CFG={
   pipeline:{bg:'#F1EFE8',text:'#5F5E5A',label:'Pipeline'},
   preparation:{bg:'#E6F1FB',text:'#185FA5',label:'Preparation'},
   chantier:{bg:'#EAF3DE',text:'#3B6D11',label:'En chantier'},
+  j30:{bg:'#FBEFD8',text:'#C9871F',label:'Ouverture J-30'},
+  soft:{bg:'#E7E0F5',text:'#6b40b8',label:'Soft Opening'},
+  grand:{bg:'#FCE7F0',text:'#B4356E',label:'Grand Opening'},
   ouvert:{bg:'#E1F5EE',text:'#0F6E56',label:'Ouvert'},
   abandonne:{bg:'#FCEBEB',text:'#A32D2D',label:'Abandonne'},
 };
@@ -697,6 +700,12 @@ function inferStatut(steps,sid){
   if(done>=Math.ceil(ST.length*0.45))return 'chantier';
   if(done>=1)return 'preparation';
   return 'pipeline';
+}
+// Statut effectif : le choix manuel (statutManuel) prime sur le calcul workflow.
+function resolveStatut(sid,steps){
+  var s=typeof S!=='undefined'&&S.studios&&S.studios[sid];
+  if(s&&s.statutManuel&&STATUT_CFG[s.statutManuel])return s.statutManuel;
+  return inferStatut(steps||{},sid);
 }
 
 var PROSPECT_TABS=[

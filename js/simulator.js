@@ -170,7 +170,7 @@ async function toggleStep(sid,stepId){
   var s=S.studios[sid];
   var ns=Object.assign({},s.steps);
   ns[stepId]=!s.steps[stepId];
-  var newStatut=inferStatut(ns,sid);
+  var newStatut=resolveStatut(sid,ns);
   var oldStatut=s.statut;
   await saveStudio(sid,Object.assign({},s,{steps:ns,statut:newStatut}));
   // Notification si changement de statut
@@ -218,7 +218,7 @@ async function _confirmerEtape(sid){
   s.customSteps.push(newStep);
   if(!s.steps)s.steps={};
   s.steps[newStep.id]=false;
-  s.statut=inferStatut(s.steps,sid);
+  s.statut=resolveStatut(sid,s.steps);
   await saveStudio(sid,s);
   var modal=document.getElementById('step-modal');
   if(modal)modal.remove();
@@ -232,7 +232,7 @@ async function supprimerEtape(sid,stepId){
   ensureCustomSteps(sid);
   s.customSteps=s.customSteps.filter(function(st){return st.id!==stepId;});
   if(s.steps)delete s.steps[stepId];
-  s.statut=inferStatut(s.steps||{},sid);
+  s.statut=resolveStatut(sid,s.steps||{});
   await saveStudio(sid,s);
   toast('\u00c9tape supprim\u00e9e');
 }
@@ -397,7 +397,7 @@ async function archiverStudio(id){
 }
 async function restaurerStudio(id){
   if(!isSuperAdmin()){toast('Action réservée aux administrateurs principaux.');return;}
-  var s=S.studios[id];await saveStudio(id,Object.assign({},s,{statut:inferStatut(s.steps,id)}));toast('Restaure');
+  var s=S.studios[id];await saveStudio(id,Object.assign({},s,{statut:resolveStatut(id,s.steps)}));toast('Restaure');
 }
 async function supprimerStudio(id){
   if(!isSuperAdmin()){toast('Action réservée aux administrateurs principaux.');return;}

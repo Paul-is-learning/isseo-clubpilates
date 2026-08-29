@@ -527,6 +527,18 @@ async function setStudioCohorte(sid,val){
   await saveStudio(sid,S.studios[sid]);
   toast('Cohorte mise à jour : C'+val);
 }
+
+// Statut du projet choisi à la main (En chantier / Ouverture J-30 / Soft Opening / Grand Opening…).
+// val vide = retour au mode auto (calcul selon l'avancement du workflow).
+async function setStudioStatut(sid,val){
+  if(!S.studios[sid])return;
+  var s=S.studios[sid];
+  if(val&&STATUT_CFG[val]){s.statutManuel=val;s.statut=val;}
+  else{delete s.statutManuel;s.statut=inferStatut(s.steps||{},sid);}
+  await saveStudio(sid,s);
+  toast('Statut : '+((STATUT_CFG[s.statut]||{}).label||s.statut)+(s.statutManuel?'':' (auto)'));
+  render();
+}
 async function saveDepenses(sid){
   await rpcPatch(sid+'_depenses',{merge:{depenses:S.depenses[sid]}});
 }

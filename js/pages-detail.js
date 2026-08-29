@@ -283,7 +283,15 @@ function renderDetail(){
   h+='</div>';
   h+='</div>';
   if(isViewer())h+='<div style="display:inline-flex;align-items:center;gap:5px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:6px;padding:4px 10px;font-size:11px;color:#1D4ED8;font-weight:600;margin-bottom:10px">👁 Mode lecture seule — consultation uniquement</div>';
-  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>'+badge(s.statut);
+  h+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:4px"><span style="font-size:18px;font-weight:600">'+s.name+'</span>';
+  if(isAdmin&&!isViewer()){
+    var _stCfg=STATUT_CFG[s.statut]||STATUT_CFG.pipeline;
+    var _autoLabel=(STATUT_CFG[inferStatut(s.steps||{},S.selectedId)]||STATUT_CFG.pipeline).label;
+    h+='<select onchange="setStudioStatut(\''+S.selectedId+'\',this.value)" title="Statut du projet" style="font-size:11px;font-weight:700;padding:3px 8px;border-radius:10px;border:1.5px solid '+_stCfg.text+'33;background:'+_stCfg.bg+';color:'+_stCfg.text+';cursor:pointer">';
+    h+='<option value=""'+(!s.statutManuel?' selected':'')+'>Auto — '+_autoLabel+'</option>';
+    Object.keys(STATUT_CFG).forEach(function(k){h+='<option value="'+k+'"'+(s.statutManuel===k?' selected':'')+'>'+STATUT_CFG[k].label+'</option>';});
+    h+='</select>';
+  } else h+=badge(s.statut);
   if(isAdmin)h+='<select onchange="setStudioCohorte(\''+S.selectedId+'\',parseInt(this.value))" style="font-size:10px;font-weight:600;padding:2px 6px;border-radius:8px;border:1px solid #dde;background:#f0f4ff;color:#1a3a6b;cursor:pointer">';
   if(isAdmin)for(var ci=1;ci<=10;ci++)h+='<option value="'+ci+'"'+((s.cohorte||1)===ci?' selected':'')+'>Cohorte '+ci+'</option>';
   if(isAdmin)h+='</select>';

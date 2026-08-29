@@ -698,7 +698,7 @@ function renderAccueil(){
       var st=S.studios[id].statut||'pipeline';
       _statCounts[st]=(_statCounts[st]||0)+1;
     });
-    var _statOrder=['pipeline','preparation','chantier','ouvert','abandonne'];
+    var _statOrder=['pipeline','preparation','chantier','j30','soft','grand','ouvert','abandonne'];
     var _statMax=Math.max.apply(null,_statOrder.map(function(k){return _statCounts[k]||0;}))||1;
 
     h+='<div class="hero-carousel">';
