@@ -272,6 +272,27 @@ async function saisirAdherent(sid,year,moisIdx,val){
   render();
 }
 
+// Pré-inscrits (avant ouverture) : facturés dès le 1er mois d'ouverture (M1).
+// Stocké dans S.adherents[sid]['y1_pre'] → suit les scénarios/sauvegardes.
+// Tant que M1 n'a pas été saisi à la main, il reste calé sur les pré-inscrits.
+function saisirPreInscrits(sid,year,val){
+  if(isViewer())return;
+  if(_isScenarioLocked(sid)){toast('Activez le mode scénario pour modifier les adhérents.','warn');return;}
+  if(!S.adherents[sid])S.adherents[sid]={};
+  var pkey='y'+year+'_pre',mkey='y'+year+'_m0';
+  var old=S.adherents[sid][pkey];
+  var m0=S.adherents[sid][mkey];
+  var linked=(m0==null)||(old!=null&&num(m0)===num(old));
+  if(val===''||val===null){
+    delete S.adherents[sid][pkey];
+    if(linked&&m0!=null)delete S.adherents[sid][mkey];
+  } else {
+    S.adherents[sid][pkey]=num(val);
+    if(linked)S.adherents[sid][mkey]=num(val); // facturation dès l'ouverture
+  }
+  markDirty('adherents',sid);
+}
+
 function saisirAdherentLive(sid,year,moisIdx,val){
   if(isViewer())return;
   if(_isScenarioLocked(sid)){toast('Activez le mode scénario pour modifier les adhérents.','warn');return;}

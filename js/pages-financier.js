@@ -527,6 +527,17 @@ function renderAdherents(sid,s){
       h+='<br><span style="color:#888">Ex : 4 mois saisis = 4 mois r\u00e9els + 8 mois budget.</span>';
     }
     h+='</div>';
+    // ── Pré-inscrits (avant ouverture) — facturés dès le 1er mois ──
+    var _preVal='';
+    if(ay===1){
+      _preVal=actuel['y1_pre']!=null?actuel['y1_pre']:'';
+      h+='<div class="pre-inscrits-card">';
+      h+='<div class="pi-head"><span class="pi-badge">PRÉ</span><b>Pré-inscrits — avant ouverture</b></div>';
+      h+='<div class="pi-body">';
+      h+='<input type="number" min="0" value="'+_preVal+'" placeholder="0" oninput="saisirPreInscrits(\''+sid+'\','+ay+',this.value)" onchange="render()" class="pi-input"/>';
+      h+='<div class="pi-note">Membres signés pendant la pré-vente · <b>facturation dès l\'ouverture ('+moisLabels[0]+' '+annee+')</b>. Ils calent automatiquement le 1<sup>er</sup> mois tant que vous ne le modifiez pas à la main. Objectif pré-ventes : 100+.</div>';
+      h+='</div></div>';
+    }
     h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(118px,1fr));gap:8px">';
     for(var i=0;i<12;i++){
       var key='y'+ay+'_m'+i;
@@ -543,6 +554,7 @@ function renderAdherents(sid,s){
       h+='</div>';
       h+='<div style="font-size:10px;color:#888;margin-bottom:3px">BP: '+bp+' (churn '+churnArr[i]+')</div>';
       h+='<input type="number" value="'+rVal+'" placeholder="'+bp+'" oninput="saisirAdherentLive(\''+sid+'\','+ay+','+i+',this.value)" style="width:100%;padding:5px 7px;border:0.5px solid '+(_hasVal?'#185FA5':'#ddd')+';border-radius:6px;font-size:12px;outline:none;background:#fff;font-weight:'+(_hasVal?'600':'400')+'"/>';
+      if(i===0&&ay===1&&_preVal!==''&&num(rVal)===num(_preVal))h+='<div style="font-size:9px;color:#6b40b8;font-weight:700;margin-top:3px">⚡ '+_preVal+' pré-inscrits facturés</div>';
       if(diff!==null)h+='<div id="adh-diff-'+i+'" style="font-size:10px;color:'+diffColor+';margin-top:3px;font-weight:600">'+(diff>=0?'+':'')+diff+'</div>';
       else h+='<div id="adh-diff-'+i+'" style="font-size:10px;margin-top:3px;font-weight:600"></div>';
       h+='</div>';
