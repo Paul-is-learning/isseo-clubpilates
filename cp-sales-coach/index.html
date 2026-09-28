@@ -157,6 +157,15 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
+/* ── Choix du pack souscrit ── */
+.pr-pack-row{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:10px}
+.pr-pack{display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #e3e7ef;background:#fff;border-radius:10px;padding:8px 4px;font-size:12.5px;font-weight:800;color:#3c4759;transition:all .13s}
+.pr-pack small{font-size:10px;font-weight:600;color:#8C95A8}
+.pr-pack.on{background:#1F9E75;border-color:#1F9E75;color:#fff}
+.pr-pack.on small{color:rgba(255,255,255,.8)}
+.pr-pack.sm{flex-direction:row;padding:5px 10px;font-size:11px;border-radius:99px}
+.pr-packline{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.pr-pack-ask{font-size:11.5px;font-weight:700;color:#C9871F}
 /* ── Guide de bienvenue (onboarding) ── */
 #obScreen{position:fixed;inset:0;z-index:9998;background:linear-gradient(165deg,#1c2b4a 0%,#26385A 55%,#2e4470 100%);overflow-y:auto;animation:obfade .3s}
 @keyframes obfade{from{opacity:0}to{opacity:1}}
@@ -1493,6 +1502,7 @@ function renderScreen(keepScroll){
       <div class="pr-cap-row"><input id="pr-nom" type="text" placeholder="Prénom Nom *" value="${esc(st._prNom||'')}" oninput="st._prNom=this.value"/><input id="pr-tel" type="tel" placeholder="Téléphone" value="${esc(st._prTel||'')}" oninput="st._prTel=this.value"/></div>
       <div class="pr-cap-lbl">Issue de l'appel :</div>
       <div class="pr-cap-sts">${['essai','abo','rappeler','perdu'].map(k=>`<button class="pr-st${curSt===k?' on':''}" style="${curSt===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="pickPrStatut('${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
+      ${curSt==='abo'?`<div class="pr-cap-lbl">Abonnement souscrit :</div><div class="pr-pack-row">${[1,2,3].map(pk=>`<button class="pr-pack${(st._prPack||recommendPack())===pk?' on':''}" onclick="st._prPack=${pk};renderScreen(true)">${packShort(pk)}<small>${fmtEur(foundingMonthly(pk)??packMonthly(pk))||''}/mois</small></button>`).join('')}</div>`:''}
       <div class="pr-cap-row"><label class="pr-cap-dl">📅 ${curSt==='essai'?'Date de l\'essai':'Date de rappel'}<input id="pr-date" type="date" value="${st._prDate||''}" onchange="st._prDate=this.value"/></label><input id="pr-note" type="text" placeholder="Note (optionnel)" value="${esc(st._prNote||'')}" oninput="st._prNote=this.value"/></div>
       <button class="go ok" style="width:100%" onclick="saveProspect()">💾 Enregistrer dans Mes prospects</button>
     </div>`;
@@ -1558,6 +1568,8 @@ function buildRecap(){
   L.push(`Cours : ${recos.map(r=>CLASSES[r.id].nm).join(' + ')}`);
   const mF=fmtEur(packMonthly(pack)),fmF=fmtEur(foundingMonthly(pack));
   if(mF)L.push(`Tarif : ${mF}/mois${fmF?` → ${fmF}/mois fondateur`:''}`);
+  const curStR=st._prStatut||(st.callGoal==='trial'?'essai':'abo');
+  if(curStR==='abo')L.push(`ABONNEMENT PRIS : ${packShort(st._prPack||recommendPack())}`);
   L.push(`Match : ${matchScore(recommendPack())}%`);
   return L.join('\n');
 }
@@ -1737,6 +1749,7 @@ async function unlockCoach(){
     showLock();
   }
 }
+function packShort(pk){const m={1:'Pack 4',2:'Pack 8',3:'Illimité'};return m[pk]||'';}
 const PIPE={
   rappeler:{ic:'📞',lbl:'À rappeler',c:'#C9871F'},
   essai:{ic:'🎟️',lbl:'Essai booké',c:'#185FA5'},
@@ -1757,6 +1770,7 @@ function saveProspect(){
     tel:($('#pr-tel')?.value||'').trim(),
     note:($('#pr-note')?.value||'').trim(),
     statut:st._prStatut||(st.callGoal==='trial'?'essai':'abo'),
+    pack:(st._prStatut||(st.callGoal==='trial'?'essai':'abo'))==='abo'?String(st._prPack||recommendPack()):'',
     rappel:($('#pr-date')?.value||''),
     obj:primaryGoalVerb(),
     fiche:buildRecap(),
@@ -1897,12 +1911,13 @@ function showProspects(keepScroll){
           <div class="pr-id"><b>${esc(p.nom)}</b></div>
           <div class="pr-sub">${p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.rep?`<span class="pr-rep">· suivi par ${esc(p.rep.split(' ')[0])}</span>`:''}</div>
         </div>
-        <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}</span>
+        <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>
       </div>
       ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
       ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
       <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${isDue?' · c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span></div>
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
+      ${p.statut==='abo'?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
       <div class="pr-actions">
         <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'✉️ Relances ('+msgs.length+')'}</button>
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date essai / rappel"/>
@@ -1937,6 +1952,7 @@ function showProspects(keepScroll){
   if(!COACH_CODE)_syncState('off');
 }
 function togglePr(id){prOpenId=prOpenId===id?null:id;showProspects(true);}
+function setPPack(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.pack=String(pk);p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);toast('Abonnement noté : '+packShort(pk)+' ✓');}
 function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.statut=s;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);toast(PIPE[s].ic+' '+PIPE[s].lbl);}
 function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);}
 function delProspect(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;if(!confirm('Supprimer la fiche de '+p.nom+' ?'))return;PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects(true);toast('Fiche supprimée');syncCall('delete',{ids:[id]}).catch(()=>{});}

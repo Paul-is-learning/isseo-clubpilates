@@ -134,6 +134,7 @@ serve(async (req) => {
           note: String(p.note || ""), statut: String(p.statut || "rappeler"),
           rappel: String(p.rappel || ""), obj: String(p.obj || ""),
           fiche: String(p.fiche || "").slice(0, 4000),
+          pack: String(p.pack || ""),
           rep: String(p.rep || rep), studio: String(p.studio || ""),
           ts: String(p.ts || new Date().toISOString()),
           maj: String(p.maj || p.ts || new Date().toISOString()),
