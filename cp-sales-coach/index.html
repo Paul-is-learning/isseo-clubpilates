@@ -157,6 +157,14 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
+/* ── Vignettes : arguments de fond dépliables ── */
+.catch-box .ln.clickable{cursor:pointer}
+.catch-more{display:block;font-size:11px;font-weight:800;color:var(--ok);margin-top:5px;letter-spacing:.03em;text-transform:uppercase;opacity:.85}
+.catch-deep{margin-top:10px;display:flex;flex-direction:column;gap:8px;animation:pop .25s}
+.cd-item{background:#fff;border:1px solid #cdeadd;border-radius:11px;padding:10px 12px;cursor:default}
+.cd-say{font-size:13.5px;font-weight:600;color:#174e39;line-height:1.55}
+.cd-why{margin-top:6px;font-size:11.5px;font-weight:500;color:#4c7a66;line-height:1.45;border-top:1px dashed #cdeadd;padding-top:6px}
+@media(max-width:1059.98px){.catch-box:has(.catch-deep){position:static}}
 /* ── Vignettes coach : rail à droite (desktop) / sticky bas (mobile) ── */
 #sideRail{display:none}
 @media(min-width:1060px){
@@ -577,13 +585,39 @@ let st={
 };
 
 const REASONS=[
-  {id:'reprise',ic:'🔄',label:'Reprendre le sport',catch:'« Le Reformer est parfait pour ça : on reprend tout en douceur, au niveau 0.5, à votre rythme. »'},
-  {id:'poids',ic:'⚖️',label:'Perte de poids',catch:'« Ici on tonifie en profondeur et on relance le métabolisme · c\'est ce qui affine durablement. »'},
-  {id:'douleur',ic:'🩹',label:'Douleurs / posture',catch:'« Vous frappez à la bonne porte : on renforce les muscles profonds qui soulagent le dos, sans impact. »'},
-  {id:'bienetre',ic:'🌿',label:'Bien-être / stress',catch:'« Respiration, concentration, mouvement fluide · beaucoup repartent d\'ici l\'esprit plus léger. »'},
-  {id:'tonus',ic:'💪',label:'Se tonifier',catch:'« C\'est exactement ce que fait le Reformer : un corps gainé et dessiné, sans prise de volume. »'},
-  {id:'reco',ic:'🗣️',label:'On m\'a recommandé',catch:'« On vous a bien conseillé ! Nos membres sont notre meilleure publicité. »'},
-  {id:'curieux',ic:'❓',label:'Simple curiosité',catch:'« Vous avez raison d\'être curieux(se) · le plus simple, c\'est de venir l\'essayer une fois pour comprendre. »'}
+  {id:'reprise',ic:'🔄',label:'Reprendre le sport',catch:'« Le Reformer est parfait pour ça : on reprend tout en douceur, au niveau 0.5, à votre rythme. »',deep:[
+    {say:'« Le pire ennemi d\'une reprise, c\'est la blessure de la 3e semaine. Ici, zéro impact, un niveau 0.5 dédié à la reprise, et un coach qui adapte chaque exercice · on reconstruit sans casser. »',why:'Le chariot du Reformer accompagne le mouvement : pas de choc articulaire, résistance des ressorts réglable cran par cran.'},
+    {say:'« On redonne d\'abord les fondations : gainage, mobilité, équilibre, souffle. Après quelques semaines, tout le reste · course, tennis, ski · redevient plus facile. »',why:'Le travail des muscles profonds (transverse, multifides) améliore le contrôle moteur et la proprioception, base de tout geste sportif.'},
+    {say:'« Et vous voyez votre progression : 5 niveaux, du 0.5 au 2.5. On sait toujours où on en est et quelle est la marche suivante · très motivant pour tenir. »',why:'La progression par niveaux est un levier d\'assiduité : objectif visible = motivation durable.'}
+  ]},
+  {id:'poids',ic:'⚖️',label:'Perte de poids',catch:'« Le Reformer travaille en résistance : on construit du muscle, et le muscle brûle des calories même au repos. »',deep:[
+    {say:'« Ce n\'est pas un discours commercial : une méta-analyse de 11 essais cliniques montre que le Pilates fait baisser significativement le poids, l\'IMC et le taux de masse grasse chez les personnes en surpoids. »',why:'Méta-analyse Frontiers in Physiology 2021, 393 participants : poids −2,4 kg, IMC −1,17, masse grasse −4,2 points vs contrôle.'},
+    {say:'« Le vrai levier, c\'est la recomposition : les ressorts font travailler en résistance, donc on construit du muscle. Et un corps plus musclé dépense plus d\'énergie, même assis au bureau. »',why:'Étude sur 12 semaines de Pilates : métabolisme de base amélioré de +10,6 % chez des femmes d\'âge moyen (IJERPH 2022). C\'est ça, « relancer le métabolisme », concrètement.'},
+    {say:'« Et je vous le dis honnêtement : une séance ne fait pas maigrir. C\'est la régularité · 2 à 3 fois par semaine · plus une alimentation raisonnable, qui change une silhouette en quelques mois. »',why:'Cette franchise crédibilise tout le reste : les études montrent un effet réel mais progressif, jamais un miracle.'}
+  ]},
+  {id:'douleur',ic:'🩹',label:'Douleurs / posture',catch:'« Vous frappez à la bonne porte : on renforce les muscles profonds qui soutiennent le dos, sans impact. »',deep:[
+    {say:'« Le Pilates fait travailler ensemble le transverse, les multifides, le plancher pelvien et le diaphragme · les muscles profonds qui stabilisent la colonne. C\'est précisément ce qui manque quand le dos se fait sentir. »',why:'Revue systématique Healthcare 2023 : la contraction coordonnée de ces muscles améliore la stabilité vertébrale et réduit la compression articulaire.'},
+    {say:'« C\'est tellement reconnu que les kinésithérapeutes utilisent le Reformer en rééducation. Ici vous faites ce même travail, en prévention, avec un coach certifié. »',why:'Efficacité sur la lombalgie chronique : preuve qualifiée de modérée par la revue Cochrane 2015 · solide, sans sur-promesse.'},
+    {say:'« Et tout se fait allongé ou soutenu par la machine, sans impact ni charge sur les articulations : on renforce sans traumatiser, et on corrige la posture geste après geste. »',why:'Le Reformer guide l\'alignement pendant l\'effort : le coach voit et corrige les compensations en direct.'}
+  ]},
+  {id:'bienetre',ic:'🌿',label:'Bien-être / stress',catch:'« Respiration, concentration, mouvement fluide · beaucoup repartent d\'ici l\'esprit plus léger. »',deep:[
+    {say:'« Chaque mouvement est guidé par la respiration. Et ce type de respiration profonde est étudié en laboratoire : il fait baisser le cortisol, l\'hormone du stress. Ce n\'est pas une impression, c\'est mesurable. »',why:'Revue systématique JBI 2019 + essais contrôlés : la respiration diaphragmatique réduit le cortisol salivaire, le rythme respiratoire et le stress perçu.'},
+    {say:'« Pendant 50 minutes, impossible de penser à autre chose : la concentration sur le geste, le souffle, le centrage. C\'est une vraie coupure mentale, pas seulement du sport. »',why:'Concentration et centrage sont deux principes fondateurs de la méthode : l\'attention totale au mouvement produit un effet proche de la pleine conscience.'},
+    {say:'« Et le cadre compte : 12 personnes maximum, lumière douce, un coach qui connaît votre prénom et vos objectifs. On vient se poser autant que se renforcer. »',why:'Petit groupe = zéro anonymat, zéro regard : le frein n°1 des salles classiques disparaît.'}
+  ]},
+  {id:'tonus',ic:'💪',label:'Se tonifier',catch:'« C\'est exactement ce que fait le Reformer : un corps gainé et dessiné, sans prise de volume. »',deep:[
+    {say:'« Le Reformer, c\'est de la vraie musculation en résistance : les ressorts se règlent cran par cran, comme des poids. Mais on sculpte en longueur · gainé, dessiné, sans volume. »',why:'Essai contrôlé randomisé 2025 sur Reformer : amélioration mesurée de la composition corporelle et de la force.'},
+    {say:'« On travaille beaucoup en excentrique : le muscle freine le retour du chariot. C\'est l\'un des modes de contraction les plus efficaces pour se tonifier · et c\'est doux pour les articulations. »',why:'La contraction excentrique (freiner une charge) crée un fort stimulus musculaire à contrainte articulaire réduite.'},
+    {say:'« Et ici le gainage n\'est pas un exercice de fin de séance : c\'est la base de chaque mouvement. Votre centre travaille pendant les 50 minutes. »',why:'Le « centrage » : chaque exercice part du caisson abdominal · abdos profonds sollicités en continu.'}
+  ]},
+  {id:'reco',ic:'🗣️',label:'On m\'a recommandé',catch:'« On vous a bien conseillé ! Nos membres sont notre meilleure publicité. »',deep:[
+    {say:'« Qui vous en a parlé ? … Et qu\'est-ce qui l\'a convaincu(e), elle/lui ? » Écoutez la réponse : c\'est souvent votre meilleur argument de vente, dans ses mots à elle/lui.',why:'Technique : faire raconter la recommandation transforme le prospect en vendeur de sa propre inscription.'},
+    {say:'« Le bouche-à-oreille est notre premier canal. On ne peut pas tricher avec des gens qui reviennent 2 fois par semaine : si on les déçoit, ils ne recommandent personne. »',why:'Preuve sociale sincère : la recommandation d\'un proche vaut plus que toute publicité.'}
+  ]},
+  {id:'curieux',ic:'❓',label:'Simple curiosité',catch:'« Vous avez raison d\'être curieux(se) · le plus simple, c\'est de venir l\'essayer une fois pour comprendre. »',deep:[
+    {say:'« La curiosité est le meilleur point de départ : le Reformer ne ressemble à rien de connu · chariot, ressorts, sangles. Ça ne s\'explique pas, ça se vit. Le cours d\'essai est fait exactement pour ça. »',why:'Basculer la curiosité vers l\'expérience : l\'essai est l\'étape naturelle, pas un engagement.'},
+    {say:'« Posez-moi toutes vos questions maintenant · la machine, l\'ambiance, le niveau. Je préfère un curieux bien informé qu\'un inscrit hésitant. »',why:'Inviter les questions = confiance. Chaque réponse est une occasion de faire visualiser la séance.'}
+  ]}
 ];
 const PAINS=[
   {id:'temps',ic:'⏳',label:'Manque de temps',dig:'C\'était quoi le vrai frein · le trajet, les horaires, la durée des séances ? Combien de temps réaliste vous pourriez dégager ?',catch:'« Je comprends. Les séances font ~50 min et se réservent 3 sem à l\'avance · ça se cale vraiment dans un agenda chargé. »'},
@@ -1171,10 +1205,16 @@ function digFor(data,ids){
   return `<div class="ask-box"><div class="h">🔍 À demander maintenant</div>${ds.map(d=>`<div class="q">${d.dig}</div>`).join('')}</div>`;
 }
 // Catch-lines en direct : ce que le commercial RÉPOND quand le client coche cette réponse.
+let _catchOpen={};
+function toggleCatch(id){_catchOpen[id]=!_catchOpen[id];renderScreen(true);}
 function catchFor(data,ids){
   const cs=(ids||[]).map(id=>{const o=data.find(x=>x.id===id);return o&&o.catch?o:null;}).filter(Boolean);
   if(!cs.length)return '';
-  return `<div class="catch-box"><div class="h">💬 À répondre, là, maintenant</div>${cs.map(c=>`<div class="ln"><span class="ci">${c.ic}</span><span>${c.catch}</span></div>`).join('')}</div>`;
+  return `<div class="catch-box"><div class="h">💬 À répondre, là, maintenant</div>${cs.map(c=>{
+    const open=!!_catchOpen[c.id],hasDeep=c.deep&&c.deep.length;
+    const deep=hasDeep&&open?`<div class="catch-deep">${c.deep.map(d=>`<div class="cd-item"><div class="cd-say">🗣️ ${d.say}</div>${d.why?`<div class="cd-why">ℹ️ ${d.why}</div>`:''}</div>`).join('')}</div>`:'';
+    return `<div class="ln${hasDeep?' clickable':''}"${hasDeep?` onclick="toggleCatch('${c.id}')"`:''}><span class="ci">${c.ic}</span><span style="flex:1;min-width:0">${c.catch}${hasDeep?`<span class="catch-more">${open?'▴ replier':'▾ '+c.deep.length+' arguments de fond'}</span>`:''}${deep}</span></div>`;
+  }).join('')}</div>`;
 }
 
 function renderScreen(keepScroll){
@@ -1746,7 +1786,7 @@ function openMenu(){
 }
 function closeMenu(){$('#menuBg').classList.remove('on');$('#menuSheet').classList.remove('on');}
 function showPresentation(){closeMenu();if(!st.connait)st.connait='oui';const flow=buildFlow();const i=flow.findIndex(s=>s.t==='present');if(i>=0){st.idx=i;renderScreen();}}
-function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
+function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;_catchOpen={};st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
 
 /* ── Académie ── */
 function showAca(){
