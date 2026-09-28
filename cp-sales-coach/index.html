@@ -156,6 +156,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.sync{background:#fdf3e3;color:#C9871F;border-color:#f0dcb4}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
+.tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
 /* ── Page prospects : DA CRM ── */
 .pr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .pr-h2{margin:0;font-size:22px;color:#16233f}
@@ -1218,6 +1219,13 @@ function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.st
    que la zone prospects, rien d'autre. localStorage = cache hors-ligne. */
 const SYNC_URL='https://wfqtpcujujqxgfsgbpvp.supabase.co/functions/v1/coach-sync';
 let COACH_CODE=localStorage.getItem('cpcoach_code')||'';
+let COACH_ROLE=localStorage.getItem('cpcoach_role')||'';
+function _adoptAuth(d){
+  if(!d)return;
+  COACH_ROLE=d.role||'';localStorage.setItem('cpcoach_role',COACH_ROLE);
+  // Le prénom de l'invitation devient le nom du conseiller (signatures, fiches)
+  if(d.rep&&CFG.rep!==d.rep){CFG.rep=d.rep;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
+}
 let _pushT=null,_lastSync='';
 async function syncCall(action,extra){
   const r=await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({code:COACH_CODE,action:action},extra||{}))});
@@ -1273,7 +1281,8 @@ async function unlockCoach(){
   if(!v){if(err)err.textContent='Entrez le code fourni par votre responsable.';return;}
   COACH_CODE=v;
   try{
-    await syncCall('ping');
+    const d=await syncCall('ping');
+    _adoptAuth(d);
     localStorage.setItem('cpcoach_code',v);
     document.getElementById('lockScreen')?.remove();
     toast('Bienvenue ! ✓');
@@ -1346,6 +1355,75 @@ function relanceMsgs(p){
     ]
   };
   return M[p.statut]||[];
+}
+
+/* ── Équipe & invitations (admin) ── */
+async function showTeam(){
+  if(COACH_ROLE!=='admin'){toast('Réservé au responsable');return;}
+  $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">Un code personnel par conseiller · révocable à tout moment</div></div></div><div class="pr-empty">⏳ Chargement…</div></div>`;
+  $('#topPhase').textContent='Équipe';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';
+  try{const d=await syncCall('team_list');renderTeam(d.invites||[]);}
+  catch(e){if(e.message!=='code')$('#screen').innerHTML=`<div class="cg"><div class="pr-empty">📴 Connexion impossible · réessayez.</div></div>`;}
+}
+function renderTeam(invites){
+  const fmt=iso=>iso?new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' à '+new Date(iso).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):null;
+  const row=i=>{
+    const off=i.actif===false;
+    return `<div class="pr-card" style="border-left:4px solid ${off?'#8C95A8':'#1F9E75'};${off?'opacity:.65':''}">
+      <div class="pr-top">
+        <div class="pr-ava" style="background:${off?'#8C95A8':'#1F9E75'}">${esc(prInitials(i.nom))}</div>
+        <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b></div>
+          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span><span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span></div></div>
+        <span class="pr-chip" style="${off?'background:#f2f3f6;color:#8C95A8;border-color:#dde1e8':'background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6'}">${off?'⏸ Suspendu':'✅ Actif'}</span>
+      </div>
+      <div class="pr-actions">
+        <button class="pr-act main" onclick="copyInvite('${i.id}')">📋 Copier l'invitation</button>
+        <button class="pr-act" onclick="toggleInvite('${i.id}',${off?'true':'false'})">${off?'▶️ Réactiver':'⏸ Suspendre'}</button>
+        <button class="pr-act danger" onclick="delInvite('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">🗑</button>
+      </div>
+    </div>`;
+  };
+  window._TEAM=invites;
+  $('#screen').innerHTML=`<div class="cg">
+    <div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">${invites.length} invitation${invites.length>1?'s':''} · chacun son code, vous gardez la main</div></div></div>
+    <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
+      <div class="pr-howto-b">
+        <div><span class="hn">1</span><span><b>Invitez un conseiller</b> : entrez son prénom, un code personnel est créé (ex. LEA-4821).</span></div>
+        <div><span class="hn">2</span><span><b>Envoyez-lui l'invitation</b> (bouton copier) : le lien de l'outil + son code. Il n'a besoin de rien d'autre · aucun compte, aucun accès au reste de votre application.</span></div>
+        <div><span class="hn">3</span><span><b>Départ ou doute ?</b> Suspendez ou supprimez son code : l'outil se verrouille chez lui à la seconde. Les fiches, elles, restent au studio.</span></div>
+        <div><span class="hn">4</span><span>Votre code <b>maître</b> reste secret : lui seul ouvre cette page. Ne le donnez jamais à l'équipe.</span></div>
+      </div>
+    </details>
+    <div class="pr-capture"><div class="pr-cap-h">➕ Inviter un conseiller</div>
+      <div class="pr-cap-row"><input type="text" id="tm-nom" placeholder="Prénom (ex. Léa)" onkeydown="if(event.key==='Enter')addInvite()"/><button class="go ok" style="flex:0 0 auto;padding:10px 18px" onclick="addInvite()">Créer son code</button></div>
+    </div>
+    ${invites.length?invites.map(row).join(''):`<div class="pr-empty">👥 Aucune invitation pour l'instant.<br><small>Créez le premier code personnel ci-dessus.</small></div>`}
+  </div>`;
+}
+async function addInvite(){
+  const nom=($('#tm-nom')?.value||'').trim();
+  if(!nom){toast('Entrez un prénom');$('#tm-nom')?.focus();return;}
+  try{
+    const d=await syncCall('team_add',{nom:nom});
+    renderTeam((window._TEAM||[]).concat([d.invite]));
+    toast('Code créé pour '+nom+' : '+d.invite.code);
+  }catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+async function toggleInvite(id,actif){
+  try{const d=await syncCall('team_toggle',{id:id,actif:actif});renderTeam(d.invites||[]);toast(actif?'Code réactivé ✓':'Code suspendu · outil verrouillé chez lui');}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+async function delInvite(id,nom){
+  if(!confirm('Supprimer définitivement le code de '+nom+' ?'))return;
+  try{const d=await syncCall('team_del',{id:id});renderTeam(d.invites||[]);toast('Invitation supprimée');}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+function copyInvite(id){
+  const i=(window._TEAM||[]).find(x=>x.id===id);if(!i)return;
+  const msg=`Bonjour ${i.nom} ! Voici ton accès au CP Sales Coach, notre assistant d'appel Club Pilates :\n\n🔗 https://clubpilates.isseo-dev.com/cp-sales-coach/\n🔑 Ton code personnel : ${i.code}\n\nOuvre le lien, entre ton code, et c'est parti. Il est personnel · ne le partage pas. À très vite !`;
+  navigator.clipboard?.writeText(msg).then(()=>toast('Invitation copiée · prête à envoyer ✓')).catch(()=>prompt('Copiez le message :',msg));
 }
 
 // Page « Mes prospects » — vue CRM
@@ -1448,6 +1526,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showScience()"><span class="mic">🔬</span><span>La science le confirme<small>Études cliniques, résultats par objectif, sources</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
+    ${COACH_ROLE==='admin'?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="printGuide()"><span class="mic">🖨️</span><span>Imprimer le guide (PDF)<small>Livret hors-ligne : toutes les sections</small></span></button>
     <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;
@@ -1652,7 +1731,7 @@ renderScreen();
 // Accès : code studio obligatoire (données équipe centralisées)
 (async function(){
   if(!COACH_CODE){showLock();return;}
-  try{await syncCall('ping');syncPull(true);}
+  try{const d=await syncCall('ping');_adoptAuth(d);syncPull(true);}
   catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
 })();
 </script>
