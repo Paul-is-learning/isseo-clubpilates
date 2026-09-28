@@ -157,6 +157,24 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
+/* ── Offre fondateur (closing) ── */
+.fond-box{background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1.5px solid #e8d5a8;border-radius:15px;padding:14px 15px;margin-top:12px}
+.fond-h{font-size:14px;font-weight:800;color:#6b4d0d;margin-bottom:10px}
+.fond-hs{display:block;font-size:11px;font-weight:700;color:#a07c2a;margin-top:2px}
+.fond-row{display:flex;align-items:center;gap:10px;background:#fff;border:1.5px solid #eee3c8;border-radius:11px;padding:9px 12px;margin-bottom:7px;flex-wrap:wrap}
+.fond-row.cur{border-color:#C9871F;box-shadow:0 3px 12px rgba(201,135,31,.18)}
+.fond-pack{flex:1;min-width:120px;font-size:12.5px;font-weight:800;color:#16233f}
+.fond-reco{background:#C9871F;color:#fff;font-size:9px;font-weight:800;border-radius:99px;padding:2px 7px;margin-left:6px;text-transform:uppercase;vertical-align:middle}
+.fond-prix{font-size:14px;color:#16233f;white-space:nowrap}
+.fond-prix s{color:#a3abbd;font-size:12px;margin-right:5px}
+.fond-prix b{color:#8a5c0a;font-size:16px}
+.fond-prix small{color:#8C95A8;font-size:10.5px;margin-left:2px}
+.fond-per{flex-basis:100%;font-size:11.5px;font-weight:700;color:#1F9E75}
+.fond-ref{font-size:11.5px;color:#8a6d2e;margin-top:6px;line-height:1.5}
+.fond-why{background:#fff;border:1.5px solid var(--line,#e3e7ef);border-radius:15px;padding:13px 15px;margin-top:10px}
+.fond-why-h{font-size:13.5px;font-weight:800;color:#16233f;margin-bottom:9px}
+.fw-row{display:flex;gap:9px;align-items:flex-start;font-size:13px;color:#3c4759;line-height:1.55;margin-bottom:8px}
+.fw-ic{flex:0 0 20px;font-size:15px;margin-top:1px}
 /* ── Page prospects : DA CRM ── */
 .pr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
 .pr-h2{margin:0;font-size:22px;color:#16233f}
@@ -450,9 +468,11 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 /* ════════════════════════════════════════════════════════════════
    CONFIG + DONNÉES + MOTEUR  (inchangés — toute l'intelligence)
    ════════════════════════════════════════════════════════════════ */
-const DEFAULT_CFG={studio:'',rep:'',base:40,p1:135,p2:235,p3:330,founding:20,privateSession:95,spotsLeft:50};
+const DEFAULT_CFG={studio:'',rep:'',base:40,p1:140,p2:240,p3:330,founding:20,privateSession:95,spotsLeft:50};
 const SESSIONS_PER_MONTH={1:4,2:8,3:null};
 let CFG=Object.assign({},DEFAULT_CFG,JSON.parse(localStorage.getItem('cpcoach_cfg')||'{}'));
+// Migration : anciens tarifs par défaut (135/235) jamais personnalisés → tarifs officiels
+if(+CFG.p1===135&&+CFG.p2===235){CFG.p1=140;CFG.p2=240;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
 
 let st={
   callGoal:'membership',
@@ -844,7 +864,7 @@ function packPerSession(p){const m=packMonthly(p),s=SESSIONS_PER_MONTH[p];if(m==
 function fmtEur(v){if(v==null||v==='')return null;const n=parseFloat(v);if(isNaN(n))return null;return n.toLocaleString('fr-FR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})+' €';}
 function foundingMonthly(p){const n=parseFloat(packMonthly(p));return isNaN(n)?null:n*(1-(parseFloat(CFG.founding)||0)/100);}
 function foundingPerSession(p){const f=foundingMonthly(p),s=SESSIONS_PER_MONTH[p];if(f==null||s==null)return null;return f/s;}
-const PACK_META={1:{cls:'p1',badge:'Complément',name:'Pack 1× / semaine',freq:'≈ 4 séances / mois'},2:{cls:'p2',badge:'★ Recommandé',name:'Pack 2× / semaine',freq:'≈ 8 séances / mois'},3:{cls:'p3',badge:'Transformation',name:'Pack illimité',freq:'À volonté'}};
+const PACK_META={1:{cls:'p1',badge:'Complément',name:'Pack 4 (1×/semaine)',freq:'4 séances / mois'},2:{cls:'p2',badge:'★ Recommandé',name:'Pack 8 (2×/semaine)',freq:'8 séances / mois'},3:{cls:'p3',badge:'Transformation',name:'Pack illimité',freq:'À volonté'}};
 function classBenefit(id){
   const g=st.goals,has=x=>g.includes(x);
   switch(id){
@@ -971,6 +991,24 @@ function buildReframe(pack){
 }
 // Preuves qui justifient le prix (faits CP vérifiés — plaquette)
 const PRICE_PROOF=['🎓 Coach diplômé à chaque cours','👥 12 personnes max','📊 5 niveaux (0.5 → 2.5)','📅 Réservation 3 semaines à l\'avance','🔁 8+ formats, zéro redondance','💪 Reformer pro conçu pour CP'];
+function buildFoundingPitch(pack){
+  const m=fmtEur(packMonthly(pack)),f=fmtEur(foundingMonthly(pack)),priv=fmtEur(CFG.privateSession);
+  const ps=foundingPerSession(pack)!=null?fmtEur(foundingPerSession(pack)):fmtEur(packPerSession(pack));
+  let s=`« Et vous appelez au meilleur moment : nos premiers membres deviennent <b>membres fondateurs</b> · -${CFG.founding}% à vie et l'inscription offerte.`;
+  if(pack===3){const fn=parseFloat(foundingMonthly(3)??packMonthly(3)),r=n=>Math.round(fn/(n*4.333));s+=f&&m?` Concrètement, l'illimité passe de ${m} à <b>${f} par mois</b>, pour toujours : à 3 séances par semaine, votre séance revient à ~${r(3)} €.`:'';}
+  else s+=f&&m?` Concrètement, votre ${PACK_META[pack].name} passe de ${m} à <b>${f} par mois</b>, pour toujours : ${ps?ps+' la séance':''} coachée en petit groupe${priv?`, quand la séance privée seule vaut ${priv}`:''}.`:'';
+  s+=` Prendre soin de soi, bien vieillir, éviter les blessures : c'est un investissement sur vos vingt prochaines années. Je vous réserve votre statut fondateur ? »`;
+  return s;
+}
+function buildFoundingPitchCasual(pack){
+  const m=fmtEur(packMonthly(pack)),f=fmtEur(foundingMonthly(pack));
+  const ps=foundingPerSession(pack)!=null?fmtEur(foundingPerSession(pack)):fmtEur(packPerSession(pack));
+  let s=`« Et petit bonus, on lance le studio : les premiers membres sont <b>fondateurs</b> · -${CFG.founding}% à vie, inscription offerte.`;
+  if(pack===3){const fn=parseFloat(foundingMonthly(3)??packMonthly(3)),r=n=>Math.round(fn/(n*4.333));s+=f&&m?` En clair : l'illimité tombe de ${m} à ${f} par mois, à vie · à 3 séances par semaine ça fait ~${r(3)} € la séance.`:'';}
+  else s+=f&&m?` En clair : votre ${PACK_META[pack].name} tombe de ${m} à ${f} par mois, à vie · ${ps?'ça fait '+ps+' la séance':''} avec un coach certifié.`:'';
+  s+=` Franchement, pour un truc qui vous garde en forme sur les vingt prochaines années, c'est le bon wagon. Je vous garde la place ? »`;
+  return s;
+}
 function buildPricePitch(pack){
   const base=fmtEur(CFG.base),m=packMonthly(pack),mF=fmtEur(m),psF=fmtEur(packPerSession(pack)),fmF=fmtEur(foundingMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack));
   if(mF==null)return `« Votre accompagnement revient à ${base||'—'} la séance. Avec votre formule et le statut de membre fondateur (-${CFG.founding}% à vie + inscription offerte), nous descendons bien en dessous. » ⚠️ Renseignez le prix dans Réglages.`;
@@ -1016,7 +1054,7 @@ function buildFlow(){
   buildPitchBeats(pack,recos).forEach((b,i)=>f.push({t:'beat',phase:'Argumentaire',beat:b,n:i+1}));
   f.push({t:'reframe',phase:'Argumentaire'});
   f.push({t:st.callGoal==='membership'?'price':'trial',phase:'Argumentaire'});
-  if(CFG.spotsLeft)f.push({t:'urgency',phase:'Closing'});
+  f.push({t:'urgency',phase:'Closing'});
   f.push({t:'closing',phase:'Closing'});
   f.push({t:'final',phase:'Closing'});
   return f;
@@ -1105,7 +1143,7 @@ function renderScreen(){
     else priceHtml=`<div class="reco-foot" style="margin-top:10px">⚠️ Prix à renseigner dans Réglages</div>`;
     h=`<div class="scr-tag reco">${s.phase} · le match</div>
       <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore(pack)}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
-      <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.replace('Pack ','')}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
+      <div class="pack-switch">${[1,2,3].map(p=>`<button class="${p===pack?'cur':''}" onclick="pickPack(${p})">${PACK_META[p].name.split(' (')[0]}<small>${p===2?'★ idéal':p===3?'illimité':'complément'}</small></button>`).join('')}</div>
       <div class="rythme"><div class="rythme-h">⏱️ Le bon rythme pour ${primaryGoalVerb()} <span class="rythme-age">ajusté pour ${ageLabel()}</span></div>${rhythmRows().map(r=>`<div class="rythme-row${r.pack===pack?' cur':''}"><div class="rr-freq">${r.freq}</div><div class="rr-time">${r.time}<small>transformation visible</small></div><div class="rr-lab">${r.lab}</div></div>`).join('')}<div class="rythme-foot">Premières sensations dès les 1ères semaines · transformation ≈ 30 séances (J. Pilates), modulée par l'âge.</div></div>
       <div class="card" style="margin-top:12px">${recos.map((r,i)=>`<div class="cls"><div class="n">${i+1}</div><div style="flex:1;min-width:0"><div class="nm">${CLASSES[r.id].nm} <span style="color:var(--ink-mid);font-weight:600;font-size:11px">· ${CLASSES[r.id].sub}</span></div><div class="ds">${classBenefit(r.id)}</div>${CLASSES[r.id].bienfaits?`<ul class="biens">${CLASSES[r.id].bienfaits.map(b=>`<li>${b}</li>`).join('')}</ul>`:''}${CLASSES[r.id].pourqui?`<div class="pourqui">👤 Idéal pour : ${CLASSES[r.id].pourqui}</div>`:''}</div></div>`).join('')}${warns.map(w=>`<div class="cls-warn">⚠️ ${w}</div>`).join('')}</div>
       <div class="flex-note"><span class="fic">🔄</span><span><b>5 niveaux (0.5 → 2.5)</b> : on démarre à son niveau, on progresse à son rythme. Toujours en phase, jamais largué.</span></div>`;
@@ -1127,10 +1165,33 @@ function renderScreen(){
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='urgency'){
-    h=sayCard('✨ Le privilège fondateur',{idea:'Avantage réel du lancement : -'+CFG.founding+'% à vie + inscription offerte.',
-      text:`« Et franchement, c'est le <b>meilleur moment</b> pour nous rejoindre : nos premiers membres deviennent <b>membres fondateurs</b> — -${CFG.founding}% à vie et l'inscription offerte. C'est un vrai avantage, réservé au lancement. Je vous réserve votre place ? »`,
-      casual:`« Et petit bonus : on lance le studio, donc les premiers membres ont le statut fondateur — -${CFG.founding}% à vie et l'inscription offerte. Honnêtement, c'est le bon wagon à prendre. Je vous garde une place ? »`,
-      hint:'Avantage réel et limité dans le temps : donnez envie d\'en profiter maintenant, avec le sourire.'},'warn');
+    const cp=recommendPack(),wk=4.333;
+    const fm=p=>foundingMonthly(p),pm=p=>parseFloat(packMonthly(p));
+    const fRows=[1,2,3].map(p=>{
+      const m=pm(p),f=fm(p);if(isNaN(m))return '';
+      let per;
+      if(p===3){const r=n=>f!=null?Math.round(f/(n*wk)):Math.round(m/(n*wk));per=`≈ ${r(3)} € la séance à 3×/sem · ≈ ${r(4)} € à 4×/sem`;}
+      else{const ps=f!=null?f/SESSIONS_PER_MONTH[p]:m/SESSIONS_PER_MONTH[p];per=`${fmtEur(ps)} la séance`;}
+      return `<div class="fond-row${p===cp?' cur':''}">
+        <div class="fond-pack">${PACK_META[p].name}${p===cp?'<span class="fond-reco">reco</span>':''}</div>
+        <div class="fond-prix">${f!=null?`<s>${fmtEur(m)}</s> <b>${fmtEur(f)}</b>`:`<b>${fmtEur(m)}</b>`}<small>/mois</small></div>
+        <div class="fond-per">${per}</div>
+      </div>`;
+    }).join('');
+    const base=fmtEur(CFG.base),priv=fmtEur(CFG.privateSession);
+    h=sayCard('✨ Le privilège fondateur',{idea:'-'+CFG.founding+'% à vie + inscription offerte · ramener au coût par séance · un investissement dans sa santé.',
+      text:buildFoundingPitch(cp),casual:buildFoundingPitchCasual(cp),
+      hint:'Avantage réel et limité dans le temps : donnez envie d\'en profiter maintenant, avec le sourire.'},'warn')
+    +`<div class="fond-box">
+      <div class="fond-h">🏛️ L'offre fondateur en chiffres <span class="fond-hs">-${CFG.founding}% à vie · inscription offerte${CFG.spotsLeft?` · ${CFG.spotsLeft} places`:''}</span></div>
+      ${fRows}
+      <div class="fond-ref">Repères : ${base?`séance à l'unité ${base}`:''}${base&&priv?' · ':''}${priv?`séance privée ${priv}`:''} · ici : coach certifié, 12 personnes max, Reformer dernière génération.</div>
+    </div>
+    <div class="fond-why"><div class="fond-why-h">💗 Pourquoi c'est un vrai investissement</div>
+      <div class="fw-row"><span class="fw-ic">🌿</span><span><b>Prendre soin de soi.</b> Un rendez-vous fixe, encadré, rien qu'à soi : c'est ce qui fait qu'on tient dans la durée · et c'est la régularité qui transforme.</span></div>
+      <div class="fw-row"><span class="fw-ic">⏳</span><span><b>Bien vieillir.</b> Muscle profond, équilibre, souplesse : exactement ce que le corps perd naturellement avec les années, et ce que le Reformer entretient · la meilleure prévention reconnue, c'est le renforcement régulier.</span></div>
+      <div class="fw-row"><span class="fw-ic">🛡️</span><span><b>Prévenir plutôt que réparer.</b> Gainage, posture, mobilité : le Pilates Reformer est utilisé par les kinésithérapeutes en rééducation · autant s'en servir <i>avant</i> la blessure. Une séance coûte bien moins qu'un pépin de dos.</span></div>
+    </div>`;
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='closing'){
