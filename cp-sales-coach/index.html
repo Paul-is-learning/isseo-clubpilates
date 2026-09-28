@@ -135,38 +135,77 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pr-cap-row input:focus{border-color:var(--cp-deep)}
 .pr-cap-lbl{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
 .pr-cap-sts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
-.pr-st{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:15px;transition:.15s}
-.pr-st small{font-size:8.5px;font-weight:700;color:inherit;line-height:1.1;text-align:center}
 .pr-cap-dl{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--ink-soft);background:#fff;border:1.5px solid #c9d8ec;border-radius:10px;padding:6px 10px}
 .pr-cap-dl input{border:0;outline:none;font:inherit;font-size:13px;color:var(--cp-dark);background:transparent}
 .pr-savedbox{background:#e7f6ef;border:1.5px solid #a8dcc4;border-radius:15px;padding:14px 16px;margin-bottom:14px;font-size:13.5px;line-height:1.5;color:#155e43}
-.pr-alert{background:#FBEFD8;border:1.5px solid #ecd9a0;border-radius:13px;padding:11px 14px;font-size:13px;color:#7a5a10;margin-bottom:12px}
-.pr-funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
-.pr-fun{background:#fff;border:1.5px solid;border-radius:12px;padding:8px 4px;text-align:center}
-.pr-fun-n{font-size:19px;font-weight:900;line-height:1.1}
-.pr-fun-l{font-size:8.5px;font-weight:700;color:var(--ink-mid);margin-top:2px;line-height:1.2}
-.pr-card{background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:13px 15px;margin-bottom:11px}
-.pr-card.due{border-color:#ecd9a0;box-shadow:0 0 0 3px #fbefd866}
-.pr-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:5px}
-.pr-id{font-size:15px;color:var(--cp-dark)}
-.pr-tel{font-size:12px;color:var(--cp-deep);text-decoration:none;font-weight:700;margin-left:8px}
-.pr-chip{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:999px;border:1px solid;white-space:nowrap}
-.pr-obj{font-size:12px;color:var(--cp-deep);font-weight:600;margin-bottom:3px}
-.pr-note{font-size:12px;color:var(--ink-soft);margin-bottom:3px}
-.pr-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink-mid);margin-bottom:9px}
-.pr-due{color:#9a6608;font-weight:800}
-.pr-pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:9px}
-.pr-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
-.pr-act{padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:12px;font-weight:700;color:var(--cp-deep)}
-.pr-act.main{flex:1;min-width:130px;background:var(--cp-deep);color:#fff;border-color:var(--cp-deep)}
-.pr-act.danger{color:var(--danger)}
-.pr-date{padding:7px 9px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:12px;color:var(--cp-dark);background:#fff;outline:none}
-.pr-msgs{margin-top:11px;border-top:1px dashed var(--line);padding-top:11px}
-.pr-msg{background:var(--cp-veil);border-radius:12px;padding:11px 13px;margin-bottom:9px}
-.pr-msg-t{font-size:11px;font-weight:800;color:var(--cp-deep);margin-bottom:6px}
-.pr-msg-b{font-size:13px;line-height:1.55;color:var(--ink);white-space:pre-wrap}
-.pr-copy{margin-top:8px;padding:7px 13px;background:#fff;border:1.5px solid var(--cp-blue);border-radius:9px;font-size:11.5px;font-weight:700;color:var(--cp-deep)}
-.pr-empty{text-align:center;color:var(--ink-mid);padding:40px 20px;font-size:14px;line-height:1.7;background:#fff;border:1.5px dashed var(--line);border-radius:15px}
+
+/* ── Verrou studio + synchronisation ── */
+#lockScreen{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#0e1526 0%,#16233f 55%,#1c2f55 100%);display:flex;align-items:center;justify-content:center;padding:24px}
+.lock-box{width:min(400px,92vw);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:38px 30px;text-align:center;backdrop-filter:blur(14px);box-shadow:0 24px 70px rgba(0,0,0,.45)}
+.lock-logo{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:linear-gradient(135deg,#C9871F,#e6b45c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:#fff;letter-spacing:1px;box-shadow:0 10px 28px rgba(201,135,31,.4)}
+.lock-t{color:#fff;font-size:20px;font-weight:800;margin-bottom:6px}
+.lock-s{color:rgba(255,255,255,.65);font-size:13.5px;line-height:1.5;margin-bottom:22px}
+#lockCode{width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.09);color:#fff;font-size:17px;letter-spacing:3px;text-align:center;text-transform:uppercase;font-weight:700;outline:none}
+#lockCode:focus{border-color:#C9871F;box-shadow:0 0 0 3px rgba(201,135,31,.25)}
+#lockCode::placeholder{letter-spacing:1px;font-weight:400;color:rgba(255,255,255,.35)}
+.lock-btn{width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#C9871F,#b3760f);color:#fff;font-size:15.5px;font-weight:800;cursor:pointer;transition:transform .12s}
+.lock-btn:active{transform:scale(.97)}
+#lockErr{color:#ff8f8f;font-size:13px;min-height:18px;margin-top:10px;font-weight:600}
+.sync-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px;white-space:nowrap;border:1px solid transparent}
+.sync-badge.ok{background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6}
+.sync-badge.sync{background:#fdf3e3;color:#C9871F;border-color:#f0dcb4}
+.sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
+
+/* ── Page prospects : DA CRM ── */
+.pr-head{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.pr-h2{margin:0;font-size:22px;color:#16233f}
+.pr-h2s{font-size:12.5px;color:#8C95A8;margin-top:3px}
+.pr-howto{background:linear-gradient(135deg,#f2f6ff,#eef2fb);border:1px solid #d8e2f5;border-radius:14px;padding:12px 16px;margin-bottom:14px}
+.pr-howto summary{cursor:pointer;font-weight:800;font-size:13.5px;color:#185FA5;list-style:none}
+.pr-howto summary::-webkit-details-marker{display:none}
+.pr-howto-b{margin-top:12px;display:flex;flex-direction:column;gap:10px}
+.pr-howto-b>div{display:flex;gap:10px;align-items:flex-start;font-size:13px;color:#3c4759;line-height:1.5}
+.hn{flex:0 0 22px;height:22px;border-radius:50%;background:#185FA5;color:#fff;font-weight:800;font-size:12px;display:flex;align-items:center;justify-content:center;margin-top:1px}
+.pr-alert{background:linear-gradient(135deg,#fff7e8,#fdf0d8);border:1px solid #f0d9a8;border-radius:12px;padding:11px 15px;font-size:13.5px;color:#8a5c0a;margin-bottom:14px}
+.pr-funnel{display:flex;align-items:stretch;gap:4px;margin-bottom:14px;overflow-x:auto;padding-bottom:4px}
+.pr-fun{flex:1;min-width:64px;border:1.5px solid #e3e7ef;background:#fff;border-radius:14px;padding:10px 4px 8px;text-align:center;cursor:pointer;transition:all .15s;position:relative}
+.pr-fun:hover{border-color:var(--pc)}
+.pr-fun.active{border-color:var(--pc);background:color-mix(in srgb,var(--pc) 8%,#fff);box-shadow:0 4px 14px color-mix(in srgb,var(--pc) 25%,transparent)}
+.pr-fun-n{font-size:21px;font-weight:900;color:var(--pc);line-height:1.1}
+.pr-fun-l{font-size:10px;font-weight:700;color:#5b6579;margin-top:3px;white-space:nowrap}
+.pr-arrow{align-self:center;color:#c4cad6;font-weight:700;font-size:15px}
+.pr-search{display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #e3e7ef;border-radius:12px;padding:9px 13px;margin-bottom:14px}
+.pr-search input{flex:1;border:none;outline:none;font-size:14px;background:transparent;color:#16233f}
+.pr-clearf{border:none;background:#f2f3f6;color:#5b6579;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:99px;cursor:pointer;white-space:nowrap}
+.pr-card{background:#fff;border:1px solid #e7eaf1;border-radius:14px;padding:14px 15px;margin-bottom:12px;box-shadow:0 2px 10px rgba(22,35,63,.05)}
+.pr-card.due{box-shadow:0 4px 18px rgba(201,135,31,.18);border-color:#f0d9a8}
+.pr-top{display:flex;align-items:center;gap:11px;margin-bottom:8px}
+.pr-ava{flex:0 0 40px;height:40px;border-radius:50%;color:#fff;font-weight:800;font-size:14.5px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
+.pr-idbox{flex:1;min-width:0}
+.pr-id b{font-size:15.5px;color:#16233f}
+.pr-sub{font-size:12.5px;color:#8C95A8;display:flex;gap:6px;flex-wrap:wrap;margin-top:2px}
+.pr-tel{color:#185FA5;text-decoration:none;font-weight:600}
+.pr-rep{color:#a3abbd}
+.pr-chip{font-size:11px;font-weight:800;padding:4px 10px;border-radius:99px;border:1px solid;white-space:nowrap}
+.pr-obj,.pr-note{font-size:13px;color:#3c4759;line-height:1.45;margin:5px 0;background:#f7f8fb;border-radius:9px;padding:7px 11px}
+.pr-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:12px;color:#8C95A8;margin:8px 0 10px}
+.pr-due{color:#C9871F;font-weight:800}
+.pr-pipe{display:flex;gap:5px;margin-bottom:10px;overflow-x:auto;padding-bottom:2px}
+.pr-st{flex:1;min-width:56px;display:flex;flex-direction:column;align-items:center;gap:2px;border:1.5px solid #e3e7ef;background:#fafbfd;border-radius:10px;padding:6px 3px;font-size:14px;cursor:pointer;transition:all .13s;color:#5b6579}
+.pr-st small{font-size:9.5px;font-weight:700}
+.pr-st.on{transform:scale(1.04);box-shadow:0 3px 10px rgba(22,35,63,.18)}
+.pr-actions{display:flex;gap:7px;align-items:center}
+.pr-act{border:1.5px solid #e3e7ef;background:#fff;border-radius:10px;padding:8px 11px;font-size:12.5px;font-weight:700;color:#3c4759;cursor:pointer}
+.pr-act.main{flex:1;background:#16233f;color:#fff;border-color:#16233f}
+.pr-act.danger{color:#c0392b}
+.pr-date{border:1.5px solid #e3e7ef;border-radius:10px;padding:7px 8px;font-size:12px;color:#3c4759;background:#fff;font-family:inherit}
+.pr-msgs{margin-top:11px;border-top:1px dashed #e3e7ef;padding-top:11px;display:flex;flex-direction:column;gap:10px}
+.pr-msg{background:#f7f8fb;border:1px solid #eceef4;border-radius:11px;padding:11px 13px}
+.pr-msg-t{font-size:12px;font-weight:800;color:#185FA5;margin-bottom:5px}
+.pr-msg-b{font-size:13px;color:#3c4759;line-height:1.55;white-space:pre-wrap}
+.pr-copy{margin-top:8px;border:none;background:#185FA5;color:#fff;font-size:12px;font-weight:700;padding:7px 12px;border-radius:9px;cursor:pointer}
+.pr-empty{text-align:center;color:#8C95A8;font-size:14px;padding:44px 20px;background:#fff;border:1.5px dashed #dde1e8;border-radius:14px;line-height:1.7}
+
 /* Guide des cours */
 .cg{padding-bottom:10px}
 .cg-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,40,80,.04)}
@@ -1173,6 +1212,78 @@ function copyRecap(){const t=buildRecap();navigator.clipboard?.writeText(t).then
    ════════════════════════════════════════════════════════════════ */
 let PROSPECTS=[];try{PROSPECTS=JSON.parse(localStorage.getItem('cpcoach_prospects')||'[]');}catch(e){PROSPECTS=[];}
 function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.stringify(PROSPECTS));}catch(e){}}
+
+/* ── Synchronisation équipe : stockage central via coach-sync (code studio requis) ──
+   Les salariés n'ont AUCUN compte backend : la fonction serveur ne manipule
+   que la zone prospects, rien d'autre. localStorage = cache hors-ligne. */
+const SYNC_URL='https://wfqtpcujujqxgfsgbpvp.supabase.co/functions/v1/coach-sync';
+let COACH_CODE=localStorage.getItem('cpcoach_code')||'';
+let _pushT=null,_lastSync='';
+async function syncCall(action,extra){
+  const r=await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({code:COACH_CODE,action:action},extra||{}))});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===401){localStorage.removeItem('cpcoach_code');COACH_CODE='';showLock();throw new Error('code');}
+  if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+  return d;
+}
+function _syncState(s){const b=$('#syncBadge');if(!b)return;b.className='sync-badge '+s;b.textContent=s==='ok'?'☁️ Synchronisé · équipe':s==='sync'?'⏳ Synchronisation…':'📴 Hors ligne · sauvegardé sur ce poste';}
+function schedulePush(){clearTimeout(_pushT);_pushT=setTimeout(syncPush,700);}
+async function syncPush(){
+  if(!COACH_CODE)return;
+  _syncState('sync');
+  try{const d=await syncCall('push',{prospects:PROSPECTS});if(d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}_syncState('ok');_lastSync=new Date().toISOString();}
+  catch(e){if(e.message!=='code')_syncState('off');}
+}
+async function syncPull(rerender){
+  if(!COACH_CODE)return;
+  _syncState('sync');
+  try{
+    const d=await syncCall('pull');
+    const server=d.prospects||[];
+    // Les fiches locales absentes du serveur (créées hors-ligne) sont conservées puis poussées
+    const ids=new Set(server.map(p=>p.id));
+    const localOnly=PROSPECTS.filter(p=>!ids.has(p.id));
+    PROSPECTS=server.concat(localOnly);
+    persistProspects();
+    if(localOnly.length)schedulePush();
+    _syncState('ok');_lastSync=new Date().toISOString();
+    if(rerender&&$('#topPhase').textContent==='Mes prospects')showProspects(true);
+  }catch(e){if(e.message!=='code')_syncState('off');}
+}
+
+/* ── Verrou : code studio à la première ouverture ── */
+function showLock(){
+  if(document.getElementById('lockScreen'))return;
+  const d=document.createElement('div');
+  d.id='lockScreen';
+  d.innerHTML=`<div class="lock-box">
+    <div class="lock-logo">CP</div>
+    <div class="lock-t">CP Sales Coach</div>
+    <div class="lock-s">Outil réservé à l'équipe commerciale.<br>Entrez le code studio pour continuer.</div>
+    <input id="lockCode" type="text" placeholder="Code studio" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')unlockCoach()"/>
+    <div id="lockErr"></div>
+    <button class="lock-btn" onclick="unlockCoach()">Déverrouiller</button>
+  </div>`;
+  document.body.appendChild(d);
+  setTimeout(()=>document.getElementById('lockCode')?.focus(),100);
+}
+async function unlockCoach(){
+  const v=(document.getElementById('lockCode')?.value||'').trim();
+  const err=document.getElementById('lockErr');
+  if(!v){if(err)err.textContent='Entrez le code fourni par votre responsable.';return;}
+  COACH_CODE=v;
+  try{
+    await syncCall('ping');
+    localStorage.setItem('cpcoach_code',v);
+    document.getElementById('lockScreen')?.remove();
+    toast('Bienvenue ! ✓');
+    syncPull(true);
+  }catch(e){
+    COACH_CODE='';
+    if(err)err.textContent=e.message==='code'?'Code invalide · vérifiez auprès de votre responsable.':'Connexion impossible — réessayez.';
+    showLock();
+  }
+}
 const PIPE={
   rappeler:{ic:'📞',lbl:'À rappeler',c:'#C9871F'},
   essai:{ic:'🎟️',lbl:'Essai booké',c:'#185FA5'},
@@ -1196,9 +1307,12 @@ function saveProspect(){
     rappel:($('#pr-date')?.value||''),
     obj:primaryGoalVerb(),
     fiche:buildRecap(),
-    ts:new Date().toISOString()
+    rep:CFG.rep||'',
+    studio:CFG.studio||'',
+    ts:new Date().toISOString(),
+    maj:new Date().toISOString()
   };
-  PROSPECTS.unshift(p);persistProspects();
+  PROSPECTS.unshift(p);persistProspects();schedulePush();
   st._prSaved=true;renderScreen();
   toast('📇 '+nom+' ajouté à Mes prospects ✓');
 }
@@ -1206,39 +1320,47 @@ function pickPrStatut(s){st._prStatut=s;renderScreen();}
 
 // Relances adaptées à l'étape du prospect — ton naturel, fond verrouillé
 function relanceMsgs(p){
-  const pre=(p.nom||'').split(' ')[0]||'',stu=CFG.studio?' '+CFG.studio:'',rep=CFG.rep||'';
+  const pre=(p.nom||'').split(' ')[0]||'',stu=CFG.studio?' '+CFG.studio:'',rep=(CFG.rep||'').split(' ')[0];
+  const moi=rep?rep+' de Club Pilates'+stu:'Club Pilates'+stu,sig=rep?rep+', Club Pilates'+stu:'Club Pilates'+stu;
   const obj=p.obj&&p.obj!=='atteindre vos objectifs'?p.obj:'retrouver la forme';
   const dt=p.rappel?frDate(p.rappel):null;
   const M={
     essai:[
-      {t:'✉️ Confirmation (à envoyer tout de suite)',msg:`Bonjour ${pre}, c'est ${rep} de Club Pilates${stu} 😊 C'est noté pour votre cours découverte offert${dt?' le '+dt:''} ! Venez en tenue souple, on s'occupe de tout le reste. À très vite !`},
+      {t:'✉️ Confirmation (à envoyer tout de suite)',msg:`Bonjour ${pre}, c'est ${moi} 😊 C'est noté pour votre cours découverte offert${dt?' le '+dt:''} ! Venez en tenue souple, on s'occupe de tout le reste. À très vite !`},
       {t:'✉️ Rappel la veille',msg:`Bonjour ${pre} ! Petit rappel : votre cours découverte Club Pilates${stu}, c'est demain${dt?' ('+dt+')':''} 🧘 On a hâte de vous accueillir. Un empêchement ? Répondez-moi, on recale ça sans souci.`},
-      {t:'✉️ No-show (il/elle n\'est pas venu·e)',msg:`Bonjour ${pre}, on vous a manqué aujourd'hui ! Aucun souci, ça arrive. Votre cours découverte reste offert — je vous repropose un créneau : plutôt en semaine ou le week-end ? ${rep}, Club Pilates${stu}`}
+      {t:'✉️ No-show (il/elle n\'est pas venu·e)',msg:`Bonjour ${pre}, on vous a manqué aujourd'hui ! Aucun souci, ça arrive. Votre cours découverte reste offert · je vous repropose un créneau : plutôt en semaine ou le week-end ? ${sig}`}
     ],
     venu:[
-      {t:'🗣️ Closing post-essai (à dire, en studio ou au tel)',msg:`« Alors, ce premier cours : vous avez ressenti quoi ? … C'est exactement ça qu'on développe séance après séance. Vous me disiez vouloir ${obj} — et le rythme qui change vraiment les choses, c'est 2 séances par semaine. Là, vous tombez pile pendant le lancement : statut fondateur, -${CFG.founding}% à vie, inscription offerte. On vous installe ça ? »`},
-      {t:'✉️ Parti·e sans signer (envoyer à J+1)',msg:`Bonjour ${pre}, un plaisir de vous avoir accueilli·e au studio ! Prenez le temps qu'il vous faut. De mon côté je garde votre tarif fondateur (-${CFG.founding}% à vie) de côté encore quelques jours — si une question vous trotte en tête, je suis là. ${rep}, Club Pilates${stu}`}
+      {t:'🗣️ Closing post-essai (à dire, en studio ou au tel)',msg:`« Alors, ce premier cours : vous avez ressenti quoi ? … C'est exactement ça qu'on développe séance après séance. Vous me disiez vouloir ${obj} · et le rythme qui change vraiment les choses, c'est 2 séances par semaine. Là, vous tombez pile pendant le lancement : statut fondateur, -${CFG.founding}% à vie, inscription offerte. On vous installe ça ? »`},
+      {t:'✉️ Parti·e sans signer (envoyer à J+1)',msg:`Bonjour ${pre}, un plaisir de vous avoir accueilli·e au studio ! Prenez le temps qu'il vous faut. De mon côté je garde votre tarif fondateur (-${CFG.founding}% à vie) de côté encore quelques jours · si une question vous trotte en tête, je suis là. ${sig}`}
     ],
     rappeler:[
-      {t:'✉️ Relance douce (comme convenu)',msg:`Bonjour ${pre}, c'est ${rep} de Club Pilates${stu} 😊 Comme convenu, je reviens vers vous — toujours partant·e pour ${obj} ? Dites-moi votre meilleur créneau pour qu'on en reparle 5 minutes.`},
-      {t:'🗣️ Rappel téléphonique (à dire)',msg:`« Bonjour ${pre}, ${rep} de Club Pilates${stu} — on s'était dit qu'on se rappelait${dt?' vers le '+dt:''}. Vous m'aviez parlé de ${obj} : c'est toujours d'actualité ? »`}
+      {t:'✉️ Relance douce (comme convenu)',msg:`Bonjour ${pre}, c'est ${moi} 😊 Comme convenu, je reviens vers vous : toujours partant·e pour ${obj} ? Dites-moi votre meilleur créneau pour qu'on en reparle 5 minutes.`},
+      {t:'🗣️ Rappel téléphonique (à dire)',msg:`« Bonjour ${pre}, ${moi} · on s'était dit qu'on se rappelait${dt?' vers le '+dt:''}. Vous m'aviez parlé de ${obj} : c'est toujours d'actualité ? »`}
     ],
     abo:[
-      {t:'✉️ Bienvenue',msg:`Bienvenue chez Club Pilates${stu}, ${pre} ! 🎉 Ravi·e de vous compter parmi nos membres. Pensez à réserver vos premiers cours sur l'app — et pour la moindre question, je suis là. ${rep}`}
+      {t:'✉️ Bienvenue',msg:`Bienvenue chez Club Pilates${stu}, ${pre} ! 🎉 Ravi·e de vous compter parmi nos membres. Pensez à réserver vos premiers cours sur l'app — et pour la moindre question, je suis là. ${sig}`}
     ],
     perdu:[
-      {t:'✉️ Porte ouverte (un seul message, puis on lâche)',msg:`Bonjour ${pre}, ${rep} de Club Pilates${stu}. Promis, je ne vous relance plus après ce message 😊 Si l'envie revient un jour, la porte est grande ouverte — et votre premier cours restera offert. Prenez soin de vous !`}
+      {t:'✉️ Porte ouverte (un seul message, puis on lâche)',msg:`Bonjour ${pre}, ${moi}. Promis, je ne vous relance plus après ce message 😊 Si l'envie revient un jour, la porte est grande ouverte · et votre premier cours restera offert. Prenez soin de vous !`}
     ]
   };
   return M[p.statut]||[];
 }
 
-// Page « Mes prospects »
-let prOpenId=null;
-function showProspects(){
+// Page « Mes prospects » — vue CRM
+let prOpenId=null,prFilter=null,prQuery='';
+function prInitials(nom){return (nom||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();}
+function setPrFilter(k){prFilter=prFilter===k?null:k;showProspects(true);}
+function prSearch(v){prQuery=(v||'').toLowerCase();showProspects(true);}
+function showProspects(keepScroll){
+  const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
-  const sorted=PROSPECTS.slice().sort((a,b)=>{const da=due(a)?0:1,db=due(b)?0:1;if(da!==db)return da-db;return (b.ts||'').localeCompare(a.ts||'');});
+  let list=PROSPECTS.slice();
+  if(prFilter)list=list.filter(p=>p.statut===prFilter);
+  if(prQuery)list=list.filter(p=>((p.nom||'')+' '+(p.tel||'')+' '+(p.note||'')).toLowerCase().includes(prQuery));
+  const sorted=list.sort((a,b)=>{const da=due(a)?0:1,db=due(b)?0:1;if(da!==db)return da-db;return (b.maj||b.ts||'').localeCompare(a.maj||a.ts||'');});
   const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PROSPECTS.filter(p=>p.statut===k).length);
   const nbDue=PROSPECTS.filter(due).length;
   const card=p=>{
@@ -1246,14 +1368,18 @@ function showProspects(){
     const isDue=due(p);
     const open=prOpenId===p.id;
     const msgs=relanceMsgs(p);
-    return `<div class="pr-card${isDue?' due':''}">
+    return `<div class="pr-card${isDue?' due':''}" style="border-left:4px solid ${pi.c}">
       <div class="pr-top">
-        <div class="pr-id"><b>${esc(p.nom)}</b>${p.tel?` <a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}</div>
-        <span class="pr-chip" style="background:${pi.c}18;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}</span>
+        <div class="pr-ava" style="background:${pi.c}">${esc(prInitials(p.nom))}</div>
+        <div class="pr-idbox">
+          <div class="pr-id"><b>${esc(p.nom)}</b></div>
+          <div class="pr-sub">${p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.rep?`<span class="pr-rep">· suivi par ${esc(p.rep.split(' ')[0])}</span>`:''}</div>
+        </div>
+        <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}</span>
       </div>
       ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
       ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
-      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${isDue?' — c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span></div>
+      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${isDue?' · c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span></div>
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
       <div class="pr-actions">
         <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'✉️ Relances ('+msgs.length+')'}</button>
@@ -1265,20 +1391,33 @@ function showProspects(){
     </div>`;
   };
   const h=`<div class="cg">
-    <div class="aca-h"><h2>Mes prospects</h2><p>Le suivi de votre processus de vente : chaque fiche, son étape, et la bonne relance au bon moment. Données stockées sur ce poste.</p></div>
-    ${nbDue?`<div class="pr-alert">🔔 <b>${nbDue} relance${nbDue>1?'s':''} à faire aujourd'hui</b> — elles sont en tête de liste.</div>`:''}
-    <div class="pr-funnel">${Object.keys(PIPE).map(k=>`<div class="pr-fun" style="border-color:${PIPE[k].c}44"><div class="pr-fun-n" style="color:${PIPE[k].c}">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></div>`).join('')}</div>
-    ${sorted.length?sorted.map(card).join(''):`<div class="pr-empty">📇 Aucune fiche pour l'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l'écran « Récap de l'appel ».</small></div>`}
+    <div class="pr-head">
+      <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PROSPECTS.length} fiche${PROSPECTS.length>1?'s':''} · pipeline commercial du studio</div></div>
+      <span id="syncBadge" class="sync-badge ok">☁️ Synchronisé · équipe</span>
+    </div>
+    <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
+      <div class="pr-howto-b">
+        <div><span class="hn">1</span><span><b>À la fin de chaque appel</b>, enregistrez le prospect depuis l'écran « Récap » · sa fiche de découverte est gardée avec lui.</span></div>
+        <div><span class="hn">2</span><span><b>Faites-le avancer</b> d'étape en étape en tapant sur le pipeline : Essai booké → Venu → Abonné.</span></div>
+        <div><span class="hn">3</span><span><b>Au bon moment, copiez la relance</b> proposée pour son étape (confirmation, veille d'essai, closing post-essai…) et envoyez-la.</span></div>
+        <div><span class="hn">4</span><span>Les fiches sont <b>partagées avec toute l'équipe</b> et sauvegardées au studio · le badge en haut vous dit si tout est synchronisé.</span></div>
+      </div>
+    </details>
+    ${nbDue?`<div class="pr-alert">🔔 <b>${nbDue} relance${nbDue>1?'s':''} à faire aujourd'hui</b> · en tête de liste.</div>`:''}
+    <div class="pr-funnel">${Object.keys(PIPE).map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
+    <div class="pr-search"><span>🔎</span><input type="text" placeholder="Rechercher un nom, un numéro…" value="${esc(prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
+    ${sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PROSPECTS.length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
-  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;
   $('#topPhase').textContent='Mes prospects';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
+  if(!COACH_CODE)_syncState('off');
 }
-function togglePr(id){prOpenId=prOpenId===id?null:id;showProspects();}
-function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.statut=s;p.maj=new Date().toISOString();persistProspects();showProspects();toast(PIPE[s].ic+' '+PIPE[s].lbl);}
-function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;persistProspects();showProspects();}
-function delProspect(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;if(!confirm('Supprimer la fiche de '+p.nom+' ?'))return;PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects();toast('Fiche supprimée');}
+function togglePr(id){prOpenId=prOpenId===id?null:id;showProspects(true);}
+function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.statut=s;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);toast(PIPE[s].ic+' '+PIPE[s].lbl);}
+function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);}
+function delProspect(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;if(!confirm('Supprimer la fiche de '+p.nom+' ?'))return;PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects(true);toast('Fiche supprimée');syncCall('delete',{ids:[id]}).catch(()=>{});}
 function copyPMsg(id,i){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const m=relanceMsgs(p)[i];if(!m)return;navigator.clipboard?.writeText(m.msg).then(()=>toast('Message copié ✓ — collez-le dans vos SMS')).catch(()=>toast('Copie impossible'));}
 function copyPFiche(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;navigator.clipboard?.writeText(p.fiche||p.nom).then(()=>toast('Fiche copiée ✓')).catch(()=>toast('Copie impossible'));}
 
@@ -1291,7 +1430,7 @@ function renderObj(q){
   if(!list.length){$('#objList').innerHTML=`<div style="text-align:center;color:var(--ink-mid);padding:30px;font-size:14px">Aucune objection trouvée pour « ${esc(q)} »</div>`;return;}
   const bar=list.filter(o=>o.barrage),cls=list.filter(o=>!o.barrage);
   let h='';
-  if(bar.length)h+=`<div class="obj-grp">🚪 Passer le barrage — les 10 premières secondes</div>`+bar.map(card).join('');
+  if(bar.length)h+=`<div class="obj-grp">🚪 Passer le barrage · les 10 premières secondes</div>`+bar.map(card).join('');
   if(cls.length)h+=(bar.length?`<div class="obj-grp">💬 Objections de fond</div>`:'')+cls.map(card).join('');
   $('#objList').innerHTML=h;
 }
@@ -1510,6 +1649,12 @@ function saveSet(){
 }
 
 renderScreen();
+// Accès : code studio obligatoire (données équipe centralisées)
+(async function(){
+  if(!COACH_CODE){showLock();return;}
+  try{await syncCall('ping');syncPull(true);}
+  catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
+})();
 </script>
 </body>
 </html>
