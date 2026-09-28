@@ -229,7 +229,16 @@ const ROLE_LABELS={
 function renderAdminPanel(){
   var blocked=S.adminSettings.blocked||[];
   var roles=S.adminSettings.roles||{};
-  var h='<div class="box" style="padding:0;overflow:hidden">';
+  // Bandeau d'orientation : qui ajouter ici vs qui inviter dans le Sales Coach
+  var h='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-bottom:14px">';
+  h+='<div style="background:#eef3fb;border:1.5px solid #c9d8ee;border-radius:12px;padding:13px 16px">';
+  h+='<div style="font-weight:800;font-size:13px;color:#0f1f3d;margin-bottom:4px">🏛️ Ici : direction &amp; associés</div>';
+  h+='<div style="font-size:12px;color:#4a5568;line-height:1.55">Un compte créé sur cette page ouvre <b>toute l\'application</b> : business plans, finances, scénarios. Réservez-le aux personnes de confiance.</div></div>';
+  h+='<div style="background:#fdf6e8;border:1.5px solid #ecd9a0;border-radius:12px;padding:13px 16px">';
+  h+='<div style="font-weight:800;font-size:13px;color:#6b4d0d;margin-bottom:4px">📞 Commerciaux (sales) : pas ici !</div>';
+  h+='<div style="font-size:12px;color:#6b5a2e;line-height:1.55">Un commercial n\'a <b>jamais de compte</b> · il reçoit un code personnel dans le <a href="/cp-sales-coach/" target="_blank" style="color:#854F0B;font-weight:700">Sales Coach</a> : menu ☰ → <b>Équipe &amp; invitations</b> (visible avec votre code maître). Il n\'accède qu\'à l\'outil d\'appel et aux fiches prospects, rien d\'autre.</div></div>';
+  h+='</div>';
+  h+='<div class="box" style="padding:0;overflow:hidden">';
   h+='<div style="background:#fff;border-bottom:1px solid #e8eaf0;padding:14px 20px;display:flex;align-items:center;justify-content:space-between">';
   h+='<div><div style="color:#0f1f3d;font-weight:700;font-size:14px">⚙ Gestion des accès utilisateurs</div>';
   h+='<div style="color:#888;font-size:11px;margin-top:2px">Activer / désactiver l\'accès ou restreindre les droits de chaque utilisateur</div></div>';
