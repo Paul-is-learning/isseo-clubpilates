@@ -157,6 +157,31 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
+/* ── Guide de bienvenue (onboarding) ── */
+#obScreen{position:fixed;inset:0;z-index:9998;background:linear-gradient(165deg,#1c2b4a 0%,#26385A 55%,#2e4470 100%);overflow-y:auto;animation:obfade .3s}
+@keyframes obfade{from{opacity:0}to{opacity:1}}
+.ob-in{max-width:560px;margin:0 auto;min-height:100dvh;display:flex;flex-direction:column;padding:calc(16px + env(safe-area-inset-top)) 20px calc(20px + env(safe-area-inset-bottom))}
+.ob-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.ob-brand{display:flex;align-items:center;gap:9px;color:rgba(255,255,255,.85);font-size:13px;font-weight:700}
+.ob-logo{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--gold),var(--gold-soft));display:grid;place-items:center;font-weight:900;font-size:12px;color:#fff}
+.ob-skip{color:rgba(255,255,255,.55);font-size:12.5px;font-weight:700;padding:6px 10px;border-radius:9px}
+.ob-skip:active{background:rgba(255,255,255,.1)}
+.ob-dots{display:flex;gap:7px;justify-content:center;margin-bottom:18px}
+.ob-dot{width:8px;height:8px;border-radius:99px;background:rgba(255,255,255,.22);transition:.25s}
+.ob-dot.on{width:26px;background:var(--gold-soft)}
+.ob-dot.done{background:rgba(230,180,92,.55)}
+.ob-card{flex:1;background:#fff;border-radius:22px;padding:26px 22px;box-shadow:0 24px 60px -20px rgba(0,0,0,.5);animation:pop .3s}
+.ob-ic{font-size:38px;line-height:1;margin-bottom:10px}
+.ob-t{font-size:22px;font-weight:800;color:var(--cp-dark);letter-spacing:-.02em;margin-bottom:16px;line-height:1.2}
+.ob-row{display:flex;gap:11px;align-items:flex-start;font-size:14px;color:#3c4759;line-height:1.6;padding:10px 0;border-top:1px dashed #E3E9F2}
+.ob-row:first-of-type{border-top:0;padding-top:0}
+.ob-ri{flex:0 0 24px;font-size:18px;margin-top:1px}
+.ob-row b{color:var(--cp-dark)}
+.ob-nav{display:flex;gap:10px;margin-top:16px}
+.ob-back{flex:0 0 56px;border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font-size:20px;font-weight:700}
+.ob-next{flex:1;border-radius:14px;background:linear-gradient(135deg,var(--gold),#b3760f);color:#fff;font-weight:800;font-size:15.5px;padding:15px;box-shadow:0 10px 26px -8px rgba(201,135,31,.55);transition:transform .13s}
+.ob-next:active{transform:scale(.98)}
+.ht-tile.gold{border-color:#EDD8AC;background:linear-gradient(160deg,#fffdf7,#fdf6e6)}
 /* ── Accueil : boîte à outils + credo ── */
 .home-tools{margin-top:18px}
 .ht-h{font-size:13px;font-weight:800;color:var(--cp-dark);margin-bottom:10px}
@@ -1326,6 +1351,7 @@ function renderScreen(keepScroll){
       <div class="home-tools">
         <div class="ht-h">🧰 Votre boîte à outils <small>tout est aussi dans le menu ☰ en haut à droite</small></div>
         <div class="ht-grid">
+          <button class="ht-tile gold" onclick="showOnboard(true)"><span class="ht-ic">🌟</span><span class="ht-lbl">L'essentiel</span></button>
           <button class="ht-tile" onclick="showProspects()"><span class="ht-ic">📇</span><span class="ht-lbl">Mes prospects</span>${PROSPECTS.length?`<span class="ht-count">${PROSPECTS.length}</span>`:''}</button>
           <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">📣</span><span class="ht-lbl">Présentation CP</span></button>
           <button class="ht-tile" onclick="showCourseGuide()"><span class="ht-ic">📚</span><span class="ht-lbl">Les cours</span></button>
@@ -1589,6 +1615,68 @@ async function syncPull(rerender){
   }catch(e){if(e.message!=='code')_syncState('off');}
 }
 
+/* ── Guide de bienvenue : état d'esprit CP, montré aux 2 premières connexions ── */
+const OB_STEPS=[
+  {ic:'❤️',t:"L'état d'esprit Club Pilates",rows:[
+    ['🤝','<b>Le client est roi.</b> Il ne nous dérange jamais, il ne « fait pas perdre de temps » · c\'est grâce à lui que nous avons du travail. Considération au décroché, merci sincère au raccroché.'],
+    ['💛','<b>Sincère ET commercial.</b> On veut son bien-être et on est là pour vendre · les deux vont ensemble : le rythme qui le transforme (2-3 séances/sem) est aussi le meilleur pour le studio.'],
+    ['🪞','<b>Transparence totale.</b> On ne vend jamais ce qu\'on ne peut pas tenir. Ce qu\'on annonce au téléphone, le studio le délivre · c\'est ce qui fait revenir et recommander.']]},
+  {ic:'🏛️',t:'Club Pilates en 30 secondes',rows:[
+    ['🌍','<b>Le n°1 mondial du Pilates Reformer</b> : plus de 1 500 studios dans 24 pays. Une méthode éprouvée, pas une salle de quartier.'],
+    ['🛠️','<b>Le meilleur équipement du marché</b> : Reformer dernière génération, et tout un plateau d\'accessoires que personne d\'autre ne réunit.'],
+    ['👥','<b>12 personnes maximum, coach certifié.</b> Chacun sa machine, chacun ses corrections · le format cours particulier, mutualisé.']]},
+  {ic:'🔬',t:'Des bienfaits réels, jamais survendus',rows:[
+    ['🩹','<b>Dos & posture</b> : le travail des muscles profonds (transverse, multifides) stabilise la colonne · les kinés utilisent le Reformer en rééducation.'],
+    ['⚖️','<b>Silhouette</b> : le muscle construit en résistance dépense des calories même au repos. Effet mesuré par méta-analyse · progressif, jamais miracle.'],
+    ['🌿','<b>Stress</b> : la respiration profonde qui guide chaque mouvement fait baisser le cortisol · mesurable en laboratoire.'],
+    ['⏳','<b>Bien vieillir</b> : force, équilibre, mobilité · exactement ce que le corps perd avec les années. La règle d\'or : dire vrai, toujours. Les détails sourcés sont dans 🔬 La science.']]},
+  {ic:'📚',t:'Les cours, en un coup d\'œil',rows:[
+    ['🎚️','<b>5 niveaux, du 0.5 au 2.5.</b> Tout le monde démarre au 0.5 ou au Flow 1 : on est toujours en phase, jamais largué.'],
+    ['🎨','<b>8 formats différents</b> : renforcement, cardio, suspension, stretching… Jamais deux séances identiques.'],
+    ['🎟️','<b>Le cours d\'essai est offert</b> : c\'est la meilleure réponse à presque toutes les hésitations. Le détail complet est dans 📚 Les cours.']]},
+  {ic:'📞',t:'Votre attitude au téléphone',rows:[
+    ['😊','<b>Souriez avant de décrocher</b> · le sourire s\'entend. Et dites son prénom 2 ou 3 fois dans l\'appel.'],
+    ['👂','<b>Écoutez plus que vous ne parlez.</b> La découverte fait la vente : creusez le « pourquoi » avant de proposer quoi que ce soit.'],
+    ['🎯','<b>Chaque appel vise un engagement</b> : un essai booké ou un abo signé. Avec conviction, par la valeur · jamais par la peur.'],
+    ['🧰','<b>Tout est à portée de main</b> : la boîte à outils sur l\'accueil, le bouton ? pour les objections, le menu ☰ en haut à droite. Ce guide reste disponible dans 🌟 L\'essentiel.']]}
+];
+let _obStep=0,_obManual=false;
+function showOnboard(manual){
+  _obStep=0;_obManual=!!manual;
+  if(!document.getElementById('obScreen')){
+    const d=document.createElement('div');d.id='obScreen';document.body.appendChild(d);
+  }
+  renderOnboard();
+}
+function renderOnboard(){
+  const s=OB_STEPS[_obStep],last=_obStep===OB_STEPS.length-1;
+  document.getElementById('obScreen').innerHTML=`<div class="ob-in">
+    <div class="ob-top">
+      <div class="ob-brand"><span class="ob-logo">CP</span> Bienvenue chez Club Pilates</div>
+      <button class="ob-skip" onclick="obClose()">${_obManual?'✕ Fermer':'Passer ›'}</button>
+    </div>
+    <div class="ob-dots">${OB_STEPS.map((x,i)=>`<span class="ob-dot${i===_obStep?' on':i<_obStep?' done':''}"></span>`).join('')}</div>
+    <div class="ob-card">
+      <div class="ob-ic">${s.ic}</div>
+      <h2 class="ob-t">${s.t}</h2>
+      ${s.rows.map(r=>`<div class="ob-row"><span class="ob-ri">${r[0]}</span><span>${r[1]}</span></div>`).join('')}
+    </div>
+    <div class="ob-nav">
+      ${_obStep>0?`<button class="ob-back" onclick="_obStep--;renderOnboard()">‹</button>`:''}
+      <button class="ob-next" onclick="${last?'obClose()':'_obStep++;renderOnboard()'}">${last?'✨ C\'est parti !':'Suivant →'}</button>
+    </div>
+  </div>`;
+}
+function obClose(){document.getElementById('obScreen')?.remove();if(!_obManual)toast('Retrouvez ce guide à tout moment : 🌟 L\'essentiel');}
+function maybeOnboard(){
+  if(document.getElementById('obScreen'))return;
+  let n=0;try{n=parseInt(localStorage.getItem('cpcoach_onboard')||'0');}catch(e){}
+  if(isNaN(n))n=0;
+  if(n>=2)return;
+  localStorage.setItem('cpcoach_onboard',String(n+1));
+  showOnboard(false);
+}
+
 /* ── Verrou : code studio à la première ouverture ── */
 function showLock(){
   if(document.getElementById('lockScreen'))return;
@@ -1628,6 +1716,7 @@ function saveNameStep(){
   document.getElementById('nameScreen')?.remove();
   toast('Bienvenue '+v.split(' ')[0]+' ! Vos scripts sont personnalisés ✓');
   renderScreen();
+  maybeOnboard();
 }
 async function unlockCoach(){
   const v=(document.getElementById('lockCode')?.value||'').trim();
@@ -1640,7 +1729,7 @@ async function unlockCoach(){
     localStorage.setItem('cpcoach_code',v);
     document.getElementById('lockScreen')?.remove();
     toast('Bienvenue ! ✓');
-    if(!CFG.rep)showNameStep();
+    if(!CFG.rep)showNameStep();else maybeOnboard();
     syncPull(true);
   }catch(e){
     COACH_CODE='';
@@ -1879,6 +1968,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showCourseGuide()"><span class="mic">📚</span><span>Les cours en détail<small>Bienfaits corps & esprit, prérequis, restrictions</small></span></button>
     <button class="menu-item" onclick="closeMenu();showArgBank()"><span class="mic">🧭</span><span>Banque d'arguments<small>Du plus logique au plus inattendu · sourcé</small></span></button>
     <button class="menu-item" onclick="closeMenu();showScience()"><span class="mic">🔬</span><span>La science le confirme<small>Études cliniques, résultats par objectif, sources</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showOnboard(true)"><span class="mic">🌟</span><span>L'essentiel CP<small>État d'esprit, bienfaits, cours, attitude · le guide de bienvenue</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     ${COACH_ROLE==='admin'?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
@@ -2083,10 +2173,18 @@ function saveSet(){
 }
 
 renderScreen();
+// Bouton « précédent » du navigateur : ne jamais quitter l'outil, revenir à l'appel
+try{history.pushState({cp:1},'');}catch(e){}
+window.addEventListener('popstate',function(){
+  try{history.pushState({cp:1},'');}catch(e){}
+  closeMenu();closeObj();closeSet();
+  document.getElementById('obScreen')?.remove();
+  renderScreen();
+});
 // Accès : code studio obligatoire (données équipe centralisées)
 (async function(){
   if(!COACH_CODE){showLock();return;}
-  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();syncPull(true);}
+  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else maybeOnboard();syncPull(true);}
   catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
 })();
 </script>
