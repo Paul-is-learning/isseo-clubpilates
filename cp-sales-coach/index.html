@@ -157,6 +157,19 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
+/* ── Vignettes coach : rail à droite (desktop) / sticky bas (mobile) ── */
+#sideRail{display:none}
+@media(min-width:1060px){
+  #sideRail{position:fixed;top:96px;left:calc(50% + 318px);width:min(430px,calc(50vw - 340px));flex-direction:column;gap:12px;max-height:calc(100dvh - 130px);overflow-y:auto;z-index:40}
+  #sideRail .catch-box,#sideRail .ask-box{margin-top:0;animation:railin .32s cubic-bezier(.25,.8,.3,1)}
+  #sideRail .catch-box{border-width:2px;box-shadow:0 16px 40px -14px rgba(31,158,117,.45)}
+  #sideRail .ask-box{box-shadow:0 16px 40px -14px rgba(201,135,31,.4)}
+  #sideRail .catch-box .ln{font-size:16px}
+}
+@keyframes railin{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+@media(max-width:1059.98px){
+  .catch-box{position:sticky;bottom:2px;z-index:6;border-width:2px;background:linear-gradient(180deg,#eefaf3,#ddf2e7);box-shadow:0 -8px 26px -8px rgba(31,158,117,.4),0 6px 18px -6px rgba(31,158,117,.35)}
+}
 /* ── Écran « Qui appelez-vous ? » ── */
 .who-card{background:#fff;border:1px solid #EBEFF6;border-radius:18px;padding:18px 16px 10px;box-shadow:var(--sh-m)}
 .who-card input{width:100%;padding:13px 15px;border:1.5px solid #E3E9F2;border-radius:12px;font:inherit;font-size:16px;outline:none;background:#FAFBFD}
@@ -544,6 +557,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--cp-deep)!important;bo
   </div>
 </div>
 
+<div id="sideRail"></div>
 <div class="toast" id="toast"></div>
 
 <script>
@@ -1163,7 +1177,7 @@ function catchFor(data,ids){
   return `<div class="catch-box"><div class="h">💬 À répondre, là, maintenant</div>${cs.map(c=>`<div class="ln"><span class="ci">${c.ic}</span><span>${c.catch}</span></div>`).join('')}</div>`;
 }
 
-function renderScreen(){
+function renderScreen(keepScroll){
   const flow=buildFlow();
   st.idx=Math.max(0,Math.min(st.idx,flow.length-1));
   const s=flow[st.idx];
@@ -1316,13 +1330,28 @@ function renderScreen(){
     h=`<div class="scr-tag reco">Fin d'appel</div><div class="scr-q" style="font-size:20px">Récap de l'appel</div>${capture}<div class="recap" id="recapBox">${esc(buildRecap())}</div>`;
     nav=`<button class="back" onclick="prev()">‹</button><button class="go ok" onclick="copyRecap()">📋 Copier la fiche</button>`;
   }
-  scr.innerHTML=h;scr.scrollTop=0;
+  const _sy=keepScroll?scr.scrollTop:0;scr.innerHTML=h;scr.scrollTop=_sy;relocateBoxes();
   $('#nav').innerHTML=nav;
 }
 function navHTML(showBack,goLabel){
   const back=showBack?`<button class="back" onclick="prev()">‹</button>`:'';
   return back+`<button class="go" onclick="next()">${goLabel||'Continuer'} ${goLabel&&goLabel.includes('→')?'':'→'}</button>`;
 }
+
+// Vignettes coach (vertes/ambre) : rail fixe à droite sur grand écran
+function relocateBoxes(){
+  const rail=document.getElementById('sideRail');if(!rail)return;
+  rail.innerHTML='';rail.style.display='none';
+  if(!window.matchMedia('(min-width:1060px)').matches)return;
+  const boxes=$('#screen').querySelectorAll('.catch-box,.ask-box');
+  if(!boxes.length)return;
+  boxes.forEach(b=>rail.appendChild(b));
+  rail.style.display='flex';
+}
+let _rzT=null;
+window.addEventListener('resize',()=>{clearTimeout(_rzT);_rzT=setTimeout(()=>{
+  if(document.getElementById('sideRail')?.children.length||$('#screen').querySelector('.catch-box,.ask-box'))renderScreen(true);
+},200);});
 
 /* navigation + sélection */
 function pick(field,id,single){
@@ -1333,9 +1362,9 @@ function pick(field,id,single){
   } else {
     const a=st[field],i=a.indexOf(id);if(i>=0)a.splice(i,1);else a.push(id);
   }
-  renderScreen();
+  renderScreen(true);
 }
-function pickPack(p){st.packChoice=(st.packChoice===p?null:p);renderScreen();}
+function pickPack(p){st.packChoice=(st.packChoice===p?null:p);renderScreen(true);}
 function setGoal(g){st.callGoal=g;renderScreen();}
 function next(){const len=buildFlow().length;if(st.idx<len-1){st.idx++;renderScreen();}}
 function prev(){if(st.idx>0){st.idx--;renderScreen();}}
@@ -1543,7 +1572,7 @@ function relanceMsgs(p){
 /* ── Équipe & invitations (admin) ── */
 async function showTeam(){
   if(COACH_ROLE!=='admin'){toast('Réservé au responsable');return;}
-  $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">Un code personnel par conseiller · révocable à tout moment</div></div></div><div class="pr-empty">⏳ Chargement…</div></div>`;
+  $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">Un code personnel par conseiller · révocable à tout moment</div></div></div><div class="pr-empty">⏳ Chargement…</div></div>`;relocateBoxes();
   $('#topPhase').textContent='Équipe';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
@@ -1669,7 +1698,7 @@ function showProspects(keepScroll){
     <div class="pr-search"><span>🔎</span><input type="text" placeholder="Rechercher un nom, un numéro…" value="${esc(prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     ${sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PROSPECTS.length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
-  $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   $('#topPhase').textContent='Mes prospects';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
@@ -1743,7 +1772,7 @@ function showAca(){
       <div class="aca-row"><span class="ck">4</span><span>« On y va ? » plutôt que « Voulez-vous ? ».</span></div>
       <div class="aca-row"><span class="ck">5</span><span>Jamais lâcher sans engagement : ferme OU rappel daté.</span></div></div>
   </div>`;
-  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='Académie';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
@@ -1767,7 +1796,7 @@ function showCourseGuide(){
     ${COURSE_GUIDE.map(card).join('')}
     <div class="cg-note">💡 Conseillez toujours selon l'objectif ET la santé du client. En cas de doute médical, orientez vers un avis du coach ou du médecin.</div>
   </div>`;
-  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='Les cours';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
@@ -1787,7 +1816,7 @@ function showArgBank(){
     </div>`).join('')}
     <div class="cg-note">🎯 Règle d'or : un argument à la fois, choisi pour CE client. L'inattendu marche parce qu'il est vrai · ne jamais broder au-delà de la carte.</div>
   </div>`;
-  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='Arguments';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
@@ -1812,7 +1841,7 @@ function showScience(){
     <div class="pres-h">📚 Sources</div>
     <div class="card">${SCI_SOURCES.map(s=>`<div class="sci-src">• ${s}</div>`).join('')}</div>
   </div>`;
-  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='La science';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';
