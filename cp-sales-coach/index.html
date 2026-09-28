@@ -157,6 +157,10 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
+/* ── Écran « Qui appelez-vous ? » ── */
+.who-card{background:#fff;border:1px solid #EBEFF6;border-radius:18px;padding:18px 16px 10px;box-shadow:var(--sh-m)}
+.who-card input{width:100%;padding:13px 15px;border:1.5px solid #E3E9F2;border-radius:12px;font:inherit;font-size:16px;outline:none;background:#FAFBFD}
+#who-nom{font-weight:700;color:var(--cp-dark)}
 /* ── Offre fondateur (closing) ── */
 .fond-box{background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1.5px solid #e8d5a8;border-radius:15px;padding:14px 15px;margin-top:12px}
 .fond-h{font-size:14px;font-weight:800;color:#6b4d0d;margin-bottom:10px}
@@ -1115,7 +1119,8 @@ const Q_CONNAIT=[{id:'oui',ic:'👍',label:'Oui, déjà entendu'},{id:'non',ic:'
 function buildFlow(){
   const f=[];
   // Écran 'goal' retiré (sept. 2026) : lancement direct en lead chaud (callGoal='membership'). Réactivable ici.
-  f.push({t:'say',phase:'Accueil',tag:'Ouverture',idea:'Un rappel personnel et chaleureux · pas un centre d\'appels.',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées · je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},getCasual:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour ! C'est <b>${esc(r)}</b>, de Club Pilates${s}. Vous nous avez laissé vos coordonnées, alors je vous appelle en direct · pour faire connaissance et voir ce qui vous ferait du bien. Vous avez deux minutes ?`;},hint:'Souriez avant de décrocher · le ton s\'entend. Barrage (« pas le temps », « envoyez un mail ») ? Le bouton ? en bas à droite a les parades.'});
+  f.push({t:'who',phase:'Démarrage'});
+  f.push({t:'say',phase:'Accueil',tag:'Ouverture',idea:'Un rappel personnel et chaleureux · pas un centre d\'appels.',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'',pn=st.prospectNom?' '+esc(st.prospectNom.split(' ')[0]):'';return `Bonjour${pn}, je suis <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées · je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},getCasual:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'',pn=st.prospectNom?' '+esc(st.prospectNom.split(' ')[0]):'';return `Bonjour${pn} ! C'est <b>${esc(r)}</b>, de Club Pilates${s}. Vous nous avez laissé vos coordonnées, alors je vous appelle en direct · pour faire connaissance et voir ce qui vous ferait du bien. Vous avez deux minutes ?`;},hint:'Souriez avant de décrocher · le ton s\'entend. Barrage (« pas le temps », « envoyez un mail ») ? Le bouton ? en bas à droite a les parades.'});
   f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
   if(st.connait)f.push({t:'present',phase:st.connait==='oui'?'Rappel':'Présentation'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
@@ -1163,11 +1168,22 @@ function renderScreen(){
   st.idx=Math.max(0,Math.min(st.idx,flow.length-1));
   const s=flow[st.idx];
   $('#topPhase').textContent=s.phase||'Sales Coach';
-  $('#topSub').textContent=(CFG.studio||'Club Pilates');
+  $('#topSub').textContent=st.prospectNom?('📞 '+st.prospectNom.split(' ')[0]+' · '+(CFG.studio||'Club Pilates')):(CFG.studio||'Club Pilates');
   $('#bar').style.width=Math.round((st.idx+1)/flow.length*100)+'%';
   const scr=$('#screen');let h='';let nav='';
 
-  if(s.t==='goal'){
+  if(s.t==='who'){
+    h=`<div class="scr-tag ask">Avant de décrocher</div>
+      <div class="scr-q">Qui appelez-vous ?</div>
+      <div class="scr-sub">Son prénom reste affiché en haut pendant tout l'appel · et pré-remplit sa fiche à la fin.</div>
+      <div class="who-card">
+        <div class="pr-cap-row"><input id="who-nom" type="text" placeholder="Prénom du prospect *" value="${esc(st.prospectNom||'')}" oninput="st.prospectNom=this.value" autocomplete="off"/></div>
+        <div class="pr-cap-row"><input id="who-tel" type="tel" placeholder="Téléphone (optionnel)" value="${esc(st.prospectTel||'')}" oninput="st.prospectTel=this.value" autocomplete="off"/></div>
+      </div>
+      <div class="say-hint"><span class="b">💡</span><span>Dire son prénom dès l'ouverture, puis 2 ou 3 fois dans l'appel : c'est le mot que votre prospect préfère entendre.</span></div>`;
+    nav=navHTML(false,'Démarrer l\'appel');
+  }
+  else if(s.t==='goal'){
     h=`<div class="scr-tag ask">Avant de commencer</div>
       <div class="scr-q">Objectif de cet appel ?</div>
       <div class="scr-sub">Le script, le prix et le closing s'adaptent à ce choix.</div>
@@ -1284,6 +1300,8 @@ function renderScreen(){
     nav=navHTML(true,'Voir la fiche →');
   }
   else if(s.t==='final'){
+    if(!st._prNom&&st.prospectNom)st._prNom=st.prospectNom;
+    if(!st._prTel&&st.prospectTel)st._prTel=st.prospectTel;
     const curSt=st._prStatut||(st.callGoal==='trial'?'essai':'abo');
     const capture=st._prSaved
       ?`<div class="pr-savedbox">✅ <b>Prospect enregistré</b> dans Mes prospects · les relances adaptées vous y attendent.<button class="go" style="margin-top:10px;width:100%" onclick="showProspects()">📇 Ouvrir Mes prospects</button></div>`
@@ -1325,6 +1343,7 @@ function prev(){if(st.idx>0){st.idx--;renderScreen();}}
 function buildRecap(){
   const pack=recommendPack(),recos=recommendClasses(pack),ah=activeHealth(),L=[];
   L.push(`FICHE PROSPECT · ${('Club Pilates '+(CFG.studio||'')).trim()}`);
+  if(st.prospectNom||st._prNom)L.push(`Prospect : ${st._prNom||st.prospectNom}${(st._prTel||st.prospectTel)?' · '+(st._prTel||st.prospectTel):''}`);
   if(CFG.rep)L.push(`Commercial : ${CFG.rep}`);L.push('');
   const b=ageBand();if(b)L.push(`Âge : ${b.label}`);
   L.push(`Connaît CP : ${st.connait==='oui'?'Oui':st.connait==='non'?'Non':'—'}`);
@@ -1698,7 +1717,7 @@ function openMenu(){
 }
 function closeMenu(){$('#menuBg').classList.remove('on');$('#menuSheet').classList.remove('on');}
 function showPresentation(){closeMenu();if(!st.connait)st.connait='oui';const flow=buildFlow();const i=flow.findIndex(s=>s.t==='present');if(i>=0){st.idx=i;renderScreen();}}
-function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;st={callGoal:g,idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
+function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
 
 /* ── Académie ── */
 function showAca(){
