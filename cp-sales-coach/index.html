@@ -124,6 +124,49 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .arg-spec{position:relative;height:5px;border-radius:3px;background:linear-gradient(90deg,#185FA522,#0F6E5622,#854F0B22,#6b40b822);margin-bottom:10px}
 .arg-spec-bar{position:absolute;inset:0;border-radius:3px;background:linear-gradient(90deg,#185FA5,#0F6E56,#854F0B,#6b40b8);opacity:.25}
 .arg-spec-dot{position:absolute;top:50%;width:13px;height:13px;border-radius:50%;background:#fff;border:3px solid var(--cp-deep);transform:translate(-50%,-50%);box-shadow:0 1px 5px rgba(20,40,80,.3)}
+/* Prospects & processus de vente */
+.obj-grp{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--cp-deep);margin:14px 0 8px;padding-bottom:5px;border-bottom:1px dashed var(--line)}
+.menu-count{display:inline-block;background:var(--cp-deep);color:#fff;font-size:10px;font-weight:800;border-radius:999px;padding:1px 7px;margin-left:5px;vertical-align:middle}
+.pr-capture{background:linear-gradient(135deg,#f0f6ff,#e9f1fb);border:1.5px solid #bcd2ee;border-radius:15px;padding:14px 15px;margin-bottom:14px}
+.pr-cap-h{font-size:14px;font-weight:800;color:var(--cp-dark);margin-bottom:10px}
+.pr-cap-h small{font-weight:600;color:var(--ink-mid);font-size:11px;margin-left:6px}
+.pr-cap-row{display:flex;gap:8px;margin-bottom:9px;flex-wrap:wrap}
+.pr-cap-row input[type=text],.pr-cap-row input[type=tel]{flex:1;min-width:130px;padding:10px 12px;border:1.5px solid #c9d8ec;border-radius:10px;font:inherit;font-size:14px;outline:none;background:#fff}
+.pr-cap-row input:focus{border-color:var(--cp-deep)}
+.pr-cap-lbl{font-size:11px;font-weight:700;color:var(--ink-soft);margin-bottom:6px}
+.pr-cap-sts{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:10px}
+.pr-st{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 4px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:15px;transition:.15s}
+.pr-st small{font-size:8.5px;font-weight:700;color:inherit;line-height:1.1;text-align:center}
+.pr-cap-dl{display:flex;align-items:center;gap:8px;font-size:11.5px;font-weight:700;color:var(--ink-soft);background:#fff;border:1.5px solid #c9d8ec;border-radius:10px;padding:6px 10px}
+.pr-cap-dl input{border:0;outline:none;font:inherit;font-size:13px;color:var(--cp-dark);background:transparent}
+.pr-savedbox{background:#e7f6ef;border:1.5px solid #a8dcc4;border-radius:15px;padding:14px 16px;margin-bottom:14px;font-size:13.5px;line-height:1.5;color:#155e43}
+.pr-alert{background:#FBEFD8;border:1.5px solid #ecd9a0;border-radius:13px;padding:11px 14px;font-size:13px;color:#7a5a10;margin-bottom:12px}
+.pr-funnel{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:16px}
+.pr-fun{background:#fff;border:1.5px solid;border-radius:12px;padding:8px 4px;text-align:center}
+.pr-fun-n{font-size:19px;font-weight:900;line-height:1.1}
+.pr-fun-l{font-size:8.5px;font-weight:700;color:var(--ink-mid);margin-top:2px;line-height:1.2}
+.pr-card{background:#fff;border:1.5px solid var(--line);border-radius:15px;padding:13px 15px;margin-bottom:11px}
+.pr-card.due{border-color:#ecd9a0;box-shadow:0 0 0 3px #fbefd866}
+.pr-top{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:5px}
+.pr-id{font-size:15px;color:var(--cp-dark)}
+.pr-tel{font-size:12px;color:var(--cp-deep);text-decoration:none;font-weight:700;margin-left:8px}
+.pr-chip{font-size:10.5px;font-weight:800;padding:3px 10px;border-radius:999px;border:1px solid;white-space:nowrap}
+.pr-obj{font-size:12px;color:var(--cp-deep);font-weight:600;margin-bottom:3px}
+.pr-note{font-size:12px;color:var(--ink-soft);margin-bottom:3px}
+.pr-meta{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink-mid);margin-bottom:9px}
+.pr-due{color:#9a6608;font-weight:800}
+.pr-pipe{display:grid;grid-template-columns:repeat(5,1fr);gap:5px;margin-bottom:9px}
+.pr-actions{display:flex;gap:7px;align-items:center;flex-wrap:wrap}
+.pr-act{padding:8px 12px;border:1.5px solid var(--line);border-radius:10px;background:#fff;font-size:12px;font-weight:700;color:var(--cp-deep)}
+.pr-act.main{flex:1;min-width:130px;background:var(--cp-deep);color:#fff;border-color:var(--cp-deep)}
+.pr-act.danger{color:var(--danger)}
+.pr-date{padding:7px 9px;border:1.5px solid var(--line);border-radius:10px;font:inherit;font-size:12px;color:var(--cp-dark);background:#fff;outline:none}
+.pr-msgs{margin-top:11px;border-top:1px dashed var(--line);padding-top:11px}
+.pr-msg{background:var(--cp-veil);border-radius:12px;padding:11px 13px;margin-bottom:9px}
+.pr-msg-t{font-size:11px;font-weight:800;color:var(--cp-deep);margin-bottom:6px}
+.pr-msg-b{font-size:13px;line-height:1.55;color:var(--ink);white-space:pre-wrap}
+.pr-copy{margin-top:8px;padding:7px 13px;background:#fff;border:1.5px solid var(--cp-blue);border-radius:9px;font-size:11.5px;font-weight:700;color:var(--cp-deep)}
+.pr-empty{text-align:center;color:var(--ink-mid);padding:40px 20px;font-size:14px;line-height:1.7;background:#fff;border:1.5px dashed var(--line);border-radius:15px}
 /* Guide des cours */
 .cg{padding-bottom:10px}
 .cg-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px 16px;margin-bottom:14px;box-shadow:0 1px 3px rgba(20,40,80,.04)}
@@ -673,6 +716,10 @@ const ARG_BANK=[
   {x:98,src:'hist',t:'Le pari des 30 séances',say:()=>`« Joseph Pilates avait une formule restée célèbre : en 10 séances vous sentez la différence, en 20 vous la voyez, en 30 vous avez un corps tout neuf. C'est un pari qui a presque cent ans — et nos membres le vérifient encore. »`}
 ];
 const OBJECTIONS=[
+  {id:'b_temps',barrage:true,ic:'🚪',t:'« Je n\'ai pas le temps là »',kw:'barrage temps la maintenant occupe debut decroche',lines:['« Je comprends tout à fait — <b>30 secondes chrono</b>, et si ça ne vous parle pas, je vous laisse tranquille. Ça marche ? »','Si vraiment pas le moment : « Aucun souci. Je vous propose un créneau : <b>plutôt ce soir ou demain matin ?</b> » — toujours verrouiller une heure précise.','Ne JAMAIS raccrocher sans un rendez-vous daté.']},
+  {id:'b_sujet',barrage:true,ic:'🚪',t:'« C\'est à quel sujet ? »',kw:'barrage sujet pourquoi qui appelle debut',lines:['« Vous nous avez laissé vos coordonnées pour le studio Club Pilates — <b>je vous rappelle personnellement</b> pour répondre à vos questions et voir ce qui vous ferait du bien. »','Enchaîner direct sur une question ouverte : « Qu\'est-ce qui vous a donné envie de nous laisser vos coordonnées ? »','Ton posé, jamais sur la défensive : vous rappelez quelqu\'un qui VOUS a sollicité.']},
+  {id:'b_mail',barrage:true,ic:'🚪',t:'« Envoyez-moi un mail »',kw:'barrage mail email envoyez doc brochure debut',lines:['« Bien sûr, je vous envoie ça. Juste <b>deux questions</b> pour vous envoyer ce qui VOUS concerne vraiment — sinon je vous noie sous la doc générique. »','Les deux questions = motif + objectif → vous êtes reparti dans la découverte.','Si blocage total : envoyer + <b>caler la relance datée</b> : « Je vous rappelle jeudi pour en parler, 18h ça va ? »']},
+  {id:'b_rappel',barrage:true,ic:'🚪',t:'« Rappelez-moi plus tard »',kw:'barrage rappeler plus tard occupe pas maintenant',lines:['« Avec plaisir — <b>quel est le meilleur créneau</b> pour vous : plutôt midi ou en fin de journée ? » Toujours transformer le vague en rendez-vous précis.','Confirmer en une phrase : « Parfait, je vous rappelle <b>demain à 18h</b>. Bonne journée ! » — et le noter dans Mes prospects.','Un « plus tard » daté = un vrai lead. Un « plus tard » vague = un appel perdu.']},
   {id:'prix',ic:'💶',t:'« C\'est cher »',kw:'cher prix budget coute argent euro',lines:['Reviens aux <b>objectifs</b> : « Si par le passé ça n\'a pas fonctionné, c\'est que le budget investi n\'était pas adapté à vos objectifs. »','« Si dans 3 mois, <b>aucun changement</b> avec votre routine actuelle, comment allez-vous vous sentir ? »','« Est-ce que ça ne vaut pas le coût d\'investir <b>60 € de plus</b> sur une activité qui va fonctionner et vous plaire ? »']},
   {id:'temps',ic:'⏳',t:'« Je n\'ai pas le temps »',kw:'temps occupe agenda horaire dispo',lines:['Si c\'est en <b>complément</b> d\'une autre activité → proposer le <b>Pack 1×/sem</b>.','Sinon → le Pack 1×/sem donne des <b>résultats à plus long terme</b>, et toujours revenir aux objectifs.','Le bon rythme reste <b>2×/sem</b> pour des résultats visibles.']},
   {id:'timing',ic:'📅',t:'« J\'attends (vacances / ouverture) »',kw:'attendre plus tard vacances timing reflechir',lines:['« Pourquoi nous appeler <b>aujourd\'hui</b> alors ? »','« Si dans 3 mois, aucun changement, comment allez-vous vous sentir ? »','Urgence douce : remise <b>50 premiers membres fondateurs</b>.']},
@@ -912,7 +959,7 @@ const Q_CONNAIT=[{id:'oui',ic:'👍',label:'Oui, déjà entendu'},{id:'non',ic:'
 function buildFlow(){
   const f=[];
   f.push({t:'goal',phase:'Démarrage'});
-  f.push({t:'say',phase:'Accueil',tag:'Ouverture',idea:'Un rappel personnel et chaleureux — pas un centre d\'appels.',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées — je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},getCasual:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour ! C'est <b>${esc(r)}</b>, de Club Pilates${s}. Vous nous avez laissé vos coordonnées, alors je vous appelle en direct — pour faire connaissance et voir ce qui vous ferait du bien. Vous avez deux minutes ?`;},hint:'Souriez avant de décrocher — le ton s\'entend. Posé, jamais pressé.'});
+  f.push({t:'say',phase:'Accueil',tag:'Ouverture',idea:'Un rappel personnel et chaleureux — pas un centre d\'appels.',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour, <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées — je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},getCasual:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'';return `Bonjour ! C'est <b>${esc(r)}</b>, de Club Pilates${s}. Vous nous avez laissé vos coordonnées, alors je vous appelle en direct — pour faire connaissance et voir ce qui vous ferait du bien. Vous avez deux minutes ?`;},hint:'Souriez avant de décrocher — le ton s\'entend. Barrage (« pas le temps », « envoyez un mail ») ? Le bouton ? en bas à droite a les parades.'});
   f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
   if(st.connait)f.push({t:'present',phase:st.connait==='oui'?'Rappel':'Présentation'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
@@ -1058,7 +1105,18 @@ function renderScreen(){
     nav=navHTML(true,'Voir la fiche →');
   }
   else if(s.t==='final'){
-    h=`<div class="scr-tag reco">Fiche prospect</div><div class="scr-q" style="font-size:20px">Récap de l'appel</div><div class="recap" id="recapBox">${esc(buildRecap())}</div>`;
+    const curSt=st._prStatut||(st.callGoal==='trial'?'essai':'abo');
+    const capture=st._prSaved
+      ?`<div class="pr-savedbox">✅ <b>Prospect enregistré</b> dans Mes prospects — les relances adaptées vous y attendent.<button class="go" style="margin-top:10px;width:100%" onclick="showProspects()">📇 Ouvrir Mes prospects</button></div>`
+      :`<div class="pr-capture">
+      <div class="pr-cap-h">📇 Enregistrer ce prospect <small>pour le suivi & les relances</small></div>
+      <div class="pr-cap-row"><input id="pr-nom" type="text" placeholder="Prénom Nom *" value="${esc(st._prNom||'')}" oninput="st._prNom=this.value"/><input id="pr-tel" type="tel" placeholder="Téléphone" value="${esc(st._prTel||'')}" oninput="st._prTel=this.value"/></div>
+      <div class="pr-cap-lbl">Issue de l'appel :</div>
+      <div class="pr-cap-sts">${['essai','abo','rappeler','perdu'].map(k=>`<button class="pr-st${curSt===k?' on':''}" style="${curSt===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="pickPrStatut('${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
+      <div class="pr-cap-row"><label class="pr-cap-dl">📅 ${curSt==='essai'?'Date de l\'essai':'Date de rappel'}<input id="pr-date" type="date" value="${st._prDate||''}" onchange="st._prDate=this.value"/></label><input id="pr-note" type="text" placeholder="Note (optionnel)" value="${esc(st._prNote||'')}" oninput="st._prNote=this.value"/></div>
+      <button class="go ok" style="width:100%" onclick="saveProspect()">💾 Enregistrer dans Mes prospects</button>
+    </div>`;
+    h=`<div class="scr-tag reco">Fin d'appel</div><div class="scr-q" style="font-size:20px">Récap de l'appel</div>${capture}<div class="recap" id="recapBox">${esc(buildRecap())}</div>`;
     nav=`<button class="back" onclick="prev()">‹</button><button class="go ok" onclick="copyRecap()">📋 Copier la fiche</button>`;
   }
   scr.innerHTML=h;scr.scrollTop=0;
@@ -1109,12 +1167,133 @@ function buildRecap(){
 }
 function copyRecap(){const t=buildRecap();navigator.clipboard?.writeText(t).then(()=>toast('Fiche copiée ✓')).catch(()=>{const ta=document.createElement('textarea');ta.value=t;document.body.appendChild(ta);ta.select();document.execCommand('copy');ta.remove();toast('Fiche copiée ✓');});}
 
+/* ════════════════════════════════════════════════════════════════
+   MES PROSPECTS — suivi du processus de vente + relances par étape
+   Stockage local au poste du commercial (localStorage).
+   ════════════════════════════════════════════════════════════════ */
+let PROSPECTS=[];try{PROSPECTS=JSON.parse(localStorage.getItem('cpcoach_prospects')||'[]');}catch(e){PROSPECTS=[];}
+function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.stringify(PROSPECTS));}catch(e){}}
+const PIPE={
+  rappeler:{ic:'📞',lbl:'À rappeler',c:'#C9871F'},
+  essai:{ic:'🎟️',lbl:'Essai booké',c:'#185FA5'},
+  venu:{ic:'🧘',lbl:'Venu à l\'essai',c:'#6b40b8'},
+  abo:{ic:'✅',lbl:'Abonné',c:'#1F9E75'},
+  perdu:{ic:'✖️',lbl:'Perdu',c:'#8C95A8'}
+};
+function frDate(d){try{return new Date(d+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});}catch(e){return d;}}
+function todayStr(){const n=new Date();return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0');}
+
+// Enregistrement depuis l'écran fiche (fin d'appel)
+function saveProspect(){
+  const nom=($('#pr-nom')?.value||'').trim();
+  if(!nom){toast('Le prénom / nom est obligatoire');$('#pr-nom')?.focus();return;}
+  const p={
+    id:'p_'+Date.now(),
+    nom:nom,
+    tel:($('#pr-tel')?.value||'').trim(),
+    note:($('#pr-note')?.value||'').trim(),
+    statut:st._prStatut||(st.callGoal==='trial'?'essai':'abo'),
+    rappel:($('#pr-date')?.value||''),
+    obj:primaryGoalVerb(),
+    fiche:buildRecap(),
+    ts:new Date().toISOString()
+  };
+  PROSPECTS.unshift(p);persistProspects();
+  st._prSaved=true;renderScreen();
+  toast('📇 '+nom+' ajouté à Mes prospects ✓');
+}
+function pickPrStatut(s){st._prStatut=s;renderScreen();}
+
+// Relances adaptées à l'étape du prospect — ton naturel, fond verrouillé
+function relanceMsgs(p){
+  const pre=(p.nom||'').split(' ')[0]||'',stu=CFG.studio?' '+CFG.studio:'',rep=CFG.rep||'';
+  const obj=p.obj&&p.obj!=='atteindre vos objectifs'?p.obj:'retrouver la forme';
+  const dt=p.rappel?frDate(p.rappel):null;
+  const M={
+    essai:[
+      {t:'✉️ Confirmation (à envoyer tout de suite)',msg:`Bonjour ${pre}, c'est ${rep} de Club Pilates${stu} 😊 C'est noté pour votre cours découverte offert${dt?' le '+dt:''} ! Venez en tenue souple, on s'occupe de tout le reste. À très vite !`},
+      {t:'✉️ Rappel la veille',msg:`Bonjour ${pre} ! Petit rappel : votre cours découverte Club Pilates${stu}, c'est demain${dt?' ('+dt+')':''} 🧘 On a hâte de vous accueillir. Un empêchement ? Répondez-moi, on recale ça sans souci.`},
+      {t:'✉️ No-show (il/elle n\'est pas venu·e)',msg:`Bonjour ${pre}, on vous a manqué aujourd'hui ! Aucun souci, ça arrive. Votre cours découverte reste offert — je vous repropose un créneau : plutôt en semaine ou le week-end ? ${rep}, Club Pilates${stu}`}
+    ],
+    venu:[
+      {t:'🗣️ Closing post-essai (à dire, en studio ou au tel)',msg:`« Alors, ce premier cours : vous avez ressenti quoi ? … C'est exactement ça qu'on développe séance après séance. Vous me disiez vouloir ${obj} — et le rythme qui change vraiment les choses, c'est 2 séances par semaine. Là, vous tombez pile pendant le lancement : statut fondateur, -${CFG.founding}% à vie, inscription offerte. On vous installe ça ? »`},
+      {t:'✉️ Parti·e sans signer (envoyer à J+1)',msg:`Bonjour ${pre}, un plaisir de vous avoir accueilli·e au studio ! Prenez le temps qu'il vous faut. De mon côté je garde votre tarif fondateur (-${CFG.founding}% à vie) de côté encore quelques jours — si une question vous trotte en tête, je suis là. ${rep}, Club Pilates${stu}`}
+    ],
+    rappeler:[
+      {t:'✉️ Relance douce (comme convenu)',msg:`Bonjour ${pre}, c'est ${rep} de Club Pilates${stu} 😊 Comme convenu, je reviens vers vous — toujours partant·e pour ${obj} ? Dites-moi votre meilleur créneau pour qu'on en reparle 5 minutes.`},
+      {t:'🗣️ Rappel téléphonique (à dire)',msg:`« Bonjour ${pre}, ${rep} de Club Pilates${stu} — on s'était dit qu'on se rappelait${dt?' vers le '+dt:''}. Vous m'aviez parlé de ${obj} : c'est toujours d'actualité ? »`}
+    ],
+    abo:[
+      {t:'✉️ Bienvenue',msg:`Bienvenue chez Club Pilates${stu}, ${pre} ! 🎉 Ravi·e de vous compter parmi nos membres. Pensez à réserver vos premiers cours sur l'app — et pour la moindre question, je suis là. ${rep}`}
+    ],
+    perdu:[
+      {t:'✉️ Porte ouverte (un seul message, puis on lâche)',msg:`Bonjour ${pre}, ${rep} de Club Pilates${stu}. Promis, je ne vous relance plus après ce message 😊 Si l'envie revient un jour, la porte est grande ouverte — et votre premier cours restera offert. Prenez soin de vous !`}
+    ]
+  };
+  return M[p.statut]||[];
+}
+
+// Page « Mes prospects »
+let prOpenId=null;
+function showProspects(){
+  const today=todayStr();
+  const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
+  const sorted=PROSPECTS.slice().sort((a,b)=>{const da=due(a)?0:1,db=due(b)?0:1;if(da!==db)return da-db;return (b.ts||'').localeCompare(a.ts||'');});
+  const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PROSPECTS.filter(p=>p.statut===k).length);
+  const nbDue=PROSPECTS.filter(due).length;
+  const card=p=>{
+    const pi=PIPE[p.statut]||PIPE.rappeler;
+    const isDue=due(p);
+    const open=prOpenId===p.id;
+    const msgs=relanceMsgs(p);
+    return `<div class="pr-card${isDue?' due':''}">
+      <div class="pr-top">
+        <div class="pr-id"><b>${esc(p.nom)}</b>${p.tel?` <a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}</div>
+        <span class="pr-chip" style="background:${pi.c}18;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}</span>
+      </div>
+      ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
+      ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
+      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${isDue?' — c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span></div>
+      <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
+      <div class="pr-actions">
+        <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'✉️ Relances ('+msgs.length+')'}</button>
+        <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date essai / rappel"/>
+        <button onclick="copyPFiche('${p.id}')" class="pr-act" title="Copier la fiche">📋</button>
+        <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
+      </div>
+      ${open?`<div class="pr-msgs">${msgs.map((m,i)=>`<div class="pr-msg"><div class="pr-msg-t">${m.t}</div><div class="pr-msg-b">${esc(m.msg)}</div><button class="pr-copy" onclick="copyPMsg('${p.id}',${i})">📋 Copier le message</button></div>`).join('')||'<div class="pr-msg-b" style="padding:10px">Aucune relance pour ce statut.</div>'}</div>`:''}
+    </div>`;
+  };
+  const h=`<div class="cg">
+    <div class="aca-h"><h2>Mes prospects</h2><p>Le suivi de votre processus de vente : chaque fiche, son étape, et la bonne relance au bon moment. Données stockées sur ce poste.</p></div>
+    ${nbDue?`<div class="pr-alert">🔔 <b>${nbDue} relance${nbDue>1?'s':''} à faire aujourd'hui</b> — elles sont en tête de liste.</div>`:''}
+    <div class="pr-funnel">${Object.keys(PIPE).map(k=>`<div class="pr-fun" style="border-color:${PIPE[k].c}44"><div class="pr-fun-n" style="color:${PIPE[k].c}">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></div>`).join('')}</div>
+    ${sorted.length?sorted.map(card).join(''):`<div class="pr-empty">📇 Aucune fiche pour l'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l'écran « Récap de l'appel ».</small></div>`}
+  </div>`;
+  $('#screen').innerHTML=h;$('#screen').scrollTop=0;
+  $('#topPhase').textContent='Mes prospects';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';
+}
+function togglePr(id){prOpenId=prOpenId===id?null:id;showProspects();}
+function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.statut=s;p.maj=new Date().toISOString();persistProspects();showProspects();toast(PIPE[s].ic+' '+PIPE[s].lbl);}
+function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;persistProspects();showProspects();}
+function delProspect(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;if(!confirm('Supprimer la fiche de '+p.nom+' ?'))return;PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects();toast('Fiche supprimée');}
+function copyPMsg(id,i){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const m=relanceMsgs(p)[i];if(!m)return;navigator.clipboard?.writeText(m.msg).then(()=>toast('Message copié ✓ — collez-le dans vos SMS')).catch(()=>toast('Copie impossible'));}
+function copyPFiche(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;navigator.clipboard?.writeText(p.fiche||p.nom).then(()=>toast('Fiche copiée ✓')).catch(()=>toast('Copie impossible'));}
+
 /* ── Objections (avec recherche) ── */
 let objOpen=null;
 function renderObj(q){
   q=(q||'').toLowerCase().trim();
   const list=OBJECTIONS.filter(o=>!q||o.t.toLowerCase().includes(q)||(o.kw||'').includes(q));
-  $('#objList').innerHTML=list.length?list.map(o=>`<div class="obj${objOpen===o.id?' open':''}" id="obj-${o.id}"><div class="obj-h" onclick="toggleObj('${o.id}')"><span class="ic">${o.ic}</span><span>${o.t}</span><span class="ch">▾</span></div><div class="obj-b">${o.lines.map(l=>`<div class="ln">${l}</div>`).join('')}</div></div>`).join(''):`<div style="text-align:center;color:var(--ink-mid);padding:30px;font-size:14px">Aucune objection trouvée pour « ${esc(q)} »</div>`;
+  const card=o=>`<div class="obj${objOpen===o.id?' open':''}" id="obj-${o.id}"><div class="obj-h" onclick="toggleObj('${o.id}')"><span class="ic">${o.ic}</span><span>${o.t}</span><span class="ch">▾</span></div><div class="obj-b">${o.lines.map(l=>`<div class="ln">${l}</div>`).join('')}</div></div>`;
+  if(!list.length){$('#objList').innerHTML=`<div style="text-align:center;color:var(--ink-mid);padding:30px;font-size:14px">Aucune objection trouvée pour « ${esc(q)} »</div>`;return;}
+  const bar=list.filter(o=>o.barrage),cls=list.filter(o=>!o.barrage);
+  let h='';
+  if(bar.length)h+=`<div class="obj-grp">🚪 Passer le barrage — les 10 premières secondes</div>`+bar.map(card).join('');
+  if(cls.length)h+=(bar.length?`<div class="obj-grp">💬 Objections de fond</div>`:'')+cls.map(card).join('');
+  $('#objList').innerHTML=h;
 }
 function toggleObj(id){objOpen=objOpen===id?null:id;document.querySelectorAll('.obj').forEach(e=>e.classList.toggle('open',e.id==='obj-'+id&&objOpen===id));}
 function openObj(){objOpen=null;$('#objSearch').value='';renderObj('');$('#objBg').classList.add('on');$('#objSheet').classList.add('on');}
@@ -1129,6 +1308,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showArgBank()"><span class="mic">🧭</span><span>Banque d'arguments<small>Du plus logique au plus inattendu — sourcé</small></span></button>
     <button class="menu-item" onclick="closeMenu();showScience()"><span class="mic">🔬</span><span>La science le confirme<small>Études cliniques, résultats par objectif, sources</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="printGuide()"><span class="mic">🖨️</span><span>Imprimer le guide (PDF)<small>Livret hors-ligne : toutes les sections</small></span></button>
     <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;
