@@ -157,6 +157,20 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
+/* ── Accueil : boîte à outils + credo ── */
+.home-tools{margin-top:18px}
+.ht-h{font-size:13px;font-weight:800;color:var(--cp-dark);margin-bottom:10px}
+.ht-h small{display:block;font-weight:600;font-size:11px;color:var(--ink-mid);margin-top:2px}
+.ht-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:9px}
+@media(max-width:380px){.ht-grid{grid-template-columns:repeat(2,1fr)}}
+.ht-tile{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;background:#fff;border:1.5px solid #E3E9F2;border-radius:14px;padding:14px 6px 11px;box-shadow:var(--sh-s);transition:transform .15s,box-shadow .15s,border-color .15s}
+.ht-tile:active{transform:scale(.96)}
+@media(hover:hover){.ht-tile:hover{transform:translateY(-2px);box-shadow:var(--sh-m);border-color:var(--cp-soft)}}
+.ht-ic{font-size:22px;line-height:1}
+.ht-lbl{font-size:11.5px;font-weight:700;color:var(--cp-dark);text-align:center;line-height:1.2}
+.ht-count{position:absolute;top:6px;right:8px;background:var(--gold);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 7px}
+.home-creed{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-left:4px solid var(--gold);border-radius:13px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#6b5325}
+.home-creed b{color:#523d12}
 /* ── Vignettes : arguments de fond dépliables ── */
 .catch-box .ln.clickable{cursor:pointer}
 .catch-more{display:block;font-size:11px;font-weight:800;color:var(--ok);margin-top:5px;letter-spacing:.03em;text-transform:uppercase;opacity:.85}
@@ -1308,7 +1322,22 @@ function renderScreen(keepScroll){
         <div class="pr-cap-row"><input id="who-nom" type="text" placeholder="Prénom du prospect *" value="${esc(st.prospectNom||'')}" oninput="st.prospectNom=this.value" autocomplete="off"/></div>
         <div class="pr-cap-row"><input id="who-tel" type="tel" placeholder="Téléphone (optionnel)" value="${esc(st.prospectTel||'')}" oninput="st.prospectTel=this.value" autocomplete="off"/></div>
       </div>
-      <div class="say-hint"><span class="b">💡</span><span>Dire son prénom dès l'ouverture, puis 2 ou 3 fois dans l'appel : c'est le mot que votre prospect préfère entendre.</span></div>`;
+      <div class="say-hint"><span class="b">💡</span><span>Dire son prénom dès l'ouverture, puis 2 ou 3 fois dans l'appel : c'est le mot que votre prospect préfère entendre.</span></div>
+      <div class="home-tools">
+        <div class="ht-h">🧰 Votre boîte à outils <small>tout est aussi dans le menu ☰ en haut à droite</small></div>
+        <div class="ht-grid">
+          <button class="ht-tile" onclick="showProspects()"><span class="ht-ic">📇</span><span class="ht-lbl">Mes prospects</span>${PROSPECTS.length?`<span class="ht-count">${PROSPECTS.length}</span>`:''}</button>
+          <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">📣</span><span class="ht-lbl">Présentation CP</span></button>
+          <button class="ht-tile" onclick="showCourseGuide()"><span class="ht-ic">📚</span><span class="ht-lbl">Les cours</span></button>
+          <button class="ht-tile" onclick="showArgBank()"><span class="ht-ic">🧭</span><span class="ht-lbl">Arguments</span></button>
+          <button class="ht-tile" onclick="showScience()"><span class="ht-ic">🔬</span><span class="ht-lbl">La science</span></button>
+          <button class="ht-tile" onclick="showAca()"><span class="ht-ic">🎓</span><span class="ht-lbl">Académie</span></button>
+          <button class="ht-tile" onclick="openObj()"><span class="ht-ic">🛡️</span><span class="ht-lbl">Objections</span></button>
+          <button class="ht-tile" onclick="openSet()"><span class="ht-ic">⚙️</span><span class="ht-lbl">Réglages</span></button>
+          ${COACH_ROLE==='admin'?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">👥</span><span class="ht-lbl">Équipe</span></button>`:''}
+        </div>
+      </div>
+      <div class="home-creed">🤝 <b>Le client est roi.</b> Il ne nous dérange jamais : c'est grâce à lui que nous avons du travail. Accueil chaleureux, transparence totale · et un merci sincère à chaque appel.</div>`;
     nav=navHTML(false,'Démarrer l\'appel');
   }
   else if(s.t==='goal'){
@@ -1866,7 +1895,7 @@ function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche
 function showAca(){
   const h=`<div class="aca">
     <div class="aca-h"><h2>Maîtrisez la vente CP</h2><p>Notre état d'esprit, puis 5 micro-leçons. À relire entre 2 appels.</p></div>
-    <div class="sci-diff"><div class="sci-diff-h">❤️ Notre état d'esprit</div><div class="sci-diff-d">On veut le bien-être du client <b>et</b> on est là pour vendre · et les deux vont ensemble. Le rythme qui transforme vraiment, c'est <b>2 à 3 séances/semaine</b> : le meilleur pour lui, et le meilleur pour le studio.</div><ul class="biens"><li>Recommandez le bon rythme avec conviction : 2 à 3×/semaine, c'est lui rendre service.</li><li>Convainquez par la valeur et les résultats · sincère, jamais alarmiste.</li><li>Chaque appel vise un engagement : un essai booké ou un abo signé.</li><li>Un client qui obtient des résultats reste, revient et nous recommande.</li></ul></div>
+    <div class="sci-diff"><div class="sci-diff-h">❤️ Notre état d'esprit</div><div class="sci-diff-d">On veut le bien-être du client <b>et</b> on est là pour vendre · et les deux vont ensemble. Le rythme qui transforme vraiment, c'est <b>2 à 3 séances/semaine</b> : le meilleur pour lui, et le meilleur pour le studio.</div><ul class="biens"><li>Recommandez le bon rythme avec conviction : 2 à 3×/semaine, c'est lui rendre service.</li><li>Convainquez par la valeur et les résultats · sincère, jamais alarmiste.</li><li>Chaque appel vise un engagement : un essai booké ou un abo signé.</li><li><b>Le client est roi</b> : il ne dérange jamais, il ne « fait pas perdre de temps » · c'est grâce à lui que nous avons du travail. Chaque appel commence par de la considération et finit par un merci sincère.</li><li><b>Transparence totale</b> : on ne vend jamais ce qu'on ne peut pas tenir. Ce qu'on annonce au téléphone, le studio le délivre · c'est ce qui fait revenir et recommander.</li><li>Un client qui obtient des résultats reste, revient et nous recommande.</li></ul></div>
     <div class="aca-l" style="border-left:4px solid #6b40b8"><div class="nb" style="background:#efe9fb;color:#6b40b8">LEÇON 0 · TA VOIX</div><h3>Parle naturel · l'idée avant le mot-à-mot</h3><div class="ld">Les scripts sont des exemples, pas des textes à réciter. Un client entend tout de suite quand on lit une fiche.</div>
       <div class="aca-row"><span class="ck">1</span><span><b>Comprends l'idée</b> de chaque écran (le bandeau 🎯) · c'est elle qu'il faut faire passer, pas la phrase exacte.</span></div>
       <div class="aca-row"><span class="ck">2</span><span><b>Dis-le comme à un ami</b> : le bouton 😎 Naturel te donne une version parlée de chaque script. Pioche, mélange, fais-le tien.</span></div>
