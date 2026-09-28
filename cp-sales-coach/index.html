@@ -1151,13 +1151,15 @@ function buildReframe(pack){
   const monthly=foundingMonthly(pack)!=null?foundingMonthly(pack):packMonthly(pack);
   const n=parseFloat(monthly);if(isNaN(n))return [];
   const mEur=fmtEur(n);
-  const out=[];const perDay=n/30;
+  const out=[];
   const priv=parseFloat(CFG.privateSession),ps=foundingPerSession(pack)!=null?foundingPerSession(pack):packPerSession(pack);
   const sess=SESSIONS_PER_MONTH[pack];
 
-  // 1 · Le coût réel par jour (sans gimmick)
-  out.push({ic:'📅',big:fmtEur(perDay)+' / jour',lab:`Le coût réel ramené à la journée.`,
-    say:`« Ramené à la journée, c'est ${fmtEur(perDay)}. Pour un accompagnement encadré qui agit sur votre posture, votre dos et votre énergie · chaque semaine, toute l'année. »`});
+  // 1 · Le coût réel par séance (le repère le plus parlant)
+  if(ps!=null)out.push({ic:'🎟️',big:fmtEur(ps)+' la séance',lab:`Le coût réel de chaque cours, tout compris.`,
+    say:`« Concrètement, chaque cours vous revient à ${fmtEur(ps)} · avec un coach diplômé, un Reformer dernière génération et 12 personnes maximum. C'est le prix d'un cours encadré, pas d'un accès à une salle. »`});
+  else {const r3=n/(3*4.333);out.push({ic:'🎟️',big:'≈ '+fmtEur(r3)+' la séance',lab:`En illimité, à 3 séances/semaine · et moins encore si vous venez plus.`,
+    say:`« En illimité, à 3 séances par semaine, chaque cours revient à environ ${fmtEur(r3)} · et plus vous venez, plus ce chiffre descend. À 4 ou 5 séances, il devient imbattable. »`});}
 
   // 2 · LE comparatif coaching privé (chiffré depuis vos tarifs · le plus crédible)
   if(!isNaN(priv)){
