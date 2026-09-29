@@ -243,6 +243,22 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pf-fnum small{display:block;font-size:10px;color:#8C95A8;font-weight:700}
 .pf-conv{border-top:1px dashed #E3E9F2;margin-top:4px;padding-top:10px;font-size:12.5px;color:#3c4759}
 .pf-conv b{color:#1F9E75}
+/* Badges à collectionner */
+.bd-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+@media(max-width:420px){.bd-grid{grid-template-columns:repeat(2,1fr)}}
+.bd-card{background:#fff;border:1.5px solid #EBEFF6;border-radius:15px;padding:13px 10px 11px;text-align:center;box-shadow:var(--sh-s);animation:pfin .5s cubic-bezier(.22,1.2,.35,1) both;position:relative;overflow:hidden}
+.bd-card .bd-ic{font-size:30px;line-height:1;margin-bottom:7px;filter:grayscale(1);opacity:.45}
+.bd-card .bd-t{font-size:12px;font-weight:800;color:#8C95A8}
+.bd-card .bd-d{font-size:10.5px;color:#a3abbd;line-height:1.35;margin-top:3px;min-height:26px}
+.bd-card.ok{border-color:#EDD8AC;background:linear-gradient(160deg,#fffdf7,#fdf4e0)}
+.bd-card.ok::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.6) 50%,transparent 60%);animation:pfshine 3.2s infinite;pointer-events:none}
+.bd-card.ok .bd-ic{filter:none;opacity:1;animation:pflvl .5s cubic-bezier(.3,1.6,.4,1) both}
+.bd-card.ok .bd-t{color:#6b4d0d}
+.bd-card.ok .bd-d{color:#a07c2a}
+.bd-won{margin-top:7px;font-size:10px;font-weight:800;color:#1F9E75;background:#e7f6ef;border-radius:99px;padding:3px 9px;display:inline-block}
+.bd-bar{height:5px;background:#EEF1F7;border-radius:99px;margin-top:8px;overflow:hidden}
+.bd-fill{height:100%;background:linear-gradient(90deg,var(--cp-soft),var(--cp-deep));border-radius:99px;transition:width 1s cubic-bezier(.3,1.25,.4,1) .4s}
+.bd-prog{font-size:9.5px;font-weight:700;color:#8C95A8;margin-top:4px}
 .pf-team{background:#fff;border:1px solid #EBEFF6;border-radius:16px;padding:6px 0;box-shadow:var(--sh-s);overflow-x:auto}
 .pf-th,.pf-tr{display:grid;grid-template-columns:minmax(90px,1.4fr) repeat(6,minmax(52px,1fr));gap:4px;align-items:center;padding:9px 14px;font-size:12px;min-width:480px}
 .pf-th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#8C95A8;border-bottom:1px solid #EEF1F7}
@@ -2134,11 +2150,11 @@ function copyInvite(id){
    ════════════════════════════════════════════════════════════════ */
 const PERF_LEVELS=[
   {lvl:'0.5',name:'Découverte',min:0,c:'#8C95A8'},
-  {lvl:'1',name:'Fondations',min:3,c:'#6F8CB8'},
-  {lvl:'1.5',name:'Élan',min:8,c:'#4F6FA0'},
-  {lvl:'2',name:'Maîtrise',min:15,c:'#6b40b8'},
-  {lvl:'2.5',name:'Excellence',min:25,c:'#C9871F'},
-  {lvl:'🏆',name:'Master Coach',min:40,c:'#1F9E75'}
+  {lvl:'1',name:'Fondations',min:10,c:'#6F8CB8'},
+  {lvl:'1.5',name:'Élan',min:50,c:'#4F6FA0'},
+  {lvl:'2',name:'Maîtrise',min:100,c:'#6b40b8'},
+  {lvl:'2.5',name:'Excellence',min:200,c:'#C9871F'},
+  {lvl:'🏆',name:'Master Coach',min:350,c:'#1F9E75'}
 ];
 function perfLevel(abos){let cur=PERF_LEVELS[0];for(const l of PERF_LEVELS)if(abos>=l.min)cur=l;const i=PERF_LEVELS.indexOf(cur);return{cur:cur,next:PERF_LEVELS[i+1]||null};}
 function _repKey(r){return (r||'').trim().split(' ')[0].toLowerCase();}
@@ -2168,14 +2184,31 @@ function buildStatsMap(events,prospects){
 function aggStats(map,repName){
   const rows=Object.values(map).filter(m=>!repName||_repKey(m.rep)===_repKey(repName));
   const month=new Date().toISOString().slice(0,7);
-  const a={appels:0,essais:0,venus:0,abos:0,perdus:0,primeTotal:0,primeMois:0,abosMois:0,packs:{1:0,2:0,3:0},packsMois:{1:0,2:0,3:0}};
+  const a={appels:0,essais:0,venus:0,abos:0,perdus:0,primeTotal:0,primeMois:0,abosMois:0,maxAbosMois:0,packs:{1:0,2:0,3:0},packsMois:{1:0,2:0,3:0}};
+  const perMonth={};
   rows.forEach(m=>{
     if(m.appel)a.appels++;if(m.essai)a.essais++;if(m.venu)a.venus++;if(m.perdu)a.perdus++;
     if(m.abo){a.abos++;a.primeTotal+=m.prime;if(+m.pack)a.packs[+m.pack]++;
+      const mk=(m.aboTs||'').slice(0,7);if(mk){perMonth[mk]=(perMonth[mk]||0)+1;}
       if((m.aboTs||'').startsWith(month)){a.abosMois++;a.primeMois+=m.prime;if(+m.pack)a.packsMois[+m.pack]++;}}
   });
+  a.maxAbosMois=Math.max(0,...Object.values(perMonth));
   return a;
 }
+const BADGES=[
+  {ic:'🌱',t:'Première vente',d:'Vendre son 1er abonnement',f:a=>[a.abos,1]},
+  {ic:'🔥',t:'Mois en feu',d:'3 ventes dans le même mois',f:a=>[a.maxAbosMois,3]},
+  {ic:'⚡',t:'Série dorée',d:'10 ventes dans le même mois',f:a=>[a.maxAbosMois,10]},
+  {ic:'💰',t:'Premier billet',d:'100 € de primes cumulées',f:a=>[a.primeTotal,100]},
+  {ic:'💎',t:'Trésorier',d:'500 € de primes cumulées',f:a=>[a.primeTotal,500]},
+  {ic:'🏦',t:'Coffre-fort',d:'1 500 € de primes cumulées',f:a=>[a.primeTotal,1500]},
+  {ic:'📞',t:'Marathonien',d:'50 appels traités',f:a=>[a.appels,50]},
+  {ic:'☎️',t:'Centurion',d:'100 appels traités',f:a=>[a.appels,100]},
+  {ic:'🎟️',t:'Faiseur d\'essais',d:'25 essais bookés',f:a=>[a.essais,25]},
+  {ic:'👑',t:'Roi de l\'illimité',d:'5 Illimités vendus',f:a=>[a.packs[3],5]},
+  {ic:'⚖️',t:'Trois couronnes',d:'Vendre chaque pack au moins une fois',f:a=>[(a.packs[1]?1:0)+(a.packs[2]?1:0)+(a.packs[3]?1:0),3]},
+  {ic:'🎯',t:'Sniper',d:'30 % de closing · dès 20 appels',f:a=>[a.appels>=20?Math.round(a.abos/a.appels*100):Math.min(a.appels,19),a.appels>=20?30:20],unit:a=>a.appels>=20?'%':' appels'}
+];
 function _pct(n,d){return d?Math.round(n/d*100):0;}
 function showPerf(){
   $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Mes performances</h2><div class="pr-h2s">Ventes, primes et progression · en direct</div></div></div><div class="pr-empty">⏳ Calcul en cours…</div></div>`;
@@ -2225,6 +2258,16 @@ function renderPerf(events){
     <div class="pf-funnel">${fun.map((f,fi)=>`<div class="pf-frow" style="animation-delay:${.25+fi*.12}s"><div class="pf-flbl">${f.lbl}</div><div class="pf-ftrack"><div class="pf-ffill" style="width:${Math.max(f.pct,f.n?4:0)}%;background:${f.c};transition-delay:${.3+fi*.15}s"></div></div><div class="pf-fnum"><b data-cnt="${f.n}">0</b><small>${f.pct}%</small></div></div>`).join('')}
       <div class="pf-conv">Taux de closing : <b>${_pct(me.abos,me.appels)}%</b> des appels deviennent des abonnés${me.essais&&me.abos<=me.essais?` · <b>${_pct(me.abos,me.essais)}%</b> des essais signent`:''}</div>
     </div>`;
+
+  const bds=BADGES.map(b=>{const [cur,tgt]=b.f(me);return {b:b,cur:cur,tgt:tgt,ok:cur>=tgt};});
+  const nbOk=bds.filter(x=>x.ok).length;
+  h+=`<div class="pf-sec" style="margin-top:20px">🎖️ Ma collection de badges <small>${nbOk}/${BADGES.length} débloqué${nbOk>1?'s':''}</small></div>
+    <div class="bd-grid">${bds.map((x,bi)=>`<div class="bd-card${x.ok?' ok':''}" style="animation-delay:${.15+bi*.05}s">
+      <div class="bd-ic">${x.ok?x.b.ic:'🔒'}</div>
+      <div class="bd-t">${x.b.t}</div>
+      <div class="bd-d">${x.b.d}</div>
+      ${x.ok?'<div class="bd-won">✓ Débloqué</div>':`<div class="bd-bar"><div class="bd-fill" style="width:${Math.min(100,Math.round(x.cur/x.tgt*100))}%"></div></div><div class="bd-prog">${x.cur}${x.b.unit?x.b.unit(me):''} / ${x.tgt}${x.b.unit?x.b.unit(me):''}</div>`}
+    </div>`).join('')}</div>`;
 
   {
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
