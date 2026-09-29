@@ -341,6 +341,19 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ht-count{position:absolute;top:6px;right:8px;background:var(--gold);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 7px}
 .home-creed{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-left:4px solid var(--gold);border-radius:13px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#6b5325}
 .home-creed b{color:#523d12}
+/* ── Glossaire ── */
+.gl{border-bottom:1.5px dashed var(--gold);background:linear-gradient(180deg,transparent 72%,rgba(201,135,31,.22) 72%);cursor:help;border-radius:2px;transition:background .15s}
+.gl:hover{background:rgba(201,135,31,.18)}
+#glossPop{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){#glossPop{align-items:center}}
+.glp-bg{position:absolute;inset:0;background:rgba(14,21,38,.55);backdrop-filter:blur(3px);animation:obfade .2s}
+.glp-card{position:relative;width:min(460px,100%);background:#fff;border-radius:22px 22px 0 0;padding:22px 22px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 50px rgba(0,0,0,.35);animation:glpin .28s cubic-bezier(.25,1.2,.35,1)}
+@media(min-width:640px){.glp-card{border-radius:20px;padding-bottom:20px}}
+@keyframes glpin{from{opacity:0;transform:translateY(30px)}to{opacity:1;transform:none}}
+.glp-tag{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--gold);margin-bottom:6px}
+.glp-t{font-size:20px;font-weight:800;color:var(--cp-dark);margin-bottom:8px}
+.glp-d{font-size:14px;color:#3c4759;line-height:1.65}
+.glp-ok{width:100%;margin-top:16px;padding:13px;border-radius:13px;background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark));color:#fff;font-weight:800;font-size:14.5px}
 /* ── Vignettes : arguments de fond dépliables ── */
 .catch-box .ln.clickable{cursor:pointer}
 .catch-more{display:block;font-size:11px;font-weight:800;color:var(--ok);margin-top:5px;letter-spacing:.03em;text-transform:uppercase;opacity:.85}
@@ -1692,11 +1705,11 @@ function navHTML(showBack,goLabel){
 function relocateBoxes(){
   const rail=document.getElementById('sideRail');if(!rail)return;
   rail.innerHTML='';rail.style.display='none';
-  if(!window.matchMedia('(min-width:1060px)').matches)return;
-  const boxes=$('#screen').querySelectorAll('.catch-box,.ask-box');
-  if(!boxes.length)return;
-  boxes.forEach(b=>rail.appendChild(b));
-  rail.style.display='flex';
+  if(window.matchMedia('(min-width:1060px)').matches){
+    const boxes=$('#screen').querySelectorAll('.catch-box,.ask-box');
+    if(boxes.length){boxes.forEach(b=>rail.appendChild(b));rail.style.display='flex';}
+  }
+  try{glossify($('#screen'));glossify(rail);}catch(e){}
 }
 let _rzT=null;
 window.addEventListener('resize',()=>{clearTimeout(_rzT);_rzT=setTimeout(()=>{
@@ -1825,6 +1838,81 @@ async function syncPull(rerender){
   }catch(e){if(e.message!=='code')_syncState('off');}
 }
 
+/* ── Glossaire : termes techniques surlignés partout, définition au clic ── */
+const GLOSSARY={
+  multifides:{t:'Multifides',d:'Petits muscles profonds étagés le long de la colonne, de vertèbre en vertèbre. Ils la stabilisent en permanence · quand ils sont faibles ou « endormis », le dos compense et se fatigue. Le Pilates est l\'une des meilleures façons de les réveiller.'},
+  transverse:{t:'Transverse',d:'Le muscle le plus profond de l\'abdomen, enroulé autour de la taille comme une gaine naturelle. C\'est lui le vrai « gainage » : il soutient le dos et tient le ventre de l\'intérieur.'},
+  plancher:{t:'Plancher pelvien',d:'Hamac de muscles qui ferme le bas du bassin et soutient les organes. Essentiel pour la posture, la continence et l\'après-grossesse · le Pilates le renforce en douceur, sans impact.'},
+  diaphragme:{t:'Diaphragme',d:'Le grand muscle de la respiration, sous les poumons. En Pilates, chaque mouvement se cale sur lui · c\'est ce qui relie le souffle, le gainage et la détente.'},
+  gainage:{t:'Gainage',d:'La capacité des muscles profonds du tronc à stabiliser la colonne pendant l\'effort. Ici ce n\'est pas une position à tenir 30 secondes : c\'est la base active de chaque mouvement de la séance.'},
+  excentrique:{t:'Contraction excentrique',d:'Le muscle travaille en freinant · comme retenir le chariot du Reformer sur le retour. C\'est l\'un des modes de renforcement les plus efficaces, avec très peu de contrainte pour les articulations.'},
+  proprioception:{t:'Proprioception',d:'Le « sixième sens » du corps : savoir où sont ses membres sans les regarder. Elle s\'entraîne par l\'équilibre et l\'instabilité · c\'est elle qui évite entorses et chutes.'},
+  sarcopenie:{t:'Sarcopénie',d:'La perte naturelle de muscle liée à l\'âge, qui s\'accélère après 50 ans si l\'on ne fait rien. Bonne nouvelle : le travail en résistance régulier la freine et la compense · à tout âge.'},
+  cortisol:{t:'Cortisol',d:'L\'hormone du stress. Utile en pic ponctuel, épuisante en continu (sommeil, humeur, poids). La respiration profonde et l\'exercice modéré la font baisser de façon mesurable en laboratoire.'},
+  metabolisme:{t:'Métabolisme de base',d:'L\'énergie que le corps brûle au repos, juste pour fonctionner. Plus on a de muscle, plus il est élevé · on dépense alors davantage, même assis au bureau.'},
+  imc:{t:'IMC',d:'Indice de masse corporelle : le rapport poids/taille utilisé par les études pour situer la corpulence. Indicatif seulement · il ne distingue pas le muscle de la graisse.'},
+  massegrasse:{t:'Masse grasse',d:'La part de graisse dans le poids total, en pourcentage. C\'est elle · bien plus que les kilos sur la balance · qui reflète une silhouette qui change.'},
+  lombalgie:{t:'Lombalgie',d:'La douleur du bas du dos, le « mal de dos » le plus répandu. Le plus souvent sans cause grave · et le renforcement des muscles profonds est l\'une des réponses les mieux validées scientifiquement.'},
+  metaanalyse:{t:'Méta-analyse',d:'Une étude qui compile les résultats de nombreuses études sur un même sujet pour en tirer une conclusion solide. C\'est le niveau de preuve le plus élevé en science.'},
+  rct:{t:'Essai contrôlé randomisé',d:'Une étude où l\'on compare deux groupes tirés au sort (avec / sans Pilates, par exemple). La méthode de référence pour prouver qu\'un effet est réel, et pas un hasard.'},
+  cochrane:{t:'Cochrane',d:'Réseau scientifique international et indépendant, référence mondiale de l\'évaluation des preuves médicales. Quand Cochrane qualifie une preuve de « modérée », c\'est un vrai gage de sérieux.'},
+  reformer:{t:'Reformer',d:'La machine emblématique du Pilates : un chariot coulissant monté sur ressorts, avec sangles et barre. Il guide le mouvement, soutient le corps et dose la résistance cran par cran · du grand débutant à l\'expert.'},
+  centrage:{t:'Centrage',d:'Principe fondateur de la méthode : chaque mouvement part du centre du corps (les abdominaux profonds), jamais des membres seuls. C\'est ce qui transforme un simple geste en exercice complet.'}
+};
+const GL_ALTS=[
+  ['métabolisme de base','metabolisme'],['essais? contrôlés? randomisés?','rct'],['méta-analyses?','metaanalyse'],
+  ['masse grasse','massegrasse'],['plancher pelvien','plancher'],['multifides?','multifides'],
+  ['transverses?','transverse'],['diaphragmes?','diaphragme'],['gainage','gainage'],['excentriques?','excentrique'],
+  ['proprioceptions?','proprioception'],['sarcopénie','sarcopenie'],['cortisol','cortisol'],['IMC','imc'],
+  ['lombalgies?','lombalgie'],['Cochrane','cochrane'],['Reformers?','reformer'],['centrage','centrage']
+];
+const GL_RE=new RegExp('(?<![A-Za-zÀ-ÖØ-öø-ÿ-])('+GL_ALTS.map(a=>a[0]).join('|')+')(?![A-Za-zÀ-ÖØ-öø-ÿ-])','gi');
+function _glKey(word){
+  const w=word.toLowerCase();
+  for(const [pat,key] of GL_ALTS){if(new RegExp('^(?:'+pat+')$','i').test(word))return key;}
+  return null;
+}
+function glossify(root){
+  if(!root)return;
+  const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{
+    const p=n.parentElement;
+    if(!p||p.closest('.gl,script,style,textarea,input,select,.tm-code,#glossPop'))return NodeFilter.FILTER_REJECT;
+    GL_RE.lastIndex=0;
+    return GL_RE.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
+  }});
+  const nodes=[];let n;while(n=walker.nextNode())nodes.push(n);
+  nodes.forEach(node=>{
+    const frag=document.createDocumentFragment();
+    let last=0;const txt=node.nodeValue;GL_RE.lastIndex=0;
+    txt.replace(GL_RE,(m,g,off)=>{
+      const key=_glKey(m);
+      frag.appendChild(document.createTextNode(txt.slice(last,off)));
+      if(key){
+        const s=document.createElement('span');s.className='gl';s.textContent=m;
+        s.addEventListener('click',ev=>{ev.stopPropagation();ev.preventDefault();showGloss(key);});
+        frag.appendChild(s);
+      }else frag.appendChild(document.createTextNode(m));
+      last=off+m.length;return m;
+    });
+    frag.appendChild(document.createTextNode(txt.slice(last)));
+    node.parentNode.replaceChild(frag,node);
+  });
+}
+function showGloss(key){
+  const g=GLOSSARY[key];if(!g)return;
+  document.getElementById('glossPop')?.remove();
+  const d=document.createElement('div');d.id='glossPop';
+  d.innerHTML=`<div class="glp-bg"></div><div class="glp-card">
+    <div class="glp-tag">📖 Glossaire</div>
+    <div class="glp-t">${g.t}</div>
+    <div class="glp-d">${g.d}</div>
+    <button class="glp-ok">Compris ✓</button>
+  </div>`;
+  d.querySelector('.glp-bg').onclick=()=>d.remove();
+  d.querySelector('.glp-ok').onclick=()=>d.remove();
+  document.body.appendChild(d);
+}
+
 /* ── Avatar : emoji fun toutes carnations, ou photo perso (compressée) ── */
 let _avaManual=false;
 function showAvatarStep(manual){
@@ -1925,6 +2013,7 @@ function renderOnboard(){
       <button class="ob-next" onclick="${last?'obClose()':'_obStep++;renderOnboard()'}">${last?'✨ C\'est parti !':'Suivant →'}</button>
     </div>
   </div>`;
+  try{glossify(document.getElementById('obScreen'));}catch(e){}
 }
 function obClose(){document.getElementById('obScreen')?.remove();if(!_obManual)toast('Retrouvez ce guide à tout moment : 🌟 L\'essentiel');}
 function maybeOnboard(){
