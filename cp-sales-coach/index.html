@@ -188,6 +188,11 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ob-row:first-of-type{border-top:0;padding-top:0}
 .ob-ri{flex:0 0 24px;font-size:18px;margin-top:1px}
 .ob-row b{color:var(--cp-dark)}
+.ob-lead{font-family:var(--serif);font-style:italic;font-size:17px;line-height:1.5;color:var(--cp-dark);border-left:3px solid var(--gold);padding:4px 0 4px 14px;margin-bottom:16px}
+.ob-why{margin-top:7px;font-size:13px;color:#5b6579;line-height:1.55}
+.ob-why b{color:#8a5c0a}
+.ob-geste{margin-top:7px;font-size:12.5px;font-weight:700;color:#1F9E75;background:#effaf4;border-radius:9px;padding:6px 10px;display:inline-block}
+.ob-foot{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-radius:12px;padding:11px 14px;font-size:13px;font-weight:700;color:#6b5325;line-height:1.55}
 .ob-nav{display:flex;gap:10px;margin-top:16px}
 .ob-back{flex:0 0 56px;border-radius:14px;background:rgba(255,255,255,.14);color:#fff;font-size:20px;font-weight:700}
 .ob-next{flex:1;border-radius:14px;background:linear-gradient(135deg,var(--gold),#b3760f);color:#fff;font-weight:800;font-size:15.5px;padding:15px;box-shadow:0 10px 26px -8px rgba(201,135,31,.55);transition:transform .13s}
@@ -1631,10 +1636,13 @@ async function syncPull(rerender){
 
 /* ── Guide de bienvenue : état d'esprit CP, montré aux 2 premières connexions ── */
 const OB_STEPS=[
-  {ic:'❤️',t:"L'état d'esprit Club Pilates",rows:[
-    ['🤝','<b>Le client est roi.</b> Il ne nous dérange jamais, il ne « fait pas perdre de temps » · c\'est grâce à lui que nous avons du travail. Considération au décroché, merci sincère au raccroché.'],
-    ['💛','<b>Sincère ET commercial.</b> On veut son bien-être et on est là pour vendre · les deux vont ensemble : le rythme qui le transforme (2-3 séances/sem) est aussi le meilleur pour le studio.'],
-    ['🪞','<b>Transparence totale.</b> On ne vend jamais ce qu\'on ne peut pas tenir. Ce qu\'on annonce au téléphone, le studio le délivre · c\'est ce qui fait revenir et recommander.']]},
+  {ic:'❤️',t:"L'état d'esprit Club Pilates",
+   lead:'Nous ne vendons pas des cartes d\'abonnement. Nous aidons des gens à reprendre soin d\'eux · et un studio qui vit, c\'est une équipe qui vend bien.',
+   rows:[
+    ['🤝','<b>Le client est roi.</b> Il ne nous dérange jamais, il ne « fait pas perdre de temps » · c\'est grâce à lui que nous avons du travail.<div class="ob-why">Derrière chaque numéro, il y a quelqu\'un qui a <b>osé faire le premier pas</b> vers un corps qui va mieux. Beaucoup n\'osent jamais.</div><div class="ob-geste">→ Le geste : remerciez-le d\'avoir laissé ses coordonnées, dès les premières secondes.</div>'],
+    ['💛','<b>Sincère ET commercial.</b> On veut son bien-être et on est là pour vendre · les deux vont ensemble : le rythme qui le transforme (2-3 séances/sem) est aussi le meilleur pour le studio.<div class="ob-why">Le vrai échec, ce n\'est pas un « non ». C\'est une personne qui avait besoin de nous et qu\'on a <b>laissée filer par timidité</b>.</div><div class="ob-geste">→ Le geste : recommandez avec conviction, comme vous le feriez pour un proche.</div>'],
+    ['🪞','<b>Transparence totale.</b> On ne vend jamais ce qu\'on ne peut pas tenir. Ce qu\'on annonce au téléphone, le studio le délivre.<div class="ob-why">Un studio vit de sa réputation : elle se construit <b>en années</b> et se perd <b>en une promesse non tenue</b>. Nos membres se parlent · c\'est notre force, à condition de la mériter.</div><div class="ob-geste">→ Le geste : dans le doute, promettez moins, délivrez plus.</div>']],
+   foot:'Raccrochez chaque appel en ayant donné plus que vous n\'avez demandé · un conseil, une attention, un sourire. C\'est ça, la maison.'},
   {ic:'🏛️',t:'Club Pilates en 30 secondes',rows:[
     ['🌍','<b>Le n°1 mondial du Pilates Reformer</b> : plus de 1 500 studios dans 24 pays. Une méthode éprouvée, pas une salle de quartier.'],
     ['🛠️','<b>Le meilleur équipement du marché</b> : Reformer dernière génération, et tout un plateau d\'accessoires que personne d\'autre ne réunit.'],
@@ -1673,7 +1681,9 @@ function renderOnboard(){
     <div class="ob-card">
       <div class="ob-ic">${s.ic}</div>
       <h2 class="ob-t">${s.t}</h2>
+      ${s.lead?`<div class="ob-lead">« ${s.lead} »</div>`:''}
       ${s.rows.map(r=>`<div class="ob-row"><span class="ob-ri">${r[0]}</span><span>${r[1]}</span></div>`).join('')}
+      ${s.foot?`<div class="ob-foot">✨ ${s.foot}</div>`:''}
     </div>
     <div class="ob-nav">
       ${_obStep>0?`<button class="ob-back" onclick="_obStep--;renderOnboard()">‹</button>`:''}
