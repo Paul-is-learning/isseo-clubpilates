@@ -166,6 +166,25 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
 /* ── Ligne à dire dans une tuile KPI ── */
 .kpi-say{margin-top:8px;background:#effaf4;border:1px solid #cdeadd;border-radius:10px;padding:8px 11px;font-size:12.5px;color:#174e39;font-weight:600;line-height:1.5}
+/* ── Avatars : partout à côté du prénom ── */
+.cp-ava{display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;flex:0 0 auto;vertical-align:middle;box-shadow:0 2px 8px -2px rgba(26,36,58,.35);line-height:1}
+.cp-ava img{width:100%;height:100%;object-fit:cover;display:block}
+.cp-ava.init{background:linear-gradient(135deg,var(--cp-soft),var(--cp-deep));color:#fff;font-weight:800}
+#topAva{margin-right:2px}
+#topAva .cp-ava{border:2px solid rgba(255,255,255,.35)}
+.pf-tn{display:flex;align-items:center;gap:6px}
+.pr-rep{display:inline-flex;align-items:center;gap:4px}
+.av-box{width:min(440px,94vw)}
+.av-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:4px 0 2px}
+.av-cell{width:100%;aspect-ratio:1;border-radius:50%;font-size:26px;display:grid;place-items:center;border:2.5px solid transparent;transition:transform .15s,border-color .15s,box-shadow .15s;cursor:pointer}
+.av-cell:hover{transform:scale(1.14);border-color:#fff;box-shadow:0 6px 18px -4px rgba(0,0,0,.45);z-index:1}
+.av-cell:active{transform:scale(1.02)}
+.av-or{display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.45);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin:14px 0 10px}
+.av-or span{flex:1;height:1px;background:rgba(255,255,255,.18)}
+.av-photo{display:block;width:100%;padding:13px;border-radius:12px;border:1.5px dashed rgba(255,255,255,.35);color:#fff;font-size:14px;font-weight:800;cursor:pointer;transition:background .15s}
+.av-photo:hover{background:rgba(255,255,255,.08)}
+.av-photo input{display:none}
+.set-ava{width:100%;margin-top:4px;padding:11px;border:1.5px solid var(--line);border-radius:11px;background:var(--cp-veil);font-size:13.5px;font-weight:700;color:var(--cp-deep)}
 /* ── Performances : gamification ── */
 .pf-hero{background:linear-gradient(150deg,#26385A,#1E2E4C);border-radius:20px;padding:20px 18px;color:#fff;margin-bottom:12px;box-shadow:0 16px 40px -14px rgba(30,46,76,.5);position:relative;overflow:hidden}
 .pf-hero::after{content:'';position:absolute;inset:0;background:radial-gradient(400px 180px at 90% -20%,rgba(255,255,255,.12),transparent 60%);pointer-events:none}
@@ -643,6 +662,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--cp-deep)!important;bo
 <div id="app">
   <div class="top">
     <div class="top-in">
+      <span id="topAva"></span>
       <div class="top-mid">
         <div class="top-phase" id="topHello">Bonjour !</div>
         <div class="top-sub"><span id="topPhase">Sales Coach</span><span id="topSub"></span></div>
@@ -702,6 +722,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--cp-deep)!important;bo
       <div class="fld"><label>Places fondateur</label><input id="set-spots" type="number" inputmode="numeric"/></div>
       <div class="fld"><label>Remise fondateur (%)</label><input id="set-founding" type="number" inputmode="decimal"/></div>
     </div>
+    <button class="set-ava" onclick="closeSet();showAvatarStep(true)">🖼️ Changer mon avatar</button>
     <div class="nav2"><button class="cx" onclick="closeSet()">Annuler</button><button class="sv" onclick="saveSet()">Enregistrer</button></div>
   </div>
 </div>
@@ -1438,6 +1459,7 @@ function renderScreen(keepScroll){
   const s=flow[st.idx];
   $('#topPhase').textContent=s.phase||'Sales Coach';
   $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
+  $('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);
   $('#topSub').textContent=st.prospectNom?(' · 📞 '+st.prospectNom.split(' ')[0]):(CFG.studio?' · '+CFG.studio:'');
   $('#bar').style.width=Math.round((st.idx+1)/flow.length*100)+'%';
   const scr=$('#screen');let h='';let nav='';
@@ -1684,12 +1706,26 @@ const SYNC_URL='https://wfqtpcujujqxgfsgbpvp.supabase.co/functions/v1/coach-sync
 let COACH_CODE=localStorage.getItem('cpcoach_code')||'';
 let COACH_ROLE=localStorage.getItem('cpcoach_role')||'';
 let IS_MGR=localStorage.getItem('cpcoach_mgr')==='1';
+let MY_AVATAR=localStorage.getItem('cpcoach_avatar')||'';
+let AVATARS={};try{AVATARS=JSON.parse(localStorage.getItem('cpcoach_avatars')||'{}');}catch(e){}
+const AVA_BG=['linear-gradient(135deg,#FFD3A5,#FD6585)','linear-gradient(135deg,#A8E0FF,#4F6FA0)','linear-gradient(135deg,#C3F5D8,#1F9E75)','linear-gradient(135deg,#FFE9A8,#C9871F)','linear-gradient(135deg,#E5D4FF,#6b40b8)','linear-gradient(135deg,#FFC9DE,#c0392b)','linear-gradient(135deg,#D7E3F5,#26385A)','linear-gradient(135deg,#B8F1EC,#0F6E56)'];
+const AVA_EMOJIS=['🧘🏻‍♀️','🧘🏼‍♀️','🧘🏽‍♀️','🧘🏾‍♀️','🧘🏿‍♀️','🧘🏻‍♂️','🧘🏽‍♂️','🧘🏿‍♂️','🤸🏻‍♀️','🤸🏽‍♀️','🤸🏿‍♀️','🤸🏼‍♂️','🤸🏾‍♂️','💃🏻','💃🏽','💃🏿','🕺🏼','🕺🏾','🦸🏻‍♀️','🦸🏽‍♀️','🦸🏿‍♂️','💪🏼','💪🏽','💪🏿'];
+function avaTag(av,size,name){
+  const s='width:'+size+'px;height:'+size+'px;font-size:'+Math.round(size*.56)+'px;';
+  if(av&&av.startsWith('P|'))return `<span class="cp-ava" style="${s}"><img src="${av.slice(2)}" alt=""/></span>`;
+  if(av&&av.startsWith('E|')){const pr=av.split('|');return `<span class="cp-ava" style="${s}background:${AVA_BG[(+pr[2]||0)%AVA_BG.length]}">${pr[1]}</span>`;}
+  return `<span class="cp-ava init" style="${s}font-size:${Math.round(size*.4)}px">${esc(prInitials(name||'?'))}</span>`;
+}
+function avatarOf(name){const k=_repKey(name);if(!k)return'';if(_repKey(CFG.rep)===k&&MY_AVATAR)return MY_AVATAR;return AVATARS[k]||'';}
+async function fetchAvatars(){try{const d=await syncCall('avatars');if(d.avatars){AVATARS=d.avatars;localStorage.setItem('cpcoach_avatars',JSON.stringify(AVATARS));}}catch(e){}}
+
 let PRIMES={1:15,2:30,3:45};
 try{PRIMES=Object.assign(PRIMES,JSON.parse(localStorage.getItem('cpcoach_primes')||'{}'));}catch(e){}
 function _adoptAuth(d){
   if(!d)return;
   COACH_ROLE=d.role||'';localStorage.setItem('cpcoach_role',COACH_ROLE);
   IS_MGR=d.manager===true;localStorage.setItem('cpcoach_mgr',IS_MGR?'1':'0');
+  if(typeof d.avatar==='string'&&d.avatar){MY_AVATAR=d.avatar;localStorage.setItem('cpcoach_avatar',MY_AVATAR);}
   if(d.primes){PRIMES=d.primes;localStorage.setItem('cpcoach_primes',JSON.stringify(PRIMES));}
   // Le prénom de l'invitation devient le nom du conseiller (signatures, fiches)
   if(d.rep&&CFG.rep!==d.rep){CFG.rep=d.rep;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
@@ -1725,6 +1761,50 @@ async function syncPull(rerender){
     _syncState('ok');_lastSync=new Date().toISOString();
     if(rerender&&$('#topPhase').textContent==='Mes prospects')showProspects(true);
   }catch(e){if(e.message!=='code')_syncState('off');}
+}
+
+/* ── Avatar : emoji fun toutes carnations, ou photo perso (compressée) ── */
+let _avaManual=false;
+function showAvatarStep(manual){
+  _avaManual=!!manual;
+  if(document.getElementById('avaScreen'))return;
+  const d=document.createElement('div');d.id='avaScreen';d.className='lock-wrap';
+  d.innerHTML=`<div class="lock-box av-box">
+    <img class="lock-brand" src="logo-cp.webp" alt="Club Pilates"/>
+    <div class="lock-t">Votre avatar</div>
+    <div class="lock-s">Il apparaîtra à côté de votre prénom, partout dans l'outil.<br>Choisissez le vôtre · ou mettez votre photo !</div>
+    <div class="av-grid">${AVA_EMOJIS.map((e,i)=>`<button class="av-cell" style="background:${AVA_BG[i%AVA_BG.length]}" onclick="pickAvatar('E|${e}|${i%AVA_BG.length}')">${e}</button>`).join('')}</div>
+    <div class="av-or"><span></span>ou<span></span></div>
+    <label class="av-photo">📷 Mettre ma photo<input type="file" accept="image/*" onchange="avatarFromFile(this)"/></label>
+    <button class="ob-skip" style="margin-top:12px" onclick="closeAvatarStep()">${manual?'✕ Fermer':'Plus tard ›'}</button>
+  </div>`;
+  document.body.appendChild(d);
+}
+function closeAvatarStep(){document.getElementById('avaScreen')?.remove();if(!_avaManual)maybeOnboard();}
+function pickAvatar(v){_applyAvatar(v);}
+function avatarFromFile(input){
+  const f=input.files&&input.files[0];if(!f)return;
+  const img=new Image();
+  img.onload=()=>{
+    const S=128,c=document.createElement('canvas');c.width=S;c.height=S;
+    const x=c.getContext('2d');
+    const r=Math.max(S/img.width,S/img.height),w=img.width*r,h=img.height*r;
+    x.drawImage(img,(S-w)/2,(S-h)/2,w,h);
+    let url=c.toDataURL('image/jpeg',.72);
+    if(url.length>13500)url=c.toDataURL('image/jpeg',.5);
+    URL.revokeObjectURL(img.src);
+    _applyAvatar('P|'+url);
+  };
+  img.onerror=()=>toast('Image illisible · essayez une autre photo');
+  img.src=URL.createObjectURL(f);
+}
+function _applyAvatar(v){
+  MY_AVATAR=v;localStorage.setItem('cpcoach_avatar',v);
+  const k=_repKey(CFG.rep);if(k)AVATARS[k]=v;
+  syncCall('avatar_set',{avatar:v,nom:CFG.rep||''}).then(()=>toast('Avatar enregistré · toute l\'équipe le voit ✨')).catch(()=>toast('Avatar gardé sur cet appareil · synchronisation au retour du réseau'));
+  document.getElementById('avaScreen')?.remove();
+  renderScreen(true);
+  if(!_avaManual)maybeOnboard();
 }
 
 /* ── Guide de bienvenue : état d'esprit CP, montré aux 2 premières connexions ── */
@@ -1856,7 +1936,7 @@ function saveNameStep(){
   document.getElementById('nameScreen')?.remove();
   toast('Bienvenue '+v.split(' ')[0]+' ! Vos scripts sont personnalisés ✓');
   renderScreen();
-  maybeOnboard();
+  if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
 }
 async function unlockCoach(){
   const v=(document.getElementById('lockCode')?.value||'').trim();
@@ -1869,8 +1949,8 @@ async function unlockCoach(){
     localStorage.setItem('cpcoach_code',v);
     document.getElementById('lockScreen')?.remove();
     toast('Bienvenue ! ✓');
-    if(!CFG.rep)showNameStep();else maybeOnboard();
-    syncPull(true);
+    if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
+    syncPull(true);fetchAvatars();
   }catch(e){
     COACH_CODE='';
     if(err)err.textContent=e.message==='code'?'Code invalide · vérifiez auprès de votre responsable.':'Connexion impossible · réessayez.';
@@ -1964,7 +2044,7 @@ function renderTeam(invites){
     const canTouch=COACH_ROLE==='admin'||!isMgrInv;
     return `<div class="pr-card" style="border-left:4px solid ${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'};${off?'opacity:.65':''}">
       <div class="pr-top">
-        <div class="pr-ava" style="background:${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'}">${esc(prInitials(i.nom))}</div>
+        ${i.avatar?avaTag(i.avatar,40,i.nom):`<div class="pr-ava" style="background:${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'}">${esc(prInitials(i.nom))}</div>`}
         <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b>${isMgrInv?'<span class="tm-mgr">⭐ Recruteur</span>':''}</div>
           <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span><span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span></div></div>
         <span class="pr-chip" style="${off?'background:#f2f3f6;color:#8C95A8;border-color:#dde1e8':'background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6'}">${off?'⏸ Suspendu':'✅ Actif'}</span>
@@ -2078,7 +2158,7 @@ function showPerf(){
   $('#topPhase').textContent='Performances';$('#topSub').textContent='';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';relocateBoxes();
-  syncCall('stats_pull').then(d=>renderPerf(d.events||[])).catch(e=>{
+  Promise.all([syncCall('stats_pull'),fetchAvatars()]).then(([d])=>renderPerf(d.events||[])).catch(e=>{
     if(e.message!=='code')renderPerf(null);
   });
 }
@@ -2102,7 +2182,7 @@ function renderPerf(events){
 
     <div class="pf-hero" style="--lc:${lv.cur.c}">
       <div class="pf-hero-top">
-        <div class="pf-badge">Niveau ${lv.cur.lvl}<small>${lv.cur.name}</small></div>
+        <div style="display:flex;align-items:center;gap:12px">${avaTag(MY_AVATAR||avatarOf(CFG.rep),48,CFG.rep)}<div class="pf-badge">Niveau ${lv.cur.lvl}<small>${lv.cur.name}</small></div></div>
         <div class="pf-abos"><b>${me.abos}</b><small>abonnement${me.abos>1?'s':''} vendu${me.abos>1?'s':''}</small></div>
       </div>
       <div class="pf-track"><div class="pf-fill" style="width:${pctLvl}%"></div></div>
@@ -2130,7 +2210,7 @@ function renderPerf(events){
     ${rows.length?`<div class="pf-team">
       <div class="pf-th"><span>Commercial</span><span>Appels</span><span>Essais</span><span>Abos</span><span>Closing</span><span>Prime mois</span><span>Total</span></div>
       ${rows.map((r,i)=>`<div class="pf-tr${_repKey(r.name)===_repKey(CFG.rep||'')?' me':''}">
-        <span class="pf-tn">${i===0&&r.a.primeMois>0?'🥇 ':i===1&&r.a.primeMois>0?'🥈 ':i===2&&r.a.primeMois>0?'🥉 ':''}${esc(r.name)}</span>
+        <span class="pf-tn">${i===0&&r.a.primeMois>0?'🥇':i===1&&r.a.primeMois>0?'🥈':i===2&&r.a.primeMois>0?'🥉':''}${avaTag(avatarOf(r.name),22,r.name)}${esc(r.name)}</span>
         <span>${r.a.appels}</span><span>${r.a.essais}</span><span><b>${r.a.abos}</b></span>
         <span>${_pct(r.a.abos,r.a.appels)}%</span><span class="pf-tp">${r.a.primeMois} €</span><span>${r.a.primeTotal} €</span>
       </div>`).join('')}
@@ -2178,7 +2258,7 @@ function showProspects(keepScroll){
         <div class="pr-ava" style="background:${pi.c}">${esc(prInitials(p.nom))}</div>
         <div class="pr-idbox">
           <div class="pr-id"><b>${esc(p.nom)}</b></div>
-          <div class="pr-sub">${p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.rep?`<span class="pr-rep">· suivi par ${esc(p.rep.split(' ')[0])}</span>`:''}</div>
+          <div class="pr-sub">${p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.rep?`<span class="pr-rep">· suivi par ${avaTag(avatarOf(p.rep),18,p.rep)} ${esc(p.rep.split(' ')[0])}</span>`:''}</div>
         </div>
         <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>
       </div>
@@ -2500,7 +2580,7 @@ window.addEventListener('popstate',function(){
     }
   }
   if(!COACH_CODE){showLock();return;}
-  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else maybeOnboard();syncPull(true);flushEvents();renderScreen(true);}
+  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();syncPull(true);flushEvents();fetchAvatars().then(()=>renderScreen(true));}
   catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
 })();
 </script>

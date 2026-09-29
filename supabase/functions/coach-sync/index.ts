@@ -63,7 +63,7 @@ serve(async (req) => {
     let invites: any[] = (accRow?.data?.invites as any[]) || [];
     let primes: Record<string, number> = { ...DEFAULT_PRIMES, ...((accRow?.data?.primes as Record<string, number>) || {}) };
     const saveInvites = () =>
-      admin.from("studios").upsert({ id: ROW_ACCESS, data: { invites, primes }, updated_at: new Date().toISOString() });
+      admin.from("studios").upsert({ id: ROW_ACCESS, data: { invites, primes, adminAvatar: accRow?.data?.adminAvatar ?? null }, updated_at: new Date().toISOString() });
 
     let role = "";
     let rep = "";
@@ -82,7 +82,38 @@ serve(async (req) => {
     }
     if (!role) return json({ error: "Code invalide" }, 401);
 
-    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes });
+    let myAvatar = "";
+    if (role === "admin") myAvatar = String(accRow?.data?.adminAvatar?.avatar || "");
+    else { const inv = invites.find((i) => norm(i.code) === norm(code)); myAvatar = String(inv?.avatar || ""); }
+
+    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar });
+
+    // ── Avatars : chacun définit le sien, tout le monde voit ceux des autres ──
+    if (action === "avatar_set") {
+      const av = String(body.avatar || "");
+      if (av && !(av.startsWith("E|") && av.length < 40) && !(av.startsWith("P|data:image/") && av.length <= 14000))
+        return json({ error: "Avatar invalide" }, 400);
+      if (role === "admin") {
+        (accRow?.data || {});
+        const adminAvatar = av ? { nom: String(body.nom || "").slice(0, 60), avatar: av } : null;
+        await admin.from("studios").upsert({ id: ROW_ACCESS, data: { invites, primes, adminAvatar }, updated_at: new Date().toISOString() });
+      } else {
+        const inv = invites.find((i) => norm(i.code) === norm(code));
+        if (inv) { inv.avatar = av; await saveInvites(); }
+      }
+      return json({ ok: true });
+    }
+
+    if (action === "avatars") {
+      const map: Record<string, string> = {};
+      for (const i of invites) {
+        const k = String(i.nom || "").trim().split(" ")[0].toLowerCase();
+        if (k && i.avatar) map[k] = String(i.avatar);
+      }
+      const aa = accRow?.data?.adminAvatar;
+      if (aa && aa.avatar) { const k = String(aa.nom || "").trim().split(" ")[0].toLowerCase(); if (k) map[k] = String(aa.avatar); }
+      return json({ ok: true, avatars: map });
+    }
 
     // ── Journal de performance (immuable : les stats survivent aux fiches) ──
     if (action === "stats_del") {
