@@ -180,9 +180,9 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .av-cell.pic{background:#fff;padding:0;overflow:hidden}
 .av-cell.pic img{width:100%;height:100%;object-fit:cover;display:block}
 .tm-studio{display:inline-block;background:#eef3fb;color:#4F6FA0;border:1px solid #d8e2f5;font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px}
-.av-cell{width:100%;aspect-ratio:1;border-radius:50%;font-size:26px;display:grid;place-items:center;border:2.5px solid transparent;transition:transform .15s,border-color .15s,box-shadow .15s;cursor:pointer}
-.av-cell:hover{transform:scale(1.14);border-color:#fff;box-shadow:0 6px 18px -4px rgba(0,0,0,.45);z-index:1}
-.av-cell:active{transform:scale(1.02)}
+.av-cell{position:relative;width:100%;aspect-ratio:1;border-radius:50%;font-size:26px;display:grid;place-items:center;border:2.5px solid transparent;transition:transform .22s cubic-bezier(.3,1.5,.4,1),border-color .15s,box-shadow .22s;cursor:pointer;z-index:0}
+.av-cell:hover{transform:scale(2.05);border-color:#fff;box-shadow:0 22px 50px -8px rgba(0,0,0,.7);z-index:6}
+.av-cell:active{transform:scale(1.85);z-index:6}
 .av-or{display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.45);font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;margin:14px 0 10px}
 .av-or span{flex:1;height:1px;background:rgba(255,255,255,.18)}
 .av-photo{display:block;width:100%;padding:13px;border-radius:12px;border:1.5px dashed rgba(255,255,255,.35);color:#fff;font-size:14px;font-weight:800;cursor:pointer;transition:background .15s}
