@@ -2008,7 +2008,7 @@ async function delInvite(id,nom){
 }
 function copyInvite(id){
   const i=(window._TEAM||[]).find(x=>x.id===id);if(!i)return;
-  const msg=`Bonjour ${i.nom} ! Voici ton accès au CP Sales Coach, notre assistant d'appel Club Pilates :\n\n🔗 https://clubpilates.isseo-dev.com/cp-sales-coach/\n🔑 Ton code personnel : ${i.code}\n\nOuvre le lien, entre ton code, et c'est parti. Il est personnel · ne le partage pas. À très vite !`;
+  const msg=`Bonjour ${i.nom} ! Voici ton accès au CP Sales Coach, notre assistant d'appel Club Pilates :\n\n🔗 https://clubpilates.isseo-dev.com/cp-sales-coach/?code=${encodeURIComponent(i.code)}\n\nUn clic sur le lien et ton profil s'active tout seul. Ton code personnel est ${i.code} (garde-le pour toi · il permet aussi d'entrer manuellement). À très vite !`;
   navigator.clipboard?.writeText(msg).then(()=>toast('Invitation copiée · prête à envoyer ✓')).catch(()=>prompt('Copiez le message :',msg));
 }
 
@@ -2461,9 +2461,33 @@ window.addEventListener('popstate',function(){
   renderScreen();
 });
 // Accès : code studio obligatoire (données équipe centralisées)
+// Un lien d'invitation peut porter le code (?code=LEA-1234) : un clic = profil activé.
 (async function(){
+  let urlCode='';
+  try{
+    const u=new URL(location.href);
+    urlCode=(u.searchParams.get('code')||'').trim();
+    if(urlCode){u.searchParams.delete('code');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
+  }catch(e){}
+  if(urlCode&&urlCode.toUpperCase()!==(COACH_CODE||'').toUpperCase()){
+    const prev=COACH_CODE;
+    if(!prev||confirm('Ce lien contient un code d\'accès personnel.\nActiver ce profil sur cet appareil ?\n(Le profil actuel sera déconnecté ici.)')){
+      COACH_CODE=urlCode;
+      try{
+        const d=await syncCall('ping');
+        localStorage.setItem('cpcoach_code',urlCode);
+        _adoptAuth(d);
+        toast('Profil '+(d.rep||'responsable')+' activé sur cet appareil ✓');
+        if(!d.rep&&!CFG.rep){/* code maître sans prénom : l'étape prénom suivra */}
+      }catch(e){
+        // Code du lien invalide : on restaure le profil précédent sans le perdre
+        COACH_CODE=prev||'';
+        if(prev){localStorage.setItem('cpcoach_code',prev);document.getElementById('lockScreen')?.remove();toast('Code du lien invalide · profil actuel conservé');}
+      }
+    }
+  }
   if(!COACH_CODE){showLock();return;}
-  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else maybeOnboard();syncPull(true);flushEvents();}
+  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else maybeOnboard();syncPull(true);flushEvents();renderScreen(true);}
   catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
 })();
 </script>
