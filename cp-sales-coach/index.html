@@ -310,6 +310,23 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ob-next{flex:1;border-radius:14px;background:linear-gradient(135deg,var(--gold),#b3760f);color:#fff;font-weight:800;font-size:15.5px;padding:15px;box-shadow:0 10px 26px -8px rgba(201,135,31,.55);transition:transform .13s}
 .ob-next:active{transform:scale(.98)}
 .ht-tile.gold{border-color:#EDD8AC;background:linear-gradient(160deg,#fffdf7,#fdf6e6)}
+/* ── Accueil : la course du mois ── */
+.hp-box{margin-top:14px;background:linear-gradient(150deg,#26385A,#1E2E4C);border-radius:17px;padding:15px 16px;color:#fff;box-shadow:0 14px 34px -12px rgba(30,46,76,.45);animation:pfin .5s cubic-bezier(.22,1.2,.35,1) both}
+.hp-h{display:flex;align-items:center;justify-content:space-between;font-size:13.5px;font-weight:800;margin-bottom:8px}
+.hp-more{color:var(--gold-soft);font-size:11px;font-weight:800;padding:4px 8px;border-radius:8px}
+.hp-more:active{background:rgba(255,255,255,.1)}
+.hp-head{font-size:12px;color:rgba(255,255,255,.85);line-height:1.5;margin-bottom:11px}
+.hp-head b{color:var(--gold-soft)}
+.hp-row{display:flex;align-items:center;gap:8px;padding:5px 0}
+.hp-row.me{background:rgba(230,180,92,.12);border-radius:10px;padding:5px 7px;margin:0 -7px}
+.hp-rank{flex:0 0 26px;font-size:13px;font-weight:800;text-align:center;color:rgba(255,255,255,.75)}
+.hp-name{flex:0 0 auto;min-width:64px;font-size:12.5px;font-weight:700}
+.hp-name small{color:var(--gold-soft);font-weight:700}
+.hp-track{flex:1;height:7px;background:rgba(255,255,255,.12);border-radius:99px;overflow:hidden}
+.hp-fill{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-soft));border-radius:99px;transition:width .9s cubic-bezier(.3,1.25,.4,1)}
+.hp-val{flex:0 0 auto;text-align:right;font-size:12.5px;font-weight:800;min-width:44px}
+.hp-val small{display:block;font-size:9px;font-weight:600;color:rgba(255,255,255,.55)}
+.hp-load{font-size:12px;color:rgba(255,255,255,.6);padding:6px 0}
 /* ── Accueil : boîte à outils + credo ── */
 .home-tools{margin-top:18px}
 .ht-h{font-size:13px;font-weight:800;color:var(--cp-dark);margin-bottom:10px}
@@ -1524,7 +1541,8 @@ function renderScreen(keepScroll){
           ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">👥</span><span class="ht-lbl">Équipe</span></button>`:''}
         </div>
       </div>
-      <div class="home-creed">🤝 <b>Le client est roi.</b> Il ne nous dérange jamais : c'est grâce à lui que nous avons du travail. Accueil chaleureux, transparence totale · et un merci sincère à chaque appel.</div>`;
+      <div class="home-creed">🤝 <b>Le client est roi.</b> Il ne nous dérange jamais : c'est grâce à lui que nous avons du travail. Accueil chaleureux, transparence totale · et un merci sincère à chaque appel.</div>
+      <div id="homePerf">${_hpCache?_hpCache:'<div class="hp-box"><div class="hp-h">🏁 La course du mois</div><div class="hp-load">⏳ Classement en cours de chargement…</div></div>'}</div>`;
     nav=navHTML(false,'Démarrer l\'appel');
   }
   else if(s.t==='goal'){
@@ -1662,6 +1680,7 @@ function renderScreen(keepScroll){
     nav=`<button class="back" onclick="prev()">‹</button><button class="go ok" onclick="copyRecap()">📋 Copier la fiche</button>`;
   }
   const _sy=keepScroll?scr.scrollTop:0;scr.innerHTML=h;scr.scrollTop=_sy;relocateBoxes();
+  if(s.t==='who')loadHomePerf();
   $('#nav').innerHTML=nav;
 }
 function navHTML(showBack,goLabel){
@@ -2207,6 +2226,43 @@ function aggStats(map,repName){
   a.maxAbosJour=Math.max(0,...Object.values(perDay));
   return a;
 }
+/* ── Accueil : la course du mois, en direct ── */
+let _hpCache='',_hpBusy=false;
+async function loadHomePerf(){
+  if(_hpBusy||!COACH_CODE)return;_hpBusy=true;
+  try{
+    const [d]=await Promise.all([syncCall('stats_pull'),fetchAvatars()]);
+    const map=buildStatsMap(d.events||[],PROSPECTS);
+    const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
+    const rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name)}))
+      .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
+    const meK=_repKey(CFG.rep||'');
+    const myIdx=rows.findIndex(r=>r.k===meK);
+    let head='';
+    if(myIdx===0&&rows[0].a.primeMois>0&&rows.length===1){head=`🥇 <b>En tête du mois !</b> Personne d'autre n'a encore marqué · creusez l'écart.`;}
+    else if(myIdx===0&&rows.length>1&&rows[0].a.primeMois>0){const gap=rows[0].a.primeMois-(rows[1]?rows[1].a.primeMois:0);head=`🥇 <b>En tête du mois !</b>${gap>0?` ${esc(rows[1].name)} est à ${gap} € derrière · ne lâchez rien.`:' Égalité parfaite · la prochaine vente fait la différence.'}`;}
+    else if(myIdx>0){const gap=rows[myIdx-1].a.primeMois-rows[myIdx].a.primeMois;head=`${['🥈','🥉'][myIdx-1]||'🎽'} <b>${myIdx+1}e du mois</b> · à ${gap>0?gap+' €':'égalité'} de ${esc(rows[myIdx-1].name)}. ${gap>0&&gap<=45?'Une seule vente peut suffire !':'Chaque appel compte.'}`;}
+    else head=`🚀 <b>La course du mois est ouverte.</b> Première vente = première place !`;
+    const h=`<div class="hp-box">
+      <div class="hp-h">🏁 La course du mois <button class="hp-more" onclick="showPerf()">Tout voir →</button></div>
+      <div class="hp-head">${head}</div>
+      ${rows.slice(0,5).map((r,i)=>{const w=rows[0].a.primeMois?Math.max(6,Math.round(r.a.primeMois/rows[0].a.primeMois*100)):6;
+        return `<div class="hp-row${r.k===meK?' me':''}">
+          <span class="hp-rank">${['🥇','🥈','🥉'][i]||(i+1)+'e'}</span>
+          ${avaTag(avatarOf(r.name),24,r.name)}
+          <span class="hp-name">${esc(r.name)}${r.k===meK?' <small>· vous</small>':''}</span>
+          <span class="hp-track"><span class="hp-fill" style="width:${w}%"></span></span>
+          <span class="hp-val">${r.a.primeMois} €<small>${r.a.abosMois} vente${r.a.abosMois>1?'s':''}</small></span>
+        </div>`;}).join('')||'<div class="hp-load">Aucune activité ce mois-ci · soyez le premier sur le podium !</div>'}
+    </div>`;
+    _hpCache=h;
+    const el=document.getElementById('homePerf');if(el)el.innerHTML=h;
+  }catch(e){
+    const el=document.getElementById('homePerf');
+    if(el&&!_hpCache&&e.message!=='code')el.innerHTML='<div class="hp-box"><div class="hp-h">🏁 La course du mois</div><div class="hp-load">📴 Hors ligne · le classement reviendra avec le réseau.</div></div>';
+  }finally{_hpBusy=false;}
+}
+
 const BADGES=[
   {ic:'🌱',t:'Première vente',d:'Le tout premier abonnement · ça se fête',f:a=>[a.abos,1]},
   {ic:'⚖️',t:'Trois couronnes',d:'Vendre chaque pack au moins une fois',f:a=>[(a.packs[1]?1:0)+(a.packs[2]?1:0)+(a.packs[3]?1:0),3]},
@@ -2637,7 +2693,7 @@ window.addEventListener('popstate',function(){
   try{history.pushState({cp:1},'');}catch(e){}
   closeMenu();closeObj();closeSet();
   document.getElementById('obScreen')?.remove();
-  renderScreen();
+  st.idx=0;renderScreen();
 });
 // Accès : code studio obligatoire (données équipe centralisées)
 // Un lien d'invitation peut porter le code (?code=LEA-1234) : un clic = profil activé.
