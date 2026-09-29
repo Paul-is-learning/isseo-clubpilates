@@ -171,6 +171,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .cp-ava{display:inline-grid;place-items:center;border-radius:50%;overflow:hidden;flex:0 0 auto;vertical-align:middle;box-shadow:0 2px 8px -2px rgba(26,36,58,.35);line-height:1}
 .cp-ava img{width:100%;height:100%;object-fit:cover;display:block}
 .cp-ava.init{background:linear-gradient(135deg,var(--cp-soft),var(--cp-deep));color:#fff;font-weight:800}
+#topTimer{color:var(--gold-soft);font-weight:800;font-variant-numeric:tabular-nums}
 #topAva{margin-right:2px}
 #topAva .cp-ava{border:2px solid rgba(255,255,255,.35)}
 .pf-tn{display:flex;align-items:center;gap:6px}
@@ -260,7 +261,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .bd-fill{height:100%;background:linear-gradient(90deg,var(--cp-soft),var(--cp-deep));border-radius:99px;transition:width 1s cubic-bezier(.3,1.25,.4,1) .4s}
 .bd-prog{font-size:9.5px;font-weight:700;color:#8C95A8;margin-top:4px}
 .pf-team{background:#fff;border:1px solid #EBEFF6;border-radius:16px;padding:6px 0;box-shadow:var(--sh-s);overflow-x:auto}
-.pf-th,.pf-tr{display:grid;grid-template-columns:minmax(90px,1.4fr) repeat(6,minmax(52px,1fr));gap:4px;align-items:center;padding:9px 14px;font-size:12px;min-width:480px}
+.pf-th,.pf-tr{display:grid;grid-template-columns:minmax(90px,1.4fr) repeat(7,minmax(48px,1fr));gap:4px;align-items:center;padding:9px 14px;font-size:12px;min-width:540px}
 .pf-th{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.04em;color:#8C95A8;border-bottom:1px solid #EEF1F7}
 .pf-tr{border-bottom:1px solid #F4F6FA;color:#3c4759}
 .pf-tr:last-child{border-bottom:0}
@@ -699,7 +700,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--cp-deep)!important;bo
       <span id="topAva"></span>
       <div class="top-mid">
         <div class="top-phase" id="topHello">Bonjour !</div>
-        <div class="top-sub"><span id="topPhase">Sales Coach</span><span id="topSub"></span></div>
+        <div class="top-sub"><span id="topPhase">Sales Coach</span><span id="topSub"></span><span id="topTimer"></span></div>
       </div>
       <img class="top-brand" src="logo-cp.webp" alt="Club Pilates"/>
       <button class="top-btn" onclick="openMenu()" aria-label="Menu">
@@ -1696,14 +1697,20 @@ function pick(field,id,single){
 }
 function pickPack(p){st.packChoice=(st.packChoice===p?null:p);renderScreen(true);}
 function setGoal(g){st.callGoal=g;renderScreen();}
-function next(){const len=buildFlow().length;if(st.idx<len-1){st.idx++;renderScreen();}}
+function next(){const f=buildFlow();if(f[st.idx]&&f[st.idx].t==='who'&&!st.callStart)st.callStart=Date.now();if(st.idx<f.length-1){st.idx++;renderScreen();}}
+function fmtDur(s){s=Math.max(0,Math.round(s));const m=Math.floor(s/60),r=s%60;return m+':'+String(r).padStart(2,'0');}
+setInterval(()=>{const el=document.getElementById('topTimer');if(!el)return;
+  if(st.callStart){el.textContent=' · ⏱ '+fmtDur((Date.now()-st.callStart)/1000);el.style.display='';}
+  else{el.textContent='';}
+},1000);
 function prev(){if(st.idx>0){st.idx--;renderScreen();}}
 
 function buildRecap(){
   const pack=recommendPack(),recos=recommendClasses(pack),ah=activeHealth(),L=[];
   L.push(`FICHE PROSPECT · ${('Club Pilates '+(CFG.studio||'')).trim()}`);
   if(st.prospectNom||st._prNom)L.push(`Prospect : ${st._prNom||st.prospectNom}${(st._prTel||st.prospectTel)?' · '+(st._prTel||st.prospectTel):''}`);
-  if(CFG.rep)L.push(`Commercial : ${CFG.rep}`);L.push('');
+  if(CFG.rep)L.push(`Commercial : ${CFG.rep}`);
+  if(st.callStart)L.push(`Durée de l'appel : ${fmtDur((Date.now()-st.callStart)/1000)}`);L.push('');
   const b=ageBand();if(b)L.push(`Âge : ${b.label}`);
   L.push(`Connaît CP : ${st.connait==='oui'?'Oui':st.connait==='non'?'Non':'—'}`);
   if(st.reason.length)L.push(`Motif : ${st.reason.map(r=>lbl(REASONS,r)).join(', ')}`);
@@ -2024,7 +2031,9 @@ function saveProspect(){
     maj:new Date().toISOString()
   };
   PROSPECTS.unshift(p);persistProspects();schedulePush();
-  emitEvent(p,'appel');
+  const _dur=st.callStart?Math.round((Date.now()-st.callStart)/1000):0;
+  emitEvent(p,'appel',_dur?{dur:_dur}:{});
+  st.callStart=null;const _tt=document.getElementById('topTimer');if(_tt)_tt.textContent='';
   if(p.statut==='essai')emitEvent(p,'essai');
   if(p.statut==='abo'){emitEvent(p,'abo',{pack:p.pack,prime:+PRIMES[p.pack]||0});if(p.pack)toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[p.pack]||0)+' € de prime !');}
   st._prSaved=true;renderScreen();
@@ -2172,7 +2181,7 @@ function buildStatsMap(events,prospects){
   (events||[]).forEach(e=>{
     const m=touch(String(e.k).split(':')[0]);
     if(e.rep)m.rep=e.rep;if(e.nom)m.nom=e.nom;
-    if(e.type==='appel'){m.appel=true;if(!m.ts||e.ts<m.ts)m.ts=e.ts;}
+    if(e.type==='appel'){m.appel=true;if(!m.ts||e.ts<m.ts)m.ts=e.ts;if(+e.dur)m.dur=+e.dur;}
     if(e.type==='essai')m.essai=true;
     if(e.type==='venu'){m.essai=true;m.venu=true;}
     if(e.type==='abo'){m.abo=true;m.appel=true;if(e.pack)m.pack=String(e.pack);if(+e.prime)m.prime=+e.prime;m.aboTs=e.ts;}
@@ -2184,10 +2193,11 @@ function buildStatsMap(events,prospects){
 function aggStats(map,repName){
   const rows=Object.values(map).filter(m=>!repName||_repKey(m.rep)===_repKey(repName));
   const month=new Date().toISOString().slice(0,7);
-  const a={appels:0,essais:0,venus:0,abos:0,perdus:0,primeTotal:0,primeMois:0,abosMois:0,maxAbosMois:0,maxAbosJour:0,packs:{1:0,2:0,3:0},packsMois:{1:0,2:0,3:0}};
+  const a={appels:0,essais:0,venus:0,abos:0,perdus:0,primeTotal:0,primeMois:0,abosMois:0,maxAbosMois:0,maxAbosJour:0,durSum:0,durN:0,packs:{1:0,2:0,3:0},packsMois:{1:0,2:0,3:0}};
   const perMonth={},perDay={};
   rows.forEach(m=>{
     if(m.appel)a.appels++;if(m.essai)a.essais++;if(m.venu)a.venus++;if(m.perdu)a.perdus++;
+    if(m.dur){a.durSum+=m.dur;a.durN++;}
     if(m.abo){a.abos++;a.primeTotal+=m.prime;if(+m.pack)a.packs[+m.pack]++;
       const mk=(m.aboTs||'').slice(0,7);if(mk){perMonth[mk]=(perMonth[mk]||0)+1;}
       const dk=(m.aboTs||'').slice(0,10);if(dk){perDay[dk]=(perDay[dk]||0)+1;}
@@ -2260,7 +2270,7 @@ function renderPerf(events){
 
     <div class="pf-sec">🎯 Mon entonnoir de conversion <small>depuis le début</small></div>
     <div class="pf-funnel">${fun.map((f,fi)=>`<div class="pf-frow" style="animation-delay:${.25+fi*.12}s"><div class="pf-flbl">${f.lbl}</div><div class="pf-ftrack"><div class="pf-ffill" style="width:${Math.max(f.pct,f.n?4:0)}%;background:${f.c};transition-delay:${.3+fi*.15}s"></div></div><div class="pf-fnum"><b data-cnt="${f.n}">0</b><small>${f.pct}%</small></div></div>`).join('')}
-      <div class="pf-conv">Taux de closing : <b>${_pct(me.abos,me.appels)}%</b> des appels deviennent des abonnés${me.essais&&me.abos<=me.essais?` · <b>${_pct(me.abos,me.essais)}%</b> des essais signent`:''}</div>
+      <div class="pf-conv">Taux de closing : <b>${_pct(me.abos,me.appels)}%</b> des appels deviennent des abonnés${me.essais&&me.abos<=me.essais?` · <b>${_pct(me.abos,me.essais)}%</b> des essais signent`:''}${me.durN?` · ⏱ appel moyen : <b>${fmtDur(me.durSum/me.durN)}</b> <small>(${me.durN} chronométré${me.durN>1?'s':''})</small>`:''}</div>
     </div>`;
 
   const bds=BADGES.map(b=>{const [cur,tgt]=b.f(me);return {b:b,cur:cur,tgt:tgt,ok:cur>=tgt};});
@@ -2279,10 +2289,10 @@ function renderPerf(events){
       .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
     h+=`<div class="pf-sec" style="margin-top:20px">🏁 Le classement de l'équipe <small>par primes du mois · l'émulation fait partie du jeu</small></div>
     ${rows.length?`<div class="pf-team">
-      <div class="pf-th"><span>Commercial</span><span>Appels</span><span>Essais</span><span>Abos</span><span>Closing</span><span>Prime mois</span><span>Total</span></div>
+      <div class="pf-th"><span>Commercial</span><span>Appels</span><span>⏱ moy.</span><span>Essais</span><span>Abos</span><span>Closing</span><span>Prime mois</span><span>Total</span></div>
       ${rows.map((r,i)=>`<div class="pf-tr${_repKey(r.name)===_repKey(CFG.rep||'')?' me':''}">
         <span class="pf-tn">${i===0&&r.a.primeMois>0?'🥇':i===1&&r.a.primeMois>0?'🥈':i===2&&r.a.primeMois>0?'🥉':''}${avaTag(avatarOf(r.name),22,r.name)}${esc(r.name)}</span>
-        <span>${r.a.appels}</span><span>${r.a.essais}</span><span><b>${r.a.abos}</b></span>
+        <span>${r.a.appels}</span><span>${r.a.durN?fmtDur(r.a.durSum/r.a.durN):'·'}</span><span>${r.a.essais}</span><span><b>${r.a.abos}</b></span>
         <span>${_pct(r.a.abos,r.a.appels)}%</span><span class="pf-tp">${r.a.primeMois} €</span><span>${r.a.primeTotal} €</span>
       </div>`).join('')}
     </div>`:`<div class="pr-empty">Aucune activité enregistrée pour l'instant.</div>`}`;

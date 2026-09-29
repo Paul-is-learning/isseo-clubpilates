@@ -83,15 +83,17 @@ serve(async (req) => {
     if (!role) return json({ error: "Code invalide" }, 401);
 
     let myAvatar = "";
+    let myStudio = "";
     if (role === "admin") myAvatar = String(accRow?.data?.adminAvatar?.avatar || "");
-    else { const inv = invites.find((i) => norm(i.code) === norm(code)); myAvatar = String(inv?.avatar || ""); }
+    else { const inv = invites.find((i) => norm(i.code) === norm(code)); myAvatar = String(inv?.avatar || ""); myStudio = String(inv?.studio || ""); }
 
-    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar });
+    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio });
 
     // ── Avatars : chacun définit le sien, tout le monde voit ceux des autres ──
     if (action === "avatar_set") {
       const av = String(body.avatar || "");
-      if (av && !(av.startsWith("E|") && av.length < 40) && !(av.startsWith("P|data:image/") && av.length <= 14000))
+      const okI = av.startsWith("I|") && av.length < 20 && /^[\w-]+$/.test(av.slice(2));
+      if (av && !okI && !(av.startsWith("E|") && av.length < 40) && !(av.startsWith("P|data:image/") && av.length <= 14000))
         return json({ error: "Avatar invalide" }, 400);
       if (role === "admin") {
         (accRow?.data || {});
@@ -140,6 +142,7 @@ serve(async (req) => {
             rep: String(e.rep || rep).slice(0, 60), nom: String(e.nom || "").slice(0, 80),
             pack: String(e.pack || "").slice(0, 2),
             prime: Math.max(0, Math.min(1000, Number(e.prime) || 0)),
+            dur: Math.max(0, Math.min(14400, Math.round(Number(e.dur) || 0))),
             ts: String(e.ts || new Date().toISOString()),
           };
           const i = events.findIndex((x) => x.k === clean.k);
@@ -188,6 +191,7 @@ serve(async (req) => {
 
       if (action === "team_add") {
         const nom = String(body.nom || "").trim().slice(0, 60);
+        const studio = String(body.studio || "").trim().slice(0, 60);
         if (!nom) return json({ error: "Nom requis" }, 400);
         if (invites.length >= MAX_INVITES) return json({ error: "Limite d'invitations atteinte" }, 400);
         const base = nom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 8) || "CP";
@@ -197,7 +201,7 @@ serve(async (req) => {
           if (norm(c) !== norm(COACH_CODE) && !invites.some((i) => norm(i.code) === norm(c))) newCode = c;
         }
         if (!newCode) return json({ error: "Génération du code impossible" }, 500);
-        const inv = { id: "inv_" + Date.now(), nom, code: newCode, actif: true, manager: false, created: new Date().toISOString(), lastSeen: "" };
+        const inv = { id: "inv_" + Date.now(), nom, studio, code: newCode, actif: true, manager: false, created: new Date().toISOString(), lastSeen: "" };
         invites.push(inv);
         await saveInvites();
         return json({ ok: true, invite: inv });
