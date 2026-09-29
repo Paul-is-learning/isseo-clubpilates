@@ -2687,13 +2687,21 @@ function saveSet(){
 }
 
 renderScreen();
-// Bouton « précédent » du navigateur : ne jamais quitter l'outil, revenir à l'appel
-try{history.pushState({cp:1},'');}catch(e){}
+// Bouton « précédent » du navigateur : ne jamais quitter l'outil, revenir à l'accueil.
+// Deux entrées-tampons + réarmement asynchrone (Safari ignore parfois un pushState
+// lancé de façon synchrone pendant popstate) + réarmement au retour du BFCache.
+function _armHistory(){try{if(!history.state||!history.state.cp){history.pushState({cp:1},'');history.pushState({cp:2},'');}else if(history.state.cp===1){history.pushState({cp:2},'');}}catch(e){}}
+_armHistory();
+window.addEventListener('pageshow',function(){setTimeout(_armHistory,50);});
 window.addEventListener('popstate',function(){
-  try{history.pushState({cp:1},'');}catch(e){}
-  closeMenu();closeObj();closeSet();
-  document.getElementById('obScreen')?.remove();
-  st.idx=0;renderScreen();
+  setTimeout(_armHistory,0);
+  try{
+    closeMenu();closeObj();closeSet();
+    document.getElementById('obScreen')?.remove();
+    document.getElementById('avaScreen')?.remove();
+  }catch(e){}
+  st.idx=0;
+  try{renderScreen();}catch(e){}
 });
 // Accès : code studio obligatoire (données équipe centralisées)
 // Un lien d'invitation peut porter le code (?code=LEA-1234) : un clic = profil activé.
