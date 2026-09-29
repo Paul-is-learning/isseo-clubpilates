@@ -139,6 +139,10 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pr-cap-dl input{border:0;outline:none;font:inherit;font-size:13px;color:var(--cp-dark);background:transparent}
 .pr-savedbox{background:#e7f6ef;border:1.5px solid #a8dcc4;border-radius:15px;padding:14px 16px;margin-bottom:14px;font-size:13.5px;line-height:1.5;color:#155e43}
 
+/* ── Logo Club Pilates officiel (blanc sur fonds sombres) ── */
+.top-brand{height:27px;width:auto;filter:brightness(0) invert(1);opacity:.96;flex:0 0 auto}
+.lock-brand{height:36px;width:auto;filter:brightness(0) invert(1);opacity:.95;margin:0 auto 18px;display:block}
+.ob-brandimg{height:22px;width:auto;filter:brightness(0) invert(1);opacity:.9}
 /* ── Verrou studio + synchronisation ── */
 #lockScreen,.lock-wrap{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#0e1526 0%,#16233f 55%,#1c2f55 100%);display:flex;align-items:center;justify-content:center;padding:24px}
 .lock-box{width:min(400px,92vw);background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.14);border-radius:22px;padding:38px 30px;text-align:center;backdrop-filter:blur(14px);box-shadow:0 24px 70px rgba(0,0,0,.45)}
@@ -557,7 +561,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--cp-deep)!important;bo
 <div id="app">
   <div class="top">
     <div class="top-in">
-      <div class="top-logo">CP</div>
+      <img class="top-brand" src="logo-cp.webp" alt="Club Pilates"/>
       <div class="top-mid">
         <div class="top-phase" id="topPhase">Sales Coach</div>
         <div class="top-sub" id="topSub">Club Pilates</div>
@@ -1351,7 +1355,7 @@ function renderScreen(keepScroll){
   st.idx=Math.max(0,Math.min(st.idx,flow.length-1));
   const s=flow[st.idx];
   $('#topPhase').textContent=s.phase||'Sales Coach';
-  $('#topSub').textContent=st.prospectNom?('📞 '+st.prospectNom.split(' ')[0]+' · '+(CFG.studio||'Club Pilates')):(CFG.studio||'Club Pilates');
+  $('#topSub').textContent=st.prospectNom?('📞 '+st.prospectNom.split(' ')[0]+(CFG.studio?' · '+CFG.studio:'')):(CFG.studio||'');
   $('#bar').style.width=Math.round((st.idx+1)/flow.length*100)+'%';
   const scr=$('#screen');let h='';let nav='';
 
@@ -1674,7 +1678,7 @@ function renderOnboard(){
   const s=OB_STEPS[_obStep],last=_obStep===OB_STEPS.length-1;
   document.getElementById('obScreen').innerHTML=`<div class="ob-in">
     <div class="ob-top">
-      <div class="ob-brand"><span class="ob-logo">CP</span> Bienvenue chez Club Pilates</div>
+      <div class="ob-brand"><img class="ob-brandimg" src="logo-cp.webp" alt="Club Pilates"/></div>
       <button class="ob-skip" onclick="obClose()">${_obManual?'✕ Fermer':'Passer ›'}</button>
     </div>
     <div class="ob-dots">${OB_STEPS.map((x,i)=>`<span class="ob-dot${i===_obStep?' on':i<_obStep?' done':''}"></span>`).join('')}</div>
@@ -1707,7 +1711,7 @@ function showLock(){
   const d=document.createElement('div');
   d.id='lockScreen';
   d.innerHTML=`<div class="lock-box">
-    <div class="lock-logo">CP</div>
+    <img class="lock-brand" src="logo-cp.webp" alt="Club Pilates"/>
     <div class="lock-t">CP Sales Coach</div>
     <div class="lock-s">Outil réservé à l'équipe commerciale.<br>Entrez le code studio pour continuer.</div>
     <input id="lockCode" type="text" placeholder="Code studio" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')unlockCoach()"/>
