@@ -29,6 +29,10 @@ const CORS = {
 };
 const ROW_PROSPECTS = "_coach_prospects";
 const ROW_ACCESS = "_coach_access";
+const ROW_STATS = "_coach_stats";
+const MAX_EVENTS = 20000;
+const EV_TYPES = ["appel", "essai", "venu", "abo", "perdu"];
+const DEFAULT_PRIMES: Record<string, number> = { "1": 15, "2": 30, "3": 45 };
 const MAX_PROSPECTS = 5000;
 const MAX_INVITES = 50;
 
@@ -57,8 +61,9 @@ serve(async (req) => {
     // ── Résolution du code : maître ou invitation active ──
     const { data: accRow } = await admin.from("studios").select("data").eq("id", ROW_ACCESS).maybeSingle();
     let invites: any[] = (accRow?.data?.invites as any[]) || [];
+    let primes: Record<string, number> = { ...DEFAULT_PRIMES, ...((accRow?.data?.primes as Record<string, number>) || {}) };
     const saveInvites = () =>
-      admin.from("studios").upsert({ id: ROW_ACCESS, data: { invites }, updated_at: new Date().toISOString() });
+      admin.from("studios").upsert({ id: ROW_ACCESS, data: { invites, primes }, updated_at: new Date().toISOString() });
 
     let role = "";
     let rep = "";
@@ -74,7 +79,56 @@ serve(async (req) => {
     }
     if (!role) return json({ error: "Code invalide" }, 401);
 
-    if (action === "ping") return json({ ok: true, role, rep });
+    if (action === "ping") return json({ ok: true, role, rep, primes });
+
+    // ── Journal de performance (immuable : les stats survivent aux fiches) ──
+    if (action === "stats_del") {
+      if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+      const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
+      let events: any[] = (stRow?.data?.events as any[]) || [];
+      const ks: string[] = Array.isArray(body.ks) ? body.ks.map(String) : [];
+      const pfx = String(body.prefix || "");
+      events = events.filter((e) => !ks.includes(e.k) && !(pfx && String(e.k).startsWith(pfx)));
+      await admin.from("studios").upsert({ id: ROW_STATS, data: { events }, updated_at: new Date().toISOString() });
+      return json({ ok: true, events });
+    }
+
+    if (action === "stats_pull" || action === "stats_push") {
+      const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
+      let events: any[] = (stRow?.data?.events as any[]) || [];
+
+      if (action === "stats_push") {
+        const incoming: any[] = Array.isArray(body.events) ? body.events : [];
+        for (const e of incoming) {
+          if (!e || !e.k || !EV_TYPES.includes(String(e.type))) continue;
+          const clean = {
+            k: String(e.k).slice(0, 80), type: String(e.type),
+            rep: String(e.rep || rep).slice(0, 60), nom: String(e.nom || "").slice(0, 80),
+            pack: String(e.pack || "").slice(0, 2),
+            prime: Math.max(0, Math.min(1000, Number(e.prime) || 0)),
+            ts: String(e.ts || new Date().toISOString()),
+          };
+          const i = events.findIndex((x) => x.k === clean.k);
+          if (i < 0) events.push(clean);
+          else if ((clean.ts || "") >= (events[i].ts || "")) events[i] = clean;
+        }
+        if (events.length > MAX_EVENTS) events = events.slice(-MAX_EVENTS);
+        await admin.from("studios").upsert({ id: ROW_STATS, data: { events }, updated_at: new Date().toISOString() });
+      }
+      return json({ ok: true, events });
+    }
+
+    // ── Barème des primes (admin uniquement) ──
+    if (action === "primes_set") {
+      if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+      const p = body.primes || {};
+      for (const k of ["1", "2", "3"]) {
+        const v = Number(p[k]);
+        if (!isNaN(v)) primes[k] = Math.max(0, Math.min(1000, v));
+      }
+      await saveInvites();
+      return json({ ok: true, primes });
+    }
 
     // ── Gestion de l'équipe (admin uniquement) ──
     if (String(action).startsWith("team_")) {
