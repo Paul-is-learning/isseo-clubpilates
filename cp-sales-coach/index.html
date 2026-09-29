@@ -162,6 +162,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .sync-badge.sync{background:#fdf3e3;color:#C9871F;border-color:#f0dcb4}
 .sync-badge.off{background:#f2f3f6;color:#8C95A8;border-color:#dde1e8}
 
+.tm-mgr{display:inline-block;background:#fdf3e3;color:#8a5c0a;border:1px solid #f0dcb4;font-size:10px;font-weight:800;border-radius:99px;padding:2px 8px;margin-left:7px;vertical-align:middle}
 .tm-code{font-family:ui-monospace,Menlo,monospace;font-weight:800;font-size:12.5px;color:#16233f;background:#f2f4f9;border:1px solid #dde1e8;border-radius:7px;padding:2px 8px;letter-spacing:1px}
 /* ── Ligne à dire dans une tuile KPI ── */
 .kpi-say{margin-top:8px;background:#effaf4;border:1px solid #cdeadd;border-radius:10px;padding:8px 11px;font-size:12.5px;color:#174e39;font-weight:600;line-height:1.5}
@@ -1463,7 +1464,7 @@ function renderScreen(keepScroll){
           <button class="ht-tile" onclick="showAca()"><span class="ht-ic">🎓</span><span class="ht-lbl">Académie</span></button>
           <button class="ht-tile" onclick="openObj()"><span class="ht-ic">🛡️</span><span class="ht-lbl">Objections</span></button>
           <button class="ht-tile" onclick="openSet()"><span class="ht-ic">⚙️</span><span class="ht-lbl">Réglages</span></button>
-          ${COACH_ROLE==='admin'?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">👥</span><span class="ht-lbl">Équipe</span></button>`:''}
+          ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">👥</span><span class="ht-lbl">Équipe</span></button>`:''}
         </div>
       </div>
       <div class="home-creed">🤝 <b>Le client est roi.</b> Il ne nous dérange jamais : c'est grâce à lui que nous avons du travail. Accueil chaleureux, transparence totale · et un merci sincère à chaque appel.</div>`;
@@ -1682,11 +1683,13 @@ function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.st
 const SYNC_URL='https://wfqtpcujujqxgfsgbpvp.supabase.co/functions/v1/coach-sync';
 let COACH_CODE=localStorage.getItem('cpcoach_code')||'';
 let COACH_ROLE=localStorage.getItem('cpcoach_role')||'';
+let IS_MGR=localStorage.getItem('cpcoach_mgr')==='1';
 let PRIMES={1:15,2:30,3:45};
 try{PRIMES=Object.assign(PRIMES,JSON.parse(localStorage.getItem('cpcoach_primes')||'{}'));}catch(e){}
 function _adoptAuth(d){
   if(!d)return;
   COACH_ROLE=d.role||'';localStorage.setItem('cpcoach_role',COACH_ROLE);
+  IS_MGR=d.manager===true;localStorage.setItem('cpcoach_mgr',IS_MGR?'1':'0');
   if(d.primes){PRIMES=d.primes;localStorage.setItem('cpcoach_primes',JSON.stringify(PRIMES));}
   // Le prénom de l'invitation devient le nom du conseiller (signatures, fiches)
   if(d.rep&&CFG.rep!==d.rep){CFG.rep=d.rep;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
@@ -1945,7 +1948,7 @@ function relanceMsgs(p){
 
 /* ── Équipe & invitations (admin) ── */
 async function showTeam(){
-  if(COACH_ROLE!=='admin'){toast('Réservé au responsable');return;}
+  if(COACH_ROLE!=='admin'&&!IS_MGR){toast('Réservé aux recruteurs');return;}
   $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">Un code personnel par conseiller · révocable à tout moment</div></div></div><div class="pr-empty">⏳ Chargement…</div></div>`;relocateBoxes();
   $('#topPhase').textContent='Équipe';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
@@ -1957,17 +1960,20 @@ function renderTeam(invites){
   const fmt=iso=>iso?new Date(iso).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' à '+new Date(iso).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):null;
   const row=i=>{
     const off=i.actif===false;
-    return `<div class="pr-card" style="border-left:4px solid ${off?'#8C95A8':'#1F9E75'};${off?'opacity:.65':''}">
+    const isMgrInv=i.manager===true;
+    const canTouch=COACH_ROLE==='admin'||!isMgrInv;
+    return `<div class="pr-card" style="border-left:4px solid ${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'};${off?'opacity:.65':''}">
       <div class="pr-top">
-        <div class="pr-ava" style="background:${off?'#8C95A8':'#1F9E75'}">${esc(prInitials(i.nom))}</div>
-        <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b></div>
+        <div class="pr-ava" style="background:${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'}">${esc(prInitials(i.nom))}</div>
+        <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b>${isMgrInv?'<span class="tm-mgr">⭐ Recruteur</span>':''}</div>
           <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span><span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span></div></div>
         <span class="pr-chip" style="${off?'background:#f2f3f6;color:#8C95A8;border-color:#dde1e8':'background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6'}">${off?'⏸ Suspendu':'✅ Actif'}</span>
       </div>
       <div class="pr-actions">
         <button class="pr-act main" onclick="copyInvite('${i.id}')">📋 Copier l'invitation</button>
-        <button class="pr-act" onclick="toggleInvite('${i.id}',${off?'true':'false'})">${off?'▶️ Réactiver':'⏸ Suspendre'}</button>
-        <button class="pr-act danger" onclick="delInvite('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">🗑</button>
+        ${canTouch?`<button class="pr-act" onclick="toggleInvite('${i.id}',${off?'true':'false'})">${off?'▶️ Réactiver':'⏸ Suspendre'}</button>`:''}
+        ${COACH_ROLE==='admin'?`<button class="pr-act" title="${isMgrInv?'Retirer le droit d\'inviter':'Donner le droit d\'inviter (recruteur)'}" onclick="toggleManager('${i.id}',${isMgrInv?'false':'true'})">${isMgrInv?'⭐':'☆'}</button>`:''}
+        ${canTouch?`<button class="pr-act danger" onclick="delInvite('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">🗑</button>`:''}
       </div>
     </div>`;
   };
@@ -1979,7 +1985,8 @@ function renderTeam(invites){
         <div><span class="hn">1</span><span><b>Invitez un conseiller</b> : entrez son prénom, un code personnel est créé (ex. LEA-4821).</span></div>
         <div><span class="hn">2</span><span><b>Envoyez-lui l'invitation</b> (bouton copier) : le lien de l'outil + son code. Il n'a besoin de rien d'autre · aucun compte, aucun accès au reste de votre application.</span></div>
         <div><span class="hn">3</span><span><b>Départ ou doute ?</b> Suspendez ou supprimez son code : l'outil se verrouille chez lui à la seconde. Les fiches, elles, restent au studio.</span></div>
-        <div><span class="hn">4</span><span>Votre code <b>maître</b> reste secret : lui seul ouvre cette page. Ne le donnez jamais à l'équipe.</span></div>
+        <div><span class="hn">4</span><span>L'étoile <b>⭐ Recruteur</b> (réservée au code maître) donne à un conseiller l'accès à cette page pour inviter à son tour · sans jamais toucher aux primes ni aux autres recruteurs.</span></div>
+        <div><span class="hn">5</span><span>Votre code <b>maître</b> reste secret : ne le donnez jamais à l'équipe.</span></div>
       </div>
     </details>
     <div class="pr-capture"><div class="pr-cap-h">➕ Inviter un conseiller</div>
@@ -1996,6 +2003,10 @@ async function addInvite(){
     renderTeam((window._TEAM||[]).concat([d.invite]));
     toast('Code créé pour '+nom+' : '+d.invite.code);
   }catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+async function toggleManager(id,mgr){
+  try{const d=await syncCall('team_manager',{id:id,manager:mgr});renderTeam(d.invites||[]);toast(mgr?'⭐ Droit d\'inviter accordé':'Droit d\'inviter retiré');}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
 async function toggleInvite(id,actif){
   try{const d=await syncCall('team_toggle',{id:id,actif:actif});renderTeam(d.invites||[]);toast(actif?'Code réactivé ✓':'Code suspendu · outil verrouillé chez lui');}
@@ -2111,11 +2122,11 @@ function renderPerf(events){
       <div class="pf-conv">Taux de closing : <b>${_pct(me.abos,me.appels)}%</b> des appels deviennent des abonnés${me.essais&&me.abos<=me.essais?` · <b>${_pct(me.abos,me.essais)}%</b> des essais signent`:''}</div>
     </div>`;
 
-  if(COACH_ROLE==='admin'){
+  {
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
     const rows=Object.entries(reps).map(([k,name])=>({name:name,a:aggStats(map,name)}))
       .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
-    h+=`<div class="pf-sec" style="margin-top:20px">👥 Vue responsable · l'équipe <small>classée par primes du mois</small></div>
+    h+=`<div class="pf-sec" style="margin-top:20px">🏁 Le classement de l'équipe <small>par primes du mois · l'émulation fait partie du jeu</small></div>
     ${rows.length?`<div class="pf-team">
       <div class="pf-th"><span>Commercial</span><span>Appels</span><span>Essais</span><span>Abos</span><span>Closing</span><span>Prime mois</span><span>Total</span></div>
       ${rows.map((r,i)=>`<div class="pf-tr${_repKey(r.name)===_repKey(CFG.rep||'')?' me':''}">
@@ -2123,8 +2134,10 @@ function renderPerf(events){
         <span>${r.a.appels}</span><span>${r.a.essais}</span><span><b>${r.a.abos}</b></span>
         <span>${_pct(r.a.abos,r.a.appels)}%</span><span class="pf-tp">${r.a.primeMois} €</span><span>${r.a.primeTotal} €</span>
       </div>`).join('')}
-    </div>`:`<div class="pr-empty">Aucune activité enregistrée pour l'instant.</div>`}
-    <div class="pf-sec" style="margin-top:18px">⚙️ Barème des primes <small>appliqué aux prochaines ventes · l'historique garde ses montants</small></div>
+    </div>`:`<div class="pr-empty">Aucune activité enregistrée pour l'instant.</div>`}`;
+  }
+  if(COACH_ROLE==='admin'){
+    h+=`<div class="pf-sec" style="margin-top:18px">⚙️ Barème des primes <small>appliqué aux prochaines ventes · l'historique garde ses montants</small></div>
     <div class="pf-primeset">
       ${[1,2,3].map(pk=>`<label>${packShort(pk)}<input id="prm-${pk}" type="number" min="0" value="${+PRIMES[pk]||0}"/> €</label>`).join('')}
       <button class="go ok" style="flex:0 0 auto;padding:10px 16px" onclick="savePrimes()">Enregistrer</button>
@@ -2250,7 +2263,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
-    ${COACH_ROLE==='admin'?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
+    ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="printGuide()"><span class="mic">🖨️</span><span>Imprimer le guide (PDF)<small>Livret hors-ligne : toutes les sections</small></span></button>
     <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;

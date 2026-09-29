@@ -67,19 +67,22 @@ serve(async (req) => {
 
     let role = "";
     let rep = "";
+    let mgr = false;
     if (norm(code) && norm(code) === norm(COACH_CODE)) {
       role = "admin";
+      mgr = true;
     } else {
       const inv = invites.find((i) => i && i.actif !== false && norm(i.code) === norm(code));
       if (inv) {
         role = "rep";
         rep = String(inv.nom || "");
+        mgr = inv.manager === true;
         if (action === "ping") { inv.lastSeen = new Date().toISOString(); await saveInvites(); }
       }
     }
     if (!role) return json({ error: "Code invalide" }, 401);
 
-    if (action === "ping") return json({ ok: true, role, rep, primes });
+    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes });
 
     // ── Journal de performance (immuable : les stats survivent aux fiches) ──
     if (action === "stats_del") {
@@ -132,7 +135,23 @@ serve(async (req) => {
 
     // ── Gestion de l'équipe (admin uniquement) ──
     if (String(action).startsWith("team_")) {
-      if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+      if (role !== "admin" && !mgr) return json({ error: "Réservé aux recruteurs" }, 403);
+
+      // Seul le code maître promeut ou rétrograde un recruteur
+      if (action === "team_manager") {
+        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        const inv = invites.find((i) => i.id === String(body.id));
+        if (!inv) return json({ error: "Invitation introuvable" }, 404);
+        inv.manager = body.manager === true;
+        await saveInvites();
+        return json({ ok: true, invites });
+      }
+
+      // Un recruteur ne peut pas suspendre/supprimer un autre recruteur
+      if (role !== "admin" && (action === "team_toggle" || action === "team_del")) {
+        const target = invites.find((i) => i.id === String(body.id));
+        if (target && target.manager === true) return json({ error: "Invitation d'un recruteur · réservé au responsable" }, 403);
+      }
 
       if (action === "team_list") return json({ ok: true, invites });
 
@@ -147,7 +166,7 @@ serve(async (req) => {
           if (norm(c) !== norm(COACH_CODE) && !invites.some((i) => norm(i.code) === norm(c))) newCode = c;
         }
         if (!newCode) return json({ error: "Génération du code impossible" }, 500);
-        const inv = { id: "inv_" + Date.now(), nom, code: newCode, actif: true, created: new Date().toISOString(), lastSeen: "" };
+        const inv = { id: "inv_" + Date.now(), nom, code: newCode, actif: true, manager: false, created: new Date().toISOString(), lastSeen: "" };
         invites.push(inv);
         await saveInvites();
         return json({ ok: true, invite: inv });
