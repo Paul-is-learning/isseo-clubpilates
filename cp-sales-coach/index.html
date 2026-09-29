@@ -2184,30 +2184,34 @@ function buildStatsMap(events,prospects){
 function aggStats(map,repName){
   const rows=Object.values(map).filter(m=>!repName||_repKey(m.rep)===_repKey(repName));
   const month=new Date().toISOString().slice(0,7);
-  const a={appels:0,essais:0,venus:0,abos:0,perdus:0,primeTotal:0,primeMois:0,abosMois:0,maxAbosMois:0,packs:{1:0,2:0,3:0},packsMois:{1:0,2:0,3:0}};
-  const perMonth={};
+  const a={appels:0,essais:0,venus:0,abos:0,perdus:0,primeTotal:0,primeMois:0,abosMois:0,maxAbosMois:0,maxAbosJour:0,packs:{1:0,2:0,3:0},packsMois:{1:0,2:0,3:0}};
+  const perMonth={},perDay={};
   rows.forEach(m=>{
     if(m.appel)a.appels++;if(m.essai)a.essais++;if(m.venu)a.venus++;if(m.perdu)a.perdus++;
     if(m.abo){a.abos++;a.primeTotal+=m.prime;if(+m.pack)a.packs[+m.pack]++;
       const mk=(m.aboTs||'').slice(0,7);if(mk){perMonth[mk]=(perMonth[mk]||0)+1;}
+      const dk=(m.aboTs||'').slice(0,10);if(dk){perDay[dk]=(perDay[dk]||0)+1;}
       if((m.aboTs||'').startsWith(month)){a.abosMois++;a.primeMois+=m.prime;if(+m.pack)a.packsMois[+m.pack]++;}}
   });
   a.maxAbosMois=Math.max(0,...Object.values(perMonth));
+  a.maxAbosJour=Math.max(0,...Object.values(perDay));
   return a;
 }
 const BADGES=[
-  {ic:'🌱',t:'Première vente',d:'Vendre son 1er abonnement',f:a=>[a.abos,1]},
-  {ic:'🔥',t:'Mois en feu',d:'3 ventes dans le même mois',f:a=>[a.maxAbosMois,3]},
-  {ic:'⚡',t:'Série dorée',d:'10 ventes dans le même mois',f:a=>[a.maxAbosMois,10]},
-  {ic:'💰',t:'Premier billet',d:'100 € de primes cumulées',f:a=>[a.primeTotal,100]},
-  {ic:'💎',t:'Trésorier',d:'500 € de primes cumulées',f:a=>[a.primeTotal,500]},
-  {ic:'🏦',t:'Coffre-fort',d:'1 500 € de primes cumulées',f:a=>[a.primeTotal,1500]},
-  {ic:'📞',t:'Marathonien',d:'50 appels traités',f:a=>[a.appels,50]},
-  {ic:'☎️',t:'Centurion',d:'100 appels traités',f:a=>[a.appels,100]},
-  {ic:'🎟️',t:'Faiseur d\'essais',d:'25 essais bookés',f:a=>[a.essais,25]},
-  {ic:'👑',t:'Roi de l\'illimité',d:'5 Illimités vendus',f:a=>[a.packs[3],5]},
+  {ic:'🌱',t:'Première vente',d:'Le tout premier abonnement · ça se fête',f:a=>[a.abos,1]},
   {ic:'⚖️',t:'Trois couronnes',d:'Vendre chaque pack au moins une fois',f:a=>[(a.packs[1]?1:0)+(a.packs[2]?1:0)+(a.packs[3]?1:0),3]},
-  {ic:'🎯',t:'Sniper',d:'30 % de closing · dès 20 appels',f:a=>[a.appels>=20?Math.round(a.abos/a.appels*100):Math.min(a.appels,19),a.appels>=20?30:20],unit:a=>a.appels>=20?'%':' appels'}
+  {ic:'🎩',t:'Coup du chapeau',d:'3 ventes dans la même journée',f:a=>[a.maxAbosJour,3]},
+  {ic:'🔥',t:'Journée de feu',d:'5 ventes dans la même journée',f:a=>[a.maxAbosJour,5]},
+  {ic:'🚀',t:'Mois fusée',d:'30 ventes dans le même mois',f:a=>[a.maxAbosMois,30]},
+  {ic:'⚡',t:'Légende du mois',d:'60 ventes dans le même mois',f:a=>[a.maxAbosMois,60]},
+  {ic:'💰',t:'Premier billet',d:'500 € de primes cumulées',f:a=>[a.primeTotal,500]},
+  {ic:'💵',t:'Belle liasse',d:'1 000 € de primes cumulées',f:a=>[a.primeTotal,1000]},
+  {ic:'💎',t:'Trésorier',d:'5 000 € de primes cumulées',f:a=>[a.primeTotal,5000]},
+  {ic:'🥇',t:'Pactole',d:'10 000 € de primes cumulées',f:a=>[a.primeTotal,10000]},
+  {ic:'🏦',t:'Coffre-fort',d:'15 000 € de primes cumulées',f:a=>[a.primeTotal,15000]},
+  {ic:'🏃',t:'Marathonien',d:'300 appels traités',f:a=>[a.appels,300]},
+  {ic:'🎯',t:'Sniper',d:'30 % de closing · dès 50 appels',f:a=>[a.appels>=50?Math.round(a.abos/a.appels*100):Math.min(a.appels,49),a.appels>=50?30:50],unit:a=>a.appels>=50?'%':' appels'},
+  {ic:'👑',t:'Roi de l\'illimité',d:'25 Illimités vendus',f:a=>[a.packs[3],25]}
 ];
 function _pct(n,d){return d?Math.round(n/d*100):0;}
 function showPerf(){
@@ -2652,7 +2656,7 @@ window.addEventListener('popstate',function(){
     }
   }
   if(!COACH_CODE){showLock();return;}
-  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();syncPull(true);flushEvents();fetchAvatars().then(()=>renderScreen(true));}
+  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();syncPull(true);flushEvents();fetchAvatars().then(()=>{if(($('#nav').innerHTML||'').includes('next()'))renderScreen(true);});}
   catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
 })();
 </script>
