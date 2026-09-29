@@ -176,6 +176,10 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pr-rep{display:inline-flex;align-items:center;gap:4px}
 .av-box{width:min(440px,94vw)}
 .av-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin:4px 0 2px}
+.av-grid.img5{grid-template-columns:repeat(5,1fr);gap:10px}
+.av-cell.pic{background:#fff;padding:0;overflow:hidden}
+.av-cell.pic img{width:100%;height:100%;object-fit:cover;display:block}
+.tm-studio{display:inline-block;background:#eef3fb;color:#4F6FA0;border:1px solid #d8e2f5;font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px}
 .av-cell{width:100%;aspect-ratio:1;border-radius:50%;font-size:26px;display:grid;place-items:center;border:2.5px solid transparent;transition:transform .15s,border-color .15s,box-shadow .15s;cursor:pointer}
 .av-cell:hover{transform:scale(1.14);border-color:#fff;box-shadow:0 6px 18px -4px rgba(0,0,0,.45);z-index:1}
 .av-cell:active{transform:scale(1.02)}
@@ -1713,6 +1717,7 @@ const AVA_EMOJIS=['🧘🏻‍♀️','🧘🏼‍♀️','🧘🏽‍♀️','�
 function avaTag(av,size,name){
   const s='width:'+size+'px;height:'+size+'px;font-size:'+Math.round(size*.56)+'px;';
   if(av&&av.startsWith('P|'))return `<span class="cp-ava" style="${s}"><img src="${av.slice(2)}" alt=""/></span>`;
+  if(av&&av.startsWith('I|'))return `<span class="cp-ava" style="${s}"><img src="avatars/${av.slice(2).replace(/[^\w-]/g,'')}.webp" alt=""/></span>`;
   if(av&&av.startsWith('E|')){const pr=av.split('|');return `<span class="cp-ava" style="${s}background:${AVA_BG[(+pr[2]||0)%AVA_BG.length]}">${pr[1]}</span>`;}
   return `<span class="cp-ava init" style="${s}font-size:${Math.round(size*.4)}px">${esc(prInitials(name||'?'))}</span>`;
 }
@@ -1726,6 +1731,7 @@ function _adoptAuth(d){
   COACH_ROLE=d.role||'';localStorage.setItem('cpcoach_role',COACH_ROLE);
   IS_MGR=d.manager===true;localStorage.setItem('cpcoach_mgr',IS_MGR?'1':'0');
   if(typeof d.avatar==='string'&&d.avatar){MY_AVATAR=d.avatar;localStorage.setItem('cpcoach_avatar',MY_AVATAR);}
+  if(d.studio&&CFG.studio!==d.studio){CFG.studio=d.studio;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
   if(d.primes){PRIMES=d.primes;localStorage.setItem('cpcoach_primes',JSON.stringify(PRIMES));}
   // Le prénom de l'invitation devient le nom du conseiller (signatures, fiches)
   if(d.rep&&CFG.rep!==d.rep){CFG.rep=d.rep;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
@@ -1773,7 +1779,7 @@ function showAvatarStep(manual){
     <img class="lock-brand" src="logo-cp.webp" alt="Club Pilates"/>
     <div class="lock-t">Votre avatar</div>
     <div class="lock-s">Il apparaîtra à côté de votre prénom, partout dans l'outil.<br>Choisissez le vôtre · ou mettez votre photo !</div>
-    <div class="av-grid">${AVA_EMOJIS.map((e,i)=>`<button class="av-cell" style="background:${AVA_BG[i%AVA_BG.length]}" onclick="pickAvatar('E|${e}|${i%AVA_BG.length}')">${e}</button>`).join('')}</div>
+    <div class="av-grid img5">${Array.from({length:20},(x,i)=>{const id='av'+String(i+1).padStart(2,'0');return `<button class="av-cell pic" onclick="pickAvatar('I|${id}')"><img src="avatars/${id}.webp" alt="" loading="lazy"/></button>`;}).join('')}</div>
     <div class="av-or"><span></span>ou<span></span></div>
     <label class="av-photo">📷 Mettre ma photo<input type="file" accept="image/*" onchange="avatarFromFile(this)"/></label>
     <button class="ob-skip" style="margin-top:12px" onclick="closeAvatarStep()">${manual?'✕ Fermer':'Plus tard ›'}</button>
@@ -2046,7 +2052,7 @@ function renderTeam(invites){
       <div class="pr-top">
         ${i.avatar?avaTag(i.avatar,40,i.nom):`<div class="pr-ava" style="background:${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'}">${esc(prInitials(i.nom))}</div>`}
         <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b>${isMgrInv?'<span class="tm-mgr">⭐ Recruteur</span>':''}</div>
-          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span><span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span></div></div>
+          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span>${i.studio?`<span class="tm-studio">📍 ${esc(i.studio)}</span>`:''}<span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span></div></div>
         <span class="pr-chip" style="${off?'background:#f2f3f6;color:#8C95A8;border-color:#dde1e8':'background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6'}">${off?'⏸ Suspendu':'✅ Actif'}</span>
       </div>
       <div class="pr-actions">
@@ -2070,16 +2076,20 @@ function renderTeam(invites){
       </div>
     </details>
     <div class="pr-capture"><div class="pr-cap-h">➕ Inviter un conseiller</div>
-      <div class="pr-cap-row"><input type="text" id="tm-nom" placeholder="Prénom (ex. Léa)" onkeydown="if(event.key==='Enter')addInvite()"/><button class="go ok" style="flex:0 0 auto;padding:10px 18px" onclick="addInvite()">Créer son code</button></div>
+      <div class="pr-cap-row"><input type="text" id="tm-nom" placeholder="Prénom (ex. Léa)"/><input type="text" id="tm-studio" list="studioList" placeholder="Studio d'affectation *" value="${esc(CFG.studio||'')}" onkeydown="if(event.key==='Enter')addInvite()"/></div>
+      <datalist id="studioList">${[...new Set(['La Garenne-Colombes','Montpellier Lattes','La Défense',CFG.studio||''].concat(invites.map(x=>x.studio||'')))].filter(Boolean).map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
+      <button class="go ok" style="width:100%;padding:11px" onclick="addInvite()">Créer son code</button>
     </div>
     ${invites.length?invites.map(row).join(''):`<div class="pr-empty">👥 Aucune invitation pour l'instant.<br><small>Créez le premier code personnel ci-dessus.</small></div>`}
   </div>`;
 }
 async function addInvite(){
   const nom=($('#tm-nom')?.value||'').trim();
+  const studio=($('#tm-studio')?.value||'').trim();
   if(!nom){toast('Entrez un prénom');$('#tm-nom')?.focus();return;}
+  if(!studio){toast('Choisissez son studio d\'affectation');$('#tm-studio')?.focus();return;}
   try{
-    const d=await syncCall('team_add',{nom:nom});
+    const d=await syncCall('team_add',{nom:nom,studio:studio});
     renderTeam((window._TEAM||[]).concat([d.invite]));
     toast('Code créé pour '+nom+' : '+d.invite.code);
   }catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
@@ -2099,7 +2109,7 @@ async function delInvite(id,nom){
 }
 function copyInvite(id){
   const i=(window._TEAM||[]).find(x=>x.id===id);if(!i)return;
-  const msg=`Bonjour ${i.nom} ! Voici ton accès au CP Sales Coach, notre assistant d'appel Club Pilates :\n\n🔗 https://clubpilates.isseo-dev.com/cp-sales-coach/?code=${encodeURIComponent(i.code)}\n\nUn clic sur le lien et ton profil s'active tout seul. Ton code personnel est ${i.code} (garde-le pour toi · il permet aussi d'entrer manuellement). À très vite !`;
+  const msg=`Bonjour ${i.nom} ! Voici ton accès au CP Sales Coach, notre assistant d'appel Club Pilates${i.studio?' pour le studio de '+i.studio:''} :\n\n🔗 https://clubpilates.isseo-dev.com/cp-sales-coach/?code=${encodeURIComponent(i.code)}\n\nUn clic sur le lien et ton profil s'active tout seul. Ton code personnel est ${i.code} (garde-le pour toi · il permet aussi d'entrer manuellement). À très vite !`;
   navigator.clipboard?.writeText(msg).then(()=>toast('Invitation copiée · prête à envoyer ✓')).catch(()=>prompt('Copiez le message :',msg));
 }
 
