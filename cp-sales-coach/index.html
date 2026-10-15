@@ -39,6 +39,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 
 /* écran central */
 .screen{flex:1 1 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:22px 18px 24px;display:flex;flex-direction:column;animation:slidein .28s cubic-bezier(.25,.8,.3,1)}
+.screen>*{flex-shrink:0}
 @keyframes slidein{from{opacity:0;transform:translateX(14px)}to{opacity:1;transform:none}}
 .scr-tag{display:inline-flex;align-self:flex-start;align-items:center;gap:7px;padding:6px 13px;border-radius:9px;font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;margin-bottom:16px}
 .scr-tag.ask{background:var(--cp-pale);color:var(--cp-deep)}
@@ -341,6 +342,13 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ht-count{position:absolute;top:6px;right:8px;background:var(--gold);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 7px}
 .home-creed{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-left:4px solid var(--gold);border-radius:13px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#6b5325}
 .home-creed b{color:#523d12}
+/* ── Lecteur de fiche prospect ── */
+.fv-card{display:flex;flex-direction:column;max-height:82vh}
+.fv-pack{font-size:12px;font-weight:800;color:#1F9E75;background:#e7f6ef;border:1px solid #bfe8d6;border-radius:99px;padding:3px 10px;vertical-align:middle;margin-left:6px}
+.fv-meta{font-size:12px;color:#8C95A8;font-weight:600;margin:-2px 0 10px}
+.fv-body{flex:1;overflow-y:auto;background:#F7F8FB;border:1px solid #EBEFF6;border-radius:13px;padding:14px 15px;font-size:13.5px;line-height:1.7;color:#3c4759;white-space:pre-wrap;font-variant-numeric:tabular-nums}
+.fv-btns{display:flex;gap:9px;margin-top:14px}
+.fv-btns .pr-act{padding:12px 16px;font-size:13px}
 /* ── Requalification des besoins ── */
 .rq-box{margin-top:14px;background:linear-gradient(135deg,#f2f6ff,#e9f1fb);border:1.5px solid #bcd2ee;border-left:4px solid var(--cp-deep);border-radius:14px;padding:13px 15px;animation:pop .3s}
 .rq-h{font-size:11px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--cp-deep);margin-bottom:7px}
@@ -350,8 +358,8 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 /* ── Glossaire ── */
 .gl{border-bottom:1.5px dashed var(--gold);background:linear-gradient(180deg,transparent 72%,rgba(201,135,31,.22) 72%);cursor:help;border-radius:2px;transition:background .15s}
 .gl:hover{background:rgba(201,135,31,.18)}
-#glossPop{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center}
-@media(min-width:640px){#glossPop{align-items:center}}
+#glossPop,#fichePop{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){#glossPop,#fichePop{align-items:center}}
 .glp-bg{position:absolute;inset:0;background:rgba(14,21,38,.55);backdrop-filter:blur(3px);animation:obfade .2s}
 .glp-card{position:relative;width:min(460px,100%);background:#fff;border-radius:22px 22px 0 0;padding:22px 22px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 50px rgba(0,0,0,.35);animation:glpin .28s cubic-bezier(.25,1.2,.35,1)}
 @media(min-width:640px){.glp-card{border-radius:20px;padding-bottom:20px}}
@@ -2514,7 +2522,7 @@ function showProspects(keepScroll){
       <div class="pr-actions">
         <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'✉️ Relances ('+msgs.length+')'}</button>
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date essai / rappel"/>
-        <button onclick="copyPFiche('${p.id}')" class="pr-act" title="Copier la fiche">📋</button>
+        <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
         <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
       </div>
       ${open?`<div class="pr-msgs">${msgs.map((m,i)=>`<div class="pr-msg"><div class="pr-msg-t">${m.t}</div><div class="pr-msg-b">${esc(m.msg)}</div><button class="pr-copy" onclick="copyPMsg('${p.id}',${i})">📋 Copier le message</button></div>`).join('')||'<div class="pr-msg-b" style="padding:10px">Aucune relance pour ce statut.</div>'}</div>`:''}
@@ -2556,6 +2564,25 @@ function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.st
 function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);}
 function delProspect(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;if(!confirm('Supprimer la fiche de '+p.nom+' ?'))return;PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects(true);toast('Fiche supprimée');syncCall('delete',{ids:[id]}).catch(()=>{});}
 function copyPMsg(id,i){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const m=relanceMsgs(p)[i];if(!m)return;navigator.clipboard?.writeText(m.msg).then(()=>toast('Message copié ✓ · collez-le dans vos SMS')).catch(()=>toast('Copie impossible'));}
+function viewPFiche(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  document.getElementById('fichePop')?.remove();
+  const fiche=(p.fiche||'').trim();
+  const d=document.createElement('div');d.id='fichePop';
+  d.innerHTML=`<div class="glp-bg"></div><div class="glp-card fv-card">
+    <div class="glp-tag">📄 Fiche de découverte</div>
+    <div class="glp-t">${esc(p.nom)}${p.statut==='abo'&&p.pack?` <span class="fv-pack">${PIPE.abo.ic} ${packShort(+p.pack)}</span>`:''}</div>
+    <div class="fv-meta">${p.tel?'📱 '+esc(p.tel)+' · ':''}${p.rep?'suivi par '+esc(p.rep.split(' ')[0])+' · ':''}créée le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
+    <div class="fv-body">${fiche?esc(fiche):'Aucune fiche de découverte enregistrée pour ce prospect.\n\nLa fiche se remplit automatiquement quand l\'appel est mené dans l\'outil puis enregistré depuis l\'écran Récap.'}</div>
+    <div class="fv-btns">
+      ${fiche?`<button class="pr-act" onclick="copyPFiche('${p.id}')">📋 Copier</button>`:''}
+      <button class="glp-ok" style="flex:1;margin-top:0" onclick="document.getElementById('fichePop').remove()">Fermer</button>
+    </div>
+  </div>`;
+  d.querySelector('.glp-bg').onclick=()=>d.remove();
+  document.body.appendChild(d);
+  try{glossify(d.querySelector('.fv-body'));}catch(e){}
+}
 function copyPFiche(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;navigator.clipboard?.writeText(p.fiche||p.nom).then(()=>toast('Fiche copiée ✓')).catch(()=>toast('Copie impossible'));}
 
 /* ── Objections (avec recherche) ── */
