@@ -3130,6 +3130,7 @@ function closeObj(){$('#objBg').classList.remove('on');$('#objSheet').classList.
 function openMenu(){
   $('#menuBody').innerHTML=`
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showStudiosFR()"><span class="mic">📍</span><span>Studios ouverts en France<small>16 studios + ouvertures à venir · téléphones cliquables</small></span></button>
     <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
     <button class="menu-item" onclick="closeMenu();showCourseGuide()"><span class="mic">📚</span><span>Les cours en détail<small>Bienfaits corps & esprit, prérequis, restrictions</small></span></button>
     <button class="menu-item" onclick="closeMenu();showArgBank()"><span class="mic">🧭</span><span>Banque d'arguments<small>Du plus logique au plus inattendu · sourcé</small></span></button>
