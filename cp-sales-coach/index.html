@@ -336,6 +336,27 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .hp-val{flex:0 0 auto;text-align:right;font-size:12.5px;font-weight:800;min-width:44px}
 .hp-val small{display:block;font-size:9px;font-weight:600;color:rgba(255,255,255,.55)}
 .hp-load{font-size:12px;color:rgba(255,255,255,.6);padding:6px 0}
+/* ── Accueil hub ── */
+.hm-today{display:flex;gap:8px;overflow-x:auto;padding-bottom:3px;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.hm-today::-webkit-scrollbar{display:none}
+.hm-chip{flex:0 0 auto;display:flex;align-items:center;gap:8px;background:#fff;border:1.5px solid #E3E9F2;border-radius:13px;padding:10px 13px;font-size:12.5px;font-weight:700;color:var(--ink);box-shadow:var(--sh-s);cursor:pointer}
+.hm-chip b{font-size:15px;color:var(--cp-dark)}
+.hm-chip.hot{border-color:var(--gold);background:linear-gradient(135deg,#FFF9EE,#FDF3DE)}
+.hm-chip .hc-ic{font-size:17px}
+.hm-sec{font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mid);margin:20px 0 9px;display:flex;align-items:center;gap:8px}
+.hm-sec::after{content:'';flex:1;height:1px;background:#E3E9F2}
+.hm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.hm-big{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:4px;background:#fff;border:1.5px solid #E3E9F2;border-radius:16px;padding:15px 14px;box-shadow:var(--sh-s);text-align:left;transition:transform .15s,box-shadow .15s}
+.hm-big .ic{font-size:23px}
+.hm-big .l{font-size:14.5px;font-weight:800;color:var(--cp-dark)}
+.hm-big .s{font-size:11px;font-weight:600;color:var(--ink-mid);line-height:1.35}
+.hm-big.call{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark));border-color:var(--cp-dark)}
+.hm-big.call .l{color:#fff}
+.hm-big.call .s{color:rgba(255,255,255,.78)}
+.hm-count{position:absolute;top:10px;right:10px;background:var(--cp-pale);color:var(--cp-dark);font-size:11px;font-weight:800;border-radius:99px;padding:2px 8px}
+.ht-prog{position:absolute;left:12px;right:12px;bottom:5px;height:4px;background:#EDF1F7;border-radius:99px;overflow:hidden}
+.ht-prog span{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--gold-soft));border-radius:99px}
+@media(hover:hover){.hm-big:hover{transform:translateY(-2px);box-shadow:var(--sh-m)}.hm-chip:hover{transform:translateY(-1px)}}
 /* ── Accueil : boîte à outils + credo ── */
 .home-tools{margin-top:18px}
 .ht-h{font-size:13px;font-weight:800;color:var(--cp-dark);margin-bottom:10px}
@@ -1731,28 +1752,8 @@ function renderScreen(keepScroll){
         <div class="pr-cap-row"><input id="who-nom" type="text" placeholder="Prénom du prospect *" value="${esc(st.prospectNom||'')}" oninput="st.prospectNom=this.value" autocomplete="off"/></div>
         <div class="pr-cap-row"><input id="who-tel" type="tel" placeholder="Téléphone (optionnel)" value="${esc(st.prospectTel||'')}" oninput="st.prospectTel=this.value" autocomplete="off"/></div>
       </div>
-      <div class="say-hint"><span class="b">💡</span><span>Dire son prénom dès l'ouverture, puis 2 ou 3 fois dans l'appel : c'est le mot que votre prospect préfère entendre.</span></div>
-      <div class="home-tools">
-        <div class="ht-h">🧰 Votre boîte à outils <small>tout est aussi dans le menu ☰ en haut à droite</small></div>
-        <div class="ht-grid">
-          <button class="ht-tile gold" onclick="showOnboard(true)"><span class="ht-ic">🌟</span><span class="ht-lbl">L'essentiel</span></button>
-          <button class="ht-tile" onclick="showTraining()"><span class="ht-ic">🎬</span><span class="ht-lbl">Formation</span></button>
-          <button class="ht-tile" onclick="showICPage()"><span class="ht-ic">🗓️</span><span class="ht-lbl">Intro Class</span></button>
-          <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">🏆</span><span class="ht-lbl">Performances</span></button>
-          <button class="ht-tile" onclick="showProspects()"><span class="ht-ic">📇</span><span class="ht-lbl">Mes prospects</span>${PROSPECTS.length?`<span class="ht-count">${PROSPECTS.length}</span>`:''}</button>
-          <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">📣</span><span class="ht-lbl">Présentation CP</span></button>
-          <button class="ht-tile" onclick="showCourseGuide()"><span class="ht-ic">📚</span><span class="ht-lbl">Les cours</span></button>
-          <button class="ht-tile" onclick="showArgBank()"><span class="ht-ic">🧭</span><span class="ht-lbl">Arguments</span></button>
-          <button class="ht-tile" onclick="showScience()"><span class="ht-ic">🔬</span><span class="ht-lbl">La science</span></button>
-          <button class="ht-tile" onclick="showAca()"><span class="ht-ic">🎓</span><span class="ht-lbl">Académie</span></button>
-          <button class="ht-tile" onclick="openObj()"><span class="ht-ic">🛡️</span><span class="ht-lbl">Objections</span></button>
-          <button class="ht-tile" onclick="openSet()"><span class="ht-ic">⚙️</span><span class="ht-lbl">Réglages</span></button>
-          ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">👥</span><span class="ht-lbl">Équipe</span></button>`:''}
-        </div>
-      </div>
-      <div class="home-creed">🤝 <b>Le client est roi.</b> Il ne nous dérange jamais : c'est grâce à lui que nous avons du travail. Accueil chaleureux, transparence totale · et un merci sincère à chaque appel.</div>
-      <div id="homePerf">${_hpCache?_hpCache:'<div class="hp-box"><div class="hp-h">🏁 La course du mois</div><div class="hp-load">⏳ Classement en cours de chargement…</div></div>'}</div>`;
-    nav=navHTML(false,'Démarrer l\'appel');
+      <div class="say-hint"><span class="b">💡</span><span>Dire son prénom dès l'ouverture, puis 2 ou 3 fois dans l'appel : c'est le mot que votre prospect préfère entendre.</span></div>`;
+    nav=`<button class="back" onclick="showHome()">‹</button><button class="go" onclick="next()">Démarrer l'appel →</button>`;
   }
   else if(s.t==='goal'){
     h=`<div class="scr-tag ask">Avant de commencer</div>
@@ -1907,7 +1908,6 @@ function renderScreen(keepScroll){
     nav=`<button class="back" onclick="prev()">‹</button><button class="go ok" onclick="copyRecap()">📋 Copier la fiche</button>`;
   }
   const _sy=keepScroll?scr.scrollTop:0;scr.innerHTML=h;scr.scrollTop=_sy;relocateBoxes();
-  if(s.t==='who')loadHomePerf();
   $('#nav').innerHTML=nav;
 }
 function navHTML(showBack,goLabel){
@@ -2182,7 +2182,7 @@ function _applyAvatar(v){
   const k=_repKey(CFG.rep);if(k)AVATARS[k]=v;
   syncCall('avatar_set',{avatar:v,nom:CFG.rep||''}).then(()=>toast('Avatar enregistré · toute l\'équipe le voit ✨')).catch(()=>toast('Avatar gardé sur cet appareil · synchronisation au retour du réseau'));
   document.getElementById('avaScreen')?.remove();
-  renderScreen(true);
+  if(document.querySelector('.hm-today'))showHome();else renderScreen(true);
   if(!_avaManual)maybeOnboard();
 }
 
@@ -2315,7 +2315,7 @@ function saveNameStep(){
   CFG.rep=v;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
   document.getElementById('nameScreen')?.remove();
   toast('Bienvenue '+v.split(' ')[0]+' ! Vos scripts sont personnalisés ✓');
-  renderScreen();
+  showHome();
   if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
 }
 async function unlockCoach(){
@@ -2330,7 +2330,8 @@ async function unlockCoach(){
     document.getElementById('lockScreen')?.remove();
     toast('Bienvenue ! ✓');
     if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
-    syncPull(true);fetchAvatars();
+    syncPull(true);icPull();fetchAvatars();
+    if(document.querySelector('.hm-today'))showHome();
   }catch(e){
     COACH_CODE='';
     if(err)err.textContent=e.message==='code'?'Code invalide · vérifiez auprès de votre responsable.':'Connexion impossible · réessayez.';
@@ -2414,7 +2415,7 @@ async function showTeam(){
   if(COACH_ROLE!=='admin'&&!IS_MGR){toast('Réservé aux recruteurs');return;}
   $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">Un code personnel par conseiller · révocable à tout moment</div></div></div><div class="pr-empty">⏳ Chargement…</div></div>`;relocateBoxes();
   $('#topPhase').textContent='Équipe';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
   try{const d=await syncCall('team_list');renderTeam(d.invites||[]);}
   catch(e){if(e.message!=='code')$('#screen').innerHTML=`<div class="cg"><div class="pr-empty">📴 Connexion impossible · réessayez.</div></div>`;}
@@ -2660,7 +2661,7 @@ async function trainPull(){
 function trainDone(){return SIM_CURRICULUM.filter(s=>TRAIN[s.id]&&TRAIN[s.id].s>=SIM_SEUIL).length;}
 function showTraining(){
   $('#topPhase').textContent='Formation';$('#topSub').textContent='';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';relocateBoxes();
   const render=()=>{
     const done=trainDone(),pct=Math.round(done/SIM_CURRICULUM.length*100);
@@ -2754,7 +2755,7 @@ function renderSim(){
    ════════════════════════════════════════════════════════════════ */
 let IC={slots:[],sessions:[],baremes:[]};
 let _icWeek=0;
-async function icPull(){try{const d=await syncCall('ic_pull');if(d){IC.slots=d.slots||[];IC.sessions=d.sessions||[];IC.baremes=d.baremes||[];}}catch(e){}}
+async function icPull(){try{const d=await syncCall('ic_pull');if(d){IC.slots=d.slots||[];IC.sessions=d.sessions||[];IC.baremes=d.baremes||[];_hmRefreshIC();}}catch(e){}}
 function icPush(slots,sessions){syncCall('ic_push',{slots:slots||[],sessions:sessions||[]}).catch(()=>{});}
 function icBaremeAt(date){
   let b={coach:12,p1:10,p2:25,p3:50};
@@ -2796,7 +2797,7 @@ function icSet(id,field,val){
 }
 function showICPage(keep){
   $('#topPhase').textContent='Intro Class';$('#topSub').textContent='';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
   if(!keep){
     $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">🗓️ Intro Class</h2><div class="pr-h2s">Chargement…</div></div></div><div class="pr-empty">⏳</div></div>`;
@@ -2965,7 +2966,7 @@ function icsSubmitSale(sessId){
 function _normTel(t){return (t||'').replace(/[^0-9+]/g,'').replace(/^\+33/,'0');}
 function showLeadImport(){
   $('#topPhase').textContent='Import de leads';$('#topSub').textContent='';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';relocateBoxes();
   $('#screen').innerHTML=`<div class="cg">
     <div class="pr-head"><div><h2 class="pr-h2">📥 Importer des leads</h2><div class="pr-h2s">${esc(CFG.studio||'')} · collez un export Fitness Boost, bsport ou tableur</div></div></div>
@@ -3029,6 +3030,9 @@ async function loadHomePerf(){
       .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
     const meK=_repKey(CFG.rep||'');
     const myIdx=rows.findIndex(r=>r.k===meK);
+    const _mine=myIdx>=0?rows[myIdx]:null;
+    const _se=document.getElementById('hm-sales');
+    if(_se)_se.innerHTML=`<span class="hc-ic">🏆</span><span>Mes ventes du mois : <b>${_mine?_mine.a.abosMois:0}</b>${_mine&&_mine.a.primeMois?` · ${_mine.a.primeMois} € de primes`:''}</span>`;
     let head='';
     if(myIdx===0&&rows[0].a.primeMois>0&&rows.length===1){head=`🥇 <b>En tête du mois !</b> Personne d'autre n'a encore marqué · creusez l'écart.`;}
     else if(myIdx===0&&rows.length>1&&rows[0].a.primeMois>0){const gap=rows[0].a.primeMois-(rows[1]?rows[1].a.primeMois:0);head=`🥇 <b>En tête du mois !</b>${gap>0?` ${esc(rows[1].name)} est à ${gap} € derrière · ne lâchez rien.`:' Égalité parfaite · la prochaine vente fait la différence.'}`;}
@@ -3074,7 +3078,7 @@ function _pct(n,d){return d?Math.round(n/d*100):0;}
 function showPerf(){
   $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Mes performances</h2><div class="pr-h2s">Ventes, primes et progression · en direct</div></div></div><div class="pr-empty">⏳ Calcul en cours…</div></div>`;
   $('#topPhase').textContent='Performances';$('#topSub').textContent='';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';relocateBoxes();
   Promise.all([syncCall('stats_pull'),fetchAvatars(),trainPull(),(COACH_ROLE==='admin'||IS_MGR)?syncCall('team_list').then(d=>{window._TEAM=d.invites||[];}).catch(()=>{}):Promise.resolve()]).then(([d])=>renderPerf(d.events||[])).catch(e=>{
     if(e.message!=='code')renderPerf(null);
@@ -3237,7 +3241,7 @@ function showProspects(keepScroll){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   $('#topPhase').textContent='Mes prospects';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
   if(!COACH_CODE)_syncState('off');
 }
@@ -3316,9 +3320,110 @@ function toggleObj(id){objOpen=objOpen===id?null:id;document.querySelectorAll('.
 function openObj(){objOpen=null;$('#objSearch').value='';renderObj('');$('#objBg').classList.add('on');$('#objSheet').classList.add('on');}
 function closeObj(){$('#objBg').classList.remove('on');$('#objSheet').classList.remove('on');}
 
+/* ── Accueil : hub de l'app ── */
+function _hmNextIC(){
+  const now=new Date();now.setHours(12,0,0,0);
+  const todayS=now.toISOString().slice(0,10);
+  const hhmm=new Date().toTimeString().slice(0,5);
+  const okStudio=s=>!icStudio()||s.studio===icStudio();
+  const cand=[];
+  ((IC&&IC.sessions)||[]).forEach(s=>{if(s.statut==='prevue'&&s.date>=todayS&&okStudio(s))cand.push({date:s.date,heure:s.heure||'',coach:s.coach||''});});
+  const taken=new Set((((IC&&IC.sessions)||[])).map(s=>s.date+'|'+(s.heure||'')));
+  ((IC&&IC.slots)||[]).forEach(sl=>{
+    if(sl.actif===false||!okStudio(sl))return;
+    const dow=(now.getDay()+6)%7;
+    let delta=((sl.jour-dow)+7)%7;
+    if(delta===0&&(sl.heure||'')<=hhmm)delta=7;
+    const d=new Date(now);d.setDate(d.getDate()+delta);
+    const ds=d.toISOString().slice(0,10);
+    if(!taken.has(ds+'|'+(sl.heure||'')))cand.push({date:ds,heure:sl.heure||'',coach:sl.coach||''});
+  });
+  const lim=new Date(now);lim.setDate(lim.getDate()+14);
+  const limS=lim.toISOString().slice(0,10);
+  return cand.filter(c=>c.date<=limS).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure))[0]||null;
+}
+function _hmIcChip(){
+  const ic=_hmNextIC();
+  const lbl=ic?new Date(ic.date+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'})+' · '+ic.heure:null;
+  return `<span class="hc-ic">🗓️</span><span>${ic?`Prochaine IC : <b>${lbl}</b>${ic.coach?' · '+esc(ic.coach):''}`:'Aucune IC planifiée'}</span>`;
+}
+function _hmRefreshIC(){const el=document.getElementById('hm-ic');if(el)el.innerHTML=_hmIcChip();}
+function icGoto(dateS){
+  const monday=_monday(0);
+  const diff=Math.round((new Date(dateS+'T12:00')-new Date(_dstr(monday)+'T12:00'))/864e5);
+  _icWeek=Math.max(0,Math.floor(diff/7));
+  showICPage();
+}
+function _hmToday(){
+  const d=new Date();d.setHours(12,0,0,0);const todayS=d.toISOString().slice(0,10);
+  const due=PROSPECTS.filter(p=>p.rappel&&p.rappel<=todayS&&(p.statut==='rappeler'||p.statut==='essai')).length;
+  const nxt=_hmNextIC();
+  return `<div class="hm-today">
+    <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">🔔</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
+    <button class="hm-chip" id="hm-ic" onclick="${nxt?`icGoto('${nxt.date}')`:'showICPage()'}">${_hmIcChip()}</button>
+    <button class="hm-chip" id="hm-sales" onclick="showPerf()"><span class="hc-ic">🏆</span><span>Mes ventes du mois : <b>…</b></span></button>
+  </div>`;
+}
+function showHome(){
+  closeMenu();
+  $('#topPhase').textContent='Accueil';
+  $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
+  $('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);
+  $('#topSub').textContent=CFG.studio?' · '+CFG.studio:'';
+  $('#bar').style.width='100%';
+  $('#nav').innerHTML='';
+  const inCall=!!st.callStart;
+  const done=trainDone(),tot=SIM_CURRICULUM.length;
+  $('#screen').innerHTML=`<div class="cg">
+    ${_hmToday()}
+    <div class="hm-sec">Agir</div>
+    <div class="hm-grid2">
+      <button class="hm-big call" onclick="homeStartCall()"><span class="ic">📞</span><span class="l">${inCall?'Reprendre l\'appel':'Démarrer un appel'}</span><span class="s">${inCall&&st.prospectNom?esc(st.prospectNom.split(' ')[0])+' est en cours':'Guidé de bout en bout'}</span></button>
+      <button class="hm-big" onclick="showProspects()"><span class="ic">📇</span><span class="l">Mes prospects</span><span class="s">Fiches, relances, suivi</span>${PROSPECTS.length?`<span class="hm-count">${PROSPECTS.length}</span>`:''}</button>
+      <button class="hm-big" onclick="showICPage()"><span class="ic">🗓️</span><span class="l">Intro Class</span><span class="s">Séances, présents, signés</span></button>
+      <button class="hm-big" onclick="showLeadImport()"><span class="ic">📥</span><span class="l">Importer des leads</span><span class="s">Fitness Boost, bsport, tableur</span></button>
+    </div>
+    <div class="hm-sec">Progresser</div>
+    <div class="ht-grid" style="grid-template-columns:repeat(2,1fr)">
+      <button class="ht-tile" onclick="showTraining()"><span class="ht-ic">🎬</span><span class="ht-lbl">Formation · ${done}/${tot}</span><span class="ht-prog"><span style="width:${Math.round(done/tot*100)}%"></span></span></button>
+      <button class="ht-tile gold" onclick="showOnboard(true)"><span class="ht-ic">🌟</span><span class="ht-lbl">L'essentiel</span></button>
+    </div>
+    <div class="hm-sec">Argumentaire</div>
+    <div class="ht-grid">
+      <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">📣</span><span class="ht-lbl">Présentation CP</span></button>
+      <button class="ht-tile" onclick="showCourseGuide()"><span class="ht-ic">📚</span><span class="ht-lbl">Les cours</span></button>
+      <button class="ht-tile" onclick="showArgBank()"><span class="ht-ic">🧭</span><span class="ht-lbl">Arguments</span></button>
+      <button class="ht-tile" onclick="openObj()"><span class="ht-ic">🛡️</span><span class="ht-lbl">Objections</span></button>
+      <button class="ht-tile" onclick="showScience()"><span class="ht-ic">🔬</span><span class="ht-lbl">La science</span></button>
+      <button class="ht-tile" onclick="showAca()"><span class="ht-ic">🎓</span><span class="ht-lbl">Académie</span></button>
+    </div>
+    <div class="hm-sec">Piloter</div>
+    <div class="ht-grid">
+      <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">🏆</span><span class="ht-lbl">Performances</span></button>
+      ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">👥</span><span class="ht-lbl">Équipe</span></button>`:''}
+      <button class="ht-tile" onclick="openSet()"><span class="ht-ic">⚙️</span><span class="ht-lbl">Réglages</span></button>
+    </div>
+    <div class="home-creed">🤝 <b>Le client est roi.</b> Il ne nous dérange jamais : c'est grâce à lui que nous avons du travail. Accueil chaleureux, transparence totale · et un merci sincère à chaque appel.</div>
+    <div id="homePerf">${_hpCache?_hpCache:'<div class="hp-box"><div class="hp-h">🏁 La course du mois</div><div class="hp-load">⏳ Classement en cours de chargement…</div></div>'}</div>
+  </div>`;
+  $('#screen').scrollTop=0;relocateBoxes();
+  loadHomePerf();
+}
+function homeStartCall(){
+  if(!st.callStart&&st.idx>0){const g=st.callGoal;_catchOpen={};st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};}
+  renderScreen();
+}
+function pageNav(){
+  const inCall=!!st.callStart;
+  return inCall
+    ?`<button class="back" onclick="showHome()" title="Accueil">🏠</button><button class="go" onclick="renderScreen()">📞 Reprendre l'appel</button>`
+    :`<button class="go" onclick="showHome()">🏠 Accueil</button>`;
+}
+
 /* ── Menu (réglages / académie / fiche / nouvel appel) ── */
 function openMenu(){
   $('#menuBody').innerHTML=`
+    <button class="menu-item" onclick="closeMenu();showHome()"><span class="mic">🏠</span><span>Accueil<small>Aujourd'hui, actions, formation, pilotage</small></span></button>
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
     <button class="menu-item" onclick="closeMenu();showStudiosFR()"><span class="mic">📍</span><span>Studios ouverts en France<small>16 studios + ouvertures à venir · téléphones cliquables</small></span></button>
     <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
@@ -3367,7 +3472,7 @@ function showAca(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='Académie';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
 }
 
@@ -3391,7 +3496,7 @@ function showCourseGuide(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='Les cours';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
 }
 
@@ -3411,7 +3516,7 @@ function showArgBank(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='Arguments';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
 }
 
@@ -3436,7 +3541,7 @@ function showScience(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=0;relocateBoxes();
   $('#topPhase').textContent='La science';
-  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
 }
 
@@ -3529,10 +3634,10 @@ function saveSet(){
   CFG.privateSession=$('#set-priv').value===''?null:parseFloat($('#set-priv').value);
   CFG.spotsLeft=$('#set-spots').value===''?null:parseInt($('#set-spots').value,10);
   CFG.founding=$('#set-founding').value===''?0:parseFloat($('#set-founding').value);
-  localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));closeSet();renderScreen();toast('Réglages enregistrés ✓');
+  localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));closeSet();if(document.querySelector('.hm-today'))showHome();else renderScreen();toast('Réglages enregistrés ✓');
 }
 
-renderScreen();
+showHome();
 // Bouton « précédent » du navigateur : ne jamais quitter l'outil, revenir à l'accueil.
 // Deux entrées-tampons + réarmement asynchrone (Safari ignore parfois un pushState
 // lancé de façon synchrone pendant popstate) + réarmement au retour du BFCache.
@@ -3546,8 +3651,7 @@ window.addEventListener('popstate',function(){
     document.getElementById('obScreen')?.remove();
     document.getElementById('avaScreen')?.remove();
   }catch(e){}
-  st.idx=0;
-  try{renderScreen();}catch(e){}
+  try{showHome();}catch(e){}
 });
 // Accès : code studio obligatoire (données équipe centralisées)
 // Un lien d'invitation peut porter le code (?code=LEA-1234) : un clic = profil activé.
@@ -3576,7 +3680,7 @@ window.addEventListener('popstate',function(){
     }
   }
   if(!COACH_CODE){showLock();return;}
-  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();syncPull(true);flushEvents();icPull();fetchAvatars().then(()=>{if(($('#nav').innerHTML||'').includes('next()'))renderScreen(true);});}
+  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();syncPull(true);flushEvents();icPull();fetchAvatars().then(()=>{const nv=$('#nav').innerHTML||'';if(nv.includes('next()'))renderScreen(true);else if(document.querySelector('.hm-today'))$('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);});}
   catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
 })();
 </script>
