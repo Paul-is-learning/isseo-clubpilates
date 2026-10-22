@@ -1493,8 +1493,8 @@ const OBJECTIONS=[
     'Dernier recours · le client veut vraiment toucher avant de signer : « Allez le <b>vivre dès cette semaine</b> : je vous organise une séance d\'essai dans un studio déjà ouvert près de chez vous. » <button class="pr-act" style="margin-top:6px" onclick="showStudiosFR()">📍 Voir les studios ouverts</button>',
     'Après la visite, rappel sous 24 h : « Alors, ce Reformer ? … C\'est exactement ce qui vous attend ici, avec en plus le statut fondateur. On le réserve ? »']},
   {id:'c_payer',cas:true,ic:'📅',t:'« Payer avant l\'ouverture ? Jamais »',kw:'cas payer avant ouverture facturation debut arnaque',lines:[
-    '« Excellente question, et soyons très clairs : en vous inscrivant aujourd\'hui, <b>votre abonnement ne démarre qu\'à l\'ouverture du studio</b>. Aujourd\'hui vous ne payez rien : vous réservez votre statut fondateur et votre place. »',
-    '« Vous bloquez le tarif à vie (-20 %) et l\'inscription offerte · la facturation, elle, commence le jour où les Reformer vous attendent. »',
+    '« Excellente question, et soyons très clairs : vous réglez <b>votre premier mois aujourd\'hui</b> · c\'est lui qui réserve votre statut fondateur et votre place parmi les 50. »',
+    '« Et ce premier mois n\'est pas perdu : il couvre <b>votre premier mois de cours à l\'ouverture</b>. Le prélèvement suivant n\'intervient qu\'à votre deuxième mois de pratique · vous ne payez jamais pour un studio fermé. »',
     'Transparence totale : engagement 3 mois à partir de l\'ouverture, tacitement renouvelable. On le dit, c\'est ce qui fait confiance.']},
   {id:'c_concurrent',cas:true,ic:'⚔️',t:'« Il y a déjà un studio de Pilates à côté »',kw:'cas concurrent autre studio deja cote prix moins cher',lines:[
     '« Et c\'est une bonne nouvelle : ça veut dire que le Reformer, ici, les gens y ont déjà goûté. La question c\'est : <b>avec quel encadrement ?</b> »',
@@ -2716,7 +2716,7 @@ function simSteps(p){
       {t:`« Le mieux c'est l'Illimité, comme ça vous êtes tranquille, vous venez quand vous voulez. »`,pts:0,fb:'~ L\'illimité se recommande aux profils assidus/pressés de résultats · pas par défaut à un débutant hésitant.'}]},
     'PRIX','OBJ2',
     {c:`Bon… c'est vrai que ça donne envie. Qu'est-ce qu'on fait alors ?`,ch:[
-      {t:`« On réserve votre statut fondateur : ${p.prix} par mois à vie, inscription offerte · et votre abonnement ne démarre qu'à l'ouverture du studio, dans quelques semaines. D'ici là vous ne payez rien. On finalise ensemble maintenant : plutôt par lien SMS ou directement au téléphone ? »`,pts:10,fb:'✓ Closing en alternative concrète + transparence (facturation à l\'ouverture) + avantage fondateur : on signe.'},
+      {t:`« On réserve votre statut fondateur : ${p.prix} par mois à vie, inscription offerte. Le premier mois se règle aujourd'hui · c'est lui qui bloque votre place, et il couvre votre premier mois de cours à l'ouverture. Le prélèvement suivant n'arrive qu'au deuxième mois de pratique. On finalise ensemble : plutôt par lien SMS ou directement au téléphone ? »`,pts:10,fb:'✓ Closing en alternative concrète + transparence (1er mois réglé aujourd\'hui = 1er mois de cours, 2e prélèvement au 2e mois de pratique) + avantage fondateur : on signe.'},
       {t:`« Je vous laisse digérer tout ça, et on se rappelle la semaine prochaine ? »`,pts:-5,fb:'✗ Le client disait OUI et vous reculez ! Chaque appel vise un engagement.'},
       {t:`« Votre premier cours est possible dès cette semaine, je vous cale mardi 18h ? »`,pts:0,fb:'✗ Faux en pré-ouverture : le studio n\'ouvre que dans quelques semaines. Une promesse intenable détruit la confiance le jour de l\'ouverture.'}]}
   ];
