@@ -455,8 +455,8 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 /* ── Glossaire ── */
 .gl{border-bottom:1.5px dashed var(--gold);background:linear-gradient(180deg,transparent 72%,rgba(201,135,31,.22) 72%);cursor:help;border-radius:2px;transition:background .15s}
 .gl:hover{background:rgba(201,135,31,.18)}
-#glossPop,#fichePop{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center}
-@media(min-width:640px){#glossPop,#fichePop{align-items:center}}
+#glossPop,#fichePop,#icPop{position:fixed;inset:0;z-index:10000;display:flex;align-items:flex-end;justify-content:center}
+@media(min-width:640px){#glossPop,#fichePop,#icPop{align-items:center}}
 .glp-bg{position:absolute;inset:0;background:rgba(14,21,38,.55);backdrop-filter:blur(3px);animation:obfade .2s}
 .glp-card{position:relative;width:min(460px,100%);background:#fff;border-radius:22px 22px 0 0;padding:22px 22px calc(20px + env(safe-area-inset-bottom));box-shadow:0 -10px 50px rgba(0,0,0,.35);animation:glpin .28s cubic-bezier(.25,1.2,.35,1)}
 @media(min-width:640px){.glp-card{border-radius:20px;padding-bottom:20px}}
@@ -465,6 +465,22 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .glp-t{font-size:20px;font-weight:800;color:var(--cp-dark);margin-bottom:8px}
 .glp-d{font-size:14px;color:#3c4759;line-height:1.65}
 .glp-ok{width:100%;margin-top:16px;padding:13px;border-radius:13px;background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark));color:#fff;font-weight:800;font-size:14.5px}
+/* ── Saisie Intro Class : bottom-sheets ── */
+#icPop .glp-card{max-height:86dvh;overflow-y:auto}
+.ics-lbl{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.07em;color:#8a93a6;margin:12px 0 6px}
+.ics-lbl small{text-transform:none;letter-spacing:0;font-weight:600}
+.ics-row{display:flex;gap:10px}
+.ics-in{width:100%;padding:11px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:15px;font-family:inherit;background:#fff;color:var(--cp-dark);box-sizing:border-box;-webkit-appearance:none;appearance:none}
+.ics-in:focus{outline:none;border-color:var(--cp-deep);box-shadow:0 0 0 3px rgba(79,111,160,.15)}
+.ics-days{display:flex;gap:6px;flex-wrap:wrap}
+.ics-packs{display:flex;gap:8px}
+.ics-chip{flex:1;min-width:0;padding:9px 4px;border:1.5px solid #dce1ea;border-radius:11px;background:#fff;font-size:12.5px;font-weight:700;color:#5a6478;text-transform:capitalize;cursor:pointer;transition:all .15s}
+.ics-chip.on{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark));border-color:var(--cp-dark);color:#fff;transform:scale(1.04)}
+.ics-slot{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e3e8f1;border-radius:12px;margin-bottom:6px;background:#f8fafd}
+.ics-slot b{font-size:13.5px;color:var(--cp-dark);white-space:nowrap}
+.ics-slot span{flex:1;font-size:13px;color:#5a6478;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ics-slot button{background:none;border:none;font-size:15px;cursor:pointer;opacity:.7}
+.ics-empty{font-size:13px;color:#8a93a6;padding:8px 0}
 /* ── Vignettes : arguments de fond dépliables ── */
 .catch-box .ln.clickable{cursor:pointer}
 .catch-more{display:block;font-size:11px;font-weight:800;color:var(--ok);margin-top:5px;letter-spacing:.03em;text-transform:uppercase;opacity:.85}
@@ -2833,39 +2849,112 @@ function icDelSession(id){
   syncCall('ic_del',{ids:[id]}).catch(()=>{});
   renderICPage();toast('Séance supprimée');
 }
+function icSheet(inner){
+  document.getElementById('icPop')?.remove();
+  const d=document.createElement('div');d.id='icPop';
+  d.innerHTML=`<div class="glp-bg"></div><div class="glp-card">${inner}</div>`;
+  d.querySelector('.glp-bg').onclick=()=>d.remove();
+  document.body.appendChild(d);return d;
+}
 function icAddSession(){
-  const date=prompt('Date de la séance (AAAA-MM-JJ) :',_dstr(_monday(_icWeek)));if(!date)return;
-  const heure=prompt('Heure (HH:MM) :','18:00');if(!heure)return;
-  const coach=prompt('Coach :','')||'';
-  const s={id:'ics_man_'+Date.now(),studio:icStudio(),date:date.slice(0,10),heure:heure.slice(0,5),coach:coach,statut:'prevue',booked:0,show:0,maj:new Date().toISOString()};
-  IC.sessions.push(s);icPush([],[s]);renderICPage();toast('Séance ajoutée ✓');
+  const days=[...Array(7)].map((_,i)=>{const d=_monday(_icWeek);d.setDate(d.getDate()+i);return _dstr(d);});
+  const today=_dstr(new Date(new Date().setHours(12,0,0,0)));
+  const sel=days.includes(today)?today:days[0];
+  const chip=d=>`<button class="ics-chip ics-day${d===sel?' on':''}" data-d="${d}" onclick="icsPickDay(this)">${new Date(d+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'})}</button>`;
+  icSheet(`<div class="glp-tag">🗓️ ${esc(icStudio()||'Intro Class')}</div>
+    <div class="glp-t">Nouvelle séance</div>
+    <div class="ics-lbl">Jour</div>
+    <div class="ics-days">${days.map(chip).join('')}</div>
+    <div class="ics-row">
+      <div style="flex:1"><div class="ics-lbl">Date</div><input type="date" id="ics-date" class="ics-in" value="${sel}" onchange="document.querySelectorAll('.ics-day').forEach(c=>c.classList.toggle('on',c.dataset.d===this.value))"/></div>
+      <div style="flex:1"><div class="ics-lbl">Heure</div><input type="time" id="ics-heure" class="ics-in" value="18:00"/></div>
+    </div>
+    <div class="ics-lbl">Coach</div>
+    <input type="text" id="ics-coach" class="ics-in" list="icCoachList" placeholder="Prénom du coach (optionnel)"/>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:16px" onclick="icsSubmitSession()">Ajouter la séance ✓</button></div>`);
+}
+function icsPickDay(btn){
+  document.querySelectorAll('.ics-day').forEach(c=>c.classList.remove('on'));
+  btn.classList.add('on');
+  const di=document.getElementById('ics-date');if(di)di.value=btn.dataset.d;
+}
+function icsSubmitSession(){
+  const date=(document.getElementById('ics-date').value||'').slice(0,10);
+  const heure=(document.getElementById('ics-heure').value||'').slice(0,5);
+  const coach=(document.getElementById('ics-coach').value||'').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Choisissez une date');return;}
+  if(!/^\d{2}:\d{2}$/.test(heure)){toast('Choisissez une heure');return;}
+  const s={id:'ics_man_'+Date.now(),studio:icStudio(),date:date,heure:heure,coach:coach,statut:'prevue',booked:0,show:0,maj:new Date().toISOString()};
+  IC.sessions.push(s);icPush([],[s]);
+  document.getElementById('icPop')?.remove();
+  renderICPage();toast('Séance ajoutée ✓');
 }
 function icSlotsUI(){
+  icSheet(`<div class="glp-tag">⚙️ ${esc(icStudio()||'Tous les studios')}</div>
+    <div class="glp-t">Planning type</div>
+    <div class="fv-meta" style="margin-bottom:4px">Chaque créneau génère automatiquement sa séance, semaine après semaine.</div>
+    <div id="ics-slots" style="margin-top:10px"></div>
+    <div class="ics-lbl" style="margin-top:14px">Ajouter un créneau</div>
+    <div class="ics-row">
+      <select id="ics-jour" class="ics-in" style="flex:1.3">${JOURS.map((j,i)=>`<option value="${i}">${j}</option>`).join('')}</select>
+      <input type="time" id="ics-sheure" class="ics-in" value="19:00" style="flex:1"/>
+    </div>
+    <div class="ics-row" style="margin-top:8px">
+      <input type="text" id="ics-scoach" class="ics-in" list="icCoachList" placeholder="Coach" style="flex:1"/>
+      <button class="glp-ok" style="flex:0 0 auto;margin-top:0;width:auto;padding:11px 18px" onclick="icsAddSlot()">➕ Ajouter</button>
+    </div>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:16px;background:#eef1f7;color:var(--cp-dark)" onclick="document.getElementById('icPop').remove()">Fermer</button></div>`);
+  icsRenderSlots();
+}
+function icsRenderSlots(){
+  const box=document.getElementById('ics-slots');if(!box)return;
   const mine=IC.slots.filter(s=>!icStudio()||s.studio===icStudio());
-  const list=mine.map((s,i)=>`${i+1}. ${s.actif===false?'⏸ ':''}${JOURS[s.jour]} ${s.heure} · ${s.coach||'?'}`).join('\n')||'(aucun créneau)';
-  const rep=prompt('PLANNING TYPE · '+(icStudio()||'tous')+'\n'+list+'\n\n➕ Ajouter : jour(1=lundi…7=dimanche) HH:MM Coach · ex : 1 19:00 Ombeline\n🗑 Supprimer : « suppr N » · ex : suppr 2\n(vide pour fermer)');
-  if(!rep)return;
-  const del=rep.trim().match(/^suppr\s+(\d+)$/i);
-  if(del){const s=mine[+del[1]-1];
-    if(!s){toast('Numéro inconnu');return;}
-    if(!confirm('Supprimer le créneau '+JOURS[s.jour]+' '+s.heure+' · '+(s.coach||'?')+' ?\nLes séances déjà créées sont conservées.'))return;
-    IC.slots=IC.slots.filter(x=>x.id!==s.id);
-    syncCall('ic_del',{ids:[s.id]}).catch(()=>{});
-    renderICPage();toast('Créneau supprimé');return;}
-  const m=rep.trim().match(/^([1-7])\s+(\d{1,2}:\d{2})\s+(.+)$/);
-  if(!m){toast('Format : 1 19:00 Ombeline · ou : suppr 2');return;}
-  const s={id:'slot_'+Date.now(),studio:icStudio(),jour:+m[1]-1,heure:m[2].padStart(5,'0'),coach:m[3].trim(),actif:true,maj:new Date().toISOString()};
-  IC.slots.push(s);icPush([s],[]);icEnsureWeek();renderICPage();toast('Créneau ajouté · séances générées ✓');
+  box.innerHTML=mine.length?mine.map(s=>`<div class="ics-slot"><b>${s.actif===false?'⏸ ':''}${JOURS[s.jour]} ${s.heure}</b><span>${esc(s.coach||'coach ?')}</span><button onclick="icsDelSlot('${s.id}')" title="Supprimer ce créneau">🗑</button></div>`).join(''):'<div class="ics-empty">Aucun créneau pour l\'instant.</div>';
+}
+function icsDelSlot(id){
+  const s=IC.slots.find(x=>x.id===id);if(!s)return;
+  if(!confirm('Supprimer le créneau '+JOURS[s.jour]+' '+s.heure+' · '+(s.coach||'?')+' ?\nLes séances déjà créées sont conservées.'))return;
+  IC.slots=IC.slots.filter(x=>x.id!==id);
+  syncCall('ic_del',{ids:[id]}).catch(()=>{});
+  icsRenderSlots();renderICPage();toast('Créneau supprimé');
+}
+function icsAddSlot(){
+  const jour=+document.getElementById('ics-jour').value;
+  const heure=(document.getElementById('ics-sheure').value||'').slice(0,5);
+  const coach=(document.getElementById('ics-scoach').value||'').trim();
+  if(!/^\d{2}:\d{2}$/.test(heure)){toast('Choisissez une heure');return;}
+  const s={id:'slot_'+Date.now(),studio:icStudio(),jour:jour,heure:heure,coach:coach,actif:true,maj:new Date().toISOString()};
+  IC.slots.push(s);icPush([s],[]);icEnsureWeek();
+  document.getElementById('ics-scoach').value='';
+  icsRenderSlots();renderICPage();toast('Créneau ajouté · séances générées ✓');
 }
 function icQuickSale(sessId){
-  const nom=prompt('Prénom Nom du client signé :');if(!nom)return;
-  const pk=prompt('Pack ? 4 / 8 / i (illimité) :','8');
-  const pack=/^i/i.test(pk||'')?'3':(pk==='4'?'1':'2');
-  const v2=(prompt('2e vendeur (optionnel, vide sinon) :','')||'').trim();
+  const s=IC.sessions.find(x=>x.id===sessId);
+  const team=[...new Set(Object.keys(AVATARS).map(k=>k.charAt(0).toUpperCase()+k.slice(1)).concat(['Équipe']))];
+  icSheet(`<div class="glp-tag">🎉 Vente Intro Class</div>
+    <div class="glp-t">Nouveau signé</div>
+    ${s?`<div class="fv-meta">Séance du ${s.date.slice(8,10)}/${s.date.slice(5,7)} à ${s.heure}${s.coach?' · '+esc(s.coach):''}</div>`:''}
+    <div class="ics-lbl">Client</div>
+    <input type="text" id="ics-nom" class="ics-in" placeholder="Prénom Nom"/>
+    <div class="ics-lbl">Pack souscrit</div>
+    <div class="ics-packs">${[['1','Pack 4'],['2','Pack 8'],['3','Illimité']].map(([v,l])=>`<button class="ics-chip ics-pk${v==='2'?' on':''}" data-p="${v}" onclick="document.querySelectorAll('.ics-pk').forEach(c=>c.classList.toggle('on',c===this))">${l}</button>`).join('')}</div>
+    <div class="ics-lbl">2e vendeur <small>(optionnel · commission 50/50)</small></div>
+    <input type="text" id="ics-v2" class="ics-in" list="icsTeamList" placeholder="Vide si vente solo"/>
+    <datalist id="icsTeamList">${team.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:16px" onclick="icsSubmitSale('${sessId}')">🎉 Enregistrer la vente</button></div>`);
+  setTimeout(()=>document.getElementById('ics-nom')?.focus(),250);
+}
+function icsSubmitSale(sessId){
+  const nom=(document.getElementById('ics-nom').value||'').trim();
+  if(!nom){toast('Le nom du client est requis');return;}
+  const pkBtn=document.querySelector('.ics-pk.on');
+  const pack=pkBtn?pkBtn.dataset.p:'2';
+  const v2=(document.getElementById('ics-v2').value||'').trim();
   const now=new Date().toISOString();
-  const p={id:'p_'+Date.now(),nom:nom.trim(),tel:'',note:'Vente IC',statut:'abo',pack:pack,rappel:'',obj:'',fiche:'',rep:CFG.rep||'',v2:v2,fullCom:false,icId:sessId,studio:icStudio(),ts:now,maj:now};
+  const p={id:'p_'+Date.now(),nom:nom,tel:'',note:'Vente IC',statut:'abo',pack:pack,rappel:'',obj:'',fiche:'',rep:CFG.rep||'',v2:v2,fullCom:false,icId:sessId,studio:icStudio(),ts:now,maj:now};
   PROSPECTS.unshift(p);persistProspects();schedulePush();
   emitEvent(p,'appel');emitEvent(p,'abo',{pack:pack,prime:+PRIMES[+pack]||0,v2:v2,icId:sessId});
+  document.getElementById('icPop')?.remove();
   toast('🎉 '+packShort(+pack)+' signé · bravo !');
   renderICPage();
 }
