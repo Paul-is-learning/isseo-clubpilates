@@ -342,6 +342,13 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ht-count{position:absolute;top:6px;right:8px;background:var(--gold);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 7px}
 .home-creed{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-left:4px solid var(--gold);border-radius:13px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#6b5325}
 .home-creed b{color:#523d12}
+/* ── Liste des studios France ── */
+.st-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px dashed #E3E9F2;font-size:13px}
+.st-row b{color:var(--cp-dark);flex:0 0 auto}
+.st-row span{color:#8C95A8;flex:1;font-size:12px}
+.st-row a{color:var(--cp-deep);font-weight:700;text-decoration:none;font-size:12px}
+.st-row.soon b{color:#8C95A8;font-weight:700}
+.st-grp{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#C9871F;margin:12px 0 4px}
 /* ── Simulateur d'appel ── */
 .sim-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 .sim-score{font-size:26px;font-weight:900;color:var(--gold);background:#26385A;border-radius:14px;padding:8px 16px;line-height:1}
@@ -1250,7 +1257,67 @@ const ARG_BANK=[
   {x:92,src:'hist',t:'Un nom d\'inventeur, pas une marque',say:()=>`« Pilates, ce n'est pas un concept marketing : c'est le nom d'un homme, Joseph Pilates, qui a passé sa vie à perfectionner cette méthode. Une technique centenaire · pas une mode fitness qui disparaîtra l'an prochain. »`},
   {x:98,src:'hist',t:'Le pari des 30 séances',say:()=>`« Joseph Pilates avait une formule restée célèbre : en 10 séances vous sentez la différence, en 20 vous la voyez, en 30 vous avez un corps tout neuf. C'est un pari qui a presque cent ans · et nos membres le vérifient encore. »`}
 ];
+// Studios Club Pilates France · relevé officiel clubpilates.fr/location-search (22 oct. 2026)
+const STUDIOS_FR={
+  ouverts:[
+    {n:'Paris Champ de Mars',v:'Paris 7e',t:'01 89 71 02 21'},
+    {n:'Paris Convention',v:'Paris 15e',t:'07 43 39 74 32'},
+    {n:'Paris Rue de la Pompe',v:'Paris 16e',t:'06 86 13 06 10'},
+    {n:'Saint-Maur',v:'Saint-Maur-des-Fossés (94)',t:'07 56 28 14 90'},
+    {n:'Montpellier Lattes',v:'Lattes (34)',t:'04 49 42 00 40'},
+    {n:'Marseille Prado',v:'Marseille 8e',t:'07 56 28 33 30'},
+    {n:'Aix Puyricard',v:'Aix-en-Provence',t:'04 12 28 00 63'},
+    {n:'Lyon Foch',v:'Lyon 6e',t:'04 28 29 22 52'},
+    {n:'Lyon Caluire',v:'Caluire-et-Cuire',t:'07 56 28 53 47'},
+    {n:'Argonay',v:'proche Annecy',t:'07 43 39 22 41'},
+    {n:'Bordeaux Mondésir',v:'Bordeaux',t:'05 25 53 09 45'},
+    {n:'Le Bouscat',v:'proche Bordeaux',t:'07 43 39 74 31'},
+    {n:'Nantes Forum d\'Orvault',v:'Orvault',t:'07 43 39 92 39'},
+    {n:'Rennes Les Lices',v:'Rennes',t:'06 82 96 48 64'},
+    {n:'Brest Kergaradec',v:'Brest',t:'09 56 51 11 78'},
+    {n:'Nancy',v:'Nancy',t:'07 56 28 33 39'}
+  ],
+  bientot:[
+    {n:'Paris Monceau',v:'Paris 17e · T4 2026'},
+    {n:'Lyon Est',v:'Saint-Priest · oct. 2026'},
+    {n:'Bidart',v:'Pays basque · fin 2026'},
+    {n:'Boulogne-Billancourt',v:'T1 2027'},
+    {n:'La Garenne-Colombes',v:'T1 2027'},
+    {n:'Rennes Cesson',v:'T1 2027'}
+  ]
+};
+function showStudiosFR(){
+  document.getElementById('glossPop')?.remove();
+  const d=document.createElement('div');d.id='glossPop';
+  d.innerHTML=`<div class="glp-bg"></div><div class="glp-card fv-card">
+    <div class="glp-tag">📍 Réseau France</div>
+    <div class="glp-t">Studios Club Pilates ouverts</div>
+    <div class="fv-meta">${STUDIOS_FR.ouverts.length} studios · relevé officiel du 22 oct. 2026 · <a href="https://www.clubpilates.fr/location-search" target="_blank" style="color:var(--cp-deep)">clubpilates.fr</a></div>
+    <div class="fv-body" style="white-space:normal">
+      ${STUDIOS_FR.ouverts.map(s=>`<div class="st-row"><b>${s.n}</b><span>${s.v}</span><a href="tel:${s.t.replace(/ /g,'')}">${s.t}</a></div>`).join('')}
+      <div class="st-grp">🔜 Prochaines ouvertures</div>
+      ${STUDIOS_FR.bientot.map(s=>`<div class="st-row soon"><b>${s.n}</b><span>${s.v}</span></div>`).join('')}
+    </div>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:0" onclick="document.getElementById('glossPop').remove()">Fermer</button></div>
+  </div>`;
+  d.querySelector('.glp-bg').onclick=()=>d.remove();
+  document.body.appendChild(d);
+}
 const OBJECTIONS=[
+  {id:'c_voir',cas:true,ic:'🏗️',t:'« Je veux voir le studio avant de m\'abonner »',kw:'cas voir studio visiter avant ouverture travaux abonner',lines:[
+    '« Je comprends, c\'est naturel. Mais attendre l\'ouverture pour décider, c\'est <b>perdre le statut fondateur</b> · réservé à nos 50 premiers membres : -20 % à vie et l\'inscription offerte. Ces places partent avant l\'ouverture. »',
+    '« Et vous ne prenez aucun risque sur la qualité : le studio sera <b>identique aux 16 déjà ouverts en France</b> · même Reformer dernière génération, même plateau, mêmes standards. Ce que vous verriez ailleurs, c\'est exactement ce que vous aurez ici. »',
+    'Dernier recours · le client veut vraiment toucher avant de signer : « Allez le <b>vivre dès cette semaine</b> : je vous organise une séance d\'essai dans un studio déjà ouvert près de chez vous. » <button class="pr-act" style="margin-top:6px" onclick="showStudiosFR()">📍 Voir les studios ouverts</button>',
+    'Après la visite, rappel sous 24 h : « Alors, ce Reformer ? … C\'est exactement ce qui vous attend ici, avec en plus le statut fondateur. On le réserve ? »']},
+  {id:'c_payer',cas:true,ic:'📅',t:'« Payer avant l\'ouverture ? Jamais »',kw:'cas payer avant ouverture facturation debut arnaque',lines:[
+    '« Excellente question, et soyons très clairs : en vous inscrivant aujourd\'hui, <b>votre abonnement ne démarre qu\'à l\'ouverture du studio</b>. Aujourd\'hui vous ne payez rien : vous réservez votre statut fondateur et votre place. »',
+    '« Vous bloquez le tarif à vie (-20 %) et l\'inscription offerte · la facturation, elle, commence le jour où les Reformer vous attendent. »',
+    'Transparence totale : engagement 3 mois à partir de l\'ouverture, tacitement renouvelable. On le dit, c\'est ce qui fait confiance.']},
+  {id:'c_concurrent',cas:true,ic:'⚔️',t:'« Il y a déjà un studio de Pilates à côté »',kw:'cas concurrent autre studio deja cote prix moins cher',lines:[
+    '« Et c\'est une bonne nouvelle : ça veut dire que le Reformer, ici, les gens y ont déjà goûté. La question c\'est : <b>avec quel encadrement ?</b> »',
+    '« Chez nous : coach certifié sur CHAQUE cours, 12 personnes maximum, 5 niveaux pour progresser, 8 formats différents · et le réseau n\'°1 mondial derrière (1 500 studios). Beaucoup de studios indépendants n\'offrent ni l\'un ni l\'autre. »',
+    '« Venez comparer par vous-même : le cours d\'essai est offert. Vous jugerez sur machine, pas sur brochure. »']},
+
   {id:'b_temps',barrage:true,ic:'🚪',t:'« Je n\'ai pas le temps là »',kw:'barrage temps la maintenant occupe debut decroche',lines:['« Je comprends tout à fait · <b>30 secondes chrono</b>, et si ça ne vous parle pas, je vous laisse tranquille. Ça marche ? »','Si vraiment pas le moment : « Aucun souci. Je vous propose un créneau : <b>plutôt ce soir ou demain matin ?</b> » · toujours verrouiller une heure précise.','Ne JAMAIS raccrocher sans un rendez-vous daté.']},
   {id:'b_sujet',barrage:true,ic:'🚪',t:'« C\'est à quel sujet ? »',kw:'barrage sujet pourquoi qui appelle debut',lines:['« Vous nous avez laissé vos coordonnées pour le studio Club Pilates · <b>je vous rappelle personnellement</b> pour répondre à vos questions et voir ce qui vous ferait du bien. »','Enchaîner direct sur une question ouverte : « Qu\'est-ce qui vous a donné envie de nous laisser vos coordonnées ? »','Ton posé, jamais sur la défensive : vous rappelez quelqu\'un qui VOUS a sollicité.']},
   {id:'b_mail',barrage:true,ic:'🚪',t:'« Envoyez-moi un mail »',kw:'barrage mail email envoyez doc brochure debut',lines:['« Bien sûr, je vous envoie ça. Juste <b>deux questions</b> pour vous envoyer ce qui VOUS concerne vraiment · sinon je vous noie sous la doc générique. »','Les deux questions = motif + objectif → vous êtes reparti dans la découverte.','Si blocage total : envoyer + <b>caler la relance datée</b> : « Je vous rappelle jeudi pour en parler, 18h ça va ? »']},
@@ -2788,10 +2855,11 @@ function renderObj(q){
   const list=OBJECTIONS.filter(o=>!q||o.t.toLowerCase().includes(q)||(o.kw||'').includes(q));
   const card=o=>`<div class="obj${objOpen===o.id?' open':''}" id="obj-${o.id}"><div class="obj-h" onclick="toggleObj('${o.id}')"><span class="ic">${o.ic}</span><span>${o.t}</span><span class="ch">▾</span></div><div class="obj-b">${o.lines.map(l=>`<div class="ln">${l}</div>`).join('')}</div></div>`;
   if(!list.length){$('#objList').innerHTML=`<div style="text-align:center;color:var(--ink-mid);padding:30px;font-size:14px">Aucune objection trouvée pour « ${esc(q)} »</div>`;return;}
-  const bar=list.filter(o=>o.barrage),cls=list.filter(o=>!o.barrage);
+  const bar=list.filter(o=>o.barrage),cas=list.filter(o=>o.cas),cls=list.filter(o=>!o.barrage&&!o.cas);
   let h='';
   if(bar.length)h+=`<div class="obj-grp">🚪 Passer le barrage · les 10 premières secondes</div>`+bar.map(card).join('');
   if(cls.length)h+=(bar.length?`<div class="obj-grp">💬 Objections de fond</div>`:'')+cls.map(card).join('');
+  if(cas.length)h+=`<div class="obj-grp">🎭 Cas pratiques · situations réelles</div>`+cas.map(card).join('');
   $('#objList').innerHTML=h;
 }
 function toggleObj(id){objOpen=objOpen===id?null:id;document.querySelectorAll('.obj').forEach(e=>e.classList.toggle('open',e.id==='obj-'+id&&objOpen===id));}
