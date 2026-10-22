@@ -128,10 +128,11 @@ serve(async (req) => {
       let slots: any[] = ic.slots || [];
       let sessions: any[] = ic.sessions || [];
       let baremes: any[] = ic.baremes || [];
+      let coachs: any[] = ic.coachs || [];
       const saveIC = () =>
-        admin.from("studios").upsert({ id: ROW_IC, data: { slots, sessions, baremes }, updated_at: new Date().toISOString() });
+        admin.from("studios").upsert({ id: ROW_IC, data: { slots, sessions, baremes, coachs }, updated_at: new Date().toISOString() });
 
-      if (action === "ic_pull") return json({ ok: true, slots, sessions, baremes });
+      if (action === "ic_pull") return json({ ok: true, slots, sessions, baremes, coachs });
 
       if (action === "ic_bareme_set") {
         if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
@@ -174,9 +175,18 @@ serve(async (req) => {
           const i = sessions.findIndex((x) => x.id === clean.id);
           if (i < 0) sessions.push(clean); else if ((clean.maj || "") >= (sessions[i].maj || "")) sessions[i] = clean;
         }
+        const inCoachs: any[] = Array.isArray(body.coachs) ? body.coachs : [];
+        for (const c of inCoachs) {
+          if (!c || !c.id || !c.nom) continue;
+          const clean = { id: String(c.id).slice(0, 60), nom: String(c.nom).slice(0, 60),
+            studio: String(c.studio || "").slice(0, 60), maj: String(c.maj || new Date().toISOString()) };
+          const i = coachs.findIndex((x) => x.id === clean.id);
+          if (i < 0) coachs.push(clean); else if ((clean.maj || "") >= (coachs[i].maj || "")) coachs[i] = clean;
+        }
+        if (coachs.length > 200) coachs = coachs.slice(-200);
         if (sessions.length > MAX_IC) sessions = sessions.slice(-MAX_IC);
         await saveIC();
-        return json({ ok: true, slots, sessions, baremes });
+        return json({ ok: true, slots, sessions, baremes, coachs });
       }
 
       if (action === "ic_del") {
@@ -184,8 +194,9 @@ serve(async (req) => {
         const ids: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
         slots = slots.filter((s) => !ids.includes(s.id));
         sessions = sessions.filter((s) => !ids.includes(s.id));
+        coachs = coachs.filter((c) => !ids.includes(c.id));
         await saveIC();
-        return json({ ok: true, slots, sessions, baremes });
+        return json({ ok: true, slots, sessions, baremes, coachs });
       }
     }
 

@@ -2754,10 +2754,10 @@ function renderSim(){_vReg('sim');
    type, ventes rattachées. Les primes/commissions se CALCULENT, jamais
    ne se tapent (cdc Tom, oct. 2026).
    ════════════════════════════════════════════════════════════════ */
-let IC={slots:[],sessions:[],baremes:[]};
+let IC={slots:[],sessions:[],baremes:[],coachs:[]};
 let _icWeek=0;
-async function icPull(){try{const d=await syncCall('ic_pull');if(d){IC.slots=d.slots||[];IC.sessions=d.sessions||[];IC.baremes=d.baremes||[];_hmRefreshIC();}}catch(e){}}
-function icPush(slots,sessions){syncCall('ic_push',{slots:slots||[],sessions:sessions||[]}).catch(()=>{});}
+async function icPull(){try{const d=await syncCall('ic_pull');if(d){IC.slots=d.slots||[];IC.sessions=d.sessions||[];IC.baremes=d.baremes||[];IC.coachs=d.coachs||[];_hmRefreshIC();}}catch(e){}}
+function icPush(slots,sessions,coachs){syncCall('ic_push',{slots:slots||[],sessions:sessions||[],coachs:coachs||[]}).catch(()=>{});}
 function icBaremeAt(date){
   let b={coach:12,p1:10,p2:25,p3:50};
   (IC.baremes||[]).forEach(x=>{if(x.effet<=date)b=x;});
@@ -2768,11 +2768,36 @@ function _dstr(d){return d.toISOString().slice(0,10);}
 const JOURS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 // Les coachs n'ont PAS de compte : ce sont des noms (planning, primes).
 // La saisie des séances est faite par le staff (Solène, Lucie, Tom…).
-function icCoachList(){
+function _icLegacyNames(){
+  const ok=s=>!icStudio()||s.studio===icStudio();
   const set=new Set();
-  IC.slots.forEach(s=>{if(s.coach)set.add(s.coach);});
-  IC.sessions.forEach(s=>{if(s.coach)set.add(s.coach);});
+  IC.slots.forEach(s=>{if(s.coach&&ok(s))set.add(s.coach);});
+  IC.sessions.forEach(s=>{if(s.coach&&ok(s))set.add(s.coach);});
   return [...set].sort();
+}
+function icRoster(){return (IC.coachs||[]).filter(c=>!icStudio()||c.studio===icStudio()).sort((a,b)=>a.nom.localeCompare(b.nom));}
+function icCoachOpts(cur){
+  let h='<option value="">Coach ?</option>',seen=false;
+  icRoster().forEach(c=>{const sel=c.nom===cur?' selected':'';if(sel)seen=true;h+=`<option value="${esc(c.nom)}"${sel}>${esc(c.nom)}</option>`;});
+  if(cur&&!seen)h+=`<option value="${esc(cur)}" selected>${esc(cur)}</option>`;
+  h+='<option value="__new">➕ Nouveau coach…</option>';
+  return h;
+}
+function icAddCoach(nom){
+  nom=(nom||'').trim();if(!nom)return null;
+  const ex=icRoster().find(c=>c.nom.toLowerCase()===nom.toLowerCase());if(ex)return ex.nom;
+  const c={id:'co_'+Date.now(),nom:nom,studio:icStudio(),maj:new Date().toISOString()};
+  IC.coachs.push(c);icPush([],[],[c]);return nom;
+}
+function icCoachPick(sel,sessId){
+  let v=sel.value;
+  if(v==='__new'){
+    const nom=prompt('Prénom du nouveau coach :');
+    v=icAddCoach(nom)||'';
+    sel.innerHTML=icCoachOpts(v);sel.value=v;
+    if(v)toast('Coach ajouté à l\'annuaire ✓');
+  }
+  if(sessId)icSet(sessId,'coach',v);
 }
 function icStudio(){return CFG.studio||'';}
 function icEnsureWeek(){
@@ -2812,7 +2837,6 @@ function renderICPage(){
   const mon=_monday(_icWeek);
   const days=[...Array(7)].map((x,j)=>_dstr(new Date(mon.getTime()+j*864e5)));
   const sess=IC.sessions.filter(s=>days.includes(s.date)&&(!icStudio()||s.studio===icStudio())).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
-  const coachs=icCoachList();
   const fmtD=d=>new Date(d+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'});
   const card=s=>{
     const sales=icSalesOf(s.id),ann=s.statut==='annulee';
@@ -2820,7 +2844,7 @@ function renderICPage(){
     return `<div class="ic-card${ann?' ann':''}">
       <div class="ic-top">
         <div class="ic-when"><b>${s.heure||'--:--'}</b><span>${esc(s.coach||'coach ?')}</span></div>
-        <input class="ic-coach" list="icCoachList" placeholder="Coach (ex. Ombeline)" value="${esc(s.coach||'')}" onchange="icSet('${s.id}','coach',this.value.trim())"/>
+        <select class="ic-coach" onchange="icCoachPick(this,'${s.id}')">${icCoachOpts(s.coach||'')}</select>
         <div class="ic-st">${['prevue','faite','annulee'].map(st=>`<button class="ic-stb${s.statut===st?' on':''}" onclick="icSet('${s.id}','statut','${st}')">${st==='prevue'?'🕐':st==='faite'?'✅':'✖️'}</button>`).join('')}${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ic-stb" title="Supprimer la séance (erreur de saisie)" onclick="icDelSession('${s.id}')">🗑</button>`:''}</div>
       </div>
       ${ann?'<div class="ic-annmsg">Séance annulée · exclue de toutes les stats</div>':`
@@ -2837,10 +2861,9 @@ function renderICPage(){
       ${(COACH_ROLE==='admin'||IS_MGR)?`<select class="ic-studio" onchange="CFG.studio=this.value;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));icEnsureWeek();renderICPage();toast('Studio actif : '+(this.value||'tous'))">${['',...new Set(['La Garenne-Colombes','Montpellier Lattes','La Défense'].concat(IC.slots.map(s=>s.studio)).concat(IC.sessions.map(s=>s.studio)).filter(Boolean))].map(s=>`<option value="${esc(s)}"${s===icStudio()?' selected':''}>${s||'🌍 Tous les studios'}</option>`).join('')}</select>`:`<span class="sync-badge ok">☁️ Équipe</span>`}</div>
     <div class="ic-week"><button onclick="_icWeek--;icEnsureWeek();renderICPage()">‹</button><b>Semaine du ${fmtD(days[0])}</b><button onclick="_icWeek++;icEnsureWeek();renderICPage()">›</button>${_icWeek?`<button class="ic-today" onclick="_icWeek=0;icEnsureWeek();renderICPage()">Aujourd'hui</button>`:''}</div>
     ${days.map(d=>{const ds=sess.filter(s=>s.date===d);return ds.length?`<div class="ic-day">${fmtD(d)}</div>`+ds.map(card).join(''):'';}).join('')||'<div class="pr-empty">Aucune séance cette semaine.<br><small>Ajoutez-en une ou configurez le planning type.</small></div>'}
-    <datalist id="icCoachList">${coachs.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
     <div class="ic-actions">
       <button class="pr-act" onclick="icAddSession()">➕ Séance ponctuelle</button>
-      ${(COACH_ROLE==='admin'||IS_MGR)?'<button class="pr-act" onclick="icSlotsUI()">⚙️ Planning type</button>':''}
+      ${(COACH_ROLE==='admin'||IS_MGR)?'<button class="pr-act" onclick="icSlotsUI()">⚙️ Planning type</button><button class="pr-act" onclick="icCoachsUI()">👩‍🏫 Coachs</button>':''}
     </div>
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
@@ -2872,7 +2895,7 @@ function icAddSession(){
       <div style="flex:1"><div class="ics-lbl">Heure</div><input type="time" id="ics-heure" class="ics-in" value="18:00"/></div>
     </div>
     <div class="ics-lbl">Coach</div>
-    <input type="text" id="ics-coach" class="ics-in" list="icCoachList" placeholder="Prénom du coach (optionnel)"/>
+    <select id="ics-coach" class="ics-in" onchange="icCoachPick(this,null)">${icCoachOpts('')}</select>
     <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:16px" onclick="icsSubmitSession()">Ajouter la séance ✓</button></div>`);
 }
 function icsPickDay(btn){
@@ -2903,7 +2926,7 @@ function icSlotsUI(){
       <input type="time" id="ics-sheure" class="ics-in" value="19:00" style="flex:1"/>
     </div>
     <div class="ics-row" style="margin-top:8px">
-      <input type="text" id="ics-scoach" class="ics-in" list="icCoachList" placeholder="Coach" style="flex:1"/>
+      <select id="ics-scoach" class="ics-in" style="flex:1" onchange="icCoachPick(this,null)">${icCoachOpts('')}</select>
       <button class="glp-ok" style="flex:0 0 auto;margin-top:0;width:auto;padding:11px 18px" onclick="icsAddSlot()">➕ Ajouter</button>
     </div>
     <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:16px;background:#eef1f7;color:var(--cp-dark)" onclick="document.getElementById('icPop').remove()">Fermer</button></div>`);
@@ -2930,6 +2953,47 @@ function icsAddSlot(){
   IC.slots.push(s);icPush([s],[]);icEnsureWeek();
   document.getElementById('ics-scoach').value='';
   icsRenderSlots();renderICPage();toast('Créneau ajouté · séances générées ✓');
+}
+function icCoachsUI(){
+  icSheet(`<div class="glp-tag">👩‍🏫 ${esc(icStudio()||'Tous les studios')}</div>
+    <div class="glp-t">Annuaire des coachs</div>
+    <div class="fv-meta" style="margin-bottom:4px">Ces profils remplissent les menus déroulants des séances et du planning. Retirer un coach ne change pas ses séances passées.</div>
+    <div id="ics-coachs" style="margin-top:10px"></div>
+    <div class="ics-lbl" style="margin-top:14px">Ajouter un coach</div>
+    <div class="ics-row">
+      <input type="text" id="ics-cnew" class="ics-in" placeholder="Prénom (ex. Ombeline)" style="flex:1"/>
+      <button class="glp-ok" style="flex:0 0 auto;margin-top:0;width:auto;padding:11px 18px" onclick="icsCoachAdd()">➕ Ajouter</button>
+    </div>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:16px;background:#eef1f7;color:var(--cp-dark)" onclick="document.getElementById('icPop').remove()">Fermer</button></div>`);
+  icsRenderCoachs();
+}
+function icsRenderCoachs(){
+  const box=document.getElementById('ics-coachs');if(!box)return;
+  const r=icRoster();
+  const legacy=_icLegacyNames().filter(n=>!r.find(c=>c.nom.toLowerCase()===n.toLowerCase()));
+  box.innerHTML=(r.length?r.map(c=>`<div class="ics-slot"><b>👤</b><span>${esc(c.nom)}</span><button onclick="icsDelCoach('${c.id}')" title="Retirer de l'annuaire">🗑</button></div>`).join(''):'<div class="ics-empty">Aucun coach pour l\'instant.</div>')
+    +(legacy.length?`<button class="pr-act" style="margin-top:8px" onclick="icsImportLegacy()">📥 Reprendre les ${legacy.length} nom${legacy.length>1?'s':''} déjà utilisé${legacy.length>1?'s':''} (${legacy.slice(0,3).map(esc).join(', ')}${legacy.length>3?'…':''})</button>`:'');
+}
+function icsCoachAdd(){
+  const inp=document.getElementById('ics-cnew');
+  const v=icAddCoach(inp.value);
+  if(!v){toast('Entrez un prénom');return;}
+  inp.value='';icsRenderCoachs();renderICPage();toast('Coach ajouté ✓');
+}
+function icsDelCoach(id){
+  const c=(IC.coachs||[]).find(x=>x.id===id);if(!c)return;
+  if(!confirm('Retirer '+c.nom+' de l\'annuaire ?'))return;
+  IC.coachs=IC.coachs.filter(x=>x.id!==id);
+  syncCall('ic_del',{ids:[id]}).catch(()=>{});
+  icsRenderCoachs();renderICPage();toast('Coach retiré');
+}
+function icsImportLegacy(){
+  const r=icRoster();
+  const legacy=_icLegacyNames().filter(n=>!r.find(c=>c.nom.toLowerCase()===n.toLowerCase()));
+  const now=Date.now();
+  const adds=legacy.map((n,i)=>({id:'co_'+(now+i),nom:n,studio:icStudio(),maj:new Date().toISOString()}));
+  IC.coachs.push(...adds);icPush([],[],adds);
+  icsRenderCoachs();renderICPage();toast(adds.length+' coach'+(adds.length>1?'s':'')+' repris ✓');
 }
 function icQuickSale(sessId){
   const s=IC.sessions.find(x=>x.id===sessId);
