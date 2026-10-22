@@ -1003,19 +1003,12 @@ async function submitCreateUser(){
   if(!nom||!email||!pwd){errEl.textContent='Tous les champs sont requis.';errEl.style.display='block';return;}
   if(pwd.length<6){errEl.textContent='Le mot de passe doit contenir au moins 6 caractères.';errEl.style.display='block';return;}
   btn.textContent='Création en cours...';btn.disabled=true;
-  // Sauvegarder la session actuelle
-  var currentSession=await sb.auth.getSession();
-  // Créer le compte via signUp
-  var res=await sb.auth.signUp({email:email,password:pwd,options:{data:{nom:nom}}});
-  if(res.error){errEl.textContent='Erreur: '+res.error.message;errEl.style.display='block';btn.textContent='Créer le compte';btn.disabled=false;return;}
-  var newUid=res.data.user&&res.data.user.id;
-  if(!newUid){errEl.textContent='Erreur: impossible de récupérer l\'ID utilisateur.';errEl.style.display='block';btn.textContent='Créer le compte';btn.disabled=false;return;}
-  // Restaurer la session admin (signUp peut changer la session)
-  if(currentSession.data&&currentSession.data.session){
-    await sb.auth.setSession({access_token:currentSession.data.session.access_token,refresh_token:currentSession.data.session.refresh_token});
-  }
-  // Insérer le profil
-  await sb.from('profiles').upsert({id:newUid,nom:nom,email:email,role:role});
+  // Création côté serveur (edge function admin-users, réservée super-admins).
+  // L'inscription publique peut ainsi rester désactivée dans Supabase.
+  var res=await sb.functions.invoke('admin-users',{body:{action:'create',email:email,password:pwd,nom:nom,role:role}});
+  var errMsg=res.error?res.error.message:(res.data&&res.data.error)||null;
+  if(errMsg||!(res.data&&res.data.ok)){errEl.textContent='Erreur: '+(errMsg||'réponse inattendue');errEl.style.display='block';btn.textContent='Créer le compte';btn.disabled=false;return;}
+  var newUid=res.data.uid;
   // Sauvegarder le rôle et le mot de passe dans adminSettings
   if(!S.adminSettings.roles)S.adminSettings.roles={};
   if(!S.adminSettings.passwords)S.adminSettings.passwords={};
@@ -1061,7 +1054,12 @@ async function executeDeleteUser(uid){
     S.adminSettings.viewers=S.adminSettings.viewers.filter(function(id){return id!==uid;});
   }
   await saveAdminSettings();
-  // 3. Supprimer le profil
+  // 3. Supprimer réellement le compte auth + le profil (edge function admin-users).
+  // Avant, seul le profil local était retiré : le compte Supabase restait valide.
+  try{
+    var delRes=await sb.functions.invoke('admin-users',{body:{action:'delete',uid:uid}});
+    if(delRes.error||(delRes.data&&delRes.data.error))console.warn('[admin-users delete]',delRes.error||delRes.data.error);
+  }catch(e){console.warn('[admin-users delete]',e);}
   await sb.from('profiles').delete().eq('id',uid);
   // 4. Supprimer la présence
   if(S.userPresence&&S.userPresence[uid]){
@@ -1326,18 +1324,11 @@ async function approveInvitation(invId){
   if(!inv){toast('Invitation introuvable');return;}
   // Générer mot de passe
   var pwd=_generatePassword();
-  // Créer le compte Supabase
-  var currentSession=await sb.auth.getSession();
-  var res=await sb.auth.signUp({email:inv.email,password:pwd,options:{data:{nom:inv.nom}}});
-  if(res.error){toast('Erreur création compte: '+res.error.message);return;}
-  var newUid=res.data.user?res.data.user.id:null;
-  if(!newUid){toast('Erreur: UID non obtenu');return;}
-  // Restaurer session admin
-  if(currentSession.data&&currentSession.data.session){
-    await sb.auth.setSession({access_token:currentSession.data.session.access_token,refresh_token:currentSession.data.session.refresh_token});
-  }
-  // Profil
-  await sb.from('profiles').upsert({id:newUid,nom:inv.nom,email:inv.email,role:'viewer'});
+  // Créer le compte côté serveur (edge function admin-users)
+  var res=await sb.functions.invoke('admin-users',{body:{action:'create',email:inv.email,password:pwd,nom:inv.nom,role:'viewer'}});
+  var errMsg=res.error?res.error.message:(res.data&&res.data.error)||null;
+  if(errMsg||!(res.data&&res.data.ok)){toast('Erreur création compte: '+(errMsg||'réponse inattendue'));return;}
+  var newUid=res.data.uid;
   // Ajouter comme viewer
   var viewers=S.adminSettings.viewers||[];
   if(viewers.indexOf(newUid)<0)viewers.push(newUid);
