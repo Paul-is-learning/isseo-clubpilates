@@ -31,6 +31,7 @@ const ROW_PROSPECTS = "_coach_prospects";
 const ROW_ACCESS = "_coach_access";
 const ROW_STATS = "_coach_stats";
 const ROW_IC = "_ic_data";
+const ROW_TRAIN = "_training";
 const MAX_IC = 8000;
 const MAX_EVENTS = 20000;
 const EV_TYPES = ["appel", "essai", "venu", "abo", "perdu"];
@@ -186,6 +187,34 @@ serve(async (req) => {
         await saveIC();
         return json({ ok: true, slots, sessions, baremes });
       }
+    }
+
+    // ── Formation : scores du parcours de cas pratiques, par salarié ──
+    // Le serveur attribue le score au code CONNECTÉ (un salarié ne peut pas
+    // valider la formation d'un autre). Meilleur score conservé.
+    if (action === "train_push" || action === "train_pull" || action === "train_del") {
+      const { data: tRow } = await admin.from("studios").select("data").eq("id", ROW_TRAIN).maybeSingle();
+      const map: Record<string, Record<string, { s: number; ts: string }>> = (tRow?.data?.map as any) || {};
+
+      if (action === "train_del") {
+        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        const who = String(body.who || "").trim().toLowerCase();
+        if (who && map[who]) delete map[who];
+        await admin.from("studios").upsert({ id: ROW_TRAIN, data: { map }, updated_at: new Date().toISOString() });
+        return json({ ok: true, map });
+      }
+
+      if (action === "train_push") {
+        const who = (role === "admin" ? String(body.nom || "admin") : rep).trim().split(" ")[0].toLowerCase();
+        const scen = String(body.scen || "").slice(0, 24);
+        const score = Math.max(0, Math.min(100, Math.round(Number(body.score) || 0)));
+        if (!who || !scen) return json({ error: "Scénario manquant" }, 400);
+        map[who] = map[who] || {};
+        const prev = map[who][scen];
+        if (!prev || score > prev.s) map[who][scen] = { s: score, ts: new Date().toISOString() };
+        await admin.from("studios").upsert({ id: ROW_TRAIN, data: { map }, updated_at: new Date().toISOString() });
+      }
+      return json({ ok: true, map });
     }
 
     if (action === "stats_del") {

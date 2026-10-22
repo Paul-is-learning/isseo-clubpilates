@@ -377,6 +377,28 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .st-row a{color:var(--cp-deep);font-weight:700;text-decoration:none;font-size:12px}
 .st-row.soon b{color:#8C95A8;font-weight:700}
 .st-grp{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:#C9871F;margin:12px 0 4px}
+/* ── Parcours de formation ── */
+.tr-hero{background:linear-gradient(150deg,#26385A,#1E2E4C);border-radius:17px;padding:16px 18px;color:#fff;margin-bottom:14px;animation:pfin .5s cubic-bezier(.22,1.2,.35,1)}
+.tr-hero-top{display:flex;align-items:baseline;gap:8px;margin-bottom:10px}
+.tr-hero-top b{font-size:28px;font-weight:900;color:var(--gold-soft)}
+.tr-hero-top span{font-size:12px;color:rgba(255,255,255,.7);font-weight:600}
+.tr-pct{margin-left:auto;font-size:18px;font-weight:900;color:#fff}
+.tr-grad{margin-top:10px;font-size:13px;font-weight:800;color:var(--gold-soft)}
+.tr-card{display:flex;align-items:center;gap:12px;width:100%;text-align:left;background:#fff;border:1.5px solid #E3E9F2;border-radius:14px;padding:13px 15px;margin-bottom:9px;box-shadow:var(--sh-s);transition:transform .14s,box-shadow .14s;cursor:pointer}
+@media(hover:hover){.tr-card:hover{transform:translateY(-1px);box-shadow:var(--sh-m)}}
+.tr-card.ok{border-color:#bfe8d6;background:linear-gradient(160deg,#fbfffd,#eefaf4)}
+.tr-card.retry{border-color:#f0dcb4}
+.tr-num{flex:0 0 32px;height:32px;border-radius:50%;background:var(--cp-pale);color:var(--cp-deep);font-weight:800;display:grid;place-items:center;font-size:14px}
+.tr-card.ok .tr-num{background:#e7f6ef}
+.tr-body{flex:1;min-width:0}
+.tr-body b{font-size:14px;color:var(--cp-dark)}
+.tr-body small{display:block;font-size:11px;color:#8C95A8;margin-top:1px}
+.tr-score{font-size:12px;font-weight:800;color:#8C95A8}
+.tr-card.ok .tr-score{color:#1F9E75}
+.tr-card.retry .tr-score{color:#C9871F}
+.tr-verdict{margin-top:12px;border-radius:12px;padding:10px 13px;font-size:13px;font-weight:800}
+.tr-verdict.ok{background:rgba(31,158,117,.2);color:#8ff0cd}
+.tr-verdict.ko{background:rgba(201,135,31,.18);color:var(--gold-soft)}
 /* ── Simulateur d'appel ── */
 .sim-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
 .sim-score{font-size:26px;font-weight:900;color:var(--gold);background:#26385A;border-radius:14px;padding:8px 16px;line-height:1}
@@ -1681,7 +1703,7 @@ function renderScreen(keepScroll){
         <div class="ht-h">🧰 Votre boîte à outils <small>tout est aussi dans le menu ☰ en haut à droite</small></div>
         <div class="ht-grid">
           <button class="ht-tile gold" onclick="showOnboard(true)"><span class="ht-ic">🌟</span><span class="ht-lbl">L'essentiel</span></button>
-          <button class="ht-tile" onclick="startSim()"><span class="ht-ic">🎬</span><span class="ht-lbl">S'entraîner</span></button>
+          <button class="ht-tile" onclick="showTraining()"><span class="ht-ic">🎬</span><span class="ht-lbl">Formation</span></button>
           <button class="ht-tile" onclick="showICPage()"><span class="ht-ic">🗓️</span><span class="ht-lbl">Intro Class</span></button>
           <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">🏆</span><span class="ht-lbl">Performances</span></button>
           <button class="ht-tile" onclick="showProspects()"><span class="ht-ic">📇</span><span class="ht-lbl">Mes prospects</span>${PROSPECTS.length?`<span class="ht-count">${PROSPECTS.length}</span>`:''}</button>
@@ -2584,11 +2606,54 @@ function simSteps(p){
       {t:`« Je vous envoie le lien d'inscription par SMS, vous le faites tranquillement ce soir. »`,pts:3,fb:'~ Mieux que rien, mais un créneau verrouillé À L\'ORAL convertit bien plus qu\'un lien froid.'}]}
   ];
 }
+const SIM_SEUIL=70; // % minimum pour valider un scénario
+const SIM_CURRICULUM=[
+  {id:'s1',t:'Le pressé qui n\'a pas le temps',nom:'Karim',char:'presse',goal:'tonus',o1:'temps',o2:'prix'},
+  {id:'s2',t:'La sceptique déjà déçue',nom:'Nadia',char:'sceptique',goal:'poids',o1:'deja',o2:'prix'},
+  {id:'s3',t:'L\'hésitante qui doit en parler',nom:'Monique',char:'hesitant',goal:'douleur',o1:'conjoint',o2:'reflechir'},
+  {id:'s4',t:'Le chaleureux au budget serré',nom:'Hugo',char:'chaleureux',goal:'energie',o1:'prix',o2:'temps'},
+  {id:'s5',t:'La prudente qui veut réfléchir',nom:'Léa',char:'sceptique',goal:'stress',o1:'reflechir',o2:'deja'},
+  {id:'s6',t:'Le pressé sous pression',nom:'Marc',char:'presse',goal:'posture',o1:'prix',o2:'conjoint'},
+  {id:'s7',t:'L\'hésitante échaudée',nom:'Fatima',char:'hesitant',goal:'poids',o1:'temps',o2:'deja'},
+  {id:'s8',t:'La convaincue qui doit convaincre',nom:'Patricia',char:'chaleureux',goal:'douleur',o1:'conjoint',o2:'prix'}
+];
+let TRAIN={};try{TRAIN=JSON.parse(localStorage.getItem('cpcoach_train')||'{}');}catch(e){}
+async function trainPull(){
+  try{const d=await syncCall('train_pull');const k=_repKey(CFG.rep||'');
+    if(d.map){window._TRAINALL=d.map;if(k&&d.map[k]){TRAIN=d.map[k];localStorage.setItem('cpcoach_train',JSON.stringify(TRAIN));}}
+  }catch(e){}
+}
+function trainDone(){return SIM_CURRICULUM.filter(s=>TRAIN[s.id]&&TRAIN[s.id].s>=SIM_SEUIL).length;}
+function showTraining(){
+  $('#topPhase').textContent='Formation';$('#topSub').textContent='';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';relocateBoxes();
+  const render=()=>{
+    const done=trainDone(),pct=Math.round(done/SIM_CURRICULUM.length*100);
+    $('#screen').innerHTML=`<div class="cg">
+      <div class="pr-head"><div><h2 class="pr-h2">🎬 Parcours de formation</h2><div class="pr-h2s">8 cas pratiques à valider (score ≥ ${SIM_SEUIL} %) · votre progression est suivie par le studio</div></div></div>
+      <div class="tr-hero"><div class="tr-hero-top"><b>${done}/${SIM_CURRICULUM.length}</b><span>scénarios validés</span><span class="tr-pct">${pct} %</span></div>
+        <div class="pf-track"><div class="pf-fill" style="width:${pct}%"></div></div>
+        ${done===SIM_CURRICULUM.length?'<div class="tr-grad">🎓 Formation complète · félicitations !</div>':''}</div>
+      ${SIM_CURRICULUM.map((s,i)=>{const r=TRAIN[s.id];const ok=r&&r.s>=SIM_SEUIL;const tried=r&&!ok;
+        return `<button class="tr-card${ok?' ok':tried?' retry':''}" onclick="startSim(null,'${s.id}')">
+          <span class="tr-num">${ok?'✅':tried?'🔁':(i+1)}</span>
+          <span class="tr-body"><b>${s.t}</b><small>${esc(s.nom)} · ${SIM_CHARS.find(c=>c.id===s.char).lbl} · objections : ${s.o1} + ${s.o2}</small></span>
+          <span class="tr-score">${r?r.s+' %':'à faire'}</span>
+        </button>`;}).join('')}
+      <button class="pr-act" style="width:100%;margin-top:10px" onclick="startSim()">🎲 Client aléatoire · entraînement libre (ne compte pas)</button>
+    </div>`;
+  };
+  render();
+  trainPull().then(render);
+}
 let SIM=null;
-function startSim(){
-  const p=simPersona();
+function startSim(x,scenId){
+  const scen=scenId?SIM_CURRICULUM.find(s=>s.id===scenId):null;
+  const p=scen?{nom:scen.nom,goal:scen.goal,goalTxt:SIM_GOALS[scen.goal],char:SIM_CHARS.find(c=>c.id===scen.char),o1:scen.o1,o2:scen.o2,pack:2,
+    prix:fmtEur(foundingMonthly(2)??packMonthly(2)),ps:fmtEur(foundingPerSession(2)??packPerSession(2))||'25,20 €'}:simPersona();
   const steps=simSteps(p).map(s=>s==='OBJ1'?{obj:p.o1}:s==='OBJ2'?{obj:p.o2}:s==='PRIX'?{obj:'prix',prefix:`« Le Pack 8, c'est ${fmtEur(packMonthly(2))} par mois · et comme membre fondateur, ${p.prix} à vie, soit ${p.ps} la séance. » … `}:s);
-  SIM={p:p,steps:steps,i:0,score:0,hist:[],mist:[],done:false,pick:null};
+  SIM={p:p,steps:steps,i:0,score:0,hist:[],mist:[],done:false,pick:null,scen:scen?scen.id:null};
   renderSim();
 }
 function simStepData(s){
@@ -2625,12 +2690,21 @@ function renderSim(){
     const titre=pct>=85?'🏆 Master Coach en herbe':pct>=70?'🥇 Closer solide':pct>=50?'💪 Bonne base, continue':'🌱 Débutant courageux';
     const best=+localStorage.getItem('cpcoach_simbest')||0;
     if(SIM.score>best)localStorage.setItem('cpcoach_simbest',String(SIM.score));
+    if(SIM.scen&&!SIM._pushed){SIM._pushed=true;
+      const prev=TRAIN[SIM.scen];
+      if(!prev||pct>prev.s){TRAIN[SIM.scen]={s:pct,ts:new Date().toISOString()};localStorage.setItem('cpcoach_train',JSON.stringify(TRAIN));}
+      syncCall('train_push',{scen:SIM.scen,score:pct,nom:CFG.rep||''}).catch(()=>{});
+    }
     h+=`<div class="sim-end">
       <div class="sim-end-t">${titre}</div>
       <div class="sim-end-n">${SIM.score}<small>/ ${max} pts</small></div>
       ${SIM.score>best?'<div class="sim-rec">🎉 Nouveau record personnel !</div>':best?`<div class="sim-rec muted">Record : ${Math.max(best,SIM.score)} pts</div>`:''}
       ${SIM.mist.length?`<div class="sim-mist"><b>À retravailler :</b>${SIM.mist.slice(0,4).map(m=>`<div>· ${m.replace(/^[✓✗~]\\s*/,'')}</div>`).join('')}</div>`:'<div class="sim-rec">Sans faute · l\'appel parfait ! 👏</div>'}
-      <button class="go ok" style="width:100%;margin-top:12px" onclick="startSim()">🔄 Nouvel appel (autre client)</button>
+      ${SIM.scen?`<div class="tr-verdict ${pct>=SIM_SEUIL?'ok':'ko'}">${pct>=SIM_SEUIL?'✅ Scénario validé · enregistré dans votre formation':'🔁 Non validé (minimum '+SIM_SEUIL+' %) · retentez-le'}</div>`:''}
+      <div style="display:flex;gap:9px;margin-top:12px">
+        ${SIM.scen?`<button class="go ok" style="flex:1" onclick="startSim(null,'${SIM.scen}')">🔄 Retenter</button>`:`<button class="go ok" style="flex:1" onclick="startSim()">🔄 Nouvel appel</button>`}
+        <button class="go" style="flex:1" onclick="showTraining()">📋 Parcours</button>
+      </div>
     </div>`;
   }
   h+='</div></div>';
@@ -2823,7 +2897,7 @@ function showPerf(){
   $('#topPhase').textContent='Performances';$('#topSub').textContent='';
   $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
   $('#bar').style.width='100%';relocateBoxes();
-  Promise.all([syncCall('stats_pull'),fetchAvatars()]).then(([d])=>renderPerf(d.events||[])).catch(e=>{
+  Promise.all([syncCall('stats_pull'),fetchAvatars(),trainPull(),(COACH_ROLE==='admin'||IS_MGR)?syncCall('team_list').then(d=>{window._TEAM=d.invites||[];}).catch(()=>{}):Promise.resolve()]).then(([d])=>renderPerf(d.events||[])).catch(e=>{
     if(e.message!=='code')renderPerf(null);
   });
 }
@@ -2892,6 +2966,14 @@ function renderPerf(events){
     </div>`:`<div class="pr-empty">Aucune activité enregistrée pour l'instant.</div>`}`;
   }
   if(COACH_ROLE==='admin'){
+    h+=`<div class="pf-sec" style="margin-top:20px">🎓 Formation de l'équipe <small>8 cas pratiques · validé dès ${SIM_SEUIL} %</small></div>
+    <div class="pf-funnel">${(()=>{
+      const all=window._TRAINALL||{};
+      const roster=[...new Set([...(window._TEAM||[]).filter(i=>i.actif!==false).map(i=>i.nom.split(' ')[0]),...(CFG.rep?[CFG.rep.split(' ')[0]]:[])])];
+      if(!roster.length)return '<div class="pr-empty">Aucun salarié invité pour l\'instant.</div>';
+      return roster.map(n=>{const t=all[_repKey(n)]||{};const done=SIM_CURRICULUM.filter(s=>t[s.id]&&t[s.id].s>=SIM_SEUIL).length;const pc=Math.round(done/SIM_CURRICULUM.length*100);
+        return `<div class="pf-frow"><div class="pf-flbl" style="display:flex;align-items:center;gap:6px">${avaTag(avatarOf(n),20,n)}${esc(n)}</div><div class="pf-ftrack"><div class="pf-ffill" style="width:${Math.max(pc,done?4:0)}%;background:${pc===100?'#1F9E75':pc>=50?'#C9871F':'#4F6FA0'}"></div></div><div class="pf-fnum"><b>${done}/8</b><small>${pc===100?'🎓 complet':pc+' %'}</small></div></div>`;}).join('');
+    })()}</div>`;
     h+=`<div class="pf-sec" style="margin-top:18px">⚙️ Barème des primes <small>appliqué aux prochaines ventes · l'historique garde ses montants</small></div>
     <div class="pf-primeset">
       ${[1,2,3].map(pk=>`<label>${packShort(pk)}<input id="prm-${pk}" type="number" min="0" value="${+PRIMES[pk]||0}"/> €</label>`).join('')}
@@ -3055,7 +3137,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showOnboard(true)"><span class="mic">🌟</span><span>L'essentiel CP<small>État d'esprit, bienfaits, cours, attitude · le guide de bienvenue</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();showICPage()"><span class="mic">🗓️</span><span>Intro Class<small>Séances découverte : inscrits, présents, signés</small></span></button>
-    <button class="menu-item" onclick="closeMenu();startSim()"><span class="mic">🎬</span><span>S'entraîner à l'appel<small>Client virtuel, objections aléatoires, score · sans risque</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showTraining()"><span class="mic">🎬</span><span>Formation · cas pratiques<small>8 scénarios à valider · progression suivie par le studio</small></span></button>
     <button class="menu-item" onclick="closeMenu();showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
