@@ -33,7 +33,7 @@ function _computeHealthScore(){
     var s=S.studios[id];
     if(!s.forecast||!s.forecast.annualCA)return;
     try{
-      var bp=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(s.forecast,id,{capex:s.capex,emprunt:s.emprunt,leasing:s.leasing,tauxInteret:s.tauxInteret,loyer_mensuel:s.loyer_mensuel});
+      var bp=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(s.forecast,id,{capex:s.capex,emprunt:s.emprunt,leasing:s.leasing,tauxInteret:s.tauxInteret,lm:s.loyer_mensuel,loyerVarPct:s.loyerVarPct});
       var ca1=bp.a1.reduce(function(s,m){return s+m.ca;},0);
       var ebitda1=bp.a1.reduce(function(s,m){return s+m.ebitda;},0);
       if(ca1>0){finSum+=Math.min(100,Math.max(0,ebitda1/ca1*100*5));finCount++;}
@@ -354,7 +354,7 @@ function _computeStudioBPvsReal(sid){
   // Build BP pour cette année
   var bp;
   try{
-    var bps=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(fc,sid,{capex:s.capex,emprunt:s.emprunt,leasing:s.leasing,tauxInteret:s.tauxInteret,loyer_mensuel:s.loyer_mensuel});
+    var bps=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(fc,sid,{capex:s.capex,emprunt:s.emprunt,leasing:s.leasing,tauxInteret:s.tauxInteret,lm:s.loyer_mensuel,loyerVarPct:s.loyerVarPct});
     bp=activeYear===1?bps.a1:activeYear===2?bps.a2:bps.a3;
   }catch(e){return null;}
   if(!bp||!bp.length)return null;

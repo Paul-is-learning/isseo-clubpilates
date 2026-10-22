@@ -20,7 +20,7 @@ function renderPageEngagements(){
   // Bloc 1 : Sociétés porteuses des projets (groupement par S.studios[id].societe)
   var SOCIETES_PORTEUSES=[
     {societe:'P&W Occitanie',short:'P&W Occitanie',color:'#1a3a6b',desc:'Montpellier Lattes & Toulouse'},
-    {societe:'COBE Society',short:'COBE Society',color:'#0F6E56',desc:'La Garenne-Colombes & Levallois-Perret'},
+    {societe:'COBE Society',short:'COBE Society',color:'#0F6E56',desc:'La Garenne-Colombes & La Défense · CNIT'},
     {societe:'SACOBE Society',short:'SACOBE Society',color:'#854F0B',desc:'Issy-les-Moulineaux'},
   ];
   // Bloc 2 : Actionnaires des sociétés porteuses (groupement par engage_par)

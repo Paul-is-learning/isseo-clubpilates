@@ -110,9 +110,10 @@ function _handleRowChange(r){
     if(r.data&&!_tauxPending[id]){
       var sd=Object.assign({},r.data);
       if(INIT[id]){
-        ['capex','emprunt','leasing','ouverture'].forEach(function(f){
+        ['capex','emprunt','leasing','ouverture','name','addr','loyerVarPct'].forEach(function(f){
           if(INIT[id][f]!==undefined)sd[f]=INIT[id][f];
         });
+        if(INIT[id].loyer_mensuel!==undefined&&!(sd.loyer_mensuel>0))sd.loyer_mensuel=INIT[id].loyer_mensuel;
         if(INIT[id].forecast&&INIT[id].forecast.moisDebut!==undefined&&sd.forecast)
           sd.forecast.moisDebut=INIT[id].forecast.moisDebut;
       }

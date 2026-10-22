@@ -69,34 +69,31 @@ const LOCALISATION_DATA={
   },
   levallois:{
     trafic:[
-      {lbl:'TMJA Rue Édouard Vaillant',kpi:'~15–20K',sub:'véh/jour · Rue commerçante structurante',col:'#D85A30'},
-      {lbl:'Profil de l\'axe',kpi:'Artère commerçante dense',sub:'Centre-ville Levallois · 2×1 voie · Flux piéton élevé',col:'#D85A30'},
-      {lbl:'Nature du trafic',kpi:'Mix piéton / voiture',sub:'Fort flux résidentiel · Cadres CSP++ dominant',col:'#D85A30'},
+      {lbl:'Site',kpi:'CNIT · cœur du Parvis',sub:'Centre d\'affaires, commerces et hôtel au pied de la gare La Défense',col:'#D85A30'},
+      {lbl:'Nature du flux',kpi:'Piéton massif',sub:'Salariés du quartier d\'affaires · passage 7j/7 via le centre',col:'#D85A30'},
+      {lbl:'Rythme',kpi:'Midi + 17h30-20h',sub:'Calé sur les horaires de bureau · week-ends plus calmes',col:'#D85A30'},
     ],
     transports:[
-      {lbl:'Métro ligne 3 — Pont de Levallois',kpi:'~400m du studio (~5 min à pied)',sub:'Connexion Opéra / République en ~15 min',tags:[{t:'Terminus ligne 3',c:'tb'}],col:'#378ADD'},
-      {lbl:'Bus RATP (4 lignes)',kpi:'163 · 174 · 175 · 176',sub:'Connexion Neuilly, La Défense, Paris',tags:[{t:'Desserte dense',c:'tg'}],col:'#1D9E75'},
-      {lbl:'Vélos & trottinettes',kpi:'Vélib + opérateurs free-floating',sub:'Usage très élevé — profil jeune actif',tags:[{t:'Mobilité douce forte',c:'tg'}],col:'#1D9E75'},
+      {lbl:'Gare La Défense (sous le CNIT)',kpi:'M1 · RER A/E · T2 · Transilien L/U',sub:'Hub multimodal majeur d\'Île-de-France · accès direct depuis le CNIT',tags:[{t:'Hub n°1 IDF',c:'tb'}],col:'#378ADD'},
+      {lbl:'Bus & mobilités douces',kpi:'Dizaines de lignes · Vélib',sub:'Terminal bus sous le Parvis',tags:[{t:'Desserte maximale',c:'tg'}],col:'#1D9E75'},
     ],
     demo:[
-      {lbl:'Population (2022)',kpi:'~65 000',sub:'hab sur 2,4 km² · +12% en 10 ans',col:'#7F77DD'},
-      {lbl:'Densité',kpi:'27 000',sub:'hab/km² — parmi les + denses de France',col:'#7F77DD'},
-      {lbl:'Revenu médian ménage',kpi:'38 500 €',sub:'/ an — très élevé · Profil cadres CSP++',col:'#7F77DD'},
+      {lbl:'Salariés du quartier',kpi:'~180 000',sub:'Paris La Défense · 1er quartier d\'affaires européen',col:'#7F77DD'},
+      {lbl:'Cible',kpi:'Cadres CSP++',sub:'Avant/après bureau et pause déjeuner · forte propension bien-être',col:'#7F77DD'},
     ],
     comparaison:[
-      {lbl:'Densité pop.',pct:100,col:'#7F77DD',note:'Levallois : 27 000/km² — Top 3 France'},
-      {lbl:'Revenu médian',pct:90,col:'#BA7517',note:'Levallois : 38,5K€ — profil premium identique Garenne'},
-      {lbl:'Proximité métro',pct:100,col:'#378ADD',note:'400m métro ligne 3 — accessibilité maximale'},
-      {lbl:'Flux piéton',pct:90,col:'#D85A30',note:'Artère commerçante à fort trafic piéton'},
-      {lbl:'Stationnement',pct:30,col:'#888780',note:'Centre-ville dense — parking difficile'},
+      {lbl:'Proximité transports',pct:100,col:'#378ADD',note:'Gare La Défense directement sous le bâtiment'},
+      {lbl:'Flux piéton',pct:100,col:'#D85A30',note:'Parvis de la Défense · passage exceptionnel'},
+      {lbl:'Activité week-end',pct:30,col:'#888780',note:'Quartier d\'affaires · week-ends plus calmes'},
+      {lbl:'Stationnement',pct:40,col:'#888780',note:'Parkings payants du CNIT · venue surtout en TC'},
     ],
     tags:[
-      {t:'Densité pop. exceptionnelle',c:'tg'},{t:'Métro L3 à 400m',c:'tg'},
-      {t:'Revenu élevé — cible Pilates',c:'tg'},{t:'Forte fréquentation piétonne',c:'tg'},
-      {t:'Cadres CSP++ La Défense / Paris',c:'tg'},{t:'Stationnement difficile',c:'ta'},
-      {t:'Loyers élevés',c:'ta'},{t:'Concurrence fitness dense',c:'tr'},
+      {t:'Hub transports n°1 IDF',c:'tg'},{t:'Flux piéton exceptionnel',c:'tg'},
+      {t:'Cadres CSP++ · cible Pilates',c:'tg'},{t:'Visibilité CNIT',c:'tg'},
+      {t:'Bail : part variable 11% du CA',c:'ta'},{t:'Week-ends plus calmes',c:'ta'},
+      {t:'Étude détaillée à compléter',c:'ta'},
     ],
-    synthese:'Levallois-Perret est l\'un des marchés les plus favorables d\'Île-de-France pour Club Pilates : densité record, revenus très élevés, métro ligne 3 à 400m et flux piéton important sur une artère commerçante. La clientèle cible (cadres 30-50 ans, revenus > 38K€) est surreprésentée. Enjeu principal : se positionner sur les créneaux 7h-9h et 18h30-20h30.',
+    synthese:'Implantation au CNIT, au cœur du Parvis de la Défense : flux piéton exceptionnel de salariés CSP++ et hub de transports majeur (M1, RER A/E, T2, Transilien L/U) directement sous le bâtiment. Bail : loyer minimum garanti 60 K€ HT/an, puis part variable de 11% du CA lorsque celle-ci dépasse le seuil. Points d\'attention : rythme calé sur les horaires de bureau (midi, fin de journée) et week-ends plus calmes. Étude de marché détaillée à compléter.',
   },
   issy:{
     trafic:[
@@ -188,7 +185,7 @@ const LOCALISATION_DATA={
 const STUDIO_COORDS={
   garenne:{lat:48.9018,lon:2.2466},
   lattes:{lat:43.5618,lon:3.9205},
-  levallois:{lat:48.8950,lon:2.2870},
+  levallois:{lat:48.8925,lon:2.2362},
   issy:{lat:48.8244,lon:2.2708},
   toulouse:{lat:43.6047,lon:1.4442},
   goldgym:{lat:48.7645,lon:1.9350},
@@ -425,6 +422,7 @@ function getStudioBPOpts(sid){
   if(!s)return{};
   var opts={};
   if(s.loyer_mensuel>0)opts.lm=s.loyer_mensuel;
+  if(s.loyerVarPct>0)opts.loyerVarPct=s.loyerVarPct;
   if(s.capexDetail&&Object.keys(s.capexDetail).length>0){
     var det=getCapexDetailForStudio(sid);
     var tots=computeCapexTotals(det);
@@ -575,6 +573,8 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
   var caMensuelRef=_isGG?(annee===1?CA_MENSUEL_GG_A1:annee===2?CA_MENSUEL_GG_A2:CA_MENSUEL_GG_A3):(annee===1?CA_MENSUEL_A1:annee===2?CA_MENSUEL_A2:CA_MENSUEL_A3);
   var ratio=annualCA/caRef;
   var ch=getStudioCharges(sid||'lattes',annee,opts.lm);
+  // Bail à part variable (ex. CNIT La Défense) : pct du CA dès qu'il dépasse le loyer minimum garanti
+  if(opts.loyerVarPct>0&&!_isGG){var _lv=Math.round(annualCA*opts.loyerVarPct);if(_lv>ch.loyer)ch.loyer=_lv;}
   // Régler amort proportionnellement au CAPEX custom (règle ii)
   var CAPEX_REF=_isGG?2283600:333500,LEASING_REF=_isGG?1326000:121600,EMPRUNT_REF=_isGG?1826880:230000,TAUX_REF=_isGG?0.035:0.0373;
   if(opts.capex&&opts.capex>0&&Math.round(opts.capex)!==CAPEX_REF)
@@ -717,7 +717,7 @@ var PROSPECT_TABS=[
 const INIT={
   lattes:{name:'Montpellier Lattes',addr:'130 av. de Montpellier, 34970 Lattes',societe:'P&W Occitanie',ouverture:'Septembre 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   garenne:{name:'La Garenne-Colombes',addr:'102B Bd de la Republique, 92250 La Garenne-Colombes',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:true,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
-  levallois:{name:'Levallois-Perret',addr:'80 Rue Edouard Vaillant, 92300 Levallois-Perret',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
+  levallois:{name:'La Défense · CNIT',addr:'CNIT, 2 Parvis de la Défense, 92092 Paris La Défense',societe:'COBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,loyer_mensuel:5000,loyerVarPct:0.11,cohorte:1,steps:{testfit:true,loi:true,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   issy:{name:'Issy-les-Moulineaux',addr:'39 avenue Victor Cresson, 92130 Issy-les-Moulineaux',societe:'SACOBE Society',ouverture:'Fin sept. 2026',statut:'preparation',capex:333500,emprunt:230000,leasing:121600,cohorte:1,steps:{testfit:true,loi:true,devis:true,bail:true,financement:false,at:false,franchise:true,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:8,annee:2026,actuel:{},actuel2:{},actuel3:{}}},
   toulouse:{name:'Toulouse Montpellier Nord',addr:'Montpellier, France',societe:'P&W Occitanie',ouverture:'2027',statut:'pipeline',capex:333500,emprunt:230000,leasing:121600,cohorte:2,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_A1,annualCA2:CA_A2,annualCA3:CA_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},
   goldgym:{name:'Maurepas Pariwest (Gold Gym)',addr:'Centre Commercial Pariwest, Rdpt Laurent Schwartz, 78310 Maurepas',societe:'COBE Society',ouverture:'2027',statut:'pipeline',capex:2283600,emprunt:1826880,leasing:1326000,tauxInteret:0.035,loyer_mensuel:16834,cohorte:1,steps:{testfit:false,loi:false,devis:false,bail:false,financement:false,at:false,franchise:false,admin:false,chantier:false,preventes:false,opening:false},forecast:{annualCA:CA_GG_A1,annualCA2:CA_GG_A2,annualCA3:CA_GG_A3,moisDebut:0,annee:2027,actuel:{},actuel2:{},actuel3:{}}},

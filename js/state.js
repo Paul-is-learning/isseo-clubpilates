@@ -162,9 +162,11 @@ async function loadAll(){
       return;
     }
     var changed=false;
-    ['ouverture','capex','emprunt','leasing'].forEach(function(f){
+    ['ouverture','capex','emprunt','leasing','name','addr','loyerVarPct'].forEach(function(f){
       if(INIT[k][f]!==undefined&&S.studios[k][f]!==INIT[k][f]){S.studios[k][f]=INIT[k][f];changed=true;}
     });
+    // Loyer custom : semé une fois depuis INIT, puis la main reste à l'éditeur in-app
+    if(INIT[k].loyer_mensuel!==undefined&&!(S.studios[k].loyer_mensuel>0)){S.studios[k].loyer_mensuel=INIT[k].loyer_mensuel;changed=true;}
     if(INIT[k].forecast&&INIT[k].forecast.moisDebut!==undefined&&S.studios[k].forecast&&S.studios[k].forecast.moisDebut!==INIT[k].forecast.moisDebut){
       S.studios[k].forecast.moisDebut=INIT[k].forecast.moisDebut;changed=true;
     }
