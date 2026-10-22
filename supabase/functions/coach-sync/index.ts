@@ -243,6 +243,7 @@ serve(async (req) => {
             v2: String(e.v2 || "").slice(0, 60),
             fullCom: e.fullCom === true,
             icId: String(e.icId || "").slice(0, 60),
+            studio: String(e.studio || "").slice(0, 60),
             prime: Math.max(0, Math.min(1000, Number(e.prime) || 0)),
             dur: Math.max(0, Math.min(14400, Math.round(Number(e.dur) || 0))),
             ts: String(e.ts || new Date().toISOString()),

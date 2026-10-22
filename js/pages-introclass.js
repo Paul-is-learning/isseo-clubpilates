@@ -66,9 +66,9 @@ function _icCompute(){
     .map(function(e){
       var ic=e.icId?sessById[e.icId]:null;
       return {nom:e.nom||'?',date:(e.ts||'').slice(0,10),pack:+e.pack||0,rep:e.rep||'',v2:e.v2||'',
-        fullCom:e.fullCom===true,icId:e.icId||'',ic:ic,studio:ic?ic.studio:''};
+        fullCom:e.fullCom===true,icId:e.icId||'',ic:ic,studio:(e.studio||(ic?ic.studio:''))};
     })
-    .filter(function(v){return !_icStudio||!v.ic||v.ic.studio===_icStudio;});
+    .filter(function(v){return !_icStudio||v.studio===_icStudio;});
   var vMois=ventes.filter(function(v){return inMonth(v.date);});
   var vSaison=ventes.filter(function(v){return inSeason(v.date);});
 

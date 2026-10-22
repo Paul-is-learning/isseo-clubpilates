@@ -343,6 +343,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .home-creed{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-left:4px solid var(--gold);border-radius:13px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#6b5325}
 .home-creed b{color:#523d12}
 /* ── Intro Class ── */
+.ic-studio{border:1.5px solid #E3E9F2;border-radius:10px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;color:var(--cp-deep);background:#fff;max-width:200px}
 .ic-week{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EBEFF6;border-radius:13px;padding:9px 12px;margin-bottom:12px;box-shadow:var(--sh-s)}
 .ic-week b{flex:1;text-align:center;font-size:13.5px;color:var(--cp-dark)}
 .ic-week button{width:34px;height:34px;border-radius:9px;background:var(--cp-veil);font-size:16px;font-weight:800;color:var(--cp-deep)}
@@ -2228,7 +2229,7 @@ let EVQ=[];try{EVQ=JSON.parse(localStorage.getItem('cpcoach_evq')||'[]');}catch(
 function _persistEvq(){try{localStorage.setItem('cpcoach_evq',JSON.stringify(EVQ));}catch(e){}}
 function emitEvent(p,type,extra){
   if(!p||!p.id)return;
-  const ev=Object.assign({k:p.id+':'+type,type:type,rep:(p.rep||CFG.rep||''),nom:p.nom||'',ts:new Date().toISOString()},extra||{});
+  const ev=Object.assign({k:p.id+':'+type,type:type,rep:(p.rep||CFG.rep||''),nom:p.nom||'',studio:(p.studio||CFG.studio||''),ts:new Date().toISOString()},extra||{});
   const i=EVQ.findIndex(e=>e.k===ev.k);if(i>=0)EVQ[i]=ev;else EVQ.push(ev);
   _persistEvq();scheduleEvFlush();
 }
@@ -2797,7 +2798,8 @@ function renderICPage(){
     </div>`;
   };
   let h=`<div class="cg">
-    <div class="pr-head"><div><h2 class="pr-h2">🗓️ Intro Class</h2><div class="pr-h2s">${icStudio()||'Tous studios'} · inscrits, présents, signés · tout se calcule</div></div><span class="sync-badge ok">☁️ Équipe</span></div>
+    <div class="pr-head"><div><h2 class="pr-h2">🗓️ Intro Class</h2><div class="pr-h2s">${(COACH_ROLE==='admin'||IS_MGR)?'':((icStudio()||'Studio non défini')+' · ')}inscrits, présents, signés · tout se calcule</div></div>
+      ${(COACH_ROLE==='admin'||IS_MGR)?`<select class="ic-studio" onchange="CFG.studio=this.value;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));icEnsureWeek();renderICPage();toast('Studio actif : '+(this.value||'tous'))">${['',...new Set(['La Garenne-Colombes','Montpellier Lattes','La Défense'].concat(IC.slots.map(s=>s.studio)).concat(IC.sessions.map(s=>s.studio)).filter(Boolean))].map(s=>`<option value="${esc(s)}"${s===icStudio()?' selected':''}>${s||'🌍 Tous les studios'}</option>`).join('')}</select>`:`<span class="sync-badge ok">☁️ Équipe</span>`}</div>
     <div class="ic-week"><button onclick="_icWeek--;icEnsureWeek();renderICPage()">‹</button><b>Semaine du ${fmtD(days[0])}</b><button onclick="_icWeek++;icEnsureWeek();renderICPage()">›</button>${_icWeek?`<button class="ic-today" onclick="_icWeek=0;icEnsureWeek();renderICPage()">Aujourd'hui</button>`:''}</div>
     ${days.map(d=>{const ds=sess.filter(s=>s.date===d);return ds.length?`<div class="ic-day">${fmtD(d)}</div>`+ds.map(card).join(''):'';}).join('')||'<div class="pr-empty">Aucune séance cette semaine.<br><small>Ajoutez-en une ou configurez le planning type.</small></div>'}
     <datalist id="icCoachList">${coachs.map(c=>`<option value="${esc(c)}">`).join('')}</datalist>
