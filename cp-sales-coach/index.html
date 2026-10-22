@@ -2786,7 +2786,7 @@ function renderICPage(){
       <div class="ic-top">
         <div class="ic-when"><b>${s.heure||'--:--'}</b><span>${esc(s.coach||'coach ?')}</span></div>
         <input class="ic-coach" list="icCoachList" placeholder="Coach (ex. Ombeline)" value="${esc(s.coach||'')}" onchange="icSet('${s.id}','coach',this.value.trim())"/>
-        <div class="ic-st">${['prevue','faite','annulee'].map(st=>`<button class="ic-stb${s.statut===st?' on':''}" onclick="icSet('${s.id}','statut','${st}')">${st==='prevue'?'🕐':st==='faite'?'✅':'✖️'}</button>`).join('')}</div>
+        <div class="ic-st">${['prevue','faite','annulee'].map(st=>`<button class="ic-stb${s.statut===st?' on':''}" onclick="icSet('${s.id}','statut','${st}')">${st==='prevue'?'🕐':st==='faite'?'✅':'✖️'}</button>`).join('')}${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ic-stb" title="Supprimer la séance (erreur de saisie)" onclick="icDelSession('${s.id}')">🗑</button>`:''}</div>
       </div>
       ${ann?'<div class="ic-annmsg">Séance annulée · exclue de toutes les stats</div>':`
       <div class="ic-counts">
@@ -2810,6 +2810,12 @@ function renderICPage(){
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
 }
+function icDelSession(id){
+  if(!confirm('Supprimer définitivement cette séance ?\n(Pour un cours annulé, préférez le statut ✖️ Annulée.)'))return;
+  IC.sessions=IC.sessions.filter(s=>s.id!==id);
+  syncCall('ic_del',{ids:[id]}).catch(()=>{});
+  renderICPage();toast('Séance supprimée');
+}
 function icAddSession(){
   const date=prompt('Date de la séance (AAAA-MM-JJ) :',_dstr(_monday(_icWeek)));if(!date)return;
   const heure=prompt('Heure (HH:MM) :','18:00');if(!heure)return;
@@ -2819,11 +2825,18 @@ function icAddSession(){
 }
 function icSlotsUI(){
   const mine=IC.slots.filter(s=>!icStudio()||s.studio===icStudio());
-  const list=mine.map(s=>`${s.actif===false?'⏸ ':''}${JOURS[s.jour]} ${s.heure} · ${s.coach||'?'}`).join('\n')||'(aucun créneau)';
-  const rep=prompt('PLANNING TYPE · '+(icStudio()||'tous')+'\n'+list+'\n\nAjouter : jour(1=lundi…7=dimanche) HH:MM Coach\nex : 1 19:00 Ombeline\n(vide pour fermer)');
+  const list=mine.map((s,i)=>`${i+1}. ${s.actif===false?'⏸ ':''}${JOURS[s.jour]} ${s.heure} · ${s.coach||'?'}`).join('\n')||'(aucun créneau)';
+  const rep=prompt('PLANNING TYPE · '+(icStudio()||'tous')+'\n'+list+'\n\n➕ Ajouter : jour(1=lundi…7=dimanche) HH:MM Coach · ex : 1 19:00 Ombeline\n🗑 Supprimer : « suppr N » · ex : suppr 2\n(vide pour fermer)');
   if(!rep)return;
+  const del=rep.trim().match(/^suppr\s+(\d+)$/i);
+  if(del){const s=mine[+del[1]-1];
+    if(!s){toast('Numéro inconnu');return;}
+    if(!confirm('Supprimer le créneau '+JOURS[s.jour]+' '+s.heure+' · '+(s.coach||'?')+' ?\nLes séances déjà créées sont conservées.'))return;
+    IC.slots=IC.slots.filter(x=>x.id!==s.id);
+    syncCall('ic_del',{ids:[s.id]}).catch(()=>{});
+    renderICPage();toast('Créneau supprimé');return;}
   const m=rep.trim().match(/^([1-7])\s+(\d{1,2}:\d{2})\s+(.+)$/);
-  if(!m){toast('Format : 1 19:00 Ombeline');return;}
+  if(!m){toast('Format : 1 19:00 Ombeline · ou : suppr 2');return;}
   const s={id:'slot_'+Date.now(),studio:icStudio(),jour:+m[1]-1,heure:m[2].padStart(5,'0'),coach:m[3].trim(),actif:true,maj:new Date().toISOString()};
   IC.slots.push(s);icPush([s],[]);icEnsureWeek();renderICPage();toast('Créneau ajouté · séances générées ✓');
 }
@@ -3087,7 +3100,18 @@ function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.st
   if(s==='abo'&&p.pack)toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');
   else toast(PIPE[s].ic+' '+PIPE[s].lbl);}
 function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);}
-function delProspect(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;if(!confirm('Supprimer la fiche de '+p.nom+' ?'))return;PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects(true);toast('Fiche supprimée');syncCall('delete',{ids:[id]}).catch(()=>{});}
+function delProspect(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const wasAbo=p.statut==='abo';
+  if(!confirm('Supprimer la fiche de '+p.nom+' ?'+(wasAbo?'\n\n⚠️ C\'est une VENTE : elle sera aussi retirée du journal (primes, stats, paie).':'')))return;
+  PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects(true);toast('Fiche supprimée');
+  syncCall('delete',{ids:[id]}).catch(()=>{});
+  // Purge du journal (appel/essai/venu/abo/perdu de cette fiche) · réservé recruteurs côté serveur
+  EVQ=EVQ.filter(e=>!e.k.startsWith(id+':'));_persistEvq();
+  syncCall('stats_del',{prefix:id+':'}).then(()=>{if(wasAbo)toast('Vente retirée du journal ✓');}).catch(e=>{
+    if(wasAbo&&e.message!=='code')toast('Fiche supprimée · demandez à un recruteur de retirer la vente du journal');
+  });
+}
 function copyPMsg(id,i){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const m=relanceMsgs(p)[i];if(!m)return;navigator.clipboard?.writeText(m.msg).then(()=>toast('Message copié ✓ · collez-le dans vos SMS')).catch(()=>toast('Copie impossible'));}
 function viewPFiche(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;

@@ -218,7 +218,7 @@ serve(async (req) => {
     }
 
     if (action === "stats_del") {
-      if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+      if (role !== "admin" && !mgr) return json({ error: "Réservé aux recruteurs" }, 403);
       const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
       let events: any[] = (stRow?.data?.events as any[]) || [];
       const ks: string[] = Array.isArray(body.ks) ? body.ks.map(String) : [];
