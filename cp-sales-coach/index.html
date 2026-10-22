@@ -5,12 +5,12 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,maximum-scale=1"/>
 <title>CP Sales Coach · Assistant d'appel</title>
 <link rel="manifest" href="manifest.json"/>
-<meta name="theme-color" content="#223354"/>
+<meta name="theme-color" content="#F4F1EA"/>
 <link rel="icon" type="image/png" sizes="32x32" href="icons/favicon-32.png"/>
 <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
 <meta name="mobile-web-app-capable" content="yes"/>
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="default"/>
 <meta name="apple-mobile-web-app-title" content="Sales Coach"/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
@@ -896,6 +896,55 @@ body{background:
 .hp-box{border:1px solid rgba(255,255,255,.07)}
 .fab:active{transform:scale(.93)}
 ::selection{background:rgba(201,135,31,.28)}
+
+/* ── Passe crème (maquette oct. 2026) ── */
+:root{--cream:#F4F1EA;--cream-line:#E7E1D4;--accent:#4B52E6;--lav:#E9E6FA;--lav-ink:#5A54C8;--pch:#FBE4D2;--pch-ink:#C06A3A;--mnt:#DCEFE3;--mnt-ink:#2E8C62;--sun:#F4E29F}
+body{background:var(--cream)}
+@media(min-width:640px){#app{box-shadow:0 0 0 1px rgba(42,49,66,.05),0 30px 80px -30px rgba(42,49,66,.18)}}
+.top{background:var(--cream);color:var(--ink)}
+.top::after{display:none}
+.top-phase,#topHello{color:var(--ink)}
+.top-sub{color:var(--ink-mid)}
+#topTimer{color:#B07A1C}
+.top-btn{background:#fff;border:1px solid var(--cream-line);color:var(--ink);box-shadow:var(--sh-s)}
+.top-brand{filter:brightness(0);opacity:.82}
+#topAva .cp-ava{border-color:#E4C089}
+.bar{background:var(--cream-line)}
+.bar-fill{box-shadow:none}
+.screen{background:transparent}
+.nav{background:rgba(244,241,234,.9);border-top:1px solid var(--cream-line)}
+.nav .back{background:#fff;border:1px solid var(--cream-line)}
+.hm-chip,.hm-big,.ht-tile,.menu-item,.card,.say-big,.opt{border-color:var(--cream-line)}
+.hm-chip .hc-ic{display:grid;place-items:center;color:#B07A1C}
+.hm-chip.hot .hc-ic{color:#C06A3A}
+.hm-sec{color:var(--ink);font-size:12px}
+.hm-sec::before{content:'';width:7px;height:7px;border-radius:50%;background:#E8795A;flex:0 0 auto}
+.hm-sec::after{background:var(--cream-line)}
+.hm-big{border-radius:20px;padding:17px 16px;gap:6px}
+.hm-icbox{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;margin-bottom:6px}
+.hm-icbox.wh{background:rgba(255,255,255,.2);color:#fff}
+.hm-icbox.lav{background:var(--lav);color:var(--lav-ink)}
+.hm-icbox.pch{background:var(--pch);color:var(--pch-ink)}
+.hm-icbox.mnt{background:var(--mnt);color:var(--mnt-ink)}
+.hm-arrow{position:absolute;top:14px;right:14px;color:#C9C2B2;display:grid;place-items:center}
+.hm-big.call{background:var(--accent);border-color:var(--accent);box-shadow:0 16px 36px -12px rgba(75,82,230,.55),inset 0 1px 0 rgba(255,255,255,.18);position:relative;overflow:hidden}
+.hm-big.call::before{content:'';position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hm-big.call .hm-arrow{color:rgba(255,255,255,.75)}
+.hm-count{background:var(--lav);color:var(--lav-ink)}
+.ht-tile{border-radius:18px;padding:16px 8px 13px}
+.ht-tile .ht-ic{color:var(--lav-ink)}
+.ht-tile.lav{background:var(--lav);border-color:transparent}
+.ht-tile.lav .ht-prog{background:rgba(90,84,200,.18)}
+.ht-tile.lav .ht-prog span{background:var(--lav-ink)}
+.ht-tile.gold{background:var(--sun);border-color:transparent}
+.ht-tile.gold .ht-ic{color:#8A6A14}
+.ht-tile.gold .ht-lbl{color:#5C4A12}
+.hm-mantra{margin-top:22px;padding-top:14px;border-top:1px solid var(--cream-line);font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#A89F8C}
+.fab{border-radius:999px;width:auto;height:48px;padding:0 18px 0 14px;display:flex;align-items:center;gap:7px}
+.fab-lbl{font-size:14px;font-weight:700}
+.home-creed{background:#FDF8ED;border-left:3px solid var(--gold)}
+.sheet,.glp-card,.modal{background:#fff}
+.lic{display:block}
 </style>
 </head>
 <body>
@@ -904,7 +953,7 @@ body{background:
   <div class="top">
     <div class="top-in">
       <button class="top-btn" id="topBack" onclick="navBack()" aria-label="Retour" style="display:none">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 6 8 12 14 18"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 6 8 12 14 18"/></svg>
       </button>
       <span id="topAva"></span>
       <div class="top-mid">
@@ -913,7 +962,7 @@ body{background:
       </div>
       <img class="top-brand" src="flower-white.png" alt="Club Pilates"/>
       <button class="top-btn" onclick="openMenu()" aria-label="Menu">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
       </button>
     </div>
     <div class="bar"><div class="bar-fill" id="bar" style="width:0%"></div></div>
@@ -924,7 +973,7 @@ body{background:
   <div class="nav" id="nav"></div>
 
   <button class="fab" onclick="openObj()" aria-label="Objections">
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.8.5-1.6 1.2-1.6 2.4"/><circle cx="12" cy="17.5" r=".7" fill="#fff"/></svg>
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.1 9a3 3 0 1 1 4.5 2.6c-.8.5-1.6 1.2-1.6 2.4"/><circle cx="12" cy="17.5" r=".7" fill="#fff"/></svg><span class="fab-lbl">Aide</span>
   </button>
 </div>
 
@@ -3127,7 +3176,7 @@ async function loadHomePerf(){
     const myIdx=rows.findIndex(r=>r.k===meK);
     const _mine=myIdx>=0?rows[myIdx]:null;
     const _se=document.getElementById('hm-sales');
-    if(_se)_se.innerHTML=`<span class="hc-ic">🏆</span><span>Mes ventes du mois : <b>${_mine?_mine.a.abosMois:0}</b>${_mine&&_mine.a.primeMois?` · ${_mine.a.primeMois} € de primes`:''}</span>`;
+    if(_se)_se.innerHTML=`<span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>${_mine?_mine.a.abosMois:0}</b>${_mine&&_mine.a.primeMois?` · ${_mine.a.primeMois} € de primes`:''}</span>`;
     let head='';
     if(myIdx===0&&rows[0].a.primeMois>0&&rows.length===1){head=`🥇 <b>En tête du mois !</b> Personne d'autre n'a encore marqué · creusez l'écart.`;}
     else if(myIdx===0&&rows.length>1&&rows[0].a.primeMois>0){const gap=rows[0].a.primeMois-(rows[1]?rows[1].a.primeMois:0);head=`🥇 <b>En tête du mois !</b>${gap>0?` ${esc(rows[1].name)} est à ${gap} € derrière · ne lâchez rien.`:' Égalité parfaite · la prochaine vente fait la différence.'}`;}
@@ -3415,6 +3464,29 @@ function toggleObj(id){objOpen=objOpen===id?null:id;document.querySelectorAll('.
 function openObj(){objOpen=null;$('#objSearch').value='';renderObj('');$('#objBg').classList.add('on');$('#objSheet').classList.add('on');}
 function closeObj(){$('#objBg').classList.remove('on');$('#objSheet').classList.remove('on');}
 
+/* ── Icônes filaires de l'accueil ── */
+const IC_PATHS={
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  calcheck:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>',
+  chart:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+  phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+  users:'<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/>',
+  download:'<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/>',
+  play:'<circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16" fill="currentColor" stroke="none"/>',
+  sparkles:'<path d="M12 3l1.9 5.8 5.8 1.9-5.8 1.9L12 18.4l-1.9-5.8-5.8-1.9 5.8-1.9z"/><path d="M19 15l.7 2.1 2.1.7-2.1.7L19 20.6l-.7-2.1-2.1-.7 2.1-.7z"/>',
+  presentation:'<path d="M2 3h20"/><path d="M21 3v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V3"/><path d="m9 21 3-3 3 3"/>',
+  layers:'<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
+  messages:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  shield:'<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><path d="m9 12 2 2 4-4"/>',
+  flask:'<path d="M10 2v6L4.5 18a2 2 0 0 0 1.8 3h11.4a2 2 0 0 0 1.8-3L14 8V2"/><path d="M8.5 2h7M7 16h10"/>',
+  grad:'<path d="M22 10 12 5 2 10l10 5 10-5z"/><path d="M6 12v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5"/>',
+  trophy:'<path d="M8 21h8M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0z"/><path d="M17 4h3v2a4 4 0 0 1-4 4M7 4H4v2a4 4 0 0 0 4 4"/>',
+  sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
+  arrow:'<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>',
+};
+function ic(n,s){return `<svg class="lic" width="${s||20}" height="${s||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC_PATHS[n]||''}</svg>`;}
+
 /* ── Accueil : hub de l'app ── */
 function _hmNextIC(){
   const now=new Date();now.setHours(12,0,0,0);
@@ -3440,7 +3512,7 @@ function _hmNextIC(){
 function _hmIcChip(){
   const ic=_hmNextIC();
   const lbl=ic?new Date(ic.date+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'})+' · '+ic.heure:null;
-  return `<span class="hc-ic">🗓️</span><span>${ic?`Prochaine IC : <b>${lbl}</b>${ic.coach?' · '+esc(ic.coach):''}`:'Aucune IC planifiée'}</span>`;
+  return `<span class="hc-ic">${window.ic?window.ic('calendar',18):''}</span><span>${ic?`Prochaine IC : <b>${lbl}</b>${ic.coach?' · '+esc(ic.coach):''}`:'Aucune IC planifiée'}</span>`;
 }
 function _hmRefreshIC(){const el=document.getElementById('hm-ic');if(el)el.innerHTML=_hmIcChip();}
 function icGoto(dateS){
@@ -3454,9 +3526,9 @@ function _hmToday(){
   const due=PROSPECTS.filter(p=>p.rappel&&p.rappel<=todayS&&(p.statut==='rappeler'||p.statut==='essai')).length;
   const nxt=_hmNextIC();
   return `<div class="hm-today">
-    <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">🔔</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
+    <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">${ic('bell',18)}</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
     <button class="hm-chip" id="hm-ic" onclick="${nxt?`icGoto('${nxt.date}')`:'showICPage()'}">${_hmIcChip()}</button>
-    <button class="hm-chip" id="hm-sales" onclick="showPerf()"><span class="hc-ic">🏆</span><span>Mes ventes du mois : <b>…</b></span></button>
+    <button class="hm-chip" id="hm-sales" onclick="showPerf()"><span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>…</b></span></button>
   </div>`;
 }
 function showHome(){_vReg('home');
@@ -3465,7 +3537,7 @@ function showHome(){_vReg('home');
   $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
   $('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);
   $('#topSub').textContent=CFG.studio?' · '+CFG.studio:'';
-  $('#bar').style.width='100%';
+  $('#bar').style.width='0%';
   $('#nav').innerHTML='';
   const inCall=!!st.callStart;
   const done=trainDone(),tot=SIM_CURRICULUM.length;
@@ -3473,33 +3545,34 @@ function showHome(){_vReg('home');
     ${_hmToday()}
     <div class="hm-sec">Agir</div>
     <div class="hm-grid2">
-      <button class="hm-big call" onclick="homeStartCall()"><span class="ic">📞</span><span class="l">${inCall?'Reprendre l\'appel':'Démarrer un appel'}</span><span class="s">${inCall&&st.prospectNom?esc(st.prospectNom.split(' ')[0])+' est en cours':'Guidé de bout en bout'}</span></button>
-      <button class="hm-big" onclick="showProspects()"><span class="ic">📇</span><span class="l">Mes prospects</span><span class="s">Fiches, relances, suivi</span>${PROSPECTS.length?`<span class="hm-count">${PROSPECTS.length}</span>`:''}</button>
-      <button class="hm-big" onclick="showICPage()"><span class="ic">🗓️</span><span class="l">Intro Class</span><span class="s">Séances, présents, signés</span></button>
-      <button class="hm-big" onclick="showLeadImport()"><span class="ic">📥</span><span class="l">Importer des leads</span><span class="s">Fitness Boost, bsport, tableur</span></button>
+      <button class="hm-big call" onclick="homeStartCall()"><span class="hm-icbox wh">${ic('phone')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">${inCall?'Reprendre l\'appel':'Démarrer un appel'}</span><span class="s">${inCall&&st.prospectNom?esc(st.prospectNom.split(' ')[0])+' est en cours':'Votre guide, étape par étape'}</span></button>
+      <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, relances, suivi</span>${PROSPECTS.length?`<span class="hm-count">${PROSPECTS.length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
+      <button class="hm-big" onclick="showICPage()"><span class="hm-icbox pch">${ic('calcheck')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Intro Class</span><span class="s">Séances, présents, signés</span></button>
+      <button class="hm-big" onclick="showLeadImport()"><span class="hm-icbox mnt">${ic('download')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Importer des leads</span><span class="s">Fitness Boost, bsport, tableur</span></button>
     </div>
     <div class="hm-sec">Progresser</div>
     <div class="ht-grid" style="grid-template-columns:repeat(2,1fr)">
-      <button class="ht-tile" onclick="showTraining()"><span class="ht-ic">🎬</span><span class="ht-lbl">Formation · ${done}/${tot}</span><span class="ht-prog"><span style="width:${Math.round(done/tot*100)}%"></span></span></button>
-      <button class="ht-tile gold" onclick="showOnboard(true)"><span class="ht-ic">🌟</span><span class="ht-lbl">L'essentiel</span></button>
+      <button class="ht-tile lav" onclick="showTraining()"><span class="ht-ic">${ic('play',22)}</span><span class="ht-lbl">Formation · ${done}/${tot}</span><span class="ht-prog"><span style="width:${Math.round(done/tot*100)}%"></span></span></button>
+      <button class="ht-tile gold" onclick="showOnboard(true)"><span class="ht-ic">${ic('sparkles',22)}</span><span class="ht-lbl">L'essentiel</span></button>
     </div>
     <div class="hm-sec">Argumentaire</div>
     <div class="ht-grid">
-      <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">📣</span><span class="ht-lbl">Présentation CP</span></button>
-      <button class="ht-tile" onclick="showCourseGuide()"><span class="ht-ic">📚</span><span class="ht-lbl">Les cours</span></button>
-      <button class="ht-tile" onclick="showArgBank()"><span class="ht-ic">🧭</span><span class="ht-lbl">Arguments</span></button>
-      <button class="ht-tile" onclick="openObj()"><span class="ht-ic">🛡️</span><span class="ht-lbl">Objections</span></button>
-      <button class="ht-tile" onclick="showScience()"><span class="ht-ic">🔬</span><span class="ht-lbl">La science</span></button>
-      <button class="ht-tile" onclick="showAca()"><span class="ht-ic">🎓</span><span class="ht-lbl">Académie</span></button>
+      <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">${ic('presentation',22)}</span><span class="ht-lbl">Présentation CP</span></button>
+      <button class="ht-tile" onclick="showCourseGuide()"><span class="ht-ic">${ic('layers',22)}</span><span class="ht-lbl">Les cours</span></button>
+      <button class="ht-tile" onclick="showArgBank()"><span class="ht-ic">${ic('messages',22)}</span><span class="ht-lbl">Arguments</span></button>
+      <button class="ht-tile" onclick="openObj()"><span class="ht-ic">${ic('shield',22)}</span><span class="ht-lbl">Objections</span></button>
+      <button class="ht-tile" onclick="showScience()"><span class="ht-ic">${ic('flask',22)}</span><span class="ht-lbl">La science</span></button>
+      <button class="ht-tile" onclick="showAca()"><span class="ht-ic">${ic('grad',22)}</span><span class="ht-lbl">Académie</span></button>
     </div>
     <div class="hm-sec">Piloter</div>
     <div class="ht-grid">
-      <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">🏆</span><span class="ht-lbl">Performances</span></button>
-      ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">👥</span><span class="ht-lbl">Équipe</span></button>`:''}
-      <button class="ht-tile" onclick="openSet()"><span class="ht-ic">⚙️</span><span class="ht-lbl">Réglages</span></button>
+      <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">${ic('trophy',22)}</span><span class="ht-lbl">Performances</span></button>
+      ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">${ic('users',22)}</span><span class="ht-lbl">Équipe</span></button>`:''}
+      <button class="ht-tile" onclick="openSet()"><span class="ht-ic">${ic('sliders',22)}</span><span class="ht-lbl">Réglages</span></button>
     </div>
     <div class="home-creed">🤝 <b>Le client est roi.</b> Il ne nous dérange jamais : c'est grâce à lui que nous avons du travail. Accueil chaleureux, transparence totale · et un merci sincère à chaque appel.</div>
     <div id="homePerf">${_hpCache?_hpCache:'<div class="hp-box"><div class="hp-h">🏁 La course du mois</div><div class="hp-load">⏳ Classement en cours de chargement…</div></div>'}</div>
+    <div class="hm-mantra">Concentration · Contrôle · Centrage</div>
   </div>`;
   $('#screen').scrollTop=0;relocateBoxes();
   loadHomePerf();
