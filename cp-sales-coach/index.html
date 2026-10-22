@@ -2601,9 +2601,9 @@ function simSteps(p){
       {t:`« Le mieux c'est l'Illimité, comme ça vous êtes tranquille, vous venez quand vous voulez. »`,pts:0,fb:'~ L\'illimité se recommande aux profils assidus/pressés de résultats · pas par défaut à un débutant hésitant.'}]},
     'PRIX','OBJ2',
     {c:`Bon… c'est vrai que ça donne envie. Qu'est-ce qu'on fait alors ?`,ch:[
-      {t:`« On réserve votre statut fondateur : ${p.prix} par mois à vie, inscription offerte, et votre premier cours cette semaine. Plutôt mardi 18h ou jeudi 19h ? »`,pts:10,fb:'✓ Closing en alternative concrète + avantage fondateur : on signe.'},
+      {t:`« On réserve votre statut fondateur : ${p.prix} par mois à vie, inscription offerte · et votre abonnement ne démarre qu'à l'ouverture du studio, dans quelques semaines. D'ici là vous ne payez rien. On finalise ensemble maintenant : plutôt par lien SMS ou directement au téléphone ? »`,pts:10,fb:'✓ Closing en alternative concrète + transparence (facturation à l\'ouverture) + avantage fondateur : on signe.'},
       {t:`« Je vous laisse digérer tout ça, et on se rappelle la semaine prochaine ? »`,pts:-5,fb:'✗ Le client disait OUI et vous reculez ! Chaque appel vise un engagement.'},
-      {t:`« Je vous envoie le lien d'inscription par SMS, vous le faites tranquillement ce soir. »`,pts:3,fb:'~ Mieux que rien, mais un créneau verrouillé À L\'ORAL convertit bien plus qu\'un lien froid.'}]}
+      {t:`« Votre premier cours est possible dès cette semaine, je vous cale mardi 18h ? »`,pts:0,fb:'✗ Faux en pré-ouverture : le studio n\'ouvre que dans quelques semaines. Une promesse intenable détruit la confiance le jour de l\'ouverture.'}]}
   ];
 }
 const SIM_SEUIL=70; // % minimum pour valider un scénario
