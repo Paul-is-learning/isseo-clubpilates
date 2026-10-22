@@ -342,6 +342,29 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ht-count{position:absolute;top:6px;right:8px;background:var(--gold);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 7px}
 .home-creed{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-left:4px solid var(--gold);border-radius:13px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#6b5325}
 .home-creed b{color:#523d12}
+/* ── Simulateur d'appel ── */
+.sim-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:14px}
+.sim-score{font-size:26px;font-weight:900;color:var(--gold);background:#26385A;border-radius:14px;padding:8px 16px;line-height:1}
+.sim-score small{display:block;font-size:10px;font-weight:700;color:rgba(255,255,255,.6);text-align:center}
+.sim-chat{display:flex;flex-direction:column;gap:9px}
+.sim-b{max-width:88%;padding:11px 14px;border-radius:16px;font-size:14px;line-height:1.55;animation:pop .3s}
+.sim-b.c{align-self:flex-start;background:#fff;border:1px solid #EBEFF6;color:#3c4759;border-bottom-left-radius:5px;box-shadow:var(--sh-s)}
+.sim-b.me{align-self:flex-end;background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark));color:#fff;border-bottom-right-radius:5px}
+.sim-fb{align-self:flex-end;max-width:88%;font-size:12px;font-weight:600;line-height:1.5;padding:8px 12px;border-radius:11px;animation:pop .3s}
+.sim-fb.ok{background:#e7f6ef;color:#155e43;border:1px solid #bfe8d6}
+.sim-fb.mid{background:#fdf3e3;color:#8a5c0a;border:1px solid #f0dcb4}
+.sim-fb.ko{background:#fdecea;color:#a93226;border:1px solid #f5c6c0}
+.sim-choices{display:flex;flex-direction:column;gap:8px;margin-top:4px}
+.sim-ch{text-align:left;background:#fff;border:1.5px solid var(--cp-soft);border-radius:14px;padding:12px 14px;font-size:13.5px;line-height:1.5;color:var(--cp-dark);font-weight:600;transition:all .15s;cursor:pointer}
+.sim-ch:hover{border-color:var(--cp-deep);background:var(--cp-veil);transform:translateY(-1px)}
+.sim-end{background:linear-gradient(150deg,#26385A,#1E2E4C);border-radius:18px;padding:20px;color:#fff;text-align:center;margin-top:8px;animation:pfin .5s cubic-bezier(.22,1.2,.35,1)}
+.sim-end-t{font-size:19px;font-weight:800}
+.sim-end-n{font-size:40px;font-weight:900;color:var(--gold-soft);margin:6px 0}
+.sim-end-n small{font-size:14px;color:rgba(255,255,255,.6)}
+.sim-rec{font-size:12.5px;font-weight:700;color:var(--gold-soft);margin-bottom:8px}
+.sim-rec.muted{color:rgba(255,255,255,.55)}
+.sim-mist{text-align:left;background:rgba(255,255,255,.08);border-radius:12px;padding:11px 13px;font-size:12px;line-height:1.6;color:rgba(255,255,255,.85);margin-top:6px}
+.sim-mist b{color:#fff}
 /* ── Lecteur de fiche prospect ── */
 .fv-card{display:flex;flex-direction:column;max-height:82vh}
 .fv-pack{font-size:12px;font-weight:800;color:#1F9E75;background:#e7f6ef;border:1px solid #bfe8d6;border-radius:99px;padding:3px 10px;vertical-align:middle;margin-left:6px}
@@ -906,6 +929,14 @@ const GOALS=[
   {id:'posture',ic:'🧍',label:'Posture / dos',dig:'Vous travaillez assis(e) combien d\'heures par jour ? Vous avez déjà des tensions cervicales / lombaires ?',catch:'« La correction posturale, c\'est LE point fort du Reformer · on rééquilibre côté par côté. »',deep:[
     {say:'« Assis 8 heures par jour, certains muscles se raccourcissent, d\'autres s\'endorment. Le Reformer fait exactement l\'inverse : il réveille les profonds et rouvre les épaules et les hanches. »',why:'Travail ciblé des chaînes postérieures + ouverture thoracique : l\'antidote de la journée de bureau.'},
     {say:'« Et la posture se corrige en direct : le coach voit vos compensations sur la machine et les reprend geste après geste. En quelques semaines, on se tient droit sans y penser. »',why:'Le double feedback (coach + machine) accélère le réapprentissage postural.'}]},
+  {id:'reco',ic:'🗣️',label:'On m\'a recommandé',catch:'« On vous a bien conseillé ! Nos membres sont notre meilleure publicité. »',deep:[
+    {say:'« Qui vous en a parlé ? … Et qu\'est-ce qui l\'a convaincu(e), elle/lui ? » Écoutez la réponse : c\'est souvent votre meilleur argument de vente, dans ses mots à elle/lui.',why:'Technique : faire raconter la recommandation transforme le prospect en vendeur de sa propre inscription.'},
+    {say:'« Le bouche-à-oreille est notre premier canal. On ne peut pas tricher avec des gens qui reviennent 2 fois par semaine : si on les déçoit, ils ne recommandent personne. »',why:'Preuve sociale sincère : la recommandation d\'un proche vaut plus que toute publicité.'}
+  ]},
+  {id:'curieux',ic:'❓',label:'Simple curiosité',catch:'« Vous avez raison d\'être curieux(se) · le plus simple, c\'est de venir l\'essayer une fois pour comprendre. »',deep:[
+    {say:'« La curiosité est le meilleur point de départ : le Reformer ne ressemble à rien de connu · chariot, ressorts, sangles. Ça ne s\'explique pas, ça se vit. Le cours d\'essai est fait exactement pour ça. »',why:'Basculer la curiosité vers l\'expérience : l\'essai est l\'étape naturelle, pas un engagement.'},
+    {say:'« Posez-moi toutes vos questions maintenant · la machine, l\'ambiance, le niveau. Je préfère un curieux bien informé qu\'un inscrit hésitant. »',why:'Inviter les questions = confiance. Chaque réponse est une occasion de faire visualiser la séance.'}
+  ]},
   {id:'perf',ic:'🏆',label:'Me dépasser / perf',dig:'Vous pratiquez quoi à côté ? Vous voulez progresser sur quoi exactement · force, gainage, souplesse ?',catch:'« Et quand vous serez prêt(e), les niveaux 2 et 2.5 vous attendent pour vous challenger vraiment. »',deep:[
     {say:'« Les niveaux 2 et 2.5 sont réellement exigeants : instabilité, tempo, combinaisons. Même les grands sportifs y découvrent des muscles qu\'ils ne travaillent jamais. »',why:'Le travail profond sous instabilité challenge autrement que la charge lourde : c\'est complémentaire, pas redondant.'},
     {say:'« C\'est le complément parfait de votre sport : gainage, mobilité, équilibre · tout ce qui fait progresser votre course, votre tennis ou votre golf. »',why:'Un centre solide améliore la transmission de force dans tous les gestes sportifs.'}]}
@@ -1263,7 +1294,7 @@ function idealPack(){
   const g=st.goals,pain=st.pain;let score=2;
   if(st.dispo==='high')score=3;
   if(g.includes('perf')&&st.dispo!=='low')score=3;
-  if(st.dispo==='low'){score=(pain.includes('temps')&&st.reason.includes('reprise'))?1:2;if(pain.includes('resultats'))score=2;}
+  if(st.dispo==='low'){score=(pain.includes('temps')&&(st.pain.includes('jamais')||!st.tried.length))?1:2;if(pain.includes('resultats'))score=2;}
   return score;
 }
 function recommendPack(){return st.packChoice||idealPack();}
@@ -1294,7 +1325,7 @@ function matchScore(pack){
   // 1) Confiance : plus la découverte est riche, plus on est sûr.
   let s=46;
   s+=Math.min(st.goals.length,3)*4;
-  if(st.pain.length)s+=5;if(st.trigger)s+=5;if(st.emotion)s+=4;if(st.dispo)s+=5;if(st.tried.length)s+=3;if(st.reason.length)s+=3;
+  if(st.pain.length)s+=5;if(st.trigger)s+=5;if(st.emotion)s+=4;if(st.dispo)s+=5;if(st.tried.length)s+=3;if(st.goals.length>1)s+=3;
   // 2) Adéquation du pack choisi avec le profil.
   const ideal=idealPack();
   if(pack===ideal)s+=12; else s-=Math.abs(pack-ideal)*7;
@@ -1488,14 +1519,12 @@ function buildFlow(){
   f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
   if(st.connait)f.push({t:'present',phase:st.connait==='oui'?'Rappel':'Présentation'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
-  f.push({t:'q',phase:'Découverte',q:'Pourquoi vous appelle-t-il aujourd\'hui ?',sub:'Laissez parler. Plusieurs réponses possibles.',data:REASONS,field:'reason',multi:true});
+  f.push({t:'q',phase:'Découverte',q:'Pourquoi appelle-t-il · ses objectifs ?',sub:'Laissez parler, cochez tout ce qui sort. La requalification se construit en bas.',data:GOALS,field:'goals',multi:true,dig:true,requalif:true});
   f.push({t:'q',phase:'Découverte',q:'⏱️ Pourquoi MAINTENANT ? Le déclencheur.',sub:'Le levier de closing le plus puissant.',data:TRIGGERS,field:'trigger',single:true,dig:true});
   f.push({t:'q',phase:'Découverte',q:'Qu\'a-t-il déjà essayé ?',sub:'Pour positionner le Reformer en contraste.',data:TRIED,field:'tried',multi:true});
   f.push({t:'q',phase:'Découverte',q:'Qu\'est-ce qui n\'a pas marché avant ?',sub:'LA vraie douleur qu\'on va résoudre.',data:PAINS,field:'pain',multi:true,dig:true});
-  f.push({t:'q',phase:'Objectifs',q:'Ses objectifs ?',sub:'On reliera chaque objectif à un cours.',data:GOALS,field:'goals',multi:true,dig:true,requalif:true});
   f.push({t:'q',phase:'Objectifs',q:'💗 Pourquoi c\'est important, au fond ?',sub:'Le « why du why ». Creusez jusqu\'à l\'émotion.',data:EMOTIONS,field:'emotion',single:true});
-  f.push({t:'q',phase:'Objectifs',q:'Quelque chose côté santé ?',sub:'Filtre les cours adaptés.',data:HEALTH,field:'health',multi:true,clearable:true});
-  f.push({t:'q',phase:'Objectifs',q:'Sa disponibilité ressentie ?',sub:'Calibre la reco. Déduisez-la, ne la demandez pas frontalement.',data:DISPO,field:'dispo',single:true});
+  f.push({t:'q2',phase:'Objectifs',qa:'Quelque chose côté santé ?',suba:'Filtre les cours adaptés.',dataA:HEALTH,fieldA:'health',multiA:true,qb:'Sa disponibilité ressentie ?',subb:'Déduisez-la, ne la demandez pas frontalement.',dataB:DISPO,fieldB:'dispo'});
   f.push({t:'reco',phase:'Reco'});
   const pack=recommendPack(),recos=recommendClasses(pack);
   buildPitchBeats(pack,recos).forEach((b,i)=>f.push({t:'beat',phase:'Argumentaire',beat:b,n:i+1}));
@@ -1557,6 +1586,7 @@ function renderScreen(keepScroll){
         <div class="ht-h">🧰 Votre boîte à outils <small>tout est aussi dans le menu ☰ en haut à droite</small></div>
         <div class="ht-grid">
           <button class="ht-tile gold" onclick="showOnboard(true)"><span class="ht-ic">🌟</span><span class="ht-lbl">L'essentiel</span></button>
+          <button class="ht-tile" onclick="startSim()"><span class="ht-ic">🎬</span><span class="ht-lbl">S'entraîner</span></button>
           <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">🏆</span><span class="ht-lbl">Performances</span></button>
           <button class="ht-tile" onclick="showProspects()"><span class="ht-ic">📇</span><span class="ht-lbl">Mes prospects</span>${PROSPECTS.length?`<span class="ht-count">${PROSPECTS.length}</span>`:''}</button>
           <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">📣</span><span class="ht-lbl">Présentation CP</span></button>
@@ -1596,6 +1626,13 @@ function renderScreen(keepScroll){
     }
     if(s.dig){h+=digFor(s.data,selIds);}
     if(s.lever&&ageBand()){const b=ageBand();h+=`<div class="lever">${b.phrases[0]}</div>`;}
+    nav=navHTML(true);
+  }
+  else if(s.t==='q2'){
+    h=`<div class="scr-tag ask">${s.phase}</div><div class="scr-q">${s.qa}</div>${s.suba?`<div class="scr-sub">${s.suba}</div>`:''}${optChips(s.dataA,s.fieldA,!s.multiA)}
+      ${catchFor(s.dataA,s.multiA?st[s.fieldA]:(st[s.fieldA]?[st[s.fieldA]]:[]))}
+      <div class="scr-q" style="margin-top:22px;font-size:21px">${s.qb}</div>${s.subb?`<div class="scr-sub">${s.subb}</div>`:''}${optChips(s.dataB,s.fieldB,true)}
+      ${catchFor(s.dataB,st[s.fieldB]?[st[s.fieldB]]:[])}`;
     nav=navHTML(true);
   }
   else if(s.t==='say'){
@@ -1768,7 +1805,6 @@ function buildRecap(){
   if(st.callStart)L.push(`Durée de l'appel : ${fmtDur((Date.now()-st.callStart)/1000)}`);L.push('');
   const b=ageBand();if(b)L.push(`Âge : ${b.label}`);
   L.push(`Connaît CP : ${st.connait==='oui'?'Oui':st.connait==='non'?'Non':'—'}`);
-  if(st.reason.length)L.push(`Motif : ${st.reason.map(r=>lbl(REASONS,r)).join(', ')}`);
   if(st.trigger)L.push(`Déclencheur : ${lbl(TRIGGERS,st.trigger)}`);
   if(st.tried.length)L.push(`A essayé : ${st.tried.map(t=>lbl(TRIED,t)).join(', ')}`);
   if(st.pain.length)L.push(`Douleur : ${st.pain.map(p=>lbl(PAINS,p)).join(', ')}`);
@@ -2354,6 +2390,148 @@ function aggStats(map,repName){
   a.maxAbosJour=Math.max(0,...Object.values(perDay));
   return a;
 }
+/* ════════════════════════════════════════════════════════════════
+   SIMULATEUR D'APPEL · client virtuel scripté, objections aléatoires,
+   scoring + débrief. Les « bonnes réponses » = la méthode maison.
+   ════════════════════════════════════════════════════════════════ */
+const SIM_NAMES=['Sophie','Karim','Nadia','Marc','Léa','Patricia','Hugo','Fatima','Jean-Luc','Émilie','Rachid','Monique'];
+const SIM_GOALS={poids:'perdre du poids',douleur:'soulager mon dos',stress:'évacuer le stress',tonus:'me tonifier',energie:'retrouver de l\'énergie',posture:'améliorer ma posture'};
+const SIM_CHARS=[
+  {id:'presse',lbl:'pressé(e)',open:'Oui allô ? Faites vite, je suis entre deux réunions.'},
+  {id:'sceptique',lbl:'sceptique',open:'Oui… c\'est à quel sujet ? Si c\'est commercial, je préviens, je suis difficile.'},
+  {id:'chaleureux',lbl:'chaleureux(se)',open:'Ah oui bonjour ! J\'attendais votre appel, j\'avoue que ça m\'intrigue votre studio.'},
+  {id:'hesitant',lbl:'hésitant(e)',open:'Euh… oui bonjour. J\'avais laissé mes coordonnées mais je ne sais pas trop si c\'est pour moi…'}
+];
+const SIM_OBJS={
+  prix:{c:p=>`Ouh là… ${p.prix} par mois quand même. C'est un vrai budget, je ne sais pas si je peux me le permettre.`,
+    ch:[
+      {t:'« Je comprends. Ramené à la séance, c\'est '+'${ps}'+' · avec un coach certifié, là où une séance privée vaut 95 €. Et c\'est un investissement dans votre santé des 20 prochaines années. »',pts:10,fb:'✓ Coût ramené à la séance + comparaison crédible + cadrage investissement : la méthode.'},
+      {t:'« On a aussi le Pack 4, moins cher, si le budget bloque. »',pts:3,fb:'~ Descendre en gamme tout de suite dévalorise la reco. D\'abord défendre la valeur, le downgrade reste une carte pour plus tard.'},
+      {t:'« C\'est le prix de la qualité, vous savez. Tout augmente en ce moment. »',pts:-5,fb:'✗ Phrase de comptoir : aucune valeur ajoutée, le client se sent incompris.'}
+    ]},
+  temps:{c:p=>`Honnêtement, avec mon travail je ne vois pas où caser ça dans la semaine…`,
+    ch:[
+      {t:'« C\'est justement pour les agendas chargés que tout se réserve à l\'avance sur l\'app : 50 minutes, créneau fixé, plus de décision à prendre le jour J. Quel moment serait réaliste : plutôt midi ou fin de journée ? »',pts:10,fb:'✓ Répondre au frein PUIS verrouiller un créneau concret : parfait.'},
+      {t:'« 50 minutes par semaine, tout le monde peut les trouver, si on veut vraiment. »',pts:-5,fb:'✗ Culpabilisant. Le client est roi : on résout son problème, on ne lui fait pas la leçon.'},
+      {t:'« Je comprends, le temps c\'est le problème de tout le monde. Réfléchissez-y et rappelez-moi. »',pts:0,fb:'✗ Abandon : un « plus tard » vague est un appel perdu. Le vrai échec, c\'est de laisser filer par timidité.'}
+    ]},
+  reflechir:{c:p=>`Écoutez, c'est intéressant mais je vais y réfléchir et je vous rappelle.`,
+    ch:[
+      {t:'« Bien sûr. Pour vous aider à réfléchir : qu\'est-ce qui vous retient, le rythme, le budget, ou autre chose ? »',pts:10,fb:'✓ Le « je vais réfléchir » cache toujours une objection précise : vous la faites sortir.'},
+      {t:'« Pas de souci, je vous laisse mon numéro, à bientôt peut-être ! »',pts:-5,fb:'✗ 9 « je vous rappelle » sur 10 ne rappellent jamais. Il fallait creuser ou verrouiller un rappel daté.'},
+      {t:'« D\'accord · je vous propose qu\'on se redise un mot jeudi 18h, et d\'ici là je vous garde votre tarif fondateur. Ça vous va ? »',pts:7,fb:'~ Bien : rappel daté + urgence douce. Encore mieux : d\'abord faire sortir la vraie objection.'}
+    ]},
+  conjoint:{c:p=>`Il faut que j'en parle à mon conjoint avant de m'engager sur un abonnement.`,
+    ch:[
+      {t:'« Très naturel. Mais c\'est vous qui ressentez ce besoin · la décision vous appartient. Je peux bloquer votre place fondateur aujourd\'hui, vous confirmez demain après en avoir parlé ? »',pts:10,fb:'✓ Respect + recentrage sur SON besoin + réservation sans pression : la méthode.'},
+      {t:'« Je comprends, rappelez-moi quand vous aurez son accord. »',pts:0,fb:'✗ Vous sortez du jeu. Sans rappel daté ni place bloquée, l\'appel meurt ici.'},
+      {t:'« Vous savez, c\'est votre corps, pas le sien ! Vous n\'avez pas besoin de permission. »',pts:-5,fb:'✗ Attaquer le couple = braquer le client. Jamais.'}
+    ]},
+  deja:{c:p=>`Vous savez, j'ai déjà testé des salles de sport, et j'ai toujours fini par arrêter…`,
+    ch:[
+      {t:'« Et c\'est précisément pour ça qu\'ici c\'est différent : un coach qui vous connaît, 12 personnes max, un créneau réservé qui vous attend. En salle, personne ne remarque votre absence · nous, si. »',pts:10,fb:'✓ Le contraste encadrement vs salle libre : l\'argument n°1 face à ce vécu.'},
+      {t:'« Il faut de la volonté, c\'est sûr. Cette fois sera peut-être la bonne ! »',pts:-5,fb:'✗ Vous validez sa peur d\'échouer au lieu de montrer que le CADRE change tout.'},
+      {t:'« Les salles classiques, c\'est de l\'abattage. Ici c\'est du premium, rien à voir. »',pts:3,fb:'~ L\'idée est là mais dénigrer frontalement fait vendeur. Expliquez le mécanisme (coach, 12 max, rendez-vous) plutôt que l\'étiquette.'}
+    ]}
+};
+function simPersona(){
+  const g=Object.keys(SIM_GOALS)[Math.floor(Math.random()*6)];
+  const ch=SIM_CHARS[Math.floor(Math.random()*SIM_CHARS.length)];
+  const objKeys=Object.keys(SIM_OBJS).sort(()=>Math.random()-.5);
+  const pack=g==='douleur'||g==='stress'?2:(Math.random()<.3?3:2);
+  const prix=fmtEur(foundingMonthly(pack)??packMonthly(pack)),ps=fmtEur(foundingPerSession(pack)??packPerSession(pack))||'~22 €';
+  return {nom:SIM_NAMES[Math.floor(Math.random()*SIM_NAMES.length)],goal:g,goalTxt:SIM_GOALS[g],char:ch,o1:objKeys[0],o2:objKeys[1],pack:pack,prix:prix,ps:ps};
+}
+function simSteps(p){
+  const o=k=>{const O=SIM_OBJS[k];return {c:O.c(p),ch:O.ch.map(c=>({t:c.t.replace('${ps}',p.ps),pts:c.pts,fb:c.fb}))};};
+  return [
+    {c:p.char.open,ch:[
+      {t:`« Bonjour ${p.nom} ! C'est ${CFG.rep||'moi'}, de Club Pilates${CFG.studio?' '+CFG.studio:''}. Vous nous avez laissé vos coordonnées · je vous appelle en personne pour voir ce qui vous ferait du bien. Vous avez deux minutes ? »`,pts:10,fb:'✓ Prénom + rappel personnel + permission : l\'ouverture maison.'},
+      {t:`« Bonjour, je vous appelle de Club Pilates concernant nos offres d'abonnement promotionnelles du moment. »`,pts:-5,fb:'✗ « Offres promotionnelles » = centre d\'appels. Le client raccroche mentalement.'},
+      {t:`« Bonjour, vous allez bien ? Alors, prêt(e) à transformer votre corps ?? »`,pts:0,fb:'✗ Trop brutal, survendu dès la 1re seconde. On fait connaissance d\'abord.'}]},
+    {c:`En fait, j'aimerais ${p.goalTxt}… enfin, c'est surtout ça qui m'a fait laisser mes coordonnées.`,ch:[
+      {t:`« D'accord. Et qu'est-ce qui fait que c'est important pour vous en ce moment, ${p.nom} ? »`,pts:10,fb:'✓ Creuser le POURQUOI avant de vendre : la découverte fait la vente.'},
+      {t:`« Parfait, alors j'ai exactement ce qu'il vous faut : notre Pack 8 à ${p.prix} par mois ! »`,pts:-5,fb:'✗ Pitcher au bout de 20 secondes : le besoin n\'est ni creusé ni validé. Trop tôt.'},
+      {t:`« Très bien. Vous avez déjà pratiqué le Pilates ou une autre activité ? »`,pts:5,fb:'~ Bonne question de découverte, mais le « pourquoi maintenant » (le déclencheur) passe avant.'}]},
+    {c:`Eh bien… disons que ça fait un moment que j'y pense, et là je me suis dit qu'il fallait que je m'y mette vraiment.`,ch:[
+      {t:`« Il y a eu un déclic particulier ? Un événement, une remarque, un ras-le-bol ? »`,pts:10,fb:'✓ Vous cherchez le déclencheur : le levier de closing le plus puissant.'},
+      {t:`« C'est tout à votre honneur ! Bon, je vous explique nos formules ? »`,pts:0,fb:'✗ Le déclencheur était à portée de main et vous passez au catalogue.'},
+      {t:`« Vous savez, 90 % des gens qui attendent ne s'y mettent jamais. Il faut agir ! »`,pts:-5,fb:'✗ Chiffre inventé + pression. Jamais de statistiques sorties du chapeau.'}]},
+    {c:`Si je suis honnête… c'est une remarque de mon médecin au dernier bilan. Ça m'a un peu secoué(e).`,ch:[
+      {t:`« Merci de me le confier. Vous faites exactement le bon choix en prenant les devants · renforcement, équilibre, souffle : c'est précisément ce qu'on travaille, et les kinés utilisent le Reformer en rééducation. Votre médecin validera. »`,pts:10,fb:'✓ Accueil de la confidence + réassurance crédible (kinés, prévention) sans dramatiser.'},
+      {t:`« Ah oui, à votre âge il ne faut vraiment plus traîner, c'est sérieux ces choses-là. »`,pts:-5,fb:'✗ Alarmisme : on ne vend JAMAIS par la peur. Sincère, pas anxiogène.'},
+      {t:`« Les médecins exagèrent souvent, mais bon, bouger ne fait jamais de mal ! »`,pts:-5,fb:'✗ Décrédibiliser le médecin ruine votre propre crédibilité santé.'}]},
+    {c:`Oui… je veux juste être sûr(e) que c'est adapté, je ne suis pas très sportif(ve) vous savez.`,ch:[
+      {t:`« C'est fait pour vous : tout le monde démarre au niveau 0.5, chacun sa machine, un coach qui adapte chaque exercice. Personne ne vous regarde, et on n'est jamais largué. »`,pts:10,fb:'✓ Le frein n°1 des débutants (le regard, le niveau) traité pile avec les bons faits.'},
+      {t:`« Si je résume : vous voulez ${p.goalTxt}, suite au signal de votre médecin, et vous cherchez un cadre rassurant pour démarrer en douceur · c'est bien ça ? »`,pts:10,fb:'✓ La requalification des besoins ! Reformuler et faire valider : excellent réflexe.'},
+      {t:`« Oh, vous savez, le Pilates c'est facile, tout le monde y arrive. »`,pts:0,fb:'✗ Minimiser inquiète plus que ça ne rassure · et c\'est faux : c\'est exigeant ET accessible, grâce aux niveaux.'}]},
+    'OBJ1',
+    {c:`Bon… et concrètement, ça donnerait quoi pour moi ?`,ch:[
+      {t:`« Pour ${p.goalTxt}, le rythme qui transforme vraiment, c'est 2 séances par semaine : le Pack 8. On commence en douceur, et vos premières sensations arrivent dès les premières semaines. »`,pts:10,fb:'✓ Reco liée à SON objectif + le bon rythme recommandé avec conviction.'},
+      {t:`« On a trois formules : Pack 4, Pack 8, Illimité. Je vous envoie la grille par mail et vous choisissez ? »`,pts:-5,fb:'✗ Le menu + le mail = fuite. C\'est VOTRE métier de recommander LE bon rythme.'},
+      {t:`« Le mieux c'est l'Illimité, comme ça vous êtes tranquille, vous venez quand vous voulez. »`,pts:0,fb:'~ L\'illimité se recommande aux profils assidus/pressés de résultats · pas par défaut à un débutant hésitant.'}]},
+    'PRIX','OBJ2',
+    {c:`Bon… c'est vrai que ça donne envie. Qu'est-ce qu'on fait alors ?`,ch:[
+      {t:`« On réserve votre statut fondateur : ${p.prix} par mois à vie, inscription offerte, et votre premier cours cette semaine. Plutôt mardi 18h ou jeudi 19h ? »`,pts:10,fb:'✓ Closing en alternative concrète + avantage fondateur : on signe.'},
+      {t:`« Je vous laisse digérer tout ça, et on se rappelle la semaine prochaine ? »`,pts:-5,fb:'✗ Le client disait OUI et vous reculez ! Chaque appel vise un engagement.'},
+      {t:`« Je vous envoie le lien d'inscription par SMS, vous le faites tranquillement ce soir. »`,pts:3,fb:'~ Mieux que rien, mais un créneau verrouillé À L\'ORAL convertit bien plus qu\'un lien froid.'}]}
+  ];
+}
+let SIM=null;
+function startSim(){
+  const p=simPersona();
+  const steps=simSteps(p).map(s=>s==='OBJ1'?{obj:p.o1}:s==='OBJ2'?{obj:p.o2}:s==='PRIX'?{obj:'prix',prefix:`« Le Pack 8, c'est ${fmtEur(packMonthly(2))} par mois · et comme membre fondateur, ${p.prix} à vie, soit ${p.ps} la séance. » … `}:s);
+  SIM={p:p,steps:steps,i:0,score:0,hist:[],mist:[],done:false,pick:null};
+  renderSim();
+}
+function simStepData(s){
+  if(s.obj){const O=SIM_OBJS[s.obj];return {c:(s.prefix||'')+O.c(SIM.p),ch:O.ch.map(c=>({t:c.t.replace('${ps}',SIM.p.ps),pts:c.pts,fb:c.fb}))};}
+  return s;
+}
+function simChoose(ci){
+  if(SIM.pick!==null)return;
+  const s=simStepData(SIM.steps[SIM.i]),c=s.ch[SIM._order[ci]];
+  SIM.pick=ci;SIM.score+=Math.max(0,c.pts);
+  if(c.pts<10)SIM.mist.push(c.fb);
+  SIM.hist.push({c:s.c,me:c.t,fb:c.fb,good:c.pts>=10,mid:c.pts>0&&c.pts<10});
+  renderSim();
+  setTimeout(()=>{SIM.i++;SIM.pick=null;if(SIM.i>=SIM.steps.length)SIM.done=true;renderSim();},1700);
+}
+function renderSim(){
+  $('#topPhase').textContent='Entraînement';$('#topSub').textContent='';
+  $('#bar').style.width=Math.round(SIM.i/SIM.steps.length*100)+'%';
+  const p=SIM.p;
+  let h=`<div class="cg"><div class="sim-head"><div><h2 class="pr-h2">🎬 Appel d'entraînement</h2><div class="pr-h2s">${esc(p.nom)}, ${p.char.lbl} · veut ${p.goalTxt} · client virtuel</div></div><div class="sim-score">${SIM.score}<small>pts</small></div></div>`;
+  h+='<div class="sim-chat" id="simChat">';
+  SIM.hist.forEach(x=>{
+    h+=`<div class="sim-b c">${esc(x.c)}</div><div class="sim-b me">${x.me}</div><div class="sim-fb ${x.good?'ok':x.mid?'mid':'ko'}">${x.fb}</div>`;
+  });
+  if(!SIM.done){
+    const s=simStepData(SIM.steps[SIM.i]);
+    h+=`<div class="sim-b c new">${esc(s.c)}</div>`;
+    if(SIM.pick===null){
+      if(!SIM._orderStep||SIM._orderStep!==SIM.i){SIM._order=[0,1,2].sort(()=>Math.random()-.5);SIM._orderStep=SIM.i;}
+      h+=`<div class="sim-choices">${SIM._order.map((oi,ci)=>`<button class="sim-ch" onclick="simChoose(${ci})">${s.ch[oi].t}</button>`).join('')}</div>`;
+    }
+  } else {
+    const max=SIM.steps.length*10,pct=Math.round(SIM.score/max*100);
+    const titre=pct>=85?'🏆 Master Coach en herbe':pct>=70?'🥇 Closer solide':pct>=50?'💪 Bonne base, continue':'🌱 Débutant courageux';
+    const best=+localStorage.getItem('cpcoach_simbest')||0;
+    if(SIM.score>best)localStorage.setItem('cpcoach_simbest',String(SIM.score));
+    h+=`<div class="sim-end">
+      <div class="sim-end-t">${titre}</div>
+      <div class="sim-end-n">${SIM.score}<small>/ ${max} pts</small></div>
+      ${SIM.score>best?'<div class="sim-rec">🎉 Nouveau record personnel !</div>':best?`<div class="sim-rec muted">Record : ${Math.max(best,SIM.score)} pts</div>`:''}
+      ${SIM.mist.length?`<div class="sim-mist"><b>À retravailler :</b>${SIM.mist.slice(0,4).map(m=>`<div>· ${m.replace(/^[✓✗~]\\s*/,'')}</div>`).join('')}</div>`:'<div class="sim-rec">Sans faute · l\'appel parfait ! 👏</div>'}
+      <button class="go ok" style="width:100%;margin-top:12px" onclick="startSim()">🔄 Nouvel appel (autre client)</button>
+    </div>`;
+  }
+  h+='</div></div>';
+  $('#screen').innerHTML=h;relocateBoxes();
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir au vrai appel</button>`;
+  const sc=document.getElementById('simChat');if(sc)$('#screen').scrollTop=$('#screen').scrollHeight;
+}
+
 /* ── Accueil : la course du mois, en direct ── */
 let _hpCache='',_hpBusy=false;
 async function loadHomePerf(){
@@ -2630,6 +2808,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showScience()"><span class="mic">🔬</span><span>La science le confirme<small>Études cliniques, résultats par objectif, sources</small></span></button>
     <button class="menu-item" onclick="closeMenu();showOnboard(true)"><span class="mic">🌟</span><span>L'essentiel CP<small>État d'esprit, bienfaits, cours, attitude · le guide de bienvenue</small></span></button>
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
+    <button class="menu-item" onclick="closeMenu();startSim()"><span class="mic">🎬</span><span>S'entraîner à l'appel<small>Client virtuel, objections aléatoires, score · sans risque</small></span></button>
     <button class="menu-item" onclick="closeMenu();showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
