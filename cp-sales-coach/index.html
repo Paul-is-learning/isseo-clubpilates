@@ -876,6 +876,9 @@ input:focus,textarea:focus,select:focus{border-color:var(--cp-deep)!important;bo
 <div id="app">
   <div class="top">
     <div class="top-in">
+      <button class="top-btn" id="topBack" onclick="navBack()" aria-label="Retour" style="display:none">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 6 8 12 14 18"/></svg>
+      </button>
       <span id="topAva"></span>
       <div class="top-mid">
         <div class="top-phase" id="topHello">Bonjour !</div>
@@ -3477,9 +3480,33 @@ function showHome(){_vReg('home');
 /* ── Historique interne : « précédent » = page précédente ── */
 let _navStack=['home'],_navBack=false;
 function _vReg(name){
-  if(_navBack){_navBack=false;return;}
+  if(_navBack){_navBack=false;_updTopBack();return;}
   if(_navStack[_navStack.length-1]!==name)_navStack.push(name);
   if(_navStack.length>30)_navStack.shift();
+  _updTopBack();
+}
+function _updTopBack(){
+  const b=document.getElementById('topBack');if(!b)return;
+  const top=_navStack[_navStack.length-1];
+  b.style.display=(_navStack.length>1||(top==='call'&&st.idx>0))?'':'none';
+}
+function navBack(){
+  let closed=false;
+  try{
+    if($('#menuSheet').classList.contains('on')){closeMenu();closed=true;}
+    if($('#objSheet').classList.contains('on')){closeObj();closed=true;}
+    if($('#setBg').classList.contains('on')){closeSet();closed=true;}
+    ['glossPop','fichePop','icPop','obScreen','avaScreen'].forEach(id=>{const e=document.getElementById(id);if(e){e.remove();closed=true;}});
+  }catch(e){}
+  if(closed)return;
+  if(_navStack[_navStack.length-1]==='call'&&st.idx>0){try{prev();}catch(e){}return;}
+  _navStack.pop();
+  if(!_navStack.length)_navStack=['home'];
+  const v=_navStack[_navStack.length-1];
+  _navBack=true;
+  try{(VIEW_FN[v]||VIEW_FN.home)();}catch(e){try{showHome();}catch(_){}}
+  _navBack=false;
+  _updTopBack();
 }
 const VIEW_FN={home:()=>showHome(),call:()=>renderScreen(true),training:()=>showTraining(),sim:()=>showTraining(),ic:()=>showICPage(),perf:()=>showPerf(),prospects:()=>showProspects(),cours:()=>showCourseGuide(),args:()=>showArgBank(),science:()=>showScience(),aca:()=>showAca(),leads:()=>showLeadImport(),team:()=>showTeam()};
 function homeStartCall(){
@@ -3719,24 +3746,7 @@ _armHistory();
 window.addEventListener('pageshow',function(){setTimeout(_armHistory,50);});
 window.addEventListener('popstate',function(){
   setTimeout(_armHistory,0);
-  // 1. Une surcouche ouverte (menu, objections, réglages, popup, guide) ? on la ferme, point.
-  let closed=false;
-  try{
-    if($('#menuSheet').classList.contains('on')){closeMenu();closed=true;}
-    if($('#objSheet').classList.contains('on')){closeObj();closed=true;}
-    if($('#setBg').classList.contains('on')){closeSet();closed=true;}
-    ['glossPop','fichePop','icPop','obScreen','avaScreen'].forEach(id=>{const e=document.getElementById(id);if(e){e.remove();closed=true;}});
-  }catch(e){}
-  if(closed)return;
-  // 2. En plein flux d'appel : un écran en arrière à la fois, jusqu'à « who ».
-  if(_navStack[_navStack.length-1]==='call'&&st.idx>0){try{prev();}catch(e){}return;}
-  // 3. Sinon : page précédente de la pile (accueil en fond de pile).
-  _navStack.pop();
-  if(!_navStack.length)_navStack=['home'];
-  const v=_navStack[_navStack.length-1];
-  _navBack=true;
-  try{(VIEW_FN[v]||VIEW_FN.home)();}catch(e){try{showHome();}catch(_){}}
-  _navBack=false;
+  navBack();
 });
 // Accès : code studio obligatoire (données équipe centralisées)
 // Un lien d'invitation peut porter le code (?code=LEA-1234) : un clic = profil activé.
