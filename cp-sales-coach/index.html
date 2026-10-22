@@ -406,6 +406,7 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .fond-prix b{color:#8a5c0a;font-size:16px}
 .fond-prix small{color:#8C95A8;font-size:10.5px;margin-left:2px}
 .fond-per{flex-basis:100%;font-size:11.5px;font-weight:700;color:#1F9E75}
+.fond-note{flex-basis:100%;font-size:11px;font-weight:700;color:#8a5c0a;background:#fdf3e3;border-radius:8px;padding:5px 9px;margin-top:2px}
 .fond-ref{font-size:11.5px;color:#8a6d2e;margin-top:6px;line-height:1.5}
 .fond-why{background:#fff;border:1.5px solid var(--line,#e3e7ef);border-radius:15px;padding:13px 15px;margin-top:10px}
 .fond-why-h{font-size:13.5px;font-weight:800;color:#16233f;margin-bottom:9px}
@@ -813,11 +814,11 @@ input:focus,textarea:focus,select:focus{border-color:var(--cp-deep)!important;bo
 /* ════════════════════════════════════════════════════════════════
    CONFIG + DONNÉES + MOTEUR  (inchangés · toute l'intelligence)
    ════════════════════════════════════════════════════════════════ */
-const DEFAULT_CFG={studio:'',rep:'',base:40,p1:140,p2:240,p3:330,founding:20,privateSession:95,spotsLeft:50};
+const DEFAULT_CFG={studio:'',rep:'',base:40,p1:142,p2:252,p3:352,founding:20,privateSession:95,spotsLeft:50};
 const SESSIONS_PER_MONTH={1:4,2:8,3:null};
 let CFG=Object.assign({},DEFAULT_CFG,JSON.parse(localStorage.getItem('cpcoach_cfg')||'{}'));
-// Migration : anciens tarifs par défaut (135/235) jamais personnalisés → tarifs officiels
-if(+CFG.p1===135&&+CFG.p2===235){CFG.p1=140;CFG.p2=240;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
+// Migration : anciens tarifs par défaut jamais personnalisés → tarifs officiels (oct. 2026)
+if((+CFG.p1===135&&+CFG.p2===235)||(+CFG.p1===140&&+CFG.p2===240&&+CFG.p3===330)){CFG.p1=142;CFG.p2=252;CFG.p3=352;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
 
 let st={
   callGoal:'membership',
@@ -1666,6 +1667,7 @@ function renderScreen(keepScroll){
         <div class="fond-pack">${PACK_META[p].name}${p===cp?'<span class="fond-reco">reco</span>':''}</div>
         <div class="fond-prix">${f!=null?`<s>${fmtEur(m)}</s> <b>${fmtEur(f)}</b>`:`<b>${fmtEur(m)}</b>`}<small>/mois</small></div>
         <div class="fond-per">${per}</div>
+        ${p===1?'<div class="fond-note">🎁 Lancement : 1 séance offerte par mois pendant 3 mois</div>':''}
       </div>`;
     }).join('');
     const base=fmtEur(CFG.base),priv=fmtEur(CFG.privateSession);
@@ -1673,9 +1675,9 @@ function renderScreen(keepScroll){
       text:buildFoundingPitch(cp),casual:buildFoundingPitchCasual(cp),
       hint:'Avantage réel et limité dans le temps : donnez envie d\'en profiter maintenant, avec le sourire.'},'warn')
     +`<div class="fond-box">
-      <div class="fond-h">🏛️ L'offre fondateur en chiffres <span class="fond-hs">-${CFG.founding}% à vie · inscription offerte${CFG.spotsLeft?` · ${CFG.spotsLeft} places`:''}</span></div>
+      <div class="fond-h">🏛️ L'offre fondateur en chiffres <span class="fond-hs">-${CFG.founding}% à vie · frais d'inscription offerts (valeur 149 €)${CFG.spotsLeft?` · ${CFG.spotsLeft} places`:''}</span></div>
       ${fRows}
-      <div class="fond-ref">Repères : ${base?`séance à l'unité ${base}`:''}${base&&priv?' · ':''}${priv?`séance privée ${priv}`:''} · ici : coach certifié, 12 personnes max, Reformer dernière génération.</div>
+      <div class="fond-ref">Repères : ${base?`séance à l'unité ${base}`:''}${base&&priv?' · ':''}${priv?`séance privée ${priv}`:''} · coach certifié, 12 personnes max, Reformer dernière génération.<br>Engagement 3 mois, tacitement renouvelable · en toute transparence.</div>
     </div>
     <div class="fond-why"><div class="fond-why-h">💗 Pourquoi c'est un vrai investissement</div>
       <div class="fw-row"><span class="fw-ic">🌿</span><span><b>Prendre soin de soi.</b> Un rendez-vous fixe, encadré, rien qu'à soi : c'est ce qui fait qu'on tient dans la durée · et c'est la régularité qui transforme.</span></div>
@@ -1814,7 +1816,7 @@ function avaTag(av,size,name){
 function avatarOf(name){const k=_repKey(name);if(!k)return'';if(_repKey(CFG.rep)===k&&MY_AVATAR)return MY_AVATAR;return AVATARS[k]||'';}
 async function fetchAvatars(){try{const d=await syncCall('avatars');if(d.avatars){AVATARS=d.avatars;localStorage.setItem('cpcoach_avatars',JSON.stringify(AVATARS));}}catch(e){}}
 
-let PRIMES={1:15,2:30,3:45};
+let PRIMES={1:10,2:25,3:50};
 try{PRIMES=Object.assign(PRIMES,JSON.parse(localStorage.getItem('cpcoach_primes')||'{}'));}catch(e){}
 function _adoptAuth(d){
   if(!d)return;
@@ -1835,11 +1837,24 @@ async function syncCall(action,extra){
   return d;
 }
 function _syncState(s){const b=$('#syncBadge');if(!b)return;b.className='sync-badge '+s;b.textContent=s==='ok'?'☁️ Synchronisé · équipe':s==='sync'?'⏳ Synchronisation…':'📴 Hors ligne · sauvegardé sur ce poste';}
+// Purge administrative : si le serveur a été remis à zéro après notre dernière
+// synchro, on vide le stock local au lieu de re-pousser d'anciennes fiches.
+function _adoptEpoch(d){
+  if(!d||!d.epoch)return false;
+  const seen=+localStorage.getItem('cpcoach_epoch')||0;
+  if(d.epoch>seen){
+    localStorage.setItem('cpcoach_epoch',String(d.epoch));
+    if(seen||PROSPECTS.length){PROSPECTS=(d.prospects||[]).slice();persistProspects();EVQ=[];_persistEvq();
+      if($('#topPhase').textContent==='Mes prospects')showProspects(true);
+      return true;}
+  }
+  return false;
+}
 function schedulePush(){clearTimeout(_pushT);_pushT=setTimeout(syncPush,700);}
 async function syncPush(){
   if(!COACH_CODE)return;
   _syncState('sync');
-  try{const d=await syncCall('push',{prospects:PROSPECTS});if(d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}_syncState('ok');_lastSync=new Date().toISOString();}
+  try{const d=await syncCall('push',{prospects:PROSPECTS});if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}_syncState('ok');_lastSync=new Date().toISOString();}
   catch(e){if(e.message!=='code')_syncState('off');}
 }
 async function syncPull(rerender){
@@ -1848,12 +1863,15 @@ async function syncPull(rerender){
   try{
     const d=await syncCall('pull');
     const server=d.prospects||[];
-    // Les fiches locales absentes du serveur (créées hors-ligne) sont conservées puis poussées
-    const ids=new Set(server.map(p=>p.id));
-    const localOnly=PROSPECTS.filter(p=>!ids.has(p.id));
-    PROSPECTS=server.concat(localOnly);
-    persistProspects();
-    if(localOnly.length)schedulePush();
+    if(_adoptEpoch(d)){/* purge administrative : local vidé, rien à re-pousser */}
+    else{
+      // Les fiches locales absentes du serveur (créées hors-ligne) sont conservées puis poussées
+      const ids=new Set(server.map(p=>p.id));
+      const localOnly=PROSPECTS.filter(p=>!ids.has(p.id));
+      PROSPECTS=server.concat(localOnly);
+      persistProspects();
+      if(localOnly.length)schedulePush();
+    }
     _syncState('ok');_lastSync=new Date().toISOString();
     if(rerender&&$('#topPhase').textContent==='Mes prospects')showProspects(true);
   }catch(e){if(e.message!=='code')_syncState('off');}

@@ -32,7 +32,7 @@ const ROW_ACCESS = "_coach_access";
 const ROW_STATS = "_coach_stats";
 const MAX_EVENTS = 20000;
 const EV_TYPES = ["appel", "essai", "venu", "abo", "perdu"];
-const DEFAULT_PRIMES: Record<string, number> = { "1": 15, "2": 30, "3": 45 };
+const DEFAULT_PRIMES: Record<string, number> = { "1": 10, "2": 25, "3": 50 };
 const MAX_PROSPECTS = 5000;
 const MAX_INVITES = 50;
 
@@ -227,10 +227,20 @@ serve(async (req) => {
     // ── Prospects (admin + rep) ──
     const { data: row } = await admin.from("studios").select("data").eq("id", ROW_PROSPECTS).maybeSingle();
     let list: any[] = (row?.data?.prospects as any[]) || [];
+    const epoch: number = Number(row?.data?.epoch) || 0;
     const saveList = () =>
-      admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { prospects: list }, updated_at: new Date().toISOString() });
+      admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { prospects: list, epoch }, updated_at: new Date().toISOString() });
 
-    if (action === "pull") return json({ ok: true, prospects: list });
+    // Remise à zéro administrative : date la purge pour que chaque appareil
+    // vide son stock local au lieu de re-pousser d'anciennes fiches.
+    if (action === "purge_all") {
+      if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+      const newEpoch = Date.now();
+      await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { prospects: [], epoch: newEpoch }, updated_at: new Date().toISOString() });
+      return json({ ok: true, prospects: [], epoch: newEpoch });
+    }
+
+    if (action === "pull") return json({ ok: true, prospects: list, epoch });
 
     if (action === "push") {
       const incoming: any[] = Array.isArray(body.prospects) ? body.prospects : [];
@@ -253,14 +263,14 @@ serve(async (req) => {
       }
       if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
       await saveList();
-      return json({ ok: true, prospects: list });
+      return json({ ok: true, prospects: list, epoch });
     }
 
     if (action === "delete") {
       const rm: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
       list = list.filter((p) => !rm.includes(p.id));
       await saveList();
-      return json({ ok: true, prospects: list });
+      return json({ ok: true, prospects: list, epoch });
     }
 
     return json({ error: "Action inconnue" }, 400);
