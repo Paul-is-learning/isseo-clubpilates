@@ -1734,6 +1734,7 @@ function catchFor(data,ids){
 }
 
 function renderScreen(keepScroll){
+  _vReg('call');
   const flow=buildFlow();
   st.idx=Math.max(0,Math.min(st.idx,flow.length-1));
   const s=flow[st.idx];
@@ -2411,7 +2412,7 @@ function relanceMsgs(p){
 }
 
 /* ── Équipe & invitations (admin) ── */
-async function showTeam(){
+async function showTeam(){_vReg('team');
   if(COACH_ROLE!=='admin'&&!IS_MGR){toast('Réservé aux recruteurs');return;}
   $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">Un code personnel par conseiller · révocable à tout moment</div></div></div><div class="pr-empty">⏳ Chargement…</div></div>`;relocateBoxes();
   $('#topPhase').textContent='Équipe';
@@ -2659,7 +2660,7 @@ async function trainPull(){
   }catch(e){}
 }
 function trainDone(){return SIM_CURRICULUM.filter(s=>TRAIN[s.id]&&TRAIN[s.id].s>=SIM_SEUIL).length;}
-function showTraining(){
+function showTraining(){_vReg('training');
   $('#topPhase').textContent='Formation';$('#topSub').textContent='';
   $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';relocateBoxes();
@@ -2704,7 +2705,7 @@ function simChoose(ci){
   renderSim();
   setTimeout(()=>{SIM.i++;SIM.pick=null;if(SIM.i>=SIM.steps.length)SIM.done=true;renderSim();},1700);
 }
-function renderSim(){
+function renderSim(){_vReg('sim');
   $('#topPhase').textContent='Entraînement';$('#topSub').textContent='';
   $('#bar').style.width=Math.round(SIM.i/SIM.steps.length*100)+'%';
   const p=SIM.p;
@@ -2795,7 +2796,7 @@ function icSet(id,field,val){
   s[field]=val;s.maj=new Date().toISOString();
   icPush([],[s]);showICPage(true);
 }
-function showICPage(keep){
+function showICPage(keep){_vReg('ic');
   $('#topPhase').textContent='Intro Class';$('#topSub').textContent='';
   $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
@@ -2964,7 +2965,7 @@ function icsSubmitSale(sessId){
 /* ── Import de leads en lot : colle un export (CSV/TSV/lignes) → fiches « à rappeler ».
    Marche avec Fitness Boost, bsport ou n'importe quel tableur, en attendant les API. ── */
 function _normTel(t){return (t||'').replace(/[^0-9+]/g,'').replace(/^\+33/,'0');}
-function showLeadImport(){
+function showLeadImport(){_vReg('leads');
   $('#topPhase').textContent='Import de leads';$('#topSub').textContent='';
   $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';relocateBoxes();
@@ -3075,7 +3076,7 @@ const BADGES=[
   {ic:'👑',t:'Roi de l\'illimité',d:'25 Illimités vendus',f:a=>[a.packs[3],25]}
 ];
 function _pct(n,d){return d?Math.round(n/d*100):0;}
-function showPerf(){
+function showPerf(){_vReg('perf');
   $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">Mes performances</h2><div class="pr-h2s">Ventes, primes et progression · en direct</div></div></div><div class="pr-empty">⏳ Calcul en cours…</div></div>`;
   $('#topPhase').textContent='Performances';$('#topSub').textContent='';
   $('#nav').innerHTML=pageNav();
@@ -3183,7 +3184,7 @@ let prOpenId=null,prFilter=null,prQuery='';
 function prInitials(nom){return (nom||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();}
 function setPrFilter(k){prFilter=prFilter===k?null:k;showProspects(true);}
 function prSearch(v){prQuery=(v||'').toLowerCase();showProspects(true);}
-function showProspects(keepScroll){
+function showProspects(keepScroll){_vReg('prospects');
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
@@ -3364,7 +3365,7 @@ function _hmToday(){
     <button class="hm-chip" id="hm-sales" onclick="showPerf()"><span class="hc-ic">🏆</span><span>Mes ventes du mois : <b>…</b></span></button>
   </div>`;
 }
-function showHome(){
+function showHome(){_vReg('home');
   closeMenu();
   $('#topPhase').textContent='Accueil';
   $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
@@ -3409,6 +3410,14 @@ function showHome(){
   $('#screen').scrollTop=0;relocateBoxes();
   loadHomePerf();
 }
+/* ── Historique interne : « précédent » = page précédente ── */
+let _navStack=['home'],_navBack=false;
+function _vReg(name){
+  if(_navBack){_navBack=false;return;}
+  if(_navStack[_navStack.length-1]!==name)_navStack.push(name);
+  if(_navStack.length>30)_navStack.shift();
+}
+const VIEW_FN={home:()=>showHome(),call:()=>renderScreen(true),training:()=>showTraining(),sim:()=>showTraining(),ic:()=>showICPage(),perf:()=>showPerf(),prospects:()=>showProspects(),cours:()=>showCourseGuide(),args:()=>showArgBank(),science:()=>showScience(),aca:()=>showAca(),leads:()=>showLeadImport(),team:()=>showTeam()};
 function homeStartCall(){
   if(!st.callStart&&st.idx>0){const g=st.callGoal;_catchOpen={};st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};}
   renderScreen();
@@ -3447,7 +3456,7 @@ function showPresentation(){closeMenu();if(!st.connait)st.connait='oui';const fl
 function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;_catchOpen={};st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
 
 /* ── Académie ── */
-function showAca(){
+function showAca(){_vReg('aca');
   const h=`<div class="aca">
     <div class="aca-h"><h2>Maîtrisez la vente CP</h2><p>Notre état d'esprit, puis 5 micro-leçons. À relire entre 2 appels.</p></div>
     <div class="sci-diff"><div class="sci-diff-h">❤️ Notre état d'esprit</div><div class="sci-diff-d">On veut le bien-être du client <b>et</b> on est là pour vendre · et les deux vont ensemble. Le rythme qui transforme vraiment, c'est <b>2 à 3 séances/semaine</b> : le meilleur pour lui, et le meilleur pour le studio.</div><ul class="biens"><li>Recommandez le bon rythme avec conviction : 2 à 3×/semaine, c'est lui rendre service.</li><li>Convainquez par la valeur et les résultats · sincère, jamais alarmiste.</li><li>Chaque appel vise un engagement : un essai booké ou un abo signé.</li><li><b>Le client est roi</b> : il ne dérange jamais, il ne « fait pas perdre de temps » · c'est grâce à lui que nous avons du travail. Chaque appel commence par de la considération et finit par un merci sincère.</li><li><b>Transparence totale</b> : on ne vend jamais ce qu'on ne peut pas tenir. Ce qu'on annonce au téléphone, le studio le délivre · c'est ce qui fait revenir et recommander.</li><li>Un client qui obtient des résultats reste, revient et nous recommande.</li></ul></div>
@@ -3477,7 +3486,7 @@ function showAca(){
 }
 
 /* ── Guide des cours (didactique) ── */
-function showCourseGuide(){
+function showCourseGuide(){_vReg('cours');
   const card=c=>{const nv=NIVEAUX.find(n=>n.n==='Level '+c.lvl);const col=nv?nv.color:'var(--cp-deep)';
     return `<div class="cg-card">
       <div class="cg-head"><div class="cg-nm">${c.nm}</div><span class="lvl-tag" style="background:${col}">Niv. ${c.lvl}</span><span class="cg-fam">${c.tag}</span></div>
@@ -3501,7 +3510,7 @@ function showCourseGuide(){
 }
 
 /* ── Banque d'arguments (du logique à l'inattendu) ── */
-function showArgBank(){
+function showArgBank(){_vReg('args');
   const srcBadge=k=>{const s=ARG_SRC[k];return `<span class="arg-src" style="color:${s.c};border-color:${s.c}44;background:${s.c}12">${s.ic} ${s.lbl}</span>`;};
   const h=`<div class="cg">
     <div class="aca-h"><h2>Banque d'arguments</h2><p>Du plus logique au plus inattendu · mais toujours crédible et sourcé. Piochez selon le client : cartésien en haut, joueur en bas.</p></div>
@@ -3521,7 +3530,7 @@ function showArgBank(){
 }
 
 /* ── La science ── */
-function showScience(){
+function showScience(){_vReg('science');
   const h=`<div class="cg">
     <div class="aca-h"><h2>Ce que dit la science</h2><p>Pas des témoignages ni des influenceurs · des sources fiables : revues à comité de lecture, portail médical, praticien identifié.</p></div>
     <div class="pres-h">🎯 L'essentiel</div>
@@ -3646,12 +3655,24 @@ _armHistory();
 window.addEventListener('pageshow',function(){setTimeout(_armHistory,50);});
 window.addEventListener('popstate',function(){
   setTimeout(_armHistory,0);
+  // 1. Une surcouche ouverte (menu, objections, réglages, popup, guide) ? on la ferme, point.
+  let closed=false;
   try{
-    closeMenu();closeObj();closeSet();
-    document.getElementById('obScreen')?.remove();
-    document.getElementById('avaScreen')?.remove();
+    if($('#menuSheet').classList.contains('on')){closeMenu();closed=true;}
+    if($('#objSheet').classList.contains('on')){closeObj();closed=true;}
+    if($('#setBg').classList.contains('on')){closeSet();closed=true;}
+    ['glossPop','fichePop','icPop','obScreen','avaScreen'].forEach(id=>{const e=document.getElementById(id);if(e){e.remove();closed=true;}});
   }catch(e){}
-  try{showHome();}catch(e){}
+  if(closed)return;
+  // 2. En plein flux d'appel : un écran en arrière à la fois, jusqu'à « who ».
+  if(_navStack[_navStack.length-1]==='call'&&st.idx>0){try{prev();}catch(e){}return;}
+  // 3. Sinon : page précédente de la pile (accueil en fond de pile).
+  _navStack.pop();
+  if(!_navStack.length)_navStack=['home'];
+  const v=_navStack[_navStack.length-1];
+  _navBack=true;
+  try{(VIEW_FN[v]||VIEW_FN.home)();}catch(e){try{showHome();}catch(_){}}
+  _navBack=false;
 });
 // Accès : code studio obligatoire (données équipe centralisées)
 // Un lien d'invitation peut porter le code (?code=LEA-1234) : un clic = profil activé.
