@@ -30,6 +30,8 @@ const CORS = {
 const ROW_PROSPECTS = "_coach_prospects";
 const ROW_ACCESS = "_coach_access";
 const ROW_STATS = "_coach_stats";
+const ROW_IC = "_ic_data";
+const MAX_IC = 8000;
 const MAX_EVENTS = 20000;
 const EV_TYPES = ["appel", "essai", "venu", "abo", "perdu"];
 const DEFAULT_PRIMES: Record<string, number> = { "1": 10, "2": 25, "3": 50 };
@@ -118,6 +120,74 @@ serve(async (req) => {
     }
 
     // ── Journal de performance (immuable : les stats survivent aux fiches) ──
+    // ── Intro Class : _ic_data = { slots, sessions, baremes } ──
+    if (action === "ic_pull" || action === "ic_push" || action === "ic_del" || action === "ic_bareme_set") {
+      const { data: icRow } = await admin.from("studios").select("data").eq("id", ROW_IC).maybeSingle();
+      const ic = icRow?.data || {};
+      let slots: any[] = ic.slots || [];
+      let sessions: any[] = ic.sessions || [];
+      let baremes: any[] = ic.baremes || [];
+      const saveIC = () =>
+        admin.from("studios").upsert({ id: ROW_IC, data: { slots, sessions, baremes }, updated_at: new Date().toISOString() });
+
+      if (action === "ic_pull") return json({ ok: true, slots, sessions, baremes });
+
+      if (action === "ic_bareme_set") {
+        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        const b = body.bareme || {};
+        const clean = {
+          id: "bar_" + Date.now(),
+          effet: String(b.effet || new Date().toISOString().slice(0, 10)).slice(0, 10),
+          coach: Math.max(0, Math.min(1000, Number(b.coach) || 0)),
+          p1: Math.max(0, Math.min(1000, Number(b.p1) || 0)),
+          p2: Math.max(0, Math.min(1000, Number(b.p2) || 0)),
+          p3: Math.max(0, Math.min(1000, Number(b.p3) || 0)),
+        };
+        baremes.push(clean);
+        baremes.sort((a, b2) => (a.effet < b2.effet ? -1 : 1));
+        await saveIC();
+        return json({ ok: true, baremes });
+      }
+
+      if (action === "ic_push") {
+        const inSlots: any[] = Array.isArray(body.slots) ? body.slots : [];
+        const inSess: any[] = Array.isArray(body.sessions) ? body.sessions : [];
+        for (const s of inSlots) {
+          if (!s || !s.id) continue;
+          const clean = { id: String(s.id).slice(0, 60), studio: String(s.studio || "").slice(0, 60),
+            jour: Math.max(0, Math.min(6, Number(s.jour) || 0)), heure: String(s.heure || "").slice(0, 5),
+            coach: String(s.coach || "").slice(0, 60), actif: s.actif !== false,
+            maj: String(s.maj || new Date().toISOString()) };
+          const i = slots.findIndex((x) => x.id === clean.id);
+          if (i < 0) slots.push(clean); else if ((clean.maj || "") >= (slots[i].maj || "")) slots[i] = clean;
+        }
+        for (const s of inSess) {
+          if (!s || !s.id) continue;
+          const clean = { id: String(s.id).slice(0, 60), studio: String(s.studio || "").slice(0, 60),
+            date: String(s.date || "").slice(0, 10), heure: String(s.heure || "").slice(0, 5),
+            coach: String(s.coach || "").slice(0, 60),
+            statut: ["prevue", "faite", "annulee"].includes(String(s.statut)) ? String(s.statut) : "prevue",
+            booked: Math.max(0, Math.min(99, Number(s.booked) || 0)),
+            show: Math.max(0, Math.min(99, Number(s.show) || 0)),
+            maj: String(s.maj || new Date().toISOString()) };
+          const i = sessions.findIndex((x) => x.id === clean.id);
+          if (i < 0) sessions.push(clean); else if ((clean.maj || "") >= (sessions[i].maj || "")) sessions[i] = clean;
+        }
+        if (sessions.length > MAX_IC) sessions = sessions.slice(-MAX_IC);
+        await saveIC();
+        return json({ ok: true, slots, sessions, baremes });
+      }
+
+      if (action === "ic_del") {
+        if (role !== "admin" && !mgr) return json({ error: "Réservé aux recruteurs" }, 403);
+        const ids: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
+        slots = slots.filter((s) => !ids.includes(s.id));
+        sessions = sessions.filter((s) => !ids.includes(s.id));
+        await saveIC();
+        return json({ ok: true, slots, sessions, baremes });
+      }
+    }
+
     if (action === "stats_del") {
       if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
       const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
@@ -141,6 +211,9 @@ serve(async (req) => {
             k: String(e.k).slice(0, 80), type: String(e.type),
             rep: String(e.rep || rep).slice(0, 60), nom: String(e.nom || "").slice(0, 80),
             pack: String(e.pack || "").slice(0, 2),
+            v2: String(e.v2 || "").slice(0, 60),
+            fullCom: e.fullCom === true,
+            icId: String(e.icId || "").slice(0, 60),
             prime: Math.max(0, Math.min(1000, Number(e.prime) || 0)),
             dur: Math.max(0, Math.min(14400, Math.round(Number(e.dur) || 0))),
             ts: String(e.ts || new Date().toISOString()),
@@ -177,6 +250,17 @@ serve(async (req) => {
         const inv = invites.find((i) => i.id === String(body.id));
         if (!inv) return json({ error: "Invitation introuvable" }, 404);
         inv.manager = body.manager === true;
+        await saveInvites();
+        return json({ ok: true, invites });
+      }
+
+      // Drapeaux métier (admin) : coach (donne des IC) · nocom (non commissionné, ex. associé)
+      if (action === "team_flag") {
+        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        const inv = invites.find((i) => i.id === String(body.id));
+        if (!inv) return json({ error: "Invitation introuvable" }, 404);
+        if (typeof body.coach === "boolean") inv.coach = body.coach;
+        if (typeof body.nocom === "boolean") inv.nocom = body.nocom;
         await saveInvites();
         return json({ ok: true, invites });
       }
@@ -253,6 +337,9 @@ serve(async (req) => {
           rappel: String(p.rappel || ""), obj: String(p.obj || ""),
           fiche: String(p.fiche || "").slice(0, 4000),
           pack: String(p.pack || ""),
+          v2: String(p.v2 || "").slice(0, 60),
+          fullCom: p.fullCom === true,
+          icId: String(p.icId || "").slice(0, 60),
           rep: String(p.rep || rep), studio: String(p.studio || ""),
           ts: String(p.ts || new Date().toISOString()),
           maj: String(p.maj || p.ts || new Date().toISOString()),
