@@ -342,6 +342,14 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ht-count{position:absolute;top:6px;right:8px;background:var(--gold);color:#fff;font-size:10px;font-weight:800;border-radius:99px;padding:1px 7px}
 .home-creed{margin-top:14px;background:linear-gradient(135deg,#fdf8ee,#faf3e2);border:1px solid #EDDCB4;border-left:4px solid var(--gold);border-radius:13px;padding:12px 15px;font-size:12.5px;line-height:1.55;color:#6b5325}
 .home-creed b{color:#523d12}
+/* ── Import de leads ── */
+.li-area{width:100%;min-height:180px;border:1.5px solid #E3E9F2;border-radius:14px;padding:13px 15px;font:13px/1.6 ui-monospace,Menlo,monospace;color:var(--cp-dark);background:#fff;outline:none;resize:vertical;box-shadow:var(--sh-s)}
+.li-area:focus{border-color:var(--cp-deep)}
+.li-prev{display:flex;gap:8px;flex-wrap:wrap;margin-top:9px;min-height:22px}
+.li-ok,.li-dup,.li-bad{font-size:12px;font-weight:800;border-radius:99px;padding:4px 11px}
+.li-ok{background:#e7f6ef;color:#1F9E75}
+.li-dup{background:#f2f3f6;color:#8C95A8}
+.li-bad{background:#fdecea;color:#a93226}
 /* ── Intro Class ── */
 .ic-studio{border:1.5px solid #E3E9F2;border-radius:10px;padding:8px 10px;font:inherit;font-size:12.5px;font-weight:700;color:var(--cp-deep);background:#fff;max-width:200px}
 .ic-week{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EBEFF6;border-radius:13px;padding:9px 12px;margin-bottom:12px;box-shadow:var(--sh-s)}
@@ -2411,6 +2419,7 @@ function renderTeam(invites){
   window._TEAM=invites;
   $('#screen').innerHTML=`<div class="cg">
     <div class="pr-head"><div><h2 class="pr-h2">Équipe & invitations</h2><div class="pr-h2s">${invites.length} invitation${invites.length>1?'s':''} · chacun son code, vous gardez la main</div></div></div>
+    <button class="pr-act" style="width:100%;margin-bottom:12px" onclick="showLeadImport()">📥 Importer des leads (Fitness Boost, bsport, CSV…)</button>
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
         <div><span class="hn">1</span><span><b>Invitez un conseiller</b> : entrez son prénom, un code personnel est créé (ex. LEA-4821).</span></div>
@@ -2851,6 +2860,63 @@ function icQuickSale(sessId){
   emitEvent(p,'appel');emitEvent(p,'abo',{pack:pack,prime:+PRIMES[+pack]||0,v2:v2,icId:sessId});
   toast('🎉 '+packShort(+pack)+' signé · bravo !');
   renderICPage();
+}
+
+/* ── Import de leads en lot : colle un export (CSV/TSV/lignes) → fiches « à rappeler ».
+   Marche avec Fitness Boost, bsport ou n'importe quel tableur, en attendant les API. ── */
+function _normTel(t){return (t||'').replace(/[^0-9+]/g,'').replace(/^\+33/,'0');}
+function showLeadImport(){
+  $('#topPhase').textContent='Import de leads';$('#topSub').textContent='';
+  $('#nav').innerHTML=`<button class="go" onclick="renderScreen()">📞 Revenir à l'appel</button>`;
+  $('#bar').style.width='100%';relocateBoxes();
+  $('#screen').innerHTML=`<div class="cg">
+    <div class="pr-head"><div><h2 class="pr-h2">📥 Importer des leads</h2><div class="pr-h2s">${esc(CFG.studio||'')} · collez un export Fitness Boost, bsport ou tableur</div></div></div>
+    <div class="pr-howto" style="margin-bottom:12px"><div class="pr-howto-b" style="margin-top:0">
+      <div><span class="hn">1</span><span>Exportez vos leads (CSV) depuis Fitness Boost ou bsport, ouvrez le fichier, copiez les lignes.</span></div>
+      <div><span class="hn">2</span><span>Collez ci-dessous : une ligne par lead, <b>nom puis téléphone</b> (séparés par ; , tabulation…). Les colonnes en plus sont gardées en note.</span></div>
+      <div><span class="hn">3</span><span>Les doublons (même numéro) sont ignorés · chaque lead devient une fiche <b>📞 À rappeler</b>, prête pour la tournée.</span></div>
+    </div></div>
+    <textarea id="leadPaste" class="li-area" placeholder="Sophie Martin;0612345678;lead Meta du 20/10&#10;Karim Benali&#9;0698765432&#10;…" oninput="leadPreview()"></textarea>
+    <div id="leadPrev" class="li-prev"></div>
+    <button class="go ok" style="width:100%;margin-top:10px" onclick="leadImport()">📥 Créer les fiches</button>
+  </div>`;
+}
+function _parseLeads(){
+  const raw=($('#leadPaste')?.value||'').trim();if(!raw)return {ok:[],dup:[],bad:[]};
+  const seen=new Set(PROSPECTS.map(p=>_normTel(p.tel)).filter(Boolean));
+  const ok=[],dup=[],bad=[];
+  raw.split('\n').forEach(line=>{
+    line=line.trim();if(!line)return;
+    const cells=line.split(/[;\t,]/).map(c=>c.trim()).filter(Boolean);
+    let tel='',nomCells=[],extra=[];
+    cells.forEach(c=>{const n=_normTel(c);if(!tel&&/^0[1-9]\d{8}$/.test(n))tel=n;else if(!tel)nomCells.push(c);else extra.push(c);});
+    const nom=nomCells.join(' ').replace(/["']/g,'').trim();
+    if(!nom||!tel){bad.push(line);return;}
+    if(seen.has(tel)){dup.push(nom);return;}
+    seen.add(tel);
+    ok.push({nom:nom,tel:tel,note:extra.join(' · ')});
+  });
+  return {ok:ok,dup:dup,bad:bad};
+}
+function leadPreview(){
+  const r=_parseLeads();
+  $('#leadPrev').innerHTML=(r.ok.length||r.dup.length||r.bad.length)?
+    `<span class="li-ok">✓ ${r.ok.length} à importer</span>${r.dup.length?`<span class="li-dup">↺ ${r.dup.length} doublon${r.dup.length>1?'s':''} ignoré${r.dup.length>1?'s':''}</span>`:''}${r.bad.length?`<span class="li-bad">✗ ${r.bad.length} ligne${r.bad.length>1?'s':''} illisible${r.bad.length>1?'s':''} (nom + tél. requis)</span>`:''}`:'';
+}
+function leadImport(){
+  const r=_parseLeads();
+  if(!r.ok.length){toast('Rien à importer · vérifiez le format (nom + téléphone)');return;}
+  const now=Date.now();
+  r.ok.forEach((l,i)=>{
+    const p={id:'p_'+(now+i),nom:l.nom,tel:l.tel,note:(l.note?l.note+' · ':'')+'importé le '+new Date().toLocaleDateString('fr-FR'),
+      statut:'rappeler',pack:'',rappel:_dstr(new Date()),obj:'',fiche:'',rep:CFG.rep||'',v2:'',fullCom:false,icId:'',
+      studio:CFG.studio||'',ts:new Date(now+i).toISOString(),maj:new Date(now+i).toISOString()};
+    PROSPECTS.unshift(p);
+    emitEvent(p,'appel',{dur:0});
+  });
+  persistProspects();schedulePush();
+  toast('📥 '+r.ok.length+' lead'+(r.ok.length>1?'s':'')+' importé'+(r.ok.length>1?'s':'')+' · à rappeler aujourd\'hui ✓');
+  showProspects();
 }
 
 /* ── Accueil : la course du mois, en direct ── */
