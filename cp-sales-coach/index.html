@@ -2746,7 +2746,7 @@ function showTraining(){_vReg('training');
   const render=()=>{
     const done=trainDone(),pct=Math.round(done/SIM_CURRICULUM.length*100);
     $('#screen').innerHTML=`<div class="cg">
-      <div class="pr-head"><div><h2 class="pr-h2">🎬 Parcours de formation</h2><div class="pr-h2s">8 cas pratiques à valider (score ≥ ${SIM_SEUIL} %) · votre progression est suivie par le studio</div></div></div>
+      <div class="pr-head"><div><h2 class="pr-h2">🎬 Parcours de formation</h2><div class="pr-h2s">8 cas pratiques à valider (score ≥ ${SIM_SEUIL} %)</div></div></div>
       <div class="tr-hero"><div class="tr-hero-top"><b>${done}/${SIM_CURRICULUM.length}</b><span>scénarios validés</span><span class="tr-pct">${pct} %</span></div>
         <div class="pf-track"><div class="pf-fill" style="width:${pct}%"></div></div>
         ${done===SIM_CURRICULUM.length?'<div class="tr-grad">🎓 Formation complète · félicitations !</div>':''}</div>
