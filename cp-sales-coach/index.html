@@ -3367,7 +3367,18 @@ function prDaysSince(p){
 const APP_POS=[['très intéress',3],['tres interess',3],['intéress',2],['interess',2],['rendez-vous',2],['rdv',2],['réserv',2],['reserv',2],['s\'inscrire',2],['inscription',2],['venir essayer',2],['essai',1],['rappelez',1],['me rappeler',1],['recontact',1],['horaire',1],['disponibilit',1],['tarif',1],['prix',1],['motivé',2],['motive',2],['partant',2]];
 const APP_NEG=[['pas intéress',-3],['pas interess',-3],['plus intéress',-3],['plus interess',-3],['ne pas rappeler',-3],['ne plus appeler',-3],['stop',-2],['refus',-2],['trop cher',-2],['pas le temps',-1],['déjà inscrit',-2],['deja inscrit',-2],['autre salle',-2],['ne répond pas',-1],['ne repond pas',-1],['sans réponse',-1],['sans reponse',-1],['messagerie',-1],['répondeur',-1],['repondeur',-1],['ne souhaite pas',-2]];
 function prAppetence(p){
-  const t=((p.appels||[]).map(a=>a.txt||'').join(' ')+' '+(p.note||'')).toLowerCase();
+  const entries=(p.appels||[]);
+  // Messagerie ou appel < ~10 s : aucun échange réel → n'alimente pas l'appétence
+  const isSubst=a=>{
+    const first=(a.txt||'').split('\n')[0].toLowerCase();
+    if(!first.startsWith('📞'))return true; // résumé collé à la main
+    if(first.includes('voicemail')||first.includes('messagerie')||first.includes('répondeur'))return false;
+    if(/· 0 ?m(in)?\b/.test(first))return false;
+    return true;
+  };
+  const subst=entries.filter(isSubst);
+  if(entries.length&&!subst.length)return {tier:'aqualifier',score:0,why:['uniquement messagerie / appel très court']};
+  const t=(subst.map(a=>a.txt||'').join(' ')+' '+(p.note||'')).toLowerCase();
   if(!t.trim())return null;
   let score=0;const why=[];
   APP_POS.forEach(([k,w])=>{if(t.includes(k)){score+=w;if(why.length<3)why.push('+ «'+k+'»');}});
@@ -3378,7 +3389,8 @@ function prAppetence(p){
 }
 function prAppChip(p){
   const a=prAppetence(p);if(!a)return '';
-  const m={chaud:['🔥','Chaud','#FDEBE3;color:#B4430F;border-color:#F5C9B2'],tiede:['🌤','Tiède','#FFF6DE;color:#8A6A14;border-color:#EFDCA6'],froid:['❄️','Froid','#E8F0FA;color:#39609C;border-color:#C9DAF2']}[a.tier];
+  const m={chaud:['🔥','Chaud','#FDEBE3;color:#B4430F;border-color:#F5C9B2'],tiede:['🌤','Tiède','#FFF6DE;color:#8A6A14;border-color:#EFDCA6'],froid:['❄️','Froid','#E8F0FA;color:#39609C;border-color:#C9DAF2'],aqualifier:['🎯','À qualifier','#F2F0E9;color:#6B6456;border-color:#DCD5C4']}[a.tier];
+  if(!m)return '';
   return `<span class="pr-appet" title="Appétence estimée depuis les appels · ${a.why.join(' · ')}" style="background:${m[2]};border:1px solid;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">${m[0]} ${m[1]}</span>`;
 }
 function prAgeChip(p){
