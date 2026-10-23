@@ -139,7 +139,8 @@ serve(async (req: Request) => {
             created++;
           }
           p.appels = Array.isArray(p.appels) ? p.appels : [];
-          const existing = li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null;
+          const existing = (li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null)
+            || p.appels.find((a: any) => String(a?.ts || "") === String(li.date || "").slice(0, 30));
           if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
           if (existing) {
             if (transcript && String(existing.txt || "").indexOf("— Transcription —") < 0) {
@@ -173,6 +174,26 @@ serve(async (req: Request) => {
       }
     }
 
+    // Nettoyage : doublons d'entrées (même horodatage) → on garde la plus riche
+    let dedupliques = 0;
+    for (const p of list) {
+      if (!Array.isArray(p?.appels) || p.appels.length < 2) continue;
+      const byTs = new Map<string, any>();
+      for (const a of p.appels) {
+        const k = String(a?.ts || "") + "|" + String(a?.txt || "").split("\n")[0].slice(0, 50);
+        const prev = byTs.get(k);
+        if (!prev) { byTs.set(k, a); continue; }
+        dedupliques++;
+        const richer = String(a?.txt || "").length > String(prev?.txt || "").length ? a : prev;
+        if (!richer.id && (a?.id || prev?.id)) richer.id = a?.id || prev?.id;
+        byTs.set(k, richer);
+      }
+      if (byTs.size !== p.appels.length) {
+        p.appels = [...byTs.values()].sort((x: any, y: any) => String(x?.ts || "").localeCompare(String(y?.ts || "")));
+        p.maj = new Date().toISOString();
+      }
+    }
+
     // Réparation : les conseillers fantômes fabriqués depuis un email Allo
     // (ex. « Jeancharlesclubpilates ») sont remappés vers le vrai prénom, ou vidés.
     let repares = 0;
@@ -184,7 +205,7 @@ serve(async (req: Request) => {
       else if (/clubpilates|allo/i.test(r)) { p.rep = ""; p.maj = new Date().toISOString(); repares++; }
     }
     await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
-    return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares });
+    return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares, appelsDedupliques: dedupliques });
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 500);
   }

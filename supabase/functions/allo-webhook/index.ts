@@ -165,8 +165,10 @@ serve(async (req: Request) => {
 
       if (!summary && !transcript) return json({ ok: true, matched: true, ignored: "sans contenu" });
       match.appels = Array.isArray(match.appels) ? match.appels : [];
-      if (callId && match.appels.some((a: any) => idEq(a?.id, callId))) return json({ ok: true, dedup: true });
-      match.appels.push({ id: callId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), txt: entryTxt(meta0, summary + extraInfo, transcript) });
+      const entryTs = String(d.start_date || evt.timestamp || now()).slice(0, 30);
+      if ((callId && match.appels.some((a: any) => idEq(a?.id, callId)))
+        || match.appels.some((a: any) => String(a?.ts || "") === entryTs)) return json({ ok: true, dedup: true });
+      match.appels.push({ id: callId, ts: entryTs, txt: entryTxt(meta0, summary + extraInfo, transcript) });
       if (match.appels.length > 20) match.appels = match.appels.slice(-20);
       if (/^Contact 0/.test(String(match.nom || "")) && isRealName(extractedName)) match.nom = extractedName.slice(0, 80);
       match.maj = now();
