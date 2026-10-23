@@ -40,7 +40,7 @@ const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*p
 // Base en dur + extension par secret ALLO_REPS ("cle=Nom,cle2=Nom2",
 // clé = début de l'email en minuscules/lettres seules). Inconnu → vide
 // (mieux vaut pas de conseiller qu'un nom fantôme dans le classement).
-const REP_DEFAULTS: Record<string, string> = { jeancharles: "JC" };
+const REP_DEFAULTS: Record<string, string> = { jeancharles: "JC", clement: "Clément", caroline: "Caroline" };
 function resolveRep(email: unknown): string {
   const local = String(email || "").split("@")[0].toLowerCase().replace(/[^a-z]/g, "");
   if (!local) return "";
@@ -108,8 +108,10 @@ serve(async (req: Request) => {
       if (key.length < 9) return json({ ok: true, ignored: "numéro invalide" });
       const callId = String(d.id || "").slice(0, 40);
       const result = String(d.result || "");
+      const author = resolveRep(d.user_email);
       const meta0 = "📞 Allo · " + (d.type === "OUTBOUND" ? "appel sortant" : "appel entrant")
-        + (d.length ? " · " + d.length : "") + (result ? " · " + result.toLowerCase() : "");
+        + (d.length ? " · " + d.length : "") + (result ? " · " + result.toLowerCase() : "")
+        + (author ? " · par " + author : "");
 
       // Enrichissement : infos que l'IA a captées pendant l'appel (clé API requise)
       let extraInfo = "";

@@ -33,7 +33,7 @@ const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*p
 // Base en dur + extension par secret ALLO_REPS ("cle=Nom,cle2=Nom2",
 // clé = début de l'email en minuscules/lettres seules). Inconnu → vide
 // (mieux vaut pas de conseiller qu'un nom fantôme dans le classement).
-const REP_DEFAULTS: Record<string, string> = { jeancharles: "JC" };
+const REP_DEFAULTS: Record<string, string> = { jeancharles: "JC", clement: "Clément", caroline: "Caroline" };
 function resolveRep(email: unknown): string {
   const local = String(email || "").split("@")[0].toLowerCase().replace(/[^a-z]/g, "");
   if (!local) return "";
@@ -101,7 +101,7 @@ serve(async (req: Request) => {
           if (typeof t === "string") transcript = t.trim();
           else if (Array.isArray(t)) transcript = t.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
           // Détail de l'appel : transcription + nom/email que l'IA a captés
-          let exName = "", exEmail = "";
+          let exName = "", exEmail = "", author = "";
           if (li.id) {
             try {
               const rIt = await fetch(API + "/v2/api/conversations/items/" + encodeURIComponent(li.id) + "?extend=transcript", { headers: H });
@@ -115,6 +115,7 @@ serve(async (req: Request) => {
                   else if (typeof tr === "string") transcript = tr.trim();
                   else if (Array.isArray(tr)) transcript = tr.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
                 }
+                author = resolveRep(it?.user_email);
                 const c = it?.extracted_data?.contact;
                 if (c) {
                   exName = String(c.name || "").trim();
@@ -143,6 +144,13 @@ serve(async (req: Request) => {
             || p.appels.find((a: any) => String(a?.ts || "") === String(li.date || "").slice(0, 30));
           if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
           if (existing) {
+            // Auteur manquant sur une entrée déjà importée → on complète la ligne méta
+            if (author && String(existing.txt || "").split("\n")[0].indexOf("· par ") < 0) {
+              const lines = String(existing.txt || "").split("\n");
+              lines[0] = lines[0] + " · par " + author;
+              existing.txt = lines.join("\n").slice(0, TXT_MAX);
+              p.maj = now();
+            }
             if (transcript && String(existing.txt || "").indexOf("— Transcription —") < 0) {
               const room = TXT_MAX - String(existing.txt).length - 40;
               if (room > 200) {
@@ -157,7 +165,8 @@ serve(async (req: Request) => {
           }
           const meta = "📞 Allo · " + (li.direction === "OUTBOUND" ? "appel sortant" : "appel entrant")
             + (li.duration ? " · " + Math.round(li.duration / 60) + " min" : "")
-            + (li.result ? " · " + String(li.result).toLowerCase() : "") + " · import historique";
+            + (li.result ? " · " + String(li.result).toLowerCase() : "")
+            + (author ? " · par " + author : "") + " · import historique";
           let txt = meta + (summary ? "\n" + summary : "");
           if (transcript) {
             const room = TXT_MAX - txt.length - 40;
