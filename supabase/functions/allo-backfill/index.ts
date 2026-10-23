@@ -82,6 +82,24 @@ const tsMin = (s: unknown): string => {
   return isNaN(t) ? x.slice(0, 16) : String(Math.floor(t / 60000));
 };
 
+// Propriétaire de la ligne Allo : identification déterministe fournie par Paul.
+// Ligne 01 88 83 34 18 → JC · ligne 07 45 80 42 39 → Caroline.
+// Extensible par secret ALLO_LINES ("33612345678=Nom,…", chiffres seuls).
+const LINE_DEFAULTS: Record<string, string> = { "33188833418": "JC", "33745804239": "Caroline" };
+function lineOwner(num: unknown): string {
+  const k = String(num || "").replace(/\D/g, "");
+  if (k.length < 9) return "";
+  const map: Record<string, string> = { ...LINE_DEFAULTS };
+  for (const pair of (Deno.env.get("ALLO_LINES") || "").split(",")) {
+    const i = pair.indexOf("=");
+    if (i > 0) map[pair.slice(0, i).replace(/\D/g, "")] = pair.slice(i + 1).trim();
+  }
+  for (const key of Object.keys(map)) {
+    if (key && (k.endsWith(key.slice(-9)) || key.endsWith(k.slice(-9)))) return map[key];
+  }
+  return "";
+}
+
 function lineOwners(): Set<string> {
   const s = new Set<string>(Object.values(LINE_DEFAULTS));
   for (const pair of (Deno.env.get("ALLO_LINES") || "").split(",")) {
