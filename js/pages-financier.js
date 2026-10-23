@@ -768,7 +768,7 @@ function renderForecast(sid,s){
   var moisLabels=[];
   for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
 
-  var h='<div>';
+  var h='<div>'+renderBPlayPanel(sid);
   // ── Réglage loyer mensuel (règle i) ─────────────────────────────────────────
   if(!isViewer()){
     var lmDefault=isLattesStudio(sid)?Math.round(38850/12):4800;
