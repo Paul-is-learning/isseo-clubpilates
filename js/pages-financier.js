@@ -655,51 +655,118 @@ function renderAdherents(sid,s){
   return h;
 }
 
+function _adhSmooth(pts){
+  if(pts.length<3){return 'M'+pts.map(function(p){return p.x+' '+p.y;}).join(' L');}
+  var d='M'+pts[0].x+' '+pts[0].y;
+  for(var i=0;i<pts.length-1;i++){
+    var p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+    var c1x=p1.x+(p2.x-p0.x)/6,c1y=p1.y+(p2.y-p0.y)/6;
+    var c2x=p2.x-(p3.x-p1.x)/6,c2y=p2.y-(p3.y-p1.y)/6;
+    d+=' C'+c1x.toFixed(1)+' '+c1y.toFixed(1)+' '+c2x.toFixed(1)+' '+c2y.toFixed(1)+' '+p2.x+' '+p2.y;
+  }
+  return d;
+}
+function _adhTT(evt,i){
+  var d=window._adhChartData;if(!d)return;
+  var tip=document.getElementById('adh-tip'),gl=document.getElementById('adh-guide');
+  if(!tip||!gl)return;
+  gl.setAttribute('x1',d.xs[i]);gl.setAttribute('x2',d.xs[i]);gl.style.opacity=1;
+  var r=d.real[i];
+  tip.innerHTML='<b>'+d.labels[i]+' '+d.annee+'</b><br/>BP : <b>'+d.bp[i]+'</b> adhérents'
+    +(r!=null?'<br/>Réalisé : <b>'+r+'</b> <span style="color:'+(r>=d.bp[i]?'#1D9E75':'#C0492F')+'">('+(r>=d.bp[i]?'+':'')+(r-d.bp[i])+')</span>':'');
+  var wrap=document.getElementById('adh-chart-wrap');
+  var wr=wrap.getBoundingClientRect();
+  var x=evt.clientX-wr.left,y=evt.clientY-wr.top;
+  tip.style.left=Math.min(x+14,wr.width-150)+'px';tip.style.top=Math.max(0,y-54)+'px';tip.style.opacity=1;
+}
+function _adhTTout(){
+  var tip=document.getElementById('adh-tip'),gl=document.getElementById('adh-guide');
+  if(tip)tip.style.opacity=0;if(gl)gl.style.opacity=0;
+}
 function buildAdherentSVG(labels,bp,real,annee){
-  var W=680,H=240,PL=44,PR=20,PT=20,PB=30;
+  var W=680,H=250,PL=42,PR=20,PT=24,PB=30;
   var cW=W-PL-PR,cH=H-PT-PB;
   var allVals=bp.concat(real.filter(function(v){return v!==null;}));
-  var maxV=Math.max.apply(null,allVals)*1.12;
-  function xPos(i){return PL+i*(cW/(labels.length-1));}
-  function yPos(v){return PT+cH-(v/maxV)*cH;}
-  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block">';
-  for(var g=0;g<=5;g++){
-    var gv=Math.round(maxV*g/5);
+  var rawMax=Math.max.apply(null,allVals.concat([220]));
+  var step=rawMax>400?100:50;
+  var maxV=Math.ceil(rawMax*1.1/step)*step;
+  function xPos(i){return Math.round(PL+i*(cW/(labels.length-1)));}
+  function yPos(v){return Math.round(PT+cH-(v/maxV)*cH);}
+  var xs=labels.map(function(_,i){return xPos(i);});
+  window._adhChartData={labels:labels,bp:bp,real:real,xs:xs,annee:annee};
+  var BLU='#3B6FC4',GRN='#1D9E75';
+  var h='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;display:block;overflow:visible">';
+  h+='<defs><linearGradient id="adhGrad" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+GRN+'" stop-opacity="0.18"/><stop offset="100%" stop-color="'+GRN+'" stop-opacity="0"/></linearGradient>'
+    +'<linearGradient id="adhGradBP" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="'+BLU+'" stop-opacity="0.07"/><stop offset="100%" stop-color="'+BLU+'" stop-opacity="0"/></linearGradient></defs>';
+  h+='<style>#adh-chart-wrap .adh-draw{stroke-dasharray:1600;stroke-dashoffset:1600;animation:adhdraw 1.1s cubic-bezier(.3,.6,.3,1) forwards}'
+    +'@keyframes adhdraw{to{stroke-dashoffset:0}}'
+    +'#adh-chart-wrap .adh-fade{opacity:0;animation:adhfade .9s .15s ease forwards}'
+    +'@keyframes adhfade{to{opacity:1}}'
+    +'#adh-chart-wrap .adh-pulse{animation:adhpulse 2.2s ease-out infinite}'
+    +'@keyframes adhpulse{0%{r:6;opacity:.45}70%{r:14;opacity:0}100%{r:14;opacity:0}}'
+    +'@media(prefers-reduced-motion:reduce){#adh-chart-wrap .adh-draw{animation:none;stroke-dashoffset:0}#adh-chart-wrap .adh-fade{animation:none;opacity:1}#adh-chart-wrap .adh-pulse{animation:none;opacity:0}}</style>';
+  // Grille discrète à pas ronds
+  for(var gv=0;gv<=maxV;gv+=step){
     var gy=yPos(gv);
-    h+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="#e8e8e0" stroke-width="1"/>';
-    h+='<text x="'+(PL-5)+'" y="'+(gy+4)+'" text-anchor="end" font-size="9" fill="#aaa">'+gv+'</text>';
+    h+='<line x1="'+PL+'" y1="'+gy+'" x2="'+(W-PR)+'" y2="'+gy+'" stroke="#EFEDE6" stroke-width="1"/>';
+    h+='<text x="'+(PL-7)+'" y="'+(gy+3.5)+'" text-anchor="end" font-size="9.5" fill="#B4AEA0">'+gv+'</text>';
   }
+  // Bande seuil 150-200 : très légère, bornes en pointillé, pastille
   var yR150=yPos(150),yR200=yPos(200);
-  h+='<rect x="'+PL+'" y="'+yR200+'" width="'+cW+'" height="'+(yR150-yR200)+'" fill="#E1F5EE" opacity="0.5"/>';
-  h+='<text x="'+(PL+4)+'" y="'+(yR200-3)+'" font-size="8" fill="#0F6E56">Seuil 150-200</text>';
-  labels.forEach(function(l,i){h+='<text x="'+xPos(i)+'" y="'+(H-5)+'" text-anchor="middle" font-size="9" fill="#888">'+l+'</text>';});
-  var bpPath='M';
-  bp.forEach(function(v,i){bpPath+=(i>0?' L':'')+xPos(i)+' '+yPos(v);});
-  h+='<path d="'+bpPath+'" fill="none" stroke="#5b7fa6" stroke-width="2" stroke-dasharray="6,3"/>';
-  var realPoints=[];
-  real.forEach(function(v,i){if(v!==null)realPoints.push({x:xPos(i),y:yPos(v),v:v});});
-  if(realPoints.length>1){
-    var rPath='M';
-    realPoints.forEach(function(p,i){rPath+=(i>0?' L':'')+p.x+' '+p.y;});
-    h+='<path d="'+rPath+'" fill="none" stroke="#1D9E75" stroke-width="2.5"/>';
+  h+='<rect x="'+PL+'" y="'+yR200+'" width="'+cW+'" height="'+(yR150-yR200)+'" fill="#0F6E56" opacity="0.045"/>';
+  h+='<line x1="'+PL+'" y1="'+yR200+'" x2="'+(W-PR)+'" y2="'+yR200+'" stroke="#0F6E56" stroke-width="1" stroke-dasharray="2,4" opacity="0.35"/>';
+  h+='<line x1="'+PL+'" y1="'+yR150+'" x2="'+(W-PR)+'" y2="'+yR150+'" stroke="#0F6E56" stroke-width="1" stroke-dasharray="2,4" opacity="0.35"/>';
+  h+='<rect x="'+(W-PR-94)+'" y="'+(yR200+4)+'" rx="7" width="84" height="14" fill="#fff" stroke="#CDE5DB"/>'
+    +'<text x="'+(W-PR-52)+'" y="'+(yR200+14)+'" text-anchor="middle" font-size="8.5" fill="#0F6E56" font-weight="600">Seuil 150 · 200</text>';
+  // Mois
+  labels.forEach(function(l,i){h+='<text x="'+xs[i]+'" y="'+(H-6)+'" text-anchor="middle" font-size="9.5" fill="#A8A294">'+l+'</text>';});
+  // Guide de survol
+  h+='<line id="adh-guide" x1="0" x2="0" y1="'+PT+'" y2="'+(PT+cH)+'" stroke="#0f1f3d" stroke-width="1" opacity="0" style="transition:opacity .15s" pointer-events="none"/>';
+  // BP : courbe lissée, tiret, aire fantôme
+  var bpPts=bp.map(function(v,i){return {x:xs[i],y:yPos(v)};});
+  var bpPath=_adhSmooth(bpPts);
+  h+='<path d="'+bpPath+' L'+bpPts[bpPts.length-1].x+' '+(PT+cH)+' L'+bpPts[0].x+' '+(PT+cH)+' Z" fill="url(#adhGradBP)"/>';
+  h+='<path class="adh-fade" d="'+bpPath+'" fill="none" stroke="'+BLU+'" stroke-width="2" stroke-dasharray="6,4" stroke-linecap="round"/>';
+  var bpLast=bpPts[bpPts.length-1];
+  h+='<circle cx="'+bpLast.x+'" cy="'+bpLast.y+'" r="3.5" fill="'+BLU+'"/>';
+  h+='<text x="'+(bpLast.x-2)+'" y="'+(bpLast.y-9)+'" text-anchor="end" font-size="10.5" font-weight="700" fill="#33415C">'+bp[bp.length-1]+'</text>'
+    +'<text x="'+(bpLast.x-2)+'" y="'+(bpLast.y+2)+'" text-anchor="end" font-size="8" fill="#B4AEA0" transform="translate(0,10)">fin '+annee+'</text>';
+  // Réalisé : aire + courbe + points, étiquette sur le DERNIER point seulement
+  var realPts=[];
+  real.forEach(function(v,i){if(v!==null)realPts.push({x:xs[i],y:yPos(v),v:v,i:i});});
+  if(realPts.length){
+    if(realPts.length>1){
+      var rPath=_adhSmooth(realPts);
+      h+='<path d="'+rPath+' L'+realPts[realPts.length-1].x+' '+(PT+cH)+' L'+realPts[0].x+' '+(PT+cH)+' Z" fill="url(#adhGrad)"/>';
+      h+='<path class="adh-draw" d="'+rPath+'" fill="none" stroke="'+GRN+'" stroke-width="2.5" stroke-linecap="round"/>';
+    }
+    realPts.forEach(function(p){h+='<circle cx="'+p.x+'" cy="'+p.y+'" r="4" fill="'+GRN+'" stroke="#fff" stroke-width="2"/>';});
+    var last=realPts[realPts.length-1];
+    h+='<circle class="adh-pulse" cx="'+last.x+'" cy="'+last.y+'" r="6" fill="none" stroke="'+GRN+'" stroke-width="2"/>';
+    var ec=last.v-bp[last.i];
+    h+='<text x="'+last.x+'" y="'+(last.y-12)+'" text-anchor="middle" font-size="11" font-weight="700" fill="#0F6E56">'+last.v+'</text>';
+    h+='<text x="'+last.x+'" y="'+(last.y-24)+'" text-anchor="middle" font-size="8.5" font-weight="600" fill="'+(ec>=0?'#0F6E56':'#C0492F')+'">'+(ec>=0?'+':'')+ec+' vs BP</text>';
   }
-  bp.forEach(function(v,i){h+='<circle cx="'+xPos(i)+'" cy="'+yPos(v)+'" r="3" fill="#5b7fa6" opacity="0.6"/>';});
-  realPoints.forEach(function(p){
-    h+='<circle cx="'+p.x+'" cy="'+p.y+'" r="5" fill="#1D9E75" stroke="#fff" stroke-width="1.5"/>';
-    h+='<text x="'+p.x+'" y="'+(p.y-10)+'" text-anchor="middle" font-size="9" fill="#0F6E56" font-weight="600">'+p.v+'</text>';
+  // Légende : pastilles de série + texte encre
+  h+='<line x1="'+(W-158)+'" y1="13" x2="'+(W-140)+'" y2="13" stroke="'+BLU+'" stroke-width="2" stroke-dasharray="6,4"/>'
+    +'<text x="'+(W-135)+'" y="16" font-size="9.5" fill="#555">BP plan fin.</text>'
+    +'<line x1="'+(W-158)+'" y1="27" x2="'+(W-140)+'" y2="27" stroke="'+GRN+'" stroke-width="2.5"/>'
+    +'<text x="'+(W-135)+'" y="30" font-size="9.5" fill="'+(realPts.length?'#555':'#B4AEA0')+'">Réalisé'+(realPts.length?'':' · à saisir')+'</text>';
+  // Colonnes de survol
+  labels.forEach(function(_,i){
+    var x0=i===0?PL:(xs[i-1]+xs[i])/2;
+    var x1=i===labels.length-1?W-PR:(xs[i]+xs[i+1])/2;
+    h+='<rect x="'+x0+'" y="'+PT+'" width="'+(x1-x0)+'" height="'+cH+'" fill="transparent" onmousemove="_adhTT(event,'+i+')" onmouseout="_adhTTout()"/>';
   });
-  h+='<line x1="'+(W-130)+'" y1="14" x2="'+(W-110)+'" y2="14" stroke="#5b7fa6" stroke-width="2" stroke-dasharray="6,3"/>';
-  h+='<text x="'+(W-106)+'" y="17" font-size="9" fill="#5b7fa6">BP Plan Fin.</text>';
-  h+='<line x1="'+(W-130)+'" y1="27" x2="'+(W-110)+'" y2="27" stroke="#1D9E75" stroke-width="2.5"/>';
-  h+='<text x="'+(W-106)+'" y="30" font-size="9" fill="#1D9E75">Realise</text>';
   h+='</svg>';
+  h+='<div id="adh-tip" style="position:absolute;pointer-events:none;opacity:0;transition:opacity .15s;background:rgba(15,31,61,.94);color:#fff;font-size:11px;line-height:1.5;padding:7px 10px;border-radius:9px;box-shadow:0 8px 24px -6px rgba(15,31,61,.4);white-space:nowrap;z-index:5"></div>';
   return h;
 }
 
 function renderAdherentChart(labels,bp,real,annee){
   var h='<div class="box" style="margin-bottom:12px;padding:1rem">';
   h+='<div style="font-weight:600;font-size:13px;margin-bottom:12px">Evolution adherents &mdash; '+annee+' &nbsp; BP vs Realise</div>';
-  h+='<div id="adh-chart-wrap">'+buildAdherentSVG(labels,bp,real,annee)+'</div>';
+  h+='<div id="adh-chart-wrap" style="position:relative">'+buildAdherentSVG(labels,bp,real,annee)+'</div>';
   h+='</div>';
   return h;
 }
