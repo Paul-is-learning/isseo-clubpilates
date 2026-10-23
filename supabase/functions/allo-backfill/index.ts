@@ -27,6 +27,25 @@ function json(obj: unknown, status = 200) {
 const telKey = (s: unknown) => String(s ?? "").replace(/\D/g, "").slice(-9);
 const idEq = (a: unknown, b: unknown) =>
   !!a && !!b && String(a).replace(/[^a-zA-Z0-9]/g, "") === String(b).replace(/[^a-zA-Z0-9]/g, "");
+
+// Repli d'identification : le commercial se présente en début d'appel.
+// On ne scanne que ses répliques (source USER) quand on les a, sinon
+// l'ouverture de la transcription (250 premiers caractères).
+function guessAuthor(userText: string): string {
+  const t = String(userText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (/jean[\s-]?charles/.test(t)) return "JC";
+  if (/\bclement\b/.test(t)) return "Clément";
+  if (/\bcaroline\b/.test(t)) return "Caroline";
+  return "";
+}
+function userSideText(transcriptions: unknown, fallback: string): string {
+  if (Array.isArray(transcriptions)) {
+    const mine = transcriptions.filter((x: any) => String(x?.source || "") === "USER").map((x: any) => String(x?.text || "")).join(" ");
+    if (mine.trim()) return mine.slice(0, 400);
+  }
+  return String(fallback || "").slice(0, 250);
+}
+
 const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*pilates|allo/i.test(n);
 
 // Correspondance email Allo → prénom du profil d'équipe (Sales Coach).
@@ -115,7 +134,8 @@ serve(async (req: Request) => {
                   else if (typeof tr === "string") transcript = tr.trim();
                   else if (Array.isArray(tr)) transcript = tr.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
                 }
-                author = resolveRep(it?.user_email);
+                author = resolveRep(it?.user_email)
+                  || guessAuthor(userSideText(it?.transcriptions ?? it?.transcript, String(it?.concatenated_transcript || "")));
                 const c = it?.extracted_data?.contact;
                 if (c) {
                   exName = String(c.name || "").trim();

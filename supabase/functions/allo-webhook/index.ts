@@ -53,6 +53,25 @@ function resolveRep(email: unknown): string {
   return "";
 }
 
+
+// Repli d'identification : le commercial se présente en début d'appel.
+// On ne scanne que ses répliques (source USER) quand on les a, sinon
+// l'ouverture de la transcription (250 premiers caractères).
+function guessAuthor(userText: string): string {
+  const t = String(userText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  if (/jean[\s-]?charles/.test(t)) return "JC";
+  if (/\bclement\b/.test(t)) return "Clément";
+  if (/\bcaroline\b/.test(t)) return "Caroline";
+  return "";
+}
+function userSideText(transcriptions: unknown, fallback: string): string {
+  if (Array.isArray(transcriptions)) {
+    const mine = transcriptions.filter((x: any) => String(x?.source || "") === "USER").map((x: any) => String(x?.text || "")).join(" ");
+    if (mine.trim()) return mine.slice(0, 400);
+  }
+  return String(fallback || "").slice(0, 250);
+}
+
 function entryTxt(meta: string, body: string, transcript: string): string {
   let t = meta + (body ? "\n" + body : "");
   if (transcript) {
@@ -108,7 +127,7 @@ serve(async (req: Request) => {
       if (key.length < 9) return json({ ok: true, ignored: "numéro invalide" });
       const callId = String(d.id || "").slice(0, 40);
       const result = String(d.result || "");
-      const author = resolveRep(d.user_email);
+      const author = resolveRep(d.user_email) || guessAuthor(userSideText(d.transcriptions, transcript));
       const meta0 = "📞 Allo · " + (d.type === "OUTBOUND" ? "appel sortant" : "appel entrant")
         + (d.length ? " · " + d.length : "") + (result ? " · " + result.toLowerCase() : "")
         + (author ? " · par " + author : "");
