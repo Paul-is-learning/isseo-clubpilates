@@ -3426,7 +3426,7 @@ function prAgeChip(p){
 }
 function showProspects(keepScroll){_vReg('prospects');
   clearInterval(_prTick);
-  _prTick=setInterval(()=>{if(document.querySelector('.pr-search'))showProspects(true);else clearInterval(_prTick);},60000);
+  _prTick=setInterval(()=>{if(document.querySelector('.pr-search')){showProspects(true);syncPull(true);}else clearInterval(_prTick);},60000);
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
@@ -3549,6 +3549,8 @@ function setPRappelH(id,v){
   showProspects(true);toast(p.rappelH?'⏰ Rappel programmé à '+p.rappelH+' · priorité absolue 1 h avant':'Heure retirée');
 }
 let _prTick=null;
+// Retour sur l'app (onglet ou app installée remise au premier plan) : données fraîches de l'équipe
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&COACH_CODE)syncPull(true);});
 function setPRep(id,v){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   p.rep=v;p.maj=new Date().toISOString();
