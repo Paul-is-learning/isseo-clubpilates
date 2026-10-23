@@ -2562,8 +2562,8 @@ async function toggleInvite(id,actif){
   catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
 async function delInvite(id,nom){
-  if(!confirm('Supprimer définitivement le code de '+nom+' ?'))return;
-  try{const d=await syncCall('team_del',{id:id});renderTeam(d.invites||[]);toast('Invitation supprimée');}
+  if(!confirm('Supprimer DÉFINITIVEMENT le profil de '+nom+' ?\n\nSon code, son avatar, ses scores de formation et toutes ses ventes du classement disparaîtront de la plateforme. Ses fiches prospects restent à l\'équipe.\n\nPour un simple départ, préférez « suspendre » : l\'historique est conservé.'))return;
+  try{const d=await syncCall('team_del',{id:id});renderTeam(d.invites||[]);_hpCache='';toast('Profil supprimé définitivement');}
   catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
 function copyInvite(id){

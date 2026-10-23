@@ -341,8 +341,30 @@ serve(async (req) => {
       }
 
       if (action === "team_del") {
+        const gone = invites.find((i) => i.id === String(body.id));
         invites = invites.filter((i) => i.id !== String(body.id));
         await saveInvites();
+        // Disparition définitive : scores de formation + événements du journal
+        if (gone && gone.nom) {
+          const nomLc = String(gone.nom).trim().toLowerCase();
+          const who = nomLc.split(" ")[0];
+          try {
+            const { data: tRow } = await admin.from("studios").select("data").eq("id", ROW_TRAIN).maybeSingle();
+            const tmap: Record<string, unknown> = (tRow?.data?.map as any) || {};
+            if (tmap[who]) {
+              delete tmap[who];
+              await admin.from("studios").upsert({ id: ROW_TRAIN, data: { map: tmap }, updated_at: new Date().toISOString() });
+            }
+          } catch (_e) { /* best effort */ }
+          try {
+            const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
+            const evts: any[] = (stRow?.data?.events as any[]) || [];
+            const kept = evts.filter((ev) => String(ev.rep || "").trim().toLowerCase() !== nomLc);
+            if (kept.length !== evts.length) {
+              await admin.from("studios").upsert({ id: ROW_STATS, data: { events: kept }, updated_at: new Date().toISOString() });
+            }
+          } catch (_e) { /* best effort */ }
+        }
         return json({ ok: true, invites });
       }
 
