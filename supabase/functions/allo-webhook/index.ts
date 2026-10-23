@@ -177,7 +177,7 @@ serve(async (req: Request) => {
           appels: (summary || transcript)
             ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), txt: entryTxt(meta0, summary + extraInfo, transcript) }]
             : [],
-          rep: resolveRep(d.user_email), studio: STUDIO, ts: now(), maj: now(),
+          rep: author || "", studio: STUDIO, ts: now(), maj: now(),
         };
         list.push(p);
         await save();
@@ -192,6 +192,7 @@ serve(async (req: Request) => {
       match.appels.push({ id: callId, ts: entryTs, txt: entryTxt(meta0, summary + extraInfo, transcript) });
       if (match.appels.length > 20) match.appels = match.appels.slice(-20);
       if (/^Contact 0/.test(String(match.nom || "")) && isRealName(extractedName)) match.nom = extractedName.slice(0, 80);
+      if (!String(match.rep || "") && author) match.rep = author;
       match.maj = now();
       await save();
       return json({ ok: true, matched: true, prospect: String(match.nom || "") });

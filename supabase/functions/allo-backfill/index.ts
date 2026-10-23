@@ -154,7 +154,7 @@ serve(async (req: Request) => {
               nom: isRealName(cName) ? cName.slice(0, 80) : "Contact 0" + key,
               tel: "0" + key, note: "Importé d'Allo · historique", statut: "rappeler", rappel: "",
               obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
-              appels: [], rep: "", studio: STUDIO, ts: String(li.date || now()).slice(0, 30), maj: now(),
+              appels: [], rep: author || "", studio: STUDIO, ts: String(li.date || now()).slice(0, 30), maj: now(),
             };
             list.push(p);
             created++;
@@ -163,6 +163,7 @@ serve(async (req: Request) => {
           const existing = (li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null)
             || p.appels.find((a: any) => String(a?.ts || "") === String(li.date || "").slice(0, 30));
           if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
+          if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
           if (existing) {
             // Auteur manquant sur une entrée déjà importée → on complète la ligne méta
             if (author && String(existing.txt || "").split("\n")[0].indexOf("· par ") < 0) {
