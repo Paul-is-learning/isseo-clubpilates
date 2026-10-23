@@ -2126,10 +2126,21 @@ function _adoptAuth(d){
   if(d.rep&&CFG.rep!==d.rep){CFG.rep=d.rep;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
 }
 let _pushT=null,_lastSync='';
+function _lockMsg(m){
+  if(m!=='code')return 'Connexion impossible · vérifiez le réseau et réessayez.';
+  if(/autre appareil/i.test(window._authErr||''))return 'Ce code est déjà utilisé sur un autre téléphone · demandez à votre responsable de libérer l\'appareil (bouton 📱↺ dans Équipe).';
+  return 'Code invalide · vérifiez auprès de votre responsable.';
+}
 async function syncCall(action,extra){
   const r=await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({code:COACH_CODE,action:action,device:DEVICE_ID},extra||{}))});
   const d=await r.json().catch(()=>({}));
-  if(r.status===401){localStorage.removeItem('cpcoach_code');COACH_CODE='';showLock();throw new Error('code');}
+  if(r.status===401){
+    window._authErr=String(d.error||'');
+    localStorage.removeItem('cpcoach_code');COACH_CODE='';showLock();
+    // Code refusé parce que lié à un autre téléphone : le dire clairement dès l'écran de verrouillage
+    if(/autre appareil/i.test(window._authErr))setTimeout(()=>{const e=document.getElementById('lockErr');if(e)e.textContent=_lockMsg('code');},0);
+    throw new Error('code');
+  }
   if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
   return d;
 }
@@ -2441,7 +2452,7 @@ async function unlockCoach(){
     if(document.querySelector('.hm-today'))showHome();
   }catch(e){
     COACH_CODE='';
-    if(err)err.textContent=e.message==='code'?'Code invalide · vérifiez auprès de votre responsable.':'Connexion impossible · réessayez.';
+    if(err)err.textContent=_lockMsg(e.message);
     showLock();
   }
 }

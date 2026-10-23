@@ -45,7 +45,10 @@ function json(obj: unknown, status = 200) {
     headers: { ...CORS, "Content-Type": "application/json" },
   });
 }
-const norm = (s: unknown) => String(s ?? "").trim().toUpperCase();
+// Saisie tolérante au téléphone : casse, espaces, tiret oublié, O/0 et I/1 confondus
+// (« n0ah 1234 » = « NOAH-1234 »). Appliqué aux deux côtés de chaque comparaison.
+const norm = (s: unknown) =>
+  String(s ?? "").toUpperCase().replace(/[\s-]/g, "").replace(/0/g, "O").replace(/1/g, "I");
 
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
