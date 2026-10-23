@@ -82,18 +82,26 @@ serve(async (req: Request) => {
           const t = li.transcript;
           if (typeof t === "string") transcript = t.trim();
           else if (Array.isArray(t)) transcript = t.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
-          // La liste ne porte pas toujours la transcription → détail de l'appel
-          if (!transcript && li.id) {
+          // Détail de l'appel : transcription + nom/email que l'IA a captés
+          let exName = "", exEmail = "";
+          if (li.id) {
             try {
               const rIt = await fetch(API + "/v2/api/conversations/items/" + encodeURIComponent(li.id) + "?extend=transcript", { headers: H });
               if (rIt.ok) {
                 const bIt = await rIt.json();
                 const it = bIt?.data ?? bIt;
-                const ct = it?.concatenated_transcript;
-                const tr = it?.transcript ?? it?.transcriptions;
-                if (typeof ct === "string" && ct.trim()) transcript = ct.trim();
-                else if (typeof tr === "string") transcript = tr.trim();
-                else if (Array.isArray(tr)) transcript = tr.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
+                if (!transcript) {
+                  const ct = it?.concatenated_transcript;
+                  const tr = it?.transcript ?? it?.transcriptions;
+                  if (typeof ct === "string" && ct.trim()) transcript = ct.trim();
+                  else if (typeof tr === "string") transcript = tr.trim();
+                  else if (Array.isArray(tr)) transcript = tr.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
+                }
+                const c = it?.extracted_data?.contact;
+                if (c) {
+                  exName = String(c.name || "").trim();
+                  exEmail = Array.isArray(c.emails) ? String(c.emails.filter(Boolean)[0] || "") : "";
+                }
               }
             } catch (_e) { /* best effort */ }
           }
@@ -114,6 +122,7 @@ serve(async (req: Request) => {
           }
           p.appels = Array.isArray(p.appels) ? p.appels : [];
           const existing = li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null;
+          if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
           if (existing) {
             if (transcript && String(existing.txt || "").indexOf("— Transcription —") < 0) {
               const room = TXT_MAX - String(existing.txt).length - 40;
@@ -137,6 +146,8 @@ serve(async (req: Request) => {
           }
           p.appels.push({ id: String(li.id || "").slice(0, 40), ts: String(li.date || now()).slice(0, 30), txt: txt.slice(0, TXT_MAX) });
           if (p.appels.length > 20) p.appels = p.appels.slice(-20);
+          if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) p.nom = exName.slice(0, 80);
+          if (exEmail && String(p.note || "").indexOf("@") < 0) p.note = (String(p.note || "") + " · " + exEmail).slice(0, 200);
           p.maj = now();
           added++;
         }
