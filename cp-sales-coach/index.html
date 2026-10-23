@@ -3408,7 +3408,7 @@ function showProspects(keepScroll){_vReg('prospects');
         <div class="pr-ava" style="background:${pi.c}">${esc(prInitials(p.nom))}</div>
         <div class="pr-idbox">
           <div class="pr-id"><b>${esc(p.nom)}</b></div>
-          <div class="pr-sub">${p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.rep?`<span class="pr-rep">· ${avaTag(avatarOf(p.rep),18,p.rep)} ${esc(p.rep.split(' ')[0])}${p.v2?` + ${esc(p.v2.split(' ')[0])}${p.fullCom?' (100 %)':' (50/50)'}`:''}</span>`:''}${p.statut==='abo'?`<span class="pr-rep">· ${p.icId?'🗓️ via IC':'📞 hors IC'}</span>`:''}</div>
+          <div class="pr-sub">${p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.rep?`<span class="pr-rep">· ${avaTag(avatarOf(p.rep),18,p.rep)} ${esc(p.rep.split(' ')[0])}${p.v2?` + ${esc(p.v2.split(' ')[0])}${p.fullCom?' (100 %)':' (50/50)'}`:''}</span>`:`<select class="pr-rep" onchange="setPRep('${p.id}',this.value)" style="border:1px dashed #C9C2B2;border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;color:var(--ink-mid);background:#fff;cursor:pointer"><option value="">👤 Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`}${p.statut==='abo'?`<span class="pr-rep">· ${p.icId?'🗓️ via IC':'📞 hors IC'}</span>`:''}</div>
         </div>
         <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${p.statut==='abo'?`<button class="pr-act" style="padding:5px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎</button>`:''}
       </div>
@@ -3478,6 +3478,12 @@ function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.st
   showProspects(true);
   if(s==='abo'&&p.pack)toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');
   else toast(PIPE[s].ic+' '+PIPE[s].lbl);}
+function setPRep(id,v){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  p.rep=v;p.maj=new Date().toISOString();
+  persistProspects();schedulePush();
+  showProspects(true);toast(v?'Fiche attribuée à '+v+' ✓':'Attribution retirée');
+}
 function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);}
 function delProspect(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
