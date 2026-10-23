@@ -3440,7 +3440,7 @@ function showProspects(keepScroll){_vReg('prospects');
       <div class="pr-actions">
         <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'✉️ Relances ('+msgs.length+')'}</button>
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date essai / rappel"/>
-        ${p.rappel?`<input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure du rappel demandée par le client · la fiche passera en tête 1 h avant"/>`:''}
+        <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure du rappel demandée par le client · la fiche passera en tête 1 h avant"/>
         <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
         <button onclick="showAppels('${p.id}')" class="pr-act" title="Résumés d'appels (Allo)">📞${(p.appels&&p.appels.length)?' '+p.appels.length:''}</button>
         <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
@@ -3502,7 +3502,9 @@ function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.st
   else toast(PIPE[s].ic+' '+PIPE[s].lbl);}
 function setPRappelH(id,v){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
-  p.rappelH=(v||'').slice(0,5);p.maj=new Date().toISOString();
+  p.rappelH=(v||'').slice(0,5);
+  if(p.rappelH&&!p.rappel){const d=new Date();d.setHours(12,0,0,0);p.rappel=d.toISOString().slice(0,10);}
+  p.maj=new Date().toISOString();
   persistProspects();schedulePush();
   showProspects(true);toast(p.rappelH?'⏰ Rappel programmé à '+p.rappelH+' · priorité absolue 1 h avant':'Heure retirée');
 }

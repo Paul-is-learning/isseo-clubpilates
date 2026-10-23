@@ -72,6 +72,49 @@ function userSideText(transcriptions: unknown, fallback: string): string {
   return String(fallback || "").slice(0, 250);
 }
 
+
+// ── Détection d'une demande de rappel dans ce qui s'est dit ──
+// « rappelez-moi demain à 14h », « plutôt vendredi en fin de journée »…
+// Fenêtre de 140 caractères après un verbe de rappel pour éviter les faux
+// positifs (« j'ai cours à 14h »). N'applique que des dates aujourd'hui/futures.
+const DAYS_FR: Record<string, number> = { dimanche: 0, lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6 };
+function detectRappel(text: string, baseIso: string): { date: string; h: string } | null {
+  const t = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const base = baseIso ? new Date(baseIso) : new Date();
+  if (isNaN(base.getTime())) return null;
+  const re = /(rappel|rappeler|rappelez|rappelle|recontact|relanc|joignable|disponible)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(t))) {
+    const win = t.slice(m.index, m.index + 140);
+    let dayOff: number | null = null;
+    let h = "";
+    if (/apres[- ]demain/.test(win)) dayOff = 2;
+    else if (/\bdemain\b/.test(win)) dayOff = 1;
+    else if (/semaine prochaine/.test(win)) dayOff = 7;
+    else {
+      const dm = win.match(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/);
+      if (dm) { const target = DAYS_FR[dm[1]]; dayOff = ((target - base.getDay()) + 7) % 7 || 7; }
+    }
+    const hm = win.match(/(\d{1,2})\s*h\s*(\d{2})?/) || win.match(/(\d{1,2}):(\d{2})/);
+    if (hm) { const hh = Math.min(23, +hm[1]); const mm = hm[2] ? Math.min(59, +hm[2]) : 0; if (hh >= 7 && hh <= 21) h = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
+    if (!h) {
+      if (/fin de journee|ce soir|en soiree/.test(win)) h = "18:00";
+      else if (/fin de matinee/.test(win)) h = "11:30";
+      else if (/\bmidi\b/.test(win)) h = "12:00";
+      else if (/apres[- ]midi/.test(win)) h = "14:30";
+      else if (/\bmatin\b/.test(win)) h = "10:00";
+    }
+    if (dayOff === null && !h) continue;
+    const d2 = new Date(base);
+    d2.setDate(d2.getDate() + (dayOff ?? 0));
+    const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+    if (d2.getTime() < today.getTime()) continue;
+    const dateS = new Date(d2.getTime() + 2 * 3600000).toISOString().slice(0, 10); // ≈ heure de Paris
+    return { date: dateS, h };
+  }
+  return null;
+}
+
 function entryTxt(meta: string, body: string, transcript: string): string {
   let t = meta + (body ? "\n" + body : "");
   if (transcript) {
@@ -157,6 +200,16 @@ serve(async (req: Request) => {
         } catch (_e) { /* best effort */ }
       }
 
+      const rdv = detectRappel(summary + " " + transcript, String(d.start_date || evt.timestamp || ""));
+      if (rdv) extraInfo += "\n⏰ Rappel demandé : " + rdv.date + (rdv.h ? " à " + rdv.h : "");
+      const applyRdv = (p: any) => {
+        if (!rdv) return;
+        if (p.statut !== "rappeler" && p.statut !== "essai") return;
+        const todayS = new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10);
+        if (p.rappel && p.rappel >= todayS && !(p.rappel === rdv.date)) return; // rappel futur posé à la main → on ne touche pas
+        p.rappel = rdv.date;
+        if (rdv.h) p.rappelH = rdv.h;
+      };
       const match = findByKey(key);
       if (!match) {
         const creatable =
@@ -179,12 +232,14 @@ serve(async (req: Request) => {
             : [],
           rep: author || "", studio: STUDIO, ts: now(), maj: now(),
         };
+        applyRdv(p);
         list.push(p);
         await save();
         return json({ ok: true, created: true, prospect: p.nom });
       }
 
       if (!summary && !transcript) return json({ ok: true, matched: true, ignored: "sans contenu" });
+      applyRdv(match);
       match.appels = Array.isArray(match.appels) ? match.appels : [];
       const entryTs = String(d.start_date || evt.timestamp || now()).slice(0, 30);
       if ((callId && match.appels.some((a: any) => idEq(a?.id, callId)))

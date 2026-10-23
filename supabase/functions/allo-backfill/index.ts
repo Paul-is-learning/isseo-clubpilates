@@ -46,6 +46,49 @@ function userSideText(transcriptions: unknown, fallback: string): string {
   return String(fallback || "").slice(0, 250);
 }
 
+
+// ── Détection d'une demande de rappel dans ce qui s'est dit ──
+// « rappelez-moi demain à 14h », « plutôt vendredi en fin de journée »…
+// Fenêtre de 140 caractères après un verbe de rappel pour éviter les faux
+// positifs (« j'ai cours à 14h »). N'applique que des dates aujourd'hui/futures.
+const DAYS_FR: Record<string, number> = { dimanche: 0, lundi: 1, mardi: 2, mercredi: 3, jeudi: 4, vendredi: 5, samedi: 6 };
+function detectRappel(text: string, baseIso: string): { date: string; h: string } | null {
+  const t = String(text || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+  const base = baseIso ? new Date(baseIso) : new Date();
+  if (isNaN(base.getTime())) return null;
+  const re = /(rappel|rappeler|rappelez|rappelle|recontact|relanc|joignable|disponible)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(t))) {
+    const win = t.slice(m.index, m.index + 140);
+    let dayOff: number | null = null;
+    let h = "";
+    if (/apres[- ]demain/.test(win)) dayOff = 2;
+    else if (/\bdemain\b/.test(win)) dayOff = 1;
+    else if (/semaine prochaine/.test(win)) dayOff = 7;
+    else {
+      const dm = win.match(/\b(lundi|mardi|mercredi|jeudi|vendredi|samedi|dimanche)\b/);
+      if (dm) { const target = DAYS_FR[dm[1]]; dayOff = ((target - base.getDay()) + 7) % 7 || 7; }
+    }
+    const hm = win.match(/(\d{1,2})\s*h\s*(\d{2})?/) || win.match(/(\d{1,2}):(\d{2})/);
+    if (hm) { const hh = Math.min(23, +hm[1]); const mm = hm[2] ? Math.min(59, +hm[2]) : 0; if (hh >= 7 && hh <= 21) h = String(hh).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
+    if (!h) {
+      if (/fin de journee|ce soir|en soiree/.test(win)) h = "18:00";
+      else if (/fin de matinee/.test(win)) h = "11:30";
+      else if (/\bmidi\b/.test(win)) h = "12:00";
+      else if (/apres[- ]midi/.test(win)) h = "14:30";
+      else if (/\bmatin\b/.test(win)) h = "10:00";
+    }
+    if (dayOff === null && !h) continue;
+    const d2 = new Date(base);
+    d2.setDate(d2.getDate() + (dayOff ?? 0));
+    const today = new Date(); today.setUTCHours(0, 0, 0, 0);
+    if (d2.getTime() < today.getTime()) continue;
+    const dateS = new Date(d2.getTime() + 2 * 3600000).toISOString().slice(0, 10); // ≈ heure de Paris
+    return { date: dateS, h };
+  }
+  return null;
+}
+
 const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*pilates|allo/i.test(n);
 
 // Correspondance email Allo → prénom du profil d'équipe (Sales Coach).
@@ -164,6 +207,10 @@ serve(async (req: Request) => {
             || p.appels.find((a: any) => String(a?.ts || "") === String(li.date || "").slice(0, 30));
           if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
           if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
+          const rdv = detectRappel(summary + " " + transcript, String(li.date || ""));
+          if (rdv && (p.statut === "rappeler" || p.statut === "essai") && (!p.rappel || p.rappel < new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10))) {
+            p.rappel = rdv.date; if (rdv.h) p.rappelH = rdv.h; p.maj = now();
+          }
           if (existing) {
             // Auteur manquant sur une entrée déjà importée → on complète la ligne méta
             if (author && String(existing.txt || "").split("\n")[0].indexOf("· par ") < 0) {
