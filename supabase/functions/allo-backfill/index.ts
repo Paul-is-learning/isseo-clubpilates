@@ -82,6 +82,21 @@ serve(async (req: Request) => {
           const t = li.transcript;
           if (typeof t === "string") transcript = t.trim();
           else if (Array.isArray(t)) transcript = t.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
+          // La liste ne porte pas toujours la transcription → détail de l'appel
+          if (!transcript && li.id) {
+            try {
+              const rIt = await fetch(API + "/v2/api/conversations/items/" + encodeURIComponent(li.id) + "?extend=transcript", { headers: H });
+              if (rIt.ok) {
+                const bIt = await rIt.json();
+                const it = bIt?.data ?? bIt;
+                const ct = it?.concatenated_transcript;
+                const tr = it?.transcript ?? it?.transcriptions;
+                if (typeof ct === "string" && ct.trim()) transcript = ct.trim();
+                else if (typeof tr === "string") transcript = tr.trim();
+                else if (Array.isArray(tr)) transcript = tr.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
+              }
+            } catch (_e) { /* best effort */ }
+          }
           if (!summary && !transcript) { skipped++; continue; }
 
           let p = list.find((x) => telKey(x?.tel) === key);
@@ -98,7 +113,20 @@ serve(async (req: Request) => {
             created++;
           }
           p.appels = Array.isArray(p.appels) ? p.appels : [];
-          if (li.id && p.appels.some((a: any) => idEq(a?.id, li.id))) { dedup++; continue; }
+          const existing = li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null;
+          if (existing) {
+            if (transcript && String(existing.txt || "").indexOf("— Transcription —") < 0) {
+              const room = TXT_MAX - String(existing.txt).length - 40;
+              if (room > 200) {
+                existing.txt = (existing.txt + "\n\n— Transcription —\n" + (transcript.length > room ? transcript.slice(0, room) + "\n…[transcription tronquée]" : transcript)).slice(0, TXT_MAX);
+                p.maj = now();
+                added++;
+                continue;
+              }
+            }
+            dedup++;
+            continue;
+          }
           const meta = "📞 Allo · " + (li.direction === "OUTBOUND" ? "appel sortant" : "appel entrant")
             + (li.duration ? " · " + Math.round(li.duration / 60) + " min" : "")
             + (li.result ? " · " + String(li.result).toLowerCase() : "") + " · import historique";

@@ -3444,7 +3444,7 @@ function viewPFiche(id){
     <div class="glp-tag">📄 Fiche de découverte</div>
     <div class="glp-t">${esc(p.nom)}${p.statut==='abo'&&p.pack?` <span class="fv-pack">${PIPE.abo.ic} ${packShort(+p.pack)}</span>`:''}</div>
     <div class="fv-meta">${p.tel?'📱 '+esc(p.tel)+' · ':''}${p.rep?'suivi par '+esc(p.rep.split(' ')[0])+' · ':''}créée le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
-    <div class="fv-body">${fiche?esc(fiche):'Aucune fiche de découverte enregistrée pour ce prospect.\n\nLa fiche se remplit automatiquement quand l\'appel est mené dans l\'outil puis enregistré depuis l\'écran Récap.'}${(p.appels&&p.appels.length)?'\n\n━━ 📞 Résumés d\'appels (Allo) ━━\n\n'+p.appels.slice().reverse().map(a=>'📅 '+new Date(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+'\n'+esc(a.txt)).join('\n\n'):''}</div>
+    <div class="fv-body">${fiche?esc(fiche):'Aucune fiche de découverte enregistrée pour ce prospect.\n\nLa fiche se remplit automatiquement quand l\'appel est mené dans l\'outil puis enregistré depuis l\'écran Récap.'}${(p.appels&&p.appels.length)?'\n\n━━ 📞 Résumés d\'appels (Allo) ━━\n\n'+p.appels.slice().reverse().map(a=>{const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');return '📅 '+new Date(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+'\n'+esc(i>=0?t.slice(0,i):t)+(i>=0?'\n📜 Transcription complète : bouton 📞 de la fiche':'');}).join('\n\n'):''}</div>
     <div class="fv-btns">
       ${fiche?`<button class="pr-act" onclick="copyPFiche('${p.id}')">📋 Copier</button>`:''}
       <button class="glp-ok" style="flex:1;margin-top:0" onclick="document.getElementById('fichePop').remove()">Fermer</button>
