@@ -40,11 +40,19 @@ serve(async (req: Request) => {
     const STUDIO = Deno.env.get("ALLO_STUDIO") || "";
     const H = { Authorization: "Api-Key " + apiKey };
 
-    // 1. Les numéros Allo du compte
-    const rNum = await fetch(API + "/v2/api/numbers", { headers: H });
-    if (!rNum.ok) return json({ error: "GET /numbers → " + rNum.status }, 502);
-    const numsBody = await rNum.text();
-    const alloNumbers = [...new Set(numsBody.match(/\+\d{8,15}/g) || [])].slice(0, 5);
+    // 1. Les numéros Allo : passés en paramètre (?number=+33…), sinon via l'API
+    //    (GET /numbers demande un scope supplémentaire → 403 avec une clé
+    //    « lecture des conversations » seule, d'où le paramètre).
+    let alloNumbers: string[] = [];
+    const qNum = (new URL(req.url)).searchParams.get("number") || "";
+    if (qNum) {
+      alloNumbers = [qNum.startsWith("+") ? qNum : "+" + qNum.replace(/\D/g, "")];
+    } else {
+      const rNum = await fetch(API + "/v2/api/numbers", { headers: H });
+      if (!rNum.ok) return json({ error: "GET /numbers → " + rNum.status + " · ajoutez ?number=%2B33XXXXXXXXX (votre ligne Allo) à l'URL, ou le scope numéros à la clé" }, 502);
+      const numsBody = await rNum.text();
+      alloNumbers = [...new Set(numsBody.match(/\+\d{8,15}/g) || [])].slice(0, 5);
+    }
     if (!alloNumbers.length) return json({ error: "Aucun numéro Allo trouvé" }, 404);
 
     // 2. Les fiches actuelles
