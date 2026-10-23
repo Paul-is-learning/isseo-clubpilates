@@ -28,42 +28,6 @@ const telKey = (s: unknown) => String(s ?? "").replace(/\D/g, "").slice(-9);
 const idEq = (a: unknown, b: unknown) =>
   !!a && !!b && String(a).replace(/[^a-zA-Z0-9]/g, "") === String(b).replace(/[^a-zA-Z0-9]/g, "");
 
-// Repli d'identification : le commercial se présente en début d'appel.
-// On ne scanne que ses répliques (source USER) quand on les a, sinon
-// l'ouverture de la transcription (250 premiers caractères).
-
-// Propriétaire de la ligne Allo : identification déterministe fournie par Paul.
-// Ligne 01 88 83 34 18 → JC · ligne 07 45 80 42 39 → Caroline.
-// Extensible par secret ALLO_LINES ("33612345678=Nom,…", chiffres seuls).
-const LINE_DEFAULTS: Record<string, string> = { "33188833418": "JC", "33745804239": "Caroline" };
-function lineOwner(num: unknown): string {
-  const k = String(num || "").replace(/\D/g, "");
-  if (k.length < 9) return "";
-  const map: Record<string, string> = { ...LINE_DEFAULTS };
-  for (const pair of (Deno.env.get("ALLO_LINES") || "").split(",")) {
-    const i = pair.indexOf("=");
-    if (i > 0) map[pair.slice(0, i).replace(/\D/g, "")] = pair.slice(i + 1).trim();
-  }
-  for (const key of Object.keys(map)) {
-    if (key && (k.endsWith(key.slice(-9)) || key.endsWith(k.slice(-9)))) return map[key];
-  }
-  return "";
-}
-
-function guessAuthor(userText: string): string {
-  const t = String(userText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
-  if (/jean[\s-]?charles/.test(t)) return "JC";
-  if (/\bclement\b/.test(t)) return "Clément";
-  if (/\bcaroline\b/.test(t)) return "Caroline";
-  return "";
-}
-function userSideText(transcriptions: unknown, fallback: string): string {
-  if (Array.isArray(transcriptions)) {
-    const mine = transcriptions.filter((x: any) => String(x?.source || "") === "USER").map((x: any) => String(x?.text || "")).join(" ");
-    if (mine.trim()) return mine.slice(0, 400);
-  }
-  return String(fallback || "").slice(0, 250);
-}
 
 
 // ── Détection d'une demande de rappel dans ce qui s'est dit ──
@@ -118,6 +82,15 @@ const tsMin = (s: unknown): string => {
   return isNaN(t) ? x.slice(0, 16) : String(Math.floor(t / 60000));
 };
 
+function lineOwners(): Set<string> {
+  const s = new Set<string>(Object.values(LINE_DEFAULTS));
+  for (const pair of (Deno.env.get("ALLO_LINES") || "").split(",")) {
+    const i = pair.indexOf("=");
+    if (i > 0) s.add(pair.slice(i + 1).trim());
+  }
+  return s;
+}
+
 const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*pilates|allo/i.test(n);
 
 // Correspondance email Allo → prénom du profil d'équipe (Sales Coach).
@@ -170,7 +143,7 @@ serve(async (req: Request) => {
     const list: any[] = (row?.data?.prospects as any[]) || [];
     const now = () => new Date().toISOString();
 
-    let convs = 0, created = 0, added = 0, dedup = 0, skipped = 0;
+    let convs = 0, created = 0, added = 0, dedup = 0, skipped = 0, auteursCorriges = 0;
 
     for (const alloNum of alloNumbers) {
       for (let page = 1; page <= 20; page++) {
@@ -207,9 +180,7 @@ serve(async (req: Request) => {
                   else if (typeof tr === "string") transcript = tr.trim();
                   else if (Array.isArray(tr)) transcript = tr.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
                 }
-                author = resolveRep(it?.user_email)
-                  || lineOwner(alloNum)
-                  || guessAuthor(userSideText(it?.transcriptions ?? it?.transcript, String(it?.concatenated_transcript || "")));
+                author = lineOwner(alloNum) || resolveRep(it?.user_email);
                 const c = it?.extracted_data?.contact;
                 if (c) {
                   exName = String(c.name || "").trim();
@@ -238,6 +209,30 @@ serve(async (req: Request) => {
             || p.appels.find((a: any) => tsMin(a?.ts) === tsMin(li.date));
           if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
           if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
+          // Réattribution : tout appel de cette conversation non attribué à un titulaire
+          // de ligne (ex. « Clément » deviné par email/transcription) passe au titulaire.
+          if (author) {
+            const owners = lineOwners();
+            for (const e of p.appels) {
+              const t0 = String(e?.txt || "");
+              if (!t0.startsWith("📞")) continue;
+              const nl = t0.indexOf("\n");
+              const first = nl < 0 ? t0 : t0.slice(0, nl), rest = nl < 0 ? "" : t0.slice(nl);
+              const m = first.match(/ · par ([^·]+?)(?= · |$)/);
+              const cur = m ? m[1].trim() : "";
+              if (cur === author || (cur && owners.has(cur))) continue;
+              const nf = m ? first.replace(" · par " + m[1], " · par " + author)
+                : first.includes(" · import historique") ? first.replace(" · import historique", " · par " + author + " · import historique")
+                : first + " · par " + author;
+              e.txt = (nf + rest).slice(0, TXT_MAX);
+              p.maj = now();
+              auteursCorriges++;
+            }
+            const imported = /^(Importé d'Allo|Contact Allo)/.test(String(p.note || ""));
+            if (imported && ["", "Clément", "Clement"].includes(String(p.rep || "")) && p.rep !== author) {
+              p.rep = author; p.maj = now(); auteursCorriges++;
+            }
+          }
           const rdv = detectRappel(summary + " " + transcript, String(li.date || ""));
           if (rdv && (p.statut === "rappeler" || p.statut === "essai") && (!p.rappel || p.rappel < new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10))) {
             p.rappel = rdv.date; if (rdv.h) p.rappelH = rdv.h; p.rappelBy = "auto"; p.maj = now();
@@ -315,7 +310,7 @@ serve(async (req: Request) => {
       else if (/clubpilates|allo/i.test(r)) { p.rep = ""; p.maj = new Date().toISOString(); repares++; }
     }
     await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
-    return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares, appelsDedupliques: dedupliques });
+    return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares, appelsDedupliques: dedupliques, auteursCorriges });
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 500);
   }
