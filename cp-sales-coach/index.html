@@ -952,7 +952,7 @@ body{background:var(--cream)}
   /* Mots décoratifs verticaux : hors jeu tant que l'écran ne leur laisse pas la place */
   body::before,body::after{display:none}
   .hm-big{min-height:148px}
-  .ht-grid.pilot{grid-template-columns:repeat(3,1fr)}
+  .ht-grid.pilot{grid-template-columns:repeat(4,1fr)}
   .hm-today{justify-content:center}
   .screen{padding-left:44px;padding-right:44px}
   .screen>*{width:100%;max-width:920px;margin-left:auto;margin-right:auto}
@@ -3586,6 +3586,55 @@ function viewPFiche(id){
   document.body.appendChild(d);
   try{glossify(d.querySelector('.fv-body'));}catch(e){}
 }
+/* ── 📊 Compteur d'appels journalier : total + par commercial ── */
+let _csDate=null;
+function csShift(n){const d=new Date(_csDate+'T12:00');d.setDate(d.getDate()+n);_csDate=d.toISOString().slice(0,10);showCallStats();}
+function showCallStats(){_vReg('calls');
+  closeMenu();
+  const todayS=(()=>{const d=new Date();d.setHours(12,0,0,0);return d.toISOString().slice(0,10);})();
+  if(!_csDate)_csDate=todayS;
+  const dateS=_csDate;
+  const rows={};let total=0,answered=0,sms=0;
+  PROSPECTS.forEach(p=>(p.appels||[]).forEach(a=>{
+    if(String(a.ts||'').slice(0,10)!==dateS)return;
+    const first=(a.txt||'').split('\n')[0];
+    if(first.startsWith('💬')){sms++;return;}
+    if(!first.startsWith('📞'))return;
+    total++;
+    const ok=/answered/i.test(first);if(ok)answered++;
+    const am=first.match(/ · par ([^·\n]+?)(?= · |$)/);
+    const who=am?am[1].trim():'Non attribué';
+    if(!rows[who])rows[who]={n:0,ok:0};
+    rows[who].n++;if(ok)rows[who].ok++;
+  }));
+  const list=Object.entries(rows).sort((x,y)=>y[1].n-x[1].n);
+  const max=list.length?list[0][1].n:1;
+  const fmtD=new Date(dateS+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  const big=(n,l,c)=>`<div style="flex:1;background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:14px 16px;text-align:center;box-shadow:var(--sh-s)"><div style="font-size:26px;font-weight:800;color:${c}">${n}</div><div style="font-size:11px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em">${l}</div></div>`;
+  $('#topPhase').textContent='Appels du jour';$('#topSub').textContent=CFG.studio?' · '+CFG.studio:'';
+  $('#bar').style.width='100%';
+  $('#nav').innerHTML=pageNav();
+  $('#screen').innerHTML=`<div class="cg">
+    <div class="pr-head"><div><h2 class="pr-h2">📊 Appels du jour</h2><div class="pr-h2s">activité téléphonique Allo · toute l'équipe</div></div><span class="sync-badge ok">☁️ Équipe</span></div>
+    <div class="ic-week"><button onclick="csShift(-1)">‹</button><b>${fmtD}</b><button onclick="csShift(1)"${dateS>=todayS?' disabled style="opacity:.3"':''}>›</button>${dateS!==todayS?`<button class="ic-today" onclick="_csDate=null;showCallStats()">Aujourd'hui</button>`:''}</div>
+    <div style="display:flex;gap:10px;margin:14px 0">
+      ${big(total,'Appels passés','var(--cp-dark)')}
+      ${big(answered,'Aboutis','#1F9E75')}
+      ${big(total?Math.round(answered/total*100)+' %':'·','Taux de décroché','#B07A1C')}
+    </div>
+    ${list.length?list.map(([who,s])=>`
+      <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--cream-line);border-radius:13px;padding:10px 14px;margin-bottom:7px;box-shadow:var(--sh-s)">
+        ${who==='Non attribué'?'<span style="width:26px;text-align:center">👤</span>':avaTag(avatarOf(who),26,who)}
+        <b style="flex:0 0 92px;font-size:13.5px;color:var(--cp-dark)">${esc(who)}</b>
+        <span style="flex:1;height:9px;background:#EFEBE0;border-radius:99px;overflow:hidden"><span style="display:block;height:100%;width:${Math.max(6,Math.round(s.n/max*100))}%;background:linear-gradient(90deg,var(--cp-deep),var(--cp-dark));border-radius:99px"></span></span>
+        <span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--cp-dark)">${s.n}<small style="font-weight:600;color:var(--ink-mid)"> appel${s.n>1?'s':''} · ${s.ok} abouti${s.ok>1?'s':''}</small></span>
+      </div>`).join(''):'<div class="pr-empty">Aucun appel Allo enregistré ce jour-là.</div>'}
+    ${sms?`<div class="fv-meta" style="margin-top:8px">💬 ${sms} SMS échangé${sms>1?'s':''} ce jour-là (non comptés comme appels).</div>`:''}
+    <div class="fv-meta" style="margin-top:10px">Source : appels Allo attachés aux fiches prospects · les appels vers des numéros hors fiches n'apparaissent pas.</div>
+  </div>`;
+  $('#screen').scrollTop=0;relocateBoxes();
+}
+
 function showAppels(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const list=(p.appels||[]).slice().reverse();
@@ -3762,6 +3811,7 @@ function showHome(){_vReg('home');
     </div>
     <div class="hm-sec">Piloter</div>
     <div class="ht-grid pilot">
+      <button class="ht-tile" onclick="showCallStats()"><span class="ht-ic">${ic('chart',22)}</span><span class="ht-lbl">Appels du jour</span></button>
       <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">${ic('trophy',22)}</span><span class="ht-lbl">Performances</span></button>
       ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">${ic('users',22)}</span><span class="ht-lbl">Équipe</span></button>`:''}
       <button class="ht-tile" onclick="openSet()"><span class="ht-ic">${ic('sliders',22)}</span><span class="ht-lbl">Réglages</span></button>
@@ -3804,7 +3854,7 @@ function navBack(){
   _navBack=false;
   _updTopBack();
 }
-const VIEW_FN={home:()=>showHome(),call:()=>renderScreen(true),training:()=>showTraining(),sim:()=>showTraining(),ic:()=>showICPage(),perf:()=>showPerf(),prospects:()=>showProspects(),cours:()=>showCourseGuide(),args:()=>showArgBank(),science:()=>showScience(),aca:()=>showAca(),leads:()=>showLeadImport(),team:()=>showTeam()};
+const VIEW_FN={home:()=>showHome(),call:()=>renderScreen(true),training:()=>showTraining(),sim:()=>showTraining(),ic:()=>showICPage(),perf:()=>showPerf(),prospects:()=>showProspects(),cours:()=>showCourseGuide(),args:()=>showArgBank(),science:()=>showScience(),aca:()=>showAca(),leads:()=>showLeadImport(),team:()=>showTeam(),calls:()=>showCallStats()};
 function homeStartCall(){
   if(!st.callStart&&st.idx>0){const g=st.callGoal;_catchOpen={};st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};}
   renderScreen();
@@ -3830,6 +3880,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showAca()"><span class="mic">🎓</span><span>Académie<small>5 leçons pour vendre mieux</small></span></button>
     <button class="menu-item" onclick="closeMenu();showICPage()"><span class="mic">🗓️</span><span>Intro Class<small>Séances découverte : inscrits, présents, signés</small></span></button>
     <button class="menu-item" onclick="closeMenu();showTraining()"><span class="mic">🎬</span><span>Formation · cas pratiques<small>8 scénarios à valider · progression suivie par le studio</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showCallStats()"><span class="mic">📊</span><span>Appels du jour<small>Compteur d'activité : total et par commercial</small></span></button>
     <button class="menu-item" onclick="closeMenu();showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
