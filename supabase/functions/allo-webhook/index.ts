@@ -99,7 +99,7 @@ serve(async (req: Request) => {
         rappel: voicemail ? new Date(Date.now() + 864e5).toISOString().slice(0, 10) : "",
         obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
         appels: summary ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now).slice(0, 30), txt: (meta0 + "\n" + summary).slice(0, 5000) }] : [],
-        rep: repName, studio: "", ts: now, maj: now,
+        rep: repName, studio: Deno.env.get("ALLO_STUDIO") || "", ts: now, maj: now,
       };
       list.push(p);
       await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
