@@ -3661,12 +3661,18 @@ function callJournalHTML(dayS,pool){
 /* ── 📊 Compteur d'appels journalier : total + par commercial ── */
 let _csDate=null;
 function csShift(n){const d=new Date(_csDate+'T12:00');d.setDate(d.getDate()+n);_csDate=d.toISOString().slice(0,10);showCallStats();}
+function fmtTalk(min){
+  if(!min)return '0 min';
+  if(min<1)return Math.round(min*60)+' s';
+  const t=Math.round(min);
+  return t<60?t+' min':Math.floor(t/60)+' h '+String(t%60).padStart(2,'0');
+}
 function showCallStats(){_vReg('calls');
   closeMenu();
   const todayS=(()=>{const d=new Date();d.setHours(12,0,0,0);return d.toISOString().slice(0,10);})();
   if(!_csDate)_csDate=todayS;
   const dateS=_csDate;
-  const rows={};let total=0,answered=0,sms=0;
+  const rows={};let total=0,answered=0,sms=0,talk=0;
   const _seenC=new Set();
   PROSPECTS.forEach(p=>(p.appels||[]).forEach(a=>{
     const tp=tsParts(a.ts);if(!tp||tp.day!==dateS)return;
@@ -3676,32 +3682,34 @@ function showCallStats(){_vReg('calls');
     if(!first.startsWith('📞'))return;
     total++;
     const ok=/answered/i.test(first);if(ok)answered++;
+    const dm=_apDurMin(first);talk+=dm;
     const am=first.match(/ · par ([^·\n]+?)(?= · |$)/);
     const who=am?am[1].trim():'Non attribué';
-    if(!rows[who])rows[who]={n:0,ok:0};
-    rows[who].n++;if(ok)rows[who].ok++;
+    if(!rows[who])rows[who]={n:0,ok:0,min:0};
+    rows[who].n++;if(ok)rows[who].ok++;rows[who].min+=dm;
   }));
   const list=Object.entries(rows).sort((x,y)=>y[1].n-x[1].n);
   const max=list.length?list[0][1].n:1;
   const fmtD=new Date(dateS+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
-  const big=(n,l,c)=>`<div style="flex:1;background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:14px 16px;text-align:center;box-shadow:var(--sh-s)"><div style="font-size:26px;font-weight:800;color:${c}">${n}</div><div style="font-size:11px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em">${l}</div></div>`;
+  const big=(n,l,c)=>`<div style="flex:1 1 140px;background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:14px 16px;text-align:center;box-shadow:var(--sh-s)"><div style="font-size:26px;font-weight:800;color:${c}">${n}</div><div style="font-size:11px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em">${l}</div></div>`;
   $('#topPhase').textContent='Appels du jour';$('#topSub').textContent=CFG.studio?' · '+CFG.studio:'';
   $('#bar').style.width='100%';
   $('#nav').innerHTML=pageNav();
   $('#screen').innerHTML=`<div class="cg">
     <div class="pr-head"><div><h2 class="pr-h2">📊 Appels du jour</h2><div class="pr-h2s">activité téléphonique Allo · toute l'équipe</div></div><span class="sync-badge ok">☁️ Équipe</span></div>
     <div class="ic-week"><button onclick="csShift(-1)">‹</button><b>${fmtD}</b><button onclick="csShift(1)"${dateS>=todayS?' disabled style="opacity:.3"':''}>›</button>${dateS!==todayS?`<button class="ic-today" onclick="_csDate=null;showCallStats()">Aujourd'hui</button>`:''}</div>
-    <div style="display:flex;gap:10px;margin:14px 0">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0">
       ${big(total,'Appels passés','var(--cp-dark)')}
       ${big(answered,'Aboutis','#1F9E75')}
       ${big(total?Math.round(answered/total*100)+' %':'·','Taux de décroché','#B07A1C')}
+      ${big(fmtTalk(talk),'Temps au téléphone','var(--accent)')}
     </div>
     ${list.length?list.map(([who,s])=>`
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--cream-line);border-radius:13px;padding:10px 14px;margin-bottom:7px;box-shadow:var(--sh-s)">
         ${who==='Non attribué'?'<span style="width:26px;text-align:center">👤</span>':avaTag(avatarOf(who),26,who)}
         <b style="flex:0 0 92px;font-size:13.5px;color:var(--cp-dark)">${esc(who)}</b>
         <span style="flex:1;height:9px;background:#EFEBE0;border-radius:99px;overflow:hidden"><span style="display:block;height:100%;width:${Math.max(6,Math.round(s.n/max*100))}%;background:linear-gradient(90deg,var(--cp-deep),var(--cp-dark));border-radius:99px"></span></span>
-        <span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--cp-dark)">${s.n}<small style="font-weight:600;color:var(--ink-mid)"> appel${s.n>1?'s':''} · ${s.ok} abouti${s.ok>1?'s':''}</small></span>
+        <span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--cp-dark)">${s.n}<small style="font-weight:600;color:var(--ink-mid)"> appel${s.n>1?'s':''} · ${s.ok} abouti${s.ok>1?'s':''} · ⏱ ${fmtTalk(s.min)}</small></span>
       </div>`).join(''):'<div class="pr-empty">Aucun appel Allo enregistré ce jour-là.</div>'}
     ${callJournalHTML(dateS)}
     ${sms?`<div class="fv-meta" style="margin-top:8px">💬 ${sms} SMS échangé${sms>1?'s':''} ce jour-là (non comptés comme appels).</div>`:''}
