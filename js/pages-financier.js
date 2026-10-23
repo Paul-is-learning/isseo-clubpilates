@@ -474,7 +474,7 @@ function renderAdherents(sid,s){
   var moisLabels=[];
   for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
 
-  var h='<div>'+renderBPlayPanel(sid);
+  var h='<div>';
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
   var bps3=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(s.forecast||{},sid,getStudioBPOpts(sid));
   [1,2,3].forEach(function(y){
