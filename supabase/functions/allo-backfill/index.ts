@@ -108,6 +108,16 @@ function detectRappel(text: string, baseIso: string): { date: string; h: string 
   return null;
 }
 
+
+// Instant d'un horodatage Allo à la minute : UTC, « Z » présent ou non
+// (10:13:45Z et 10:13:45 désignent le même appel).
+const tsMin = (s: unknown): string => {
+  let x = String(s || "");
+  if (!/[zZ]|[+-]\d\d:?\d\d$/.test(x)) x += "Z";
+  const t = Date.parse(x);
+  return isNaN(t) ? x.slice(0, 16) : String(Math.floor(t / 60000));
+};
+
 const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*pilates|allo/i.test(n);
 
 // Correspondance email Allo → prénom du profil d'équipe (Sales Coach).
@@ -225,7 +235,7 @@ serve(async (req: Request) => {
           }
           p.appels = Array.isArray(p.appels) ? p.appels : [];
           const existing = (li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null)
-            || p.appels.find((a: any) => String(a?.ts || "") === String(li.date || "").slice(0, 30));
+            || p.appels.find((a: any) => tsMin(a?.ts) === tsMin(li.date));
           if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
           if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
           const rdv = detectRappel(summary + " " + transcript, String(li.date || ""));
@@ -278,12 +288,14 @@ serve(async (req: Request) => {
       if (!Array.isArray(p?.appels) || p.appels.length < 2) continue;
       const byTs = new Map<string, any>();
       for (const a of p.appels) {
-        const k = String(a?.ts || "") + "|" + String(a?.txt || "").split("\n")[0].slice(0, 50);
+        // Même minute = même appel, qu'il vienne de l'import ou du direct
+        const k = (String(a?.txt || "").startsWith("💬") ? "sms|" : "call|") + tsMin(a?.ts);
         const prev = byTs.get(k);
         if (!prev) { byTs.set(k, a); continue; }
         dedupliques++;
         const richer = String(a?.txt || "").length > String(prev?.txt || "").length ? a : prev;
         if (!richer.id && (a?.id || prev?.id)) richer.id = a?.id || prev?.id;
+        if (!richer.rx && (a?.rx || prev?.rx)) richer.rx = a?.rx || prev?.rx;
         byTs.set(k, richer);
       }
       if (byTs.size !== p.appels.length) {

@@ -3587,6 +3587,22 @@ function viewPFiche(id){
   document.body.appendChild(d);
   try{glossify(d.querySelector('.fv-body'));}catch(e){}
 }
+/* ── Journal des appels : heure d'appel (littérale Allo) vs heure d'arrivée (rx, UTC réel) ── */
+function _apDurMin(first){
+  let m=first.match(/· (\d+)\s*m(?:in)?\s*(\d+)\s*s\b/);if(m)return +m[1]+(+m[2])/60;
+  m=first.match(/· (\d+)\s*min\b/);if(m)return +m[1];
+  m=first.match(/· (\d+)\s*s\b/);if(m)return (+m[1])/60;
+  return 0;
+}
+function _apCoherence(a,durMin){
+  if(!a.rx)return {ic:'·',lbl:'historique (heure d\'arrivée non enregistrée)',c:'var(--ink-mid)'};
+  const t=tsParts(a.ts),r=tsParts(a.rx);if(!t||!r)return {ic:'?',lbl:'horodatage illisible',c:'var(--ink-mid)'};
+  const diff=Math.round((r.abs-t.abs)/60000);
+  if(diff<-3)return {ic:'⚠️',lbl:'reçu '+r.h+' · AVANT l\'heure d\'appel affichée ('+diff+' min) : décalage de fuseau',c:'#B4300F'};
+  if(diff>durMin+120)return {ic:'🕓',lbl:'reçu '+r.h+' · arrivée tardive (+'+Math.round(diff-durMin)+' min après la fin)',c:'#B4710F'};
+  return {ic:'✓',lbl:'reçu '+r.h+' · cohérent ('+Math.max(0,Math.round(diff-durMin))+' min après la fin)',c:'#1F9E75'};
+}
+
 /* ── 📊 Compteur d'appels journalier : total + par commercial ── */
 let _csDate=null;
 function csShift(n){const d=new Date(_csDate+'T12:00');d.setDate(d.getDate()+n);_csDate=d.toISOString().slice(0,10);showCallStats();}
@@ -3596,10 +3612,12 @@ function showCallStats(){_vReg('calls');
   if(!_csDate)_csDate=todayS;
   const dateS=_csDate;
   const rows={};let total=0,answered=0,sms=0;
+  const _seenC=new Set();
   PROSPECTS.forEach(p=>(p.appels||[]).forEach(a=>{
-    if(String(a.ts||'').slice(0,10)!==dateS)return;
+    const tp=tsParts(a.ts);if(!tp||tp.day!==dateS)return;
     const first=(a.txt||'').split('\n')[0];
     if(first.startsWith('💬')){sms++;return;}
+    const kC=p.id+'|'+Math.floor(tp.abs/60000);if(_seenC.has(kC))return;_seenC.add(kC);
     if(!first.startsWith('📞'))return;
     total++;
     const ok=/answered/i.test(first);if(ok)answered++;
@@ -3630,19 +3648,60 @@ function showCallStats(){_vReg('calls');
         <span style="flex:1;height:9px;background:#EFEBE0;border-radius:99px;overflow:hidden"><span style="display:block;height:100%;width:${Math.max(6,Math.round(s.n/max*100))}%;background:linear-gradient(90deg,var(--cp-deep),var(--cp-dark));border-radius:99px"></span></span>
         <span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--cp-dark)">${s.n}<small style="font-weight:600;color:var(--ink-mid)"> appel${s.n>1?'s':''} · ${s.ok} abouti${s.ok>1?'s':''}</small></span>
       </div>`).join(''):'<div class="pr-empty">Aucun appel Allo enregistré ce jour-là.</div>'}
+    ${(()=>{
+      const J=[];const byKey=new Map();
+      PROSPECTS.forEach(p=>(p.appels||[]).forEach(a=>{
+        const tp=tsParts(a.ts);if(!tp||tp.day!==dateS)return;
+        const first=(a.txt||'').split('\n')[0];
+        if(!first.startsWith('📞'))return;
+        const k=p.id+'|'+Math.floor(tp.abs/60000);
+        const prev=byKey.get(k);
+        // Même appel importé deux fois : on garde l'entrée reçue en direct (heure d'arrivée connue)
+        if(prev){if(!prev.a.rx&&a.rx){prev.a=a;prev.first=first;}return;}
+        const row={p,a,first,abs:tp.abs};byKey.set(k,row);J.push(row);
+      }));
+      if(!J.length)return '';
+      J.sort((x,y)=>y.abs-x.abs);
+      const nbIncoh=J.filter(j=>_apCoherence(j.a,_apDurMin(j.first)).ic==='⚠️').length;
+      return `<div class="hm-sec" style="margin-top:22px">Journal des appels · ${J.length}</div>
+      ${nbIncoh?`<div class="pr-alert" style="margin-bottom:8px">⚠️ <b>${nbIncoh} appel${nbIncoh>1?'s':''}</b> reçu${nbIncoh>1?'s':''} avant l'heure affichée : l'horodatage Allo n'est pas en heure française pour ${nbIncoh>1?'ceux-là':'celui-là'}.</div>`:''}
+      <div style="max-height:440px;overflow-y:auto;border:1px solid var(--cream-line);border-radius:14px;background:#fff">
+      ${J.map(j=>{
+        const tp=tsParts(j.a.ts)||{h:'?'};
+        const dur=_apDurMin(j.first);
+        const co=_apCoherence(j.a,dur);
+        const am=j.first.match(/ · par ([^·\n]+?)(?= · |$)/);const who=am?am[1].trim():'';
+        const dir=/appel entrant/.test(j.first)?'↙':'↗';
+        const res=(j.first.match(/· (answered|voicemail|received|closed|failed|transferred_ai|blocked)\b/i)||['',''])[1].toLowerCase();
+        const resLbl={answered:'abouti',voicemail:'messagerie',received:'manqué',closed:'raccroché',failed:'échec',transferred_ai:'IA',blocked:'bloqué'}[res]||res;
+        return `<div onclick="showAppels('${j.p.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
+          <b style="flex:0 0 46px;font-size:13.5px;color:var(--cp-dark);font-variant-numeric:tabular-nums">${tp.h}</b>
+          <span style="flex:0 0 14px;color:var(--ink-mid);font-weight:800" title="${dir==='↗'?'sortant':'entrant'}">${dir}</span>
+          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;color:var(--ink)">${esc(j.p.nom)}</span>
+          ${who?`<span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ink-mid)">${avaTag(avatarOf(who),16,who)} ${esc(who)}</span>`:''}
+          <span style="flex:0 0 74px;text-align:right;font-size:11px;color:var(--ink-mid)">${dur?(dur<1?Math.round(dur*60)+' s':Math.round(dur)+' min'):(/· 0 ?m/.test(j.first)?'< 1 min':'')}${resLbl?(dur||/· 0 ?m/.test(j.first)?' · ':'')+resLbl:''}</span>
+          <span title="${esc(co.lbl)}" style="flex:0 0 18px;text-align:center;color:${co.c};font-weight:800">${co.ic}</span>
+        </div>`;}).join('')}
+      </div>
+      <div class="fv-meta" style="margin-top:6px">Du plus récent au plus ancien · survolez ✓ pour l'heure d'arrivée sur la plateforme · touchez une ligne pour ouvrir la fiche.</div>`;
+    })()}
     ${sms?`<div class="fv-meta" style="margin-top:8px">💬 ${sms} SMS échangé${sms>1?'s':''} ce jour-là (non comptés comme appels).</div>`:''}
     <div class="fv-meta" style="margin-top:10px">Source : appels Allo attachés aux fiches prospects · les appels vers des numéros hors fiches n'apparaissent pas.</div>
   </div>`;
   $('#screen').scrollTop=0;relocateBoxes();
 }
 
-// Heure littérale : Allo horodate en heure française (même suffixé Z) →
-// on affiche EXACTEMENT ce qui est écrit, sans conversion de fuseau.
+// Horodatages Allo = UTC, avec ou sans « Z » (vérifié sur données réelles :
+// les appels reçus en direct arrivent 0-2 min après la fin quand on lit leur
+// heure en UTC). Affichage en heure de Paris, quel que soit l'appareil.
 function tsParts(ts){
-  const s=String(ts||'');
-  const m=s.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
-  if(!m)return null;
-  return {date:m[3].replace(/^0/,'')+' '+['','janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][+m[2]]+' '+m[1],h:m[4]+':'+m[5],day:s.slice(0,10)};
+  let s=String(ts||'');
+  if(!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(s))return null;
+  if(!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+='Z';
+  const d=new Date(s);if(isNaN(d.getTime()))return null;
+  const p={};new Intl.DateTimeFormat('en-GB',{timeZone:'Europe/Paris',year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',hour12:false}).formatToParts(d).forEach(x=>p[x.type]=x.value);
+  const hh=p.hour==='24'?'00':p.hour;
+  return {date:(+p.day)+' '+['','janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][+p.month]+' '+p.year,h:hh+':'+p.minute,day:p.year+'-'+p.month+'-'+p.day,abs:d.getTime()};
 }
 function showAppels(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;

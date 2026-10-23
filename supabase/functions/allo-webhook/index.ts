@@ -134,6 +134,16 @@ function detectRappel(text: string, baseIso: string): { date: string; h: string 
   return null;
 }
 
+
+// Instant d'un horodatage Allo à la minute : UTC, « Z » présent ou non
+// (10:13:45Z et 10:13:45 désignent le même appel).
+const tsMin = (s: unknown): string => {
+  let x = String(s || "");
+  if (!/[zZ]|[+-]\d\d:?\d\d$/.test(x)) x += "Z";
+  const t = Date.parse(x);
+  return isNaN(t) ? x.slice(0, 16) : String(Math.floor(t / 60000));
+};
+
 function entryTxt(meta: string, body: string, transcript: string): string {
   let t = meta + (body ? "\n" + body : "");
   if (transcript) {
@@ -250,7 +260,7 @@ serve(async (req: Request) => {
           rappel: voicemail ? new Date(Date.now() + 864e5).toISOString().slice(0, 10) : "",
           obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
           appels: (summary || transcript)
-            ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), txt: entryTxt(meta0, summary + extraInfo, transcript) }]
+            ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), rx: now(), txt: entryTxt(meta0, summary + extraInfo, transcript) }]
             : [],
           rep: author || "", studio: STUDIO, ts: now(), maj: now(),
         };
@@ -265,8 +275,8 @@ serve(async (req: Request) => {
       match.appels = Array.isArray(match.appels) ? match.appels : [];
       const entryTs = String(d.start_date || evt.timestamp || now()).slice(0, 30);
       if ((callId && match.appels.some((a: any) => idEq(a?.id, callId)))
-        || match.appels.some((a: any) => String(a?.ts || "") === entryTs)) return json({ ok: true, dedup: true });
-      match.appels.push({ id: callId, ts: entryTs, txt: entryTxt(meta0, summary + extraInfo, transcript) });
+        || match.appels.some((a: any) => !String(a?.txt || "").startsWith("💬") && tsMin(a?.ts) === tsMin(entryTs))) return json({ ok: true, dedup: true });
+      match.appels.push({ id: callId, ts: entryTs, rx: now(), txt: entryTxt(meta0, summary + extraInfo, transcript) });
       if (match.appels.length > 20) match.appels = match.appels.slice(-20);
       if (/^Contact 0/.test(String(match.nom || "")) && isRealName(extractedName)) match.nom = extractedName.slice(0, 80);
       if (!String(match.rep || "") && author) match.rep = author;
@@ -285,7 +295,7 @@ serve(async (req: Request) => {
       const msgId = String(d.id || "").slice(0, 40);
       const smsAuthor = resolveRep(d.user_email) || lineOwner(inbound ? d.to_number : d.from_number);
       const meta = inbound ? "💬 SMS reçu" : "💬 SMS envoyé" + (smsAuthor ? " par " + smsAuthor : "");
-      const entry = { id: msgId, ts: String(d.sent_at || evt.timestamp || now()).slice(0, 30), txt: (meta + "\n" + content).slice(0, TXT_MAX) };
+      const entry = { id: msgId, ts: String(d.sent_at || evt.timestamp || now()).slice(0, 30), rx: now(), txt: (meta + "\n" + content).slice(0, TXT_MAX) };
       const match = findByKey(key);
       if (match) {
         match.appels = Array.isArray(match.appels) ? match.appels : [];
