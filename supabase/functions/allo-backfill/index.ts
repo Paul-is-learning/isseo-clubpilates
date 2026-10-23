@@ -158,6 +158,33 @@ serve(async (req: Request) => {
           const li = conv?.last_item;
           const key = telKey(conv?.contact_number);
           if (key.length < 9) { skipped++; continue; }
+          // Réattribution par LIGNE, avant tout filtre (messageries et appels sans
+          // résumé compris) : chaque appel de la fiche non attribué à un titulaire de
+          // ligne (ex. « Clément » venu de l'email du compte) passe au titulaire.
+          const owner = lineOwner(alloNum);
+          const p0 = owner ? list.find((x) => telKey(x?.tel) === key) : null;
+          if (p0) {
+            const owners = lineOwners();
+            for (const e of (Array.isArray(p0.appels) ? p0.appels : [])) {
+              const t0 = String(e?.txt || "");
+              if (!t0.startsWith("📞")) continue;
+              const nl = t0.indexOf("\n");
+              const first = nl < 0 ? t0 : t0.slice(0, nl), rest = nl < 0 ? "" : t0.slice(nl);
+              const m = first.match(/ · par ([^·]+?)(?= · |$)/);
+              const cur = m ? m[1].trim() : "";
+              if (cur === owner || (cur && owners.has(cur))) continue;
+              const nf = m ? first.replace(" · par " + m[1], " · par " + owner)
+                : first.includes(" · import historique") ? first.replace(" · import historique", " · par " + owner + " · import historique")
+                : first + " · par " + owner;
+              e.txt = (nf + rest).slice(0, TXT_MAX);
+              p0.maj = now();
+              auteursCorriges++;
+            }
+            const imported = /^(Importé d'Allo|Contact Allo)/.test(String(p0.note || ""));
+            if (imported && ["", "Clément", "Clement"].includes(String(p0.rep || "")) && p0.rep !== owner) {
+              p0.rep = owner; p0.maj = now(); auteursCorriges++;
+            }
+          }
           if (!li || li.type !== "CALL") { skipped++; continue; }
           const summary = String(li.summary || "").trim();
           let transcript = "";
@@ -209,30 +236,6 @@ serve(async (req: Request) => {
             || p.appels.find((a: any) => tsMin(a?.ts) === tsMin(li.date));
           if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
           if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
-          // Réattribution : tout appel de cette conversation non attribué à un titulaire
-          // de ligne (ex. « Clément » deviné par email/transcription) passe au titulaire.
-          if (author) {
-            const owners = lineOwners();
-            for (const e of p.appels) {
-              const t0 = String(e?.txt || "");
-              if (!t0.startsWith("📞")) continue;
-              const nl = t0.indexOf("\n");
-              const first = nl < 0 ? t0 : t0.slice(0, nl), rest = nl < 0 ? "" : t0.slice(nl);
-              const m = first.match(/ · par ([^·]+?)(?= · |$)/);
-              const cur = m ? m[1].trim() : "";
-              if (cur === author || (cur && owners.has(cur))) continue;
-              const nf = m ? first.replace(" · par " + m[1], " · par " + author)
-                : first.includes(" · import historique") ? first.replace(" · import historique", " · par " + author + " · import historique")
-                : first + " · par " + author;
-              e.txt = (nf + rest).slice(0, TXT_MAX);
-              p.maj = now();
-              auteursCorriges++;
-            }
-            const imported = /^(Importé d'Allo|Contact Allo)/.test(String(p.note || ""));
-            if (imported && ["", "Clément", "Clement"].includes(String(p.rep || "")) && p.rep !== author) {
-              p.rep = author; p.maj = now(); auteursCorriges++;
-            }
-          }
           const rdv = detectRappel(summary + " " + transcript, String(li.date || ""));
           if (rdv && (p.statut === "rappeler" || p.statut === "essai") && (!p.rappel || p.rappel < new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10))) {
             p.rappel = rdv.date; if (rdv.h) p.rappelH = rdv.h; p.rappelBy = "auto"; p.maj = now();
