@@ -949,6 +949,11 @@ body{background:var(--cream)}
 /* ── Plein écran PC ── */
 @media(min-width:1024px){
   #app{max-width:1160px}
+  /* Mots décoratifs verticaux : hors jeu tant que l'écran ne leur laisse pas la place */
+  body::before,body::after{display:none}
+  .hm-big{min-height:148px}
+  .ht-grid.pilot{grid-template-columns:repeat(3,1fr)}
+  .hm-today{justify-content:center}
   .screen{padding-left:44px;padding-right:44px}
   .screen>*{width:100%;max-width:920px;margin-left:auto;margin-right:auto}
   /* Écrans d'appel (vignettes coach à droite) : colonne resserrée à gauche */
@@ -960,6 +965,10 @@ body{background:var(--cream)}
 }
 @media(min-width:1160px){
   #sideRail{left:auto;right:max(16px,calc((100vw - 1160px)/2 + 28px));width:min(400px,calc((100vw - 760px)/2))}
+}
+@media(min-width:1480px){
+  body::before{display:block;left:max(14px,calc(50% - 580px - 128px))}
+  body::after{display:block;right:max(14px,calc(50% - 580px - 128px))}
 }
 </style>
 </head>
@@ -3752,7 +3761,7 @@ function showHome(){_vReg('home');
       <button class="ht-tile" onclick="showAca()"><span class="ht-ic">${ic('grad',22)}</span><span class="ht-lbl">Académie</span></button>
     </div>
     <div class="hm-sec">Piloter</div>
-    <div class="ht-grid">
+    <div class="ht-grid pilot">
       <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">${ic('trophy',22)}</span><span class="ht-lbl">Performances</span></button>
       ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">${ic('users',22)}</span><span class="ht-lbl">Équipe</span></button>`:''}
       <button class="ht-tile" onclick="openSet()"><span class="ht-ic">${ic('sliders',22)}</span><span class="ht-lbl">Réglages</span></button>
