@@ -945,6 +945,22 @@ body{background:var(--cream)}
 .home-creed{background:#FDF8ED;border-left:3px solid var(--gold)}
 .sheet,.glp-card,.modal{background:#fff}
 .lic{display:block}
+
+/* ── Plein écran PC ── */
+@media(min-width:1024px){
+  #app{max-width:1160px}
+  .screen{padding-left:44px;padding-right:44px}
+  .screen>*{width:100%;max-width:920px;margin-left:auto;margin-right:auto}
+  /* Écrans d'appel (vignettes coach à droite) : colonne resserrée à gauche */
+  .screen:has(.catch-box,.ask-box)>*{max-width:700px;margin-left:0}
+  .nav{padding-left:max(18px,calc((100% - 920px)/2));padding-right:max(18px,calc((100% - 920px)/2))}
+  .hm-grid2{grid-template-columns:repeat(4,1fr)}
+  .hm-big .s{min-height:30px}
+  .ht-grid{grid-template-columns:repeat(6,1fr)}
+}
+@media(min-width:1160px){
+  #sideRail{left:auto;right:max(16px,calc((100vw - 1160px)/2 + 28px));width:min(400px,calc((100vw - 760px)/2))}
+}
 </style>
 </head>
 <body>
