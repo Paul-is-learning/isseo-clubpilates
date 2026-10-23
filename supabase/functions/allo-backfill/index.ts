@@ -29,6 +29,24 @@ const idEq = (a: unknown, b: unknown) =>
   !!a && !!b && String(a).replace(/[^a-zA-Z0-9]/g, "") === String(b).replace(/[^a-zA-Z0-9]/g, "");
 const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*pilates|allo/i.test(n);
 
+// Correspondance email Allo → prénom du profil d'équipe (Sales Coach).
+// Base en dur + extension par secret ALLO_REPS ("cle=Nom,cle2=Nom2",
+// clé = début de l'email en minuscules/lettres seules). Inconnu → vide
+// (mieux vaut pas de conseiller qu'un nom fantôme dans le classement).
+const REP_DEFAULTS: Record<string, string> = { jeancharles: "JC" };
+function resolveRep(email: unknown): string {
+  const local = String(email || "").split("@")[0].toLowerCase().replace(/[^a-z]/g, "");
+  if (!local) return "";
+  const map: Record<string, string> = { ...REP_DEFAULTS };
+  for (const pair of (Deno.env.get("ALLO_REPS") || "").split(",")) {
+    const i = pair.indexOf("=");
+    if (i > 0) map[pair.slice(0, i).trim().toLowerCase().replace(/[^a-z]/g, "")] = pair.slice(i + 1).trim();
+  }
+  for (const k of Object.keys(map)) if (k && local.startsWith(k)) return map[k];
+  return "";
+}
+
+
 serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST attendu" }, 405);
   try {
@@ -155,8 +173,18 @@ serve(async (req: Request) => {
       }
     }
 
+    // Réparation : les conseillers fantômes fabriqués depuis un email Allo
+    // (ex. « Jeancharlesclubpilates ») sont remappés vers le vrai prénom, ou vidés.
+    let repares = 0;
+    for (const p of list) {
+      const r = String(p?.rep || "");
+      if (!r || /\s/.test(r) || r.length <= 12) continue;
+      const mapped = resolveRep(r + "@x");
+      if (mapped && mapped !== r) { p.rep = mapped; p.maj = new Date().toISOString(); repares++; }
+      else if (/clubpilates|allo/i.test(r)) { p.rep = ""; p.maj = new Date().toISOString(); repares++; }
+    }
     await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
-    return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped });
+    return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares });
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 500);
   }

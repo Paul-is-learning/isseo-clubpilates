@@ -36,8 +36,22 @@ const idEq = (a: unknown, b: unknown) =>
 
 // Allo met VOTRE nom d'entreprise quand le contact est inconnu → on l'écarte
 const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*pilates|allo/i.test(n);
-const repFromEmail = (e: unknown) =>
-  String(e || "").split("@")[0].replace(/[._-]+/g, " ").trim().replace(/(^|\s)\S/g, (c) => c.toUpperCase());
+// Correspondance email Allo → prénom du profil d'équipe (Sales Coach).
+// Base en dur + extension par secret ALLO_REPS ("cle=Nom,cle2=Nom2",
+// clé = début de l'email en minuscules/lettres seules). Inconnu → vide
+// (mieux vaut pas de conseiller qu'un nom fantôme dans le classement).
+const REP_DEFAULTS: Record<string, string> = { jeancharles: "JC" };
+function resolveRep(email: unknown): string {
+  const local = String(email || "").split("@")[0].toLowerCase().replace(/[^a-z]/g, "");
+  if (!local) return "";
+  const map: Record<string, string> = { ...REP_DEFAULTS };
+  for (const pair of (Deno.env.get("ALLO_REPS") || "").split(",")) {
+    const i = pair.indexOf("=");
+    if (i > 0) map[pair.slice(0, i).trim().toLowerCase().replace(/[^a-z]/g, "")] = pair.slice(i + 1).trim();
+  }
+  for (const k of Object.keys(map)) if (k && local.startsWith(k)) return map[k];
+  return "";
+}
 
 function entryTxt(meta: string, body: string, transcript: string): string {
   let t = meta + (body ? "\n" + body : "");
@@ -142,7 +156,7 @@ serve(async (req: Request) => {
           appels: (summary || transcript)
             ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), txt: entryTxt(meta0, summary + extraInfo, transcript) }]
             : [],
-          rep: repFromEmail(d.user_email), studio: STUDIO, ts: now(), maj: now(),
+          rep: resolveRep(d.user_email), studio: STUDIO, ts: now(), maj: now(),
         };
         list.push(p);
         await save();
@@ -168,7 +182,7 @@ serve(async (req: Request) => {
       const content = String(d.content || "").trim();
       if (key.length < 9 || !content) return json({ ok: true, ignored: "sms sans contenu/numéro" });
       const msgId = String(d.id || "").slice(0, 40);
-      const meta = inbound ? "💬 SMS reçu" : "💬 SMS envoyé" + (d.user_email ? " par " + repFromEmail(d.user_email) : "");
+      const meta = inbound ? "💬 SMS reçu" : "💬 SMS envoyé" + (resolveRep(d.user_email) ? " par " + resolveRep(d.user_email) : "");
       const entry = { id: msgId, ts: String(d.sent_at || evt.timestamp || now()).slice(0, 30), txt: (meta + "\n" + content).slice(0, TXT_MAX) };
       const match = findByKey(key);
       if (match) {
@@ -189,7 +203,7 @@ serve(async (req: Request) => {
         tel: telFr, note: "Importé d'Allo · SMS entrant", statut: "rappeler",
         rappel: new Date().toISOString().slice(0, 10),
         obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
-        appels: [entry], rep: repFromEmail(d.user_email), studio: STUDIO, ts: now(), maj: now(),
+        appels: [entry], rep: resolveRep(d.user_email), studio: STUDIO, ts: now(), maj: now(),
       };
       list.push(p);
       await save();
