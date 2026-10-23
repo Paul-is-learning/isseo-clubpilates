@@ -3460,18 +3460,25 @@ function showAppels(id){
   icSheet(`<div class="glp-tag">📞 Résumés d'appels · Allo</div>
     <div class="glp-t">${esc(p.nom)}</div>
     <div class="fv-meta">Collez ici les résumés IA de vos appels Allo · toute l'équipe les voit sur la fiche.</div>
-    <div style="margin-top:12px">${list.length?list.map(a=>`
+    <div style="margin-top:12px">${list.length?list.map(a=>{
+      const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');
+      let main=i>=0?t.slice(0,i):t;const tr=i>=0?t.slice(i+20):'';
+      // Auteur de l'appel : extrait de la ligne méta « … · par X » → chip en en-tête
+      const lines=main.split('\n');const am=(lines[0]||'').match(/ · par ([^·\n]+?)(?= · import historique|$)/);
+      const auth=am?am[1].trim():'';
+      if(auth){lines[0]=lines[0].replace(' · par '+am[1],'');main=lines.join('\n');}
+      return `
       <div style="background:#F8FAFD;border:1px solid #E3E8F1;border-radius:12px;padding:10px 12px;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
           <b style="font-size:11.5px;color:var(--cp-dark)">📅 ${new Date(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})} à ${new Date(a.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b>
+          ${auth?`<span style="display:inline-flex;align-items:center;gap:5px;background:#EEF2FA;border:1px solid #DCE4F2;border-radius:99px;padding:2px 9px 2px 3px;font-size:11px;font-weight:800;color:var(--cp-dark)">${avaTag(avatarOf(auth),18,auth)} ${esc(auth)}</span>`:''}
           <span style="flex:1"></span>
           <button style="opacity:.6" title="Copier" onclick="copyAppel('${p.id}','${a.ts}')">📋</button>
           <button style="opacity:.6" title="Supprimer ce résumé" onclick="delAppel('${p.id}','${a.ts}')">🗑</button>
         </div>
-        ${(()=>{const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');const main=i>=0?t.slice(0,i):t;const tr=i>=0?t.slice(i+20):'';
-          return `<div style="font-size:13px;line-height:1.55;color:#333B4E;white-space:pre-wrap">${esc(main)}</div>`
-            +(tr?`<details style="margin-top:8px"><summary style="font-size:11.5px;font-weight:700;color:var(--cp-deep);cursor:pointer">📜 Transcription complète</summary><div style="font-size:12px;line-height:1.5;color:#55607A;white-space:pre-wrap;margin-top:6px;max-height:300px;overflow:auto">${esc(tr)}</div></details>`:'');})()}
-      </div>`).join(''):'<div class="ics-empty">Aucun résumé pour l\'instant.</div>'}</div>
+        <div style="font-size:13px;line-height:1.55;color:#333B4E;white-space:pre-wrap">${esc(main)}</div>
+        ${tr?`<details style="margin-top:8px"><summary style="font-size:11.5px;font-weight:700;color:var(--cp-deep);cursor:pointer">📜 Transcription complète</summary><div style="font-size:12px;line-height:1.5;color:#55607A;white-space:pre-wrap;margin-top:6px;max-height:300px;overflow:auto">${esc(tr)}</div></details>`:''}
+      </div>`;}).join(''):'<div class="ics-empty">Aucun résumé pour l\'instant.</div>'}</div>
     <div class="ics-lbl" style="margin-top:14px">Ajouter un résumé</div>
     <textarea id="ap-txt" placeholder="Collez le résumé IA d'Allo…" style="width:100%;min-height:96px;padding:11px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea>
     <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:12px" onclick="addAppel('${p.id}')">📞 Enregistrer le résumé</button></div>`);
