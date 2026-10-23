@@ -156,6 +156,8 @@ async function loadAll(){
   // Inject INIT studios missing from Supabase + patch config fields
   Object.keys(INIT).forEach(function(k){
     if(!S.studios[k]){
+      // Studio supprimé volontairement (pierre tombale) → ne jamais le ressusciter
+      if((S.adminSettings.deletedStudios||[]).indexOf(k)>=0)return;
       // Studio défini dans INIT mais absent de Supabase → l'injecter
       S.studios[k]=JSON.parse(JSON.stringify(INIT[k]));
       sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()});

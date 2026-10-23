@@ -426,6 +426,13 @@ async function supprimerStudio(id){
   if(!isSuperAdmin()){toast('Action réservée aux administrateurs principaux.');return;}
   if(!confirm('Supprimer définitivement ce projet ? Cette action est irréversible.'))return;
   await sb.from('studios').delete().eq('id',id);
+  // Pierre tombale pour les studios définis dans le code : sans elle, le
+  // semeur de state.js les ré-injecterait au prochain chargement.
+  if(typeof INIT!=='undefined'&&INIT[id]){
+    if(!S.adminSettings.deletedStudios)S.adminSettings.deletedStudios=[];
+    if(S.adminSettings.deletedStudios.indexOf(id)<0)S.adminSettings.deletedStudios.push(id);
+    await saveAdminSettings();
+  }
   delete S.studios[id];S.view='dashboard';S.selectedId=null;render();toast('Supprime');
 }
 async function createStudio(){
