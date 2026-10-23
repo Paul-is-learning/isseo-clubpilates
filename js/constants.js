@@ -227,6 +227,14 @@ function getBPAdherents(sid){
     var tgtA1=fc.adhFinA1>0?fc.adhFinA1:refA1;
     var tgtA2=fc.adhFinA2>0?fc.adhFinA2:refA2;
     var tgtA3=fc.adhFinA3>0?fc.adhFinA3:refA3;
+    // Lissage linéaire : progression constante vers la cible (+N nets/mois)
+    if(fc.adhLissage==='lineaire'){
+      var lin=[];
+      for(var i=0;i<12;i++)lin.push(Math.round(tgtA1*(i+1)/12));
+      for(var i=0;i<12;i++)lin.push(Math.round(tgtA1+(tgtA2-tgtA1)*(i+1)/12));
+      for(var i=0;i<12;i++)lin.push(Math.round(tgtA2+(tgtA3-tgtA2)*(i+1)/12));
+      return lin;
+    }
     var r1=tgtA1/refA1,r2=tgtA2/refA2,r3=tgtA3/refA3;
     var out=[];
     for(var i=0;i<12;i++)out.push(Math.round(BP_ADHERENTS[i]*r1));
@@ -248,6 +256,37 @@ const BP_CHURN=[
 // Repartition abonnements (source PDF)
 const PACK_REP={pack4:0.47,pack8:0.50,illimite:0.03};
 const PRIX={seance:33.33,pack4:110.00,pack8:193.33,illimite:276.67};
+
+// Panier moyen HT et CA annuels depuis une courbe adhérents + mix packs.
+// Calibration : la courbe du dossier (2 693 adh-mois A1 × 156,67 € HT ≈ 429 K€
+// de CA cours) suit déjà ce modèle. privés+boutique = +4,615 % (19 800/429 000).
+function adhCurveFromTargets(t1,t2,t3,lissage){
+  var fc={adhFinA1:t1,adhFinA2:t2,adhFinA3:t3,adhLissage:lissage};
+  var refA1=285,refA2=345,refA3=400;
+  if(lissage==='lineaire'){
+    var lin=[];
+    for(var i=0;i<12;i++)lin.push(Math.round(t1*(i+1)/12));
+    for(var i=0;i<12;i++)lin.push(Math.round(t1+(t2-t1)*(i+1)/12));
+    for(var i=0;i<12;i++)lin.push(Math.round(t2+(t3-t2)*(i+1)/12));
+    return lin;
+  }
+  var r1=t1/refA1,r2=t2/refA2,r3=t3/refA3,out=[];
+  for(var i=0;i<12;i++)out.push(Math.round(BP_ADHERENTS[i]*r1));
+  for(var i=12;i<24;i++)out.push(Math.round(BP_ADHERENTS[i]*r2));
+  for(var i=24;i<36;i++)out.push(Math.round(BP_ADHERENTS[i]*r3));
+  return out;
+}
+function caFromAdherents(curve,mix,prixTTC){
+  var panierHT=((mix.p4/100)*prixTTC.p4+(mix.p8/100)*prixTTC.p8+(mix.ill/100)*prixTTC.ill)/1.2;
+  var EXTRA=19800/429000; // privés + boutique, ratio du dossier
+  var out=[];
+  for(var y=0;y<3;y++){
+    var s=0;
+    for(var i=y*12;i<y*12+12;i++)s+=curve[i];
+    out.push(Math.round(s*panierHT*(1+EXTRA)));
+  }
+  return {ca:out,panierHT:Math.round(panierHT*100)/100};
+}
 
 // ── CA BP 3 ans (source : Dossier Financement Lattes p.9) ─────────────────────
 const CA_A1=448800,CA_A2=610190,CA_A3=761841;

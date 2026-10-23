@@ -380,6 +380,75 @@ function renderBP3YInfographic(sid,s){
 }
 
 // ── Adherents ─────────────────────────────────────────────────────────────────
+/* ── 🎯 Jouer avec le BP : cibles adhérents, lissage, mix packs → CA ── */
+function _bpPlay(sid){
+  var s=S.studios[sid],fc=(s&&s.forecast)||{};
+  if(!S.bpPlay)S.bpPlay={};
+  if(!S.bpPlay[sid]){
+    S.bpPlay[sid]={
+      t1:fc.adhFinA1>0?fc.adhFinA1:285,t2:fc.adhFinA2>0?fc.adhFinA2:345,t3:fc.adhFinA3>0?fc.adhFinA3:400,
+      lissage:fc.adhLissage||'dossier',
+      mix:Object.assign({p4:47,p8:50,ill:3},fc.adhMix||{}),
+      prix:Object.assign({p4:142,p8:252,ill:352},fc.adhPrix||{})
+    };
+  }
+  return S.bpPlay[sid];
+}
+function setBPlay(sid,k,v){
+  var p=_bpPlay(sid);
+  if(k==='lissage')p.lissage=v;
+  else if(k.indexOf('mix.')===0)p.mix[k.slice(4)]=num(v,0);
+  else if(k.indexOf('prix.')===0)p.prix[k.slice(5)]=num(v,0);
+  else p[k]=Math.max(0,num(v,0));
+  render();
+}
+async function applyBPlay(sid){
+  if(isViewer()){toast('Lecture seule');return;}
+  var p=_bpPlay(sid),s=S.studios[sid];
+  var mixTot=p.mix.p4+p.mix.p8+p.mix.ill;
+  if(Math.round(mixTot)!==100){toast('Le mix doit faire 100 % (actuellement '+Math.round(mixTot)+' %)');return;}
+  var curve=adhCurveFromTargets(p.t1,p.t2,p.t3,p.lissage);
+  var r=caFromAdherents(curve,p.mix,p.prix);
+  var fc=Object.assign({},s.forecast||{},{
+    adhFinA1:p.t1,adhFinA2:p.t2,adhFinA3:p.t3,
+    adhLissage:p.lissage,adhMix:p.mix,adhPrix:p.prix,
+    annualCA:r.ca[0],annualCA2:r.ca[1],annualCA3:r.ca[2]
+  });
+  await saveStudio(sid,Object.assign({},s,{forecast:fc}));
+  toast('BP recalculé : '+fmtN(r.ca[0])+' / '+fmtN(r.ca[1])+' / '+fmtN(r.ca[2])+' €');
+  render();
+}
+function renderBPlayPanel(sid){
+  var p=_bpPlay(sid);
+  var curve=adhCurveFromTargets(p.t1,p.t2,p.t3,p.lissage);
+  var r=caFromAdherents(curve,p.mix,p.prix);
+  var mixTot=Math.round(p.mix.p4+p.mix.p8+p.mix.ill);
+  var nets=[Math.round(p.t1/12*10)/10,Math.round((p.t2-p.t1)/12*10)/10,Math.round((p.t3-p.t2)/12*10)/10];
+  var inp=function(val,oc,w){return '<input type="number" value="'+val+'" onchange="'+oc+'" style="width:'+(w||70)+'px;padding:7px 8px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;text-align:center"/>';};
+  var h='<div class="card" style="padding:18px 20px;margin-bottom:16px;border-left:3px solid #1a3a6b">';
+  h+='<div style="font-weight:700;font-size:14px;color:#0f1f3d;margin-bottom:2px">🎯 Jouer avec le BP</div>';
+  h+='<div style="font-size:11.5px;color:#888;margin-bottom:14px">Cibles adhérents fin d\'année × mix forfaits → le CA et tout le BP se recalculent. Répartition mensuelle du CA : courbe du dossier.</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">';
+  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Adhérents fin A1 · A2 · A3</div><div style="display:flex;gap:6px">'
+    +inp(p.t1,"setBPlay('"+sid+"','t1',this.value)")+inp(p.t2,"setBPlay('"+sid+"','t2',this.value)")+inp(p.t3,"setBPlay('"+sid+"','t3',this.value)")+'</div></div>';
+  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Lissage des inscriptions</div>'
+    +'<select onchange="setBPlay(\''+sid+'\',\'lissage\',this.value)" style="padding:8px 10px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;background:#fff">'
+    +'<option value="dossier"'+(p.lissage==='dossier'?' selected':'')+'>Courbe du dossier (ramp-up)</option>'
+    +'<option value="lineaire"'+(p.lissage==='lineaire'?' selected':'')+'>Linéaire (+N nets / mois)</option>'
+    +'</select>'
+    +(p.lissage==='lineaire'?'<div style="font-size:10.5px;color:#888;margin-top:4px">≈ +'+nets[0]+' · +'+nets[1]+' · +'+nets[2]+' nets/mois</div>':'')+'</div>';
+  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Mix % · Pack 4 / Pack 8 / Illimité'+(mixTot!==100?' <span style="color:#c53030">(= '+mixTot+' %)</span>':'')+'</div><div style="display:flex;gap:6px">'
+    +inp(p.mix.p4,"setBPlay('"+sid+"','mix.p4',this.value)",56)+inp(p.mix.p8,"setBPlay('"+sid+"','mix.p8',this.value)",56)+inp(p.mix.ill,"setBPlay('"+sid+"','mix.ill',this.value)",56)+'</div></div>';
+  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Tarifs TTC /mois</div><div style="display:flex;gap:6px">'
+    +inp(p.prix.p4,"setBPlay('"+sid+"','prix.p4',this.value)",62)+inp(p.prix.p8,"setBPlay('"+sid+"','prix.p8',this.value)",62)+inp(p.prix.ill,"setBPlay('"+sid+"','prix.ill',this.value)",62)+'</div></div>';
+  h+='</div>';
+  h+='<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px dashed #e3e8f1">';
+  h+='<div style="font-size:12.5px;color:#333"><b>Panier moyen : '+r.panierHT.toFixed(2).replace('.',',')+' € HT</b>/adhérent/mois · CA calculé : <b>'+fmtN(r.ca[0])+'</b> / <b>'+fmtN(r.ca[1])+'</b> / <b>'+fmtN(r.ca[2])+' €</b> <span style="color:#888">(+4,6 % privés & boutique inclus)</span></div>';
+  if(!isViewer())h+='<button class="btn btn-primary" style="margin-left:auto" onclick="applyBPlay(\''+sid+'\')">Appliquer au BP</button>';
+  h+='</div></div>';
+  return h;
+}
+
 function renderAdherents(sid,s){
   var ay=S.adherentYear||1;
   var actuel=S.adherents[sid]||{};
@@ -405,7 +474,7 @@ function renderAdherents(sid,s){
   var moisLabels=[];
   for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
 
-  var h='<div>';
+  var h='<div>'+renderBPlayPanel(sid);
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
   var bps3=(typeof build3YearBPWithOverrides==='function'?build3YearBPWithOverrides:build3YearBP)(s.forecast||{},sid,getStudioBPOpts(sid));
   [1,2,3].forEach(function(y){
