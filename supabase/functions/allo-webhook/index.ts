@@ -71,7 +71,7 @@ serve(async (req: Request) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "",
     );
     const { data: row } = await admin.from("studios").select("data").eq("id", ROW_PROSPECTS).maybeSingle();
-    const list: any[] = (row?.data?.list as any[]) || [];
+    const list: any[] = (row?.data?.prospects as any[]) || [];
     const match = list.find((p) => telKey(p?.tel) === key);
     if (!match) return json({ ok: true, matched: false });
 
@@ -91,7 +91,7 @@ serve(async (req: Request) => {
     if (match.appels.length > 20) match.appels = match.appels.slice(-20);
     match.maj = new Date().toISOString();
 
-    await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), list }, updated_at: new Date().toISOString() });
+    await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
     return json({ ok: true, matched: true, prospect: String(match.nom || "") });
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 500);
