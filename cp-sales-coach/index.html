@@ -3340,9 +3340,22 @@ function prSearch(v){prQuery=(v||'').toLowerCase();showProspects(true);}
 let prSort=localStorage.getItem('cpcoach_prsort')||'recent';
 function setPrSort(m){prSort=m;localStorage.setItem('cpcoach_prsort',m);showProspects(true);}
 function prLastContact(p){
-  let last=p.maj||p.ts||'';
+  let last='';
   (p.appels||[]).forEach(a=>{if(a.ts&&a.ts>last)last=a.ts;});
-  return last;
+  return last||p.ts||'';
+}
+/* Rappel programmé à l'heure : priorité absolue quand l'échéance approche (60 min) */
+function prRdvState(p){
+  if(!p.rappel)return null;
+  const today=new Date();today.setHours(12,0,0,0);
+  const todayS=today.toISOString().slice(0,10);
+  if(p.rappel!==todayS||!p.rappelH)return null;
+  const [h,m]=p.rappelH.split(':').map(Number);
+  const target=new Date();target.setHours(h,m||0,0,0);
+  const diffMin=Math.round((target.getTime()-Date.now())/60000);
+  if(diffMin>60)return {t:'plus-tard',diffMin};
+  if(diffMin>0)return {t:'imminent',diffMin};
+  return {t:'retard',diffMin};
 }
 function prDaysSince(p){
   const l=prLastContact(p);if(!l)return null;
@@ -3375,6 +3388,8 @@ function prAgeChip(p){
   return `<span style="color:${col};font-weight:700">⏳ ${d} j sans contact</span>`;
 }
 function showProspects(keepScroll){_vReg('prospects');
+  clearInterval(_prTick);
+  _prTick=setInterval(()=>{if(document.querySelector('.pr-search'))showProspects(true);else clearInterval(_prTick);},60000);
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
@@ -3382,6 +3397,11 @@ function showProspects(keepScroll){_vReg('prospects');
   if(prFilter)list=list.filter(p=>p.statut===prFilter);
   if(prQuery)list=list.filter(p=>((p.nom||'')+' '+(p.tel||'')+' '+(p.note||'')).toLowerCase().includes(prQuery));
   const sorted=list.sort((a,b)=>{
+    // Priorité absolue : rappel programmé aujourd'hui dont l'heure approche (≤60 min) ou est passée
+    const ua=prRdvState(a),ub=prRdvState(b);
+    const ra=ua&&ua.t!=='plus-tard'?0:1,rb=ub&&ub.t!=='plus-tard'?0:1;
+    if(ra!==rb)return ra-rb;
+    if(ra===0)return (a.rappelH||'').localeCompare(b.rappelH||'');
     const da=due(a)?0:1,db=due(b)?0:1;if(da!==db)return da-db;
     if(prSort==='prio'){
       // À recontacter d'abord : fiches actives, le plus ancien contact en tête
@@ -3394,7 +3414,7 @@ function showProspects(keepScroll){_vReg('prospects');
         return (rk[(prAppetence(a)||{}).tier]??1.5)-(rk[(prAppetence(b)||{}).tier]??1.5);
       }
     }
-    return (b.maj||b.ts||'').localeCompare(a.maj||a.ts||'');
+    return prLastContact(b).localeCompare(prLastContact(a));
   });
   const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PROSPECTS.filter(p=>p.statut===k).length);
   const nbDue=PROSPECTS.filter(due).length;
@@ -3414,12 +3434,13 @@ function showProspects(keepScroll){_vReg('prospects');
       </div>
       ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
       ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
-      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${isDue?' · c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
+      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${p.rappelH?' à '+p.rappelH:''}${isDue&&!p.rappelH?' · c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}${(()=>{const u=prRdvState(p);if(!u||u.t==='plus-tard')return '';return `<span style="background:#FDE8E3;color:#B4300F;border:1px solid #F5C0AE;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">🚨 ${u.t==='imminent'?'dans '+u.diffMin+' min':u.diffMin===0?'maintenant !':'en retard de '+(-u.diffMin)+' min'}</span>`;})()}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
       ${p.statut==='abo'?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
       <div class="pr-actions">
         <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'✉️ Relances ('+msgs.length+')'}</button>
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date essai / rappel"/>
+        ${p.rappel?`<input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure du rappel demandée par le client · la fiche passera en tête 1 h avant"/>`:''}
         <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
         <button onclick="showAppels('${p.id}')" class="pr-act" title="Résumés d'appels (Allo)">📞${(p.appels&&p.appels.length)?' '+p.appels.length:''}</button>
         <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
@@ -3479,6 +3500,13 @@ function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.st
   showProspects(true);
   if(s==='abo'&&p.pack)toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');
   else toast(PIPE[s].ic+' '+PIPE[s].lbl);}
+function setPRappelH(id,v){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  p.rappelH=(v||'').slice(0,5);p.maj=new Date().toISOString();
+  persistProspects();schedulePush();
+  showProspects(true);toast(p.rappelH?'⏰ Rappel programmé à '+p.rappelH+' · priorité absolue 1 h avant':'Heure retirée');
+}
+let _prTick=null;
 function setPRep(id,v){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   p.rep=v;p.maj=new Date().toISOString();

@@ -413,7 +413,7 @@ serve(async (req) => {
         const clean = {
           id: String(p.id), nom: String(p.nom || ""), tel: String(p.tel || ""),
           note: String(p.note || ""), statut: String(p.statut || "rappeler"),
-          rappel: String(p.rappel || ""), obj: String(p.obj || ""),
+          rappel: String(p.rappel || ""), rappelH: String(p.rappelH || "").slice(0, 5), obj: String(p.obj || ""),
           fiche: String(p.fiche || "").slice(0, 4000),
           pack: String(p.pack || ""),
           v2: String(p.v2 || "").slice(0, 60),
