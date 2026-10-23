@@ -59,7 +59,6 @@ serve(async (req: Request) => {
 
     const d = evt.data || {};
     const summary = String(d.summary || "").trim();
-    if (!summary) return json({ ok: true, ignored: "sans résumé" });
 
     // Numéro du prospect : l'autre bout du fil
     const phone = d.type === "OUTBOUND" ? d.to : d.from_number;
@@ -73,20 +72,50 @@ serve(async (req: Request) => {
     const { data: row } = await admin.from("studios").select("data").eq("id", ROW_PROSPECTS).maybeSingle();
     const list: any[] = (row?.data?.prospects as any[]) || [];
     const match = list.find((p) => telKey(p?.tel) === key);
-    if (!match) return json({ ok: true, matched: false });
-
     const callId = String(d.id || "").slice(0, 40);
+    const result = String(d.result || "");
+    const meta0 = "📞 Allo · " + (d.type === "OUTBOUND" ? "appel sortant" : "appel entrant")
+      + (d.length ? " · " + d.length : "") + (result ? " · " + result.toLowerCase() : "");
+
+    if (!match) {
+      // Pas de fiche → on la crée (zéro double saisie), sauf appels sans valeur
+      const creatable =
+        (d.type === "OUTBOUND" && !["BLOCKED", "FAILED", "FAILED_EXTERNAL", "CLOSED"].includes(result)) ||
+        (d.type === "INBOUND" && ["ANSWERED", "VOICEMAIL", "TRANSFERRED_AI"].includes(result));
+      if (!creatable) return json({ ok: true, matched: false, created: false });
+      const telFr = key.length === 9 ? "0" + key : String(phone || "");
+      const rawName = String((d.type === "OUTBOUND" ? d.to_name : d.from_name) || "").trim();
+      // Allo met VOTRE nom d'entreprise quand le contact est inconnu → on l'écarte
+      const isRealName = rawName && !/^[+\d\s().-]+$/.test(rawName) && !/club\s*pilates|allo/i.test(rawName);
+      const repName = String(d.user_email || "").split("@")[0].replace(/[._-]+/g, " ").trim()
+        .replace(/(^|\s)\S/g, (c: string) => c.toUpperCase());
+      const now = new Date().toISOString();
+      const voicemail = result === "VOICEMAIL";
+      const p: any = {
+        id: "p_allo_" + (callId || crypto.randomUUID().replace(/-/g, "").slice(0, 12)),
+        nom: isRealName ? rawName.slice(0, 80) : "Contact " + telFr,
+        tel: telFr, note: "Importé d'Allo" + (voicemail ? " · messagerie laissée" : ""),
+        statut: "rappeler",
+        rappel: voicemail ? new Date(Date.now() + 864e5).toISOString().slice(0, 10) : "",
+        obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
+        appels: summary ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now).slice(0, 30), txt: (meta0 + "\n" + summary).slice(0, 5000) }] : [],
+        rep: repName, studio: "", ts: now, maj: now,
+      };
+      list.push(p);
+      await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
+      return json({ ok: true, matched: false, created: true, prospect: p.nom });
+    }
+
+    if (!summary) return json({ ok: true, matched: true, ignored: "sans résumé" });
     match.appels = Array.isArray(match.appels) ? match.appels : [];
     if (callId && match.appels.some((a: any) => a?.id === callId)) {
       return json({ ok: true, dedup: true }); // livraison "at least once"
     }
 
-    const meta = "📞 Allo · " + (d.type === "OUTBOUND" ? "appel sortant" : "appel entrant")
-      + (d.length ? " · " + d.length : "") + (d.result ? " · " + String(d.result).toLowerCase() : "");
     match.appels.push({
       id: callId,
       ts: String(d.start_date || evt.timestamp || new Date().toISOString()).slice(0, 30),
-      txt: (meta + "\n" + summary).slice(0, 5000),
+      txt: (meta0 + "\n" + summary).slice(0, 5000),
     });
     if (match.appels.length > 20) match.appels = match.appels.slice(-20);
     match.maj = new Date().toISOString();
