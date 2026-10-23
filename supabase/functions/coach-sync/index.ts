@@ -77,6 +77,14 @@ serve(async (req) => {
     } else {
       const inv = invites.find((i) => i && i.actif !== false && norm(i.code) === norm(code));
       if (inv) {
+        // 1 code = 1 appareil : le premier appareil qui utilise le code le réclame ;
+        // tout autre appareil est refusé (l'admin peut libérer via team_device_reset).
+        // Les clients anciens (sans champ device) passent, le verrou s'arme à leur prochaine mise à jour.
+        const dev = String(body.device || "").slice(0, 80);
+        if (dev) {
+          if (!inv.device) { inv.device = dev; inv.deviceAt = new Date().toISOString(); await saveInvites(); }
+          else if (inv.device !== dev) return json({ error: "Code déjà actif sur un autre appareil · voir le responsable" }, 401);
+        }
         role = "rep";
         rep = String(inv.nom || "");
         mgr = inv.manager === true;
@@ -307,7 +315,7 @@ serve(async (req) => {
       }
 
       // Un recruteur ne peut pas suspendre/supprimer un autre recruteur
-      if (role !== "admin" && (action === "team_toggle" || action === "team_del")) {
+      if (role !== "admin" && (action === "team_toggle" || action === "team_del" || action === "team_device_reset")) {
         const target = invites.find((i) => i.id === String(body.id));
         if (target && target.manager === true) return json({ error: "Invitation d'un recruteur · réservé au responsable" }, 403);
       }
@@ -336,6 +344,14 @@ serve(async (req) => {
         const inv = invites.find((i) => i.id === String(body.id));
         if (!inv) return json({ error: "Invitation introuvable" }, 404);
         inv.actif = body.actif !== false;
+        await saveInvites();
+        return json({ ok: true, invites });
+      }
+
+      if (action === "team_device_reset") {
+        const inv2 = invites.find((i) => i.id === String(body.id));
+        if (!inv2) return json({ error: "Invitation introuvable" }, 404);
+        delete inv2.device; delete inv2.deviceAt;
         await saveInvites();
         return json({ ok: true, invites });
       }
