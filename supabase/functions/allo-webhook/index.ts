@@ -57,6 +57,25 @@ function resolveRep(email: unknown): string {
 // Repli d'identification : le commercial se présente en début d'appel.
 // On ne scanne que ses répliques (source USER) quand on les a, sinon
 // l'ouverture de la transcription (250 premiers caractères).
+
+// Propriétaire de la ligne Allo : identification déterministe fournie par Paul.
+// Ligne 01 88 83 34 18 → JC · ligne 07 45 80 42 39 → Caroline.
+// Extensible par secret ALLO_LINES ("33612345678=Nom,…", chiffres seuls).
+const LINE_DEFAULTS: Record<string, string> = { "33188833418": "JC", "33745804239": "Caroline" };
+function lineOwner(num: unknown): string {
+  const k = String(num || "").replace(/\D/g, "");
+  if (k.length < 9) return "";
+  const map: Record<string, string> = { ...LINE_DEFAULTS };
+  for (const pair of (Deno.env.get("ALLO_LINES") || "").split(",")) {
+    const i = pair.indexOf("=");
+    if (i > 0) map[pair.slice(0, i).replace(/\D/g, "")] = pair.slice(i + 1).trim();
+  }
+  for (const key of Object.keys(map)) {
+    if (key && (k.endsWith(key.slice(-9)) || key.endsWith(k.slice(-9)))) return map[key];
+  }
+  return "";
+}
+
 function guessAuthor(userText: string): string {
   const t = String(userText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (/jean[\s-]?charles/.test(t)) return "JC";
@@ -170,7 +189,9 @@ serve(async (req: Request) => {
       if (key.length < 9) return json({ ok: true, ignored: "numéro invalide" });
       const callId = String(d.id || "").slice(0, 40);
       const result = String(d.result || "");
-      const author = resolveRep(d.user_email) || guessAuthor(userSideText(d.transcriptions, transcript));
+      const author = resolveRep(d.user_email)
+        || lineOwner(d.type === "OUTBOUND" ? d.from_number : d.to)
+        || guessAuthor(userSideText(d.transcriptions, transcript));
       const meta0 = "📞 Allo · " + (d.type === "OUTBOUND" ? "appel sortant" : "appel entrant")
         + (d.length ? " · " + d.length : "") + (result ? " · " + result.toLowerCase() : "")
         + (author ? " · par " + author : "");
@@ -261,7 +282,8 @@ serve(async (req: Request) => {
       const content = String(d.content || "").trim();
       if (key.length < 9 || !content) return json({ ok: true, ignored: "sms sans contenu/numéro" });
       const msgId = String(d.id || "").slice(0, 40);
-      const meta = inbound ? "💬 SMS reçu" : "💬 SMS envoyé" + (resolveRep(d.user_email) ? " par " + resolveRep(d.user_email) : "");
+      const smsAuthor = resolveRep(d.user_email) || lineOwner(inbound ? d.to_number : d.from_number);
+      const meta = inbound ? "💬 SMS reçu" : "💬 SMS envoyé" + (smsAuthor ? " par " + smsAuthor : "");
       const entry = { id: msgId, ts: String(d.sent_at || evt.timestamp || now()).slice(0, 30), txt: (meta + "\n" + content).slice(0, TXT_MAX) };
       const match = findByKey(key);
       if (match) {
@@ -282,7 +304,7 @@ serve(async (req: Request) => {
         tel: telFr, note: "Importé d'Allo · SMS entrant", statut: "rappeler",
         rappel: new Date().toISOString().slice(0, 10),
         obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
-        appels: [entry], rep: resolveRep(d.user_email), studio: STUDIO, ts: now(), maj: now(),
+        appels: [entry], rep: smsAuthor || "", studio: STUDIO, ts: now(), maj: now(),
       };
       list.push(p);
       await save();

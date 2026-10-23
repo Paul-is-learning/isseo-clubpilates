@@ -31,6 +31,25 @@ const idEq = (a: unknown, b: unknown) =>
 // Repli d'identification : le commercial se présente en début d'appel.
 // On ne scanne que ses répliques (source USER) quand on les a, sinon
 // l'ouverture de la transcription (250 premiers caractères).
+
+// Propriétaire de la ligne Allo : identification déterministe fournie par Paul.
+// Ligne 01 88 83 34 18 → JC · ligne 07 45 80 42 39 → Caroline.
+// Extensible par secret ALLO_LINES ("33612345678=Nom,…", chiffres seuls).
+const LINE_DEFAULTS: Record<string, string> = { "33188833418": "JC", "33745804239": "Caroline" };
+function lineOwner(num: unknown): string {
+  const k = String(num || "").replace(/\D/g, "");
+  if (k.length < 9) return "";
+  const map: Record<string, string> = { ...LINE_DEFAULTS };
+  for (const pair of (Deno.env.get("ALLO_LINES") || "").split(",")) {
+    const i = pair.indexOf("=");
+    if (i > 0) map[pair.slice(0, i).replace(/\D/g, "")] = pair.slice(i + 1).trim();
+  }
+  for (const key of Object.keys(map)) {
+    if (key && (k.endsWith(key.slice(-9)) || key.endsWith(k.slice(-9)))) return map[key];
+  }
+  return "";
+}
+
 function guessAuthor(userText: string): string {
   const t = String(userText || "").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
   if (/jean[\s-]?charles/.test(t)) return "JC";
@@ -163,7 +182,8 @@ serve(async (req: Request) => {
           if (typeof t === "string") transcript = t.trim();
           else if (Array.isArray(t)) transcript = t.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
           // Détail de l'appel : transcription + nom/email que l'IA a captés
-          let exName = "", exEmail = "", author = "";
+          let exName = "", exEmail = "";
+          let author = lineOwner(alloNum);
           if (li.id) {
             try {
               const rIt = await fetch(API + "/v2/api/conversations/items/" + encodeURIComponent(li.id) + "?extend=transcript", { headers: H });
@@ -178,6 +198,7 @@ serve(async (req: Request) => {
                   else if (Array.isArray(tr)) transcript = tr.map((x: any) => String(x?.text || x || "")).filter(Boolean).join("\n").trim();
                 }
                 author = resolveRep(it?.user_email)
+                  || lineOwner(alloNum)
                   || guessAuthor(userSideText(it?.transcriptions ?? it?.transcript, String(it?.concatenated_transcript || "")));
                 const c = it?.extracted_data?.contact;
                 if (c) {
