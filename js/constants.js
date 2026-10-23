@@ -541,6 +541,7 @@ const BP_LINES=[
   {id:'ca_boutique',label:'CA Boutique',cat:'p'},
   {id:'fournitures',label:'Fournitures consommables',cat:'c'},
   {id:'loyer',label:'Loyer bail',cat:'c'},
+  {id:'loyer_var',label:'Loyer variable (% du CA)',cat:'c'},
   {id:'charges_loc',label:'Charges locatives',cat:'c'},
   {id:'coachs',label:'Coachs instructeurs',cat:'c'},
   {id:'royalties',label:'Royalties 9%',cat:'c'},
@@ -576,8 +577,10 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
   var caMensuelRef=_isGG?(annee===1?CA_MENSUEL_GG_A1:annee===2?CA_MENSUEL_GG_A2:CA_MENSUEL_GG_A3):(annee===1?CA_MENSUEL_A1:annee===2?CA_MENSUEL_A2:CA_MENSUEL_A3);
   var ratio=annualCA/caRef;
   var ch=getStudioCharges(sid||'lattes',annee,opts.lm);
-  // Bail à part variable (ex. CNIT La Défense) : pct du CA dès qu'il dépasse le loyer minimum garanti
-  if(opts.loyerVarPct>0&&!_isGG){var _lv=Math.round(annualCA*opts.loyerVarPct);if(_lv>ch.loyer)ch.loyer=_lv;}
+  // Bail à part variable (ex. CNIT La Défense) : le loyer reste le minimum
+  // garanti, la part variable (pct × CA − LMG, si positive) a sa propre ligne.
+  ch.loyer_var=0;
+  if(opts.loyerVarPct>0&&!_isGG){var _lv=Math.round(annualCA*opts.loyerVarPct)-ch.loyer;if(_lv>0)ch.loyer_var=_lv;}
   // Régler amort proportionnellement au CAPEX custom (règle ii)
   var CAPEX_REF=_isGG?2283600:333500,LEASING_REF=_isGG?1326000:121600,EMPRUNT_REF=_isGG?1826880:230000,TAUX_REF=_isGG?0.035:0.0373;
   if(opts.capex&&opts.capex>0&&Math.round(opts.capex)!==CAPEX_REF)
@@ -600,7 +603,7 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
   var royaltiesRatio=royaltiesAnnuelles/caRef;
 
   // IS annuel calculé sur le résultat exact du dossier
-  var totalChargesHorsFinIS=ch.fournitures+ch.loyer+ch.charges_loc+ch.coachs+royaltiesAnnuelles
+  var totalChargesHorsFinIS=ch.fournitures+ch.loyer+(ch.loyer_var||0)+ch.charges_loc+ch.coachs+royaltiesAnnuelles
     +ch.pub+ch.software+ch.assurance+ch.mutuelle+ch.nettoyage+ch.compta+ch.entretien
     +ch.missions+ch.telecom+ch.social+ch.creditbail+ch.salaries+ch.impots_taxes+ch.amort;
   var rexAnnuel=annualCA-totalChargesHorsFinIS;
@@ -621,6 +624,7 @@ function buildBPFromDossier(annualCA,moisDebut,annee,sid,opts){
     // Gold Gym : _maintenance→entretien, _energie→nettoyage, _autres→missions
     row.fournitures=Math.round(ch.fournitures/12);
     row.loyer=Math.round(ch.loyer/12);
+    row.loyer_var=Math.round((ch.loyer_var||0)/12);
     row.charges_loc=Math.round(ch.charges_loc/12);
     row.coachs=Math.round(ch.coachs/12);
     row.royalties=Math.round(ca*royaltiesRatio); // proportionnel au CA mensuel

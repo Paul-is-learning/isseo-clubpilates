@@ -821,6 +821,8 @@ function renderForecast(sid,s){
     h+='<tr class="bp-section-head charges"><td colspan="14">CHARGES</td></tr>';
     var monthCh=Array(12).fill(0);
     CHARGES.forEach(function(l){
+      // Ligne loyer variable : affichée seulement quand le bail en a une
+      if(l.id==='loyer_var'&&!bp.some(function(r){return (r.loyer_var||0)>0;}))return;
       var tot=0;
       var lineVals=[];
       // IS est auto-calculé — verrouillé (read-only)
@@ -936,6 +938,7 @@ function renderForecast(sid,s){
       });
       h+='</div><div class="sec-title">Charges</div><div class="edit-grid">';
       CHARGES.forEach(function(l){
+        if(l.id==='loyer_var'&&!(r.loyer_var>0))return;
         h+='<div><label style="font-size:11px;color:#888;display:block;margin-bottom:3px">'+l.label+' (BP: '+fmtN(r[l.id])+')</label>';
         h+='<input type="number" value="'+(S.editVals[l.id]||'')+'" oninput="setEV(\''+l.id+'\',this.value)" placeholder="'+r[l.id]+'" style="width:100%;padding:7px;border:0.5px solid #ddd;border-radius:7px;font-size:12px;outline:none"/></div>';
       });
