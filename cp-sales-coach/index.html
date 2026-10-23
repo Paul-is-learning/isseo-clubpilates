@@ -3577,7 +3577,7 @@ function viewPFiche(id){
     <div class="glp-tag">📄 Fiche de découverte</div>
     <div class="glp-t">${esc(p.nom)}${p.statut==='abo'&&p.pack?` <span class="fv-pack">${PIPE.abo.ic} ${packShort(+p.pack)}</span>`:''}</div>
     <div class="fv-meta">${p.tel?'📱 '+esc(p.tel)+' · ':''}${p.rep?'suivi par '+esc(p.rep.split(' ')[0])+' · ':''}créée le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
-    <div class="fv-body">${fiche?esc(fiche):'Aucune fiche de découverte enregistrée pour ce prospect.\n\nLa fiche se remplit automatiquement quand l\'appel est mené dans l\'outil puis enregistré depuis l\'écran Récap.'}${(p.appels&&p.appels.length)?'\n\n━━ 📞 Résumés d\'appels (Allo) ━━\n\n'+p.appels.slice().reverse().map(a=>{const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');return '📅 '+new Date(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+'\n'+esc(i>=0?t.slice(0,i):t)+(i>=0?'\n📜 Transcription complète : bouton 📞 de la fiche':'');}).join('\n\n'):''}</div>
+    <div class="fv-body">${fiche?esc(fiche):'Aucune fiche de découverte enregistrée pour ce prospect.\n\nLa fiche se remplit automatiquement quand l\'appel est mené dans l\'outil puis enregistré depuis l\'écran Récap.'}${(p.appels&&p.appels.length)?'\n\n━━ 📞 Résumés d\'appels (Allo) ━━\n\n'+p.appels.slice().reverse().map(a=>{const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');return '📅 '+tsDate(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+'\n'+esc(i>=0?t.slice(0,i):t)+(i>=0?'\n📜 Transcription complète : bouton 📞 de la fiche':'');}).join('\n\n'):''}</div>
     <div class="fv-btns">
       ${fiche?`<button class="pr-act" onclick="copyPFiche('${p.id}')">📋 Copier</button>`:''}
       <button class="glp-ok" style="flex:1;margin-top:0" onclick="document.getElementById('fichePop').remove()">Fermer</button>
@@ -3597,7 +3597,9 @@ function showCallStats(){_vReg('calls');
   const dateS=_csDate;
   const rows={};let total=0,answered=0,sms=0;
   PROSPECTS.forEach(p=>(p.appels||[]).forEach(a=>{
-    if(String(a.ts||'').slice(0,10)!==dateS)return;
+    const d=tsDate(a.ts);if(isNaN(d.getTime()))return;
+    const local=new Date(d.getTime()-d.getTimezoneOffset()*60000).toISOString().slice(0,10);
+    if(local!==dateS)return;
     const first=(a.txt||'').split('\n')[0];
     if(first.startsWith('💬')){sms++;return;}
     if(!first.startsWith('📞'))return;
@@ -3636,6 +3638,11 @@ function showCallStats(){_vReg('calls');
   $('#screen').scrollTop=0;relocateBoxes();
 }
 
+function tsDate(ts){
+  let s=String(ts||'');
+  if(/^\d{4}-\d{2}-\d{2}T\d{2}/.test(s)&&!/[zZ]|[+\-]\d{2}:?\d{2}$/.test(s))s+='Z';
+  return new Date(s);
+}
 function showAppels(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const list=(p.appels||[]).slice().reverse();
@@ -3652,7 +3659,7 @@ function showAppels(id){
       return `
       <div style="background:#F8FAFD;border:1px solid #E3E8F1;border-radius:12px;padding:10px 12px;margin-bottom:8px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
-          <b style="font-size:11.5px;color:var(--cp-dark)">📅 ${new Date(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})} à ${new Date(a.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b>
+          <b style="font-size:11.5px;color:var(--cp-dark)">📅 ${tsDate(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})} à ${tsDate(a.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b>
           ${auth?`<span style="display:inline-flex;align-items:center;gap:5px;background:#EEF2FA;border:1px solid #DCE4F2;border-radius:99px;padding:2px 9px 2px 3px;font-size:11px;font-weight:800;color:var(--cp-dark)">${avaTag(avatarOf(auth),18,auth)} ${esc(auth)}</span>`:''}
           <span style="flex:1"></span>
           <button style="opacity:.6" title="Copier" onclick="copyAppel('${p.id}','${a.ts}')">📋</button>
