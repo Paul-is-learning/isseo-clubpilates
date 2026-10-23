@@ -230,7 +230,7 @@ serve(async (req: Request) => {
           if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
           const rdv = detectRappel(summary + " " + transcript, String(li.date || ""));
           if (rdv && (p.statut === "rappeler" || p.statut === "essai") && (!p.rappel || p.rappel < new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10))) {
-            p.rappel = rdv.date; if (rdv.h) p.rappelH = rdv.h; p.maj = now();
+            p.rappel = rdv.date; if (rdv.h) p.rappelH = rdv.h; p.rappelBy = "auto"; p.maj = now();
           }
           if (existing) {
             // Auteur manquant sur une entrée déjà importée → on complète la ligne méta

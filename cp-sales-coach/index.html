@@ -3471,7 +3471,7 @@ function showProspects(keepScroll){_vReg('prospects');
       </div>
       ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
       ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
-      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${p.rappelH?' à '+p.rappelH:''}${isDue&&!p.rappelH?' · c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}${(()=>{const u=prRdvState(p);if(!u||u.t==='plus-tard')return '';return `<span style="background:#FDE8E3;color:#B4300F;border:1px solid #F5C0AE;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">🚨 ${u.t==='imminent'?'dans '+u.diffMin+' min':u.diffMin===0?'maintenant !':'en retard de '+(-u.diffMin)+' min'}</span>`;})()}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
+      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${p.rappelH?' à '+p.rappelH:''}${isDue&&!p.rappelH?' · c\'est maintenant !':''}${p.rappelBy?` <small style="font-weight:600;color:var(--ink-mid)">· ${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}</span>`:'<span>Sans date</span>'}${(()=>{const u=prRdvState(p);if(!u||u.t==='plus-tard')return '';return `<span style="background:#FDE8E3;color:#B4300F;border:1px solid #F5C0AE;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">🚨 ${u.t==='imminent'?'dans '+u.diffMin+' min':u.diffMin===0?'maintenant !':'en retard de '+(-u.diffMin)+' min'}</span>`;})()}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
       ${p.statut==='abo'?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
       <div class="pr-actions">
@@ -3542,6 +3542,7 @@ function setPRappelH(id,v){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   p.rappelH=(v||'').slice(0,5);
   if(p.rappelH&&!p.rappel){const d=new Date();d.setHours(12,0,0,0);p.rappel=d.toISOString().slice(0,10);}
+  p.rappelBy=CFG.rep?CFG.rep.split(' ')[0]:'';
   p.maj=new Date().toISOString();
   persistProspects();schedulePush();
   showProspects(true);toast(p.rappelH?'⏰ Rappel programmé à '+p.rappelH+' · priorité absolue 1 h avant':'Heure retirée');
@@ -3553,7 +3554,7 @@ function setPRep(id,v){
   persistProspects();schedulePush();
   showProspects(true);toast(v?'Fiche attribuée à '+v+' ✓':'Attribution retirée');
 }
-function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);}
+function setPRappel(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.rappel=v;p.rappelBy=CFG.rep?CFG.rep.split(' ')[0]:'';p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);}
 function delProspect(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const wasAbo=p.statut==='abo';

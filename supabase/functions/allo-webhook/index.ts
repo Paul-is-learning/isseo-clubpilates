@@ -230,6 +230,7 @@ serve(async (req: Request) => {
         if (p.rappel && p.rappel >= todayS && !(p.rappel === rdv.date)) return; // rappel futur posé à la main → on ne touche pas
         p.rappel = rdv.date;
         if (rdv.h) p.rappelH = rdv.h;
+        p.rappelBy = "auto";
       };
       const match = findByKey(key);
       if (!match) {
