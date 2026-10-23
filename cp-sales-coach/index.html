@@ -3336,6 +3336,44 @@ let prOpenId=null,prFilter=null,prQuery='';
 function prInitials(nom){return (nom||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();}
 function setPrFilter(k){prFilter=prFilter===k?null:k;showProspects(true);}
 function prSearch(v){prQuery=(v||'').toLowerCase();showProspects(true);}
+/* ── Priorisation des rappels : ancienneté du dernier contact + appétence ── */
+let prSort=localStorage.getItem('cpcoach_prsort')||'recent';
+function setPrSort(m){prSort=m;localStorage.setItem('cpcoach_prsort',m);showProspects(true);}
+function prLastContact(p){
+  let last=p.maj||p.ts||'';
+  (p.appels||[]).forEach(a=>{if(a.ts&&a.ts>last)last=a.ts;});
+  return last;
+}
+function prDaysSince(p){
+  const l=prLastContact(p);if(!l)return null;
+  const d=Math.floor((Date.now()-new Date(l).getTime())/864e5);
+  return d<0?0:d;
+}
+// Appétence estimée : signaux positifs/négatifs dans ce que disent les appels
+// (résumés + transcriptions). Heuristique transparente : le survol dit pourquoi.
+const APP_POS=[['très intéress',3],['tres interess',3],['intéress',2],['interess',2],['rendez-vous',2],['rdv',2],['réserv',2],['reserv',2],['s\'inscrire',2],['inscription',2],['venir essayer',2],['essai',1],['rappelez',1],['me rappeler',1],['recontact',1],['horaire',1],['disponibilit',1],['tarif',1],['prix',1],['motivé',2],['motive',2],['partant',2]];
+const APP_NEG=[['pas intéress',-3],['pas interess',-3],['plus intéress',-3],['plus interess',-3],['ne pas rappeler',-3],['ne plus appeler',-3],['stop',-2],['refus',-2],['trop cher',-2],['pas le temps',-1],['déjà inscrit',-2],['deja inscrit',-2],['autre salle',-2],['ne répond pas',-1],['ne repond pas',-1],['sans réponse',-1],['sans reponse',-1],['messagerie',-1],['répondeur',-1],['repondeur',-1],['ne souhaite pas',-2]];
+function prAppetence(p){
+  const t=((p.appels||[]).map(a=>a.txt||'').join(' ')+' '+(p.note||'')).toLowerCase();
+  if(!t.trim())return null;
+  let score=0;const why=[];
+  APP_POS.forEach(([k,w])=>{if(t.includes(k)){score+=w;if(why.length<3)why.push('+ «'+k+'»');}});
+  APP_NEG.forEach(([k,w])=>{if(t.includes(k)){score+=w;if(why.length<3)why.push('− «'+k+'»');}});
+  if(!why.length)return null;
+  const tier=score>=2?'chaud':score<=-2?'froid':'tiede';
+  return {tier,score,why};
+}
+function prAppChip(p){
+  const a=prAppetence(p);if(!a)return '';
+  const m={chaud:['🔥','Chaud','#FDEBE3;color:#B4430F;border-color:#F5C9B2'],tiede:['🌤','Tiède','#FFF6DE;color:#8A6A14;border-color:#EFDCA6'],froid:['❄️','Froid','#E8F0FA;color:#39609C;border-color:#C9DAF2']}[a.tier];
+  return `<span class="pr-appet" title="Appétence estimée depuis les appels · ${a.why.join(' · ')}" style="background:${m[2]};border:1px solid;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">${m[0]} ${m[1]}</span>`;
+}
+function prAgeChip(p){
+  if(p.statut!=='rappeler'&&p.statut!=='essai')return '';
+  const d=prDaysSince(p);if(d===null||d<3)return '';
+  const col=d>=14?'#C0492F':d>=7?'#B4710F':'#8C95A8';
+  return `<span style="color:${col};font-weight:700">⏳ ${d} j sans contact</span>`;
+}
 function showProspects(keepScroll){_vReg('prospects');
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
@@ -3343,7 +3381,21 @@ function showProspects(keepScroll){_vReg('prospects');
   let list=PROSPECTS.slice();
   if(prFilter)list=list.filter(p=>p.statut===prFilter);
   if(prQuery)list=list.filter(p=>((p.nom||'')+' '+(p.tel||'')+' '+(p.note||'')).toLowerCase().includes(prQuery));
-  const sorted=list.sort((a,b)=>{const da=due(a)?0:1,db=due(b)?0:1;if(da!==db)return da-db;return (b.maj||b.ts||'').localeCompare(a.maj||a.ts||'');});
+  const sorted=list.sort((a,b)=>{
+    const da=due(a)?0:1,db=due(b)?0:1;if(da!==db)return da-db;
+    if(prSort==='prio'){
+      // À recontacter d'abord : fiches actives, le plus ancien contact en tête
+      const act=p=>(p.statut==='rappeler'||p.statut==='essai')?0:1;
+      if(act(a)!==act(b))return act(a)-act(b);
+      if(act(a)===0){
+        const la=prLastContact(a)||'',lb=prLastContact(b)||'';
+        if(la!==lb)return la.localeCompare(lb); // plus ancien d'abord
+        const rk={chaud:0,tiede:1,froid:2};
+        return (rk[(prAppetence(a)||{}).tier]??1.5)-(rk[(prAppetence(b)||{}).tier]??1.5);
+      }
+    }
+    return (b.maj||b.ts||'').localeCompare(a.maj||a.ts||'');
+  });
   const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PROSPECTS.filter(p=>p.statut===k).length);
   const nbDue=PROSPECTS.filter(due).length;
   const card=p=>{
@@ -3362,7 +3414,7 @@ function showProspects(keepScroll){_vReg('prospects');
       </div>
       ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
       ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
-      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${isDue?' · c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span></div>
+      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${isDue?' · c\'est maintenant !':''}</span>`:'<span>Sans date</span>'}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
       ${p.statut==='abo'?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
       <div class="pr-actions">
@@ -3391,6 +3443,11 @@ function showProspects(keepScroll){_vReg('prospects');
     ${nbDue?`<div class="pr-alert">🔔 <b>${nbDue} relance${nbDue>1?'s':''} à faire aujourd'hui</b> · en tête de liste.</div>`:''}
     <div class="pr-funnel">${Object.keys(PIPE).map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-search"><span>🔎</span><input type="text" placeholder="Rechercher un nom, un numéro…" value="${esc(prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
+    <div style="display:flex;gap:8px;align-items:center;margin:2px 0 10px">
+      <span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Tri :</span>
+      <button class="pr-act" style="${prSort!=='prio'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('recent')">🕐 Récents</button>
+      <button class="pr-act" style="${prSort==='prio'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('prio')" title="Rappels du jour, puis les fiches actives dont le dernier contact est le plus ancien">🎯 À recontacter d'abord</button>
+    </div>
     ${sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PROSPECTS.length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
