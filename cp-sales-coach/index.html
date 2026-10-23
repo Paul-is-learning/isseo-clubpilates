@@ -2085,7 +2085,7 @@ function avaTag(av,size,name){
   if(av&&av.startsWith('E|')){const pr=av.split('|');return `<span class="cp-ava" style="${s}background:${AVA_BG[(+pr[2]||0)%AVA_BG.length]}">${pr[1]}</span>`;}
   return `<span class="cp-ava init" style="${s}font-size:${Math.round(size*.4)}px">${esc(prInitials(name||'?'))}</span>`;
 }
-function avatarOf(name){const k=_repKey(name);if(!k)return'';if(_repKey(CFG.rep)===k&&MY_AVATAR)return MY_AVATAR;return AVATARS[k]||'';}
+function avatarOf(name){const k=_repKey(name);if(!k)return'';if(_repKey(CFG.rep)===k&&MY_AVATAR)return MY_AVATAR;return AVATARS[k]||AVATARS[(name||'').trim().split(' ')[0].toLowerCase()]||'';}
 async function fetchAvatars(){try{const d=await syncCall('avatars');if(d.avatars){AVATARS=d.avatars;localStorage.setItem('cpcoach_avatars',JSON.stringify(AVATARS));}}catch(e){}}
 
 let PRIMES={1:10,2:25,3:50};
@@ -2595,7 +2595,7 @@ const PERF_LEVELS=[
   {lvl:'🏆',name:'Master Coach',min:350,c:'#1F9E75'}
 ];
 function perfLevel(abos){let cur=PERF_LEVELS[0];for(const l of PERF_LEVELS)if(abos>=l.min)cur=l;const i=PERF_LEVELS.indexOf(cur);return{cur:cur,next:PERF_LEVELS[i+1]||null};}
-function _repKey(r){return (r||'').trim().split(' ')[0].toLowerCase();}
+function _repKey(r){return (r||'').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 // Fusion journal + fiches → un état par prospect (le journal gagne)
 function buildStatsMap(events,prospects){
   const map={};

@@ -119,12 +119,16 @@ serve(async (req) => {
 
     if (action === "avatars") {
       const map: Record<string, string> = {};
-      for (const i of invites) {
-        const k = String(i.nom || "").trim().split(" ")[0].toLowerCase();
-        if (k && i.avatar) map[k] = String(i.avatar);
-      }
+      const putKey = (nom: unknown, avatar: string) => {
+        const first = String(nom || "").trim().split(" ")[0].toLowerCase();
+        if (!first || !avatar) return;
+        map[first] = avatar;
+        const plain = first.normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        if (plain && plain !== first) map[plain] = avatar;
+      };
+      for (const i of invites) if (i.avatar) putKey(i.nom, String(i.avatar));
       const aa = accRow?.data?.adminAvatar;
-      if (aa && aa.avatar) { const k = String(aa.nom || "").trim().split(" ")[0].toLowerCase(); if (k) map[k] = String(aa.avatar); }
+      if (aa && aa.avatar) putKey(aa.nom, String(aa.avatar));
       return json({ ok: true, avatars: map });
     }
 
