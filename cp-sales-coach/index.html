@@ -3639,11 +3639,19 @@ function openMenu(){
     ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="printGuide()"><span class="mic">🖨️</span><span>Imprimer le guide (PDF)<small>Livret hors-ligne : toutes les sections</small></span></button>
+    <button class="menu-item" onclick="switchProfile()"><span class="mic">🔁</span><span>Changer de profil<small>Cet appareil passera sur un autre code d'accès</small></span></button>
     <button class="menu-item" onclick="newCall()"><span class="mic">🔄</span><span>Nouvel appel<small>Repartir de zéro</small></span></button>`;
   $('#menuBg').classList.add('on');$('#menuSheet').classList.add('on');
 }
 function closeMenu(){$('#menuBg').classList.remove('on');$('#menuSheet').classList.remove('on');}
 function showPresentation(){closeMenu();if(!st.connait)st.connait='oui';const flow=buildFlow();const i=flow.findIndex(s=>s.t==='present');if(i>=0){st.idx=i;renderScreen();}}
+function switchProfile(){
+  closeMenu();
+  if(!confirm('Changer de profil sur cet appareil ?\nIl faudra saisir un autre code d\'accès. Les données d\'équipe restent synchronisées.'))return;
+  ['cpcoach_code','cpcoach_role','cpcoach_mgr','cpcoach_avatar'].forEach(function(k){localStorage.removeItem(k);});
+  CFG.rep='';localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
+  location.reload();
+}
 function newCall(){closeMenu();if(!confirm('Démarrer un nouvel appel ? La fiche en cours sera effacée.'))return;const g=st.callGoal;_catchOpen={};st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};renderScreen();toast('Nouvel appel');}
 
 /* ── Académie ── */
@@ -3861,6 +3869,8 @@ window.addEventListener('popstate',function(){
     const prev=COACH_CODE;
     if(!prev||confirm('Ce lien contient un code d\'accès personnel.\nActiver ce profil sur cet appareil ?\n(Le profil actuel sera déconnecté ici.)')){
       COACH_CODE=urlCode;
+      const prevRep=CFG.rep,prevAva=MY_AVATAR;
+      CFG.rep='';MY_AVATAR='';localStorage.removeItem('cpcoach_avatar');localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
       try{
         const d=await syncCall('ping');
         localStorage.setItem('cpcoach_code',urlCode);
@@ -3870,6 +3880,7 @@ window.addEventListener('popstate',function(){
       }catch(e){
         // Code du lien invalide : on restaure le profil précédent sans le perdre
         COACH_CODE=prev||'';
+        CFG.rep=prevRep;MY_AVATAR=prevAva;if(prevAva)localStorage.setItem('cpcoach_avatar',prevAva);localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
         if(prev){localStorage.setItem('cpcoach_code',prev);document.getElementById('lockScreen')?.remove();toast('Code du lien invalide · profil actuel conservé');}
       }
     }
