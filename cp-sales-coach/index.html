@@ -3505,10 +3505,11 @@ function showProspects(keepScroll){_vReg('prospects');
     <div class="pr-search"><span>🔎</span><input type="text" placeholder="Rechercher un nom, un numéro…" value="${esc(prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     <div style="display:flex;gap:8px;align-items:center;margin:2px 0 10px">
       <span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Tri :</span>
-      <button class="pr-act" style="${prSort!=='prio'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('recent')">🕐 Récents</button>
+      <button class="pr-act" style="${prSort!=='prio'&&prSort!=='journal'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('recent')">🕐 Récents</button>
       <button class="pr-act" style="${prSort==='prio'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('prio')" title="Rappels du jour, puis les fiches actives dont le dernier contact est le plus ancien">🎯 À recontacter d'abord</button>
+      <button class="pr-act" style="${prSort==='journal'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('journal')" title="Tous les appels réalisés, du plus récent au plus ancien">📞 Journal d'appels</button>
     </div>
-    ${sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PROSPECTS.length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
+    ${prSort==='journal'?callJournalHTML(null,list):sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PROSPECTS.length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   $('#topPhase').textContent='Mes prospects';
@@ -3603,6 +3604,58 @@ function _apCoherence(a,durMin){
   return {ic:'✓',lbl:'reçu '+r.h+' · cohérent ('+Math.max(0,Math.round(diff-durMin))+' min après la fin)',c:'#1F9E75'};
 }
 
+function _journalRows(dayS,pool){
+  const J=[];const byKey=new Map();
+  (pool||PROSPECTS).forEach(p=>(p.appels||[]).forEach(a=>{
+    const tp=tsParts(a.ts);if(!tp)return;if(dayS&&tp.day!==dayS)return;
+    const first=(a.txt||'').split('\n')[0];
+    if(!first.startsWith('📞'))return;
+    const k=p.id+'|'+Math.floor(tp.abs/60000);
+    const prev=byKey.get(k);
+    // Même appel importé deux fois : on garde l'entrée reçue en direct (heure d'arrivée connue)
+    if(prev){if(!prev.a.rx&&a.rx){prev.a=a;prev.first=first;}return;}
+    const row={p,a,first,tp,abs:tp.abs};byKey.set(k,row);J.push(row);
+  }));
+  J.sort((x,y)=>y.abs-x.abs);
+  return J;
+}
+function _journalRowHTML(j){
+  const dur=_apDurMin(j.first);
+  const co=_apCoherence(j.a,dur);
+  const am=j.first.match(/ · par ([^·\n]+?)(?= · |$)/);const who=am?am[1].trim():'';
+  const dir=/appel entrant/.test(j.first)?'↙':'↗';
+  const res=(j.first.match(/· (answered|voicemail|received|closed|failed|transferred_ai|blocked)\b/i)||['',''])[1].toLowerCase();
+  const resLbl={answered:'abouti',voicemail:'messagerie',received:'manqué',closed:'raccroché',failed:'échec',transferred_ai:'IA',blocked:'bloqué'}[res]||res;
+  const durLbl=dur?(dur<1?Math.round(dur*60)+' s':Math.round(dur)+' min'):(/· 0 ?m/.test(j.first)?'< 1 min':'');
+  return `<div onclick="showAppels('${j.p.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
+    <b style="flex:0 0 46px;font-size:13.5px;color:var(--cp-dark);font-variant-numeric:tabular-nums">${j.tp.h}</b>
+    <span style="flex:0 0 14px;color:var(--ink-mid);font-weight:800" title="${dir==='↗'?'sortant':'entrant'}">${dir}</span>
+    <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;color:var(--ink)">${esc(j.p.nom)}</span>
+    ${who?`<span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ink-mid)">${avaTag(avatarOf(who),16,who)} ${esc(who)}</span>`:''}
+    <span style="flex:0 0 78px;text-align:right;font-size:11px;color:var(--ink-mid)">${durLbl}${resLbl?(durLbl?' · ':'')+resLbl:''}</span>
+    <span title="${esc(co.lbl)}" style="flex:0 0 18px;text-align:center;color:${co.c};font-weight:800">${co.ic}</span>
+  </div>`;
+}
+// dayS = un jour précis (onglet 📊) · null = tous les jours, regroupés (Mes prospects)
+function callJournalHTML(dayS,pool){
+  const J=_journalRows(dayS,pool);
+  if(!J.length)return dayS?'':'<div class="pr-empty">Aucun appel Allo pour ces fiches.</div>';
+  const nbIncoh=J.filter(j=>_apCoherence(j.a,_apDurMin(j.first)).ic==='⚠️').length;
+  let body='',lastDay='';
+  J.forEach(j=>{
+    if(!dayS&&j.tp.day!==lastDay){
+      lastDay=j.tp.day;
+      const n=J.filter(x=>x.tp.day===lastDay).length;
+      body+=`<div style="position:sticky;top:0;z-index:1;background:#F8F5EE;padding:6px 13px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;color:var(--ink-mid);border-bottom:1px solid #F1EDE3">${new Date(lastDay+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'})} · ${n} appel${n>1?'s':''}</div>`;
+    }
+    body+=_journalRowHTML(j);
+  });
+  return `${dayS?`<div class="hm-sec" style="margin-top:22px">Journal des appels · ${J.length}</div>`:''}
+    ${nbIncoh?`<div class="pr-alert" style="margin-bottom:8px">⚠️ <b>${nbIncoh} appel${nbIncoh>1?'s':''}</b> reçu${nbIncoh>1?'s':''} avant l'heure affichée : problème de fuseau à signaler.</div>`:''}
+    <div style="max-height:${dayS?'440px':'64vh'};overflow-y:auto;border:1px solid var(--cream-line);border-radius:14px;background:#fff">${body}</div>
+    <div class="fv-meta" style="margin-top:6px">Du plus récent au plus ancien · survolez ✓ pour l'heure d'arrivée sur la plateforme · touchez une ligne pour ouvrir l'appel.</div>`;
+}
+
 /* ── 📊 Compteur d'appels journalier : total + par commercial ── */
 let _csDate=null;
 function csShift(n){const d=new Date(_csDate+'T12:00');d.setDate(d.getDate()+n);_csDate=d.toISOString().slice(0,10);showCallStats();}
@@ -3648,43 +3701,7 @@ function showCallStats(){_vReg('calls');
         <span style="flex:1;height:9px;background:#EFEBE0;border-radius:99px;overflow:hidden"><span style="display:block;height:100%;width:${Math.max(6,Math.round(s.n/max*100))}%;background:linear-gradient(90deg,var(--cp-deep),var(--cp-dark));border-radius:99px"></span></span>
         <span style="flex:0 0 auto;font-size:13px;font-weight:800;color:var(--cp-dark)">${s.n}<small style="font-weight:600;color:var(--ink-mid)"> appel${s.n>1?'s':''} · ${s.ok} abouti${s.ok>1?'s':''}</small></span>
       </div>`).join(''):'<div class="pr-empty">Aucun appel Allo enregistré ce jour-là.</div>'}
-    ${(()=>{
-      const J=[];const byKey=new Map();
-      PROSPECTS.forEach(p=>(p.appels||[]).forEach(a=>{
-        const tp=tsParts(a.ts);if(!tp||tp.day!==dateS)return;
-        const first=(a.txt||'').split('\n')[0];
-        if(!first.startsWith('📞'))return;
-        const k=p.id+'|'+Math.floor(tp.abs/60000);
-        const prev=byKey.get(k);
-        // Même appel importé deux fois : on garde l'entrée reçue en direct (heure d'arrivée connue)
-        if(prev){if(!prev.a.rx&&a.rx){prev.a=a;prev.first=first;}return;}
-        const row={p,a,first,abs:tp.abs};byKey.set(k,row);J.push(row);
-      }));
-      if(!J.length)return '';
-      J.sort((x,y)=>y.abs-x.abs);
-      const nbIncoh=J.filter(j=>_apCoherence(j.a,_apDurMin(j.first)).ic==='⚠️').length;
-      return `<div class="hm-sec" style="margin-top:22px">Journal des appels · ${J.length}</div>
-      ${nbIncoh?`<div class="pr-alert" style="margin-bottom:8px">⚠️ <b>${nbIncoh} appel${nbIncoh>1?'s':''}</b> reçu${nbIncoh>1?'s':''} avant l'heure affichée : l'horodatage Allo n'est pas en heure française pour ${nbIncoh>1?'ceux-là':'celui-là'}.</div>`:''}
-      <div style="max-height:440px;overflow-y:auto;border:1px solid var(--cream-line);border-radius:14px;background:#fff">
-      ${J.map(j=>{
-        const tp=tsParts(j.a.ts)||{h:'?'};
-        const dur=_apDurMin(j.first);
-        const co=_apCoherence(j.a,dur);
-        const am=j.first.match(/ · par ([^·\n]+?)(?= · |$)/);const who=am?am[1].trim():'';
-        const dir=/appel entrant/.test(j.first)?'↙':'↗';
-        const res=(j.first.match(/· (answered|voicemail|received|closed|failed|transferred_ai|blocked)\b/i)||['',''])[1].toLowerCase();
-        const resLbl={answered:'abouti',voicemail:'messagerie',received:'manqué',closed:'raccroché',failed:'échec',transferred_ai:'IA',blocked:'bloqué'}[res]||res;
-        return `<div onclick="showAppels('${j.p.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
-          <b style="flex:0 0 46px;font-size:13.5px;color:var(--cp-dark);font-variant-numeric:tabular-nums">${tp.h}</b>
-          <span style="flex:0 0 14px;color:var(--ink-mid);font-weight:800" title="${dir==='↗'?'sortant':'entrant'}">${dir}</span>
-          <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;color:var(--ink)">${esc(j.p.nom)}</span>
-          ${who?`<span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ink-mid)">${avaTag(avatarOf(who),16,who)} ${esc(who)}</span>`:''}
-          <span style="flex:0 0 74px;text-align:right;font-size:11px;color:var(--ink-mid)">${dur?(dur<1?Math.round(dur*60)+' s':Math.round(dur)+' min'):(/· 0 ?m/.test(j.first)?'< 1 min':'')}${resLbl?(dur||/· 0 ?m/.test(j.first)?' · ':'')+resLbl:''}</span>
-          <span title="${esc(co.lbl)}" style="flex:0 0 18px;text-align:center;color:${co.c};font-weight:800">${co.ic}</span>
-        </div>`;}).join('')}
-      </div>
-      <div class="fv-meta" style="margin-top:6px">Du plus récent au plus ancien · survolez ✓ pour l'heure d'arrivée sur la plateforme · touchez une ligne pour ouvrir la fiche.</div>`;
-    })()}
+    ${callJournalHTML(dateS)}
     ${sms?`<div class="fv-meta" style="margin-top:8px">💬 ${sms} SMS échangé${sms>1?'s':''} ce jour-là (non comptés comme appels).</div>`:''}
     <div class="fv-meta" style="margin-top:10px">Source : appels Allo attachés aux fiches prospects · les appels vers des numéros hors fiches n'apparaissent pas.</div>
   </div>`;
