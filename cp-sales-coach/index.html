@@ -3468,7 +3468,9 @@ function showAppels(id){
           <button style="opacity:.6" title="Copier" onclick="copyAppel('${p.id}','${a.ts}')">📋</button>
           <button style="opacity:.6" title="Supprimer ce résumé" onclick="delAppel('${p.id}','${a.ts}')">🗑</button>
         </div>
-        <div style="font-size:13px;line-height:1.55;color:#333B4E;white-space:pre-wrap">${esc(a.txt)}</div>
+        ${(()=>{const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');const main=i>=0?t.slice(0,i):t;const tr=i>=0?t.slice(i+20):'';
+          return `<div style="font-size:13px;line-height:1.55;color:#333B4E;white-space:pre-wrap">${esc(main)}</div>`
+            +(tr?`<details style="margin-top:8px"><summary style="font-size:11.5px;font-weight:700;color:var(--cp-deep);cursor:pointer">📜 Transcription complète</summary><div style="font-size:12px;line-height:1.5;color:#55607A;white-space:pre-wrap;margin-top:6px;max-height:300px;overflow:auto">${esc(tr)}</div></details>`:'');})()}
       </div>`).join(''):'<div class="ics-empty">Aucun résumé pour l\'instant.</div>'}</div>
     <div class="ics-lbl" style="margin-top:14px">Ajouter un résumé</div>
     <textarea id="ap-txt" placeholder="Collez le résumé IA d'Allo…" style="width:100%;min-height:96px;padding:11px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea>
