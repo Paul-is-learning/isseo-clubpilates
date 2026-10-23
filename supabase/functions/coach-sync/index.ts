@@ -419,6 +419,10 @@ serve(async (req) => {
           v2: String(p.v2 || "").slice(0, 60),
           fullCom: p.fullCom === true,
           icId: String(p.icId || "").slice(0, 60),
+          // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.
+          appels: Array.isArray(p.appels)
+            ? p.appels.slice(-20).map((a: any) => ({ ts: String(a?.ts || "").slice(0, 30), txt: String(a?.txt || "").slice(0, 5000) })).filter((a: any) => a.txt)
+            : [],
           rep: String(p.rep || rep), studio: String(p.studio || ""),
           ts: String(p.ts || new Date().toISOString()),
           maj: String(p.maj || p.ts || new Date().toISOString()),

@@ -3369,6 +3369,7 @@ function showProspects(keepScroll){_vReg('prospects');
         <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'✉️ Relances ('+msgs.length+')'}</button>
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date essai / rappel"/>
         <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
+        <button onclick="showAppels('${p.id}')" class="pr-act" title="Résumés d'appels (Allo)">📞${(p.appels&&p.appels.length)?' '+p.appels.length:''}</button>
         <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
       </div>
       ${open?`<div class="pr-msgs">${msgs.map((m,i)=>`<div class="pr-msg"><div class="pr-msg-t">${m.t}</div><div class="pr-msg-b">${esc(m.msg)}</div><button class="pr-copy" onclick="copyPMsg('${p.id}',${i})">📋 Copier le message</button></div>`).join('')||'<div class="pr-msg-b" style="padding:10px">Aucune relance pour ce statut.</div>'}</div>`:''}
@@ -3443,7 +3444,7 @@ function viewPFiche(id){
     <div class="glp-tag">📄 Fiche de découverte</div>
     <div class="glp-t">${esc(p.nom)}${p.statut==='abo'&&p.pack?` <span class="fv-pack">${PIPE.abo.ic} ${packShort(+p.pack)}</span>`:''}</div>
     <div class="fv-meta">${p.tel?'📱 '+esc(p.tel)+' · ':''}${p.rep?'suivi par '+esc(p.rep.split(' ')[0])+' · ':''}créée le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})}</div>
-    <div class="fv-body">${fiche?esc(fiche):'Aucune fiche de découverte enregistrée pour ce prospect.\n\nLa fiche se remplit automatiquement quand l\'appel est mené dans l\'outil puis enregistré depuis l\'écran Récap.'}</div>
+    <div class="fv-body">${fiche?esc(fiche):'Aucune fiche de découverte enregistrée pour ce prospect.\n\nLa fiche se remplit automatiquement quand l\'appel est mené dans l\'outil puis enregistré depuis l\'écran Récap.'}${(p.appels&&p.appels.length)?'\n\n━━ 📞 Résumés d\'appels (Allo) ━━\n\n'+p.appels.slice().reverse().map(a=>'📅 '+new Date(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+'\n'+esc(a.txt)).join('\n\n'):''}</div>
     <div class="fv-btns">
       ${fiche?`<button class="pr-act" onclick="copyPFiche('${p.id}')">📋 Copier</button>`:''}
       <button class="glp-ok" style="flex:1;margin-top:0" onclick="document.getElementById('fichePop').remove()">Fermer</button>
@@ -3452,6 +3453,51 @@ function viewPFiche(id){
   d.querySelector('.glp-bg').onclick=()=>d.remove();
   document.body.appendChild(d);
   try{glossify(d.querySelector('.fv-body'));}catch(e){}
+}
+function showAppels(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const list=(p.appels||[]).slice().reverse();
+  icSheet(`<div class="glp-tag">📞 Résumés d'appels · Allo</div>
+    <div class="glp-t">${esc(p.nom)}</div>
+    <div class="fv-meta">Collez ici les résumés IA de vos appels Allo · toute l'équipe les voit sur la fiche.</div>
+    <div style="margin-top:12px">${list.length?list.map(a=>`
+      <div style="background:#F8FAFD;border:1px solid #E3E8F1;border-radius:12px;padding:10px 12px;margin-bottom:8px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px">
+          <b style="font-size:11.5px;color:var(--cp-dark)">📅 ${new Date(a.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short',year:'numeric'})} à ${new Date(a.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</b>
+          <span style="flex:1"></span>
+          <button style="opacity:.6" title="Copier" onclick="copyAppel('${p.id}','${a.ts}')">📋</button>
+          <button style="opacity:.6" title="Supprimer ce résumé" onclick="delAppel('${p.id}','${a.ts}')">🗑</button>
+        </div>
+        <div style="font-size:13px;line-height:1.55;color:#333B4E;white-space:pre-wrap">${esc(a.txt)}</div>
+      </div>`).join(''):'<div class="ics-empty">Aucun résumé pour l\'instant.</div>'}</div>
+    <div class="ics-lbl" style="margin-top:14px">Ajouter un résumé</div>
+    <textarea id="ap-txt" placeholder="Collez le résumé IA d'Allo…" style="width:100%;min-height:96px;padding:11px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:12px" onclick="addAppel('${p.id}')">📞 Enregistrer le résumé</button></div>`);
+  setTimeout(()=>document.getElementById('ap-txt')?.focus(),250);
+}
+function addAppel(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const txt=(document.getElementById('ap-txt')?.value||'').trim();
+  if(!txt){toast('Collez d\'abord un résumé');return;}
+  if(!p.appels)p.appels=[];
+  p.appels.push({ts:new Date().toISOString(),txt:txt.slice(0,5000)});
+  if(p.appels.length>20)p.appels=p.appels.slice(-20);
+  p.maj=new Date().toISOString();
+  persistProspects();schedulePush();
+  showAppels(id);try{showProspects();}catch(e){}
+  toast('Résumé enregistré · synchronisé équipe ✓');
+}
+function delAppel(id,ts){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.appels)return;
+  if(!confirm('Supprimer ce résumé d\'appel ?'))return;
+  p.appels=p.appels.filter(a=>a.ts!==ts);
+  p.maj=new Date().toISOString();
+  persistProspects();schedulePush();
+  showAppels(id);
+}
+function copyAppel(id,ts){
+  const p=PROSPECTS.find(x=>x.id===id);const a=p&&(p.appels||[]).find(x=>x.ts===ts);
+  if(a)navigator.clipboard?.writeText(a.txt).then(()=>toast('Résumé copié ✓')).catch(()=>toast('Copie impossible'));
 }
 function copyPFiche(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;navigator.clipboard?.writeText(p.fiche||p.nom).then(()=>toast('Fiche copiée ✓')).catch(()=>toast('Copie impossible'));}
 
