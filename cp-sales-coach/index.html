@@ -525,7 +525,11 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .price-box summary{cursor:pointer;list-style:none;padding:9px 0 6px;font-size:12.5px;font-weight:800;color:var(--cp-dark)}
 .price-box summary::-webkit-details-marker{display:none}
 .price-box summary small{font-weight:600;color:var(--ink-mid);margin-left:4px}
-.price-box:not([open]) summary::after{content:' ▾ voir';font-size:11px;color:var(--cp-deep)}
+.price-box summary{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
+.price-box summary::after{margin-left:auto;font-size:11px;font-weight:800;color:var(--cp-deep);white-space:nowrap}
+.price-box:not([open]) summary::after{content:'▾ afficher'}
+.price-box[open] summary::after{content:'▴ masquer'}
+.price-box:not([open]){padding-bottom:4px}
 .pb-head,.pb-row{display:grid;grid-template-columns:1.05fr 1.35fr 1fr;gap:8px;align-items:center}
 .pb-head{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-mid);padding:2px 0 4px;border-bottom:1px solid #F1EDE3}
 .pb-row{padding:7px 0;border-bottom:1px dashed #EFEADF}
@@ -537,10 +541,23 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pb-reco{display:inline-block;margin-top:2px;background:var(--accent,#4B52E6);color:#fff;font-size:9px;font-weight:800;border-radius:99px;padding:1px 6px}
 .pb-cond{margin:9px 0 0;padding-left:16px;font-size:11px;line-height:1.5;color:var(--ink-soft)}
 .pb-cond li{margin:2px 0}
-#sideRail .price-box{margin-top:0;animation:railin .32s cubic-bezier(.25,.8,.3,1)}
-#sideRail .price-box summary{pointer-events:none}
-#sideRail .price-box summary::after{content:''}
+@media(min-width:1060px){
+  .screen.has-rail{display:grid;grid-template-columns:minmax(0,1fr) clamp(300px,32%,380px);column-gap:28px;align-items:start;align-content:start}
+  .screen.has-rail>.call-main{grid-column:1;min-width:0;max-width:none;width:auto;margin:0;display:flex;flex-direction:column}
+  .screen.has-rail>.call-main>*{flex-shrink:0}
+  .screen.has-rail>.call-aside{grid-column:2;max-width:none;width:auto;margin:0;position:sticky;top:0;display:flex;flex-direction:column;gap:12px;max-height:calc(100dvh - 200px);overflow-y:auto;padding:2px 2px 8px;scrollbar-width:thin}
+  .call-aside .catch-box,.call-aside .ask-box,.call-aside .price-box{margin-top:0;position:static;animation:railin .32s cubic-bezier(.25,.8,.3,1)}
+  .call-aside .catch-box{border-width:2px;box-shadow:0 16px 40px -14px rgba(31,158,117,.45)}
+  .call-aside .ask-box{box-shadow:0 16px 40px -14px rgba(201,135,31,.4)}
+  .call-aside .catch-box .ln{font-size:15px}
+}
 @media(max-width:480px){#topStop{font-size:0!important;padding:0 10px!important}#topStop::before{content:'⏹';font-size:15px}}
+.top-studio{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;height:38px;padding:0 13px;border-radius:12px;background:#fff;border:1px solid var(--cream-line,#E7E1D4);box-shadow:var(--sh-s);font-size:12.5px;font-weight:800;color:var(--cp-dark);cursor:pointer;white-space:nowrap}
+.top-studio .ts-caret{font-size:10px;color:var(--ink-mid)}
+.top-studio .ts-short{display:none}
+.top-studio.locked{cursor:default;box-shadow:none;background:transparent}
+@media(max-width:620px){.top-studio .ts-full{display:none}.top-studio .ts-short{display:inline}.top-studio{padding:0 9px;font-size:11.5px}}
+@media(max-width:480px){.top-brand{display:none}}
 @media(max-width:1059.98px){
   .catch-box{position:sticky;bottom:2px;z-index:6;border-width:2px;background:linear-gradient(180deg,#eefaf3,#ddf2e7);box-shadow:0 -8px 26px -8px rgba(31,158,117,.4),0 6px 18px -6px rgba(31,158,117,.35)}
 }
@@ -977,19 +994,19 @@ body{background:var(--cream)}
   .hm-today{justify-content:center}
   .screen{padding-left:44px;padding-right:44px}
   .screen>*{width:100%;max-width:920px;margin-left:auto;margin-right:auto}
-  /* Écrans d'appel (vignettes coach à droite) : colonne resserrée à gauche */
-  .screen.has-rail>*{max-width:700px;margin-left:0}
   .nav{padding-left:max(18px,calc((100% - 920px)/2));padding-right:max(18px,calc((100% - 920px)/2))}
   .hm-grid2{grid-template-columns:repeat(4,1fr)}
   .hm-big .s{min-height:30px}
   .ht-grid{grid-template-columns:repeat(6,1fr)}
 }
-@media(min-width:1160px){
-  #sideRail{left:auto;right:max(16px,calc((100vw - 1160px)/2 + 28px));width:min(400px,calc((100vw - 760px)/2))}
+/* Grands écrans : l'app occupe davantage la largeur */
+@media(min-width:1440px){
+  #app{max-width:1340px}
+  .screen.has-rail{column-gap:36px;grid-template-columns:minmax(0,1fr) 400px}
 }
-@media(min-width:1480px){
-  body::before{display:block;left:max(14px,calc(50% - 580px - 128px))}
-  body::after{display:block;right:max(14px,calc(50% - 580px - 128px))}
+@media(min-width:1700px){
+  body::before{display:block;left:max(14px,calc(50% - 670px - 128px))}
+  body::after{display:block;right:max(14px,calc(50% - 670px - 128px))}
 }
 </style>
 </head>
@@ -1007,6 +1024,7 @@ body{background:var(--cream)}
         <div class="top-phase" id="topHello">Bonjour !</div>
         <div class="top-sub"><span id="topPhase">Sales Coach</span><span id="topSub"></span><span id="topTimer"></span></div>
       </div>
+      <button class="top-studio" id="topStudio" onclick="openStudioPicker()" style="display:none"></button>
       <img class="top-brand" src="flower-white.png" alt="Club Pilates"/>
       <button class="top-btn" onclick="openMenu()" aria-label="Menu">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
@@ -1046,7 +1064,7 @@ body{background:var(--cream)}
   <div class="modal">
     <h3>Réglages du studio</h3>
     <div class="g2">
-      <div class="fld"><label>Studio</label><input id="set-studio" placeholder="La Garenne"/></div>
+      <div class="fld"><label>Studio</label><input id="set-studio" readonly onclick="closeSet();openStudioPicker()" style="cursor:pointer" title="Changer de studio : pastille 📍 en haut de page"/></div>
       <div class="fld"><label>Commercial(e)</label><input id="set-rep" placeholder="Caroline"/></div>
     </div>
     <div class="fld"><label>Prix de base (€/séance)</label><input id="set-base" type="number" inputmode="decimal"/></div>
@@ -1873,7 +1891,7 @@ function renderScreen(keepScroll){
   $('#topPhase').textContent=s.phase||'Sales Coach';
   $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
   $('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);
-  $('#topSub').textContent=st.prospectNom?(' · 📞 '+st.prospectNom.split(' ')[0]):(CFG.studio?' · '+CFG.studio:'');
+  $('#topSub').textContent=st.prospectNom?(' · 📞 '+st.prospectNom.split(' ')[0]):'';
   $('#bar').style.width=Math.round((st.idx+1)/flow.length*100)+'%';
   const scr=$('#screen');let h='';let nav='';
   setTimeout(_updTopStop,0);
@@ -2037,7 +2055,7 @@ function renderScreen(keepScroll){
       ${curSt==='abo'?`<div class="pr-cap-lbl">Abonnement souscrit :</div><div class="pr-pack-row">${[1,2,3].map(pk=>`<button class="pr-pack${(st._prPack||recommendPack())===pk?' on':''}" onclick="st._prPack=${pk};renderScreen(true)">${packShort(pk)}<small>${fmtEur(foundingMonthly(pk)??packMonthly(pk))||''}/mois</small></button>`).join('')}</div>
       <div class="pr-cap-row"><input type="text" id="pr-v2" list="teamList" placeholder="2e vendeur (optionnel · 50/50)" value="${esc(st._prV2||'')}" oninput="st._prV2=this.value"/><label class="pr-cap-dl" style="flex:0 0 auto"><input type="checkbox" ${st._prFull?'checked':''} onchange="st._prFull=this.checked" style="width:auto"/> 100 % au 2e</label></div>
       <datalist id="teamList">${[...new Set((Object.values(AVATARS).length?Object.keys(AVATARS):[]).map(k=>k.charAt(0).toUpperCase()+k.slice(1)).concat(['Équipe']))].map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
-      <div class="pr-cap-row"><label class="pr-cap-dl" style="flex:1">🗓️ Vient d'une Intro Class ?<select id="pr-ic" onchange="st._prIcId=this.value" style="border:0;outline:none;font:inherit;background:transparent;flex:1">${['<option value="">Hors IC (téléphone, walk-in)</option>'].concat(IC.sessions.filter(s=>s.statut!=='annulee'&&(!icStudio()||s.studio===icStudio())).sort((a,b)=>(b.date+b.heure).localeCompare(a.date+a.heure)).slice(0,15).map(s=>`<option value="${s.id}"${st._prIcId===s.id?' selected':''}>IC du ${s.date.slice(8,10)}/${s.date.slice(5,7)} ${s.heure} · ${esc(s.coach||'?')}</option>`)).join('')}</select></label></div>`:''}
+      <div class="pr-cap-row"><label class="pr-cap-dl" style="flex:1">🗓️ Vient d'une Intro Class ?<select id="pr-ic" onchange="st._prIcId=this.value" style="border:0;outline:none;font:inherit;background:transparent;flex:1">${['<option value="">Hors IC (téléphone, walk-in)</option>'].concat(IC.sessions.filter(s=>s.statut!=='annulee'&&(!icStudio()||s&&_sk(s.studio)===_sk(icStudio()))).sort((a,b)=>(b.date+b.heure).localeCompare(a.date+a.heure)).slice(0,15).map(s=>`<option value="${s.id}"${st._prIcId===s.id?' selected':''}>IC du ${s.date.slice(8,10)}/${s.date.slice(5,7)} ${s.heure} · ${esc(s.coach||'?')}</option>`)).join('')}</select></label></div>`:''}
       <div class="pr-cap-row"><label class="pr-cap-dl">📅 ${curSt==='essai'?'Date de l\'essai':'Date de rappel'}<input id="pr-date" type="date" value="${st._prDate||''}" onchange="st._prDate=this.value"/></label><input id="pr-note" type="text" placeholder="Note (optionnel)" value="${esc(st._prNote||'')}" oninput="st._prNote=this.value"/></div>
       <button class="go ok" style="width:100%" onclick="saveProspect()">💾 Enregistrer dans Mes prospects</button>
     </div>`;
@@ -2060,13 +2078,13 @@ function priceBoxHTML(){
   const pct=parseFloat(CFG.founding)||0,d=v=>v*(1-pct/100);
   let cp=0;try{cp=(st.goals&&st.goals.length)||st.dispo?recommendPack():0;}catch(e){}
   const wide=window.matchMedia('(min-width:1060px)').matches;
-  let open=wide;try{if(!wide)open=localStorage.getItem('cpcoach_pbox')==='1';}catch(e){}
+  let open=wide;try{const v=localStorage.getItem(wide?'cpcoach_pbox_d':'cpcoach_pbox');if(v!==null)open=v==='1';}catch(e){}
   const row=(p,name,freq,prix,promo,per,was)=>`<div class="pb-row${p===cp?' cur':''}">
       <div class="pb-n"><b>${name}</b><small>${freq}</small>${p===cp?'<span class="pb-reco">reco</span>':''}</div>
       <div class="pb-p">${prix}<small>${promo}</small></div>
       <div class="pb-s"><b>${per}</b><small>${was}</small></div>
     </div>`;
-  return `<details class="price-box"${open?' open':''} ontoggle="try{if(!window.matchMedia('(min-width:1060px)').matches)localStorage.setItem('cpcoach_pbox',this.open?'1':'0')}catch(e){}">
+  return `<details class="price-box"${open?' open':''} ontoggle="try{localStorage.setItem(window.matchMedia('(min-width:1060px)').matches?'cpcoach_pbox_d':'cpcoach_pbox',this.open?'1':'0')}catch(e){}">
     <summary>💶 Tarifs & conditions <small>offre de lancement · TTC / mois</small></summary>
     <div class="pb-head"><span>Formule</span><span>Prix / mois</span><span>La séance</span></div>
     ${row(1,'Pack 4','4 séances',`<b>${f(m1)}</b>`,'🎁 +1 séance offerte / mois · 3 mois',f(m1/5),'au lieu de '+f(m1/4))}
@@ -2081,14 +2099,22 @@ function priceBoxHTML(){
     </ul>
   </details>`;
 }
+// Ordinateur : l'écran d'appel devient 2 colonnes (script à gauche, vignettes coach +
+// pense-bête tarifs à droite, collant au défilement). Téléphone : tout reste empilé.
 function relocateBoxes(){
-  const rail=document.getElementById('sideRail');if(!rail)return;
-  rail.innerHTML='';rail.style.display='none';$('#screen').classList.remove('has-rail');
+  const rail=document.getElementById('sideRail');if(rail){rail.innerHTML='';rail.style.display='none';}
+  const scr=$('#screen');scr.classList.remove('has-rail');
   if(window.matchMedia('(min-width:1060px)').matches){
-    const boxes=$('#screen').querySelectorAll('.catch-box,.ask-box,.price-box');
-    if(boxes.length){boxes.forEach(b=>{if(b.classList.contains('price-box'))b.open=true;rail.appendChild(b);});rail.style.display='flex';$('#screen').classList.add('has-rail');}
+    const boxes=[...scr.querySelectorAll('.catch-box,.ask-box,.price-box')];
+    if(boxes.length){
+      const main=document.createElement('div');main.className='call-main';
+      const aside=document.createElement('aside');aside.className='call-aside';
+      boxes.forEach(b=>aside.appendChild(b));
+      while(scr.firstChild)main.appendChild(scr.firstChild);
+      scr.append(main,aside);scr.classList.add('has-rail');
+    }
   }
-  try{glossify($('#screen'));glossify(rail);}catch(e){}
+  try{glossify(scr);}catch(e){}
 }
 let _rzT=null;
 window.addEventListener('resize',()=>{clearTimeout(_rzT);_rzT=setTimeout(()=>{
@@ -2175,12 +2201,75 @@ async function fetchAvatars(){try{const d=await syncCall('avatars');if(d.avatars
 
 let PRIMES={1:10,2:25,3:50};
 try{PRIMES=Object.assign(PRIMES,JSON.parse(localStorage.getItem('cpcoach_primes')||'{}'));}catch(e){}
+/* ── Studios : navigation (code maître) et cloisonnement (salariés) ── */
+const STUDIOS=['La Garenne-Colombes','Montpellier Lattes','La Défense'];
+const STUDIO_SHORT={'La Garenne-Colombes':'Garenne','Montpellier Lattes':'Lattes','La Défense':'Défense'};
+// Avant le 1er ping de cette version : un salarié qui a déjà un studio est présumé cloisonné
+let SCOPED=(()=>{const v=localStorage.getItem('cpcoach_scoped');return v===null?null:v==='1';})();
+function canNav(){if(COACH_ROLE==='admin')return true;if(SCOPED===null)return !CFG.studio;return !SCOPED;}
+function canonStudio(s){const k=_sk(s);if(!k)return '';return STUDIOS.find(x=>_sk(x)===k)||(k.length>=5?STUDIOS.find(x=>_sk(x).includes(k)||k.includes(_sk(x))):'')||'';}
+(function(){const c=canonStudio(CFG.studio);const v=c||(canNav()?STUDIOS[0]:CFG.studio);if(v!==CFG.studio){CFG.studio=v;try{localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}catch(e){}}})();
+function _sk(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');}
+// Un élément appartient au studio actif ; studio actif vide = invitation sans studio (accès complet)
+function inStudio(x){return !CFG.studio||!x||!_sk(x.studio)||_sk(x.studio)===_sk(CFG.studio);}
+function PSC(){return PROSPECTS.filter(inStudio);}
+function _updTopStudio(){
+  const b=document.getElementById('topStudio');if(!b)return;
+  if(!COACH_CODE){b.style.display='none';return;}
+  if(_navStack[_navStack.length-1]==='call'&&(st.idx>0||!!st.callStart)&&!st._prSaved){b.style.display='none';return;}
+  const admin=canNav(),label=CFG.studio||'Tous les studios';
+  b.innerHTML=`<span class="ts-full">📍 ${esc(label)}</span><span class="ts-short">📍 ${esc(STUDIO_SHORT[label]||label)}</span>${admin?'<span class="ts-caret">▾</span>':''}`;
+  b.classList.toggle('locked',!admin);
+  b.title=admin?'Changer de studio':(CFG.studio?'Votre studio':'Studio non défini · voir votre responsable');
+  b.style.display='';
+}
+function openStudioPicker(){
+  if(!canNav()){toast('Votre accès est limité au studio '+CFG.studio);return;}
+  if(st.callStart&&!st._prSaved){toast('Terminez ou arrêtez l\'appel avant de changer de studio');return;}
+  const count=s=>PROSPECTS.filter(p=>_sk(p.studio)===_sk(s)).length;
+  icSheet(`<div class="glp-tag">📍 Studios</div>
+    <div class="glp-t">Sur quel studio naviguer ?</div>
+    <div class="fv-meta">Fiches, relances, Intro Class, appels et classement suivent ce choix. Vos salariés, eux, ne voient que leur studio.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
+      ${STUDIOS.map(s=>`<button class="pr-act" style="display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;font-size:14px;${_sk(s)===_sk(CFG.studio)?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setStudio('${s.replace(/'/g,"\\'")}')"><span>📍 <b>${esc(s)}</b></span><small style="opacity:.75">${count(s)} fiche${count(s)>1?'s':''}</small></button>`).join('')}
+    </div>`);
+}
+function _rerenderTop(){
+  const top=_navStack[_navStack.length-1]||'home';if(top==='call')return;
+  _navBack=true;try{(VIEW_FN[top]||VIEW_FN.home)();}catch(e){}_navBack=false;
+}
+function setStudio(s){
+  CFG.studio=canonStudio(s)||s;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
+  if(st._prId){const f=PROSPECTS.find(x=>x.id===st._prId);if(!f||!inStudio(f))delete st._prId;}
+  document.getElementById('icPop')?.remove();
+  _hpCache='';
+  try{icEnsureWeek();}catch(e){}
+  _updTopStudio();
+  const top=_navStack[_navStack.length-1]||'home';
+  _navBack=true;try{(VIEW_FN[top]||VIEW_FN.home)();}catch(e){showHome();}_navBack=false;
+  toast('📍 '+s);
+}
+// Le serveur fait foi : salarié cloisonné → son studio ; code maître / invitation sans studio
+// → navigue, mais toujours dans un des 3 studios officiels (jamais de fiche orpheline).
+function _adoptStudio(d){
+  if(!d)return false;
+  if(typeof d.scoped==='boolean')SCOPED=d.scoped;
+  else if(typeof d.studio==='string')SCOPED=COACH_ROLE!=='admin'&&!!_sk(d.studio);
+  try{localStorage.setItem('cpcoach_scoped',SCOPED?'1':'0');}catch(e){}
+  const before=CFG.studio;
+  if(!canNav()){if(typeof d.studio==='string'&&d.studio)CFG.studio=canonStudio(d.studio)||d.studio;}
+  else if(!canonStudio(CFG.studio))CFG.studio=STUDIOS[0];
+  else CFG.studio=canonStudio(CFG.studio);
+  if(CFG.studio!==before)localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
+  setTimeout(_updTopStudio,0);
+  return CFG.studio!==before;
+}
 function _adoptAuth(d){
   if(!d)return;
   COACH_ROLE=d.role||'';localStorage.setItem('cpcoach_role',COACH_ROLE);
   IS_MGR=d.manager===true;localStorage.setItem('cpcoach_mgr',IS_MGR?'1':'0');
   if(typeof d.avatar==='string'&&d.avatar){MY_AVATAR=d.avatar;localStorage.setItem('cpcoach_avatar',MY_AVATAR);}
-  if(d.studio&&CFG.studio!==d.studio){CFG.studio=d.studio;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
+  _adoptStudio(d);
   if(d.primes){PRIMES=d.primes;localStorage.setItem('cpcoach_primes',JSON.stringify(PRIMES));}
   // Le prénom de l'invitation devient le nom du conseiller (signatures, fiches)
   if(d.rep&&CFG.rep!==d.rep){CFG.rep=d.rep;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
@@ -2222,7 +2311,7 @@ function schedulePush(){clearTimeout(_pushT);_pushT=setTimeout(syncPush,700);}
 async function syncPush(){
   if(!COACH_CODE)return;
   _syncState('sync');
-  try{const d=await syncCall('push',{prospects:PROSPECTS});if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}_syncState('ok');_lastSync=new Date().toISOString();}
+  try{const d=await syncCall('push',{prospects:PROSPECTS});if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}if(d&&'studio' in d&&_adoptStudio(d))_rerenderTop();_syncState('ok');_lastSync=new Date().toISOString();}
   catch(e){if(e.message!=='code')_syncState('off');}
 }
 async function syncPull(rerender){
@@ -2231,6 +2320,7 @@ async function syncPull(rerender){
   try{
     const d=await syncCall('pull');
     const server=d.prospects||[];
+    const studioChanged=('studio' in d)&&_adoptStudio(d);
     if(_adoptEpoch(d)){/* purge administrative : local vidé, rien à re-pousser */}
     else{
       // Les fiches locales absentes du serveur (créées hors-ligne) sont conservées puis poussées
@@ -2241,7 +2331,7 @@ async function syncPull(rerender){
       const localOnly=PROSPECTS.filter(p=>{
         if(ids.has(p.id))return false;
         const t=byTel.get(_k(p.tel));
-        if(!t)return true;
+        if(!t||(_sk(t.studio)&&_sk(p.studio)&&_sk(t.studio)!==_sk(p.studio)))return true;
         // Même numéro qu'une fiche du serveur (ex. créée par Allo) : on fusionne la saisie locale dedans
         if((p.maj||'')>(t.maj||'')){
           if(p.nom&&(/^Contact 0/.test(t.nom||'')||!t.nom))t.nom=p.nom;
@@ -2258,7 +2348,8 @@ async function syncPull(rerender){
       if(localOnly.length||absorbed)schedulePush();
     }
     _syncState('ok');_lastSync=new Date().toISOString();
-    if(rerender&&$('#topPhase').textContent==='Mes prospects')showProspects(true);
+    if(studioChanged)_rerenderTop();
+    else if(rerender&&$('#topPhase').textContent==='Mes prospects')showProspects(true);
   }catch(e){if(e.message!=='code')_syncState('off');}
 }
 
@@ -2566,7 +2657,7 @@ function saveProspect(){
   };
   // Rattachement : même fiche si lancée depuis une carte, sinon même numéro (fiche créée par Allo…)
   const _k=s=>String(s||'').replace(/\D/g,'').slice(-9);
-  const ex=(st._prId&&PROSPECTS.find(x=>x.id===st._prId))||(_k(p.tel).length===9&&PROSPECTS.find(x=>_k(x.tel)===_k(p.tel)));
+  const ex=(st._prId&&PROSPECTS.find(x=>x.id===st._prId))||(_k(p.tel).length===9&&PSC().find(x=>_k(x.tel)===_k(p.tel)));
   if(ex){
     const keepNom=ex.nom&&!/^Contact 0/.test(ex.nom)&&!p.nom;
     Object.assign(ex,{
@@ -2576,7 +2667,7 @@ function saveProspect(){
       rappel:p.rappel||ex.rappel, obj:p.obj||ex.obj, fiche:p.fiche, rep:ex.rep||p.rep, studio:ex.studio||p.studio,
       maj:p.maj
     });
-    p.id=ex.id;
+    p.id=ex.id;p.studio=ex.studio||p.studio;
     persistProspects();schedulePush();
     toast('🔗 Rattaché à la fiche existante · appels Allo conservés');
   }else{
@@ -2643,7 +2734,7 @@ function renderTeam(invites){
       <div class="pr-top">
         ${i.avatar?avaTag(i.avatar,40,i.nom):`<div class="pr-ava" style="background:${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'}">${esc(prInitials(i.nom))}</div>`}
         <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b>${isMgrInv?'<span class="tm-mgr">⭐ Recruteur</span>':''}</div>
-          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span>${i.studio?`<span class="tm-studio">📍 ${esc(i.studio)}</span>`:''}<span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span><span>${i.device?' · 📱 appareil lié':' · 📱 libre'}</span></div></div>
+          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span>${COACH_ROLE==='admin'?`<select class="tm-studio" onchange="setInviteStudio('${i.id}',this.value)" style="border:1px solid ${i.studio?'#DCE4F2':'#F5C0AE'};border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;background:${i.studio?'#fff':'#FFF4F0'};color:${i.studio?'var(--cp-dark)':'#B4300F'}">${!i.studio?'<option value="" selected>⚠️ Studio non défini · accès à tous</option>':!canonStudio(i.studio)?`<option value="" selected>⚠️ ${esc(i.studio)} · non reconnu</option>`:''}${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(i.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select>`:(i.studio?`<span class="tm-studio">📍 ${esc(i.studio)}</span>`:'<span class="tm-studio">⚠️ studio non défini</span>')}<span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span><span>${i.device?' · 📱 appareil lié':' · 📱 libre'}</span></div></div>
         <span class="pr-chip" style="${off?'background:#f2f3f6;color:#8C95A8;border-color:#dde1e8':'background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6'}">${off?'⏸ Suspendu':'✅ Actif'}</span>
       </div>
       <div class="pr-actions">
@@ -2670,8 +2761,7 @@ function renderTeam(invites){
       </div>
     </details>
     <div class="pr-capture"><div class="pr-cap-h">➕ Inviter un conseiller</div>
-      <div class="pr-cap-row"><input type="text" id="tm-nom" placeholder="Prénom (ex. Léa)"/><input type="text" id="tm-studio" list="studioList" placeholder="Studio d'affectation *" value="${esc(CFG.studio||'')}" onkeydown="if(event.key==='Enter')addInvite()"/></div>
-      <datalist id="studioList">${[...new Set(['La Garenne-Colombes','Montpellier Lattes','La Défense',CFG.studio||''].concat(invites.map(x=>x.studio||'')))].filter(Boolean).map(s=>`<option value="${esc(s)}">`).join('')}</datalist>
+      <div class="pr-cap-row"><input type="text" id="tm-nom" placeholder="Prénom (ex. Léa)"/><select id="tm-studio" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:14px;background:#fff"${canNav()?'':' disabled'}>${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(CFG.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select></div>
       <button class="go ok" style="width:100%;padding:11px" onclick="addInvite()">Créer son code</button>
     </div>
     ${invites.length?invites.map(row).join(''):`<div class="pr-empty">👥 Aucune invitation pour l'instant.<br><small>Créez le premier code personnel ci-dessus.</small></div>`}
@@ -2694,6 +2784,10 @@ async function toggleManager(id,mgr){
 }
 async function toggleInvite(id,actif){
   try{const d=await syncCall('team_toggle',{id:id,actif:actif});renderTeam(d.invites||[]);toast(actif?'Code réactivé ✓':'Code suspendu · outil verrouillé chez lui');}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+async function setInviteStudio(id,studio){
+  try{const d=await syncCall('team_studio',{id:id,studio:studio});renderTeam(d.invites||[]);toast('📍 Studio mis à jour · effectif à sa prochaine connexion');}
   catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
 async function resetDevice(id,nom){
@@ -2988,13 +3082,13 @@ const JOURS=['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
 // Les coachs n'ont PAS de compte : ce sont des noms (planning, primes).
 // La saisie des séances est faite par le staff (Solène, Lucie, Tom…).
 function _icLegacyNames(){
-  const ok=s=>!icStudio()||s.studio===icStudio();
+  const ok=s=>!icStudio()||s&&_sk(s.studio)===_sk(icStudio());
   const set=new Set();
   IC.slots.forEach(s=>{if(s.coach&&ok(s))set.add(s.coach);});
   IC.sessions.forEach(s=>{if(s.coach&&ok(s))set.add(s.coach);});
   return [...set].sort();
 }
-function icRoster(){return (IC.coachs||[]).filter(c=>!icStudio()||c.studio===icStudio()).sort((a,b)=>a.nom.localeCompare(b.nom));}
+function icRoster(){return (IC.coachs||[]).filter(c=>!icStudio()||c&&_sk(c.studio)===_sk(icStudio())).sort((a,b)=>a.nom.localeCompare(b.nom));}
 function icCoachOpts(cur){
   let h='<option value="">Coach ?</option>',seen=false;
   icRoster().forEach(c=>{const sel=c.nom===cur?' selected':'';if(sel)seen=true;h+=`<option value="${esc(c.nom)}"${sel}>${esc(c.nom)}</option>`;});
@@ -3023,7 +3117,7 @@ function icEnsureWeek(){
   const mon=_monday(_icWeek),news=[];
   for(let j=0;j<7;j++){
     const date=_dstr(new Date(mon.getTime()+j*864e5));
-    IC.slots.filter(s=>s.actif!==false&&s.jour===j&&(!icStudio()||s.studio===icStudio())).forEach(s=>{
+    IC.slots.filter(s=>s.actif!==false&&s.jour===j&&(!icStudio()||s&&_sk(s.studio)===_sk(icStudio()))).forEach(s=>{
       const id='ics_'+s.id+'_'+date;
       if(!IC.sessions.find(x=>x.id===id)){
         const sess={id:id,studio:s.studio,date:date,heure:s.heure,coach:s.coach,statut:'prevue',booked:0,show:0,maj:new Date().toISOString()};
@@ -3055,7 +3149,7 @@ function renderICPage(){
   const scrollY=$('#screen').scrollTop;
   const mon=_monday(_icWeek);
   const days=[...Array(7)].map((x,j)=>_dstr(new Date(mon.getTime()+j*864e5)));
-  const sess=IC.sessions.filter(s=>days.includes(s.date)&&(!icStudio()||s.studio===icStudio())).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
+  const sess=IC.sessions.filter(s=>days.includes(s.date)&&(!icStudio()||s&&_sk(s.studio)===_sk(icStudio()))).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
   const fmtD=d=>new Date(d+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'});
   const card=s=>{
     const sales=icSalesOf(s.id),ann=s.statut==='annulee';
@@ -3076,8 +3170,8 @@ function renderICPage(){
     </div>`;
   };
   let h=`<div class="cg">
-    <div class="pr-head"><div><h2 class="pr-h2">🗓️ Intro Class</h2><div class="pr-h2s">${(COACH_ROLE==='admin'||IS_MGR)?'':((icStudio()||'Studio non défini')+' · ')}inscrits, présents, signés · tout se calcule</div></div>
-      ${(COACH_ROLE==='admin'||IS_MGR)?`<select class="ic-studio" onchange="CFG.studio=this.value;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));icEnsureWeek();renderICPage();toast('Studio actif : '+(this.value||'tous'))">${['',...new Set(['La Garenne-Colombes','Montpellier Lattes','La Défense'].concat(IC.slots.map(s=>s.studio)).concat(IC.sessions.map(s=>s.studio)).filter(Boolean))].map(s=>`<option value="${esc(s)}"${s===icStudio()?' selected':''}>${s||'🌍 Tous les studios'}</option>`).join('')}</select>`:`<span class="sync-badge ok">☁️ Équipe</span>`}</div>
+    <div class="pr-head"><div><h2 class="pr-h2">🗓️ Intro Class</h2><div class="pr-h2s">inscrits, présents, signés · tout se calcule</div></div>
+      <span class="sync-badge ok">📍 ${esc(icStudio()||'Tous les studios')}</span></div>
     <div class="ic-week"><button onclick="_icWeek--;icEnsureWeek();renderICPage()">‹</button><b>Semaine du ${fmtD(days[0])}</b><button onclick="_icWeek++;icEnsureWeek();renderICPage()">›</button>${_icWeek?`<button class="ic-today" onclick="_icWeek=0;icEnsureWeek();renderICPage()">Aujourd'hui</button>`:''}</div>
     ${days.map(d=>{const ds=sess.filter(s=>s.date===d);return ds.length?`<div class="ic-day">${fmtD(d)}</div>`+ds.map(card).join(''):'';}).join('')||'<div class="pr-empty">Aucune séance cette semaine.<br><small>Ajoutez-en une ou configurez le planning type.</small></div>'}
     <div class="ic-actions">
@@ -3153,7 +3247,7 @@ function icSlotsUI(){
 }
 function icsRenderSlots(){
   const box=document.getElementById('ics-slots');if(!box)return;
-  const mine=IC.slots.filter(s=>!icStudio()||s.studio===icStudio());
+  const mine=IC.slots.filter(s=>!icStudio()||s&&_sk(s.studio)===_sk(icStudio()));
   box.innerHTML=mine.length?mine.map(s=>`<div class="ics-slot"><b>${s.actif===false?'⏸ ':''}${JOURS[s.jour]} ${s.heure}</b><span>${esc(s.coach||'coach ?')}</span><button onclick="icsDelSlot('${s.id}')" title="Supprimer ce créneau">🗑</button></div>`).join(''):'<div class="ics-empty">Aucun créneau pour l\'instant.</div>';
 }
 function icsDelSlot(id){
@@ -3266,7 +3360,7 @@ function showLeadImport(){_vReg('leads');
 }
 function _parseLeads(){
   const raw=($('#leadPaste')?.value||'').trim();if(!raw)return {ok:[],dup:[],bad:[]};
-  const seen=new Set(PROSPECTS.map(p=>_normTel(p.tel)).filter(Boolean));
+  const seen=new Set(PSC().map(p=>_normTel(p.tel)).filter(Boolean));
   const ok=[],dup=[],bad=[];
   raw.split('\n').forEach(line=>{
     line=line.trim();if(!line)return;
@@ -3308,7 +3402,7 @@ async function loadHomePerf(){
   if(_hpBusy||!COACH_CODE)return;_hpBusy=true;
   try{
     const [d]=await Promise.all([syncCall('stats_pull'),fetchAvatars()]);
-    const map=buildStatsMap(d.events||[],PROSPECTS);
+    const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
     const rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name)}))
       .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
@@ -3370,7 +3464,7 @@ function showPerf(){_vReg('perf');
 }
 function renderPerf(events){
   const offline=events===null;
-  const map=buildStatsMap(events||[],PROSPECTS);
+  const map=buildStatsMap((events||[]).filter(inStudio),PSC());
   const me=aggStats(map,CFG.rep||'');
   const lv=perfLevel(me.abos);
   const span=lv.next?lv.next.min-lv.cur.min:1;
@@ -3436,7 +3530,7 @@ function renderPerf(events){
     h+=`<div class="pf-sec" style="margin-top:20px">🎓 Formation de l'équipe <small>8 cas pratiques · validé dès ${SIM_SEUIL} %</small></div>
     <div class="pf-funnel">${(()=>{
       const all=window._TRAINALL||{};
-      const roster=[...new Set([...(window._TEAM||[]).filter(i=>i.actif!==false).map(i=>i.nom.split(' ')[0]),...(CFG.rep?[CFG.rep.split(' ')[0]]:[])])];
+      const roster=[...new Set([...(window._TEAM||[]).filter(i=>i.actif!==false&&inStudio(i)).map(i=>i.nom.split(' ')[0]),...(CFG.rep?[CFG.rep.split(' ')[0]]:[])])];
       if(!roster.length)return '<div class="pr-empty">Aucun salarié invité pour l\'instant.</div>';
       return roster.map(n=>{const t=all[_repKey(n)]||{};const done=SIM_CURRICULUM.filter(s=>t[s.id]&&t[s.id].s>=SIM_SEUIL).length;const pc=Math.round(done/SIM_CURRICULUM.length*100);
         return `<div class="pf-frow"><div class="pf-flbl" style="display:flex;align-items:center;gap:6px">${avaTag(avatarOf(n),20,n)}${esc(n)}</div><div class="pf-ftrack"><div class="pf-ffill" style="width:${Math.max(pc,done?4:0)}%;background:${pc===100?'#1F9E75':pc>=50?'#C9871F':'#4F6FA0'}"></div></div><div class="pf-fnum"><b>${done}/8</b><small>${pc===100?'🎓 complet':pc+' %'}</small></div></div>`;}).join('');
@@ -3536,7 +3630,7 @@ function showProspects(keepScroll){_vReg('prospects');
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
-  let list=PROSPECTS.slice();
+  let list=PSC();
   if(prFilter)list=list.filter(p=>p.statut===prFilter);
   if(prQuery)list=list.filter(p=>((p.nom||'')+' '+(p.tel||'')+' '+(p.note||'')).toLowerCase().includes(prQuery));
   const sorted=list.sort((a,b)=>{
@@ -3559,8 +3653,8 @@ function showProspects(keepScroll){_vReg('prospects');
     }
     return prLastContact(b).localeCompare(prLastContact(a));
   });
-  const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PROSPECTS.filter(p=>p.statut===k).length);
-  const nbDue=PROSPECTS.filter(due).length;
+  const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PSC().filter(p=>p.statut===k).length);
+  const nbDue=PSC().filter(due).length;
   const card=p=>{
     const pi=PIPE[p.statut]||PIPE.rappeler;
     const isDue=due(p);
@@ -3595,7 +3689,7 @@ function showProspects(keepScroll){_vReg('prospects');
   };
   const h=`<div class="cg">
     <div class="pr-head">
-      <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PROSPECTS.length} fiche${PROSPECTS.length>1?'s':''} · pipeline commercial du studio</div></div>
+      <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
       <span id="syncBadge" class="sync-badge ok">☁️ Synchronisé · équipe</span>
     </div>
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
@@ -3616,7 +3710,7 @@ function showProspects(keepScroll){_vReg('prospects');
       <button class="pr-act" style="${prSort==='prio'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('prio')" title="Rappels du jour, puis les fiches actives dont le dernier contact est le plus ancien">🎯 À recontacter d'abord</button>
       <button class="pr-act" style="${prSort==='journal'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('journal')" title="Tous les appels réalisés, du plus récent au plus ancien">📞 Journal d'appels</button>
     </div>
-    ${prSort==='journal'?callJournalHTML(null,list):sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PROSPECTS.length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
+    ${prSort==='journal'?callJournalHTML(null,list):sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   $('#topPhase').textContent='Mes prospects';
@@ -3715,7 +3809,7 @@ function _apCoherence(a,durMin){
 
 function _journalRows(dayS,pool){
   const J=[];const byKey=new Map();
-  (pool||PROSPECTS).forEach(p=>(p.appels||[]).forEach(a=>{
+  (pool||PSC()).forEach(p=>(p.appels||[]).forEach(a=>{
     const tp=tsParts(a.ts);if(!tp)return;if(dayS&&tp.day!==dayS)return;
     const first=(a.txt||'').split('\n')[0];
     if(!first.startsWith('📞'))return;
@@ -3781,7 +3875,7 @@ function showCallStats(){_vReg('calls');
   const dateS=_csDate;
   const rows={};let total=0,answered=0,sms=0,talk=0;
   const _seenC=new Set();
-  PROSPECTS.forEach(p=>(p.appels||[]).forEach(a=>{
+  PSC().forEach(p=>(p.appels||[]).forEach(a=>{
     const tp=tsParts(a.ts);if(!tp||tp.day!==dateS)return;
     const first=(a.txt||'').split('\n')[0];
     if(first.startsWith('💬')){sms++;return;}
@@ -3799,7 +3893,7 @@ function showCallStats(){_vReg('calls');
   const max=list.length?list[0][1].n:1;
   const fmtD=new Date(dateS+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
   const big=(n,l,c)=>`<div style="flex:1 1 140px;background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:14px 16px;text-align:center;box-shadow:var(--sh-s)"><div style="font-size:26px;font-weight:800;color:${c}">${n}</div><div style="font-size:11px;font-weight:700;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em">${l}</div></div>`;
-  $('#topPhase').textContent='Appels du jour';$('#topSub').textContent=CFG.studio?' · '+CFG.studio:'';
+  $('#topPhase').textContent='Appels du jour';$('#topSub').textContent='';
   $('#bar').style.width='100%';
   $('#nav').innerHTML=pageNav();
   $('#screen').innerHTML=`<div class="cg">
@@ -3938,7 +4032,7 @@ function _hmNextIC(){
   const now=new Date();now.setHours(12,0,0,0);
   const todayS=now.toISOString().slice(0,10);
   const hhmm=new Date().toTimeString().slice(0,5);
-  const okStudio=s=>!icStudio()||s.studio===icStudio();
+  const okStudio=s=>!icStudio()||s&&_sk(s.studio)===_sk(icStudio());
   const cand=[];
   ((IC&&IC.sessions)||[]).forEach(s=>{if(s.statut==='prevue'&&s.date>=todayS&&okStudio(s))cand.push({date:s.date,heure:s.heure||'',coach:s.coach||''});});
   const taken=new Set((((IC&&IC.sessions)||[])).map(s=>s.date+'|'+(s.heure||'')));
@@ -3969,7 +4063,7 @@ function icGoto(dateS){
 }
 function _hmToday(){
   const d=new Date();d.setHours(12,0,0,0);const todayS=d.toISOString().slice(0,10);
-  const due=PROSPECTS.filter(p=>p.rappel&&p.rappel<=todayS&&(p.statut==='rappeler'||p.statut==='essai')).length;
+  const due=PSC().filter(p=>p.rappel&&p.rappel<=todayS&&(p.statut==='rappeler'||p.statut==='essai')).length;
   const nxt=_hmNextIC();
   return `<div class="hm-today">
     <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">${ic('bell',18)}</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
@@ -3982,7 +4076,7 @@ function showHome(){_vReg('home');
   $('#topPhase').textContent='Accueil';
   $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
   $('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);
-  $('#topSub').textContent=CFG.studio?' · '+CFG.studio:'';
+  $('#topSub').textContent='';
   $('#bar').style.width='0%';
   $('#nav').innerHTML='';
   const inCall=!!st.callStart;
@@ -3992,7 +4086,7 @@ function showHome(){_vReg('home');
     <div class="hm-sec">Agir</div>
     <div class="hm-grid2">
       <button class="hm-big call" onclick="homeStartCall()"><span class="hm-icbox wh">${ic('phone')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">${inCall?'Reprendre l\'appel':'Démarrer un appel'}</span><span class="s">${inCall&&st.prospectNom?esc(st.prospectNom.split(' ')[0])+' est en cours':'Votre guide, étape par étape'}</span></button>
-      <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, relances, suivi</span>${PROSPECTS.length?`<span class="hm-count">${PROSPECTS.length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
+      <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, relances, suivi</span>${PSC().length?`<span class="hm-count">${PSC().length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
       <button class="hm-big" onclick="showICPage()"><span class="hm-icbox pch">${ic('calcheck')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Intro Class</span><span class="s">Séances, présents, signés</span></button>
       <button class="hm-big" onclick="showLeadImport()"><span class="hm-icbox mnt">${ic('download')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Importer des leads</span><span class="s">Fitness Boost, bsport, tableur</span></button>
     </div>
@@ -4027,15 +4121,16 @@ function showHome(){_vReg('home');
 /* ── Historique interne : « précédent » = page précédente ── */
 let _navStack=['home'],_navBack=false;
 function _vReg(name){
-  if(_navBack){_navBack=false;_updTopBack();_updTopStop();return;}
+  if(_navBack){_navBack=false;_updTopBack();_updTopStop();_updTopStudio();return;}
   if(_navStack[_navStack.length-1]!==name)_navStack.push(name);
   if(_navStack.length>30)_navStack.shift();
-  _updTopBack();_updTopStop();
+  _updTopBack();_updTopStop();_updTopStudio();
 }
 function _updTopStop(){
   const b=document.getElementById('topStop');if(!b)return;
   const inCall=_navStack[_navStack.length-1]==='call'&&(st.idx>0||!!st.callStart)&&!st._prSaved;
   b.style.display=inCall?'':'none';
+  const ts=document.getElementById('topStudio');if(ts&&inCall)ts.style.display='none';
 }
 function _resetCall(){
   const g=st.callGoal;_catchOpen={};
@@ -4119,7 +4214,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showTraining()"><span class="mic">🎬</span><span>Formation · cas pratiques<small>8 scénarios à valider · progression suivie par le studio</small></span></button>
     <button class="menu-item" onclick="closeMenu();showCallStats()"><span class="mic">📊</span><span>Appels du jour<small>Compteur d'activité : total et par commercial</small></span></button>
     <button class="menu-item" onclick="closeMenu();showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
-    <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PROSPECTS.length?' <span class="menu-count">'+PROSPECTS.length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PSC().length?' <span class="menu-count">'+PSC().length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
     <button class="menu-item" onclick="printGuide()"><span class="mic">🖨️</span><span>Imprimer le guide (PDF)<small>Livret hors-ligne : toutes les sections</small></span></button>
@@ -4318,7 +4413,7 @@ function printGuide(){
 function openSet(){['studio','rep','base','p1','p2','p3','founding'].forEach(k=>$('#set-'+k).value=CFG[k]??'');$('#set-priv').value=CFG.privateSession??'';$('#set-spots').value=CFG.spotsLeft??'';$('#setBg').classList.add('on');}
 function closeSet(){$('#setBg').classList.remove('on');}
 function saveSet(){
-  CFG.studio=$('#set-studio').value.trim();CFG.rep=$('#set-rep').value.trim();
+  CFG.rep=$('#set-rep').value.trim();
   CFG.base=parseFloat($('#set-base').value)||DEFAULT_CFG.base;
   CFG.p1=$('#set-p1').value===''?null:parseFloat($('#set-p1').value);
   CFG.p2=$('#set-p2').value===''?null:parseFloat($('#set-p2').value);

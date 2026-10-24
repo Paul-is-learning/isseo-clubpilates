@@ -137,7 +137,7 @@ serve(async (req: Request) => {
     if (!codeOk) return json({ error: "Code administrateur invalide" }, 401);
     const apiKey = Deno.env.get("ALLO_API_KEY") || "";
     if (!apiKey) return json({ error: "ALLO_API_KEY non configuré" }, 500);
-    const STUDIO = Deno.env.get("ALLO_STUDIO") || "";
+    const STUDIO = Deno.env.get("ALLO_STUDIO") || "La Garenne-Colombes";
     const H = { Authorization: "Api-Key " + apiKey };
 
     // 1. Les numéros Allo : passés en paramètre (?number=+33…), sinon via l'API

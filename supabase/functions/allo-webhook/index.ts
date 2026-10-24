@@ -162,14 +162,20 @@ serve(async (req: Request) => {
     const evt = JSON.parse(raw);
     const topic = String(evt.topic || "");
     const d = evt.data || {};
-    const STUDIO = Deno.env.get("ALLO_STUDIO") || "";
+    const STUDIO = Deno.env.get("ALLO_STUDIO") || "La Garenne-Colombes";
 
     const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
     const { data: row } = await admin.from("studios").select("data").eq("id", ROW_PROSPECTS).maybeSingle();
     const list: any[] = (row?.data?.prospects as any[]) || [];
     const save = () =>
       admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
-    const findByKey = (k: string) => list.find((p) => telKey(p?.tel) === k);
+    // Préférer la fiche du studio de la ligne ; une fiche trouvée sans studio y est rattachée
+    const findByKey = (k: string) => {
+      const same = list.filter((p) => telKey(p?.tel) === k);
+      const f = same.find((p) => String(p?.studio || "") === STUDIO) || same[0];
+      if (f && !String(f.studio || "").trim()) f.studio = STUDIO;
+      return f;
+    };
     const now = () => new Date().toISOString();
 
     // ── 📞 Appel terminé : résumé + transcription (+ infos extraites via API) ──

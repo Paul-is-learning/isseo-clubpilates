@@ -101,7 +101,32 @@ serve(async (req) => {
     if (role === "admin") myAvatar = String(accRow?.data?.adminAvatar?.avatar || "");
     else { const inv = invites.find((i) => norm(i.code) === norm(code)); myAvatar = String(inv?.avatar || ""); myStudio = String(inv?.studio || ""); }
 
-    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio });
+    // ── Cloisonnement par studio ──
+    // Code maître : tous les studios. Salarié / recruteur : uniquement le studio de son
+    // invitation (lecture ET écriture). Invitation sans studio (héritage) : accès complet,
+    // signalé dans Équipe pour être corrigé.
+    const sk = (s: unknown) => String(s ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+    const STUDIOS = ["La Garenne-Colombes", "Montpellier Lattes", "La Défense"];
+    const canon = (s: unknown) => {
+      const k = sk(s);
+      if (!k) return "";
+      return STUDIOS.find((x) => sk(x) === k) || (k.length >= 5 ? STUDIOS.find((x) => sk(x).includes(k) || k.includes(sk(x))) : "") || "";
+    };
+    if (myStudio && canon(myStudio)) myStudio = canon(myStudio);
+    const scoped = role !== "admin" && !!sk(myStudio);
+    const inMine = (x: any) => !scoped || sk(x?.studio) === sk(myStudio);
+    // Élément envoyé par un salarié cloisonné : toujours estampillé à SON studio (jamais refusé
+    // en silence, sinon la fiche ou la vente serait perdue) ; modifier un élément existant d'un
+    // autre studio reste interdit (garde « i >= 0 && !inMine(existant) » à chaque écriture).
+    // existing = la version serveur de l'élément (si elle existe) : une copie sans studio ou mal
+    // orthographiée n'efface jamais le studio déjà connu ; un élément neuf n'est jamais orphelin.
+    const ownStudio = (x: any, existing?: any) => {
+      if (scoped) { x.studio = myStudio; return true; }
+      x.studio = canon(x?.studio) || canon(existing?.studio) || String(existing?.studio || "") || STUDIOS[0];
+      return true;
+    };
+
+    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio, scoped });
 
     // ── Avatars : chacun définit le sien, tout le monde voit ceux des autres ──
     if (action === "avatar_set") {
@@ -147,7 +172,8 @@ serve(async (req) => {
       const saveIC = () =>
         admin.from("studios").upsert({ id: ROW_IC, data: { slots, sessions, baremes, coachs }, updated_at: new Date().toISOString() });
 
-      if (action === "ic_pull") return json({ ok: true, slots, sessions, baremes, coachs });
+      const icOut = () => json({ ok: true, slots: slots.filter(inMine), sessions: sessions.filter(inMine), baremes, coachs: coachs.filter(inMine) });
+      if (action === "ic_pull") return icOut();
 
       if (action === "ic_bareme_set") {
         if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
@@ -176,6 +202,8 @@ serve(async (req) => {
             coach: String(s.coach || "").slice(0, 60), actif: s.actif !== false,
             maj: String(s.maj || new Date().toISOString()) };
           const i = slots.findIndex((x) => x.id === clean.id);
+          if (i >= 0 && !inMine(slots[i])) continue;
+          ownStudio(clean, i >= 0 ? slots[i] : null);
           if (i < 0) slots.push(clean); else if ((clean.maj || "") >= (slots[i].maj || "")) slots[i] = clean;
         }
         for (const s of inSess) {
@@ -188,6 +216,8 @@ serve(async (req) => {
             show: Math.max(0, Math.min(99, Number(s.show) || 0)),
             maj: String(s.maj || new Date().toISOString()) };
           const i = sessions.findIndex((x) => x.id === clean.id);
+          if (i >= 0 && !inMine(sessions[i])) continue;
+          ownStudio(clean, i >= 0 ? sessions[i] : null);
           if (i < 0) sessions.push(clean); else if ((clean.maj || "") >= (sessions[i].maj || "")) sessions[i] = clean;
         }
         const inCoachs: any[] = Array.isArray(body.coachs) ? body.coachs : [];
@@ -196,22 +226,25 @@ serve(async (req) => {
           const clean = { id: String(c.id).slice(0, 60), nom: String(c.nom).slice(0, 60),
             studio: String(c.studio || "").slice(0, 60), maj: String(c.maj || new Date().toISOString()) };
           const i = coachs.findIndex((x) => x.id === clean.id);
+          if (i >= 0 && !inMine(coachs[i])) continue;
+          ownStudio(clean, i >= 0 ? coachs[i] : null);
           if (i < 0) coachs.push(clean); else if ((clean.maj || "") >= (coachs[i].maj || "")) coachs[i] = clean;
         }
         if (coachs.length > 200) coachs = coachs.slice(-200);
         if (sessions.length > MAX_IC) sessions = sessions.slice(-MAX_IC);
         await saveIC();
-        return json({ ok: true, slots, sessions, baremes, coachs });
+        return icOut();
       }
 
       if (action === "ic_del") {
         if (role !== "admin" && !mgr) return json({ error: "Réservé aux recruteurs" }, 403);
         const ids: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
-        slots = slots.filter((s) => !ids.includes(s.id));
-        sessions = sessions.filter((s) => !ids.includes(s.id));
-        coachs = coachs.filter((c) => !ids.includes(c.id));
+        const keep = (x: any) => !ids.includes(x.id) || !inMine(x);
+        slots = slots.filter(keep);
+        sessions = sessions.filter(keep);
+        coachs = coachs.filter(keep);
         await saveIC();
-        return json({ ok: true, slots, sessions, baremes, coachs });
+        return icOut();
       }
     }
 
@@ -249,9 +282,9 @@ serve(async (req) => {
       let events: any[] = (stRow?.data?.events as any[]) || [];
       const ks: string[] = Array.isArray(body.ks) ? body.ks.map(String) : [];
       const pfx = String(body.prefix || "");
-      events = events.filter((e) => !ks.includes(e.k) && !(pfx && String(e.k).startsWith(pfx)));
+      events = events.filter((e) => !inMine(e) || (!ks.includes(e.k) && !(pfx && String(e.k).startsWith(pfx))));
       await admin.from("studios").upsert({ id: ROW_STATS, data: { events }, updated_at: new Date().toISOString() });
-      return json({ ok: true, events });
+      return json({ ok: true, events: events.filter(inMine) });
     }
 
     if (action === "stats_pull" || action === "stats_push") {
@@ -275,13 +308,15 @@ serve(async (req) => {
             ts: String(e.ts || new Date().toISOString()),
           };
           const i = events.findIndex((x) => x.k === clean.k);
+          if (i >= 0 && !inMine(events[i])) continue;
+          ownStudio(clean, i >= 0 ? events[i] : null);
           if (i < 0) events.push(clean);
           else if ((clean.ts || "") >= (events[i].ts || "")) events[i] = clean;
         }
         if (events.length > MAX_EVENTS) events = events.slice(-MAX_EVENTS);
         await admin.from("studios").upsert({ id: ROW_STATS, data: { events }, updated_at: new Date().toISOString() });
       }
-      return json({ ok: true, events });
+      return json({ ok: true, events: events.filter(inMine) });
     }
 
     // ── Barème des primes (admin uniquement) ──
@@ -307,7 +342,7 @@ serve(async (req) => {
         if (!inv) return json({ error: "Invitation introuvable" }, 404);
         inv.manager = body.manager === true;
         await saveInvites();
-        return json({ ok: true, invites });
+        return json({ ok: true, invites: invites.filter(inMine) });
       }
 
       // Drapeaux métier (admin) : coach (donne des IC) · nocom (non commissionné, ex. associé)
@@ -318,21 +353,35 @@ serve(async (req) => {
         if (typeof body.coach === "boolean") inv.coach = body.coach;
         if (typeof body.nocom === "boolean") inv.nocom = body.nocom;
         await saveInvites();
-        return json({ ok: true, invites });
+        return json({ ok: true, invites: invites.filter(inMine) });
       }
 
-      // Un recruteur ne peut pas suspendre/supprimer un autre recruteur
+      // Un recruteur ne peut pas suspendre/supprimer un autre recruteur, ni toucher un autre studio
       if (role !== "admin" && (action === "team_toggle" || action === "team_del" || action === "team_device_reset")) {
         const target = invites.find((i) => i.id === String(body.id));
         if (target && target.manager === true) return json({ error: "Invitation d'un recruteur · réservé au responsable" }, 403);
+        if (target && !inMine(target)) return json({ error: "Invitation d'un autre studio" }, 403);
       }
 
-      if (action === "team_list") return json({ ok: true, invites });
+      // Studio d'affectation (code maître) : c'est lui qui définit ce qu'une personne voit
+      if (action === "team_studio") {
+        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        const inv = invites.find((i) => i.id === String(body.id));
+        if (!inv) return json({ error: "Invitation introuvable" }, 404);
+        const st = canon(body.studio);
+        if (!st) return json({ error: "Studio inconnu · choisir parmi : " + STUDIOS.join(", ") }, 400);
+        inv.studio = st;
+        await saveInvites();
+        return json({ ok: true, invites: invites.filter(inMine) });
+      }
+
+      if (action === "team_list") return json({ ok: true, invites: invites.filter(inMine) });
 
       if (action === "team_add") {
         const nom = String(body.nom || "").trim().slice(0, 60);
-        const studio = String(body.studio || "").trim().slice(0, 60);
+        const studio = scoped ? myStudio : canon(body.studio);
         if (!nom) return json({ error: "Nom requis" }, 400);
+        if (!studio) return json({ error: "Studio d'affectation obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
         if (invites.length >= MAX_INVITES) return json({ error: "Limite d'invitations atteinte" }, 400);
         const base = nom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 8) || "CP";
         let newCode = "";
@@ -352,7 +401,7 @@ serve(async (req) => {
         if (!inv) return json({ error: "Invitation introuvable" }, 404);
         inv.actif = body.actif !== false;
         await saveInvites();
-        return json({ ok: true, invites });
+        return json({ ok: true, invites: invites.filter(inMine) });
       }
 
       if (action === "team_device_reset") {
@@ -360,7 +409,7 @@ serve(async (req) => {
         if (!inv2) return json({ error: "Invitation introuvable" }, 404);
         delete inv2.device; delete inv2.deviceAt;
         await saveInvites();
-        return json({ ok: true, invites });
+        return json({ ok: true, invites: invites.filter(inMine) });
       }
 
       if (action === "team_del") {
@@ -388,7 +437,7 @@ serve(async (req) => {
             }
           } catch (_e) { /* best effort */ }
         }
-        return json({ ok: true, invites });
+        return json({ ok: true, invites: invites.filter(inMine) });
       }
 
       return json({ error: "Action inconnue" }, 400);
@@ -410,7 +459,7 @@ serve(async (req) => {
       return json({ ok: true, prospects: [], epoch: newEpoch });
     }
 
-    if (action === "pull") return json({ ok: true, prospects: list, epoch });
+    if (action === "pull") return json({ ok: true, prospects: list.filter(inMine), epoch, studio: myStudio, scoped });
 
     if (action === "push") {
       const incoming: any[] = Array.isArray(body.prospects) ? body.prospects : [];
@@ -435,6 +484,8 @@ serve(async (req) => {
           maj: String(p.maj || p.ts || new Date().toISOString()),
         };
         const i = list.findIndex((x) => x.id === clean.id);
+        if (i >= 0 && !inMine(list[i])) continue;
+        ownStudio(clean, i >= 0 ? list[i] : null);
         if (i >= 0) {
           if ((clean.maj || "") >= (list[i].maj || "")) {
             // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
@@ -450,7 +501,9 @@ serve(async (req) => {
         // pendant que le commercial menait l'appel dans l'assistant) : fusion, pas de doublon.
         const tk = (s: unknown) => String(s || "").replace(/\D/g, "").slice(-9);
         const k = tk(clean.tel);
-        const j = k.length === 9 ? list.findIndex((x) => tk(x.tel) === k) : -1;
+        // Fusion par numéro, au sein du même studio uniquement
+        const sameStudio = (x: any) => !sk(x.studio) || !sk(clean.studio) || sk(x.studio) === sk(clean.studio);
+        const j = k.length === 9 ? list.findIndex((x) => tk(x.tel) === k && sameStudio(x) && inMine(x)) : -1;
         if (j < 0) { list.push(clean); continue; }
         const ex = list[j];
         const newer = (clean.maj || "") >= (ex.maj || "");
@@ -459,6 +512,7 @@ serve(async (req) => {
         merged.id = clean.id; // l'id de la fiche de l'assistant (porte les événements de vente)
         if (/^Contact 0/.test(String(merged.nom || "")) && other.nom && !/^Contact 0/.test(String(other.nom))) merged.nom = other.nom;
         merged.rep = base.rep || other.rep;
+        merged.studio = base.studio || other.studio;
         merged.ts = String(ex.ts || clean.ts) < String(clean.ts || ex.ts) ? ex.ts : clean.ts;
         merged.note = [ex.note, clean.note].filter(Boolean).filter((v: string, n: number, a: string[]) => a.indexOf(v) === n).join(" · ").slice(0, 300);
         const all = [...(ex.appels || []), ...(clean.appels || [])];
@@ -473,14 +527,14 @@ serve(async (req) => {
       }
       if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
       await saveList();
-      return json({ ok: true, prospects: list, epoch });
+      return json({ ok: true, prospects: list.filter(inMine), epoch, studio: myStudio, scoped });
     }
 
     if (action === "delete") {
       const rm: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
-      list = list.filter((p) => !rm.includes(p.id));
+      list = list.filter((p) => !rm.includes(p.id) || !inMine(p));
       await saveList();
-      return json({ ok: true, prospects: list, epoch });
+      return json({ ok: true, prospects: list.filter(inMine), epoch });
     }
 
     return json({ error: "Action inconnue" }, 400);
