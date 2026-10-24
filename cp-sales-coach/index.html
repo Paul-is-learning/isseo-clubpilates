@@ -3753,7 +3753,6 @@ function showCallStats(){_vReg('calls');
       ${big(total,'Appels passés','var(--cp-dark)')}
       ${big(answered,'Aboutis','#1F9E75')}
       ${big(total?Math.round(answered/total*100)+' %':'·','Taux de décroché','#B07A1C')}
-      ${big(fmtTalk(talk),'Temps au téléphone','var(--accent)')}
     </div>
     ${list.length?list.map(([who,s])=>`
       <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--cream-line);border-radius:13px;padding:10px 14px;margin-bottom:7px;box-shadow:var(--sh-s)">
