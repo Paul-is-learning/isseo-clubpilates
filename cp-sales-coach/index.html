@@ -2082,7 +2082,7 @@ function _illiPerWeek(){let n=3;try{n=parseInt(localStorage.getItem('cpcoach_ill
 function illiPerWeek(v){
   const n=Math.min(7,Math.max(1,parseInt(v,10)||0));if(!n)return;
   try{localStorage.setItem('cpcoach_illi',String(n));}catch(e){}
-  const m3=parseFloat(CFG.p3),pct=parseFloat(CFG.founding)||0,per=n*52/12;
+  const m3=parseFloat(CFG.p3),pct=parseFloat(CFG.founding)||0,per=n*4;
   // Mise à jour sur place : le champ garde le focus pendant la saisie
   document.querySelectorAll('.pb-illi-ps').forEach(e=>e.textContent=fmtEur(m3*(1-pct/100)/per));
   document.querySelectorAll('.pb-illi-was').forEach(e=>e.textContent='au lieu de '+fmtEur(m3/per));
@@ -2104,7 +2104,7 @@ function priceBoxHTML(){
     <div class="pb-head"><span>Formule</span><span>Prix / mois</span><span>La séance</span></div>
     ${row(1,'Pack 4','4 séances',`<b>${f(m1)}</b>`,'🎁 +1 séance offerte / mois · 3 mois',f(m1/5),'au lieu de '+f(m1/4))}
     ${row(2,'Pack 8','8 séances',`<s>${f(m2)}</s> <b>${f(d(m2))}</b>`,'-'+pct+' % à vie',f(d(m2)/8),'au lieu de '+f(m2/8))}
-    ${(()=>{const n=_illiPerWeek(),per=n*52/12;
+    ${(()=>{const n=_illiPerWeek(),per=n*4;
       return row(3,'Illimité',`<span class="pb-illi">à <input type="number" class="pb-illi-n" min="1" max="7" step="1" value="${n}" oninput="illiPerWeek(this.value)" aria-label="Cours par semaine"/> cours / sem</span>`,`<s>${f(m3)}</s> <b>${f(d(m3))}</b>`,'-'+pct+' % à vie',
         `<span class="pb-illi-ps">${f(d(m3)/per)}</span>`,
         `<span class="pb-illi-was">au lieu de ${f(m3/per)}</span>`);})()}
