@@ -520,6 +520,27 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
   #sideRail .catch-box .ln{font-size:16px}
 }
 @keyframes railin{from{opacity:0;transform:translateX(18px)}to{opacity:1;transform:none}}
+/* ── Pense-bête tarifs ── */
+.price-box{margin-top:16px;background:#fff;border:1px solid var(--cream-line,#E7E1D4);border-radius:14px;padding:4px 14px 12px;box-shadow:var(--sh-s);font-size:12px;color:var(--ink)}
+.price-box summary{cursor:pointer;list-style:none;padding:9px 0 6px;font-size:12.5px;font-weight:800;color:var(--cp-dark)}
+.price-box summary::-webkit-details-marker{display:none}
+.price-box summary small{font-weight:600;color:var(--ink-mid);margin-left:4px}
+.price-box:not([open]) summary::after{content:' ▾ voir';font-size:11px;color:var(--cp-deep)}
+.pb-head,.pb-row{display:grid;grid-template-columns:1.05fr 1.35fr 1fr;gap:8px;align-items:center}
+.pb-head{font-size:9.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-mid);padding:2px 0 4px;border-bottom:1px solid #F1EDE3}
+.pb-row{padding:7px 0;border-bottom:1px dashed #EFEADF}
+.pb-row.cur{background:#F4F1FD;margin:0 -8px;padding:7px 8px;border-radius:9px;border-bottom-color:transparent}
+.pb-row b{font-weight:800;color:var(--cp-dark)}
+.pb-row small{display:block;font-size:10px;color:var(--ink-mid);line-height:1.3}
+.pb-row s{color:var(--ink-mid);font-weight:600;font-size:11px}
+.pb-p small{color:#B4710F;font-weight:700}
+.pb-reco{display:inline-block;margin-top:2px;background:var(--accent,#4B52E6);color:#fff;font-size:9px;font-weight:800;border-radius:99px;padding:1px 6px}
+.pb-cond{margin:9px 0 0;padding-left:16px;font-size:11px;line-height:1.5;color:var(--ink-soft)}
+.pb-cond li{margin:2px 0}
+#sideRail .price-box{margin-top:0;animation:railin .32s cubic-bezier(.25,.8,.3,1)}
+#sideRail .price-box summary{pointer-events:none}
+#sideRail .price-box summary::after{content:''}
+@media(max-width:480px){#topStop{font-size:0!important;padding:0 10px!important}#topStop::before{content:'⏹';font-size:15px}}
 @media(max-width:1059.98px){
   .catch-box{position:sticky;bottom:2px;z-index:6;border-width:2px;background:linear-gradient(180deg,#eefaf3,#ddf2e7);box-shadow:0 -8px 26px -8px rgba(31,158,117,.4),0 6px 18px -6px rgba(31,158,117,.35)}
 }
@@ -957,7 +978,7 @@ body{background:var(--cream)}
   .screen{padding-left:44px;padding-right:44px}
   .screen>*{width:100%;max-width:920px;margin-left:auto;margin-right:auto}
   /* Écrans d'appel (vignettes coach à droite) : colonne resserrée à gauche */
-  .screen:has(.catch-box,.ask-box)>*{max-width:700px;margin-left:0}
+  .screen.has-rail>*{max-width:700px;margin-left:0}
   .nav{padding-left:max(18px,calc((100% - 920px)/2));padding-right:max(18px,calc((100% - 920px)/2))}
   .hm-grid2{grid-template-columns:repeat(4,1fr)}
   .hm-big .s{min-height:30px}
@@ -1613,7 +1634,11 @@ function matchScore(pack){
 function packMonthly(p){return p===1?CFG.p1:p===2?CFG.p2:p===3?CFG.p3:null;}
 function packPerSession(p){const m=packMonthly(p),s=SESSIONS_PER_MONTH[p];if(m==null||s==null)return null;const n=parseFloat(m);return isNaN(n)?null:n/s;}
 function fmtEur(v){if(v==null||v==='')return null;const n=parseFloat(v);if(isNaN(n))return null;return n.toLocaleString('fr-FR',{minimumFractionDigits:n%1?2:0,maximumFractionDigits:2})+' €';}
-function foundingMonthly(p){const n=parseFloat(packMonthly(p));return isNaN(n)?null:n*(1-(parseFloat(CFG.founding)||0)/100);}
+// Grille de lancement : -20 % à vie (50 premiers) sur Pack 8 et Illimité uniquement.
+// Pack 4 : prix inchangé, 1 séance offerte / mois pendant 3 mois (5 séances pour le prix de 4).
+function foundingMonthly(p){if(p===1)return null;const n=parseFloat(packMonthly(p));return isNaN(n)?null:n*(1-(parseFloat(CFG.founding)||0)/100);}
+function launchPerSession(p){if(p!==1)return null;const n=parseFloat(packMonthly(1));return isNaN(n)?null:n/5;}
+function effPerSession(p){return foundingPerSession(p)??launchPerSession(p)??packPerSession(p);}
 function foundingPerSession(p){const f=foundingMonthly(p),s=SESSIONS_PER_MONTH[p];if(f==null||s==null)return null;return f/s;}
 const PACK_META={1:{cls:'p1',badge:'Complément',name:'Pack 4 (1×/semaine)',freq:'4 séances / mois'},2:{cls:'p2',badge:'★ Recommandé',name:'Pack 8 (2×/semaine)',freq:'8 séances / mois'},3:{cls:'p3',badge:'Transformation',name:'Pack illimité',freq:'À volonté'}};
 function classBenefit(id){
@@ -1701,7 +1726,7 @@ function buildReframe(pack){
   const n=parseFloat(monthly);if(isNaN(n))return [];
   const mEur=fmtEur(n);
   const out=[];
-  const priv=parseFloat(CFG.privateSession),ps=foundingPerSession(pack)!=null?foundingPerSession(pack):packPerSession(pack);
+  const priv=parseFloat(CFG.privateSession),ps=effPerSession(pack);
   const sess=SESSIONS_PER_MONTH[pack];
 
   // 1 · Le coût réel par séance (le repère le plus parlant)
@@ -1747,6 +1772,7 @@ const PRICE_PROOF=['🎓 Coach diplômé à chaque cours','👥 12 personnes max
 function buildFoundingPitch(pack){
   const m=fmtEur(packMonthly(pack)),f=fmtEur(foundingMonthly(pack)),priv=fmtEur(CFG.privateSession);
   const ps=foundingPerSession(pack)!=null?fmtEur(foundingPerSession(pack)):fmtEur(packPerSession(pack));
+  if(pack===1){const lps=fmtEur(launchPerSession(1));return `« Et vous appelez au meilleur moment : pour le lancement, le Pack 4 vous offre <b>1 séance chaque mois pendant vos 3 premiers mois</b> · 5 séances pour ${m}, soit ${lps} la séance, et l'inscription offerte (valeur 149 €). Et si vous visez 2 séances par semaine, le Pack 8 est à <b>-${CFG.founding}% à vie</b> pour nos 50 premiers membres. Je vous réserve votre place ? »`;}
   let s=`« Et vous appelez au meilleur moment : nos premiers membres deviennent <b>membres fondateurs</b> · -${CFG.founding}% à vie et l'inscription offerte.`;
   if(pack===3){const fn=parseFloat(foundingMonthly(3)??packMonthly(3)),r=n=>Math.round(fn/(n*4.333));s+=f&&m?` Concrètement, l'illimité passe de ${m} à <b>${f} par mois</b>, pour toujours : à 3 séances par semaine, votre séance revient à ~${r(3)} €.`:'';}
   else s+=f&&m?` Concrètement, votre ${PACK_META[pack].name} passe de ${m} à <b>${f} par mois</b>, pour toujours : ${ps?ps+' la séance':''} coachée en petit groupe${priv?`, quand la séance privée seule vaut ${priv}`:''}.`:'';
@@ -1756,6 +1782,7 @@ function buildFoundingPitch(pack){
 function buildFoundingPitchCasual(pack){
   const m=fmtEur(packMonthly(pack)),f=fmtEur(foundingMonthly(pack));
   const ps=foundingPerSession(pack)!=null?fmtEur(foundingPerSession(pack)):fmtEur(packPerSession(pack));
+  if(pack===1){const lps=fmtEur(launchPerSession(1));return `« Et petit bonus, on lance le studio : en Pack 4, on vous offre <b>1 séance par mois pendant 3 mois</b> · 5 séances pour ${m}, ça fait ${lps} la séance, inscription offerte. Et si vous montez à 2 séances par semaine, le Pack 8 est à <b>-${CFG.founding}% à vie</b>. Je vous garde la place ? »`;}
   let s=`« Et petit bonus, on lance le studio : les premiers membres sont <b>fondateurs</b> · -${CFG.founding}% à vie, inscription offerte.`;
   if(pack===3){const fn=parseFloat(foundingMonthly(3)??packMonthly(3)),r=n=>Math.round(fn/(n*4.333));s+=f&&m?` En clair : l'illimité tombe de ${m} à ${f} par mois, à vie · à 3 séances par semaine ça fait ~${r(3)} € la séance.`:'';}
   else s+=f&&m?` En clair : votre ${PACK_META[pack].name} tombe de ${m} à ${f} par mois, à vie · ${ps?'ça fait '+ps+' la séance':''} avec un coach certifié.`:'';
@@ -1767,7 +1794,7 @@ function buildPricePitch(pack){
   if(mF==null)return `« Votre accompagnement revient à ${base||'—'} la séance. Avec votre formule et le statut de membre fondateur (-${CFG.founding}% à vie + inscription offerte), nous descendons bien en dessous. » ⚠️ Renseignez le prix dans Réglages.`;
   const pn=PACK_META[pack].name.toLowerCase();let s;
   if(pack===3){const wk=4.333,r=f=>Math.round(m/(f*wk))+' €',ps3=r(3),ps4=r(4),ps5=r(5);s=`« Je vous propose l'illimité : ${mF}/mois. Et là, plus vous venez, plus c'est imbattable : à 3 fois par semaine ça revient à ~${ps3} la séance, à 4 fois ~${ps4}, à 5 fois à peine ~${ps5}. L'illimité, c'est fait pour celles et ceux qui veulent des résultats vite.`;if(fmF)s+=` Et comme membre fondateur, ${fmF}/mois · un tarif préférentiel gardé à vie, donc c'est encore moins.`;}
-  else {s=`« Je vous propose le ${pn} : ${mF}/mois, soit ${psF} la séance, tout compris.`;if(fpsF)s+=` Et comme membre fondateur, ${fmF}/mois · soit ${fpsF} la séance, un tarif préférentiel conservé à vie.`;}
+  else {s=`« Je vous propose le ${pn} : ${mF}/mois, soit ${psF} la séance, tout compris.`;if(fpsF)s+=` Et comme membre fondateur, ${fmF}/mois · soit ${fpsF} la séance, un tarif préférentiel conservé à vie.`;else if(pack===1)s+=` Et pour le lancement, 1 séance offerte chaque mois pendant 3 mois : 5 séances pour ${mF}, soit ${fmtEur(launchPerSession(1))} la séance.`;}
   return s+` Les frais d'inscription vous sont offerts. Qu'en dites-vous ? »`;
 }
 function buildPricePitchCasual(pack){
@@ -1775,7 +1802,7 @@ function buildPricePitchCasual(pack){
   if(mF==null)return buildPricePitch(pack);
   const pn=PACK_META[pack].name.toLowerCase();let s;
   if(pack===3){const wk=4.333,r=f=>Math.round(m/(f*wk))+' €';s=`« Alors le tarif : l'illimité, c'est ${mF} par mois. Et plus vous venez, plus c'est rentable : à 3 séances par semaine ça tombe à ~${r(3)} la séance, à 4 fois ~${r(4)}, à 5 fois ~${r(5)}.`;if(fmF)s+=` Et en membre fondateur, ${fmF} par mois · un tarif que vous gardez à vie.`;}
-  else {s=`« Alors le tarif : le ${pn}, c'est ${mF} par mois · ça fait ${psF} la séance, tout compris.`;if(fpsF)s+=` Et en membre fondateur, ${fmF} par mois, soit ${fpsF} la séance · et ce tarif-là, vous le gardez à vie.`;}
+  else {s=`« Alors le tarif : le ${pn}, c'est ${mF} par mois · ça fait ${psF} la séance, tout compris.`;if(fpsF)s+=` Et en membre fondateur, ${fmF} par mois, soit ${fpsF} la séance · et ce tarif-là, vous le gardez à vie.`;else if(pack===1)s+=` Et pour le lancement, on vous offre 1 séance par mois pendant 3 mois : 5 séances pour ${mF}, ${fmtEur(launchPerSession(1))} la séance.`;}
   return s+` L'inscription, on vous l'offre. Ça vous va ? »`;
 }
 function buildTrialPitchCasual(){let s=`« Le plus simple pour vous faire une idée : venez essayer. Un cours d'intro de 30 minutes, offert, zéro engagement. Vous voyez le studio, vous testez le Reformer, vous rencontrez le coach · et on en reparle après.`;if(st.pain.length)s+=` Vu ce que vous m'avez raconté, c'est vraiment fait pour vous.`;return s+` Plutôt début ou fin de semaine ? »`;}
@@ -1928,7 +1955,7 @@ function renderScreen(keepScroll){
     const pack=recommendPack(),meta=PACK_META[pack],recos=recommendClasses(pack),warns=classWarnings(recos);
     const fmF=fmtEur(foundingMonthly(pack)),mF=fmtEur(packMonthly(pack)),fpsF=fmtEur(foundingPerSession(pack)),psF=fmtEur(packPerSession(pack));
     let priceHtml='';
-    if(mF){priceHtml=`<div class="reco-price"><span class="now">${fmF||mF}</span><span class="un">/ mois</span></div><div class="reco-foot">${pack===3?'Illimité':'Soit '+(fpsF||psF)+'/séance'} · fondateur -${CFG.founding}% · inscription offerte</div>`;}
+    if(mF){priceHtml=`<div class="reco-price"><span class="now">${fmF||mF}</span><span class="un">/ mois</span></div><div class="reco-foot">${pack===3?'Illimité · fondateur -'+CFG.founding+'%':pack===1?'Soit '+fmtEur(launchPerSession(1))+'/séance · 1 séance offerte/mois × 3 mois':'Soit '+(fpsF||psF)+'/séance · fondateur -'+CFG.founding+'%'} · inscription offerte</div>`;}
     else priceHtml=`<div class="reco-foot" style="margin-top:10px">⚠️ Prix à renseigner dans Réglages</div>`;
     h=`<div class="scr-tag reco">${s.phase} · le match</div>
       <div class="reco-card ${meta.cls}"><span class="reco-badge">${meta.badge} · match ${matchScore(pack)}%</span><div class="reco-name">${meta.name}</div><div class="reco-freq">${meta.freq}</div>${priceHtml}</div>
@@ -1960,6 +1987,7 @@ function renderScreen(keepScroll){
       const m=pm(p),f=fm(p);if(isNaN(m))return '';
       let per;
       if(p===3){const r=n=>f!=null?Math.round(f/(n*wk)):Math.round(m/(n*wk));per=`≈ ${r(3)} € la séance à 3×/sem · ≈ ${r(4)} € à 4×/sem`;}
+      else if(p===1){per=`${fmtEur(m/5)} la séance (5 séances pour ${fmtEur(m)})`;}
       else{const ps=f!=null?f/SESSIONS_PER_MONTH[p]:m/SESSIONS_PER_MONTH[p];per=`${fmtEur(ps)} la séance`;}
       return `<div class="fond-row${p===cp?' cur':''}">
         <div class="fond-pack">${PACK_META[p].name}${p===cp?'<span class="fond-reco">reco</span>':''}</div>
@@ -2016,6 +2044,7 @@ function renderScreen(keepScroll){
     h=`<div class="scr-tag reco">Fin d'appel</div><div class="scr-q" style="font-size:20px">Récap de l'appel</div>${capture}<div class="recap" id="recapBox">${esc(buildRecap())}</div>`;
     nav=`<button class="back" onclick="prev()">‹</button><button class="go ok" onclick="copyRecap()">📋 Copier la fiche</button>`;
   }
+  h+=priceBoxHTML();
   const _sy=keepScroll?scr.scrollTop:0;scr.innerHTML=h;scr.scrollTop=_sy;relocateBoxes();
   $('#nav').innerHTML=nav;
 }
@@ -2025,12 +2054,39 @@ function navHTML(showBack,goLabel){
 }
 
 // Vignettes coach (vertes/ambre) : rail fixe à droite sur grand écran
+// Pense-bête permanent pendant l'assistant : grille de lancement + conditions commerciales
+function priceBoxHTML(){
+  const f=v=>fmtEur(v)||'—',m1=parseFloat(CFG.p1),m2=parseFloat(CFG.p2),m3=parseFloat(CFG.p3);
+  const pct=parseFloat(CFG.founding)||0,d=v=>v*(1-pct/100);
+  let cp=0;try{cp=(st.goals&&st.goals.length)||st.dispo?recommendPack():0;}catch(e){}
+  const wide=window.matchMedia('(min-width:1060px)').matches;
+  let open=wide;try{if(!wide)open=localStorage.getItem('cpcoach_pbox')==='1';}catch(e){}
+  const row=(p,name,freq,prix,promo,per,was)=>`<div class="pb-row${p===cp?' cur':''}">
+      <div class="pb-n"><b>${name}</b><small>${freq}</small>${p===cp?'<span class="pb-reco">reco</span>':''}</div>
+      <div class="pb-p">${prix}<small>${promo}</small></div>
+      <div class="pb-s"><b>${per}</b><small>${was}</small></div>
+    </div>`;
+  return `<details class="price-box"${open?' open':''} ontoggle="try{if(!window.matchMedia('(min-width:1060px)').matches)localStorage.setItem('cpcoach_pbox',this.open?'1':'0')}catch(e){}">
+    <summary>💶 Tarifs & conditions <small>offre de lancement · TTC / mois</small></summary>
+    <div class="pb-head"><span>Formule</span><span>Prix / mois</span><span>La séance</span></div>
+    ${row(1,'Pack 4','4 séances',`<b>${f(m1)}</b>`,'🎁 +1 séance offerte / mois · 3 mois',f(m1/5),'au lieu de '+f(m1/4))}
+    ${row(2,'Pack 8','8 séances',`<s>${f(m2)}</s> <b>${f(d(m2))}</b>`,'-'+pct+' % à vie',f(d(m2)/8),'au lieu de '+f(m2/8))}
+    ${row(3,'Illimité','à volonté',`<s>${f(m3)}</s> <b>${f(d(m3))}</b>`,'-'+pct+' % à vie',f(d(m3)/12),'à 12 séances · '+f(d(m3)/16)+' à 16')}
+    <ul class="pb-cond">
+      <li><b>Inscription offerte</b> (valeur 149 €)</li>
+      <li><b>-${pct} % à vie</b> réservé aux 50 premiers membres${CFG.spotsLeft?` · <b>${CFG.spotsLeft} places</b> restantes`:''}</li>
+      <li>Engagement <b>3 mois</b>, tacitement renouvelable</li>
+      <li><b>1er mois réglé à la réservation</b> · il couvre le 1er mois de cours ; 2e prélèvement au 2e mois de pratique</li>
+      <li>Hors forfait : séance à l'unité ${f(CFG.base)} · séance privée ${f(CFG.privateSession)}</li>
+    </ul>
+  </details>`;
+}
 function relocateBoxes(){
   const rail=document.getElementById('sideRail');if(!rail)return;
-  rail.innerHTML='';rail.style.display='none';
+  rail.innerHTML='';rail.style.display='none';$('#screen').classList.remove('has-rail');
   if(window.matchMedia('(min-width:1060px)').matches){
-    const boxes=$('#screen').querySelectorAll('.catch-box,.ask-box');
-    if(boxes.length){boxes.forEach(b=>rail.appendChild(b));rail.style.display='flex';}
+    const boxes=$('#screen').querySelectorAll('.catch-box,.ask-box,.price-box');
+    if(boxes.length){boxes.forEach(b=>{if(b.classList.contains('price-box'))b.open=true;rail.appendChild(b);});rail.style.display='flex';$('#screen').classList.add('has-rail');}
   }
   try{glossify($('#screen'));glossify(rail);}catch(e){}
 }
@@ -2767,7 +2823,7 @@ function simPersona(){
   const ch=SIM_CHARS[Math.floor(Math.random()*SIM_CHARS.length)];
   const objKeys=Object.keys(SIM_OBJS).sort(()=>Math.random()-.5);
   const pack=g==='douleur'||g==='stress'?2:(Math.random()<.3?3:2);
-  const prix=fmtEur(foundingMonthly(pack)??packMonthly(pack)),ps=fmtEur(foundingPerSession(pack)??packPerSession(pack))||'~22 €';
+  const prix=fmtEur(foundingMonthly(pack)??packMonthly(pack)),ps=fmtEur(effPerSession(pack))||'~22 €';
   return {nom:SIM_NAMES[Math.floor(Math.random()*SIM_NAMES.length)],goal:g,goalTxt:SIM_GOALS[g],char:ch,o1:objKeys[0],o2:objKeys[1],pack:pack,prix:prix,ps:ps};
 }
 function simSteps(p){
