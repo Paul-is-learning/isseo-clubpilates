@@ -981,6 +981,7 @@ body{background:var(--cream)}
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="14 6 8 12 14 18"/></svg>
       </button>
       <span id="topAva"></span>
+      <button class="top-btn" id="topStop" onclick="stopCallMenu()" aria-label="Arrêter l'appel" title="Arrêter l'appel" style="display:none;width:auto;padding:0 11px;gap:5px;font-size:12px;font-weight:800;color:#B4300F;border-color:#F5C0AE;background:#FFF4F0">⏹ Arrêter</button>
       <div class="top-mid">
         <div class="top-phase" id="topHello">Bonjour !</div>
         <div class="top-sub"><span id="topPhase">Sales Coach</span><span id="topSub"></span><span id="topTimer"></span></div>
@@ -1848,6 +1849,7 @@ function renderScreen(keepScroll){
   $('#topSub').textContent=st.prospectNom?(' · 📞 '+st.prospectNom.split(' ')[0]):(CFG.studio?' · '+CFG.studio:'');
   $('#bar').style.width=Math.round((st.idx+1)/flow.length*100)+'%';
   const scr=$('#screen');let h='';let nav='';
+  setTimeout(_updTopStop,0);
 
   if(s.t==='who'){
     h=`<div class="scr-tag ask">Avant de décrocher</div>
@@ -1855,8 +1857,10 @@ function renderScreen(keepScroll){
       <div class="scr-sub">Son prénom reste affiché en haut pendant tout l'appel · et pré-remplit sa fiche à la fin.</div>
       <div class="who-card">
         <div class="pr-cap-row"><input id="who-nom" type="text" placeholder="Prénom du prospect *" value="${esc(st.prospectNom||'')}" oninput="st.prospectNom=this.value" autocomplete="off"/></div>
-        <div class="pr-cap-row"><input id="who-tel" type="tel" placeholder="Téléphone (optionnel)" value="${esc(st.prospectTel||'')}" oninput="st.prospectTel=this.value" autocomplete="off"/></div>
+        <div class="pr-cap-row"><input id="who-tel" type="tel" placeholder="Téléphone · rattache l'appel Allo à la fiche" value="${esc(st.prospectTel||'')}" oninput="st.prospectTel=this.value" autocomplete="off"/></div>
       </div>
+      ${st._prId?'<div class="fv-meta" style="margin:-4px 0 10px">🔗 Rattaché à la fiche existante · résumés Allo conservés</div>':''}
+      <button class="pr-act" style="width:100%;margin-bottom:12px" onclick="skipAssistant()">⚡ Sans l'assistant : juste enregistrer le contact</button>
       <div class="say-hint"><span class="b">💡</span><span>Dire son prénom dès l'ouverture, puis 2 ou 3 fois dans l'appel : c'est le mot que votre prospect préfère entendre.</span></div>`;
     nav=`<button class="back" onclick="showHome()">‹</button><button class="go" onclick="next()">Démarrer l'appel →</button>`;
   }
@@ -2175,10 +2179,27 @@ async function syncPull(rerender){
     else{
       // Les fiches locales absentes du serveur (créées hors-ligne) sont conservées puis poussées
       const ids=new Set(server.map(p=>p.id));
-      const localOnly=PROSPECTS.filter(p=>!ids.has(p.id));
+      const _k=s=>String(s||'').replace(/\D/g,'').slice(-9);
+      const byTel=new Map();server.forEach(p=>{const k=_k(p.tel);if(k.length===9&&!byTel.has(k))byTel.set(k,p);});
+      let absorbed=0;
+      const localOnly=PROSPECTS.filter(p=>{
+        if(ids.has(p.id))return false;
+        const t=byTel.get(_k(p.tel));
+        if(!t)return true;
+        // Même numéro qu'une fiche du serveur (ex. créée par Allo) : on fusionne la saisie locale dedans
+        if((p.maj||'')>(t.maj||'')){
+          if(p.nom&&(/^Contact 0/.test(t.nom||'')||!t.nom))t.nom=p.nom;
+          ['fiche','statut','pack','v2','icId','rappel','rappelH','rappelBy','obj'].forEach(f=>{if(p[f])t[f]=p[f];});
+          if(p.fullCom)t.fullCom=true;
+          if(p.note&&String(t.note||'').indexOf(p.note)<0)t.note=[t.note,p.note].filter(Boolean).join(' · ').slice(0,300);
+          if(!t.rep&&p.rep)t.rep=p.rep;
+          t.maj=p.maj;
+        }
+        absorbed++;return false;
+      });
       PROSPECTS=server.concat(localOnly);
       persistProspects();
-      if(localOnly.length)schedulePush();
+      if(localOnly.length||absorbed)schedulePush();
     }
     _syncState('ok');_lastSync=new Date().toISOString();
     if(rerender&&$('#topPhase').textContent==='Mes prospects')showProspects(true);
@@ -2471,7 +2492,7 @@ function todayStr(){const n=new Date();return n.getFullYear()+'-'+String(n.getMo
 function saveProspect(){
   const nom=($('#pr-nom')?.value||'').trim();
   if(!nom){toast('Le prénom / nom est obligatoire');$('#pr-nom')?.focus();return;}
-  const p={
+  let p={
     id:'p_'+Date.now(),
     nom:nom,
     tel:($('#pr-tel')?.value||'').trim(),
@@ -2487,14 +2508,32 @@ function saveProspect(){
     ts:new Date().toISOString(),
     maj:new Date().toISOString()
   };
-  PROSPECTS.unshift(p);persistProspects();schedulePush();
+  // Rattachement : même fiche si lancée depuis une carte, sinon même numéro (fiche créée par Allo…)
+  const _k=s=>String(s||'').replace(/\D/g,'').slice(-9);
+  const ex=(st._prId&&PROSPECTS.find(x=>x.id===st._prId))||(_k(p.tel).length===9&&PROSPECTS.find(x=>_k(x.tel)===_k(p.tel)));
+  if(ex){
+    const keepNom=ex.nom&&!/^Contact 0/.test(ex.nom)&&!p.nom;
+    Object.assign(ex,{
+      nom:keepNom?ex.nom:p.nom, tel:p.tel||ex.tel,
+      note:[ex.note,p.note].filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(' · ').slice(0,300),
+      statut:p.statut, pack:p.pack||ex.pack, v2:p.v2||ex.v2, fullCom:p.fullCom||ex.fullCom, icId:p.icId||ex.icId,
+      rappel:p.rappel||ex.rappel, obj:p.obj||ex.obj, fiche:p.fiche, rep:ex.rep||p.rep, studio:ex.studio||p.studio,
+      maj:p.maj
+    });
+    p.id=ex.id;
+    persistProspects();schedulePush();
+    toast('🔗 Rattaché à la fiche existante · appels Allo conservés');
+  }else{
+    if(!_k(p.tel))toast('⚠️ Sans téléphone, l\'appel Allo ne pourra pas être rattaché à cette fiche');
+    PROSPECTS.unshift(p);persistProspects();schedulePush();
+  }
   const _dur=st.callStart?Math.round((Date.now()-st.callStart)/1000):0;
   emitEvent(p,'appel',_dur?{dur:_dur}:{});
   st.callStart=null;const _tt=document.getElementById('topTimer');if(_tt)_tt.textContent='';
   if(p.statut==='essai')emitEvent(p,'essai');
   if(p.statut==='abo'){emitEvent(p,'abo',{pack:p.pack,prime:+PRIMES[p.pack]||0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''});if(p.pack)toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[p.pack]||0)+' € de commission !');}
   st._prSaved=true;renderScreen();
-  toast('📇 '+nom+' ajouté à Mes prospects ✓');
+  if(!ex)toast('📇 '+nom+' ajouté à Mes prospects ✓');
 }
 function pickPrStatut(s){st._prStatut=s;renderScreen();}
 
@@ -3491,6 +3530,7 @@ function showProspects(keepScroll){_vReg('prospects');
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / d'essai souhaitée par le client"/>
         <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure de rappel demandée par le client · la fiche passera en tête 1 h avant"/>
         <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
+        <button onclick="startCallFor('${p.id}')" class="pr-act" title="Ouvrir l'assistant d'appel sur cette fiche">🎧</button>
         <button onclick="showAppels('${p.id}')" class="pr-act" title="Résumés d'appels (Allo)">📞${(p.appels&&p.appels.length)?' '+p.appels.length:''}</button>
         <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
       </div>
@@ -3932,10 +3972,46 @@ function showHome(){_vReg('home');
 /* ── Historique interne : « précédent » = page précédente ── */
 let _navStack=['home'],_navBack=false;
 function _vReg(name){
-  if(_navBack){_navBack=false;_updTopBack();return;}
+  if(_navBack){_navBack=false;_updTopBack();_updTopStop();return;}
   if(_navStack[_navStack.length-1]!==name)_navStack.push(name);
   if(_navStack.length>30)_navStack.shift();
-  _updTopBack();
+  _updTopBack();_updTopStop();
+}
+function _updTopStop(){
+  const b=document.getElementById('topStop');if(!b)return;
+  const inCall=_navStack[_navStack.length-1]==='call'&&(st.idx>0||!!st.callStart)&&!st._prSaved;
+  b.style.display=inCall?'':'none';
+}
+function _resetCall(){
+  const g=st.callGoal;_catchOpen={};
+  st={callGoal:g,prospectNom:'',prospectTel:'',idx:0,ageBand:null,connait:null,reason:[],trigger:null,tried:[],pain:[],goals:[],emotion:null,health:[],dispo:null,packChoice:null};
+  const t=document.getElementById('topTimer');if(t)t.textContent='';
+}
+function stopCallMenu(){
+  icSheet(`<div class="glp-tag">⏹ Arrêter l'appel</div>
+    <div class="glp-t">Que fait-on de cet appel ?</div>
+    <div class="fv-meta">${st.prospectNom?esc(st.prospectNom)+' · ':''}les réponses déjà saisies restent dans le récap.</div>
+    <div class="fv-btns" style="flex-direction:column;gap:8px;margin-top:14px">
+      <button class="glp-ok" style="margin-top:0" onclick="document.getElementById('icPop').remove();stopCallSave()">📇 Enregistrer la fiche maintenant</button>
+      <button class="glp-ok" style="margin-top:0;background:#FFF4F0;color:#B4300F" onclick="document.getElementById('icPop').remove();stopCallDiscard()">✕ Abandonner sans enregistrer</button>
+      <button class="glp-ok" style="margin-top:0;background:#eef1f7;color:var(--cp-dark)" onclick="document.getElementById('icPop').remove()">Continuer l'appel</button>
+    </div>`);
+}
+function stopCallSave(){st.idx=buildFlow().length-1;renderScreen();}
+function stopCallDiscard(){_resetCall();showHome();toast('Appel arrêté · rien n\'a été enregistré');}
+// Assistant lancé depuis une fiche : prérempli et rattaché à cette fiche
+function startCallFor(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  _resetCall();
+  st.prospectNom=/^Contact 0/.test(p.nom||'')?'':(p.nom||'');
+  st.prospectTel=p.tel||'';
+  st._prId=id;
+  renderScreen();
+}
+// Sans assistant : on enregistre directement le contact
+function skipAssistant(){
+  if(!(st.prospectNom||'').trim()){toast('Indiquez au moins le prénom');document.getElementById('who-nom')?.focus();return;}
+  stopCallSave();
 }
 function _updTopBack(){
   const b=document.getElementById('topBack');if(!b)return;

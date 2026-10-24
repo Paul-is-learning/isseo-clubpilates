@@ -435,8 +435,41 @@ serve(async (req) => {
           maj: String(p.maj || p.ts || new Date().toISOString()),
         };
         const i = list.findIndex((x) => x.id === clean.id);
-        if (i < 0) list.push(clean);
-        else if ((clean.maj || "") >= (list[i].maj || "")) list[i] = clean;
+        if (i >= 0) {
+          if ((clean.maj || "") >= (list[i].maj || "")) {
+            // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
+            const seen = new Set(clean.appels.map((a: any) => String(a.ts).slice(0, 16)));
+            for (const a of (list[i].appels || [])) if (!seen.has(String(a.ts).slice(0, 16))) clean.appels.push(a);
+            clean.appels.sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts)));
+            if (clean.appels.length > 20) clean.appels = clean.appels.slice(-20);
+            list[i] = clean;
+          }
+          continue;
+        }
+        // Nouvelle fiche avec le même numéro qu'une fiche existante (ex. créée par Allo
+        // pendant que le commercial menait l'appel dans l'assistant) : fusion, pas de doublon.
+        const tk = (s: unknown) => String(s || "").replace(/\D/g, "").slice(-9);
+        const k = tk(clean.tel);
+        const j = k.length === 9 ? list.findIndex((x) => tk(x.tel) === k) : -1;
+        if (j < 0) { list.push(clean); continue; }
+        const ex = list[j];
+        const newer = (clean.maj || "") >= (ex.maj || "");
+        const base = newer ? clean : ex, other = newer ? ex : clean;
+        const merged: any = { ...other, ...base };
+        merged.id = clean.id; // l'id de la fiche de l'assistant (porte les événements de vente)
+        if (/^Contact 0/.test(String(merged.nom || "")) && other.nom && !/^Contact 0/.test(String(other.nom))) merged.nom = other.nom;
+        merged.rep = base.rep || other.rep;
+        merged.ts = String(ex.ts || clean.ts) < String(clean.ts || ex.ts) ? ex.ts : clean.ts;
+        merged.note = [ex.note, clean.note].filter(Boolean).filter((v: string, n: number, a: string[]) => a.indexOf(v) === n).join(" · ").slice(0, 300);
+        const all = [...(ex.appels || []), ...(clean.appels || [])];
+        const byMin = new Map<string, any>();
+        for (const a of all) {
+          const km = String(a.ts).slice(0, 16);
+          const prev = byMin.get(km);
+          if (!prev || String(a.txt || "").length > String(prev.txt || "").length) byMin.set(km, { ...a, rx: a.rx || prev?.rx || "" });
+        }
+        merged.appels = [...byMin.values()].sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts))).slice(-20);
+        list[j] = merged;
       }
       if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
       await saveList();
