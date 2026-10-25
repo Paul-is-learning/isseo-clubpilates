@@ -699,6 +699,34 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .pres-line{font-size:13.5px;line-height:1.55;color:var(--ink-soft);padding:7px 0;border-top:1px dashed var(--line)}
 .pres-line:first-child{border-top:0;padding-top:0}
 .pres-line b{color:var(--cp-dark);font-weight:700}
+/* Les 3 fondamentaux */
+.pres-h{scroll-margin-top:10px}
+.pres-toc{display:flex;flex-wrap:wrap;gap:6px;margin:-4px 0 6px}
+.pres-toc button{padding:6px 11px;border-radius:999px;border:1.5px solid var(--line);background:#fff;font-size:11.5px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+.pres-toc button.hot{background:var(--cp-dark);border-color:var(--cp-dark);color:#fff}
+.fd-intro{font-size:12.5px;color:var(--ink-soft);line-height:1.5;margin:-4px 0 12px}
+.fd{background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:14px 15px;margin-bottom:12px}
+.fd-top{display:flex;align-items:center;gap:10px}
+.fd-n{width:30px;height:30px;border-radius:10px;background:var(--cp-dark);color:#fff;font-weight:900;font-size:14px;display:grid;place-items:center;flex:0 0 auto}
+.fd-t{font-weight:800;color:var(--cp-dark);font-size:15.5px;line-height:1.25}
+.fd-ask{margin-top:9px;font-size:12.5px;color:var(--ink-soft);line-height:1.45;font-style:italic}
+.fd-ask>b:first-child{font-style:normal;color:var(--cp-deep);font-weight:800;margin-right:3px}
+.fd-say{margin-top:10px;background:var(--cp-veil);border-left:4px solid var(--ok);border-radius:0 12px 12px 0;padding:11px 13px;font-size:14.5px;line-height:1.55;color:var(--ink);font-weight:600}
+.fd-say b{color:var(--cp-deep);font-weight:800}
+.fd-say-h{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:var(--ok);margin-bottom:5px}
+.fd .cls-warn{margin-top:9px}
+.fd-hl{margin-top:9px;background:var(--cp-dark);color:rgba(255,255,255,.9);border-radius:12px;padding:10px 13px;font-size:13px;line-height:1.5}
+.fd-hl b{color:#fff}
+.fd-hl-h{font-size:10.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#9ec5a8;margin-bottom:4px}
+.fd-more{margin-top:11px;border-top:1px dashed var(--line);padding-top:9px}
+.fd-more summary{cursor:pointer;list-style:none;display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--cp-deep)}
+.fd-more summary::-webkit-details-marker{display:none}
+.fd-more summary::after{content:'▾ déplier';margin-left:auto;font-size:11px;white-space:nowrap}
+.fd-more[open] summary::after{content:'▴ replier'}
+.fd-sub{font-size:11px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:var(--cp-deep);margin:14px 0 0}
+.fd-subd{font-size:12px;color:var(--ink-mid);font-style:italic;margin:8px 0 0}
+.fd-more .cls .n{font-size:12px}
+.fd-note{margin-top:10px;font-size:12px;line-height:1.5;color:var(--ink-soft);background:var(--cp-pale);border-radius:10px;padding:9px 12px}
 .testi{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin-bottom:9px;border-left:3px solid var(--cp-blue)}
 .testi-q{font-family:var(--serif);font-style:italic;font-size:16px;line-height:1.45;color:var(--cp-dark)}
 .testi-a{font-size:11px;color:var(--ink-mid);margin-top:6px;font-weight:600}
@@ -1197,8 +1225,8 @@ const GOALS=[
     {say:'« Posez-moi toutes vos questions maintenant · la machine, l\'ambiance, le niveau. Je préfère un curieux bien informé qu\'un inscrit hésitant. »',why:'Inviter les questions = confiance. Chaque réponse est une occasion de faire visualiser la séance.'}
   ]},
   {id:'perf',ic:'🏆',label:'Me dépasser / perf',dig:'Vous pratiquez quoi à côté ? Vous voulez progresser sur quoi exactement · force, gainage, souplesse ?',catch:'« Et quand vous serez prêt(e), les niveaux 2 et 2.5 vous attendent pour vous challenger vraiment. »',deep:[
-    {say:'« Les niveaux 2 et 2.5 sont réellement exigeants : instabilité, tempo, combinaisons. Même les grands sportifs y découvrent des muscles qu\'ils ne travaillent jamais. »',why:'Le travail profond sous instabilité challenge autrement que la charge lourde : c\'est complémentaire, pas redondant.'},
-    {say:'« C\'est le complément parfait de votre sport : gainage, mobilité, équilibre · tout ce qui fait progresser votre course, votre tennis ou votre golf. »',why:'Un centre solide améliore la transmission de force dans tous les gestes sportifs.'}]}
+    {say:'« Les niveaux 2 et 2.5 sont réellement exigeants : instabilité, tempo, combinaisons. Même les sportifs confirmés y sentent travailler autrement leurs muscles profonds : les stabilisateurs du tronc, des hanches et des épaules. »',why:'Le travail profond sous instabilité challenge autrement que la charge lourde : c\'est complémentaire, pas redondant.'},
+    {say:'« C\'est le complément parfait de votre sport : gainage, mobilité, équilibre · une base utile pour votre course, votre tennis ou votre golf. »',why:'Un centre solide peut aider à mieux transmettre la force ; les études sur la performance restent limitées.'}]}
 ];
 const HEALTH=[
   {id:'aucun',ic:'✅',label:'Rien à signaler',clear:true},
@@ -1272,9 +1300,9 @@ const TRIED=[
   {id:'coach',ic:'🧑‍🏫',label:'Coach perso',contrast:'efficace, mais cher et difficile à tenir dans la durée',catch:'« L\'efficacité du coaching, mais en petit groupe : le même suivi pour une fraction du prix. »',deep:[
     {say:'« Vous gardez ce qui marchait · le suivi individuel · sans le prix : 12 personnes max, un coach qui vous connaît, autour de 24 à 28 € la séance en fondateur, quand la séance privée seule vaut 95 €. »',why:'Chiffres réels des packs : le calcul parle de lui-même, pas besoin d\'en rajouter.'},
     {say:'« Et la dynamique de groupe aide à durer, là où le coaching solo s\'essouffle souvent au bout de quelques mois. »',why:'Émulation + rendez-vous fixe : la régularité tient mieux à plusieurs.'}]},
-  {id:'yoga',ic:'🧘',label:'Yoga / Pilates au sol',contrast:'doux et agréable, mais sans le renforcement profond que donne le Reformer',catch:'« Vous allez adorer : on garde la fluidité, on ajoute le renforcement profond du Reformer. »',deep:[
-    {say:'« Vous avez déjà la base : la respiration, la fluidité. Le Reformer ajoute la résistance des ressorts · c\'est ce qui transforme un travail d\'entretien en vrai renforcement. »',why:'La résistance réglable crée le stimulus musculaire que le poids du corps seul ne donne plus une fois habitué.'},
-    {say:'« Et l\'amplitude est plus grande qu\'au sol : le chariot soutient et guide, on va plus loin sans se faire mal. »',why:'Le support du chariot permet des étirements actifs chargés impossibles au tapis.'}]},
+  {id:'yoga',ic:'🧘',label:'Yoga / Pilates au sol',contrast:'c\'est une bonne base pour le souffle et le contrôle, mais sans la résistance réglable des ressorts',catch:'« Vous avez déjà une vraie base : le souffle, le contrôle. Le Reformer y ajoute la résistance réglable des ressorts, pour travailler la force en plus. »',deep:[
+    {say:'« Vous avez déjà la base : la respiration, la fluidité. Le Reformer y ajoute la résistance réglable des ressorts · un vrai travail de force, dosé à votre niveau. »',why:'La résistance réglable crée le stimulus musculaire que le poids du corps seul ne donne plus une fois habitué.'},
+    {say:'« Et l\'amplitude est plus grande qu\'au sol : le chariot soutient et guide, on va plus loin, sous contrôle. »',why:'Le support du chariot permet des étirements actifs chargés impossibles au tapis.'}]},
   {id:'running',ic:'🏃',label:'Course / cardio',contrast:'beaucoup d\'impact sur les articulations, et vite la lassitude',catch:'« Ici zéro impact pour les articulations · et on ne se lasse pas : 8 formats différents. »',deep:[
     {say:'« Si vous aimez courir, gardez la course ! Le Reformer est son meilleur complément : zéro impact, renforcement du centre et des jambes · exactement ce qui protège vos genoux et votre dos de la route. »',why:'Gainage et renforcement réduisent les blessures de course · et le zéro impact laisse les articulations récupérer.'},
     {say:'« Et si la course vous a lassé, ici la variété est structurelle : 8 formats, 5 niveaux · jamais deux séances identiques. »',why:'La lassitude vient de la répétition : le format varié la neutralise.'}]},
@@ -1335,7 +1363,7 @@ const AVANTAGES=[
   'Zéro redondance : Reformer + TRX + Chair + Bosu…','Reformer conçu exclusivement pour Club Pilates'
 ];
 
-/* ── Fiche de présentation (affichée si le client ne connaît PAS CP) ── */
+/* ── Fiche de présentation (toujours présentée, rapidement · plus d'étape « connaît CP ? » depuis le 25 oct. 2026) ── */
 const CP_PITCH_INTRO='« Laissez-moi vous présenter la maison en quelques mots. Club Pilates, c\'est le <b>n°1 mondial du Pilates sur Reformer</b> : une méthode centenaire, des studios pensés dans le moindre détail, et un accompagnement attentionné que vous ne trouverez nulle part ailleurs. »';
 const CP_PITCH_RECALL='« Vous connaissez déjà la maison, c\'est un plaisir. Permettez-moi simplement de vous <b>rappeler pourquoi c\'est l\'enseigne de référence</b> et ce qui rend l\'expérience de nos studios si particulière. »';
 const CP_KPIS=[
@@ -1346,10 +1374,99 @@ const CP_KPIS=[
   {ic:'📈',big:'+30 %/an',lab:'Croissance de la clientèle masculine · un sport pour tous.'}
 ];
 const CP_STORY=[
-  'La <b>méthode Pilates</b> a été créée il y a plus d\'un siècle par Joseph Pilates · ancien boxeur · pour la <b>rééducation et la performance</b> des athlètes et des soldats.',
+  'La <b>méthode Pilates</b> a été créée il y a plus d\'un siècle par Joseph Pilates · ancien boxeur · pour la <b>rééducation et la performance</b>, avant d\'être adoptée par les danseurs de New York.',
   'Club Pilates a rendu cette méthode <b>premium accessible à tous</b>, en cours collectifs de 12 personnes maximum, encadrés par des coachs diplômés.',
   'Aujourd\'hui c\'est <b>l\'enseigne de référence</b> qui a démocratisé le Reformer dans le monde entier.'
 ];
+/* ── Les bienfaits du Pilates Reformer (contenu Paul, 25 oct. 2026, vérifié : fact-check 36 agents, formulations corrigées a minima) ──
+   Réponse courte (1 ou 2 par appel, jamais en monologue), le fond se déplie si le prospect creuse. Étape 'benefits' de l'appel, juste après la présentation. */
+const CP_FUNDAMENTALS=[
+  {ic:'🛟',toc:'Reformer vs tapis',t:'Reformer ou Pilates au sol (mat) ?',askL:'Quand le prospect demande',
+   ask:'« Quelle différence avec le Pilates mat ? Pourquoi c\'est mieux ? »',
+   say:'« Le mat, c\'est votre poids de corps sur un tapis. Chez Club Pilates, vous travaillez sur Reformer : un chariot sur rails avec des ressorts. Les ressorts font deux choses que le tapis ne peut pas faire : ils vous <b>aident</b> quand un mouvement est trop dur, et ils vous <b>résistent</b> quand vous êtes prêt à aller plus loin. Résultat, on adapte l\'exercice <b>à votre niveau</b>, séance après séance. C\'est pour ça que chacun progresse à son rythme, tout en respectant son corps. »',
+   hl:{h:'Pas « mieux » dans l\'absolu · si on vous oppose « le mat, c\'est bien aussi »',d:'« Le mat est très bien, il pose déjà la respiration et le centre. Le Reformer ajoute la résistance réglable des ressorts : on travaille la force en plus du contrôle, et chaque exercice est dosé à votre niveau. Et ce qui fait vraiment les résultats, c\'est la régularité et un coach qui vous corrige : <b>c\'est exactement notre modèle</b>. »'},
+   more:'Le fond, si le prospect creuse',
+   secs:[
+     {h:'Le fond, si le prospect creuse',rows:[
+       {t:'Assistance et résistance',d:'Sur tapis, beaucoup d\'exercices sont trop durs pour un débutant (roll-up, teaser), et pour un pratiquant confirmé, on ne peut pas y régler la charge. Le ressort comble les deux extrémités : un débutant réussit le mouvement avec l\'aide du ressort, un confirmé le fait avec moins d\'aide ou plus de résistance, selon l\'exercice. On ne « saute » pas d\'exercice, on le dose.'},
+       {t:'Feedback immédiat',d:'Le chariot bouge : si vous forcez ou perdez le contrôle, vous le sentez tout de suite. Et les petites compensations (épaules qui montent, bassin qui bascule), c\'est le coach qui les repère et vous corrige : 12 personnes maximum, il passe à votre poste.'},
+       {t:'Instabilité contrôlée',d:'Le chariot mobile oblige les muscles profonds à travailler pour stabiliser le corps. C\'est du gainage « caché » dans la plupart des exercices.'},
+       {t:'Progression mesurable',d:'On change de ressort, de position des pieds, de bras. Le coach voit la progression, le client aussi.'},
+       {t:'Dos et articulations',d:'Beaucoup d\'exercices se font allongé ou assis, colonne soutenue, sans impact. Point fort pour les personnes qui ont mal au dos, aux genoux ou qui reprennent le sport.'}]}],
+   note:'Chez Club Pilates, le Reformer est complété par la Chair, le Springboard, le TRX et la barre, et les cours sont par niveaux (0.5, 1, 1.5, 2, 2.5) en petit groupe. À mentionner si le prospect craint un cours « usine » ou, à l\'inverse, un cours trop facile.'},
+  {ic:'🏅',toc:'Débutant comme sportif',t:'Du grand débutant au sportif aguerri',askL:'Pour répondre à',
+   ask:'« Je ne suis pas du tout sportif, je vais suivre ? » · « Je fais déjà beaucoup de sport, ce ne sera pas trop doux ? »',
+   say:'« C\'est toute la force du Reformer : <b>la même machine s\'adapte à chacun</b>. Pour un débutant, les ressorts <b>aident</b> à réussir le mouvement. Pour un sportif, on <b>retire de l\'aide ou on ajoute de la résistance</b> dès le premier cours. Et on avance par niveaux, du 0.5 au 2.5, à son rythme : plus on monte, plus on ajoute d\'instabilité, de tempo et de combinaisons. Vous serez toujours à votre niveau, jamais largué, avec toujours une marche au-dessus. »',
+   hl:{h:'Pour le sportif qui pense que c\'est « trop doux »',d:'« Vous démarrez au niveau 1, comme tout le monde, même les initiés : on pose la précision avant la charge, mais les ressorts se règlent à votre force dès le premier cours. Et quand vous serez prêt, les niveaux 2 et 2.5 sont réellement exigeants : instabilité, tempo, combinaisons. Même les sportifs confirmés y sentent travailler autrement leurs muscles profonds, les stabilisateurs du tronc, des hanches et des épaules. Et c\'est <b>le complément de votre sport</b> : gainage, mobilité, équilibre. »'},
+   more:'Les arguments par profil · l\'échelle des niveaux',
+   secs:[
+     {h:'Pour le débutant',rows:[
+       {t:'Aucune expérience requise',d:'Le Foundation 0.5 est fait pour le tout premier pas : on découvre l\'appareil, les réglages et les mouvements de base, sans aucune pression.'},
+       {t:'Le ressort aide',d:'Un mouvement trop dur au tapis devient faisable : le ressort vous accompagne. On dose l\'exercice au lieu de le sauter.'},
+       {t:'Colonne soutenue, sans impact',d:'Beaucoup d\'exercices se font allongé ou assis. Rassurant pour qui reprend le sport ou a mal au dos (avec l\'avis du médecin en cas de douleur).'},
+       {t:'Jamais seul face à la machine',d:'12 personnes maximum : le coach passe à votre poste et vous corrige individuellement.'}]},
+     {h:'Pour le sportif aguerri',rows:[
+       {t:'Même les initiés démarrent au niveau 1',d:'On pose la précision avant la charge : c\'est ce qui permet ensuite de monter en intensité proprement. Et dès le premier cours, les ressorts se règlent à votre force.'},
+       {t:'Toujours une marche au-dessus',d:'Moins d\'aide ou plus de résistance selon l\'exercice : la charge se règle cran par cran. Et quand les ressorts ne suffisent plus, on complique l\'exercice : sur une jambe, tempo, instabilité, combinaisons.'},
+       {t:'Des formats athlétiques',d:'FIT 2 (Functional Interval Training, haute intensité), Suspend 2 (TRX), Control 2 (barre fusion), Flow 2.5 (niveau expert) · des cours de niveau 2 et plus, accessibles en progressant (niveau 1 puis 1.5, voir l\'échelle ci-dessous).'},
+       {t:'Le complément de votre sport',d:'Gainage, mobilité, équilibre : une base utile pour vos gestes sportifs (course, tennis, golf), en complément de votre entraînement.'},
+       {t:'Un travail différent de la musculation',d:'Instabilité, contrôle et amplitude sollicitent le corps autrement que la charge lourde : c\'est complémentaire, pas redondant.'}]},
+     {h:'L\'échelle des niveaux',rows:NIVEAUX.map(n=>({t:n.n+' · '+n.t,d:n.d}))}],
+   note:'Même logique que l\'histoire de Joseph Pilates (bloc 4 · Contrology) : un enfant chétif devenu boxeur, des internés, des danseurs. Des publics très différents, la même méthode.'},
+  {ic:'🫁',toc:'Muscles & souffle',t:'Dos, ventre et respiration : ce qui travaille vraiment',askL:'Pour répondre à',
+   ask:'« Ça travaille quoi, exactement ? » · « Pourquoi autant insister sur la respiration ? »',
+   say:'« Le Pilates, ce n\'est pas des abdos pour avoir des tablettes. Ce sont les <b>muscles profonds</b> qu\'on ne voit pas et qui tiennent votre colonne : le transverse, une sorte de ceinture naturelle autour du ventre, et les multifides, tout le long de la colonne. Ils se recrutent avec la respiration : <b>chaque expiration serre cette ceinture</b>. C\'est pour ça qu\'on insiste autant sur le souffle en cours : ce n\'est pas seulement de la relaxation, c\'est le moteur de l\'exercice. »',
+   hl:{h:'La phrase courte à retenir',d:'« En Pilates, la respiration n\'accompagne pas le mouvement, <b>elle le déclenche</b>. »'},
+   more:'Les muscles à connaître · pourquoi la respiration',
+   secs:[
+     {h:'Sangle abdominale',rows:[
+       {t:'Transverse de l\'abdomen',d:'Le muscle le plus profond du ventre, horizontal, effet corset. Il se contracte à l\'expiration. Il aplatit le ventre et aide à soutenir les lombaires, comme une ceinture qui fait le tour de la taille.'},
+       {t:'Obliques internes et externes',d:'Rotation, inclinaison et stabilité latérale du tronc ; ils gainent les côtés de la taille.'},
+       {t:'Grand droit',d:'Le muscle « visible », mais pas la priorité.'},
+       {t:'Plancher pelvien et diaphragme',d:'Le plancher et le toit du caisson abdominal, qui travaillent avec le transverse. Argument fort pour les femmes en post-partum (après le feu vert de la sage-femme ou du médecin, en complément de la rééducation du périnée, jamais à sa place) ou en prévention.'}]},
+     {h:'Dos',rows:[
+       {t:'Multifides',d:'Muscles profonds le long de la colonne, qui la stabilisent vertèbre par vertèbre. Ils s\'affaiblissent très tôt en cas de lombalgie, et ne se remettent pas toujours seuls sans exercice ciblé.'},
+       {t:'Érecteurs du rachis (ilio-costal, longissimus, épineux)',d:'Les longs muscles de chaque côté de la colonne, qui redressent le dos et tiennent la posture.'},
+       {t:'Carré des lombes',d:'Entre la dernière côte et le bassin ; stabilise le bas du dos et contrôle l\'inclinaison latérale.'},
+       {t:'Trapèzes (faisceaux moyen et inférieur) et rhomboïdes',d:'Entre les omoplates, ils tiennent les épaules en arrière et en bas. Les muscles de la posture « bureau ».'},
+       {t:'Grand dorsal',d:'Le grand muscle plat du dos, des bras vers le bassin. Travaille dès qu\'on tire avec les bras, ou qu\'on appuie vers le bas, comme pour se soulever d\'une chaise.'},
+       {t:'Dentelé antérieur',d:'Sur le côté des côtes, il plaque l\'omoplate contre la cage thoracique. Clé sur toutes les positions en appui sur les mains.'},
+       {t:'Grand fessier',d:'Le prolongement de la chaîne postérieure. Un fessier faible peut faire travailler les lombaires à sa place.'}]},
+     {h:'Pourquoi la respiration est le point clé',rows:[
+       {t:'On respire latéralement',d:'Avec le diaphragme, mais en dirigeant l\'air vers les côtes plutôt que dans le ventre, pour garder les abdominaux engagés pendant qu\'on respire. <b>Test en direct</b> : main sur les côtes, inspirer en les écartant.'},
+       {t:'On expire sur l\'effort',d:'L\'expiration active le transverse et le plancher pelvien, ce qui stabilise la colonne au moment où elle en a le plus besoin.'},
+       {t:'Ne jamais bloquer la respiration',d:'En musculation, on retient souvent son souffle pour soulever lourd : la pression dans le ventre grimpe d\'un coup, elle pousse sur le périnée et fait monter la tension artérielle. En Pilates, on apprend à gainer tout en respirant · précieux après une grossesse ou en cas de petites fuites.'}]}]},
+  {ic:'📜',toc:'Contrology',t:'Joseph Pilates et la « Contrology »',askL:'Pour répondre à',
+   ask:'« C\'est une mode ? » · « C\'est de la gym douce ? » · « Est-ce que c\'est pour moi ? »',
+   warn:'Le terme exact est <b>Contrology</b> (contrôlogie), pas « centrologie ». C\'est le nom que Joseph Pilates a donné à sa méthode dans les années 1920 et 1930. Le « centrage » (centering) est l\'un de ses principes, d\'où la confusion fréquente. Si un prospect pratiquant vous reprend, mieux vaut avoir le bon mot.',
+   say:'« Le Pilates, ce n\'est pas une mode récente. Joseph Pilates a créé sa méthode il y a un siècle, il l\'appelait “Contrology” : l\'idée que c\'est <b>l\'esprit qui contrôle le muscle</b>, et pas l\'inverse. Le Reformer, l\'appareil au cœur de nos cours, c\'est lui qui l\'a inventé. Et selon son histoire, ses premiers appareils sont nés pour la <b>rééducation</b>, avec des ressorts fixés sur des lits d\'hôpital. Donc quand on vous dit que c\'est bon pour le dos, ce n\'est pas un argument marketing : <b>c\'est l\'origine même de la méthode</b>, et la recherche le confirme aujourd\'hui sur le mal de dos chronique. »',
+   hl:{h:'L\'élément biographique qui fait mouche',d:'Pilates était un enfant chétif (asthme, rachitisme) qui s\'est reconstruit par le sport, jusqu\'à devenir boxeur. Pendant la Première Guerre, interné dans un camp en Angleterre, il a fait pratiquer sa méthode aux autres internés, jusqu\'aux malades alités. Puis il l\'a enseignée aux danseurs de New York. <b>Trois publics très différents, même méthode.</b> Ça répond à « est-ce que c\'est pour moi ? » : oui, quel que soit le point de départ.'},
+   more:'Les six principes de la méthode',
+   secs:[
+     {h:'Les six principes',sub:'Utiles pour répondre à « c\'est quoi la différence avec de la gym douce ? »',num:true,rows:[
+       {t:'Concentration',d:'Chaque mouvement est fait en pleine attention.'},
+       {t:'Contrôle',d:'Aucun mouvement n\'est subi ; on contrôle l\'aller et le retour. Sur Reformer, le retour du chariot compte autant que l\'aller.'},
+       {t:'Centrage',d:'Tout part du centre, le powerhouse : les abdominaux profonds, mais aussi le bas du dos, le bassin et les fessiers. Voir le bloc 3 · Dos, ventre et respiration.'},
+       {t:'Précision',d:'Mieux vaut 5 répétitions justes que 20 approximatives.'},
+       {t:'Respiration',d:'Coordonnée au mouvement, jamais bloquée.'},
+       {t:'Fluidité',d:'Les mouvements s\'enchaînent, sans à-coups.'}]}]}
+];
+/* Rendu partagé étape d'appel + livret imprimé (open=true : tout déplié ; ids=true : ancres du sommaire) */
+function fundamentalsHTML(open,ids){
+  return CP_FUNDAMENTALS.map((f,i)=>`<div class="fd"${ids?` id="fd-${i+1}"`:''}>
+    <div class="fd-top"><div class="fd-n">${i+1}</div><div class="fd-t">${f.ic} ${f.t}</div></div>
+    <div class="fd-ask"><b>${f.askL}</b> ${f.ask}</div>
+    <div class="fd-say"><div class="fd-say-h">🗣️ Réponse courte</div>${f.say}</div>
+    ${f.warn?`<div class="cls-warn">⚠️ ${f.warn}</div>`:''}
+    ${f.hl?`<div class="fd-hl"><div class="fd-hl-h">${f.hl.h}</div>${f.hl.d}</div>`:''}
+    <details class="fd-more"${open?' open':''}><summary>🔍 ${f.more}</summary>
+      ${f.secs.map(s=>`${f.secs.length>1?`<div class="fd-sub">${s.h}</div>`:''}${s.sub?`<div class="fd-subd">${s.sub}</div>`:''}
+        ${s.rows.map((r,j)=>`<div class="cls">${s.num?`<div class="n">${j+1}</div>`:''}<div><div class="nm">${r.t}</div><div class="ds">${r.d}</div></div></div>`).join('')}`).join('')}
+      ${f.note?`<div class="fd-note">💡 ${f.note}</div>`:''}
+    </details>
+  </div>`).join('');
+}
+function presGo(id){const e=document.getElementById(id);if(e)e.scrollIntoView({behavior:'smooth',block:'start'});}
 const CP_EQUIPMENT=[
   {ic:'🛟',nm:'Reformer',ds:'Le Reformer le plus abouti du marché, conçu exclusivement pour Club Pilates.'},
   {ic:'🧗',nm:'Springboard',ds:'Le « Cadillac » mural à ressorts · force & mobilité.'},
@@ -1373,9 +1490,9 @@ const CP_PRESS=[
 ];
 /* ── Témoignages : EXEMPLES à remplacer par de vrais avis Google du studio ── */
 const CP_TESTIMONIALS=[
-  {q:'En 3 mois, mon dos ne me réveille plus la nuit. Je ne pensais pas que ce serait aussi rapide.',a:'— exemple à personnaliser'},
-  {q:'L\'ambiance est bienveillante, les coachs connaissent mon prénom et mes objectifs. On se sent suivi.',a:'— exemple à personnaliser'},
-  {q:'J\'avais peur de ne pas être à la hauteur. On commence à son rythme, je me suis sentie à l\'aise dès le premier cours.',a:'— exemple à personnaliser'}
+  {q:'En 3 mois, mon dos ne me réveille plus la nuit. Je ne pensais pas que ce serait aussi rapide.',a:'· exemple à personnaliser'},
+  {q:'L\'ambiance est bienveillante, les coachs connaissent mon prénom et mes objectifs. On se sent suivi.',a:'· exemple à personnaliser'},
+  {q:'J\'avais peur de ne pas être à la hauteur. On commence à son rythme, je me suis sentie à l\'aise dès le premier cours.',a:'· exemple à personnaliser'}
 ];
 
 /* ── La science : sources fiables (revues à comité de lecture, portail médical, praticien identifié) ── */
@@ -1502,7 +1619,7 @@ const ARG_BANK=[
   {x:28,src:'mec',t:'Zéro impact articulaire',say:()=>`« Les ressorts du Reformer peuvent aider le mouvement ou le résister. On se renforce en profondeur SANS choc pour les genoux, les hanches, le dos. C'est pour ça que les kinés l'utilisent en rééducation. »`},
   {x:38,src:'sens',t:'L\'abonnement le moins cher…',say:()=>`« …c'est celui qu'on utilise vraiment. Une salle pas chère où on ne va jamais, c'est de l'argent jeté tous les mois. Un studio où on VIENT, c'est un investissement qui rend. »`},
   {x:46,src:'mec',t:'Le rendez-vous de 50 minutes',say:()=>`« Une séance, c'est 50 minutes, cadrées, réservées à l'avance. Pas d'attente aux machines, pas d'improvisation : vous arrivez, on s'occupe de tout, vous repartez. C'est ça qui rend la régularité facile. »`},
-  {x:56,src:'hist',t:'Née dans un hôpital de guerre',say:()=>`« Petite histoire vraie : pendant la Première Guerre mondiale, Joseph Pilates a monté des ressorts sur des lits d'hôpital pour rééduquer les blessés qui ne pouvaient pas se lever. C'est l'ancêtre direct du Reformer. Cette machine est née pour réparer les corps. »`},
+  {x:56,src:'hist',t:'Née pendant la Grande Guerre',say:()=>`« L'histoire de la méthode raconte que pendant la Première Guerre mondiale, interné dans un camp en Angleterre, Joseph Pilates a monté des ressorts sur des lits d'hôpital pour faire travailler les malades qui ne pouvaient pas se lever. C'est de là que viennent ses appareils à ressorts : ils sont nés pour réparer les corps. »`},
   {x:64,src:'hist',t:'Le secret des danseurs depuis 1930',say:()=>`« Quand Joseph Pilates a ouvert son studio à New York, ce sont les danseurs professionnels qui ont adopté sa méthode en premier · pour la force ET la ligne. Presque un siècle plus tard, c'est toujours leur secret le mieux gardé. »`},
   {x:74,src:'sens',t:'L\'effet « rendez-vous coiffeur »',say:()=>`« Vous annulez rarement le coiffeur ou le dentiste, non ? C'est pareil ici : un créneau réservé, un coach qui vous attend et vous connaît. C'est exactement ce qui manque au sport en solo · et c'est assumé, c'est notre méthode anti-abandon. »`},
   {x:84,src:'mec',t:'Le seul sport qu\'on commence allongé',say:()=>`« Honnêtement, c'est le seul sport où la première chose qu'on vous dit, c'est \"allongez-vous\". Et pourtant vous ressortez gainé(e) comme jamais. Déroutant la première fois · et après, on ne veut plus rien d'autre. »`},
@@ -1583,9 +1700,9 @@ const OBJECTIONS=[
   {id:'niveau',ic:'🌱',t:'« J\'ai peur de ne pas suivre »',kw:'niveau debutant peur jamais dur difficile suivre',lines:['<b>Tous démarrent par le Level 0.5 / Flow 1</b>, même les initiés. C\'est la règle.','Cours en <b>petit comité (12 max)</b> · le coach corrige individuellement.','Le Flow 1 est <b>sans aucun prérequis</b>. On progresse quand VOUS êtes prêt(e).','Ne <b>jamais avoir fait</b> est même un avantage : aucune mauvaise habitude.']},
   {id:'engagement',ic:'📝',t:'« 3 mois c\'est long »',kw:'engagement 3 mois long essayer avant duree',lines:['Reviens à la <b>douleur</b> : « Si vous avez déjà arrêté avant, c\'est qu\'il n\'y avait pas d\'engagement structurant. »','Joseph Pilates : <b>10 / 20 / 30 séances</b>. 3 mois = le temps minimum pour délivrer.','À l\'échelle de votre santé, <b>3 mois c\'est très court</b>.','Le pack vous engage envers <b>vous-même</b>, pas envers nous.']},
   {id:'conjoint',ic:'👫',t:'« J\'en parle à mon conjoint »',kw:'conjoint mari femme epoux couple decision parler',lines:['Normal. Mais c\'est <b>VOUS qui ressentez le besoin</b> · la décision finale vous appartient.','Proposez de <b>bloquer la place fondateur</b> aujourd\'hui (on confirme demain). Les 50 partent vite.','Invitez le/la conjoint(e) à <b>découvrir le studio</b> ensemble (offres binôme possibles).']},
-  {id:'blessure',ic:'🩹',t:'« J\'ai mal au dos / peur de me blesser »',kw:'dos blessure mal douleur peur articulation',lines:['<b>Le Pilates a été inventé pour la rééducation</b> · pour soigner les soldats blessés.','Le Reformer = <b>résistance contrôlée, sans choc ni impact</b>.','<b>Posture, gainage, renforcement profond</b> = solution n°1 contre les lombaires.','Le Flow 1 est <b>sans contre-indication</b> sur le dos. Faire valider par le médecin pour rassurer.']},
+  {id:'blessure',ic:'🩹',t:'« J\'ai mal au dos / peur de me blesser »',kw:'dos blessure mal douleur peur articulation',lines:['<b>Le Pilates a ses racines dans la rééducation</b> · selon son histoire, ses premiers appareils étaient des ressorts fixés sur des lits d\'hôpital.','Le Reformer = <b>résistance contrôlée, sans choc ni impact</b>.','<b>Posture, gainage, renforcement profond</b> : efficacité reconnue sur la lombalgie chronique (revue Cochrane 2015), sans promettre de miracle.','Le Flow 1 a <b>très peu de contre-indications</b> sur le dos. En cas de douleur, faire valider par le médecin pour rassurer.']},
   {id:'concurrent',ic:'🏋️',t:'« Pourquoi pas la salle / le yoga ? »',kw:'salle gym yoga concurrent comparaison fitness',lines:['« Vous avez déjà essayé ? Qu\'est-ce qui n\'a pas fonctionné ? »','Salle = <b>matériel sans méthode</b>, 0 encadrement = retour case départ.','Yoga = souplesse, mais <b>0 renforcement profond ni cardio</b>. Complémentaire, pas équivalent.','CP = <b>posture + gainage + cardio + souplesse + renforcement</b>, Reformer exclusif.']},
-  {id:'genre',ic:'💪',t:'« C\'est pour les femmes / seniors »',kw:'femme homme senior age stereotype masculin',lines:['<b>Joseph Pilates était boxeur</b> · méthode créée pour athlètes et soldats.','<b>FIT 2, Cardio Sculpt, Bootcamp, TRX</b> = intensité athlétique élevée.','Tom Brady, LeBron… s\'entraînent en Pilates : <b>prévention + performance</b>.','Clientèle masculine <b>+30 %/an</b> mondialement.']},
+  {id:'genre',ic:'💪',t:'« C\'est pour les femmes / seniors »',kw:'femme homme senior age stereotype masculin',lines:['<b>Joseph Pilates était boxeur</b> · sa méthode a ensuite conquis les danseurs et les sportifs.','<b>FIT 2 (haute intensité), Suspend 2 (TRX), Control 2</b> = de vrais formats athlétiques, accessibles en progressant (niveau 2).','<b>Le complément du sport</b> : gainage, mobilité, équilibre · les sportifs confirmés y sentent travailler autrement leurs muscles profonds.','Clientèle masculine <b>+30 %/an</b> mondialement.']},
   {id:'voyage',ic:'✈️',t:'« Et si je voyage / déménage ? »',kw:'voyage demenagement deplacement absence gel',lines:['Abonnement <b>valable dans tous les Club Pilates du monde</b> (1500 studios).','En vacances en France ? Réservez à Paris, Bordeaux, Lyon via l\'app.','Long déplacement / souci : <b>gel temporaire possible</b> (à confirmer studio).','Déménagement : <b>transfert simple</b> vers le studio le plus proche.']},
   {id:'capacite',ic:'👥',t:'« Vous êtes combien ? »',kw:'combien capacite monde nombre place cours',lines:['<b>12 personnes maximum</b>, pas une de plus.','Reformers <b>espacés et adossés au mur</b> · aucune promiscuité.','Le coach <b>passe à votre poste, corrige individuellement</b>.','L\'attention d\'un cours particulier dans un cadre collectif.']},
   {id:'preuve',ic:'📊',t:'« Est-ce que ça marche ? »',kw:'marche preuve resultat efficace serieux temoignage',lines:['<b>1500 studios, 24 pays, 8 M de séances/an</b>.','Classé <b>8 années de suite au Franchise 500</b>, le palmarès de solidité des franchises du magazine Entrepreneur · l\'enseigne est durable, pas une mode.','« St-Maur : 291 membres dès le soft-opening » · la demande explose.','<b>10 / 20 / 30 séances</b> + proposer une <b>visite du studio</b>.']}
@@ -1835,14 +1952,13 @@ function buildTrialClose(){return `« Avec plaisir. Je vous réserve votre cours
 /* ════════════════════════════════════════════════════════════════
    FLUX CONVERSATIONNEL · 1 écran = 1 chose
    ════════════════════════════════════════════════════════════════ */
-const Q_CONNAIT=[{id:'oui',ic:'👍',label:'Oui, déjà entendu'},{id:'non',ic:'🆕',label:'Non, à présenter'}];
 function buildFlow(){
   const f=[];
   // Écran 'goal' retiré (sept. 2026) : lancement direct en lead chaud (callGoal='membership'). Réactivable ici.
   f.push({t:'who',phase:'Démarrage'});
   f.push({t:'say',phase:'Accueil',tag:'Ouverture',idea:'Un rappel personnel et chaleureux · pas un centre d\'appels.',getText:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'',pn=st.prospectNom?' '+esc(st.prospectNom.split(' ')[0]):'';return `Bonjour${pn}, je suis <b>${esc(r)}</b>, de Club Pilates${s}. Vous avez pris le temps de nous laisser vos coordonnées · je vous rappelle <b>personnellement</b> pour comprendre ce qui vous ferait du bien. Vous avez un instant à m'accorder ?`;},getCasual:()=>{const r=CFG.rep||'[prénom]',s=CFG.studio?' '+esc(CFG.studio):'',pn=st.prospectNom?' '+esc(st.prospectNom.split(' ')[0]):'';return `Bonjour${pn} ! C'est <b>${esc(r)}</b>, de Club Pilates${s}. Vous nous avez laissé vos coordonnées, alors je vous appelle en direct · pour faire connaissance et voir ce qui vous ferait du bien. Vous avez deux minutes ?`;},hint:'Souriez avant de décrocher · le ton s\'entend. Barrage (« pas le temps », « envoyez un mail ») ? Le bouton ? en bas à droite a les parades.'});
-  f.push({t:'q',phase:'Accueil',q:'Le client connaît Club Pilates ?',data:Q_CONNAIT,field:'connait',single:true});
-  if(st.connait)f.push({t:'present',phase:st.connait==='oui'?'Rappel':'Présentation'});
+  f.push({t:'present',phase:'Présentation'});
+  f.push({t:'benefits',phase:'Bienfaits'});
   f.push({t:'q',phase:'Profil',q:'Sa tranche d\'âge ?',sub:'Déduisez-la de la voix et du vocabulaire. Adapte vos leviers.',data:AGE_BANDS,field:'ageBand',single:true,lever:true});
   f.push({t:'q',phase:'Découverte',q:'Pourquoi appelle-t-il · ses objectifs ?',sub:'Laissez parler, cochez tout ce qui sort. La requalification se construit en bas.',data:GOALS,field:'goals',multi:true,dig:true,requalif:true});
   f.push({t:'q',phase:'Découverte',q:'⏱️ Pourquoi MAINTENANT ? Le déclencheur.',sub:'Le levier de closing le plus puissant.',data:TRIGGERS,field:'trigger',single:true,dig:true});
@@ -1950,24 +2066,35 @@ function renderScreen(keepScroll){
     nav=navHTML(true,'Dit ✓');
   }
   else if(s.t==='present'){
-    const known=st.connait==='oui';
-    h=`<div class="scr-tag say">🗣️ ${known?'Rappeler les points forts':'Présenter Club Pilates'}</div>
-      <div class="say-big quote" style="font-size:18px;margin-bottom:18px">${known?CP_PITCH_RECALL:CP_PITCH_INTRO}</div>
-      <div class="pres-h">📊 Les chiffres qui rassurent</div>
+    h=`<div class="scr-tag say">🗣️ Présenter Club Pilates · rapidement</div>
+      <div class="say-big quote" style="font-size:18px;margin-bottom:10px">${CP_PITCH_INTRO}</div>
+      <div class="fd-ask" style="margin:0 0 12px"><b>S'il connaît déjà la maison</b> ${CP_PITCH_RECALL}</div>
+      <div class="fd-intro">Piochez 2 ou 3 éléments, pas tout : les bienfaits du Reformer viennent à l'étape suivante.</div>
+      <div class="pres-toc">${[['pk-kpi','📊 Chiffres'],['pk-story','📖 Histoire'],['pk-studio','🏋️ Studio'],['pk-trust','🤝 Qualité']].map(x=>`<button type="button" onclick="presGo('${x[0]}')">${x[1]}</button>`).join('')}</div>
+      <div class="pres-h" id="pk-kpi">📊 Les chiffres qui rassurent</div>
       ${CP_KPIS.map(k=>`<div class="rf"><div class="ic">${k.ic}</div><div><div class="big">${k.big}</div><div class="lab">${k.lab}</div></div></div>`).join('')}
-      <div class="pres-h">📖 L'histoire en 3 phrases</div>
+      <div class="pres-h" id="pk-story">📖 L'histoire en 3 phrases</div>
       <div class="card" style="margin-bottom:14px">${CP_STORY.map(t=>`<div class="pres-line">${t}</div>`).join('')}</div>
-      <div class="pres-h">🏋️ Un studio = une salle ultra-complète</div>
+      <div class="pres-h" id="pk-studio">🏋️ Un studio = une salle ultra-complète</div>
       <div class="scr-sub" style="margin-top:-2px;margin-bottom:12px">« Et pas n'importe quel matériel : le <b>meilleur équipement disponible sur le marché</b>, réuni en un seul lieu. Vous ne trouverez pas ça ailleurs. »</div>
       <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>
-      <div class="pres-h">🤝 Notre engagement qualité</div>
+      <div class="pres-h" id="pk-trust">🤝 Notre engagement qualité</div>
       <div class="card" style="margin-bottom:14px">${CP_TRUST.map(t=>`<div class="cls"><div class="n" style="font-size:15px">${t.ic}</div><div><div class="nm">${t.t}</div><div class="ds">${t.d}</div></div></div>`).join('')}</div>
       <div class="pres-h">📰 Vu dans la presse</div>
       ${CP_PRESS.map(p=>`<div class="press"><div class="press-src">${p.src}</div><div class="press-q">« ${p.quote} »</div><div class="press-note">${p.note}</div></div>`).join('')}
-      <div class="pres-h">💬 Ce qu'en disent nos membres</div>
+      <div class="pres-h" id="pk-avis">💬 Ce qu'en disent nos membres</div>
       ${CP_TESTIMONIALS.map(t=>`<div class="testi"><div class="testi-q">“${t.q}”</div><div class="testi-a">${t.a}</div></div>`).join('')}
       <div class="testi-note">✎ Remplacez ces exemples par de vrais avis Google de votre studio (Réglages à venir) · un témoignage authentique vaut dix arguments.</div>`;
-    nav=navHTML(true,known?'Rappelé ✓ →':'Présenté ✓ →');
+    nav=navHTML(true,'Présenté ✓ →');
+  }
+  else if(s.t==='benefits'){
+    h=`<div class="scr-tag say">🗣️ Les bienfaits du Pilates Reformer</div>
+      <div class="say-big quote" style="font-size:18px;margin-bottom:12px">« Avant de parler de vous, deux mots sur le <b>Reformer</b>, la machine au cœur de nos cours : ce qu'il change par rapport au tapis, et pourquoi il convient à tous les niveaux. »</div>
+      <div class="fd-intro"><b>Pas de monologue</b> : choisissez 1 ou 2 réponses courtes selon le prospect, avec vos mots mais sans changer les faits. Les autres servent quand il pose la question ; le détail se déplie s'il creuse.</div>
+      <div class="pres-toc">${CP_FUNDAMENTALS.map((f,i)=>`<button type="button" onclick="presGo('fd-${i+1}')">${f.ic} ${f.toc}</button>`).join('')}</div>
+      ${fundamentalsHTML(false,true)}
+      <div class="fd-ask" style="margin-top:4px"><b>Puis passez-lui la parole</b> « Et vous, qu'est-ce qui vous a donné envie de nous laisser vos coordonnées ? »</div>`;
+    nav=navHTML(true,'Expliqué ✓ →');
   }
   else if(s.t==='beat'){
     h=sayCard(`🗣️ ${s.n}. ${s.beat.label}`,s.beat);
@@ -2167,7 +2294,6 @@ function buildRecap(){
   if(CFG.rep)L.push(`Commercial : ${CFG.rep}`);
   if(st.callStart)L.push(`Durée de l'appel : ${fmtDur((Date.now()-st.callStart)/1000)}`);L.push('');
   const b=ageBand();if(b)L.push(`Âge : ${b.label}`);
-  L.push(`Connaît CP : ${st.connait==='oui'?'Oui':st.connait==='non'?'Non':'—'}`);
   if(st.trigger)L.push(`Déclencheur : ${lbl(TRIGGERS,st.trigger)}`);
   if(st.tried.length)L.push(`A essayé : ${st.tried.map(t=>lbl(TRIED,t)).join(', ')}`);
   if(st.pain.length)L.push(`Douleur : ${st.pain.map(p=>lbl(PAINS,p)).join(', ')}`);
@@ -2390,14 +2516,17 @@ const GLOSSARY={
   rct:{t:'Essai contrôlé randomisé',d:'Une étude où l\'on compare deux groupes tirés au sort (avec / sans Pilates, par exemple). La méthode de référence pour prouver qu\'un effet est réel, et pas un hasard.'},
   cochrane:{t:'Cochrane',d:'Réseau scientifique international et indépendant, référence mondiale de l\'évaluation des preuves médicales. Quand Cochrane qualifie une preuve de « modérée », c\'est un vrai gage de sérieux.'},
   reformer:{t:'Reformer',d:'La machine emblématique du Pilates : un chariot coulissant monté sur ressorts, avec sangles et barre. Il guide le mouvement, soutient le corps et dose la résistance cran par cran · du grand débutant à l\'expert.'},
-  centrage:{t:'Centrage',d:'Principe fondateur de la méthode : chaque mouvement part du centre du corps (les abdominaux profonds), jamais des membres seuls. C\'est ce qui transforme un simple geste en exercice complet.'}
+  centrage:{t:'Centrage',d:'Principe fondateur de la méthode : chaque mouvement part du centre du corps, le powerhouse (abdominaux profonds, bas du dos, bassin, fessiers), jamais des membres seuls. C\'est ce qui transforme un simple geste en exercice complet.'},
+  contrology:{t:'Contrology',d:'Le nom que Joseph Pilates donnait à sa méthode (contrôlogie) : l\'esprit qui contrôle le muscle. À ne pas confondre avec le « centrage », l\'un de ses principes · on ne dit jamais « centrologie ».'},
+  powerhouse:{t:'Powerhouse',d:'Le « centre » du corps en Pilates : abdos, bas du dos, bassin et fessiers. Tout mouvement part de là.'}
 };
 const GL_ALTS=[
   ['métabolisme de base','metabolisme'],['essais? contrôlés? randomisés?','rct'],['méta-analyses?','metaanalyse'],
   ['masse grasse','massegrasse'],['plancher pelvien','plancher'],['multifides?','multifides'],
   ['transverses?','transverse'],['diaphragmes?','diaphragme'],['gainage','gainage'],['excentriques?','excentrique'],
   ['proprioceptions?','proprioception'],['sarcopénie','sarcopenie'],['cortisol','cortisol'],['IMC','imc'],
-  ['lombalgies?','lombalgie'],['Cochrane','cochrane'],['Reformers?','reformer'],['centrage','centrage']
+  ['lombalgies?','lombalgie'],['Cochrane','cochrane'],['Reformers?','reformer'],['centrage','centrage'],
+  ['Contrology','contrology'],['contrôlogie','contrology'],['powerhouse','powerhouse']
 ];
 const GL_RE=new RegExp('(?<![A-Za-zÀ-ÖØ-öø-ÿ-])('+GL_ALTS.map(a=>a[0]).join('|')+')(?![A-Za-zÀ-ÖØ-öø-ÿ-])','gi');
 function _glKey(word){
@@ -2409,7 +2538,7 @@ function glossify(root){
   if(!root)return;
   const walker=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>{
     const p=n.parentElement;
-    if(!p||p.closest('.gl,script,style,textarea,input,select,.tm-code,#glossPop'))return NodeFilter.FILTER_REJECT;
+    if(!p||p.closest('.gl,script,style,textarea,input,select,.tm-code,#glossPop,.scr-tag,.pres-toc,summary'))return NodeFilter.FILTER_REJECT;
     GL_RE.lastIndex=0;
     return GL_RE.test(n.nodeValue)?NodeFilter.FILTER_ACCEPT:NodeFilter.FILTER_REJECT;
   }});
@@ -4115,7 +4244,7 @@ function showHome(){_vReg('home');
     </div>
     <div class="hm-sec">Argumentaire</div>
     <div class="ht-grid">
-      <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">${ic('presentation',22)}</span><span class="ht-lbl">Présentation CP</span></button>
+      <button class="ht-tile" onclick="showPresentation()"><span class="ht-ic">${ic('presentation',22)}</span><span class="ht-lbl">Présentation & bienfaits</span></button>
       <button class="ht-tile" onclick="showCourseGuide()"><span class="ht-ic">${ic('layers',22)}</span><span class="ht-lbl">Les cours</span></button>
       <button class="ht-tile" onclick="showArgBank()"><span class="ht-ic">${ic('messages',22)}</span><span class="ht-lbl">Arguments</span></button>
       <button class="ht-tile" onclick="openObj()"><span class="ht-ic">${ic('shield',22)}</span><span class="ht-lbl">Objections</span></button>
@@ -4223,6 +4352,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
     <button class="menu-item" onclick="closeMenu();showStudiosFR()"><span class="mic">📍</span><span>Studios ouverts en France<small>16 studios + ouvertures à venir · téléphones cliquables</small></span></button>
     <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
+    <button class="menu-item" onclick="showBenefits()"><span class="mic">🛟</span><span>Les bienfaits du Reformer<small>vs tapis, débutant comme sportif, muscles & souffle, Contrology</small></span></button>
     <button class="menu-item" onclick="closeMenu();showCourseGuide()"><span class="mic">📚</span><span>Les cours en détail<small>Bienfaits corps & esprit, prérequis, restrictions</small></span></button>
     <button class="menu-item" onclick="closeMenu();showArgBank()"><span class="mic">🧭</span><span>Banque d'arguments<small>Du plus logique au plus inattendu · sourcé</small></span></button>
     <button class="menu-item" onclick="closeMenu();showScience()"><span class="mic">🔬</span><span>La science le confirme<small>Études cliniques, résultats par objectif, sources</small></span></button>
@@ -4241,7 +4371,9 @@ function openMenu(){
   $('#menuBg').classList.add('on');$('#menuSheet').classList.add('on');
 }
 function closeMenu(){$('#menuBg').classList.remove('on');$('#menuSheet').classList.remove('on');}
-function showPresentation(){closeMenu();if(!st.connait)st.connait='oui';const flow=buildFlow();const i=flow.findIndex(s=>s.t==='present');if(i>=0){st.idx=i;renderScreen();}}
+function _goStep(t){closeMenu();const i=buildFlow().findIndex(s=>s.t===t);if(i>=0){st.idx=i;renderScreen();}}
+function showPresentation(){_goStep('present');}
+function showBenefits(){_goStep('benefits');}
 function switchProfile(){
   closeMenu();
   if(!confirm('Changer de profil sur cet appareil ?\nIl faudra saisir un autre code d\'accès. Les données d\'équipe restent synchronisées.'))return;
@@ -4352,11 +4484,16 @@ function showScience(){_vReg('science');
 
 /* ── Impression du livret (PDF hors-ligne) · copie fidèle des pages de l'app ── */
 function _capScreen(fn){
+  // L'écran courant est mis de côté tel quel (nœuds, saisies, mise en page 2 colonnes, scroll, pile de navigation) puis remis : imprimer en plein appel ne casse plus rien.
   var scr=document.getElementById('screen');
-  var a=scr.innerHTML,b=$('#topPhase').innerHTML,c=$('#nav').innerHTML,d=$('#bar').style.width;
+  var y=scr.scrollTop,cls=scr.className,ns=_navStack.slice(),keep=document.createDocumentFragment();
+  while(scr.firstChild)keep.appendChild(scr.firstChild);
+  var b=$('#topPhase').innerHTML,c=$('#nav').innerHTML,d=$('#bar').style.width;
   try{fn();}catch(e){console.warn('[cap]',e);}
   var html=scr.innerHTML;
-  scr.innerHTML=a;$('#topPhase').innerHTML=b;$('#nav').innerHTML=c;$('#bar').style.width=d;
+  scr.innerHTML='';scr.appendChild(keep);scr.className=cls;scr.scrollTop=y;
+  $('#topPhase').innerHTML=b;$('#nav').innerHTML=c;$('#bar').style.width=d;
+  _navStack=ns;_updTopBack();_updTopStop();_updTopStudio();
   return html;
 }
 function buildPrintDoc(){
@@ -4368,6 +4505,7 @@ function buildPrintDoc(){
     ${CP_KPIS.map(k=>`<div class="rf"><div class="ic">${k.ic}</div><div style="flex:1;min-width:0"><div class="big">${k.big}</div><div class="lab">${k.lab}</div></div></div>`).join('')}
     <div class="pres-h">📖 L'histoire</div>
     <div class="card">${CP_STORY.map(t=>`<div class="pres-line">${t}</div>`).join('')}</div>
+
     <div class="pres-h">🏋️ Le studio · le meilleur équipement du marché</div>
     <div class="card">${CP_EQUIPMENT.map(e=>`<div class="cls"><div class="n" style="font-size:15px">${e.ic}</div><div><div class="nm">${e.nm}</div><div class="ds">${e.ds}</div></div></div>`).join('')}</div>
     <div class="pres-h">🤝 Notre engagement qualité</div>
@@ -4383,11 +4521,12 @@ function buildPrintDoc(){
   const obj=OBJECTIONS.map(o=>`<div class="card"><div class="nm" style="margin-bottom:4px">${o.ic} ${o.t}</div>${o.lines.map(l=>`<div class="ds" style="margin-top:5px">▸ ${l}</div>`).join('')}</div>`).join('');
   const body=sec('1 · Notre état d\'esprit & méthode',_capScreen(showAca))
     +sec('2 · Présenter Club Pilates',presentation)
-    +sec('3 · Les cours en détail',_capScreen(showCourseGuide))
-    +sec('4 · Ce que dit la science',_capScreen(showScience))
-    +sec('5 · Banque d\'arguments · du logique à l\'inattendu',ARG_BANK.map(a=>`<div class="card"><div class="nm" style="margin-bottom:4px">${a.t} <span class="tag">${ARG_SRC[a.src].ic} ${ARG_SRC[a.src].lbl}</span></div><div class="rf-say">🗣️ ${typeof a.say==='function'?a.say():a.say}</div></div>`).join(''))
-    +sec('6 · Reframing prix · du coût vers la valeur',reframe)
-    +sec('7 · Réponses aux 15 objections',obj);
+    +sec('3 · Les bienfaits du Pilates Reformer',fundamentalsHTML(true))
+    +sec('4 · Les cours en détail',_capScreen(showCourseGuide))
+    +sec('5 · Ce que dit la science',_capScreen(showScience))
+    +sec('6 · Banque d\'arguments · du logique à l\'inattendu',ARG_BANK.map(a=>`<div class="card"><div class="nm" style="margin-bottom:4px">${a.t} <span class="tag">${ARG_SRC[a.src].ic} ${ARG_SRC[a.src].lbl}</span></div><div class="rf-say">🗣️ ${typeof a.say==='function'?a.say():a.say}</div></div>`).join(''))
+    +sec('7 · Reframing prix · du coût vers la valeur',reframe)
+    +sec('8 · Réponses aux '+OBJECTIONS.length+' objections',obj);
   const overrides=`
     html,body{height:auto !important;overflow:visible !important;background:#fff !important}
     body{font-size:13px}
@@ -4405,6 +4544,7 @@ function buildPrintDoc(){
     .card,.cls,.rf,.cg-card,.testi,.press,.sci-diff,.aca-l,.rythme,.flex-note,.pres-line,.biens li,.lvls .lvl,.obj{page-break-inside:avoid}
     .cg-grid{grid-template-columns:1fr 1fr !important}
     .rf,.cls{break-inside:avoid}
+    .fd-more summary::after{display:none} .fd-say,.fd-hl,.fd-note,.fd .cls-warn{page-break-inside:avoid;break-inside:avoid} .fd-top,.fd-more summary,.fd-sub{page-break-after:avoid;break-after:avoid}
     @page{margin:13mm}
   `;
   return `<!DOCTYPE html><html lang="fr"><head><meta charset="utf-8"><title>Guide du conseiller · Club Pilates</title>
