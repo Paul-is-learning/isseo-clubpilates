@@ -4365,7 +4365,6 @@ function showProspects(keepScroll){
     </div>`}
     <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
-    ${prSort==='rappels'&&'Notification' in window&&Notification.permission!=='granted'?`<button class="pr-act" style="width:100%;margin:-2px 0 10px" onclick="askRdvNotif()">🔔 Me prévenir 10 min avant chaque rappel</button>`:''}
     <div class="hm-sec">${clientView?'Clients · '+sorted.length:(prSort==='journal'?'Journal d\'appels':prSort==='rappels'?'Rappels programmés':prSort==='prio'?'À contacter d\'abord':'Leads récents')+' · '+(prSort==='journal'?'':sorted.length)}</div>
     ${!clientView&&prSort==='journal'?callJournalHTML(null,list):sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
