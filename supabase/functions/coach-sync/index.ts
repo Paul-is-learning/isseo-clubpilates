@@ -22,6 +22,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -50,6 +51,59 @@ function json(obj: unknown, status = 200) {
 const norm = (s: unknown) =>
   String(s ?? "").toUpperCase().replace(/[\s-]/g, "").replace(/0/g, "O").replace(/1/g, "I");
 
+// Codes d'invitation : PRÉNOM-XXXX-XXXX, tirage cryptographique, alphabet sans
+// caractères ambigus (ni 0/O ni 1/I/L) · ~8·10¹¹ combinaisons par prénom.
+const CODE_ABC = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
+function randChunk(n: number) {
+  const b = crypto.getRandomValues(new Uint8Array(n));
+  return Array.from(b, (x) => CODE_ABC[x % CODE_ABC.length]).join("");
+}
+function genCode(nom: string, taken: (c: string) => boolean): string {
+  const base = String(nom || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 8) || "CP";
+  for (let t = 0; t < 20; t++) {
+    const c = base + "-" + randChunk(4) + "-" + randChunk(4);
+    if (!taken(c)) return c;
+  }
+  return "";
+}
+const DENIED = "Code invalide, ou déjà utilisé sur un autre appareil · voir le responsable";
+
+// ── Page Intro Class d'isseo : gérant connecté (jeton Supabase), jamais de code ──
+// Renvoie le planning IC, le journal des ventes et l'équipe SANS les codes ni
+// les appareils. Le barème ne s'écrit qu'avec un profil isseo administrateur.
+// deno-lint-ignore no-explicit-any
+async function isseoIC(admin: any, req: Request, body: any, action: string) {
+  const jwt = (req.headers.get("authorization") || "").replace(/^Bearer\s+/i, "");
+  const { data: u } = await admin.auth.getUser(jwt);
+  const uid = u?.user?.id;
+  if (!uid) return json({ error: "Session isseo requise" }, 401);
+  const { data: prof } = await admin.from("profiles").select("role").eq("id", uid).maybeSingle();
+  if (!prof) return json({ error: "Accès refusé" }, 403);
+  const ic = await getRow(admin, ROW_IC);
+  if (action === "isseo_ic_bareme") {
+    if (prof.role !== "admin") return json({ error: "Réservé aux administrateurs" }, 403);
+    const b = body.bareme || {};
+    const clean = {
+      id: "bar_" + Date.now(),
+      effet: String(b.effet || new Date().toISOString().slice(0, 10)).slice(0, 10),
+      coach: Math.max(0, Math.min(1000, Number(b.coach) || 0)),
+      p1: Math.max(0, Math.min(1000, Number(b.p1) || 0)),
+      p2: Math.max(0, Math.min(1000, Number(b.p2) || 0)),
+      p3: Math.max(0, Math.min(1000, Number(b.p3) || 0)),
+    };
+    // deno-lint-ignore no-explicit-any
+    ic.baremes = [...(ic.baremes || []), clean].sort((a: any, b2: any) => (a.effet < b2.effet ? -1 : 1));
+    await putRow(admin, ROW_IC, ic);
+  }
+  const st = await getRow(admin, ROW_STATS);
+  const acc = await getRow(admin, ROW_ACCESS);
+  // deno-lint-ignore no-explicit-any
+  const invites = ((acc.invites as any[]) || []).map((i) => ({
+    nom: String(i?.nom || ""), studio: String(i?.studio || ""), actif: i?.actif !== false, nocom: i?.nocom === true, coach: i?.coach === true,
+  }));
+  return json({ ok: true, slots: ic.slots || [], sessions: ic.sessions || [], baremes: ic.baremes || [], events: st.events || [], invites });
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: CORS });
   try {
@@ -64,17 +118,23 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    if (action === "isseo_ic" || action === "isseo_ic_bareme") return await isseoIC(admin, req, body, action);
+
+    // ── Limite d'essais : 8 échecs en 15 min depuis une même adresse → blocage 15 min ──
+    const rl = await rateLimit(admin, req);
+    if (rl.blocked) return json({ error: "Trop d'essais · réessayez dans 15 minutes" }, 429);
+
     // ── Résolution du code : maître ou invitation active ──
-    const { data: accRow } = await admin.from("studios").select("data").eq("id", ROW_ACCESS).maybeSingle();
+    const accRow = { data: await getRow(admin, ROW_ACCESS) };
     let invites: any[] = (accRow?.data?.invites as any[]) || [];
     let primes: Record<string, number> = { ...DEFAULT_PRIMES, ...((accRow?.data?.primes as Record<string, number>) || {}) };
     const saveInvites = () =>
-      admin.from("studios").upsert({ id: ROW_ACCESS, data: { invites, primes, adminAvatar: accRow?.data?.adminAvatar ?? null }, updated_at: new Date().toISOString() });
+      putRow(admin, ROW_ACCESS, { invites, primes, adminAvatar: accRow?.data?.adminAvatar ?? null });
 
     let role = "";
     let rep = "";
     let mgr = false;
-    if (norm(code) && norm(code) === norm(COACH_CODE)) {
+    if (norm(code) && safeEq(norm(code), norm(COACH_CODE))) {
       role = "admin";
       mgr = true;
     } else {
@@ -82,19 +142,19 @@ serve(async (req) => {
       if (inv) {
         // 1 code = 1 appareil : le premier appareil qui utilise le code le réclame ;
         // tout autre appareil est refusé (l'admin peut libérer via team_device_reset).
-        // Les clients anciens (sans champ device) passent, le verrou s'arme à leur prochaine mise à jour.
+        // Identifiant d'appareil obligatoire (sinon le verrou se contournait en l'omettant),
+        // et même réponse qu'un code faux : rien n'indique de l'extérieur qu'un code existe.
         const dev = String(body.device || "").slice(0, 80);
-        if (dev) {
-          if (!inv.device) { inv.device = dev; inv.deviceAt = new Date().toISOString(); await saveInvites(); }
-          else if (inv.device !== dev) return json({ error: "Code déjà actif sur un autre appareil · voir le responsable" }, 401);
-        }
+        if (!dev || (inv.device && inv.device !== dev)) { await rl.fail(); return json({ error: DENIED }, 401); }
+        if (!inv.device) { inv.device = dev; inv.deviceAt = new Date().toISOString(); await saveInvites(); }
         role = "rep";
         rep = String(inv.nom || "");
         mgr = inv.manager === true;
         if (action === "ping") { inv.lastSeen = new Date().toISOString(); await saveInvites(); }
       }
     }
-    if (!role) return json({ error: "Code invalide" }, 401);
+    if (!role) { await rl.fail(); return json({ error: DENIED }, 401); }
+    await rl.ok();
 
     let myAvatar = "";
     let myStudio = "";
@@ -137,7 +197,7 @@ serve(async (req) => {
       if (role === "admin") {
         (accRow?.data || {});
         const adminAvatar = av ? { nom: String(body.nom || "").slice(0, 60), avatar: av } : null;
-        await admin.from("studios").upsert({ id: ROW_ACCESS, data: { invites, primes, adminAvatar }, updated_at: new Date().toISOString() });
+        await putRow(admin, ROW_ACCESS, { invites, primes, adminAvatar });
       } else {
         const inv = invites.find((i) => norm(i.code) === norm(code));
         if (inv) { inv.avatar = av; await saveInvites(); }
@@ -163,14 +223,14 @@ serve(async (req) => {
     // ── Journal de performance (immuable : les stats survivent aux fiches) ──
     // ── Intro Class : _ic_data = { slots, sessions, baremes } ──
     if (action === "ic_pull" || action === "ic_push" || action === "ic_del" || action === "ic_bareme_set") {
-      const { data: icRow } = await admin.from("studios").select("data").eq("id", ROW_IC).maybeSingle();
+      const icRow = { data: await getRow(admin, ROW_IC) };
       const ic = icRow?.data || {};
       let slots: any[] = ic.slots || [];
       let sessions: any[] = ic.sessions || [];
       let baremes: any[] = ic.baremes || [];
       let coachs: any[] = ic.coachs || [];
       const saveIC = () =>
-        admin.from("studios").upsert({ id: ROW_IC, data: { slots, sessions, baremes, coachs }, updated_at: new Date().toISOString() });
+        putRow(admin, ROW_IC, { slots, sessions, baremes, coachs });
 
       const icOut = () => json({ ok: true, slots: slots.filter(inMine), sessions: sessions.filter(inMine), baremes, coachs: coachs.filter(inMine) });
       if (action === "ic_pull") return icOut();
@@ -252,14 +312,14 @@ serve(async (req) => {
     // Le serveur attribue le score au code CONNECTÉ (un salarié ne peut pas
     // valider la formation d'un autre). Meilleur score conservé.
     if (action === "train_push" || action === "train_pull" || action === "train_del") {
-      const { data: tRow } = await admin.from("studios").select("data").eq("id", ROW_TRAIN).maybeSingle();
+      const tRow = { data: await getRow(admin, ROW_TRAIN) };
       const map: Record<string, Record<string, { s: number; ts: string }>> = (tRow?.data?.map as any) || {};
 
       if (action === "train_del") {
         if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
         const who = String(body.who || "").trim().toLowerCase();
         if (who && map[who]) delete map[who];
-        await admin.from("studios").upsert({ id: ROW_TRAIN, data: { map }, updated_at: new Date().toISOString() });
+        await putRow(admin, ROW_TRAIN, { map });
         return json({ ok: true, map });
       }
 
@@ -271,24 +331,24 @@ serve(async (req) => {
         map[who] = map[who] || {};
         const prev = map[who][scen];
         if (!prev || score > prev.s) map[who][scen] = { s: score, ts: new Date().toISOString() };
-        await admin.from("studios").upsert({ id: ROW_TRAIN, data: { map }, updated_at: new Date().toISOString() });
+        await putRow(admin, ROW_TRAIN, { map });
       }
       return json({ ok: true, map });
     }
 
     if (action === "stats_del") {
       if (role !== "admin" && !mgr) return json({ error: "Réservé aux recruteurs" }, 403);
-      const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
+      const stRow = { data: await getRow(admin, ROW_STATS) };
       let events: any[] = (stRow?.data?.events as any[]) || [];
       const ks: string[] = Array.isArray(body.ks) ? body.ks.map(String) : [];
       const pfx = String(body.prefix || "");
       events = events.filter((e) => !inMine(e) || (!ks.includes(e.k) && !(pfx && String(e.k).startsWith(pfx))));
-      await admin.from("studios").upsert({ id: ROW_STATS, data: { events }, updated_at: new Date().toISOString() });
+      await putRow(admin, ROW_STATS, { events });
       return json({ ok: true, events: events.filter(inMine) });
     }
 
     if (action === "stats_pull" || action === "stats_push") {
-      const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
+      const stRow = { data: await getRow(admin, ROW_STATS) };
       let events: any[] = (stRow?.data?.events as any[]) || [];
 
       if (action === "stats_push") {
@@ -314,7 +374,7 @@ serve(async (req) => {
           else if ((clean.ts || "") >= (events[i].ts || "")) events[i] = clean;
         }
         if (events.length > MAX_EVENTS) events = events.slice(-MAX_EVENTS);
-        await admin.from("studios").upsert({ id: ROW_STATS, data: { events }, updated_at: new Date().toISOString() });
+        await putRow(admin, ROW_STATS, { events });
       }
       return json({ ok: true, events: events.filter(inMine) });
     }
@@ -334,6 +394,8 @@ serve(async (req) => {
     // ── Gestion de l'équipe (admin uniquement) ──
     if (String(action).startsWith("team_")) {
       if (role !== "admin" && !mgr) return json({ error: "Réservé aux recruteurs" }, 403);
+
+      const taken = (c: string) => norm(c) === norm(COACH_CODE) || invites.some((i) => norm(i.code) === norm(c));
 
       // Seul le code maître promeut ou rétrograde un recruteur
       if (action === "team_manager") {
@@ -357,7 +419,7 @@ serve(async (req) => {
       }
 
       // Un recruteur ne peut pas suspendre/supprimer un autre recruteur, ni toucher un autre studio
-      if (role !== "admin" && (action === "team_toggle" || action === "team_del" || action === "team_device_reset")) {
+      if (role !== "admin" && (action === "team_toggle" || action === "team_del" || action === "team_device_reset" || action === "team_regen")) {
         const target = invites.find((i) => i.id === String(body.id));
         if (target && target.manager === true) return json({ error: "Invitation d'un recruteur · réservé au responsable" }, 403);
         if (target && !inMine(target)) return json({ error: "Invitation d'un autre studio" }, 403);
@@ -377,18 +439,36 @@ serve(async (req) => {
 
       if (action === "team_list") return json({ ok: true, invites: invites.filter(inMine) });
 
+      // Nouveau code pour une invitation (fuite, doute) : l'ancien cesse de marcher, l'appareil est libéré
+      if (action === "team_regen") {
+        const inv = invites.find((i) => i.id === String(body.id));
+        if (!inv) return json({ error: "Invitation introuvable" }, 404);
+        const c = genCode(inv.nom, taken);
+        if (!c) return json({ error: "Génération du code impossible" }, 500);
+        inv.code = c; delete inv.device; delete inv.deviceAt; inv.regen = new Date().toISOString();
+        await saveInvites();
+        return json({ ok: true, invites: invites.filter(inMine) });
+      }
+
+      // Renouvellement de TOUS les codes (code maître uniquement)
+      if (action === "team_regen_all") {
+        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        for (const inv of invites) {
+          const c = genCode(inv.nom, taken);
+          if (!c) return json({ error: "Génération du code impossible" }, 500);
+          inv.code = c; delete inv.device; delete inv.deviceAt; inv.regen = new Date().toISOString();
+        }
+        await saveInvites();
+        return json({ ok: true, invites: invites.filter(inMine) });
+      }
+
       if (action === "team_add") {
         const nom = String(body.nom || "").trim().slice(0, 60);
         const studio = scoped ? myStudio : canon(body.studio);
         if (!nom) return json({ error: "Nom requis" }, 400);
         if (!studio) return json({ error: "Studio d'affectation obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
         if (invites.length >= MAX_INVITES) return json({ error: "Limite d'invitations atteinte" }, 400);
-        const base = nom.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/[^A-Za-z]/g, "").toUpperCase().slice(0, 8) || "CP";
-        let newCode = "";
-        for (let t = 0; t < 20 && !newCode; t++) {
-          const c = base + "-" + String(Math.floor(1000 + Math.random() * 9000));
-          if (norm(c) !== norm(COACH_CODE) && !invites.some((i) => norm(i.code) === norm(c))) newCode = c;
-        }
+        const newCode = genCode(nom, taken);
         if (!newCode) return json({ error: "Génération du code impossible" }, 500);
         const inv = { id: "inv_" + Date.now(), nom, studio, code: newCode, actif: true, manager: false, created: new Date().toISOString(), lastSeen: "" };
         invites.push(inv);
@@ -421,19 +501,19 @@ serve(async (req) => {
           const nomLc = String(gone.nom).trim().toLowerCase();
           const who = nomLc.split(" ")[0];
           try {
-            const { data: tRow } = await admin.from("studios").select("data").eq("id", ROW_TRAIN).maybeSingle();
+            const tRow = { data: await getRow(admin, ROW_TRAIN) };
             const tmap: Record<string, unknown> = (tRow?.data?.map as any) || {};
             if (tmap[who]) {
               delete tmap[who];
-              await admin.from("studios").upsert({ id: ROW_TRAIN, data: { map: tmap }, updated_at: new Date().toISOString() });
+              await putRow(admin, ROW_TRAIN, { map: tmap });
             }
           } catch (_e) { /* best effort */ }
           try {
-            const { data: stRow } = await admin.from("studios").select("data").eq("id", ROW_STATS).maybeSingle();
+            const stRow = { data: await getRow(admin, ROW_STATS) };
             const evts: any[] = (stRow?.data?.events as any[]) || [];
             const kept = evts.filter((ev) => String(ev.rep || "").trim().toLowerCase() !== nomLc);
             if (kept.length !== evts.length) {
-              await admin.from("studios").upsert({ id: ROW_STATS, data: { events: kept }, updated_at: new Date().toISOString() });
+              await putRow(admin, ROW_STATS, { events: kept });
             }
           } catch (_e) { /* best effort */ }
         }
@@ -444,18 +524,18 @@ serve(async (req) => {
     }
 
     // ── Prospects (admin + rep) ──
-    const { data: row } = await admin.from("studios").select("data").eq("id", ROW_PROSPECTS).maybeSingle();
+    const row = { data: await getRow(admin, ROW_PROSPECTS) };
     let list: any[] = (row?.data?.prospects as any[]) || [];
     const epoch: number = Number(row?.data?.epoch) || 0;
     const saveList = () =>
-      admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { prospects: list, epoch }, updated_at: new Date().toISOString() });
+      putRow(admin, ROW_PROSPECTS, { prospects: list, epoch });
 
     // Remise à zéro administrative : date la purge pour que chaque appareil
     // vide son stock local au lieu de re-pousser d'anciennes fiches.
     if (action === "purge_all") {
       if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
       const newEpoch = Date.now();
-      await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { prospects: [], epoch: newEpoch }, updated_at: new Date().toISOString() });
+      await putRow(admin, ROW_PROSPECTS, { prospects: [], epoch: newEpoch });
       return json({ ok: true, prospects: [], epoch: newEpoch });
     }
 
@@ -539,6 +619,7 @@ serve(async (req) => {
 
     return json({ error: "Action inconnue" }, 400);
   } catch (err) {
-    return json({ error: (err as Error).message || "Erreur serveur" }, 500);
+    console.error("coach-sync", (err as Error).message);
+    return json({ error: "Erreur serveur" }, 500);
   }
 });

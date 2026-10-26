@@ -2479,9 +2479,9 @@ function _adoptAuth(d){
 }
 let _pushT=null,_lastSync='';
 function _lockMsg(m){
+  if(m==='rate')return 'Trop d\'essais · patientez 15 minutes avant de réessayer.';
   if(m!=='code')return 'Connexion impossible · vérifiez le réseau et réessayez.';
-  if(/autre appareil/i.test(window._authErr||''))return 'Ce code est déjà utilisé sur un autre téléphone · demandez à votre responsable de libérer l\'appareil (bouton 📱↺ dans Équipe).';
-  return 'Code invalide · vérifiez auprès de votre responsable.';
+  return 'Code refusé · vérifiez-le auprès de votre responsable. Nouveau téléphone ? Il peut libérer l\'appareil (bouton 📱↺ dans Équipe).';
 }
 async function syncCall(action,extra){
   const r=await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({code:COACH_CODE,action:action,device:DEVICE_ID},extra||{}))});
@@ -2490,8 +2490,12 @@ async function syncCall(action,extra){
     window._authErr=String(d.error||'');
     localStorage.removeItem('cpcoach_code');COACH_CODE='';showLock();
     // Code refusé parce que lié à un autre téléphone : le dire clairement dès l'écran de verrouillage
-    if(/autre appareil/i.test(window._authErr))setTimeout(()=>{const e=document.getElementById('lockErr');if(e)e.textContent=_lockMsg('code');},0);
+    setTimeout(()=>{const e=document.getElementById('lockErr');if(e)e.textContent=_lockMsg('code');},0);
     throw new Error('code');
+  }
+  if(r.status===429){
+    if(!COACH_CODE||document.getElementById('lockScreen')){throw new Error('rate');}
+    throw new Error(d.error||'Trop d\'essais');
   }
   if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
   return d;
@@ -2948,6 +2952,7 @@ function renderTeam(invites){
         ${canTouch?`<button class="pr-act" onclick="toggleInvite('${i.id}',${off?'true':'false'})">${off?'▶️ Réactiver':'⏸ Suspendre'}</button>`:''}
         ${COACH_ROLE==='admin'?`<button class="pr-act" title="${isMgrInv?'Retirer le droit d\'inviter':'Donner le droit d\'inviter (recruteur)'}" onclick="toggleManager('${i.id}',${isMgrInv?'false':'true'})">${isMgrInv?'⭐':'☆'}</button>`:''}
         ${canTouch&&i.device?`<button class="pr-act" title="Libérer l'appareil (changement de téléphone)" onclick="resetDevice('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">📱↺</button>`:''}
+        ${canTouch?`<button class="pr-act" title="Nouveau code (l'ancien cesse de fonctionner)" onclick="regenInvite('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">🔑</button>`:''}
         ${canTouch?`<button class="pr-act danger" onclick="delInvite('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">🗑</button>`:''}
       </div>
     </div>`;
@@ -2958,11 +2963,12 @@ function renderTeam(invites){
     <button class="pr-act" style="width:100%;margin-bottom:12px" onclick="showLeadImport()">📥 Importer des leads (Fitness Boost, bsport, CSV…)</button>
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
-        <div><span class="hn">1</span><span><b>Invitez un conseiller</b> : entrez son prénom, un code personnel est créé (ex. LEA-4821).</span></div>
+        <div><span class="hn">1</span><span><b>Invitez un conseiller</b> : entrez son prénom, un code personnel est créé (ex. LEA-H6KU-7N8Y).</span></div>
         <div><span class="hn">2</span><span><b>Envoyez-lui l'invitation</b> (bouton copier) : le lien de l'outil + son code. Il n'a besoin de rien d'autre · aucun compte, aucun accès au reste de votre application.</span></div>
         <div><span class="hn">🔒</span><span><b>1 code = 1 appareil</b> : le premier téléphone qui utilise un code le verrouille. Un code prêté à un tiers ne fonctionnera pas ailleurs. Changement de téléphone ? Le bouton 📱↺ libère l'appareil.</span></div>
         <div><span class="hn">3</span><span><b>Départ ou doute ?</b> Suspendez ou supprimez son code : l'outil se verrouille chez lui à la seconde. Les fiches, elles, restent au studio.</span></div>
         <div><span class="hn">4</span><span>L'étoile <b>⭐ Recruteur</b> (réservée au code maître) donne à un conseiller l'accès à cette page pour inviter à son tour · sans jamais toucher aux primes ni aux autres recruteurs.</span></div>
+        <div><span class="hn">🔑</span><span><b>Code compromis ?</b> Le bouton 🔑 crée un nouveau code : l'ancien cesse de marcher à la seconde. Après 8 codes faux, l'outil se bloque 15 minutes sur ce réseau.</span></div>
         <div><span class="hn">5</span><span>Votre code <b>maître</b> reste secret : ne le donnez jamais à l'équipe.</span></div>
       </div>
     </details>
@@ -2970,6 +2976,7 @@ function renderTeam(invites){
       <div class="pr-cap-row"><input type="text" id="tm-nom" placeholder="Prénom (ex. Léa)"/><select id="tm-studio" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:14px;background:#fff"${canNav()?'':' disabled'}>${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(CFG.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select></div>
       <button class="go ok" style="width:100%;padding:11px" onclick="addInvite()">Créer son code</button>
     </div>
+    ${COACH_ROLE==='admin'&&invites.length?`<button class="pr-act" style="width:100%;margin-bottom:12px" onclick="regenAllInvites()">🔑 Renouveler tous les codes de l'équipe</button>`:''}
     ${invites.length?invites.map(row).join(''):`<div class="pr-empty">👥 Aucune invitation pour l'instant.<br><small>Créez le premier code personnel ci-dessus.</small></div>`}
   </div>`;
 }
@@ -2999,6 +3006,16 @@ async function setInviteStudio(id,studio){
 async function resetDevice(id,nom){
   if(!confirm('Libérer l\'appareil de '+nom+' ?\nSon code fonctionnera sur le prochain appareil qui l\'utilise (nouveau téléphone).'))return;
   try{const d=await syncCall('team_device_reset',{id:id});renderTeam(d.invites||[]);toast('Appareil libéré · le prochain appareil réclamera le code');}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+async function regenInvite(id,nom){
+  if(!confirm('Créer un nouveau code pour '+nom+' ?\nL\'ancien code cessera de fonctionner immédiatement : envoyez-lui le nouveau (bouton copier).'))return;
+  try{const d=await syncCall('team_regen',{id:id});renderTeam(d.invites||[]);const i=(d.invites||[]).find(x=>x.id===id);toast('🔑 Nouveau code pour '+nom+(i?' : '+i.code:''));}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+async function regenAllInvites(){
+  if(!confirm('Renouveler les codes de TOUTE l\'équipe ?\nTous les anciens codes cessent de fonctionner immédiatement. Chacun devra saisir son nouveau code : envoyez-les un par un (bouton copier).'))return;
+  try{const d=await syncCall('team_regen_all');renderTeam(d.invites||[]);toast('🔑 Codes renouvelés · envoyez le nouveau code à chacun');}
   catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
 async function delInvite(id,nom){

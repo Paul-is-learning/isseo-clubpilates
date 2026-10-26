@@ -16,6 +16,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
 
 const ROW_PROSPECTS = "_coach_prospects";
 const TXT_MAX = 9000;
@@ -132,9 +133,12 @@ function resolveRep(email: unknown): string {
 serve(async (req: Request) => {
   if (req.method !== "POST") return json({ error: "POST attendu" }, 405);
   try {
-    const codeOk = (req.headers.get("x-admin-code") || "").trim().toUpperCase() ===
-      (Deno.env.get("COACH_CODE") || "").trim().toUpperCase() && !!Deno.env.get("COACH_CODE");
-    if (!codeOk) return json({ error: "Code administrateur invalide" }, 401);
+    const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
+    const rl = await rateLimit(admin, req);
+    if (rl.blocked) return json({ error: "Trop d'essais · réessayez dans 15 minutes" }, 429);
+    const master = (Deno.env.get("COACH_CODE") || "").trim().toUpperCase();
+    const codeOk = !!master && safeEq((req.headers.get("x-admin-code") || "").trim().toUpperCase(), master);
+    if (!codeOk) { await rl.fail(); return json({ error: "Code administrateur invalide" }, 401); }
     const apiKey = Deno.env.get("ALLO_API_KEY") || "";
     if (!apiKey) return json({ error: "ALLO_API_KEY non configuré" }, 500);
     const STUDIO = Deno.env.get("ALLO_STUDIO") || "La Garenne-Colombes";
@@ -156,8 +160,7 @@ serve(async (req: Request) => {
     if (!alloNumbers.length) return json({ error: "Aucun numéro Allo trouvé" }, 404);
 
     // 2. Les fiches actuelles
-    const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
-    const { data: row } = await admin.from("studios").select("data").eq("id", ROW_PROSPECTS).maybeSingle();
+    const row = { data: await getRow(admin, ROW_PROSPECTS) };
     const list: any[] = (row?.data?.prospects as any[]) || [];
     const now = () => new Date().toISOString();
 
@@ -330,7 +333,7 @@ serve(async (req: Request) => {
       if (mapped && mapped !== r) { p.rep = mapped; p.maj = new Date().toISOString(); repares++; }
       else if (/clubpilates|allo/i.test(r)) { p.rep = ""; p.maj = new Date().toISOString(); repares++; }
     }
-    await admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
+    await putRow(admin, ROW_PROSPECTS, { ...(row?.data || {}), prospects: list });
     return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares, appelsDedupliques: dedupliques, auteursCorriges });
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 500);

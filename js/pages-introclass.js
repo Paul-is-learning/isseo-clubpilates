@@ -5,7 +5,8 @@
 // CALCULÉ depuis les données saisies par l'équipe dans le Sales Coach :
 // rows Supabase `_ic_data` (séances/planning/barèmes), `_coach_stats`
 // (journal des ventes), `_coach_access` (équipe + drapeaux).
-// Lecture directe de la table `studios` (auth gérant), aucune ressaisie.
+// Lu via la fonction serveur coach-sync (session isseo), aucune ressaisie :
+// les données commerciales ne sont plus lisibles directement (table coach_store).
 // ═══════════════════════════════════════════════════════════════════════════
 
 var _icd=null;      // cache données
@@ -17,16 +18,17 @@ function loadIntroClass(force){
   if(_icdLoading)return;
   if(_icd&&!force)return;
   _icdLoading=true;
-  sb.from('studios').select('id,data').in('id',['_ic_data','_coach_stats','_coach_access'])
+  sb.functions.invoke('coach-sync',{body:{action:'isseo_ic'}})
     .then(function(res){
       _icdLoading=false;
-      var rows={};(res.data||[]).forEach(function(r){rows[r.id]=r.data||{};});
+      var d=res.data||{};
+      if(res.error||!d.ok){if(typeof toast==='function')toast('Intro Class : données indisponibles');d={};}
       _icd={
-        slots:(rows['_ic_data']||{}).slots||[],
-        sessions:(rows['_ic_data']||{}).sessions||[],
-        baremes:(rows['_ic_data']||{}).baremes||[],
-        events:(rows['_coach_stats']||{}).events||[],
-        invites:(rows['_coach_access']||{}).invites||[]
+        slots:d.slots||[],
+        sessions:d.sessions||[],
+        baremes:d.baremes||[],
+        events:d.events||[],
+        invites:d.invites||[]
       };
       if(S.page==='introclass')render();
     });
@@ -236,12 +238,10 @@ function _icAddBareme(){
   var p1=prompt('Commission Pack 4 (€) :','10');if(p1===null)return;
   var p2=prompt('Commission Pack 8 (€) :','25');if(p2===null)return;
   var p3=prompt('Commission Illimité (€) :','50');if(p3===null)return;
-  // écrit via la table (gérant authentifié)
-  sb.from('studios').select('data').eq('id','_ic_data').maybeSingle().then(function(res){
-    var d=(res.data&&res.data.data)||{};
-    d.baremes=(d.baremes||[]);
-    d.baremes.push({id:'bar_'+Date.now(),effet:effet.slice(0,10),coach:+coach||0,p1:+p1||0,p2:+p2||0,p3:+p3||0});
-    d.baremes.sort(function(a,b){return a.effet<b.effet?-1:1;});
-    return sb.from('studios').upsert({id:'_ic_data',data:d,updated_at:new Date().toISOString()});
-  }).then(function(){if(typeof toast==='function')toast('Barème enregistré ✓');loadIntroClass(true);});
+  // écrit par le serveur (profil isseo administrateur)
+  sb.functions.invoke('coach-sync',{body:{action:'isseo_ic_bareme',bareme:{effet:effet.slice(0,10),coach:+coach||0,p1:+p1||0,p2:+p2||0,p3:+p3||0}}})
+    .then(function(res){
+      if(res.error||!(res.data&&res.data.ok)){if(typeof toast==='function')toast('Barème non enregistré · réservé aux administrateurs');return;}
+      if(typeof toast==='function')toast('Barème enregistré ✓');loadIntroClass(true);
+    });
 }

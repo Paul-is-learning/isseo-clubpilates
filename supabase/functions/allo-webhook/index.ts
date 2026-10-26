@@ -21,6 +21,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { getRow, putRow } from "../_shared/store.ts";
 
 const ROW_PROSPECTS = "_coach_prospects";
 const TXT_MAX = 9000;
@@ -165,10 +166,10 @@ serve(async (req: Request) => {
     const STUDIO = Deno.env.get("ALLO_STUDIO") || "La Garenne-Colombes";
 
     const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
-    const { data: row } = await admin.from("studios").select("data").eq("id", ROW_PROSPECTS).maybeSingle();
+    const row = { data: await getRow(admin, ROW_PROSPECTS) };
     const list: any[] = (row?.data?.prospects as any[]) || [];
     const save = () =>
-      admin.from("studios").upsert({ id: ROW_PROSPECTS, data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() });
+      putRow(admin, ROW_PROSPECTS, { ...(row?.data || {}), prospects: list });
     // Préférer la fiche du studio de la ligne ; une fiche trouvée sans studio y est rattachée
     const findByKey = (k: string) => {
       const same = list.filter((p) => telKey(p?.tel) === k);
