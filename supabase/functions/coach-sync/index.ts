@@ -43,7 +43,7 @@ const MAX_INVITES = 50;
 // Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
 // toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
 // appartiennent aussi à Boost.
-const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis"];
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis", "bnew", "bnews"];
 // deno-lint-ignore no-explicit-any
 function keepBoost(clean: any, ex: any) {
   if (!ex) return;
@@ -624,6 +624,34 @@ serve(async (req) => {
       return json({ ok: true, boost: boost && boostOk, items });
     }
 
+    // ── Créer un prospect depuis l'outil · créé dans Boost par boost-push (bnew), sans doublon ──
+    if (action === "contact_create") {
+      const nom = String(body.nom || "").trim().slice(0, 80);
+      const digits = String(body.tel || "").replace(/\D/g, "");
+      const tel = !digits ? "" : digits.length === 11 && digits.startsWith("33") ? "0" + digits.slice(2) : digits.length === 10 && digits.startsWith("0") ? digits : "+" + digits;
+      const email = String(body.email || "").trim().slice(0, 120);
+      const SRC = ["site_web", "reseaux_sociaux", "bouche_a_oreille", "publicite", "google_my_business", "autre"];
+      const source = SRC.includes(String(body.source)) ? String(body.source) : "autre";
+      const note = String(body.note || "").trim().slice(0, 300);
+      if (!nom) return json({ error: "Le nom est obligatoire" }, 400);
+      if (!digits && !email) return json({ error: "Un téléphone ou un email est nécessaire" }, 400);
+      if (digits && digits.length < 9) return json({ error: "Numéro de téléphone incomplet" }, 400);
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Adresse email invalide" }, 400);
+      const studio = scoped ? myStudio : (canon(body.studio) || "");
+      if (!studio) return json({ error: "Studio obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
+      const k9 = digits.slice(-9);
+      const dup = list.find((x) => sk(x.studio) === sk(studio) && ((k9.length === 9 && String(x.tel || "").replace(/\D/g, "").slice(-9) === k9) || (email && String(x.email || "").toLowerCase() === email.toLowerCase())));
+      if (dup) return json({ ok: true, exists: true, prospect: outP(dup) });
+      const now = new Date().toISOString();
+      const by = String(rep || (role === "admin" ? String(body.rep || "Paul") : "")).slice(0, 60);
+      const np: any = { id: "p_" + Date.now() + Math.random().toString(36).slice(2, 6), nom, tel, email, note, statut: "rappeler", rappel: "", rappelH: "", rappelBy: "", obj: "", fiche: "", pack: "", appels: [],
+        rep: by, studio, ts: now, maj: now, src: source, bentry: now,
+        bnew: { nom, tel, email, source, note, at: now, by } };
+      list.push(np);
+      await saveList();
+      return json({ ok: true, prospect: outP(np) });
+    }
+
     // ── Modifier les coordonnées d'une fiche (nom, téléphone, email, notes Boost) ──
     // Appliqué tout de suite dans l'outil ; pour une fiche Boost, mis en file (bqi) pour boost-push,
     // et protégé de la synchro tant que Boost n'a pas été mis à jour.
@@ -657,9 +685,11 @@ serve(async (req) => {
       const digits = String(p.tel || "").replace(/\D/g, "");
       const to = digits.length === 10 && digits.startsWith("0") ? "+33" + digits.slice(1) : digits ? "+" + digits : "";
       if (!to) return json({ ok: false, reason: "pas de numéro" });
+      // Le code maître (Paul) appelle depuis le compte Aircall de Tom s'il n'a pas le sien
       const who = role === "admin" ? String(body.nom || "") : rep;
       const ul = await aircallGet("/users?per_page=50");
-      const u = matchAircallUser(ul.body?.users || [], who);
+      const users = ul.body?.users || [];
+      const u = matchAircallUser(users, who) || (role === "admin" ? matchAircallUser(users, "Tom") : null);
       if (!u?.id) return json({ ok: false, reason: "pas de compte Aircall pour " + (who || "ce poste") });
       const ud = await aircallGet("/users/" + u.id);
       // deno-lint-ignore no-explicit-any

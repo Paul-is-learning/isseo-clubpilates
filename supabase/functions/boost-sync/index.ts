@@ -184,6 +184,17 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   const live = new Set(res.list.map((p: any) => p.id)); // deno-lint-ignore no-explicit-any
   const ids = [...new Set([...(t.ids || []), ...res.tomb])].filter((id) => !live.has(id)).slice(-5000);
   if (JSON.stringify(ids) !== JSON.stringify(t.ids || [])) await putRow(admin, "_coach_tomb", { ids });
+  // Index des téléphones et emails Boost du club : boost-push s'y réfère avant de créer un contact
+  const idx = await getRow(admin, "_boost_index");
+  const tel: Record<string, string> = {}, mail: Record<string, string> = {};
+  for (const c of contacts.items) {
+    const k = String(c?.phone || "").replace(/\D/g, "").slice(-9);
+    if (k.length === 9 && !tel[k]) tel[k] = String(c.id);
+    const m = String(c?.email || "").trim().toLowerCase();
+    if (m && !mail[m]) mail[m] = String(c.id);
+  }
+  const nextIdx = { ...idx, [clubKey]: { tel, mail, at: nowIso } };
+  if (JSON.stringify(idx[clubKey]?.tel) !== JSON.stringify(tel) || JSON.stringify(idx[clubKey]?.mail) !== JSON.stringify(mail)) await putRow(admin, "_boost_index", nextIdx);
   const st = await getRow(admin, "_boost_sync");
   await putRow(admin, "_boost_sync", { ...st, [clubKey]: { last: nowIso, changed, report } });
   return json({ ok: true, report });

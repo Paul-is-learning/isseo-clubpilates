@@ -669,6 +669,8 @@ a.menu-item{text-decoration:none;color:inherit}
 .hs-s{font-size:12px;color:#55607A;margin-top:2px}.hs-t{font-size:12.5px;color:#333B4E;margin-top:4px;white-space:pre-wrap;line-height:1.45}
 .hs-more{margin-top:5px;font-size:11.5px;font-weight:700;color:var(--cp-deep);background:none;border:0;padding:0;cursor:pointer}
 @media(max-width:520px){.hs-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pr-new{border:0;background:var(--accent);color:#fff;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px -10px rgba(75,82,230,.8)}
+.pl-form select{border:1px solid var(--cream-line);border-radius:9px;padding:7px 9px;font:inherit;font-size:13px;color:var(--ink);background:#fff;text-transform:none;letter-spacing:0;font-weight:500}
 .pl-edit{margin-left:8px;border:1px solid var(--cream-line);background:#fff;border-radius:8px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;text-transform:none;letter-spacing:0}
 .pl-form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;background:var(--cream);border:1px solid var(--cream-line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .pl-form label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em}
@@ -4338,7 +4340,7 @@ function showProspects(keepScroll){
   const h=`<div class="cg prw">
     <div class="pr-head">
       <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
-      <span id="syncBadge" class="sync-badge ok">☁️ Synchronisé · équipe</span>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="pr-new" onclick="newProspectForm()">＋ Nouveau prospect</button><span id="syncBadge" class="sync-badge ok">☁️ Synchronisé · équipe</span></div>
     </div>
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
@@ -4387,6 +4389,37 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
   whatsapp:['🟢','WhatsApp envoyé'],whatsapp_recu:['🟢','WhatsApp reçu'],messenger:['💭','Messenger envoyé'],messenger_recu:['💭','Messenger reçu'],instagram:['📸','Instagram envoyé'],instagram_recu:['📸','Instagram reçu'],
   rdv:['📅','RDV'],rdv_annule:['📅','RDV annulé'],rdv_pas_venu:['📅','RDV non venu'],rdv_venu:['📅','RDV venu'],rdv_date_passee:['📅','RDV passé'],seance_essai:['🎟️','Séance d\'essai'],bilan:['📋','Bilan'],
   rappel:['⏰','Rappel'],note:['📝','Note'],message_vocal:['🎙️','Message vocal'],tache:['✔️','Tâche'],signature:['✅','Signature'],refus_signature:['✖️','Refus de signature'],contractuel:['📄','Contrat']};
+// Créer un prospect depuis l'outil · il est créé dans Fitness Boost dans la minute (sans doublon)
+const NEW_SRC=[['bouche_a_oreille','Bouche à oreille'],['site_web','Site web'],['reseaux_sociaux','Réseaux sociaux'],['publicite','Publicité'],['google_my_business','Google My Business'],['autre','Autre (téléphone, accueil…)']];
+function newProspectForm(){
+  const adm=COACH_ROLE==='admin';
+  icSheet(`<div class="glp-tag">＋ Nouveau prospect</div><div class="glp-t">Créé dans l'outil et dans Fitness Boost</div>
+    <div class="pl-form" style="margin-top:12px">
+      <label class="wide">Nom et prénom *<input id="np-nom" maxlength="80" placeholder="Camille Martin"/></label>
+      <label>Téléphone<input id="np-tel" type="tel" placeholder="06 12 34 56 78"/></label>
+      <label>Email<input id="np-email" type="email" placeholder="camille@exemple.fr"/></label>
+      <label>Source<select id="np-src">${NEW_SRC.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></label>
+      ${adm?`<label>Studio<select id="np-studio">${STUDIOS.map(x=>`<option${_sk(x)===_sk(CFG.studio||'')?' selected':''}>${esc(x)}</option>`).join('')}</select></label>`:''}
+      <label class="wide">Note<textarea id="np-note" rows="2" maxlength="300" placeholder="Ce qu'il cherche, quand le rappeler…"></textarea></label>
+      <div class="pl-row" style="grid-column:1/-1;margin:2px 0 0"><button class="pr-act main" style="flex:0 0 auto" onclick="createProspect()">Créer le prospect</button><small id="np-err" style="color:#B4300F;font-weight:700"></small></div>
+    </div>`);
+  setTimeout(()=>document.getElementById('np-nom')?.focus(),50);
+}
+async function createProspect(){
+  const v=k=>(document.getElementById(k)?.value??'').trim();
+  const err=document.getElementById('np-err');
+  const body={nom:v('np-nom'),tel:v('np-tel'),email:v('np-email'),source:v('np-src'),note:v('np-note'),studio:v('np-studio')||CFG.studio||'',rep:CFG.rep||''};
+  if(!body.nom){if(err)err.textContent='Le nom est obligatoire';return;}
+  if(!body.tel&&!body.email){if(err)err.textContent='Un téléphone ou un email est nécessaire';return;}
+  try{
+    const d=await syncCall('contact_create',body);
+    if(!d.ok){if(err)err.textContent=d.error||'Création impossible';return;}
+    document.getElementById('icPop')?.remove();
+    if(!PROSPECTS.find(x=>x.id===d.prospect.id))PROSPECTS.unshift(d.prospect);
+    persistProspects();prSort='recent';prFilter=null;prOpenId=d.prospect.id;loadHist(d.prospect.id);showProspects();
+    toast(d.exists?'Ce prospect existe déjà · fiche ouverte':'✅ Prospect créé · envoi vers Boost dans la minute');
+  }catch(e){if(e.message!=='code'&&err)err.textContent=e.message||'Connexion impossible';}
+}
 // Modifier les coordonnées d'une fiche · pour une fiche Boost, Boost est mis à jour dans la minute
 let prEditId=null;
 async function saveContactEdit(id){
