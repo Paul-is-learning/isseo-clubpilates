@@ -35,6 +35,8 @@ const NO_CREATE = new Set(["client", "ancien_client", "archive"]);
 // et un rappel au-delà de J+30 n'est pas traité (ignoré)
 export const MAX_AGE_DAYS = 60;
 export const RAPPEL_HORIZON_DAYS = 30;
+// Un rappel passé depuis plus de 14 jours est périmé : ni date affichée, ni motif d'import
+export const STALE_DAYS = 14;
 const horizon = (nowIso: string) => new Date(Date.parse(nowIso) + RAPPEL_HORIZON_DAYS * 864e5).toISOString();
 
 export function plannedByContact(acts: any[], nowIso: string) {
@@ -71,6 +73,7 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   else if (rel) when = rel;
   else if (st === "rdv_planifie") when = String(c?.next_rdv || c?.date_rdv || "");
   if (when && nowIso && when > horizon(nowIso)) when = ""; // rappel au-delà de J+30 : non traité
+  if (when && nowIso && when < new Date(Date.parse(nowIso) - STALE_DAYS * 864e5).toISOString()) when = ""; // rappel périmé
   const dt = when ? parisDT(when) : null;
   return { statut, rappel: dt?.d || "", rappelH: dt && /T\d/.test(when) ? dt.h : "", nok: st === "rdv_nok", client: st === "client" };
 }
@@ -110,7 +113,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     return inv ? String(inv.nom) : n;
   };
   const R = {
-    contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0,
+    contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
     doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
@@ -199,9 +202,28 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     if (rep) R.commerciaux[rep] = (R.commerciaux[rep] || 0) + 1;
   }
 
+  // Rappels posés par Boost et périmés : on les retire de la fiche (jamais ceux posés dans l'outil)
+  const staleIso = new Date(Date.parse(ctx.nowIso) - STALE_DAYS * 864e5).toISOString().slice(0, 10);
+  for (const p of list) {
+    if (p.bclub === ctx.club && p.rappelBy === "Boost" && p.rappel && p.rappel < staleIso && !pendingTool(p)) {
+      p.rappel = ""; p.rappelH = ""; p.rappelBy = ""; p.brap = ""; p.maj = ctx.nowIso; R.rappels_perimes++;
+    }
+  }
+  // Fiches importées qui ne passent plus les règles (lead de plus de 60 jours, sans rappel à venir)
+  // et que personne n'a travaillées dans l'outil : retirées, elles restent dans Boost
+  const ageIso = new Date(Date.parse(ctx.nowIso) - MAX_AGE_DAYS * 864e5).toISOString();
+  const keep = (p: any) => {
+    if (!String(p.id).startsWith("p_fb_" + ctx.club + "_") || p.bmember) return true;
+    if ((p.appels || []).length || p.bq || p.fiche || p.note || p.obj || p.pack || p.rappel) return true;
+    if (p.statut !== "rappeler" && !p.bset) return true;
+    return String(p.bentry || p.ts || "") >= ageIso;
+  };
+  const pruned: string[] = [];
+  for (let i = list.length - 1; i >= 0; i--) if (!keep(list[i])) { pruned.push(list[i].id); list.splice(i, 1); R.retires_anciens++; }
+
   // Suppressions Boost : la fiche disparaît (RGPD), son id part en pierre tombale
   const del = new Set(ctx.deletedIds.map(String));
-  const tomb: string[] = [];
+  const tomb: string[] = [...pruned]; // retirées : un téléphone ne doit pas les repousser
   for (let i = list.length - 1; i >= 0; i--) {
     if (list[i].bid && del.has(String(list[i].bid))) { tomb.push(list[i].id); list.splice(i, 1); R.supprimes++; }
   }

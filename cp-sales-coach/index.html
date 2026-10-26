@@ -1194,6 +1194,17 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-info{font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}.pl-info a{color:var(--lav-ink);text-decoration:none;font-weight:600}
 @media(max-width:1100px){.pl-line{grid-template-columns:44px minmax(0,1.4fr) auto minmax(0,1fr) auto}.pl-st .pl-flag{display:none}.pl-meta{display:none}}
 @media(max-width:640px){.pl-line{grid-template-columns:40px minmax(0,1fr) auto;gap:4px 10px;padding:10px 10px 10px 16px}.pl-st{grid-column:2/3;grid-row:2}.pl-next{grid-column:2/4;grid-row:3}.pl-quick{grid-column:3;grid-row:1/3}.pl-ava{width:40px;height:40px}.pl-dgrid{grid-template-columns:1fr;gap:6px}}
+
+/* Ligne prospect : 2e ligne de contexte */
+.pl-line{row-gap:6px}
+.pl-ctx{grid-column:2/-2;grid-row:2;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;min-width:0;padding-top:7px;border-top:1px dashed var(--cream-line);font-size:12px;color:var(--ink-soft)}
+.pl-c b{font-weight:700;color:var(--ink-mid);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-right:4px}
+.pl-c.muted{color:var(--ink-mid)}
+.pl-c.note{flex:1 1 280px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4A4F5E}
+.pl-quick{grid-column:-2/-1;grid-row:1/3;align-self:center}
+.pl-ava{grid-column:1;grid-row:1/3;align-self:start}
+.pl-who,.pl-st,.pl-next,.pl-meta{grid-row:1}
+@media(max-width:640px){.pl-ava{grid-row:1/3}.pl-who{grid-row:1}.pl-st{grid-row:2}.pl-next{grid-row:3}.pl-ctx{grid-column:1/-1;grid-row:4}.pl-quick{grid-column:3;grid-row:1/3}.pl-c.note{white-space:normal}}
 </style>
 </head>
 <body>
@@ -4182,6 +4193,22 @@ function showProspects(keepScroll){
   const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PSC().filter(p=>p.statut===k).length);
   const nbDue=PSC().filter(due).length;
   // Une ligne par prospect (lecture rapide) · le détail s'ouvre au clic
+  // 2e ligne de contexte : dernier contact, volume d'échanges, note la plus utile
+  const plCtx=p=>{
+    const ap=(p.appels||[]).slice().sort((a,b)=>String(b.ts).localeCompare(String(a.ts)));
+    const calls=ap.filter(a=>/^📞/.test(String(a.txt||''))),sms=ap.filter(a=>/^💬/.test(String(a.txt||'')));
+    const ok=calls.filter(a=>/answered|· décroché/.test(String(a.txt||'').split('\n')[0])).length;
+    const last=ap[0];let lastH='';
+    if(last){const l0=String(last.txt||'').split('\n')[0];const t=new Date(last.ts);
+      const who=(l0.match(/ par ([^·\n]+?)(?= · |$)/)||[])[1]||'';
+      const kind=/^💬/.test(l0)?(/reçu/.test(l0)?'💬 SMS reçu':'💬 SMS envoyé'):/sans réponse|manqué|voicemail|messagerie|received/.test(l0)?'📵 appel '+(/entrant/.test(l0)?'manqué':'sans réponse'):'📞 appel '+(/entrant/.test(l0)?'entrant':'sortant');
+      const dur=(l0.match(/· (\d+ m \d+ s|\d+ s|\d+\s*min)\b/)||[])[1]||'';
+      lastH=`<span class="pl-c"><b>Dernier contact</b> ${isNaN(t)?'':t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' · '}${kind}${dur?' · '+dur:''}${who?' · '+esc(who.split(' ')[0]):''}</span>`;}
+    else lastH='<span class="pl-c muted"><b>Dernier contact</b> aucun appel enregistré</span>';
+    const vol=calls.length||sms.length?`<span class="pl-c">${calls.length} appel${calls.length>1?'s':''}${calls.length?' · '+ok+' abouti'+(ok>1?'s':''):''}${sms.length?' · '+sms.length+' SMS':''}</span>`:'';
+    const note=(noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
+    return `<div class="pl-ctx">${lastH}${vol}${note?`<span class="pl-c note" title="${esc(note)}">📝 ${esc(note.length>140?note.slice(0,140)+'…':note)}</span>`:''}</div>`;
+  };
   const card=p=>{
     const pi=PIPE[p.statut]||PIPE.rappeler;
     const isDue=due(p);
@@ -4202,6 +4229,7 @@ function showProspects(keepScroll){
         <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${flags}</div>
         <div class="pl-next">${when}</div>
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
+        ${plCtx(p)}
         <div class="pl-quick" onclick="event.stopPropagation()">
           ${p.noCall||!p.tel?'':`<a class="pl-btn call" href="tel:${esc(p.tel)}" title="Appeler">${ic('phone')}</a>`}
           <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>

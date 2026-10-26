@@ -179,10 +179,11 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
       .eq("id", "_coach_prospects").eq("updated_at", row?.updated_at).select("id");
     if (!upd || !upd.length) return json({ error: "Les fiches ont changé pendant la synchro · reprise au prochain passage", report }, 409);
   }
-  if (res.tomb.length) {
-    const t = await getRow(admin, "_coach_tomb");
-    await putRow(admin, "_coach_tomb", { ids: [...new Set([...(t.ids || []), ...res.tomb])].slice(-5000) });
-  }
+  // Pierres tombales : fiches supprimées dans Boost ou retirées ; une fiche recréée plus tard en sort
+  const t = await getRow(admin, "_coach_tomb");
+  const live = new Set(res.list.map((p: any) => p.id)); // deno-lint-ignore no-explicit-any
+  const ids = [...new Set([...(t.ids || []), ...res.tomb])].filter((id) => !live.has(id)).slice(-5000);
+  if (JSON.stringify(ids) !== JSON.stringify(t.ids || [])) await putRow(admin, "_coach_tomb", { ids });
   const st = await getRow(admin, "_boost_sync");
   await putRow(admin, "_boost_sync", { ...st, [clubKey]: { last: nowIso, changed, report } });
   return json({ ok: true, report });
