@@ -1111,6 +1111,58 @@ body{background:var(--cream)}
   body::before{display:block;left:max(14px,calc(50% - 670px - 128px))}
   body::after{display:block;right:max(14px,calc(50% - 670px - 128px))}
 }
+
+/* ── Mes prospects · style de l'accueil, pleine largeur, grille de fiches (oct. 2026) ── */
+body.v-pr #app{max-width:none}
+body.v-pr::before,body.v-pr::after{display:none!important}
+@media(min-width:1024px){body.v-pr .screen>*{max-width:none}body.v-pr .nav{padding-left:44px;padding-right:44px}}
+.prw .pr-head{align-items:center;margin-bottom:10px}
+.prw .pr-h2{font-size:26px;font-weight:800;letter-spacing:-.02em;color:var(--ink)}
+.prw .pr-h2s{color:var(--ink-mid);font-weight:600}
+.prw .pr-howto{background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:11px 16px;margin-bottom:6px}
+.prw .pr-howto summary{color:var(--lav-ink)}
+.prw .pr-alert{background:#FDF8ED;border:1px solid #F0E0B8;border-radius:16px;margin:8px 0 0}
+.prw .hm-sec{margin:18px 0 10px}
+.prw .pr-funnel{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin-bottom:4px;overflow:visible}
+.prw .pr-arrow{display:none}
+.prw .pr-fun{border:1px solid var(--cream-line);border-radius:18px;padding:13px 6px 11px;box-shadow:var(--sh-s);min-width:0}
+.prw .pr-fun-n{font-size:26px;font-weight:800}
+.prw .pr-fun-l{font-size:11px;color:var(--ink-soft)}
+.prw .pr-fun.active{background:color-mix(in srgb,var(--pc) 10%,#fff);border-color:var(--pc)}
+.prw .pr-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.prw .pr-search{flex:1 1 320px;margin:0;border:1px solid var(--cream-line);border-radius:14px;padding:10px 14px;box-shadow:var(--sh-s)}
+.pr-tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--cream-line);border-radius:14px;padding:4px;box-shadow:var(--sh-s);flex-wrap:wrap}
+.pr-tab{border:0;background:transparent;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
+.pr-tab:hover{background:var(--cream)}
+.pr-tab.on{background:var(--accent);color:#fff;box-shadow:0 6px 16px -8px rgba(75,82,230,.7)}
+.pr-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:14px;align-items:start}
+.pr-list .pr-card.open{grid-column:1/-1}
+.prw .pr-card{position:relative;margin:0;border:1px solid var(--cream-line);border-radius:20px;padding:14px 15px 12px 18px;box-shadow:var(--sh-s);transition:box-shadow .15s,transform .15s}
+.prw .pr-card::before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:4px;border-radius:0 4px 4px 0;background:var(--stc)}
+@media(hover:hover){.prw .pr-card:hover{box-shadow:var(--sh-m)}}
+.prw .pr-card.due{border-color:#F0D9A8;box-shadow:0 10px 26px -14px rgba(201,135,31,.55)}
+.prw .pr-ava{border-radius:14px;flex:0 0 42px;height:42px;font-size:14px}
+.prw .pr-id b{font-size:15px;color:var(--ink)}
+.prw .pr-chip{font-size:10.5px;padding:3px 9px}
+.prw .pr-obj,.prw .pr-note{background:var(--cream);border-radius:10px;font-size:12.5px;padding:6px 10px}
+.prw .pr-bnotes{background:var(--cream);border-color:var(--cream-line);border-radius:10px;padding:5px 10px;font-size:12px}
+.prw .pr-meta{margin:7px 0 9px;font-size:11.5px;gap:8px}
+.prw .pr-pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-bottom:9px;overflow:visible}
+.prw .pr-st{flex-direction:column;justify-content:center;gap:1px;min-width:0;padding:5px 2px 4px;border:1px solid var(--cream-line);background:#fff;border-radius:10px;font-size:13px;line-height:1.1}
+.prw .pr-st small{font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.prw .pr-st.on{transform:none;box-shadow:0 6px 14px -8px rgba(42,49,66,.5)}
+.prw .pr-actions{flex-wrap:wrap;gap:6px}
+.prw .pr-act{border:1px solid var(--cream-line);border-radius:10px;padding:7px 10px;font-size:12px}
+.prw .pr-act.main{flex:1 1 150px;white-space:nowrap;background:var(--accent);border-color:var(--accent);box-shadow:0 8px 18px -10px rgba(75,82,230,.8)}
+.prw .pr-date{border:1px solid var(--cream-line);border-radius:10px;padding:6px 5px;font-size:11.5px;flex:0 0 118px!important;width:118px}
+.prw .pr-date[type=time]{flex:0 0 72px!important;width:72px}
+.prw .pr-actions>*{order:1}
+.prw .pr-actions>span{order:2;flex:0 0 auto;text-align:left!important;margin-left:2px}
+.prw .pr-actions>.pr-date{order:3}
+.prw .pr-actions>span br{display:none}
+.prw .pr-empty{border:1px dashed var(--cream-line);border-radius:20px}
+
+@media(max-width:640px){.pr-list{grid-template-columns:1fr}.prw .pr-funnel{grid-template-columns:repeat(5,minmax(58px,1fr));overflow-x:auto}.prw .pr-fun-n{font-size:20px}.prw .pr-st small{display:block}.prw .pr-st{flex-direction:column;font-size:13px}}
 </style>
 </head>
 <body>
@@ -4096,7 +4148,7 @@ function showProspects(keepScroll){_vReg('prospects');
     const isDue=due(p);
     const open=prOpenId===p.id;
     const hot=prSort==='rappels'&&rdvHot(p);
-    return `<div class="pr-card${isDue?' due':''}${hot?' rdv-hot':''}" style="border-left:4px solid ${pi.c}">
+    return `<div class="pr-card${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
       <div class="pr-top">
         <div class="pr-ava" style="background:${pi.c}">${esc(prInitials(p.nom))}</div>
         <div class="pr-idbox">
@@ -4113,7 +4165,7 @@ function showProspects(keepScroll){_vReg('prospects');
       ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
       <div class="pr-actions">
         <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'🗂️ Historique des contacts'}</button>
-        <span style="flex:0 0 auto;font-size:9px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;text-align:right">⏰ Rappel<br/>souhaité</span>
+        <span style="flex:0 0 auto;font-size:9px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;text-align:right">⏰ Rappel <br/>souhaité</span>
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / d'essai souhaitée par le client"/>
         <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure de rappel demandée par le client · la fiche passera en tête 1 h avant"/>
         <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
@@ -4124,32 +4176,35 @@ function showProspects(keepScroll){_vReg('prospects');
       ${open?histPanel(p):''}
     </div>`;
   };
-  const h=`<div class="cg">
+  const h=`<div class="cg prw">
     <div class="pr-head">
       <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
       <span id="syncBadge" class="sync-badge ok">☁️ Synchronisé · équipe</span>
     </div>
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
-        <div><span class="hn">1</span><span><b>Les fiches se créent toutes seules</b> : chaque appel et SMS passé par Allo crée ou enrichit la fiche · résumé IA, transcription (bouton 📞) et commercial arrivent automatiquement. L'écran « Récap » reste là pour les appels menés dans l'outil.</span></div>
+        <div><span class="hn">1</span><span><b>Les fiches viennent de Fitness Boost</b> : nouveaux leads, rappels, statuts et commercial arrivent toutes les 5 minutes · les appels Allo (résumé, transcription) s'y rattachent automatiquement.</span></div>
         <div><span class="hn">2</span><span><b>Faites avancer le prospect</b> d'étape en étape en tapant sur le pipeline : Séance d'essai → RDV venu → Client · les mêmes mots que dans Fitness Boost.</span></div>
-        <div><span class="hn">3</span><span><b>Au bon moment, copiez la relance</b> proposée pour son étape (confirmation, veille d'essai, closing post-essai…) et envoyez-la.</span></div>
-        <div><span class="hn">4</span><span><b>Le tri « 🎯 À recontacter d'abord »</b> met en tête les rappels du jour puis les fiches les plus anciennes · les pastilles 🔥/🌤/❄️ estiment l'appétence depuis les appels (survolez : elles expliquent pourquoi).</span></div>
+        <div><span class="hn">3</span><span><b>« Historique des contacts »</b> retrace tout ce qui a déjà été fait : appels et durée, SMS, emails, RDV.</span></div>
+        <div><span class="hn">4</span><span><b>Trois onglets</b> : 🆕 les leads par ordre d'arrivée, 🎯 ceux à contacter d'abord, ⏰ les rappels programmés (l'onglet clignote quand l'heure approche) · les pastilles 🔥/🌤/❄️ estiment l'appétence.</span></div>
         <div><span class="hn">5</span><span>Les fiches sont <b>partagées avec toute l'équipe</b> et sauvegardées au studio · le badge en haut vous dit si tout est synchronisé.</span></div>
       </div>
     </details>
-    ${nbDue?`<div class="pr-alert">🔔 <b>${nbDue} relance${nbDue>1?'s':''} à faire aujourd'hui</b> · en tête de liste.</div>`:''}
+    ${nbDue?`<div class="pr-alert">🔔 <b>${nbDue} rappel${nbDue>1?'s':''} à faire aujourd'hui</b> · onglet ⏰ Rappels programmés.</div>`:''}
+    <div class="hm-sec">Pipeline</div>
     <div class="pr-funnel">${Object.keys(PIPE).map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
+    <div class="pr-tools">
     <div class="pr-search"><span>🔎</span><input type="text" placeholder="Rechercher un nom, un numéro…" value="${esc(prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
-    <div style="display:flex;gap:8px;align-items:center;margin:2px 0 10px">
-      <span style="font-size:11px;font-weight:700;color:var(--ink-mid)">Tri :</span>
-      <button class="pr-act" style="${prSort!=='prio'&&prSort!=='journal'&&prSort!=='rappels'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('recent')" title="Les leads dans leur ordre d'arrivée, le plus récent en tête (comme dans Boost)">🆕 Leads récents</button>
-      <button class="pr-act" style="${prSort==='prio'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('prio')" title="Leads sans rappel programmé : jamais appelés d'abord (les plus anciens en tête), puis ceux dont le dernier contact est le plus ancien">🎯 À contacter d'abord</button>
-      <button class="pr-act" style="${prSort==='rappels'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('rappels')" title="Les rappels convenus avec les prospects, par date et heure · l'onglet clignote quand l'heure approche">⏰ Rappels programmés <span id="prRdvBadge" class="pr-rdvb" style="${PSC().filter(rdvHot).length?'':'display:none'}">${PSC().filter(rdvHot).length}</span></button>
-      <button class="pr-act" style="${prSort==='journal'?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setPrSort('journal')" title="Tous les appels réalisés, du plus récent au plus ancien">📞 Journal d'appels</button>
+    <div class="pr-tabs">
+      <button class="pr-tab${prSort!=='prio'&&prSort!=='journal'&&prSort!=='rappels'?' on':''}" onclick="setPrSort('recent')" title="Les leads dans leur ordre d'arrivée, le plus récent en tête (comme dans Boost)">🆕 Leads récents</button>
+      <button class="pr-tab${prSort==='prio'?' on':''}" onclick="setPrSort('prio')" title="Leads sans rappel programmé : jamais appelés d'abord (les plus anciens en tête), puis ceux dont le dernier contact est le plus ancien">🎯 À contacter d'abord</button>
+      <button class="pr-tab${prSort==='rappels'?' on':''}" onclick="setPrSort('rappels')" title="Les rappels convenus avec les prospects, par date et heure · l'onglet clignote quand l'heure approche">⏰ Rappels programmés <span id="prRdvBadge" class="pr-rdvb" style="${PSC().filter(rdvHot).length?'':'display:none'}">${PSC().filter(rdvHot).length}</span></button>
+      <button class="pr-tab${prSort==='journal'?' on':''}" onclick="setPrSort('journal')" title="Tous les appels réalisés, du plus récent au plus ancien">📞 Journal d'appels</button>
+    </div>
     </div>
     ${prSort==='rappels'&&'Notification' in window&&Notification.permission!=='granted'?`<button class="pr-act" style="width:100%;margin:-2px 0 10px" onclick="askRdvNotif()">🔔 Me prévenir 10 min avant chaque rappel</button>`:''}
-    ${prSort==='journal'?callJournalHTML(null,list):sorted.length?sorted.map(card).join(''):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
+    <div class="hm-sec">${prSort==='journal'?'Journal d\'appels':prSort==='rappels'?'Rappels programmés':prSort==='prio'?'À contacter d\'abord':'Leads récents'} · ${prSort==='journal'?'':sorted.length}</div>
+    ${prSort==='journal'?callJournalHTML(null,list):sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   $('#topPhase').textContent='Mes prospects';
@@ -4631,6 +4686,7 @@ function showHome(){_vReg('home');
 /* ── Historique interne : « précédent » = page précédente ── */
 let _navStack=['home'],_navBack=false;
 function _vReg(name){
+  document.body.classList.toggle('v-pr',name==='prospects');
   if(_navBack){_navBack=false;_updTopBack();_updTopStop();_updTopStudio();return;}
   if(_navStack[_navStack.length-1]!==name)_navStack.push(name);
   if(_navStack.length>30)_navStack.shift();
