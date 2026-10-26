@@ -100,6 +100,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
     doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
+    crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
   const seenKey = new Map<string, number>();
   for (const c of ctx.contacts) { const k = telKey(c?.phone); if (k.length === 9) seenKey.set(k, (seenKey.get(k) || 0) + 1); }
@@ -125,7 +126,6 @@ export function reconcile(prospects: any[], ctx: Ctx) {
 
     const m = mapStatus(c, planned.get(bid), ctx.nowIso);
     const rep = repOf(c.assigned_to);
-    if (rep) R.commerciaux[rep] = (R.commerciaux[rep] || 0) + 1;
 
     if (!p) {
       if (NO_CREATE.has(String(c.status)) || c.archived === true) { R.non_importes++; continue; }
@@ -137,6 +137,10 @@ export function reconcile(prospects: any[], ctx: Ctx) {
         statut: m.statut, rappel: m.rappel, rappelH: m.rappelH, rappelBy: m.rappel ? "Boost" : "", ts: String(c.created_at || ctx.nowIso), maj: ctx.nowIso, bset: true, brap: m.rappel + " " + m.rappelH };
       list.push(p);
       R.crees++;
+      const inc = (o: Record<string, number>, k: string) => { o[k] = (o[k] || 0) + 1; };
+      inc(R.crees_par_mois, String(c.effective_entry_at || c.last_entry_at || c.created_at || "?").slice(0, 7));
+      inc(R.crees_par_source, String(c.source || "?"));
+      inc(R.crees_par_statut, String(c.status || "?"));
     } else if (fresh) {
       // Premier lien : le statut local est conservé (référence Boost mémorisée), écart compté
       if (m.statut !== p.statut) { const g = (p.statut || "?") + " → " + String(c.status); R.ecarts_premier_lien[g] = (R.ecarts_premier_lien[g] || 0) + 1; }
@@ -169,6 +173,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     p.cEmail = c.email_consent === false || c.email_opt_out === true ? false : null;
     p.cWa = c.whatsapp_consent === false ? false : null;
     if (p.cPhone === false) R.refus_appel++;
+    if (rep) R.commerciaux[rep] = (R.commerciaux[rep] || 0) + 1;
   }
 
   // Suppressions Boost : la fiche disparaît (RGPD), son id part en pierre tombale
