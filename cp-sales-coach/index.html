@@ -664,7 +664,7 @@ a.menu-item{text-decoration:none;color:inherit}
 .hs-ic{font-size:17px;line-height:1.2}.hs-b{flex:1;min-width:0}
 .hs-h{display:flex;flex-wrap:wrap;align-items:center;gap:6px;font-size:12.5px;color:var(--cp-dark)}
 .hs-src{font-size:9.5px;font-weight:800;border-radius:99px;padding:1px 6px;text-transform:uppercase;letter-spacing:.04em}
-.hs-src.a{background:#EAF6F0;color:#1F7A55}.hs-src.b{background:#EEF2FB;color:#2A3F6B}
+.hs-src.a{background:#EAF6F0;color:#1F7A55}.hs-src.c{background:#FFF1E6;color:#B4541A}.hs-src.b{background:#EEF2FB;color:#2A3F6B}
 .hs-who{font-size:11px;color:var(--ink-mid);font-weight:700}.hs-d{margin-left:auto;font-size:11px;color:var(--ink-mid)}
 .hs-s{font-size:12px;color:#55607A;margin-top:2px}.hs-t{font-size:12.5px;color:#333B4E;margin-top:4px;white-space:pre-wrap;line-height:1.45}
 .hs-more{margin-top:5px;font-size:11.5px;font-weight:700;color:var(--cp-deep);background:none;border:0;padding:0;cursor:pointer}
@@ -4283,6 +4283,16 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
   whatsapp:['🟢','WhatsApp envoyé'],whatsapp_recu:['🟢','WhatsApp reçu'],messenger:['💭','Messenger envoyé'],messenger_recu:['💭','Messenger reçu'],instagram:['📸','Instagram envoyé'],instagram_recu:['📸','Instagram reçu'],
   rdv:['📅','RDV'],rdv_annule:['📅','RDV annulé'],rdv_pas_venu:['📅','RDV non venu'],rdv_venu:['📅','RDV venu'],rdv_date_passee:['📅','RDV passé'],seance_essai:['🎟️','Séance d\'essai'],bilan:['📋','Bilan'],
   rappel:['⏰','Rappel'],note:['📝','Note'],message_vocal:['🎙️','Message vocal'],tache:['✔️','Tâche'],signature:['✅','Signature'],refus_signature:['✖️','Refus de signature'],contractuel:['📄','Contrat']};
+// Transcription d'un appel Aircall, lue à la demande
+async function aircallTr(id,call){
+  const p=PROSPECTS.find(x=>x.id===id);
+  icSheet(`<div class="glp-tag">📞 Aircall · transcription</div><div class="glp-t">${esc(p?.nom||'')}</div><div class="fv-meta">⏳ Chargement…</div>`);
+  try{
+    const d=await syncCall('aircall_transcript',{id,call});
+    const t=String(d.text||'').trim();
+    icSheet(`<div class="glp-tag">📞 Aircall · transcription</div><div class="glp-t">${esc(p?.nom||'')}</div>${t?`<div style="margin-top:10px;font-size:13px;line-height:1.6;color:#333B4E;white-space:pre-wrap">${esc(t)}</div>`:'<div class="ics-empty">Pas de transcription pour cet appel (appel trop court ou non enregistré).</div>'}`);
+  }catch(e){if(e.message!=='code')icSheet('<div class="ics-empty">📴 Transcription indisponible pour le moment.</div>');}
+}
 function histPanel(p){
   const h=HIST[p.id];
   const dt=iso=>{const t=new Date(iso);return isNaN(t)?'':t.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});};
@@ -4298,17 +4308,27 @@ function histPanel(p){
   allo.forEach(a=>{
     const l0=String(a.txt||'').split('\n')[0];
     const RES={answered:'décroché',voicemail:'messagerie',received:'reçu',closed:'clôturé',failed:'échec',transferred_ai:'transféré à l\'IA',blocked:'bloqué',missed:'manqué'};
-    const meta=/^📞/.test(l0)?l0.replace(/^📞\s*Allo\s*·\s*/,'').replace(/ · import historique/,'').replace(/\b(answered|voicemail|received|closed|failed|transferred_ai|blocked|missed)\b/g,m=>RES[m]):'résumé d\'appel';
-    items.push({at:a.ts,ic:'📞',lbl:'Appel Allo',sub:meta,src:'Allo',allo:a.ts});
+    const ac=/^📞\s*Aircall/.test(l0);
+    const meta=/^📞/.test(l0)?l0.replace(/^📞\s*(Allo|Aircall)\s*·\s*/,'').replace(/ · import historique/,'').replace(/\b(answered|voicemail|received|closed|failed|transferred_ai|blocked|missed)\b/g,m=>RES[m]):'résumé d\'appel';
+    items.push({at:a.ts,ic:/sans réponse|manqué/.test(meta)?'📵':'📞',lbl:ac?'Appel Aircall':'Appel Allo',sub:meta,src:ac?'Aircall':'Allo',allo:a.ts});
   });
   // Activités Boost (un appel déjà présent dans Allo à ±3 min n'est pas affiché deux fois)
   const alloT=allo.map(a=>new Date(a.ts).getTime()).filter(x=>!isNaN(x));
+  // Appels Aircall (Lattes), lus à la demande · ceux déjà rangés sur la fiche (en direct) ne sont pas doublés
+  const ACI=((h&&h.items)||[]).filter(a=>a.src==='Aircall'&&!(p.appels||[]).some(x=>x.id==='ac_'+a.id));
+  const fmtS=sec=>sec>=60?Math.floor(sec/60)+' m '+(sec%60)+' s':sec+' s';
+  ACI.forEach(a=>{
+    const ok=a.type==='appel_ok';
+    items.push({at:a.at,ic:ok?'📞':'📵',lbl:'Appel Aircall',sub:['appel '+a.dir,ok&&a.dur?fmtS(a.dur):'',ok?'décroché':a.vm?'messagerie':a.dir==='sortant'?'sans réponse':'manqué',a.who?'par '+a.who.split(' ')[0]:'',a.line].filter(Boolean).join(' · '),src:'Aircall',allo:a.at,acId:ok&&a.rec?a.id:''});
+    const t=new Date(a.at).getTime();if(!isNaN(t))alloT.push(t);
+  });
   // Rappel posé par l'équipe : il remplace les rappels automatiques Boost prévus avant lui
   const nowT=Date.now();
   const humanT=(((h&&h.items)||[]).filter(a=>!a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()>nowT).map(a=>new Date(a.sched).getTime()).sort((x,y)=>x-y)[0])
     ||(p.rappel&&p.rappelBy&&!/^(Boost|auto)$/.test(p.rappelBy)?rdvAt(p)?.getTime():0)||0;
   let replaced=0;
   ((h&&h.items)||[]).forEach(a=>{
+    if(a.src==='Aircall')return;
     if(humanT&&a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()<humanT){replaced++;return;}
     const [ic,lbl]=BA[a.type]||['•',a.type||'Activité'];
     const t=new Date(a.at).getTime();
@@ -4322,22 +4342,22 @@ function histPanel(p){
     items.push({at:a.at,ic,lbl,sub:bits.join(' · '),txt:a.txt,who:a.who,src:'Boost',type:a.type});
   });
   items.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
-  const B=((h&&h.items)||[]);
+  const B=((h&&h.items)||[]).filter(a=>a.src!=='Aircall');
   const n=k=>B.filter(a=>k.test(a.type)).length;
-  const calls=allo.length+B.filter(a=>/^appel/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).length;
+  const calls=allo.length+ACI.length+B.filter(a=>/^appel/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).length;
   // Durée totale : minutes Boost + durées Allo (« 10 m 40 s », « 45 s ») des appels non doublonnés
   const alloSec=allo.reduce((s,a)=>{const l0=String(a.txt||'').split('\n')[0];const m=l0.match(/(?:(\d+)\s*h\s*)?(?:(\d+)\s*m(?:in)?\s*)?(\d+)\s*s\b/)||l0.match(/(?:(\d+)\s*h\s*)?(\d+)\s*m(?:in)?\b()/);return s+(m?((+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)):0);},0);
-  const callMin=Math.round(alloSec/60)+B.filter(a=>/^appel_ok/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).reduce((s,a)=>s+(a.dur||0),0);
+  const callMin=Math.round((alloSec+ACI.reduce((s,a)=>s+(a.type==='appel_ok'?a.dur||0:0),0))/60)+B.filter(a=>/^appel_ok/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).reduce((s,a)=>s+(a.dur||0),0);
   const kpi=(ic,v,l)=>`<div class="hs-k"><b>${ic} ${v}</b><span>${l}</span></div>`;
   return `<div class="pr-msgs hs">
     <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/)+alloSms.length,'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
     ${!h||h.loading?'<div class="hs-load">⏳ Chargement de l\'historique Boost…</div>':h.err||!h.ok?'<div class="hs-load">📴 Historique Boost indisponible pour le moment · seuls les appels Allo sont affichés.</div>':!h.boost&&!p.bid?'<div class="hs-load">Fiche absente de Boost · seuls les appels Allo sont affichés.</div>':''}
     ${replaced?`<div class="hs-load">🧹 ${replaced} rappel${replaced>1?'s':''} automatique${replaced>1?'s':''} Boost masqué${replaced>1?'s':''} : remplacé${replaced>1?'s':''} par le rappel convenu du ${new Date(humanT).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} à ${new Date(humanT).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}.</div>`:''}
     <div class="hs-list">${items.length?items.map(i=>`<div class="hs-it"><div class="hs-ic">${i.ic}</div><div class="hs-b">
-      <div class="hs-h"><b>${esc(i.lbl)}</b><span class="hs-src ${i.src==='Allo'?'a':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
+      <div class="hs-h"><b>${esc(i.lbl)}</b><span class="hs-src ${i.src==='Allo'?'a':i.src==='Aircall'?'c':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
       ${i.sub?`<div class="hs-s">${esc(i.sub)}</div>`:''}
       ${i.txt?`<div class="hs-t">${esc(i.txt)}</div>`:''}
-      ${i.allo?`<button class="hs-more" onclick="showAppels('${p.id}')">📜 Résumé et transcription</button>`:''}
+      ${i.acId?`<button class="hs-more" onclick="aircallTr('${p.id}','${i.acId}')">📜 Transcription</button>`:i.allo&&(p.appels||[]).some(x=>x.ts===i.allo)?`<button class="hs-more" onclick="showAppels('${p.id}')">📜 ${i.src==='Aircall'?'Transcription':'Résumé et transcription'}</button>`:''}
     </div></div>`).join(''):(!h||h.loading?'':'<div class="hs-load">Aucun point de contact enregistré.</div>')}</div>
   </div>`;
 }
@@ -4554,9 +4574,9 @@ function tsParts(ts){
 function showAppels(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const list=(p.appels||[]).slice().reverse();
-  icSheet(`<div class="glp-tag">📞 Résumés d'appels · Allo</div>
+  icSheet(`<div class="glp-tag">📞 Appels · Allo et Aircall</div>
     <div class="glp-t">${esc(p.nom)}</div>
-    <div class="fv-meta">Collez ici les résumés IA de vos appels Allo · toute l'équipe les voit sur la fiche.</div>
+    <div class="fv-meta">Résumés et transcriptions des appels Allo et Aircall · toute l'équipe les voit sur la fiche.</div>
     <div style="margin-top:12px">${list.length?list.map(a=>{
       const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');
       let main=i>=0?t.slice(0,i):t;const tr=i>=0?t.slice(i+20):'';

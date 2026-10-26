@@ -23,6 +23,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { AIRCALL_STUDIO, aircallGet, aircallHeaders, callTs, telKey, transcriptText } from "../_shared/aircall.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -566,36 +567,73 @@ serve(async (req) => {
     const tombSet = new Set(tomb);
     if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, scoped, tomb });
 
-    // ── Historique Boost d'une fiche (appels + durée, SMS, emails, WhatsApp, RDV…) ──
-    // Lu à la demande avec le token LECTURE SEULE du club ; rien n'est stocké.
+    // ── Historique d'une fiche : activités Boost (appels + durée, SMS, emails, WhatsApp, RDV…)
+    // et, pour Montpellier Lattes, les appels Aircall de ce numéro. Lu à la demande, rien n'est stocké.
     if (action === "boost_history") {
       const p = list.find((x) => x.id === String(body.id || ""));
       if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
-      if (!p.bid) return json({ ok: true, boost: false, items: [] });
+      // deno-lint-ignore no-explicit-any
+      let items: any[] = [];
+      let boostOk = false, boost = false;
       const TOK: Record<string, string> = { garenne: "BOOST_TOKEN_GARENNE", lattes: "BOOST_TOKEN_LATTES", defense: "BOOST_TOKEN_DEFENSE" };
-      const token = Deno.env.get(TOK[p.bclub] || "") || "";
-      if (!token) return json({ ok: true, boost: false, items: [] });
-      const H = { Authorization: "Bearer " + token, Accept: "application/json" };
-      const B = "https://www.app-boost.com/api/v1";
-      const [ra, ru] = await Promise.all([
-        fetch(B + "/activities?prospect_id=" + encodeURIComponent(p.bid) + "&limit=200", { headers: H, redirect: "manual" }),
-        fetch(B + "/users", { headers: H, redirect: "manual" }),
-      ]);
-      if (ra.status !== 200) { await ra.body?.cancel(); await ru.body?.cancel(); return json({ ok: false, boost: true, http: ra.status, items: [] }); }
-      // deno-lint-ignore no-explicit-any
-      const acts: any[] = (await ra.json().catch(() => ({})))?.data || [];
-      // deno-lint-ignore no-explicit-any
-      const users: any[] = ru.status === 200 ? ((await ru.json().catch(() => ({})))?.data || []) : [];
-      if (ru.status !== 200) await ru.body?.cancel();
-      const uname = new Map(users.map((u) => [String(u?.id), String(u?.name || "")]));
-      const items = acts.map((a) => ({
-        at: String(a?.created_at || ""), sched: String(a?.scheduled_at || ""), type: String(a?.action_type || ""),
-        rdv: String(a?.rdv_type || ""), st: String(a?.status || ""), dur: Number(a?.duration) || 0,
-        title: String(a?.title || "").slice(0, 120), txt: String(a?.description || a?.content || "").slice(0, 800),
-        who: uname.get(String(a?.user_id || "")) || "", auto: a?.est_auto === true, venu: a?.est_venu ?? null,
-        ds: String(a?.delivery_status || ""),
-      }));
-      return json({ ok: true, boost: true, items });
+      const token = p.bid ? (Deno.env.get(TOK[p.bclub] || "") || "") : "";
+      const jobs: Promise<void>[] = [];
+      if (token) {
+        boost = true;
+        jobs.push((async () => {
+          const H = { Authorization: "Bearer " + token, Accept: "application/json" };
+          const B = "https://www.app-boost.com/api/v1";
+          const [ra, ru] = await Promise.all([
+            fetch(B + "/activities?prospect_id=" + encodeURIComponent(p.bid) + "&limit=200", { headers: H, redirect: "manual" }),
+            fetch(B + "/users", { headers: H, redirect: "manual" }),
+          ]);
+          if (ra.status !== 200) { await ra.body?.cancel(); await ru.body?.cancel(); return; }
+          // deno-lint-ignore no-explicit-any
+          const acts: any[] = (await ra.json().catch(() => ({})))?.data || [];
+          // deno-lint-ignore no-explicit-any
+          const users: any[] = ru.status === 200 ? ((await ru.json().catch(() => ({})))?.data || []) : [];
+          if (ru.status !== 200) await ru.body?.cancel();
+          const uname = new Map(users.map((u) => [String(u?.id), String(u?.name || "")]));
+          boostOk = true;
+          items = items.concat(acts.map((a) => ({
+            src: "Boost", at: String(a?.created_at || ""), sched: String(a?.scheduled_at || ""), type: String(a?.action_type || ""),
+            rdv: String(a?.rdv_type || ""), st: String(a?.status || ""), dur: Number(a?.duration) || 0,
+            title: String(a?.title || "").slice(0, 120), txt: String(a?.description || a?.content || "").slice(0, 800),
+            who: uname.get(String(a?.user_id || "")) || "", auto: a?.est_auto === true, venu: a?.est_venu ?? null,
+            ds: String(a?.delivery_status || ""),
+          })));
+        })());
+      }
+      // Aircall : appels de ce numéro (studio de Lattes uniquement)
+      const digits = String(p.tel || "").replace(/\D/g, "");
+      const e164 = digits.length === 10 && digits.startsWith("0") ? "+33" + digits.slice(1) : digits ? "+" + digits : "";
+      if (sk(p.studio) === sk(AIRCALL_STUDIO) && e164 && aircallHeaders()) {
+        jobs.push((async () => {
+          const r = await aircallGet("/calls/search?phone_number=" + encodeURIComponent(e164) + "&order=desc&per_page=50");
+          // deno-lint-ignore no-explicit-any
+          const calls: any[] = (r.body?.calls || []).filter((c: any) => telKey(c?.raw_digits) === telKey(e164));
+          items = items.concat(calls.map((c) => ({
+            src: "Aircall", id: String(c?.id || ""), at: callTs(c), type: c?.answered_at ? "appel_ok" : "appel_nok",
+            dir: c?.direction === "outbound" ? "sortant" : "entrant", dur: Number(c?.duration) || 0, sec: true,
+            who: String(c?.user?.name || ""), line: String(c?.number?.name || "").replace(/^Club Pilates\s*/i, ""),
+            rec: !!(c?.recording || c?.asset), vm: !!c?.voicemail,
+          })));
+        })());
+      }
+      await Promise.all(jobs);
+      return json({ ok: true, boost: boost && boostOk, items });
+    }
+
+    // ── Transcription Aircall d'un appel (vérifie que l'appel concerne bien ce numéro) ──
+    if (action === "aircall_transcript") {
+      const p = list.find((x) => x.id === String(body.id || ""));
+      if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
+      const callId = String(body.call || "").replace(/\D/g, "");
+      if (!callId) return json({ error: "Appel manquant" }, 400);
+      const c = await aircallGet("/calls/" + callId);
+      if (!c.body?.call || telKey(c.body.call.raw_digits) !== telKey(p.tel)) return json({ error: "Appel introuvable pour cette fiche" }, 404);
+      const t = await aircallGet("/calls/" + callId + "/transcription");
+      return json({ ok: true, text: t.status === 200 ? transcriptText(t.body).slice(0, 20000) : "", http: t.status });
     }
 
     if (action === "push") {

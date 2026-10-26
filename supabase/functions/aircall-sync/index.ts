@@ -1,5 +1,5 @@
 // ═══════════════════════════════════════════════════════════════════════════
-// Edge Function — aircall-sync (phase 1 : découverte, LECTURE SEULE)
+// Edge Function — aircall-sync (découverte + mise en place du branchement)
 // ═══════════════════════════════════════════════════════════════════════════
 // Aircall (téléphonie de Montpellier Lattes) doit enrichir les fiches Boost,
 // comme Allo : appels, durée, résumé, transcription. Cette première version ne
@@ -7,14 +7,18 @@
 // sans donnée personnelle (comptes, formes, disponibilité de l'IA) pour caler
 // le branchement sur ce que le compte fournit vraiment.
 //
-// POST ?action=discover     en-tête x-sync-key = BOOST_SYNC_KEY
+// POST ?action=discover          lecture seule, rapport sans donnée personnelle
+// POST ?action=setup_webhook     crée dans Aircall la notification « Sales Coach »
+//                                (call.ended + transcription.created → aircall-webhook)
+// POST ?action=remove_webhook    la supprime
+// En-tête x-sync-key = BOOST_SYNC_KEY
 // Secrets : AIRCALL_API_ID, AIRCALL_API_TOKEN (Basic auth), BOOST_SYNC_KEY
 // Déployée avec --no-verify-jwt.
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { rateLimit, safeEq } from "../_shared/store.ts";
+import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
 
 const BASE = "https://api.aircall.io/v1";
 
@@ -63,7 +67,30 @@ serve(async (req: Request) => {
     };
 
     const url = new URL(req.url);
-    if ((url.searchParams.get("action") || "") !== "discover") return json({ error: "Action inconnue (phase 1 : discover)" }, 400);
+    const action = url.searchParams.get("action") || "";
+    if (action === "setup_webhook" || action === "remove_webhook") {
+      const cfg = await getRow(admin, "_aircall");
+      const send = async (method: string, path: string, body?: unknown) => {
+        const r = await fetch(BASE + path, { method, redirect: "manual", headers: { ...H, ...(body ? { "Content-Type": "application/json" } : {}) }, body: body ? JSON.stringify(body) : undefined });
+        // deno-lint-ignore no-explicit-any
+        let b: any = null; try { b = await r.json(); } catch { /* vide */ }
+        return { status: r.status, body: b };
+      };
+      if (action === "remove_webhook") {
+        if (!cfg.webhook_id) return json({ ok: true, note: "aucun webhook enregistré" });
+        const r = await send("DELETE", "/webhooks/" + encodeURIComponent(String(cfg.webhook_id)));
+        await putRow(admin, "_aircall", {});
+        return json({ ok: r.status < 300 || r.status === 404, http: r.status });
+      }
+      if (cfg.webhook_id && cfg.token) return json({ ok: true, deja: true, webhook_id: cfg.webhook_id });
+      const target = (Deno.env.get("SUPABASE_URL") || "") + "/functions/v1/aircall-webhook";
+      const r = await send("POST", "/webhooks", { custom_name: "Sales Coach", url: target, events: ["call.ended", "transcription.created"] });
+      const w = r.body?.webhook || r.body;
+      if (r.status >= 300 || !w?.token) return json({ ok: false, http: r.status }, 502);
+      await putRow(admin, "_aircall", { webhook_id: w.webhook_id ?? w.id, token: w.token, at: new Date().toISOString() });
+      return json({ ok: true, webhook_id: w.webhook_id ?? w.id, evenements: w.events || ["call.ended", "transcription.created"] });
+    }
+    if (action !== "discover") return json({ error: "Action inconnue" }, 400);
     const report: Record<string, unknown> = { at: new Date().toISOString() };
 
     const company = await get("/company");
