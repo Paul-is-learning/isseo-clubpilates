@@ -669,6 +669,13 @@ a.menu-item{text-decoration:none;color:inherit}
 .hs-s{font-size:12px;color:#55607A;margin-top:2px}.hs-t{font-size:12.5px;color:#333B4E;margin-top:4px;white-space:pre-wrap;line-height:1.45}
 .hs-more{margin-top:5px;font-size:11.5px;font-weight:700;color:var(--cp-deep);background:none;border:0;padding:0;cursor:pointer}
 @media(max-width:520px){.hs-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.pl-edit{margin-left:8px;border:1px solid var(--cream-line);background:#fff;border-radius:8px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;text-transform:none;letter-spacing:0}
+.pl-form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;background:var(--cream);border:1px solid var(--cream-line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
+.pl-form label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em}
+.pl-form label.wide{grid-column:1/-1}
+.pl-form input,.pl-form textarea{border:1px solid var(--cream-line);border-radius:9px;padding:7px 9px;font:inherit;font-size:13px;color:var(--ink);background:#fff;text-transform:none;letter-spacing:0;font-weight:500}
+.pl-form textarea{resize:vertical}
+@media(max-width:640px){.pl-form{grid-template-columns:1fr}}
 .jr-tr{flex:0 0 auto;border:1px solid var(--cream-line);background:#fff;border-radius:9px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;white-space:nowrap}
 .jr-tr:hover{background:var(--lav)}
 .jr-tr.off{opacity:.28;cursor:default;border-color:transparent;background:transparent;padding:4px 6px}
@@ -4299,7 +4306,18 @@ function showProspects(keepScroll){
             </div>
           </div>
           <div>
-            <div class="pl-lbl">Coordonnées</div>
+            <div class="pl-lbl">Coordonnées <button class="pl-edit" onclick="prEditId='${p.id}';showProspects(true)">✏️ Modifier</button></div>
+            ${prEditId===p.id?`<div class="pl-form">
+              <label>Nom<input id="pe-nom" value="${esc(p.nom||'')}" maxlength="80"/></label>
+              <label>Téléphone<input id="pe-tel" type="tel" value="${p.noCall?'':esc(p.tel||'')}" placeholder="${p.noCall?'numéro masqué (refus d\'appel)':'06 12 34 56 78'}"/></label>
+              <label>Email<input id="pe-email" type="email" value="${esc(p.email||'')}" placeholder="prenom@exemple.fr"/></label>
+              ${p.bid?`<label class="wide">Notes Boost<textarea id="pe-notes" rows="3" maxlength="2000">${esc(p.bnotes||'')}</textarea></label>`:''}
+              <div class="pl-row" style="grid-column:1/-1;margin:2px 0 0">
+                <button class="pr-act main" style="flex:0 0 auto" onclick="saveContactEdit('${p.id}')">Enregistrer${p.bid?' · et mettre à jour Boost':''}</button>
+                <button class="pr-act" onclick="prEditId=null;showProspects(true)">Annuler</button>
+                <small id="pe-err" style="color:#B4300F;font-weight:700"></small>
+              </div>
+            </div>`:''}
             <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:'Pas de téléphone'}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
             <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="setPRep('${p.id}',this.value)" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
@@ -4369,6 +4387,23 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
   whatsapp:['🟢','WhatsApp envoyé'],whatsapp_recu:['🟢','WhatsApp reçu'],messenger:['💭','Messenger envoyé'],messenger_recu:['💭','Messenger reçu'],instagram:['📸','Instagram envoyé'],instagram_recu:['📸','Instagram reçu'],
   rdv:['📅','RDV'],rdv_annule:['📅','RDV annulé'],rdv_pas_venu:['📅','RDV non venu'],rdv_venu:['📅','RDV venu'],rdv_date_passee:['📅','RDV passé'],seance_essai:['🎟️','Séance d\'essai'],bilan:['📋','Bilan'],
   rappel:['⏰','Rappel'],note:['📝','Note'],message_vocal:['🎙️','Message vocal'],tache:['✔️','Tâche'],signature:['✅','Signature'],refus_signature:['✖️','Refus de signature'],contractuel:['📄','Contrat']};
+// Modifier les coordonnées d'une fiche · pour une fiche Boost, Boost est mis à jour dans la minute
+let prEditId=null;
+async function saveContactEdit(id){
+  const v=k=>(document.getElementById(k)?.value??'');
+  const err=document.getElementById('pe-err');
+  const nom=v('pe-nom').trim(),tel=v('pe-tel').trim(),email=v('pe-email').trim();
+  if(!nom){if(err)err.textContent='Le nom est obligatoire';return;}
+  if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){if(err)err.textContent='Adresse email invalide';return;}
+  const body={id,nom,tel,email};const n=document.getElementById('pe-notes');if(n)body.notes=n.value;
+  try{
+    const d=await syncCall('contact_edit',body);
+    if(!d.ok){if(err)err.textContent=d.error||'Enregistrement impossible';return;}
+    const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)PROSPECTS[i]={...PROSPECTS[i],...d.prospect};
+    persistProspects();prEditId=null;showProspects(true);
+    toast(d.boost?'✅ Fiche mise à jour · envoi vers Boost en cours':'✅ Fiche mise à jour');
+  }catch(e){if(e.message!=='code'&&err)err.textContent=e.message||'Connexion impossible';}
+}
 // Transcription d'UN appel (journal) : celle rangée sur la fiche, sinon lue chez Aircall
 function callTr(pid,key){
   const p=PROSPECTS.find(x=>x.id===pid);if(!p)return;

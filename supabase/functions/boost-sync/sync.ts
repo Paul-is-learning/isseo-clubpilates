@@ -182,14 +182,18 @@ export function reconcile(prospects: any[], ctx: Ctx) {
         p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.brap = rap; p.maj = ctx.nowIso; R.rappel_maj++;
       }
     }
-    // Champs maîtres Boost (réservés au serveur)
+    // Champs maîtres Boost (réservés au serveur) · sauf des coordonnées modifiées dans l'outil
+    // et pas encore écrites dans Boost : elles ne sont pas écrasées en attendant
+    const idPending = !!(p.bqi && bqiSig(p.bqi) !== p.bqis);
     p.bid = bid; p.bclub = ctx.club; p.bst = String(c.status || ""); p.bupd = String(c.updated_at || "");
     p.bentry = String(c.effective_entry_at || c.last_entry_at || c.created_at || ""); // arrivée du lead (tri « Leads récents »)
-    p.nom = String(c.name || p.nom || "").slice(0, 80);
-    if (key.length === 9) p.tel = telFr(c.phone);
-    p.email = String(c.email || "").slice(0, 120);
+    if (!idPending) {
+      p.nom = String(c.name || p.nom || "").slice(0, 80);
+      if (key.length === 9) p.tel = telFr(c.phone);
+      p.email = String(c.email || "").slice(0, 120);
+    }
     p.src = String(c.source || "").slice(0, 40);
-    p.bnotes = String(c.notes || "").slice(0, 2000);
+    if (!idPending) p.bnotes = String(c.notes || "").slice(0, 2000);
     p.bnok = m.nok; p.bclient = m.client;
     p.bmember = String(c.status) === "client"; // adhérent : hors tournée d'appels, jamais de vente déclarable
     if (rep) p.rep = rep;
@@ -277,4 +281,22 @@ export function buildOps(q: any, contact: any, nowIso: string, lastRdvSig?: stri
   if (rdv && !rdv.user_id) { rdv = null; }
   if (!Object.keys(patch).length && !rdv) return { skip: "déjà à jour dans Boost" };
   return { patch: Object.keys(patch).length ? patch : null, rdv };
+}
+
+// ═══ Coordonnées modifiées dans le Sales Coach (nom, téléphone, email, notes Boost) ═══
+export const bqiSig = (q: any) => [q?.nom, q?.tel, q?.email, q?.notes].join("|");
+export const toE164 = (t: unknown) => {
+  const d = String(t ?? "").replace(/\D/g, "");
+  if (d.length === 10 && d.startsWith("0")) return "+33" + d.slice(1);
+  if (d.length === 11 && d.startsWith("33")) return "+" + d;
+  return d.length >= 8 ? "+" + d : "";
+};
+export function identityPatch(q: any, c: any) {
+  const patch: Record<string, unknown> = {};
+  if (q.nom && q.nom !== String(c?.name || "")) patch.name = q.nom;
+  const e = toE164(q.tel);
+  if (e && telKey(e) !== telKey(c?.phone)) patch.phone = e;
+  if ((q.email || "") !== String(c?.email || "")) patch.email = q.email || null;
+  if (typeof q.notes === "string" && q.notes !== String(c?.notes || "")) patch.notes = q.notes;
+  return patch;
 }

@@ -43,7 +43,7 @@ const MAX_INVITES = 50;
 // Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
 // toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
 // appartiennent aussi à Boost.
-const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember"];
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis"];
 // deno-lint-ignore no-explicit-any
 function keepBoost(clean: any, ex: any) {
   if (!ex) return;
@@ -622,6 +622,30 @@ serve(async (req) => {
       }
       await Promise.all(jobs);
       return json({ ok: true, boost: boost && boostOk, items });
+    }
+
+    // ── Modifier les coordonnées d'une fiche (nom, téléphone, email, notes Boost) ──
+    // Appliqué tout de suite dans l'outil ; pour une fiche Boost, mis en file (bqi) pour boost-push,
+    // et protégé de la synchro tant que Boost n'a pas été mis à jour.
+    if (action === "contact_edit") {
+      const i = list.findIndex((x) => x.id === String(body.id || ""));
+      if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+      const p = list[i];
+      const nom = String(body.nom ?? p.nom ?? "").trim().slice(0, 80);
+      const digits = String(body.tel ?? "").replace(/\D/g, "");
+      const tel = !digits ? "" : digits.length === 11 && digits.startsWith("33") ? "0" + digits.slice(2) : digits.length === 10 && digits.startsWith("0") ? digits : "+" + digits;
+      const email = String(body.email ?? "").trim().slice(0, 120);
+      const notes = body.notes === undefined ? undefined : String(body.notes).slice(0, 2000);
+      if (!nom) return json({ error: "Le nom est obligatoire" }, 400);
+      if (digits && digits.length < 9) return json({ error: "Numéro de téléphone incomplet" }, 400);
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Adresse email invalide" }, 400);
+      // Refus d'appel : le numéro n'est jamais envoyé au téléphone, un champ vide le conserve
+      const keepTel = p.cPhone === false && !digits;
+      p.nom = nom; if (!keepTel) p.tel = tel; p.email = email; if (notes !== undefined && p.bid) p.bnotes = notes;
+      p.maj = new Date().toISOString();
+      if (p.bid) p.bqi = { nom, tel: keepTel ? p.tel : tel, email, ...(notes !== undefined ? { notes } : {}), at: p.maj, by: String(rep || (role === "admin" ? "Paul" : "")).slice(0, 60) };
+      await saveList();
+      return json({ ok: true, prospect: outP(p), boost: !!p.bid });
     }
 
     // ── Appel lancé depuis Aircall (Lattes) : l'appel démarre dans l'application Aircall du conseiller ──

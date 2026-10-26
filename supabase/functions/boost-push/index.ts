@@ -22,7 +22,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
-import { bqSig, buildOps } from "../boost-sync/sync.ts";
+import { bqiSig, bqSig, buildOps, identityPatch } from "../boost-sync/sync.ts";
 
 const BASE = "https://www.app-boost.com/api/v1";
 const RW: Record<string, string> = { garenne: "BOOST_RW_TOKEN_GARENNE", lattes: "BOOST_RW_TOKEN_LATTES", defense: "BOOST_RW_TOKEN_DEFENSE" };
@@ -85,10 +85,36 @@ serve(async (req: Request) => {
     const { data: row } = await admin.from("coach_store").select("data").eq("id", "_coach_prospects").maybeSingle();
     // deno-lint-ignore no-explicit-any
     const list: any[] = row?.data?.prospects || [];
+    // 1. Coordonnées modifiées dans l'outil (nom, téléphone, email, notes)
+    const itodo = list.filter((p) => p?.bid && p.bqi && bqiSig(p.bqi) !== p.bqis);
+    const iresults: Record<string, { at: string; sig: string; bqe?: string; retry?: boolean }> = {};
+    let iwrites = 0;
+    for (const p of itodo) {
+      if (iwrites >= MAX_WRITES) break;
+      const token = Deno.env.get(RW[p.bclub] || "") || "";
+      const sig = bqiSig(p.bqi);
+      const entry = { at: nowIso, mode, fiche: p.id, statut: "coordonnées", par: p.bqi.by || "", res: "" };
+      if (!token) { entry.res = "pas de token d'écriture pour ce club"; log.push(entry); iresults[p.id] = { at: p.bqi.at, sig, bqe: entry.res }; continue; }
+      const got = await call(token, "GET", "/contacts/" + encodeURIComponent(p.bid));
+      if (got.status !== 200 || !got.data) { entry.res = "lecture Boost " + got.status; log.push(entry); iresults[p.id] = got.status === 404 ? { at: p.bqi.at, sig, bqe: entry.res } : { at: p.bqi.at, sig, retry: true }; continue; }
+      const c = got.data;
+      if (mode === "test" && !/^test\b/i.test(String(c.name || "").trim())) { entry.res = "ignoré (mode test : seuls les contacts « TEST… »)"; log.push(entry); iresults[p.id] = { at: p.bqi.at, sig }; continue; }
+      const patch = identityPatch(p.bqi, c);
+      if (!Object.keys(patch).length) { entry.res = "déjà à jour dans Boost"; log.push(entry); iresults[p.id] = { at: p.bqi.at, sig }; continue; }
+      if (mode === "simulation") { entry.res = "simulé : champs " + Object.keys(patch).join(", "); log.push(entry); iresults[p.id] = { at: p.bqi.at, sig }; continue; }
+      const r = await call(token, "PATCH", "/contacts/" + encodeURIComponent(p.bid), patch);
+      iwrites++;
+      entry.res = r.status === 200 ? "coordonnées mises à jour (" + Object.keys(patch).join(", ") + ")" : "mise à jour refusée " + r.status;
+      log.push(entry);
+      iresults[p.id] = r.status >= 500 ? { at: p.bqi.at, sig, retry: true } : { at: p.bqi.at, sig, bqe: r.status === 200 ? "" : entry.res };
+      await new Promise((res) => setTimeout(res, 120));
+    }
+
+    // 2. Statuts et rappels
     const todo = list.filter((p) => p?.bid && p.bq && bqSig(p.bq) !== p.bqs);
     // deno-lint-ignore no-explicit-any
     const results: Record<string, { at: string; sig: string; bqr?: string; bqe?: string; retry?: boolean }> = {};
-    let writes = 0;
+    let writes = iwrites;
     for (const p of todo) {
       if (writes >= MAX_WRITES) break;
       const token = Deno.env.get(RW[p.bclub] || "") || "";
@@ -140,16 +166,20 @@ serve(async (req: Request) => {
     const skipped = Math.max(0, todo.length - Object.keys(results).length);
 
     // Marquer les envois sur les fiches · écriture atomique, réessayée si un téléphone écrit au même moment
-    const ids = Object.keys(results).filter((id) => !results[id].retry);
+    const ids = [...Object.keys(results).filter((id) => !results[id].retry), ...Object.keys(iresults).filter((id) => !iresults[id].retry)];
     for (let attempt = 0; attempt < 4 && ids.length; attempt++) {
       const { data: cur } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
       // deno-lint-ignore no-explicit-any
       const plist: any[] = (cur?.data?.prospects || []).map((p: any) => {
-        const r = results[p?.id];
-        if (!r || r.retry || !p.bq || p.bq.at !== r.at) return p; // changé depuis : sera traité au prochain passage
-        const n = { ...p, bqs: r.sig };
-        if (r.bqr) n.bqr = r.bqr;
-        if (r.bqe !== undefined) n.bqe = r.bqe;
+        const r = results[p?.id], ir = iresults[p?.id];
+        // deno-lint-ignore no-explicit-any
+        let n: any = p;
+        if (r && !r.retry && p.bq && p.bq.at === r.at) { // sinon changé depuis : traité au prochain passage
+          n = { ...n, bqs: r.sig };
+          if (r.bqr) n.bqr = r.bqr;
+          if (r.bqe !== undefined) n.bqe = r.bqe;
+        }
+        if (ir && !ir.retry && p.bqi && p.bqi.at === ir.at) { n = { ...n, bqis: ir.sig }; if (ir.bqe) n.bqe = ir.bqe; }
         return n;
       });
       const { data: upd } = await admin.from("coach_store")
@@ -158,8 +188,8 @@ serve(async (req: Request) => {
       if (upd && upd.length) break;
       await new Promise((r) => setTimeout(r, 300));
     }
-    if (Object.keys(results).length) await putRow(admin, "_boost_push", { ...cfg, mode, log: log.slice(-200), last: nowIso });
-    return json({ ok: true, mode, en_file: todo.length, traites: Object.keys(results).length, ecritures: writes, reportes: skipped });
+    if (Object.keys(results).length || Object.keys(iresults).length) await putRow(admin, "_boost_push", { ...cfg, mode, log: log.slice(-200), last: nowIso });
+    return json({ ok: true, mode, coordonnees: Object.keys(iresults).length, en_file: todo.length, traites: Object.keys(results).length, ecritures: writes, reportes: skipped });
   } catch (err) {
     console.error("boost-push", (err as Error).message);
     return json({ error: "Erreur serveur" }, 500);
