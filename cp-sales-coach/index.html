@@ -678,6 +678,8 @@ a.menu-item{text-decoration:none;color:inherit}
 .pl-form input,.pl-form textarea{border:1px solid var(--cream-line);border-radius:9px;padding:7px 9px;font:inherit;font-size:13px;color:var(--ink);background:#fff;text-transform:none;letter-spacing:0;font-weight:500}
 .pl-form textarea{resize:vertical}
 @media(max-width:640px){.pl-form{grid-template-columns:1fr}}
+.hs-next{display:flex;gap:9px;background:#FFF8EC;border:1px solid #F0D9A8;border-radius:10px;padding:9px 11px;margin-bottom:8px}
+.hs-next.late{background:#FDF1EE;border-color:#F5C0AE}
 .jr-tr{flex:0 0 auto;border:1px solid var(--cream-line);background:#fff;border-radius:9px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;white-space:nowrap}
 .jr-tr:hover{background:var(--lav)}
 .jr-tr.off{opacity:.28;cursor:default;border-color:transparent;background:transparent;padding:4px 6px}
@@ -4531,6 +4533,15 @@ function histPanel(p){
     <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/)+alloSms.length,'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
     ${!h||h.loading?'<div class="hs-load">⏳ Chargement de l\'historique Boost…</div>':h.err||!h.ok?'<div class="hs-load">📴 Historique Boost indisponible pour le moment · seuls les appels Allo sont affichés.</div>':!h.boost&&!p.bid?'<div class="hs-load">Fiche absente de Boost · seuls les appels Allo sont affichés.</div>':''}
     ${replaced?`<div class="hs-load">🧹 ${replaced} rappel${replaced>1?'s':''} automatique${replaced>1?'s':''} Boost masqué${replaced>1?'s':''} : remplacé${replaced>1?'s':''} par le rappel convenu du ${new Date(humanT).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} à ${new Date(humanT).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}.</div>`:''}
+    ${(()=>{ // Prochaine étape convenue : affichée en tête de l'historique
+      const t=rdvAt(p);if(!t||!prOpen(p))return '';
+      const ic=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;
+      const late=t.getTime()<Date.now();
+      const pend=p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs;
+      return `<div class="hs-next${late?' late':''}"><div class="hs-ic">${p.statut==='essai'?'🎟️':'⏰'}</div><div class="hs-b">
+        <div class="hs-h"><b>Prochaine étape · ${p.statut==='essai'?(ic?esc(icLabel(ic)):'Séance d\'essai'):'Rappel'}</b>${late?'<span class="hs-src" style="background:#FDECE8;color:#B4300F">en retard</span>':''}<span class="hs-d">${dt(t.toISOString())}</span></div>
+        <div class="hs-s">${p.rappelBy?(p.rappelBy==='auto'?'⚡ détecté dans un appel':'posé par '+esc(p.rappelBy)):''}${p.bid?(pend?' · ⏳ envoi vers Boost en cours':' · ✓ noté dans Boost'):''}</div>
+      </div></div>`;})()}
     <div class="hs-list">${items.length?items.map(i=>`<div class="hs-it"><div class="hs-ic">${i.ic}</div><div class="hs-b">
       <div class="hs-h"><b>${esc(i.lbl)}</b><span class="hs-src ${i.src==='Allo'?'a':i.src==='Aircall'?'c':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
       ${i.sub?`<div class="hs-s">${esc(i.sub)}</div>`:''}
