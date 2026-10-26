@@ -43,7 +43,7 @@ const MAX_INVITES = 50;
 // Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
 // toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
 // appartiennent aussi à Boost.
-const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis", "bnew", "bnews"];
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis", "bnew", "bnews", "temp", "btemp"];
 // deno-lint-ignore no-explicit-any
 function keepBoost(clean: any, ex: any) {
   if (!ex) return;
@@ -666,6 +666,20 @@ serve(async (req) => {
       await saveList();
       await pushBoostNow(admin);
       return json({ ok: true, prospect: outP(np) });
+    }
+
+    // ── Température du lead (chaud / tiède / froid, vide = automatique) · badge Boost mis à jour ──
+    if (action === "temp_set") {
+      const i = list.findIndex((x) => x.id === String(body.id || ""));
+      if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+      const t = String(body.temp || "");
+      if (t && !["chaud", "tiede", "froid"].includes(t)) return json({ error: "Température inconnue" }, 400);
+      const p = list[i];
+      p.temp = t; p.maj = new Date().toISOString();
+      if (p.bid) p.bqi = { ...(p.bqi && p.bqi.notes !== undefined ? { notes: p.bqi.notes } : {}), nom: p.nom, tel: p.tel, email: p.email || "", badge: t, at: p.maj, by: String(rep || (role === "admin" ? "Paul" : "")).slice(0, 60) };
+      await saveList();
+      if (p.bid) await pushBoostNow(admin);
+      return json({ ok: true, prospect: outP(p) });
     }
 
     // ── Laisser une note : ajoutée en tête des notes Boost (datée, signée) et envoyée aussitôt ──

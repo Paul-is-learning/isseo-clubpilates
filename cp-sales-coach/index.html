@@ -681,6 +681,11 @@ a.menu-item{text-decoration:none;color:inherit}
 .src-ic svg{width:14px;height:14px}
 .src-txt{font-size:10px;font-weight:700;color:var(--ink-mid);background:#F6F4EE;border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 .pl-arr{white-space:nowrap}
+.pl-tb{border:1px solid var(--cream-line);background:#fff;border-radius:99px;padding:4px 11px;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer}
+.pl-tb.on.t-chaud{background:#FDEBE3;color:#B4430F;border-color:#F5C9B2}
+.pl-tb.on.t-tiede{background:#FFF6DE;color:#8A6A14;border-color:#EFDCA6}
+.pl-tb.on.t-froid{background:#E8F0FA;color:#39609C;border-color:#C9DAF2}
+.pl-tb.on.t-auto{background:var(--lav);color:var(--lav-ink);border-color:transparent}
 .pl-done{display:inline-flex;align-items:center;gap:5px;margin-left:8px;font-size:11px;font-weight:800;color:#1F7A55;background:#EAF6F0;border:1px solid #BFE8D6;border-radius:99px;padding:2px 9px 2px 6px;cursor:pointer;white-space:nowrap;vertical-align:1px}
 .pl-done input{width:14px;height:14px;margin:0;accent-color:#1F9E75;cursor:pointer}
 .pl-done:hover{background:#DDF1E6}
@@ -4233,6 +4238,12 @@ function prDaysSince(p){
 const APP_POS=[['très intéress',3],['tres interess',3],['intéress',2],['interess',2],['rendez-vous',2],['rdv',2],['réserv',2],['reserv',2],['s\'inscrire',2],['inscription',2],['venir essayer',2],['essai',1],['rappelez',1],['me rappeler',1],['recontact',1],['horaire',1],['disponibilit',1],['tarif',1],['prix',1],['motivé',2],['motive',2],['partant',2]];
 const APP_NEG=[['pas intéress',-3],['pas interess',-3],['plus intéress',-3],['plus interess',-3],['ne pas rappeler',-3],['ne plus appeler',-3],['stop',-2],['refus',-2],['trop cher',-2],['pas le temps',-1],['déjà inscrit',-2],['deja inscrit',-2],['autre salle',-2],['ne répond pas',-1],['ne repond pas',-1],['sans réponse',-1],['sans reponse',-1],['messagerie',-1],['répondeur',-1],['repondeur',-1],['ne souhaite pas',-2]];
 function prAppetence(p){
+  // Température réglée à la main (ou badge Boost) : elle prime sur l'estimation automatique
+  if(p.temp)return {tier:p.temp,score:0,why:['réglée à la main'],manual:true};
+  if(p.btemp)return {tier:p.btemp,score:0,why:['badge Boost'],manual:true};
+  return prAppetenceAuto(p);
+}
+function prAppetenceAuto(p){
   const entries=(p.appels||[]);
   // Messagerie ou appel < ~10 s : aucun échange réel → n'alimente pas l'appétence
   const isSubst=a=>{
@@ -4398,6 +4409,8 @@ function showProspects(keepScroll){
             <div class="pl-lbl">Étape</div>
             <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
             ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}${p.pack?`<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎ Vendeurs</button>`:''}</div>`:''}
+            <div class="pl-lbl">Température du lead</div>
+            <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
             <div class="pl-lbl">Séance d'essai · Intro Class</div>
             <div class="pl-row">${icBookSelect(p)}</div>
             <div class="pl-lbl">Rappel convenu</div>
@@ -4559,6 +4572,15 @@ async function smsSent(id){
   try{const d=await syncCall('note_add',{id,text:'💬 SMS de relance envoyé : '+t.slice(0,160),nom:CFG.rep||''});
     if(d&&d.ok&&d.prospect){const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)Object.assign(PROSPECTS[i],d.prospect);persistProspects();}}catch(e){}
   document.getElementById('icPop')?.remove();showProspects(true);toast('💬 SMS noté sur la fiche'+(PROSPECTS.find(x=>x.id===id)?.bid?' et dans Boost':''));
+}
+// Température du lead : réglée à la main, envoyée à Boost (badge) · « Auto » revient à l'estimation des appels
+async function setTemp(id,t){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const prev=p.temp;p.temp=t;showProspects(true);
+  try{const d=await syncCall('temp_set',{id,temp:t});if(!d.ok){p.temp=prev;showProspects(true);toast(d.error||'Non enregistré');return;}
+    const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)Object.assign(PROSPECTS[i],d.prospect);persistProspects();
+    toast(t?({chaud:'🔥 Lead chaud',tiede:'🌤 Lead tiède',froid:'❄️ Lead froid'})[t]+(p.bid&&t!=='tiede'?' · Boost mis à jour':''):'↺ Température automatique');
+  }catch(e){p.temp=prev;showProspects(true);}
 }
 // Laisser une note : datée et signée, en tête des notes Boost, envoyée aussitôt à Boost
 let noteOpen=null;

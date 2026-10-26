@@ -194,6 +194,12 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     }
     p.src = String(c.source || "").slice(0, 40);
     if (!idPending) p.bnotes = String(c.notes || "").slice(0, 2000);
+    // Badge Boost (chaud / tiède / froid) : changé dans Boost → la température de la fiche suit
+    if (!idPending) {
+      const b = ["chaud", "tiede", "froid"].includes(String(c.badge)) ? String(c.badge) : "";
+      if (b !== String(p.btemp || "") && p.btemp !== undefined) p.temp = b;
+      p.btemp = b;
+    }
     p.bnok = m.nok; p.bclient = m.client;
     p.bmember = String(c.status) === "client"; // adhérent : hors tournée d'appels, jamais de vente déclarable
     if (rep) p.rep = rep;
@@ -284,7 +290,7 @@ export function buildOps(q: any, contact: any, nowIso: string, lastRdvSig?: stri
 }
 
 // ═══ Coordonnées modifiées dans le Sales Coach (nom, téléphone, email, notes Boost) ═══
-export const bqiSig = (q: any) => [q?.nom, q?.tel, q?.email, q?.notes].join("|");
+export const bqiSig = (q: any) => [q?.nom, q?.tel, q?.email, q?.notes, q?.badge].join("|");
 export const toE164 = (t: unknown) => {
   const d = String(t ?? "").replace(/\D/g, "");
   if (d.length === 10 && d.startsWith("0")) return "+33" + d.slice(1);
@@ -298,5 +304,8 @@ export function identityPatch(q: any, c: any) {
   if (e && telKey(e) !== telKey(c?.phone)) patch.phone = e;
   if ((q.email || "") !== String(c?.email || "")) patch.email = q.email || null;
   if (typeof q.notes === "string" && q.notes !== String(c?.notes || "")) patch.notes = q.notes;
+  // Température → badge Boost (chaud / tiede / froid ; vide = retire le badge)
+  // (Boost connaît « chaud » et « froid » ; « tiède » n'est pas envoyé pour ne pas faire refuser la mise à jour)
+  if (typeof q.badge === "string" && q.badge !== "tiede" && q.badge !== String(c?.badge || "")) patch.badge = q.badge || null;
   return patch;
 }
