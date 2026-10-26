@@ -153,7 +153,6 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     p.cEmail = c.email_consent === false || c.email_opt_out === true ? false : null;
     p.cWa = c.whatsapp_consent === false ? false : null;
     if (p.cPhone === false) R.refus_appel++;
-    p.bsync = ctx.nowIso;
   }
 
   // Suppressions Boost : la fiche disparaît (RGPD), son id part en pierre tombale

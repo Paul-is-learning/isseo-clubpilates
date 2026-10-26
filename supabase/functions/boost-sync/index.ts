@@ -148,7 +148,9 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   // Lecture incomplète = on n'écrit rien (jamais d'import partiel)
   if (!contacts.ok || !acts.ok || users.status !== 200 || !deleted.ok)
     return json({ error: "Lecture Boost incomplète", http: { contacts: contacts.status, activites: acts.status, users: users.status, suppressions: deleted.status } }, 502);
-  const store = await getRow(admin, "_coach_prospects");
+  await getRow(admin, "_coach_prospects"); // migration douce si besoin
+  const { data: row } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
+  const store = row?.data || {};
   const access = await getRow(admin, "_coach_access");
   // deno-lint-ignore no-explicit-any
   const prospects: any[] = store.prospects || [];
@@ -159,20 +161,30 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   const report = { club: club.studio, mode: write ? "import" : "simulation", at: nowIso, fiches_avant: prospects.length, fiches_apres: res.list.length, ...res.report };
   if (!write) return json({ ok: true, report });
   if (res.list.length > 5000) return json({ error: "Plus de 5000 fiches · import refusé", report }, 400);
-  // Sauvegarde du jour (une par jour, jamais écrasée), puis écriture
-  const bak = "_coach_prospects_bak_" + nowIso.slice(0, 10).replace(/-/g, "");
-  const { data: hasBak } = await admin.from("coach_store").select("id").eq("id", bak).maybeSingle();
-  if (!hasBak) await putRow(admin, bak, store);
-  const fresh = await getRow(admin, "_coach_prospects");
-  if (JSON.stringify(fresh.prospects || []) !== JSON.stringify(prospects))
-    return json({ error: "Les fiches ont changé pendant la synchro · relancez", report }, 409);
-  await putRow(admin, "_coach_prospects", { ...store, prospects: res.list });
+  // Rien de neuf dans Boost : aucune écriture (la synchro tourne toutes les 5 minutes)
+  const changed = JSON.stringify(res.list) !== JSON.stringify(prospects);
+  if (changed) {
+    // Sauvegarde du jour (une par jour, 7 jours gardés), puis écriture atomique : refusée si un
+    // téléphone a écrit entre la lecture et l'écriture (le passage suivant reprendra)
+    const day = nowIso.slice(0, 10).replace(/-/g, "");
+    const bak = "_coach_prospects_bak_" + day;
+    const { data: hasBak } = await admin.from("coach_store").select("id").eq("id", bak).maybeSingle();
+    if (!hasBak) {
+      await putRow(admin, bak, store);
+      const old = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10).replace(/-/g, "");
+      await admin.from("coach_store").delete().like("id", "\\_coach\\_prospects\\_bak\\_%").lt("id", "_coach_prospects_bak_" + old);
+    }
+    const { data: upd } = await admin.from("coach_store")
+      .update({ data: { ...store, prospects: res.list }, updated_at: new Date().toISOString() })
+      .eq("id", "_coach_prospects").eq("updated_at", row?.updated_at).select("id");
+    if (!upd || !upd.length) return json({ error: "Les fiches ont changé pendant la synchro · reprise au prochain passage", report }, 409);
+  }
   if (res.tomb.length) {
     const t = await getRow(admin, "_coach_tomb");
     await putRow(admin, "_coach_tomb", { ids: [...new Set([...(t.ids || []), ...res.tomb])].slice(-5000) });
   }
   const st = await getRow(admin, "_boost_sync");
-  await putRow(admin, "_boost_sync", { ...st, [clubKey]: { last: nowIso, report } });
+  await putRow(admin, "_boost_sync", { ...st, [clubKey]: { last: nowIso, changed, report } });
   return json({ ok: true, report });
 }
 
@@ -184,7 +196,12 @@ serve(async (req: Request) => {
     if (rl.blocked) return json({ error: "Trop d'essais · réessayez dans 15 minutes" }, 429);
     const key = Deno.env.get("BOOST_SYNC_KEY") || "";
     if (key.length < 24) return json({ error: "BOOST_SYNC_KEY non configuré (24 caractères minimum)" }, 500);
-    if (!safeEq(req.headers.get("x-sync-key") || "", key)) { await rl.fail(); return json({ error: "Clé invalide" }, 401); }
+    // Clé de Paul (BOOST_SYNC_KEY) ou clé du planificateur (tirée au hasard en base, jamais affichée)
+    const given = req.headers.get("x-sync-key") || "";
+    const { data: cron } = await admin.from("coach_store").select("data").eq("id", "_boost_cron").maybeSingle();
+    const cronKey = String(cron?.data?.key || "");
+    const okKey = safeEq(given, key) || (cronKey.length >= 32 && safeEq(given, cronKey));
+    if (!okKey) { await rl.fail(); return json({ error: "Clé invalide" }, 401); }
     await rl.ok();
 
     const url = new URL(req.url);
