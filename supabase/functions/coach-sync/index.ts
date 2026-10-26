@@ -566,6 +566,38 @@ serve(async (req) => {
     const tombSet = new Set(tomb);
     if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, scoped, tomb });
 
+    // ── Historique Boost d'une fiche (appels + durée, SMS, emails, WhatsApp, RDV…) ──
+    // Lu à la demande avec le token LECTURE SEULE du club ; rien n'est stocké.
+    if (action === "boost_history") {
+      const p = list.find((x) => x.id === String(body.id || ""));
+      if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
+      if (!p.bid) return json({ ok: true, boost: false, items: [] });
+      const TOK: Record<string, string> = { garenne: "BOOST_TOKEN_GARENNE", lattes: "BOOST_TOKEN_LATTES", defense: "BOOST_TOKEN_DEFENSE" };
+      const token = Deno.env.get(TOK[p.bclub] || "") || "";
+      if (!token) return json({ ok: true, boost: false, items: [] });
+      const H = { Authorization: "Bearer " + token, Accept: "application/json" };
+      const B = "https://www.app-boost.com/api/v1";
+      const [ra, ru] = await Promise.all([
+        fetch(B + "/activities?prospect_id=" + encodeURIComponent(p.bid) + "&limit=200", { headers: H, redirect: "manual" }),
+        fetch(B + "/users", { headers: H, redirect: "manual" }),
+      ]);
+      if (ra.status !== 200) { await ra.body?.cancel(); await ru.body?.cancel(); return json({ ok: false, boost: true, http: ra.status, items: [] }); }
+      // deno-lint-ignore no-explicit-any
+      const acts: any[] = (await ra.json().catch(() => ({})))?.data || [];
+      // deno-lint-ignore no-explicit-any
+      const users: any[] = ru.status === 200 ? ((await ru.json().catch(() => ({})))?.data || []) : [];
+      if (ru.status !== 200) await ru.body?.cancel();
+      const uname = new Map(users.map((u) => [String(u?.id), String(u?.name || "")]));
+      const items = acts.map((a) => ({
+        at: String(a?.created_at || ""), sched: String(a?.scheduled_at || ""), type: String(a?.action_type || ""),
+        rdv: String(a?.rdv_type || ""), st: String(a?.status || ""), dur: Number(a?.duration) || 0,
+        title: String(a?.title || "").slice(0, 120), txt: String(a?.description || a?.content || "").slice(0, 800),
+        who: uname.get(String(a?.user_id || "")) || "", auto: a?.est_auto === true, venu: a?.est_venu ?? null,
+        ds: String(a?.delivery_status || ""),
+      }));
+      return json({ ok: true, boost: true, items });
+    }
+
     if (action === "push") {
       const incoming: any[] = Array.isArray(body.prospects) ? body.prospects : [];
       for (const p of incoming) {
