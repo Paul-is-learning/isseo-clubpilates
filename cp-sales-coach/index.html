@@ -4314,7 +4314,7 @@ function prSeg(p){
   if(c.n>=3&&!c.ok)return 'unreach';
   return 'redo';
 }
-const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · le plus récent en tête (rappeler vite un lead chaud)'],['redo','🔁 À recontacter','Déjà appelés, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
+const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · le plus récent en tête (rappeler vite un lead chaud)'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['redo','🔁 À recontacter','Déjà appelés, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
 function showProspects(keepScroll){
   const _ae=document.activeElement,_srch=_ae&&_ae.id==='prSearchIn'?[_ae.selectionStart,_ae.selectionEnd]:null;
   _vReg('prospects');
