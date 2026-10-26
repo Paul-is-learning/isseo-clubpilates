@@ -4185,7 +4185,13 @@ function histPanel(p){
   });
   // Activités Boost (un appel déjà présent dans Allo à ±3 min n'est pas affiché deux fois)
   const alloT=(p.appels||[]).map(a=>new Date(a.ts).getTime()).filter(x=>!isNaN(x));
+  // Rappel posé par l'équipe : il remplace les rappels automatiques Boost prévus avant lui
+  const nowT=Date.now();
+  const humanT=(((h&&h.items)||[]).filter(a=>!a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()>nowT).map(a=>new Date(a.sched).getTime()).sort((x,y)=>x-y)[0])
+    ||(p.rappel&&p.rappelBy&&!/^(Boost|auto)$/.test(p.rappelBy)?rdvAt(p)?.getTime():0)||0;
+  let replaced=0;
   ((h&&h.items)||[]).forEach(a=>{
+    if(humanT&&a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()<humanT){replaced++;return;}
     const [ic,lbl]=BA[a.type]||['•',a.type||'Activité'];
     const t=new Date(a.at).getTime();
     if(/^appel/.test(a.type)&&alloT.some(x=>Math.abs(x-t)<=180000)){const it=items.find(i=>i.allo&&Math.abs(new Date(i.allo).getTime()-t)<=180000);if(it)it.sub+=(a.dur?' · '+a.dur+' min':'')+' · aussi dans Boost';return;}
@@ -4206,6 +4212,7 @@ function histPanel(p){
   return `<div class="pr-msgs hs">
     <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/),'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
     ${!h||h.loading?'<div class="hs-load">⏳ Chargement de l\'historique Boost…</div>':h.err||!h.ok?'<div class="hs-load">📴 Historique Boost indisponible pour le moment · seuls les appels Allo sont affichés.</div>':!h.boost&&!p.bid?'<div class="hs-load">Fiche absente de Boost · seuls les appels Allo sont affichés.</div>':''}
+    ${replaced?`<div class="hs-load">🧹 ${replaced} rappel${replaced>1?'s':''} automatique${replaced>1?'s':''} Boost masqué${replaced>1?'s':''} : remplacé${replaced>1?'s':''} par le rappel convenu du ${new Date(humanT).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} à ${new Date(humanT).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}.</div>`:''}
     <div class="hs-list">${items.length?items.map(i=>`<div class="hs-it"><div class="hs-ic">${i.ic}</div><div class="hs-b">
       <div class="hs-h"><b>${esc(i.lbl)}</b><span class="hs-src ${i.src==='Allo'?'a':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
       ${i.sub?`<div class="hs-s">${esc(i.sub)}</div>`:''}

@@ -38,7 +38,9 @@ export const RAPPEL_HORIZON_DAYS = 30;
 const horizon = (nowIso: string) => new Date(Date.parse(nowIso) + RAPPEL_HORIZON_DAYS * 864e5).toISOString();
 
 export function plannedByContact(acts: any[], nowIso: string) {
-  const out = new Map<string, { at: string; essai: boolean; created: string }>();
+  // Un rappel posé par une personne (est_auto = false) passe toujours avant les rappels automatiques
+  // des séquences Boost (« Rappel J3 — Appel + Mail nouveau lead »…)
+  const out = new Map<string, { at: string; essai: boolean; created: string; auto: boolean }>();
   for (const a of acts) {
     if (!a?.prospect_id || a.status !== "planifie" || !a.scheduled_at) continue;
     const essai = a.action_type === "seance_essai" || a.rdv_type === "seance_essai";
@@ -46,13 +48,15 @@ export function plannedByContact(acts: any[], nowIso: string) {
     if (String(a.scheduled_at) < nowIso.slice(0, 10)) continue; // passé : ignoré
     if (String(a.scheduled_at) > horizon(nowIso)) continue; // au-delà de J+30 : non traité
     const cur = out.get(a.prospect_id);
-    if (!cur || String(a.scheduled_at) < cur.at) out.set(a.prospect_id, { at: String(a.scheduled_at), essai, created: String(a.created_at || "") });
+    const auto = a.est_auto === true;
+    const better = !cur || (cur.auto && !auto) || (cur.auto === auto && String(a.scheduled_at) < cur.at);
+    if (better) out.set(a.prospect_id, { at: String(a.scheduled_at), essai, created: String(a.created_at || ""), auto });
   }
   return out;
 }
 
 // Statut Sales Coach + date de rappel déduits d'un contact Boost
-export function mapStatus(c: any, planned?: { at: string; essai: boolean; created?: string }, nowIso?: string) {
+export function mapStatus(c: any, planned?: { at: string; essai: boolean; created?: string; auto?: boolean }, nowIso?: string) {
   const st = String(c?.status || "");
   let statut = "rappeler";
   if (st === "rdv_venu") statut = "venu";
@@ -62,7 +66,8 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   // Date de relance (écrite par le Sales Coach ou dans Boost) contre activité planifiée : la plus
   // récemment posée l'emporte ; une séance d'essai planifiée garde toujours sa date
   const rel = String(c?.date_relance || "");
-  if (planned && (planned.essai || !rel || String(planned.created || "") > String(c?.updated_at || ""))) when = planned.at;
+  // Un rappel automatique ne remplace jamais une date de relance posée par l'équipe
+  if (planned && (planned.essai || !rel || (!planned.auto && String(planned.created || "") > String(c?.updated_at || "")))) when = planned.at;
   else if (rel) when = rel;
   else if (st === "rdv_planifie") when = String(c?.next_rdv || c?.date_rdv || "");
   if (when && nowIso && when > horizon(nowIso)) when = ""; // rappel au-delà de J+30 : non traité
