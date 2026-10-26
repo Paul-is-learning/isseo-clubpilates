@@ -4269,10 +4269,11 @@ function showProspects(keepScroll){
   // 🎯 À contacter d'abord : leads ouverts sans rappel programmé · jamais appelés d'abord (les plus anciens en tête), puis dernier contact le plus ancien
   // ⏰ Rappels programmés : par date et heure, retards en tête
   const clientView=prFilter==='abo';
-  if(!clientView&&prSort==='prio')list=list.filter(p=>p.statut==='rappeler'&&!p.noCall&&!p.rappel);
-  if(!clientView&&prSort==='rappels')list=list.filter(p=>prOpen(p)&&p.rappel);
+  if(!clientView&&!prFilter&&prSort==='prio')list=list.filter(p=>p.statut==='rappeler'&&!p.noCall&&!p.rappel);
+  if(!clientView&&!prFilter&&prSort==='rappels')list=list.filter(p=>prOpen(p)&&p.rappel);
   // Adhérents importés de Boost : visibles via le filtre « Client », jamais mêlés aux leads
-  if(prSort==='recent'&&prFilter!=='abo')list=list.filter(p=>!p.bmember);
+  // (avec un filtre de statut actif, on montre toutes les fiches de ce statut, adhérents compris)
+  if(prSort==='recent'&&!prFilter)list=list.filter(p=>!p.bmember);
   const sorted=list.sort((a,b)=>{
     if(clientView)return String(a.nom||'').localeCompare(String(b.nom||''),'fr',{sensitivity:'base'});
     if(prSort==='prio'){
