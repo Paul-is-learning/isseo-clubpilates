@@ -696,6 +696,17 @@ a.menu-item{text-decoration:none;color:inherit}
 .jr-tr{flex:0 0 auto;border:1px solid var(--cream-line);background:#fff;border-radius:9px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;white-space:nowrap}
 .jr-tr:hover{background:var(--lav)}
 .jr-tr.off{opacity:.28;cursor:default;border-color:transparent;background:transparent;padding:4px 6px}
+.dg{background:#fff;border:1px solid var(--cream-line);border-radius:18px;padding:12px 16px;margin:8px 0 0;box-shadow:var(--sh-s)}
+.dg-h{display:flex;flex-wrap:wrap;gap:8px 12px;align-items:center;font-size:13px;color:var(--ink)}
+.dg-k{cursor:pointer;background:var(--cream);border-radius:99px;padding:3px 11px;font-size:12.5px;color:var(--ink-soft)}
+.dg-k:hover{background:var(--lav)}.dg-k.hot{background:#FFF1E6;color:#B4541A}
+.dg-bar{height:7px;border-radius:99px;background:var(--cream);margin:10px 0 7px;overflow:hidden}
+.dg-fill{height:100%;border-radius:99px;background:linear-gradient(90deg,var(--accent),#7C83F0);transition:width .6s}
+.dg-f{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;font-size:12px;color:var(--ink-mid)}
+.dg-rep{display:inline-flex;align-items:center;gap:4px;color:var(--ink-soft)}
+.dg-goal{margin-left:auto;display:inline-flex;align-items:center;gap:6px}
+.dg-goal input{width:58px;border:1px solid var(--cream-line);border-radius:8px;padding:3px 6px;font:inherit;font-size:12px;text-align:center}
+.pl-btn.sms{background:#EAF6F0;border-color:#BFE8D6}
 .pr-tabn{display:inline-block;min-width:16px;font-size:10.5px;font-weight:800;color:var(--ink-mid);background:var(--cream);border-radius:99px;padding:0 6px;margin-left:3px}
 .pr-tab.on .pr-tabn{background:rgba(255,255,255,.22);color:#fff}
 .pr-rdvb{display:inline-block;min-width:18px;background:#E0452B;color:#fff;border-radius:99px;padding:0 6px;font-size:11px;font-weight:800;margin-left:4px;animation:prBlink 1.1s ease-in-out infinite}
@@ -4254,6 +4265,31 @@ function prAgeChip(p){
   const col=d>=14?'#C0492F':d>=7?'#B4710F':'#8C95A8';
   return `<span style="color:${col};font-weight:700">⏳ ${d} j sans contact</span>`;
 }
+// ── Objectif du jour : ce qu'il reste à faire, appels passés par commercial, objectif fixé par Paul ──
+function setDayGoal(v){CFG.dayGoal=Math.max(0,Math.min(500,+v||0));try{localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}catch(e){}showProspects(true);}
+function dayGoalHTML(){
+  const all=PSC();
+  const today=(tsParts(new Date().toISOString())||{}).day;
+  const nNew=all.filter(p=>prSeg(p)==='new').length;
+  const nRap=all.filter(p=>prOpen(p)&&p.rappel&&rdvAt(p)&&(tsParts(rdvAt(p).toISOString())||{}).day<=today).length;
+  const redo=all.filter(p=>prSeg(p)==='redo'),nHot=redo.filter(p=>(prAppetence(p)||{}).tier==='chaud').length;
+  const byRep={};let total=0;
+  all.forEach(p=>(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||/appel entrant/.test(l0))return;const tp=tsParts(a.ts);if(!tp||tp.day!==today)return;const who=((l0.match(/ par ([^·\n]+?)(?= · |$)/)||[])[1]||'Équipe').trim().split(/\s+/)[0];byRep[who]=(byRep[who]||0)+1;total++;}));
+  const goal=+CFG.dayGoal||0;
+  const pct=goal?Math.min(100,Math.round(total/goal*100)):0;
+  return `<div class="dg">
+    <div class="dg-h"><b>🎯 Aujourd'hui</b>
+      <span class="dg-k" onclick="setPrFilter(null);setPrSort('new')">🆕 <b>${nNew}</b> nouveau${nNew>1?'x':''} à appeler</span>
+      <span class="dg-k${nRap?' hot':''}" onclick="setPrFilter(null);setPrSort('rappels')">⏰ <b>${nRap}</b> rappel${nRap>1?'s':''} du jour ou en retard</span>
+      <span class="dg-k" onclick="setPrFilter(null);setPrSort('redo')">🔁 <b>${redo.length}</b> à recontacter${nHot?` · dont <b>${nHot}</b> 🔥`:''}</span>
+    </div>
+    <div class="dg-bar"><div class="dg-fill" style="width:${pct}%"></div></div>
+    <div class="dg-f"><span>📞 <b>${total}</b> appel${total>1?'s':''} sortant${total>1?'s':''} aujourd'hui${goal?` sur <b>${goal}</b> · ${pct} %`:''}</span>
+      ${Object.entries(byRep).sort((x,y)=>y[1]-x[1]).map(([n,c])=>`<span class="dg-rep">${avaTag(avatarOf(n),16,n)} ${esc(n)} <b>${c}</b></span>`).join('')}
+      <span class="dg-goal">Objectif <input type="number" min="0" max="500" value="${goal||''}" placeholder="—" onchange="setDayGoal(this.value)"/> appels / jour</span>
+    </div>
+  </div>`;
+}
 // ── Segments « intelligents » des leads ouverts (statut Contacté) ──
 // 🆕 Nouveaux : jamais appelés · 🔁 À recontacter : appelés, sans rappel, pas injoignables
 // ⏰ Rappels & RDV : rappel ou séance datés · 📵 Injoignables : 3 appels ou plus, aucun décroché
@@ -4267,7 +4303,7 @@ function prSeg(p){
   if(c.n>=3&&!c.ok)return 'unreach';
   return 'redo';
 }
-const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · le plus récent en tête (rappeler vite un lead chaud)'],['redo','🔁 À recontacter','Déjà appelés, sans rappel convenu · le contact le plus ancien en tête'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
+const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · le plus récent en tête (rappeler vite un lead chaud)'],['redo','🔁 À recontacter','Déjà appelés, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
 function showProspects(keepScroll){
   const _ae=document.activeElement,_srch=_ae&&_ae.id==='prSearchIn'?[_ae.selectionStart,_ae.selectionEnd]:null;
   _vReg('prospects');
@@ -4298,7 +4334,12 @@ function showProspects(keepScroll){
       if(prFilter==='perdu')return String(b.maj||'').localeCompare(String(a.maj||''));
       return prArrival(b).localeCompare(prArrival(a));
     }
-    if(prSort==='redo'||prSort==='unreach')return prLastContact(a).localeCompare(prLastContact(b)); // contact le plus ancien d'abord
+    if(prSort==='redo'){ // 🔥 chauds d'abord, puis 🌤, puis ❄️ ; à égalité, le contact le plus ancien en tête
+      const rk=x=>({chaud:0,tiede:1,froid:3}[(prAppetence(x)||{}).tier]??2);
+      if(rk(a)!==rk(b))return rk(a)-rk(b);
+      return prLastContact(a).localeCompare(prLastContact(b));
+    }
+    if(prSort==='unreach')return prLastContact(a).localeCompare(prLastContact(b)); // contact le plus ancien d'abord
     if(prSort==='rappels')return (rdvAt(a)?.getTime()||0)-(rdvAt(b)?.getTime()||0);
     return prArrival(b).localeCompare(prArrival(a));
   });
@@ -4346,6 +4387,7 @@ function showProspects(keepScroll){
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
         ${plCtx(p)}
         <div class="pl-quick" onclick="event.stopPropagation()">
+          ${prSeg(p)==='unreach'&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">💬</button>`:''}
           ${p.noCall||!p.tel?'':_sk(p.studio)===_sk('Montpellier Lattes')?`<button class="pl-btn call" onclick="aircallDial('${p.id}')" title="Appeler depuis Aircall">${ic('phone')}</button>`:`<a class="pl-btn call" href="tel:${esc(p.tel)}" title="Appeler">${ic('phone')}</a>`}
           <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
         </div>
@@ -4411,7 +4453,7 @@ function showProspects(keepScroll){
         <div><span class="hn">5</span><span>Les fiches sont <b>partagées avec toute l'équipe</b> et sauvegardées au studio · le badge en haut vous dit si tout est synchronisé.</span></div>
       </div>
     </details>
-    ${nbDue?`<div class="pr-alert">🔔 <b>${nbDue} rappel${nbDue>1?'s':''} à faire aujourd'hui</b> · onglet ⏰ Rappels programmés.</div>`:''}
+    ${dayGoalHTML()}
     <div class="hm-sec">Pipeline</div>
     <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-tools">
@@ -4492,6 +4534,31 @@ async function rappelDone(id,box){
   q.rappel='';q.rappelH='';q.rappelBy='';q.maj=new Date().toISOString();
   persistProspects();schedulePush();showProspects(true);
   toast('✅ Rappel fait · retiré des rappels programmés'+(q.bid?' · Boost mis à jour':''));
+}
+// SMS de relance d'un injoignable : texte proposé, à envoyer depuis le téléphone, puis tracé en note
+function smsText(p){
+  const pre=(p.nom||'').trim().split(/\s+/)[0]||'';
+  const rep=(CFG.rep||'').trim().split(/\s+/)[0];
+  const stu=String(p.studio||CFG.studio||'');
+  return `Bonjour ${pre}, c'est ${rep?rep+' de ':''}Club Pilates ${stu} 😊 J'ai essayé de vous joindre au sujet de votre demande. Quel moment vous arrange pour un appel rapide ? Vous pouvez aussi me répondre directement ici.`;
+}
+function smsRelance(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const c=prCalls(p);
+  icSheet(`<div class="glp-tag">💬 SMS de relance</div><div class="glp-t">${esc(p.nom||'')}</div>
+    <div class="fv-meta">${c.n} appel${c.n>1?'s':''} sans réponse · personnalisez si besoin, puis envoyez depuis votre téléphone.</div>
+    <textarea id="sms-txt" rows="5" style="width:100%;box-sizing:border-box;margin-top:10px;border:1px solid var(--cream-line);border-radius:12px;padding:10px;font:inherit;font-size:13.5px;line-height:1.5">${esc(smsText(p))}</textarea>
+    <div class="pl-row" style="margin-top:10px">
+      <a class="pr-act main" style="flex:0 0 auto;text-decoration:none" href="#" onclick="this.href='sms:${esc(p.tel)}?&body='+encodeURIComponent(document.getElementById('sms-txt').value)">📱 Ouvrir dans Messages</a>
+      <button class="pr-act" onclick="navigator.clipboard?.writeText(document.getElementById('sms-txt').value).then(()=>toast('SMS copié ✓'))">📋 Copier</button>
+      <button class="pr-act" onclick="smsSent('${p.id}')">✅ C'est envoyé</button>
+    </div>`);
+}
+async function smsSent(id){
+  const t=document.getElementById('sms-txt')?.value||'';
+  try{const d=await syncCall('note_add',{id,text:'💬 SMS de relance envoyé : '+t.slice(0,160),nom:CFG.rep||''});
+    if(d&&d.ok&&d.prospect){const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)Object.assign(PROSPECTS[i],d.prospect);persistProspects();}}catch(e){}
+  document.getElementById('icPop')?.remove();showProspects(true);toast('💬 SMS noté sur la fiche'+(PROSPECTS.find(x=>x.id===id)?.bid?' et dans Boost':''));
 }
 // Laisser une note : datée et signée, en tête des notes Boost, envoyée aussitôt à Boost
 let noteOpen=null;
