@@ -1135,7 +1135,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pr-tab{border:0;background:transparent;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
 .pr-tab:hover{background:var(--cream)}
 .pr-tab.on{background:var(--accent);color:#fff;box-shadow:0 6px 16px -8px rgba(75,82,230,.7)}
-.pr-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(430px,1fr));gap:14px;align-items:start}
+.pr-list{display:flex;flex-direction:column;gap:8px}
 .pr-list .pr-card.open{grid-column:1/-1}
 .prw .pr-card{position:relative;margin:0;border:1px solid var(--cream-line);border-radius:20px;padding:14px 15px 12px 18px;box-shadow:var(--sh-s);transition:box-shadow .15s,transform .15s}
 .prw .pr-card::before{content:'';position:absolute;left:0;top:18px;bottom:18px;width:4px;border-radius:0 4px 4px 0;background:var(--stc)}
@@ -1162,7 +1162,38 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .prw .pr-actions>span br{display:none}
 .prw .pr-empty{border:1px dashed var(--cream-line);border-radius:20px}
 
-@media(max-width:640px){.pr-list{grid-template-columns:1fr}.prw .pr-funnel{grid-template-columns:repeat(5,minmax(58px,1fr));overflow-x:auto}.prw .pr-fun-n{font-size:20px}.prw .pr-st small{display:block}.prw .pr-st{flex-direction:column;font-size:13px}}
+@media(max-width:640px){.prw .pr-funnel{grid-template-columns:repeat(5,minmax(58px,1fr));overflow-x:auto}.prw .pr-fun-n{font-size:20px}.prw .pr-st small{display:block}.prw .pr-st{flex-direction:column;font-size:13px}}
+
+/* Ligne prospect (style accueil : aéré, une ligne lisible, détail au clic) */
+.prw .pr-card.pl{padding:0;border-radius:18px}
+.prw .pr-card.pl::before{top:14px;bottom:14px}
+.pl-line{display:grid;grid-template-columns:44px minmax(190px,1.5fr) minmax(150px,1fr) minmax(170px,1fr) minmax(140px,.9fr) auto;align-items:center;gap:16px;padding:11px 14px 11px 20px;cursor:pointer}
+.pl-ava{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:14px}
+.pl-who{min-width:0}.pl-who b{display:block;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pl-who span{display:block;font-size:12px;color:var(--ink-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.pl-st{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.pl-chip{font-size:11.5px;font-weight:800;border-radius:99px;padding:4px 10px;white-space:nowrap}
+.pl-flag{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEF2FB;color:#2A3F6B;white-space:nowrap}
+.pl-flag.ok{background:var(--mnt);color:var(--mnt-ink)}.pl-flag.warn{background:#FFF6E0;color:#8A5A00}.pl-flag.bad{background:#FDECE8;color:#B4300F}
+.pl-when{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+.pl-when.muted{font-weight:600;color:var(--ink-mid)}
+.pl-when.due{color:#B07A1C}.pl-when.late{color:#C0492F}
+.pl-when em{font-style:normal;font-size:11px;font-weight:800;background:#FDECE8;color:#B4300F;border-radius:99px;padding:1px 7px;margin-left:4px}
+.pl-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
+.pl-quick{display:flex;gap:6px}
+.pl-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--cream-line);background:#fff;display:grid;place-items:center;color:var(--ink-soft);font-size:14px;cursor:pointer;text-decoration:none}
+.pl-btn.call{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 8px 18px -10px rgba(75,82,230,.8)}
+.pl-btn svg{width:17px;height:17px}
+.prw .pr-card.pl.open{box-shadow:var(--sh-m)}
+.pl-detail{border-top:1px solid var(--cream-line);padding:14px 18px 16px 20px}
+.pl-dgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;margin-bottom:12px}
+.pl-lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);margin:2px 0 7px}
+.pl-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:10px}
+.pl-row .pr-date{flex:0 0 auto!important;width:auto}
+.pl-by{font-size:11px;color:var(--ink-mid);font-weight:600}
+.pl-info{font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}.pl-info a{color:var(--lav-ink);text-decoration:none;font-weight:600}
+@media(max-width:1100px){.pl-line{grid-template-columns:44px minmax(0,1.4fr) auto minmax(0,1fr) auto}.pl-st .pl-flag{display:none}.pl-meta{display:none}}
+@media(max-width:640px){.pl-line{grid-template-columns:40px minmax(0,1fr) auto;gap:4px 10px;padding:10px 10px 10px 16px}.pl-st{grid-column:2/3;grid-row:2}.pl-next{grid-column:2/4;grid-row:3}.pl-quick{grid-column:3;grid-row:1/3}.pl-ava{width:40px;height:40px}.pl-dgrid{grid-template-columns:1fr;gap:6px}}
 </style>
 </head>
 <body>
@@ -4143,37 +4174,62 @@ function showProspects(keepScroll){_vReg('prospects');
   });
   const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PSC().filter(p=>p.statut===k).length);
   const nbDue=PSC().filter(due).length;
+  // Une ligne par prospect (lecture rapide) · le détail s'ouvre au clic
   const card=p=>{
     const pi=PIPE[p.statut]||PIPE.rappeler;
     const isDue=due(p);
     const open=prOpenId===p.id;
     const hot=prSort==='rappels'&&rdvHot(p);
-    return `<div class="pr-card${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
-      <div class="pr-top">
-        <div class="pr-ava" style="background:${pi.c}">${esc(prInitials(p.nom))}</div>
-        <div class="pr-idbox">
-          <div class="pr-id"><b>${esc(p.nom)}</b></div>${boostBadges(p)}
-          <div class="pr-sub">${p.noCall?'<span class="pr-tel" style="color:#B4300F">📵 Refus d\'appel noté dans Boost</span>':p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.email&&p.cEmail!==false?`<a class="pr-tel" href="mailto:${esc(p.email)}" title="${esc(p.email)}">✉️</a>`:''}${p.rep?`<span class="pr-rep">· ${avaTag(avatarOf(p.rep),18,p.rep)} ${esc(p.rep.split(' ')[0])}${p.v2?` + ${esc(p.v2.split(' ')[0])}${p.fullCom?' (100 %)':' (50/50)'}`:''}</span>`:p.bid?'<span class="pr-rep" style="color:var(--ink-mid)">· 👤 non assigné dans Boost</span>':`<select class="pr-rep" onchange="setPRep('${p.id}',this.value)" style="border:1px dashed #C9C2B2;border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;color:var(--ink-mid);background:#fff;cursor:pointer"><option value="">👤 Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`}${p.statut==='abo'?`<span class="pr-rep">· ${p.icId?'🗓️ via IC':'📞 hors IC'}</span>`:''}</div>
+    const u=prRdvState(p);
+    const late=p.rappel&&rdvAt(p)&&rdvAt(p).getTime()<Date.now()&&prOpen(p);
+    const when=p.rappel
+      ?`<span class="pl-when${late?' late':isDue?' due':''}">${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
+      :`<span class="pl-when muted">${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>`;
+    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rep?esc(p.rep.split(' ')[0]):'',p.src?esc(BOOST_SRC[p.src]||p.src):''].filter(Boolean).join(' · ');
+    const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
+    const flags=[p.bmember?'<span class="pl-flag ok">🏅 Adhérent</span>':'',p.bid&&bl&&({a_traiter:'rappeler',contacte:'rappeler',rdv_planifie:'rappeler',rdv_nok:'rappeler',rdv_venu:'venu',client:'abo',perdu:'perdu'}[p.bst]||'')!==p.statut&&!(p.statut==='essai'&&p.bst==='rdv_planifie')?`<span class="pl-flag">Boost : ${esc(bl)}</span>`:'',p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?'<span class="pl-flag warn">⏳ envoi Boost</span>':p.bqe?'<span class="pl-flag bad">⚠️ Boost</span>':''].join('');
+    return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
+      <div class="pl-line" onclick="togglePr('${p.id}')">
+        <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
+        <div class="pl-who"><b>${esc(p.nom)}</b><span>${sub}</span></div>
+        <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${flags}</div>
+        <div class="pl-next">${when}</div>
+        <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
+        <div class="pl-quick" onclick="event.stopPropagation()">
+          ${p.noCall||!p.tel?'':`<a class="pl-btn call" href="tel:${esc(p.tel)}" title="Appeler">${ic('phone')}</a>`}
+          <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
         </div>
-        <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${p.statut==='abo'&&!p.bmember?`<button class="pr-act" style="padding:5px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎</button>`:''}
       </div>
-      ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
-      ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
-      ${p.bnotes?`<details class="pr-bnotes"><summary>🗂️ Notes Boost</summary><div>${esc(p.bnotes)}</div></details>`:''}
-      <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Séance d\'essai':'RDV planifié'} : ${frDate(p.rappel)}${p.rappelH?' à '+p.rappelH:''}${isDue&&!p.rappelH?' · c\'est maintenant !':''}${p.rappelBy?` <small style="font-weight:600;color:var(--ink-mid)">· ${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}</span>`:'<span>Sans date</span>'}${(()=>{const u=prRdvState(p);if(!u||u.t==='plus-tard')return '';return `<span style="background:#FDE8E3;color:#B4300F;border:1px solid #F5C0AE;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">🚨 ${u.t==='imminent'?'dans '+u.diffMin+' min':u.diffMin===0?'maintenant !':'en retard de '+fmtMin(-u.diffMin)}</span>`;})()}<span>· ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
-      <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
-      ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
-      <div class="pr-actions">
-        <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'🗂️ Historique des contacts'}</button>
-        <span style="flex:0 0 auto;font-size:9px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;text-align:right">⏰ Rappel <br/>souhaité</span>
-        <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / d'essai souhaitée par le client"/>
-        <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure de rappel demandée par le client · la fiche passera en tête 1 h avant"/>
-        <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
-        ${p.noCall?'':`<button onclick="startCallFor('${p.id}')" class="pr-act" title="Ouvrir l'assistant d'appel sur cette fiche">🎧</button>`}
-        <button onclick="showAppels('${p.id}')" class="pr-act" title="Résumés d'appels (Allo)">📞${(p.appels&&p.appels.length)?' '+p.appels.length:''}</button>
-        <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
-      </div>
-      ${open?histPanel(p):''}
+      ${open?`<div class="pl-detail">
+        <div class="pl-dgrid">
+          <div>
+            <div class="pl-lbl">Étape</div>
+            <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
+            ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}${p.pack?`<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎ Vendeurs</button>`:''}</div>`:''}
+            <div class="pl-lbl">Rappel convenu</div>
+            <div class="pl-row">
+              <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / de séance d'essai convenue avec le client"/>
+              <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" title="Heure du rappel · la fiche passe en tête 1 h avant"/>
+              ${p.rappelBy?`<small class="pl-by">${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}
+            </div>
+          </div>
+          <div>
+            <div class="pl-lbl">Coordonnées</div>
+            <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:'Pas de téléphone'}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
+            <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="setPRep('${p.id}',this.value)" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
+            ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
+            ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
+            ${p.bnotes?`<details class="pr-bnotes"><summary>🗂️ Notes Boost</summary><div>${esc(p.bnotes)}</div></details>`:''}
+            <div class="pl-row" style="margin-top:8px">
+              <button onclick="viewPFiche('${p.id}')" class="pr-act">📄 Fiche découverte</button>
+              ${p.noCall?'':`<button onclick="startCallFor('${p.id}')" class="pr-act">🎧 Appel guidé</button>`}
+              <button onclick="showAppels('${p.id}')" class="pr-act">📞 Appels Allo${(p.appels&&p.appels.length)?' ('+p.appels.length+')':''}</button>
+              <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
+            </div>
+          </div>
+        </div>
+        ${histPanel(p)}
+      </div>`:''}
     </div>`;
   };
   const h=`<div class="cg prw">
