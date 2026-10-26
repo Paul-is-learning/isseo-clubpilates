@@ -1,0 +1,23 @@
+# Jamais publié par Vercel : code serveur, base, outillage, rapports
+supabase/
+migrations/
+.claude/
+scripts/
+tests/
+tests.html
+types/
+*.sql
+*.md
+*.csv
+discover-*.json
+*-report.json
+*backup*
+package.json
+package-lock.json
+tsconfig.json
+vite.config.js
+vitest.config.js
+eslint.config.js
+.prettierrc
+.prettierignore
+.DS_Store
