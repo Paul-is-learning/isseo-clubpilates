@@ -681,6 +681,9 @@ a.menu-item{text-decoration:none;color:inherit}
 .src-ic svg{width:14px;height:14px}
 .src-txt{font-size:10px;font-weight:700;color:var(--ink-mid);background:#F6F4EE;border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 .pl-arr{white-space:nowrap}
+.pl-done{display:inline-flex;align-items:center;gap:5px;margin-left:8px;font-size:11px;font-weight:800;color:#1F7A55;background:#EAF6F0;border:1px solid #BFE8D6;border-radius:99px;padding:2px 9px 2px 6px;cursor:pointer;white-space:nowrap;vertical-align:1px}
+.pl-done input{width:14px;height:14px;margin:0;accent-color:#1F9E75;cursor:pointer}
+.pl-done:hover{background:#DDF1E6}
 .pl-edit{margin-left:8px;border:1px solid var(--cream-line);background:#fff;border-radius:8px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;text-transform:none;letter-spacing:0}
 .pl-form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;background:var(--cream);border:1px solid var(--cream-line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .pl-form label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em}
@@ -4319,7 +4322,7 @@ function showProspects(keepScroll){
         <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
         <div class="pl-who"><b>${srcLogo(p.src)}${esc(p.nom)}</b><span>${sub}</span></div>
         <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${flags}</div>
-        <div class="pl-next">${when}</div>
+        <div class="pl-next">${when}${p.rappel&&prOpen(p)&&rdvAt(p)&&rdvAt(p).getTime()<=Date.now()+15*60000?`<label class="pl-done" onclick="event.stopPropagation()" title="Cochez quand le rappel est fait et que le prospect a décroché"><input type="checkbox" onchange="rappelDone('${p.id}',this)"/> Rappel fait</label>`:''}</div>
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
         ${plCtx(p)}
         <div class="pl-quick" onclick="event.stopPropagation()">
@@ -4455,6 +4458,23 @@ async function createProspect(){
     persistProspects();prSort='recent';prFilter=null;prOpenId=d.prospect.id;loadHist(d.prospect.id);showProspects();
     toast(d.exists?'Ce prospect existe déjà · fiche ouverte':'✅ Prospect créé · envoi vers Boost dans la minute');
   }catch(e){if(e.message!=='code'&&err)err.textContent=e.message||'Connexion impossible';}
+}
+// Rappel fait (et décroché) : la date de rappel est levée, la fiche sort des rappels programmés,
+// une note datée le trace et Boost est mis à jour (Contacté, date de relance effacée)
+async function rappelDone(id,box){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.rappel){if(box)box.checked=false;return;}
+  const t=rdvAt(p);
+  const ok=(p.appels||[]).some(a=>{const l0=String(a.txt||'').split('\n')[0];return /^📞/.test(l0)&&/answered|· décroché/.test(l0)&&t&&new Date(a.ts).getTime()>=t.getTime()-12*3600e3;});
+  if(!ok&&!confirm('Aucun appel décroché n\'est encore enregistré pour ce rappel.\nConfirmez-vous que le prospect a bien été joint ?')){if(box)box.checked=false;return;}
+  const lbl=frDate(p.rappel)+(p.rappelH?' '+p.rappelH:'');
+  try{
+    const d=await syncCall('note_add',{id,text:'✅ Rappel du '+lbl+' fait · décroché',nom:CFG.rep||''});
+    if(d&&d.ok&&d.prospect){const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)Object.assign(PROSPECTS[i],d.prospect);}
+  }catch(e){if(e.message==='code'){if(box)box.checked=false;return;}}
+  const q=PROSPECTS.find(x=>x.id===id);
+  q.rappel='';q.rappelH='';q.rappelBy='';q.maj=new Date().toISOString();
+  persistProspects();schedulePush();showProspects(true);
+  toast('✅ Rappel fait · retiré des rappels programmés'+(q.bid?' · Boost mis à jour':''));
 }
 // Laisser une note : datée et signée, en tête des notes Boost, envoyée aussitôt à Boost
 let noteOpen=null;
