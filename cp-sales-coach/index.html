@@ -696,6 +696,8 @@ a.menu-item{text-decoration:none;color:inherit}
 .jr-tr{flex:0 0 auto;border:1px solid var(--cream-line);background:#fff;border-radius:9px;padding:4px 9px;font-size:11.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;white-space:nowrap}
 .jr-tr:hover{background:var(--lav)}
 .jr-tr.off{opacity:.28;cursor:default;border-color:transparent;background:transparent;padding:4px 6px}
+.pr-tabn{display:inline-block;min-width:16px;font-size:10.5px;font-weight:800;color:var(--ink-mid);background:var(--cream);border-radius:99px;padding:0 6px;margin-left:3px}
+.pr-tab.on .pr-tabn{background:rgba(255,255,255,.22);color:#fff}
 .pr-rdvb{display:inline-block;min-width:18px;background:#E0452B;color:#fff;border-radius:99px;padding:0 6px;font-size:11px;font-weight:800;margin-left:4px;animation:prBlink 1.1s ease-in-out infinite}
 @keyframes prBlink{50%{opacity:.3}}
 .pr-card.rdv-hot{animation:prGlow 1.4s ease-in-out infinite}
@@ -4158,7 +4160,7 @@ function setPrFilter(k){prFilter=prFilter===k?null:k;showProspects(true);}
 let prQueryRaw='',_prSearchT=null;
 function prSearch(v){prQueryRaw=v||'';prQuery=prQueryRaw.toLowerCase().trim();clearTimeout(_prSearchT);_prSearchT=setTimeout(()=>showProspects(true),140);}
 /* ── Priorisation des rappels : ancienneté du dernier contact + appétence ── */
-let prSort=localStorage.getItem('cpcoach_prsort')||'recent';
+let prSort=({recent:'new',prio:'redo'})[localStorage.getItem('cpcoach_prsort')]||localStorage.getItem('cpcoach_prsort')||'new';
 function setPrSort(m){prSort=m;localStorage.setItem('cpcoach_prsort',m);showProspects(true);}
 function prLastContact(p){
   let last='';
@@ -4252,6 +4254,20 @@ function prAgeChip(p){
   const col=d>=14?'#C0492F':d>=7?'#B4710F':'#8C95A8';
   return `<span style="color:${col};font-weight:700">⏳ ${d} j sans contact</span>`;
 }
+// ── Segments « intelligents » des leads ouverts (statut Contacté) ──
+// 🆕 Nouveaux : jamais appelés · 🔁 À recontacter : appelés, sans rappel, pas injoignables
+// ⏰ Rappels & RDV : rappel ou séance datés · 📵 Injoignables : 3 appels ou plus, aucun décroché
+function prCalls(p){const c=(p.appels||[]).filter(a=>/^📞/.test(String(a.txt||'')));const ok=c.filter(a=>/answered|· décroché/.test(String(a.txt||'').split('\n')[0])).length;return {n:c.length,ok};}
+function prSeg(p){
+  if(p.bmember||!prOpen(p))return '';
+  if(p.rappel)return 'rappels';
+  if(p.statut!=='rappeler')return '';
+  const c=prCalls(p);
+  if(!c.n)return 'new';
+  if(c.n>=3&&!c.ok)return 'unreach';
+  return 'redo';
+}
+const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · le plus récent en tête (rappeler vite un lead chaud)'],['redo','🔁 À recontacter','Déjà appelés, sans rappel convenu · le contact le plus ancien en tête'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
 function showProspects(keepScroll){
   const _ae=document.activeElement,_srch=_ae&&_ae.id==='prSearchIn'?[_ae.selectionStart,_ae.selectionEnd]:null;
   _vReg('prospects');
@@ -4268,13 +4284,13 @@ function showProspects(keepScroll){
   // 🆕 Leads récents : ordre d'arrivée, le plus récent en tête (comme dans Boost)
   // 🎯 À contacter d'abord : leads ouverts sans rappel programmé · jamais appelés d'abord (les plus anciens en tête), puis dernier contact le plus ancien
   // ⏰ Rappels programmés : par date et heure, retards en tête
-  // Une tuile du pipeline cliquée = vue complète de ce statut, sans les onglets (récents, à rappeler…)
-  const clientView=!!prFilter;
-  if(!clientView&&!prFilter&&prSort==='prio')list=list.filter(p=>p.statut==='rappeler'&&!p.noCall&&!p.rappel);
-  if(!clientView&&!prFilter&&prSort==='rappels')list=list.filter(p=>prOpen(p)&&p.rappel);
-  // Adhérents importés de Boost : visibles via le filtre « Client », jamais mêlés aux leads
-  // (avec un filtre de statut actif, on montre toutes les fiches de ce statut, adhérents compris)
-  if(prSort==='recent'&&!prFilter)list=list.filter(p=>!p.bmember);
+  // Tuiles Séance d'essai, Client, Perdu = vue complète de ce statut, sans onglets.
+  // Sans tuile (ou tuile Contacté) : les segments intelligents des leads ouverts.
+  const clientView=!!prFilter&&prFilter!=='rappeler';
+  if(!clientView&&prSort!=='journal'){
+    if(prSort==='all')list=list.filter(p=>prOpen(p)&&!p.bmember);
+    else list=list.filter(p=>prSeg(p)===prSort);
+  }
   const sorted=list.sort((a,b)=>{
     if(clientView){
       if(prFilter==='essai')return (rdvAt(a)?.getTime()||9e15)-(rdvAt(b)?.getTime()||9e15); // par date de séance
@@ -4282,10 +4298,7 @@ function showProspects(keepScroll){
       if(prFilter==='perdu')return String(b.maj||'').localeCompare(String(a.maj||''));
       return prArrival(b).localeCompare(prArrival(a));
     }
-    if(prSort==='prio'){
-      const na=(a.appels||[]).length?1:0,nb=(b.appels||[]).length?1:0;if(na!==nb)return na-nb;
-      return (na?prLastContact(a):prArrival(a)).localeCompare(na?prLastContact(b):prArrival(b));
-    }
+    if(prSort==='redo'||prSort==='unreach')return prLastContact(a).localeCompare(prLastContact(b)); // contact le plus ancien d'abord
     if(prSort==='rappels')return (rdvAt(a)?.getTime()||0)-(rdvAt(b)?.getTime()||0);
     return prArrival(b).localeCompare(prArrival(a));
   });
@@ -4394,7 +4407,7 @@ function showProspects(keepScroll){
         <div><span class="hn">1</span><span><b>Les fiches viennent de Fitness Boost</b> : nouveaux leads, rappels, statuts et commercial arrivent toutes les 5 minutes · les appels Allo (résumé, transcription) s'y rattachent automatiquement.</span></div>
         <div><span class="hn">2</span><span><b>Faites avancer le prospect</b> d'étape en étape en tapant sur le pipeline : Séance d'essai → RDV venu → Client · les mêmes mots que dans Fitness Boost.</span></div>
         <div><span class="hn">3</span><span><b>« Historique des contacts »</b> retrace tout ce qui a déjà été fait : appels et durée, SMS, emails, RDV.</span></div>
-        <div><span class="hn">4</span><span><b>Trois onglets</b> : 🆕 les leads par ordre d'arrivée, 🎯 ceux à contacter d'abord, ⏰ les rappels programmés (l'onglet clignote quand l'heure approche) · les pastilles 🔥/🌤/❄️ estiment l'appétence.</span></div>
+        <div><span class="hn">4</span><span><b>Les onglets trient vos leads</b> : 🆕 nouveaux (jamais appelés), 🔁 à recontacter, ⏰ rappels et RDV (l'onglet clignote quand l'heure approche), 📵 injoignables (3 appels sans réponse), 📞 historique d'appels avec transcriptions · les pastilles 🔥/🌤/❄️ estiment l'appétence.</span></div>
         <div><span class="hn">5</span><span>Les fiches sont <b>partagées avec toute l'équipe</b> et sauvegardées au studio · le badge en haut vous dit si tout est synchronisé.</span></div>
       </div>
     </details>
@@ -4402,16 +4415,13 @@ function showProspects(keepScroll){
     <div class="hm-sec">Pipeline</div>
     <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-tools">
-    ${prFilter?'':`<div class="pr-tabs">
-      <button class="pr-tab${prSort!=='prio'&&prSort!=='journal'&&prSort!=='rappels'?' on':''}" onclick="setPrSort('recent')" title="Les leads dans leur ordre d'arrivée, le plus récent en tête (comme dans Boost)">🆕 Leads récents</button>
-      <button class="pr-tab${prSort==='prio'?' on':''}" onclick="setPrSort('prio')" title="Leads sans rappel programmé : jamais appelés d'abord (les plus anciens en tête), puis ceux dont le dernier contact est le plus ancien">🎯 À contacter d'abord</button>
-      <button class="pr-tab${prSort==='rappels'?' on':''}" onclick="setPrSort('rappels')" title="Les rappels convenus avec les prospects, par date et heure · l'onglet clignote quand l'heure approche">⏰ Rappels programmés <span id="prRdvBadge" class="pr-rdvb" style="${PSC().filter(rdvHot).length?'':'display:none'}">${PSC().filter(rdvHot).length}</span></button>
-      <button class="pr-tab${prSort==='journal'?' on':''}" onclick="setPrSort('journal')" title="Tous les appels réalisés, du plus récent au plus ancien">📞 Journal d'appels</button>
+    ${prFilter&&prFilter!=='rappeler'?'':`<div class="pr-tabs">${PR_SEGS.map(([k,l,t])=>{const n=k==='journal'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
+      return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${l}${k==='journal'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;}).join('')}
     </div>`}
     <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':prFilter?'Rechercher dans « '+PIPE[prFilter].lbl+' » : nom, numéro…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
-    <div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:(prSort==='journal'?'Journal d\'appels':prSort==='rappels'?'Rappels programmés':prSort==='prio'?'À contacter d\'abord':'Leads récents')+' · '+(prSort==='journal'?'':sorted.length)}</div>
-    ${!clientView&&prSort==='journal'?callJournalHTML(null,list):sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
+    <div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'?'':' · '+sorted.length)}</div>
+    ${!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   if(_srch){const n=document.getElementById('prSearchIn');if(n){n.focus({preventScroll:true});try{n.setSelectionRange(_srch[0],_srch[1]);}catch(e){}}}
@@ -4462,7 +4472,7 @@ async function createProspect(){
     if(!d.ok){if(err)err.textContent=d.error||'Création impossible';return;}
     document.getElementById('icPop')?.remove();
     if(!PROSPECTS.find(x=>x.id===d.prospect.id))PROSPECTS.unshift(d.prospect);
-    persistProspects();prSort='recent';prFilter=null;prOpenId=d.prospect.id;loadHist(d.prospect.id);showProspects();
+    persistProspects();prSort='new';prFilter=null;prOpenId=d.prospect.id;loadHist(d.prospect.id);showProspects();
     toast(d.exists?'Ce prospect existe déjà · fiche ouverte':'✅ Prospect créé · envoi vers Boost dans la minute');
   }catch(e){if(e.message!=='code'&&err)err.textContent=e.message||'Connexion impossible';}
 }
