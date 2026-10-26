@@ -668,7 +668,6 @@ a.menu-item{text-decoration:none;color:inherit}
 .hs-who{font-size:11px;color:var(--ink-mid);font-weight:700}.hs-d{margin-left:auto;font-size:11px;color:var(--ink-mid)}
 .hs-s{font-size:12px;color:#55607A;margin-top:2px}.hs-t{font-size:12.5px;color:#333B4E;margin-top:4px;white-space:pre-wrap;line-height:1.45}
 .hs-more{margin-top:5px;font-size:11.5px;font-weight:700;color:var(--cp-deep);background:none;border:0;padding:0;cursor:pointer}
-.hs-rel{margin-top:10px}.hs-rel summary{cursor:pointer;font-size:12.5px;font-weight:800;color:var(--cp-deep);padding:4px 0}
 @media(max-width:520px){.hs-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .pr-rdvb{display:inline-block;min-width:18px;background:#E0452B;color:#fff;border-radius:99px;padding:0 6px;font-size:11px;font-weight:800;margin-left:4px;animation:prBlink 1.1s ease-in-out infinite}
 @keyframes prBlink{50%{opacity:.3}}
@@ -2259,9 +2258,9 @@ function renderScreen(keepScroll){
     if(!st._prTel&&st.prospectTel)st._prTel=st.prospectTel;
     const curSt=st._prStatut||(st.callGoal==='trial'?'essai':'abo');
     const capture=st._prSaved
-      ?`<div class="pr-savedbox">✅ <b>Prospect enregistré</b> dans Mes prospects · les relances adaptées vous y attendent.<button class="go" style="margin-top:10px;width:100%" onclick="showProspects()">📇 Ouvrir Mes prospects</button></div>`
+      ?`<div class="pr-savedbox">✅ <b>Prospect enregistré</b> dans Mes prospects · son historique et ses rappels vous y attendent.<button class="go" style="margin-top:10px;width:100%" onclick="showProspects()">📇 Ouvrir Mes prospects</button></div>`
       :`<div class="pr-capture">
-      <div class="pr-cap-h">📇 Enregistrer ce prospect <small>pour le suivi & les relances</small></div>
+      <div class="pr-cap-h">📇 Enregistrer ce prospect <small>pour le suivi et les rappels</small></div>
       <div class="pr-cap-row"><input id="pr-nom" type="text" placeholder="Prénom Nom *" value="${esc(st._prNom||'')}" oninput="st._prNom=this.value"/><input id="pr-tel" type="tel" placeholder="Téléphone" value="${esc(st._prTel||'')}" oninput="st._prTel=this.value"/></div>
       <div class="pr-cap-lbl">Issue de l'appel :</div>
       <div class="pr-cap-sts">${['essai','abo','rappeler','perdu'].map(k=>`<button class="pr-st${curSt===k?' on':''}" style="${curSt===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="pickPrStatut('${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
@@ -2927,36 +2926,6 @@ function saveProspect(){
   if(!ex)toast('📇 '+nom+' ajouté à Mes prospects ✓');
 }
 function pickPrStatut(s){st._prStatut=s;renderScreen();}
-
-// Relances adaptées à l'étape du prospect · ton naturel, fond verrouillé
-function relanceMsgs(p){
-  const pre=(p.nom||'').split(' ')[0]||'',stu=CFG.studio?' '+CFG.studio:'',rep=(CFG.rep||'').split(' ')[0];
-  const moi=rep?rep+' de Club Pilates'+stu:'Club Pilates'+stu,sig=rep?rep+', Club Pilates'+stu:'Club Pilates'+stu;
-  const obj=p.obj&&p.obj!=='atteindre vos objectifs'?p.obj:'retrouver la forme';
-  const dt=p.rappel?frDate(p.rappel):null;
-  const M={
-    essai:[
-      {t:'✉️ Confirmation (à envoyer tout de suite)',msg:`Bonjour ${pre}, c'est ${moi} 😊 C'est noté pour votre cours découverte${dt?' le '+dt:''} ! Venez en tenue souple, on s'occupe de tout le reste. À très vite !`},
-      {t:'✉️ Rappel la veille',msg:`Bonjour ${pre} ! Petit rappel : votre cours découverte Club Pilates${stu}, c'est demain${dt?' ('+dt+')':''} 🧘 On a hâte de vous accueillir. Un empêchement ? Répondez-moi, on recale ça sans souci.`},
-      {t:'✉️ No-show (il/elle n\'est pas venu·e)',msg:`Bonjour ${pre}, on vous a manqué aujourd'hui ! Aucun souci, ça arrive. Votre cours découverte vous attend toujours · je vous repropose un créneau : plutôt en semaine ou le week-end ? ${sig}`}
-    ],
-    venu:[
-      {t:'🗣️ Closing post-essai (à dire, en studio ou au tel)',msg:`« Alors, ce premier cours : vous avez ressenti quoi ? … C'est exactement ça qu'on développe séance après séance. Vous me disiez vouloir ${obj} · et le rythme qui change vraiment les choses, c'est 2 séances par semaine. Là, vous tombez pile pendant le lancement : statut fondateur, -${CFG.founding}% à vie, inscription offerte. On vous installe ça ? »`},
-      {t:'✉️ Parti·e sans signer (envoyer à J+1)',msg:`Bonjour ${pre}, un plaisir de vous avoir accueilli·e au studio ! Prenez le temps qu'il vous faut. De mon côté je garde votre tarif fondateur (-${CFG.founding}% à vie) de côté encore quelques jours · si une question vous trotte en tête, je suis là. ${sig}`}
-    ],
-    rappeler:[
-      {t:'✉️ Relance douce (comme convenu)',msg:`Bonjour ${pre}, c'est ${moi} 😊 Comme convenu, je reviens vers vous : toujours partant·e pour ${obj} ? Dites-moi votre meilleur créneau pour qu'on en reparle 5 minutes.`},
-      {t:'🗣️ Rappel téléphonique (à dire)',msg:`« Bonjour ${pre}, ${moi} · on s'était dit qu'on se rappelait${dt?' vers le '+dt:''}. Vous m'aviez parlé de ${obj} : c'est toujours d'actualité ? »`}
-    ],
-    abo:[
-      {t:'✉️ Bienvenue',msg:`Bienvenue chez Club Pilates${stu}, ${pre} ! 🎉 Ravi·e de vous compter parmi nos membres. Pensez à réserver vos premiers cours sur l'app · et pour la moindre question, je suis là. ${sig}`}
-    ],
-    perdu:[
-      {t:'✉️ Porte ouverte (un seul message, puis on lâche)',msg:`Bonjour ${pre}, ${moi}. Promis, je ne vous relance plus après ce message 😊 Si l'envie revient un jour, la porte est grande ouverte. Prenez soin de vous !`}
-    ]
-  };
-  return M[p.statut]||[];
-}
 
 /* ── Équipe & invitations (admin) ── */
 async function showTeam(){_vReg('team');
@@ -4124,7 +4093,6 @@ function showProspects(keepScroll){_vReg('prospects');
     const pi=PIPE[p.statut]||PIPE.rappeler;
     const isDue=due(p);
     const open=prOpenId===p.id;
-    const msgs=relanceMsgs(p).filter(m=>!(p.cSms===false&&p.cWa===false)||/^🗣️/.test(m.t));
     const hot=prSort==='rappels'&&rdvHot(p);
     return `<div class="pr-card${isDue?' due':''}${hot?' rdv-hot':''}" style="border-left:4px solid ${pi.c}">
       <div class="pr-top">
@@ -4142,7 +4110,7 @@ function showProspects(keepScroll){_vReg('prospects');
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
       ${p.statut==='abo'?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
       <div class="pr-actions">
-        <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'🗂️ Historique & relances'}</button>
+        <button onclick="togglePr('${p.id}')" class="pr-act main">${open?'▴ Fermer':'🗂️ Historique des contacts'}</button>
         <span style="flex:0 0 auto;font-size:9px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em;line-height:1.25;text-align:right">⏰ Rappel<br/>souhaité</span>
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / d'essai souhaitée par le client"/>
         <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure de rappel demandée par le client · la fiche passera en tête 1 h avant"/>
@@ -4151,7 +4119,7 @@ function showProspects(keepScroll){_vReg('prospects');
         <button onclick="showAppels('${p.id}')" class="pr-act" title="Résumés d'appels (Allo)">📞${(p.appels&&p.appels.length)?' '+p.appels.length:''}</button>
         <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
       </div>
-      ${open?histPanel(p,msgs):''}
+      ${open?histPanel(p):''}
     </div>`;
   };
   const h=`<div class="cg">
@@ -4202,7 +4170,7 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
   whatsapp:['🟢','WhatsApp envoyé'],whatsapp_recu:['🟢','WhatsApp reçu'],messenger:['💭','Messenger envoyé'],messenger_recu:['💭','Messenger reçu'],instagram:['📸','Instagram envoyé'],instagram_recu:['📸','Instagram reçu'],
   rdv:['📅','RDV'],rdv_annule:['📅','RDV annulé'],rdv_pas_venu:['📅','RDV non venu'],rdv_venu:['📅','RDV venu'],rdv_date_passee:['📅','RDV passé'],seance_essai:['🎟️','Séance d\'essai'],bilan:['📋','Bilan'],
   rappel:['⏰','Rappel'],note:['📝','Note'],message_vocal:['🎙️','Message vocal'],tache:['✔️','Tâche'],signature:['✅','Signature'],refus_signature:['✖️','Refus de signature'],contractuel:['📄','Contrat']};
-function histPanel(p,msgs){
+function histPanel(p){
   const h=HIST[p.id];
   const dt=iso=>{const t=new Date(iso);return isNaN(t)?'':t.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});};
   const items=[];
@@ -4242,9 +4210,6 @@ function histPanel(p,msgs){
       ${i.txt?`<div class="hs-t">${esc(i.txt)}</div>`:''}
       ${i.allo?`<button class="hs-more" onclick="showAppels('${p.id}')">📜 Résumé et transcription</button>`:''}
     </div></div>`).join(''):(!h||h.loading?'':'<div class="hs-load">Aucun point de contact enregistré.</div>')}</div>
-    <details class="hs-rel"><summary>✉️ Messages de relance prêts à copier (${msgs.length})</summary>
-      ${msgs.map((m,i)=>`<div class="pr-msg"><div class="pr-msg-t">${m.t}</div><div class="pr-msg-b">${esc(m.msg)}</div><button class="pr-copy" onclick="copyPMsg('${p.id}',${i})">📋 Copier le message</button></div>`).join('')||'<div class="pr-msg-b" style="padding:10px">Aucune relance pour ce statut.</div>'}
-    </details>
   </div>`;
 }
 function editSale(id){
@@ -4299,7 +4264,6 @@ function delProspect(id){
     if(wasAbo&&e.message!=='code')toast('Fiche supprimée · demandez à un recruteur de retirer la vente du journal');
   });
 }
-function copyPMsg(id,i){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const m=relanceMsgs(p)[i];if(!m)return;navigator.clipboard?.writeText(m.msg).then(()=>toast('Message copié ✓ · collez-le dans vos SMS')).catch(()=>toast('Copie impossible'));}
 function viewPFiche(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   document.getElementById('fichePop')?.remove();
@@ -4614,7 +4578,7 @@ function showHome(){_vReg('home');
     <div class="hm-sec">Agir</div>
     <div class="hm-grid2">
       <button class="hm-big call" onclick="homeStartCall()"><span class="hm-icbox wh">${ic('phone')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">${inCall?'Reprendre l\'appel':'Démarrer un appel'}</span><span class="s">${inCall&&st.prospectNom?esc(st.prospectNom.split(' ')[0])+' est en cours':'Votre guide, étape par étape'}</span></button>
-      <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, relances, suivi</span>${PSC().length?`<span class="hm-count">${PSC().length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
+      <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, historique, rappels</span>${PSC().length?`<span class="hm-count">${PSC().length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
       <button class="hm-big" onclick="showICPage()"><span class="hm-icbox pch">${ic('calcheck')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Intro Class</span><span class="s">Séances, présents, signés</span></button>
       <button class="hm-big" onclick="showLeadImport()"><span class="hm-icbox mnt">${ic('download')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Importer des leads</span><span class="s">Fitness Boost, bsport, tableur</span></button>
     </div>
