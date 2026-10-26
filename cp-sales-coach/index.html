@@ -671,9 +671,12 @@ a.menu-item{text-decoration:none;color:inherit}
 @media(max-width:520px){.hs-kpis{grid-template-columns:repeat(3,minmax(0,1fr))}}
 .pr-new{border:0;background:var(--accent);color:#fff;border-radius:12px;padding:9px 14px;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 8px 18px -10px rgba(75,82,230,.8)}
 .pl-form select{border:1px solid var(--cream-line);border-radius:9px;padding:7px 9px;font:inherit;font-size:13px;color:var(--ink);background:#fff;text-transform:none;letter-spacing:0;font-weight:500}
-.pl-note{display:flex;gap:7px;align-items:stretch;margin:8px 0 2px}
-.pl-note textarea{flex:1;min-width:0;border:1px solid var(--cream-line);border-radius:10px;padding:7px 9px;font:inherit;font-size:13px;resize:vertical;background:#fff}
-.pl-note .pr-act.main{flex:0 0 auto}
+.pl-note{position:relative;margin:0 0 4px}
+.pl-note textarea{display:block;width:100%;box-sizing:border-box;min-height:58px;border:1px solid var(--cream-line);border-radius:12px;padding:8px 10px 30px;font:inherit;font-size:13px;line-height:1.45;resize:vertical;background:#fff;color:var(--ink)}
+.pl-note textarea:focus{outline:none;border-color:var(--lav-ink);box-shadow:0 0 0 3px var(--lav)}
+.pl-note-btn{position:absolute;right:7px;bottom:7px;border:0;border-radius:8px;padding:5px 11px;font-size:11.5px;font-weight:800;background:var(--lav);color:var(--lav-ink);cursor:pointer;transition:background .15s,color .15s}
+.pl-note-btn.on{background:var(--accent);color:#fff}
+.pl-hint{font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-mid);font-size:10.5px;margin-left:4px}
 .pl-edit{margin-left:8px;border:1px solid var(--cream-line);background:#fff;border-radius:8px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;text-transform:none;letter-spacing:0}
 .pl-form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;background:var(--cream);border:1px solid var(--cream-line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .pl-form label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em}
@@ -4330,7 +4333,8 @@ function showProspects(keepScroll){
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
             ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
             ${p.bnotes?`<details class="pr-bnotes"${noteOpen===p.id?' open':''}><summary>🗂️ Notes Boost</summary><div>${esc(p.bnotes)}</div></details>`:''}
-            <div class="pl-note"><textarea id="pn-${p.id}" rows="2" maxlength="600" placeholder="Laisser une note${p.bid?' · enregistrée aussitôt dans Boost':''}…"></textarea><button class="pr-act main" onclick="addNote('${p.id}')">📝 Enregistrer</button></div>
+            <div class="pl-lbl" style="margin-top:10px">Nouvelle note${p.bid?' <span class="pl-hint">envoyée aussitôt à Boost</span>':''}</div>
+            <div class="pl-note"><textarea id="pn-${p.id}" rows="2" maxlength="600" placeholder="Ex. : préfère être rappelée après 18 h, intéressée par le Pack 8…" oninput="this.nextElementSibling.classList.toggle('on',!!this.value.trim())"></textarea><button class="pl-note-btn" onclick="addNote('${p.id}')" title="Enregistrer la note">Enregistrer</button></div>
             <div class="pl-row" style="margin-top:8px">
               <button onclick="viewPFiche('${p.id}')" class="pr-act">📄 Fiche découverte</button>
               ${p.noCall?'':`<button onclick="startCallFor('${p.id}')" class="pr-act">🎧 Appel guidé</button>`}
