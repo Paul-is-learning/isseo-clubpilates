@@ -42,7 +42,7 @@ const MAX_INVITES = 50;
 // Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
 // toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
 // appartiennent aussi à Boost.
-const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset"];
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry"];
 // deno-lint-ignore no-explicit-any
 function keepBoost(clean: any, ex: any) {
   if (!ex) return;

@@ -139,6 +139,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     }
     // Champs maîtres Boost (réservés au serveur)
     p.bid = bid; p.bclub = ctx.club; p.bst = String(c.status || ""); p.bupd = String(c.updated_at || "");
+    p.bentry = String(c.effective_entry_at || c.last_entry_at || c.created_at || ""); // arrivée du lead (tri « Leads récents »)
     p.nom = String(c.name || p.nom || "").slice(0, 80);
     if (key.length === 9) p.tel = telFr(c.phone);
     p.email = String(c.email || "").slice(0, 120);
