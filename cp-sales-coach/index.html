@@ -4177,14 +4177,21 @@ function histPanel(p){
   const dt=iso=>{const t=new Date(iso);return isNaN(t)?'':t.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});};
   const items=[];
   // Appels Allo de la fiche (avec transcription)
-  (p.appels||[]).forEach(a=>{
+  // Les SMS Allo sont rangés avec les appels sur la fiche (ligne 1 « 💬 SMS envoyé / reçu ») : on les sépare
+  const isSms=a=>/^💬/.test(String(a.txt||''));
+  const allo=(p.appels||[]).filter(a=>!isSms(a)),alloSms=(p.appels||[]).filter(isSms);
+  alloSms.forEach(a=>{
+    const t=String(a.txt||'');const l0=t.split('\n')[0];
+    items.push({at:a.ts,ic:'💬',lbl:/reçu/.test(l0)?'SMS reçu':'SMS envoyé',sub:(l0.match(/ par (.+)$/)||[])[1]?'par '+l0.match(/ par (.+)$/)[1]:'',txt:t.slice(l0.length+1),src:'Allo'});
+  });
+  allo.forEach(a=>{
     const l0=String(a.txt||'').split('\n')[0];
     const RES={answered:'décroché',voicemail:'messagerie',received:'reçu',closed:'clôturé',failed:'échec',transferred_ai:'transféré à l\'IA',blocked:'bloqué',missed:'manqué'};
     const meta=/^📞/.test(l0)?l0.replace(/^📞\s*Allo\s*·\s*/,'').replace(/ · import historique/,'').replace(/\b(answered|voicemail|received|closed|failed|transferred_ai|blocked|missed)\b/g,m=>RES[m]):'résumé d\'appel';
     items.push({at:a.ts,ic:'📞',lbl:'Appel Allo',sub:meta,src:'Allo',allo:a.ts});
   });
   // Activités Boost (un appel déjà présent dans Allo à ±3 min n'est pas affiché deux fois)
-  const alloT=(p.appels||[]).map(a=>new Date(a.ts).getTime()).filter(x=>!isNaN(x));
+  const alloT=allo.map(a=>new Date(a.ts).getTime()).filter(x=>!isNaN(x));
   // Rappel posé par l'équipe : il remplace les rappels automatiques Boost prévus avant lui
   const nowT=Date.now();
   const humanT=(((h&&h.items)||[]).filter(a=>!a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()>nowT).map(a=>new Date(a.sched).getTime()).sort((x,y)=>x-y)[0])
@@ -4206,11 +4213,13 @@ function histPanel(p){
   items.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
   const B=((h&&h.items)||[]);
   const n=k=>B.filter(a=>k.test(a.type)).length;
-  const calls=(p.appels||[]).length+B.filter(a=>/^appel/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).length;
-  const callMin=B.filter(a=>/^appel_ok/.test(a.type)).reduce((s,a)=>s+(a.dur||0),0);
+  const calls=allo.length+B.filter(a=>/^appel/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).length;
+  // Durée totale : minutes Boost + durées Allo (« 10 m 40 s », « 45 s ») des appels non doublonnés
+  const alloSec=allo.reduce((s,a)=>{const l0=String(a.txt||'').split('\n')[0];const m=l0.match(/(?:(\d+)\s*h\s*)?(?:(\d+)\s*m(?:in)?\s*)?(\d+)\s*s\b/)||l0.match(/(?:(\d+)\s*h\s*)?(\d+)\s*m(?:in)?\b()/);return s+(m?((+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)):0);},0);
+  const callMin=Math.round(alloSec/60)+B.filter(a=>/^appel_ok/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).reduce((s,a)=>s+(a.dur||0),0);
   const kpi=(ic,v,l)=>`<div class="hs-k"><b>${ic} ${v}</b><span>${l}</span></div>`;
   return `<div class="pr-msgs hs">
-    <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/),'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
+    <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/)+alloSms.length,'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
     ${!h||h.loading?'<div class="hs-load">⏳ Chargement de l\'historique Boost…</div>':h.err||!h.ok?'<div class="hs-load">📴 Historique Boost indisponible pour le moment · seuls les appels Allo sont affichés.</div>':!h.boost&&!p.bid?'<div class="hs-load">Fiche absente de Boost · seuls les appels Allo sont affichés.</div>':''}
     ${replaced?`<div class="hs-load">🧹 ${replaced} rappel${replaced>1?'s':''} automatique${replaced>1?'s':''} Boost masqué${replaced>1?'s':''} : remplacé${replaced>1?'s':''} par le rappel convenu du ${new Date(humanT).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} à ${new Date(humanT).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}.</div>`:''}
     <div class="hs-list">${items.length?items.map(i=>`<div class="hs-it"><div class="hs-ic">${i.ic}</div><div class="hs-b">
