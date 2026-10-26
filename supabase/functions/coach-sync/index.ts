@@ -42,7 +42,7 @@ const MAX_INVITES = 50;
 // Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
 // toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
 // appartiennent aussi à Boost.
-const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry"];
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe"];
 // deno-lint-ignore no-explicit-any
 function keepBoost(clean: any, ex: any) {
   if (!ex) return;
@@ -50,6 +50,14 @@ function keepBoost(clean: any, ex: any) {
   if (ex.bid) { clean.nom = ex.nom; clean.tel = ex.tel; clean.rep = String(ex.rep || ""); }
   // Statut changé depuis l'outil : il n'est plus « posé par Boost »
   if (ex.bset && clean.statut !== ex.statut) clean.bset = false;
+}
+// Changement fait dans l'outil sur une fiche Boost (statut, rappel) : mis en file pour boost-push,
+// qui l'écrira dans Boost (bq = à envoyer, bqs = signature du dernier envoi)
+// deno-lint-ignore no-explicit-any
+function markBq(next: any, ex: any, by: string) {
+  if (!ex?.bid) return;
+  if (next.statut === ex.statut && String(next.rappel || "") === String(ex.rappel || "") && String(next.rappelH || "") === String(ex.rappelH || "")) return;
+  next.bq = { statut: next.statut, rappel: String(next.rappel || ""), rappelH: String(next.rappelH || ""), at: new Date().toISOString(), by: String(by || "").slice(0, 60) };
 }
 // Refus d'appel noté dans Boost : le numéro ne quitte jamais le serveur
 // deno-lint-ignore no-explicit-any
@@ -586,6 +594,7 @@ serve(async (req) => {
         if (i >= 0) {
           keepBoost(clean, list[i]);
           if ((clean.maj || "") >= (list[i].maj || "")) {
+            markBq(clean, list[i], rep);
             // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
             const seen = new Set(clean.appels.map((a: any) => String(a.ts).slice(0, 16)));
             for (const a of (list[i].appels || [])) if (!seen.has(String(a.ts).slice(0, 16))) clean.appels.push(a);
@@ -608,7 +617,7 @@ serve(async (req) => {
         const base = newer ? clean : ex, other = newer ? ex : clean;
         const merged: any = { ...other, ...base };
         merged.id = clean.id; // l'id de la fiche de l'assistant (porte les événements de vente)
-        if (ex.bid) { for (const f of BOOST_FIELDS) if (f in ex) merged[f] = ex[f]; merged.nom = ex.nom; merged.tel = ex.tel; merged.rep = String(ex.rep || ""); }
+        if (ex.bid) { for (const f of BOOST_FIELDS) if (f in ex) merged[f] = ex[f]; merged.nom = ex.nom; merged.tel = ex.tel; merged.rep = String(ex.rep || ""); markBq(merged, ex, rep); }
         if (/^Contact 0/.test(String(merged.nom || "")) && other.nom && !/^Contact 0/.test(String(other.nom))) merged.nom = other.nom;
         merged.rep = base.rep || other.rep;
         merged.studio = base.studio || other.studio;

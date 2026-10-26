@@ -3075,7 +3075,7 @@ function boostBadges(p){
   if(!p.bid)return '';
   const pill=(t,bg,c,bd)=>`<span class="pr-bb" style="background:${bg};color:${c};border-color:${bd}">${t}</span>`;
   const bl=BOOST_ST[p.bst]||p.bst||'?';
-  return `<div class="pr-bbs">${bl!==stLabel(p)?pill('Boost · '+esc(bl),'#EEF2FB','#2A3F6B','#D5DDF0'):pill('✓ Boost','#EEF2FB','#2A3F6B','#D5DDF0')}${p.src?pill(esc(BOOST_SRC[p.src]||p.src),'#F6F4EE','#6B6252','#E6E0D2'):''}${p.noCall?pill('📵 Ne pas appeler','#FDECE8','#B4300F','#F5C0AE'):''}</div>`;
+  return `<div class="pr-bbs">${bl!==stLabel(p)?pill('Boost · '+esc(bl),'#EEF2FB','#2A3F6B','#D5DDF0'):pill('✓ Boost','#EEF2FB','#2A3F6B','#D5DDF0')}${p.src?pill(esc(BOOST_SRC[p.src]||p.src),'#F6F4EE','#6B6252','#E6E0D2'):''}${p.noCall?pill('📵 Ne pas appeler','#FDECE8','#B4300F','#F5C0AE'):''}${p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?pill('⏳ envoi vers Boost','#FFF6E0','#8A5A00','#F3D58C'):p.bqe?`<span class="pr-bb" style="background:#FDECE8;color:#B4300F;border-color:#F5C0AE" title="${esc(p.bqe)}">⚠️ Boost n'a pas accepté</span>`:''}</div>`;
 }
 function buildStatsMap(events,prospects){
   const map={};

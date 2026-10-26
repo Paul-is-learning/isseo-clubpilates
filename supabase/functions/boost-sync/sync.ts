@@ -32,28 +32,32 @@ const NO_CREATE = new Set(["client", "ancien_client", "archive"]);
 
 // Activité planifiée la plus proche par contact : essai (seance_essai) ou rappel (rappel / rdv)
 export function plannedByContact(acts: any[], nowIso: string) {
-  const out = new Map<string, { at: string; essai: boolean }>();
+  const out = new Map<string, { at: string; essai: boolean; created: string }>();
   for (const a of acts) {
     if (!a?.prospect_id || a.status !== "planifie" || !a.scheduled_at) continue;
     const essai = a.action_type === "seance_essai" || a.rdv_type === "seance_essai";
     if (!essai && !["rappel", "rdv"].includes(String(a.action_type))) continue;
     if (String(a.scheduled_at) < nowIso.slice(0, 10)) continue; // passé : ignoré
     const cur = out.get(a.prospect_id);
-    if (!cur || String(a.scheduled_at) < cur.at) out.set(a.prospect_id, { at: String(a.scheduled_at), essai });
+    if (!cur || String(a.scheduled_at) < cur.at) out.set(a.prospect_id, { at: String(a.scheduled_at), essai, created: String(a.created_at || "") });
   }
   return out;
 }
 
 // Statut Sales Coach + date de rappel déduits d'un contact Boost
-export function mapStatus(c: any, planned?: { at: string; essai: boolean }) {
+export function mapStatus(c: any, planned?: { at: string; essai: boolean; created?: string }) {
   const st = String(c?.status || "");
   let statut = "rappeler";
   if (st === "rdv_venu") statut = "venu";
   else if (st === "perdu") statut = "perdu";
   else if (planned?.essai) statut = "essai";
   let when = "";
-  if (planned) when = planned.at;
-  else if (st === "rdv_planifie") when = String(c?.next_rdv || c?.date_relance || c?.date_rdv || "");
+  // Date de relance (écrite par le Sales Coach ou dans Boost) contre activité planifiée : la plus
+  // récemment posée l'emporte ; une séance d'essai planifiée garde toujours sa date
+  const rel = String(c?.date_relance || "");
+  if (planned && (planned.essai || !rel || String(planned.created || "") > String(c?.updated_at || ""))) when = planned.at;
+  else if (rel) when = rel;
+  else if (st === "rdv_planifie") when = String(c?.next_rdv || c?.date_rdv || "");
   const dt = when ? parisDT(when) : null;
   return { statut, rappel: dt?.d || "", rappelH: dt && /T\d/.test(when) ? dt.h : "", nok: st === "rdv_nok", client: st === "client" };
 }
@@ -166,4 +170,49 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   // Fiche liée dont le contact n'est plus renvoyé par Boost (archivé hors liste…) : signalée
   const disparus = list.filter((p) => p.bid && p.bclub === ctx.club && !bidsSeen.has(String(p.bid))).length;
   return { list, tomb, report: { ...R, lies_mais_absents_de_boost: disparus } };
+}
+
+// ═══ Sens inverse : Sales Coach → Boost (boost-push) ═══
+
+// Heure de Paris (AAAA-MM-JJ + HH:MM) → instant UTC ISO
+export function parisToUtc(d: string, h: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || "");
+  if (!m) return "";
+  const [hh, mm] = (/^\d{1,2}:\d{2}$/.test(h || "") ? h : "09:00").split(":").map(Number);
+  const guess = Date.UTC(+m[1], +m[2] - 1, +m[3], hh, mm);
+  const p = parisDT(new Date(guess).toISOString());
+  if (!p) return "";
+  const [ph, pm] = p.h.split(":").map(Number);
+  const shown = Date.UTC(+p.d.slice(0, 4), +p.d.slice(5, 7) - 1, +p.d.slice(8, 10), ph, pm);
+  return new Date(guess - (shown - guess)).toISOString();
+}
+
+// Signature d'un changement à envoyer (évite tout double envoi)
+export const bqSig = (q: any) => [q?.statut, q?.rappel, q?.rappelH].join("|");
+
+// Ce qu'on écrit dans Boost pour un changement fait dans le Sales Coach (q = p.bq)
+export function buildOps(q: any, contact: any, nowIso: string, lastRdvSig?: string) {
+  const bst = String(contact?.status || "");
+  const patch: Record<string, unknown> = {};
+  let rdv: Record<string, unknown> | null = null;
+  const when = q.rappel ? parisToUtc(q.rappel, q.rappelH) : "";
+  if (bst === "client" && q.statut !== "abo") return { skip: "déjà client dans Boost (statut définitif)" };
+  switch (q.statut) {
+    case "abo": patch.status = "client"; patch.date_inscription = nowIso; break;
+    case "perdu": patch.status = "perdu"; break;
+    case "venu": patch.status = "rdv_venu"; patch.est_venu = true; patch.date_last_rdv_venu = nowIso; break;
+    case "essai":
+      patch.status = "rdv_planifie";
+      if (when && lastRdvSig !== "essai|" + when) rdv = { scheduled_at: when, user_id: contact?.assigned_to || null, title: "Séance d'essai", duration: 50 };
+      break;
+    case "rappeler":
+      if (when) { patch.status = "rdv_planifie"; patch.date_relance = when; }
+      else if (["a_traiter", "rdv_planifie", "rdv_nok"].includes(bst)) { patch.status = "contacte"; if (contact?.date_relance) patch.date_relance = null; }
+      break;
+    default: return { skip: "statut inconnu" };
+  }
+  if (patch.status === bst) delete patch.status;
+  if (rdv && !rdv.user_id) { rdv = null; }
+  if (!Object.keys(patch).length && !rdv) return { skip: "déjà à jour dans Boost" };
+  return { patch: Object.keys(patch).length ? patch : null, rdv };
 }
