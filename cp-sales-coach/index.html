@@ -4458,7 +4458,7 @@ async function aircallDial(id){
   toast('📞 Lancement de l\'appel dans Aircall…');
   try{
     const d=await syncCall('aircall_dial',{id,nom:CFG.rep||''});
-    if(d.ok){toast('📞 Appel lancé dans Aircall'+(d.ligne?' · '+d.ligne.replace(/^Club Pilates\s*/i,''):'')+' · décrochez dans l\'application');return;}
+    if(d.ok){toast('📞 Appel lancé dans l\'Aircall de '+(d.conseiller||'votre compte')+(d.ligne?' · '+d.ligne.replace(/^Club Pilates\s*/i,''):'')+' · il démarre là où ce compte est connecté (application Aircall ouverte et « disponible »)');return;}
     if(confirm('Aircall n\'a pas pu lancer l\'appel : '+(d.reason||'erreur')+'.\n\nAppeler '+(p.nom||'')+' depuis cet appareil à la place ?'))location.href='tel:'+p.tel;
   }catch(e){if(e.message!=='code'&&confirm('Aircall injoignable.\n\nAppeler depuis cet appareil à la place ?'))location.href='tel:'+p.tel;}
 }
