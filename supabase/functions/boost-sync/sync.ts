@@ -75,6 +75,15 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   return { statut, rappel: dt?.d || "", rappelH: dt && /T\d/.test(when) ? dt.h : "", nok: st === "rdv_nok", client: st === "client" };
 }
 
+// Rappel de la fiche déjà passé (heure de Paris ; sans heure = fin de journée)
+function rappelPast(p: any, nowIso: string) {
+  const n = parisDT(nowIso);
+  if (!p?.rappel || !n) return false;
+  return String(p.rappel) + " " + String(p.rappelH || "23:59") < n.d + " " + n.h;
+}
+// Changement de statut ou de rappel fait dans l'outil, pas encore écrit dans Boost
+const pendingTool = (p: any) => !!(p?.bq && [p.bq.statut, p.bq.rappel, p.bq.rappelH].join("|") !== p.bqs);
+
 export type Ctx = {
   studio: string; club: string; nowIso: string;
   contacts: any[]; acts: any[]; users: any[]; invites: any[]; deletedIds: string[];
@@ -154,8 +163,8 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     } else if (fresh) {
       // Premier lien : le statut local est conservé (référence Boost mémorisée), écart compté
       if (m.statut !== p.statut) { const g = (p.statut || "?") + " → " + String(c.status); R.ecarts_premier_lien[g] = (R.ecarts_premier_lien[g] || 0) + 1; }
-      // Un rappel convenu dans Boost est repris si la fiche n'en a pas
-      if (m.rappel && !p.rappel) { p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.maj = ctx.nowIso; R.rappel_maj++; }
+      // Un rappel convenu dans Boost est repris si la fiche n'en a pas, ou si le sien est déjà passé
+      if (m.rappel && (!p.rappel || rappelPast(p, ctx.nowIso)) && !pendingTool(p)) { p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.maj = ctx.nowIso; R.rappel_maj++; }
       p.brap = m.rappel + " " + m.rappelH;
     } else {
       // Fiche déjà liée : Boost gagne dès que son statut ou son rappel change
@@ -163,7 +172,10 @@ export function reconcile(prospects: any[], ctx: Ctx) {
       if (String(c.status) !== String(p.bst) && !NO_CREATE.has(String(c.status))) {
         if (p.statut !== m.statut) { p.statut = m.statut; p.bset = true; p.maj = ctx.nowIso; R.statut_change++; }
       }
-      if (rap.trim() && rap !== p.brap) {
+      // Boost gagne quand son rappel change, ou quand celui de la fiche est passé alors qu'un rappel
+      // à venir existe dans Boost (jamais quand un changement fait dans l'outil attend son envoi)
+      const cur = String(p.rappel || "") + " " + String(p.rappelH || "");
+      if (rap.trim() && cur !== rap && !pendingTool(p) && (rap !== p.brap || !p.rappel || rappelPast(p, ctx.nowIso))) {
         p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.brap = rap; p.maj = ctx.nowIso; R.rappel_maj++;
       }
     }
