@@ -72,14 +72,14 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     const n = userName.get(String(uid || "")) || "";
     if (!n) return "";
     // Mêmes prénoms, tirets et espaces confondus, l'un prolongeant l'autre (« Jean-Charles » =
-    // « Jean Charles Colley », « Caroline B » = « Caroline »), ou initiales (« Jean-Charles » = « JC »)
+    // « Jean Charles Colley », « Caroline B » = « Caroline »), ou initiales (« Jean-Charles » = « JC » ou « JC Colley »)
     const tok = (x: unknown) => String(x ?? "").trim().split(/[\s-]+/).map(sk).filter(Boolean);
     const a = tok(n);
     const initials = String(n).trim().split(/\s+/)[0].split("-").map((x) => sk(x).slice(0, 1)).join("");
     const pre = (x: string[], y: string[]) => x.length > 0 && x.every((t, i) => y[i] === t);
     const inv = ctx.invites.find((i: any) => {
       const b = tok(i?.nom);
-      return b.length > 0 && (pre(a, b) || pre(b, a) || (initials.length > 1 && b.length === 1 && b[0] === initials));
+      return b.length > 0 && (pre(a, b) || pre(b, a) || (initials.length > 1 && b[0] === initials));
     });
     return inv ? String(inv.nom) : n;
   };
