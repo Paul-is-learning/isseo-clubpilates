@@ -650,6 +650,7 @@ serve(async (req) => {
           v2: String(p.v2 || "").slice(0, 60),
           fullCom: p.fullCom === true,
           icId: String(p.icId || "").slice(0, 60),
+          icBook: String(p.icBook || "").slice(0, 60), // inscription à une Intro Class (séance d'essai)
           // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.
           appels: Array.isArray(p.appels)
             ? p.appels.slice(-20).map((a: any) => ({ id: String(a?.id || "").slice(0, 40), ts: String(a?.ts || "").slice(0, 30), rx: String(a?.rx || "").slice(0, 30), sv: Number(a?.sv) || 0, txt: String(a?.txt || "").slice(0, 9000) })).filter((a: any) => a.txt)
