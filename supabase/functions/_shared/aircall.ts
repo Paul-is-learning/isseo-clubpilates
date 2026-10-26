@@ -58,3 +58,20 @@ export function transcriptText(body: any): string {
 }
 
 export const callTs = (c: any) => c?.started_at ? new Date(Number(c.started_at) * 1000).toISOString() : new Date().toISOString();
+
+export async function aircallPost(path: string, body: unknown): Promise<{ status: number; body: any }> {
+  const H = aircallHeaders();
+  if (!H) return { status: 0, body: null };
+  const r = await fetch(AIRCALL_BASE + path, { method: "POST", redirect: "manual", headers: { ...H, "Content-Type": "application/json" }, body: JSON.stringify(body) });
+  const txt = await r.text();
+  try { return { status: r.status, body: txt ? JSON.parse(txt) : null }; } catch { return { status: r.status, body: null }; }
+}
+
+// Utilisateur Aircall d'un conseiller du Sales Coach : mêmes prénoms (« Solène » = « Solène VASSEUR »)
+export function matchAircallUser(users: any[], rep: string): any | null {
+  const tok = (x: unknown) => String(x ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().split(/[\s-]+/).filter(Boolean);
+  const a = tok(rep);
+  if (!a.length) return null;
+  const pre = (x: string[], y: string[]) => x.length > 0 && x.every((t, i) => y[i] === t);
+  return users.find((u) => { const b = tok(u?.name); return b.length && (pre(a, b) || pre(b, a)); }) || null;
+}

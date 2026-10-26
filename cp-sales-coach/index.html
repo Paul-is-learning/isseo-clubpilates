@@ -4276,7 +4276,7 @@ function showProspects(keepScroll){
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
         ${plCtx(p)}
         <div class="pl-quick" onclick="event.stopPropagation()">
-          ${p.noCall||!p.tel?'':`<a class="pl-btn call" href="tel:${esc(p.tel)}" title="Appeler">${ic('phone')}</a>`}
+          ${p.noCall||!p.tel?'':_sk(p.studio)===_sk('Montpellier Lattes')?`<button class="pl-btn call" onclick="aircallDial('${p.id}')" title="Appeler depuis Aircall">${ic('phone')}</button>`:`<a class="pl-btn call" href="tel:${esc(p.tel)}" title="Appeler">${ic('phone')}</a>`}
           <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
         </div>
       </div>
@@ -4366,6 +4366,16 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
   whatsapp:['🟢','WhatsApp envoyé'],whatsapp_recu:['🟢','WhatsApp reçu'],messenger:['💭','Messenger envoyé'],messenger_recu:['💭','Messenger reçu'],instagram:['📸','Instagram envoyé'],instagram_recu:['📸','Instagram reçu'],
   rdv:['📅','RDV'],rdv_annule:['📅','RDV annulé'],rdv_pas_venu:['📅','RDV non venu'],rdv_venu:['📅','RDV venu'],rdv_date_passee:['📅','RDV passé'],seance_essai:['🎟️','Séance d\'essai'],bilan:['📋','Bilan'],
   rappel:['⏰','Rappel'],note:['📝','Note'],message_vocal:['🎙️','Message vocal'],tache:['✔️','Tâche'],signature:['✅','Signature'],refus_signature:['✖️','Refus de signature'],contractuel:['📄','Contrat']};
+// Lattes : l'appel part de l'application Aircall du conseiller connecté (ligne du studio)
+async function aircallDial(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  toast('📞 Lancement de l\'appel dans Aircall…');
+  try{
+    const d=await syncCall('aircall_dial',{id,nom:CFG.rep||''});
+    if(d.ok){toast('📞 Appel lancé dans Aircall'+(d.ligne?' · '+d.ligne.replace(/^Club Pilates\s*/i,''):'')+' · décrochez dans l\'application');return;}
+    if(confirm('Aircall n\'a pas pu lancer l\'appel : '+(d.reason||'erreur')+'.\n\nAppeler '+(p.nom||'')+' depuis cet appareil à la place ?'))location.href='tel:'+p.tel;
+  }catch(e){if(e.message!=='code'&&confirm('Aircall injoignable.\n\nAppeler depuis cet appareil à la place ?'))location.href='tel:'+p.tel;}
+}
 // Transcription d'un appel Aircall, lue à la demande
 async function aircallTr(id,call){
   const p=PROSPECTS.find(x=>x.id===id);

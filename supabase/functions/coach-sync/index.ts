@@ -23,7 +23,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
-import { AIRCALL_STUDIO, aircallGet, aircallHeaders, callTs, telKey, transcriptText } from "../_shared/aircall.ts";
+import { AIRCALL_STUDIO, aircallGet, aircallHeaders, aircallPost, callTs, matchAircallUser, telKey, transcriptText } from "../_shared/aircall.ts";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -622,6 +622,28 @@ serve(async (req) => {
       }
       await Promise.all(jobs);
       return json({ ok: true, boost: boost && boostOk, items });
+    }
+
+    // ── Appel lancé depuis Aircall (Lattes) : l'appel démarre dans l'application Aircall du conseiller ──
+    if (action === "aircall_dial") {
+      const p = list.find((x) => x.id === String(body.id || ""));
+      if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
+      if (p.cPhone === false) return json({ ok: false, reason: "refus d'appel noté dans Boost" });
+      if (sk(p.studio) !== sk(AIRCALL_STUDIO) || !aircallHeaders()) return json({ ok: false, reason: "studio sans Aircall" });
+      const digits = String(p.tel || "").replace(/\D/g, "");
+      const to = digits.length === 10 && digits.startsWith("0") ? "+33" + digits.slice(1) : digits ? "+" + digits : "";
+      if (!to) return json({ ok: false, reason: "pas de numéro" });
+      const who = role === "admin" ? String(body.nom || "") : rep;
+      const ul = await aircallGet("/users?per_page=50");
+      const u = matchAircallUser(ul.body?.users || [], who);
+      if (!u?.id) return json({ ok: false, reason: "pas de compte Aircall pour " + (who || "ce poste") });
+      const ud = await aircallGet("/users/" + u.id);
+      // deno-lint-ignore no-explicit-any
+      const nums: any[] = ud.body?.user?.numbers || [];
+      if (!nums.length) return json({ ok: false, reason: "aucune ligne Aircall attribuée à " + u.name });
+      const r = await aircallPost("/users/" + u.id + "/calls", { number_id: nums[0].id, to });
+      if (r.status === 204 || r.status === 200 || r.status === 201) return json({ ok: true, ligne: String(nums[0].name || ""), conseiller: String(u.name || "") });
+      return json({ ok: false, reason: r.status === 400 || r.status === 405 ? "Aircall indisponible · ouvrez l'application Aircall et passez en disponible" : "Aircall a refusé l'appel (" + r.status + ")" });
     }
 
     // ── Transcription Aircall d'un appel (vérifie que l'appel concerne bien ce numéro) ──
