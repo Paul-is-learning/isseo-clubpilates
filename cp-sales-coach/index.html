@@ -677,6 +677,10 @@ a.menu-item{text-decoration:none;color:inherit}
 .pl-note-btn{position:absolute;right:7px;bottom:7px;border:0;border-radius:8px;padding:5px 11px;font-size:11.5px;font-weight:800;background:var(--lav);color:var(--lav-ink);cursor:pointer;transition:background .15s,color .15s}
 .pl-note-btn.on{background:var(--accent);color:#fff}
 .pl-hint{font-weight:600;text-transform:none;letter-spacing:0;color:var(--ink-mid);font-size:10.5px;margin-left:4px}
+.src-ic{display:inline-grid;place-items:center;width:18px;height:18px;border-radius:5px;margin-right:7px;vertical-align:-3px;font-size:11px;line-height:1;box-shadow:0 0 0 1px rgba(0,0,0,.06);flex:0 0 auto}
+.src-ic svg{width:14px;height:14px}
+.src-txt{font-size:10px;font-weight:700;color:var(--ink-mid);background:#F6F4EE;border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
+.pl-arr{white-space:nowrap}
 .pl-edit{margin-left:8px;border:1px solid var(--cream-line);background:#fff;border-radius:8px;padding:2px 8px;font-size:10.5px;font-weight:700;color:var(--lav-ink);cursor:pointer;text-transform:none;letter-spacing:0}
 .pl-form{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;background:var(--cream);border:1px solid var(--cream-line);border-radius:12px;padding:10px 12px;margin-bottom:10px}
 .pl-form label{display:flex;flex-direction:column;gap:3px;font-size:10.5px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.05em}
@@ -1190,7 +1194,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-line{display:grid;grid-template-columns:44px minmax(190px,1.5fr) minmax(150px,1fr) minmax(170px,1fr) minmax(140px,.9fr) auto;align-items:center;gap:16px;padding:11px 14px 11px 20px;cursor:pointer}
 .pl-ava{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:14px}
 .pl-who{min-width:0}.pl-who b{display:block;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.pl-who span{display:block;font-size:12px;color:var(--ink-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.pl-who>span{display:block;font-size:12px;color:var(--ink-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .pl-st{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
 .pl-chip{font-size:11.5px;font-weight:800;border-radius:99px;padding:4px 10px;white-space:nowrap}
 .pl-flag{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEF2FB;color:#2A3F6B;white-space:nowrap}
@@ -3170,11 +3174,31 @@ const BOOST_SRC={facebook_ads:'Facebook Ads',google_ads:'Google Ads',site_web:'S
 function noteShow(p){
   return String(p.note||'').split(' · ').map(x=>x.trim()).filter(x=>x&&!/^(Importé d'Allo|historique|Contact Allo)$/i.test(x)).join(' · ');
 }
+// Petit logo de la source du lead (au lieu du texte « Facebook Ads »…), libellé au survol
+function srcLogo(src){
+  if(!src)return '';
+  const lbl=esc(BOOST_SRC[src]||src);
+  const box=(inner,bg)=>`<span class="src-ic" title="${lbl}" style="background:${bg}">${inner}</span>`;
+  const svgT=(t,c,fs)=>`<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><text x="8" y="12.2" text-anchor="middle" font-family="Arial,Helvetica,sans-serif" font-weight="800" font-size="${fs||12}" fill="${c}">${t}</text></svg>`;
+  switch(src){
+    case 'facebook_ads':return box(svgT('f','#fff',13),'#1877F2');
+    case 'google_ads':case 'google_my_business':return box(`<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><path d="M14.4 8.2c0-.5 0-.9-.1-1.3H8.1v2.5h3.6a3.1 3.1 0 0 1-1.3 2v1.7h2.1c1.2-1.1 1.9-2.8 1.9-4.9z" fill="#4285F4"/><path d="M8.1 14.6c1.8 0 3.3-.6 4.4-1.6l-2.1-1.7c-.6.4-1.4.7-2.3.7-1.8 0-3.2-1.2-3.8-2.8H2.1v1.7a6.6 6.6 0 0 0 6 3.7z" fill="#34A853"/><path d="M4.3 9.2a4 4 0 0 1 0-2.4V5.1H2.1a6.6 6.6 0 0 0 0 5.8z" fill="#FBBC05"/><path d="M8.1 3.9c1 0 1.9.3 2.6 1l1.9-1.9A6.6 6.6 0 0 0 2.1 5.1l2.2 1.7c.6-1.6 2-2.9 3.8-2.9z" fill="#EA4335"/></svg>`,'#fff');
+    case 'bsport':return box(svgT('b','#fff',13),'#111');
+    case 'reseaux_sociaux':return box(`<svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true"><rect x="3" y="3" width="10" height="10" rx="3" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="8" cy="8" r="2.3" fill="none" stroke="#fff" stroke-width="1.6"/><circle cx="11" cy="5" r=".8" fill="#fff"/></svg>`,'linear-gradient(135deg,#F58529,#DD2A7B 55%,#8134AF)');
+    case 'site_web':case 'landing_page':case 'popup_lead':case 'tunnel_vente':case 'tunnel_reservation':return box('🌐','#EEF2FB');
+    case 'bouche_a_oreille':return box('💬','#F6F4EE');
+    case 'parrainage':return box('🤝','#F6F4EE');
+    case 'accueil':return box('🏠','#F6F4EE');
+    case 'telephone':return box('📞','#F6F4EE');
+    case 'seance_essai':return box('🎟️','#F6F4EE');
+    default:return `<span class="src-txt" title="${lbl}">${lbl}</span>`;
+  }
+}
 function boostBadges(p){
   if(!p.bid)return '';
   const pill=(t,bg,c,bd)=>`<span class="pr-bb" style="background:${bg};color:${c};border-color:${bd}">${t}</span>`;
   const bl=BOOST_ST[p.bst]||p.bst||'?';
-  return `<div class="pr-bbs">${bl!==stLabel(p)?pill('Boost · '+esc(bl),'#EEF2FB','#2A3F6B','#D5DDF0'):pill('✓ Boost','#EEF2FB','#2A3F6B','#D5DDF0')}${p.bmember?pill('🏅 Adhérent','#EAF6F0','#1F7A55','#BFE8D6'):''}${p.src?pill(esc(BOOST_SRC[p.src]||p.src),'#F6F4EE','#6B6252','#E6E0D2'):''}${p.noCall?pill('📵 Ne pas appeler','#FDECE8','#B4300F','#F5C0AE'):''}${p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?pill('⏳ envoi vers Boost','#FFF6E0','#8A5A00','#F3D58C'):p.bqe?`<span class="pr-bb" style="background:#FDECE8;color:#B4300F;border-color:#F5C0AE" title="${esc(p.bqe)}">⚠️ Boost n'a pas accepté</span>`:''}</div>`;
+  return `<div class="pr-bbs">${bl!==stLabel(p)?pill('Boost · '+esc(bl),'#EEF2FB','#2A3F6B','#D5DDF0'):pill('✓ Boost','#EEF2FB','#2A3F6B','#D5DDF0')}${p.bmember?pill('🏅 Adhérent','#EAF6F0','#1F7A55','#BFE8D6'):''}${p.src?srcLogo(p.src):''}${p.noCall?pill('📵 Ne pas appeler','#FDECE8','#B4300F','#F5C0AE'):''}${p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?pill('⏳ envoi vers Boost','#FFF6E0','#8A5A00','#F3D58C'):p.bqe?`<span class="pr-bb" style="background:#FDECE8;color:#B4300F;border-color:#F5C0AE" title="${esc(p.bqe)}">⚠️ Boost n'a pas accepté</span>`:''}</div>`;
 }
 function buildStatsMap(events,prospects){
   const map={};
@@ -4283,14 +4307,17 @@ function showProspects(keepScroll){
     const late=p.rappel&&rdvAt(p)&&rdvAt(p).getTime()<Date.now()&&prOpen(p);
     const when=p.rappel
       ?`<span class="pl-when${late?' late':isDue?' due':''}">${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
-      :`<span class="pl-when muted">${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>`;
-    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rep?esc(p.rep.split(' ')[0]):'',p.src?esc(BOOST_SRC[p.src]||p.src):''].filter(Boolean).join(' · ');
+      :`<span class="pl-when muted">${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
+    const arr=new Date(prArrival(p));
+    const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">🕐 ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} · ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
+    // L'heure d'arrivée est dans la colonne « prochaine étape » ; si un rappel l'occupe, elle passe sous le nom
+    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rep?esc(p.rep.split(' ')[0]):'',p.rappel?arrH:''].filter(Boolean).join(' · ');
     const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
     const flags=[p.bmember?'<span class="pl-flag ok">🏅 Adhérent</span>':'',p.bid&&bl&&({a_traiter:'rappeler',contacte:'rappeler',rdv_planifie:'rappeler',rdv_nok:'rappeler',rdv_venu:'venu',client:'abo',perdu:'perdu'}[p.bst]||'')!==p.statut&&!(p.statut==='essai'&&p.bst==='rdv_planifie')?`<span class="pl-flag">Boost : ${esc(bl)}</span>`:'',p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?'<span class="pl-flag warn">⏳ envoi Boost</span>':p.bqe?'<span class="pl-flag bad">⚠️ Boost</span>':''].join('');
     return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
       <div class="pl-line" onclick="togglePr('${p.id}')">
         <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
-        <div class="pl-who"><b>${esc(p.nom)}</b><span>${sub}</span></div>
+        <div class="pl-who"><b>${srcLogo(p.src)}${esc(p.nom)}</b><span>${sub}</span></div>
         <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${flags}</div>
         <div class="pl-next">${when}</div>
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
