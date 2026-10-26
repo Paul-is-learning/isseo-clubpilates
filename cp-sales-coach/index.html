@@ -4052,7 +4052,10 @@ async function savePrimes(){
 let prOpenId=null,prFilter=null,prQuery='';
 function prInitials(nom){return (nom||'?').split(' ').map(w=>w[0]||'').join('').slice(0,2).toUpperCase();}
 function setPrFilter(k){prFilter=prFilter===k?null:k;showProspects(true);}
-function prSearch(v){prQuery=(v||'').toLowerCase();showProspects(true);}
+// Recherche fluide : on garde la saisie telle quelle, on filtre après une courte pause,
+// et le champ garde le focus et la position du curseur à chaque rafraîchissement
+let prQueryRaw='',_prSearchT=null;
+function prSearch(v){prQueryRaw=v||'';prQuery=prQueryRaw.toLowerCase().trim();clearTimeout(_prSearchT);_prSearchT=setTimeout(()=>showProspects(true),140);}
 /* ── Priorisation des rappels : ancienneté du dernier contact + appétence ── */
 let prSort=localStorage.getItem('cpcoach_prsort')||'recent';
 function setPrSort(m){prSort=m;localStorage.setItem('cpcoach_prsort',m);showProspects(true);}
@@ -4148,7 +4151,9 @@ function prAgeChip(p){
   const col=d>=14?'#C0492F':d>=7?'#B4710F':'#8C95A8';
   return `<span style="color:${col};font-weight:700">⏳ ${d} j sans contact</span>`;
 }
-function showProspects(keepScroll){_vReg('prospects');
+function showProspects(keepScroll){
+  const _ae=document.activeElement,_srch=_ae&&_ae.id==='prSearchIn'?[_ae.selectionStart,_ae.selectionEnd]:null;
+  _vReg('prospects');
   clearInterval(_prTick);
   _prTick=setInterval(()=>{if(document.querySelector('.pr-search')){showProspects(true);syncPull(true);}else clearInterval(_prTick);},60000);
   const scrollY=keepScroll?$('#screen').scrollTop:0;
@@ -4156,7 +4161,9 @@ function showProspects(keepScroll){_vReg('prospects');
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
   let list=PSC();
   if(prFilter)list=list.filter(p=>p.statut===prFilter);
-  if(prQuery)list=list.filter(p=>((p.nom||'')+' '+(p.tel||'')+' '+(p.note||'')).toLowerCase().includes(prQuery));
+  // Recherche sans accents ni casse ; un numéro se cherche sans les espaces
+  if(prQuery){const fold=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();const q=fold(prQuery),qd=prQuery.replace(/\D/g,'');
+    list=list.filter(p=>fold((p.nom||'')+' '+(p.email||'')+' '+(p.note||'')).includes(q)||(qd.length>=3&&String(p.tel||'').replace(/\D/g,'').includes(qd)));}
   // 🆕 Leads récents : ordre d'arrivée, le plus récent en tête (comme dans Boost)
   // 🎯 À contacter d'abord : leads ouverts sans rappel programmé · jamais appelés d'abord (les plus anciens en tête), puis dernier contact le plus ancien
   // ⏰ Rappels programmés : par date et heure, retards en tête
@@ -4250,19 +4257,20 @@ function showProspects(keepScroll){_vReg('prospects');
     <div class="hm-sec">Pipeline</div>
     <div class="pr-funnel">${Object.keys(PIPE).map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-tools">
-    <div class="pr-search"><span>🔎</span><input type="text" placeholder="Rechercher un nom, un numéro…" value="${esc(prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     <div class="pr-tabs">
       <button class="pr-tab${prSort!=='prio'&&prSort!=='journal'&&prSort!=='rappels'?' on':''}" onclick="setPrSort('recent')" title="Les leads dans leur ordre d'arrivée, le plus récent en tête (comme dans Boost)">🆕 Leads récents</button>
       <button class="pr-tab${prSort==='prio'?' on':''}" onclick="setPrSort('prio')" title="Leads sans rappel programmé : jamais appelés d'abord (les plus anciens en tête), puis ceux dont le dernier contact est le plus ancien">🎯 À contacter d'abord</button>
       <button class="pr-tab${prSort==='rappels'?' on':''}" onclick="setPrSort('rappels')" title="Les rappels convenus avec les prospects, par date et heure · l'onglet clignote quand l'heure approche">⏰ Rappels programmés <span id="prRdvBadge" class="pr-rdvb" style="${PSC().filter(rdvHot).length?'':'display:none'}">${PSC().filter(rdvHot).length}</span></button>
       <button class="pr-tab${prSort==='journal'?' on':''}" onclick="setPrSort('journal')" title="Tous les appels réalisés, du plus récent au plus ancien">📞 Journal d'appels</button>
     </div>
+    <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher un nom, un numéro…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
     ${prSort==='rappels'&&'Notification' in window&&Notification.permission!=='granted'?`<button class="pr-act" style="width:100%;margin:-2px 0 10px" onclick="askRdvNotif()">🔔 Me prévenir 10 min avant chaque rappel</button>`:''}
     <div class="hm-sec">${prSort==='journal'?'Journal d\'appels':prSort==='rappels'?'Rappels programmés':prSort==='prio'?'À contacter d\'abord':'Leads récents'} · ${prSort==='journal'?'':sorted.length}</div>
     ${prSort==='journal'?callJournalHTML(null,list):sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
+  if(_srch){const n=document.getElementById('prSearchIn');if(n){n.focus({preventScroll:true});try{n.setSelectionRange(_srch[0],_srch[1]);}catch(e){}}}
   $('#topPhase').textContent='Mes prospects';
   $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';
