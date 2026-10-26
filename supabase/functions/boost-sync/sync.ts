@@ -71,7 +71,9 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const repOf = (uid: unknown) => {
     const n = userName.get(String(uid || "")) || "";
     if (!n) return "";
-    const inv = ctx.invites.find((i: any) => first(i?.nom) && first(i?.nom) === first(n));
+    // Même prénom (« Caroline B » = « Caroline »), ou initiales d'un prénom composé (« Jean-Charles » = « JC »)
+    const initials = String(n).trim().split(/\s+/)[0].split("-").map((x) => sk(x).slice(0, 1)).join("");
+    const inv = ctx.invites.find((i: any) => first(i?.nom) && (first(i?.nom) === first(n) || (initials.length > 1 && sk(i?.nom) === initials)));
     return inv ? String(inv.nom) : n;
   };
   const R = {

@@ -56,9 +56,14 @@ Essai booké (Sales Coach) ← activité `seance_essai` / `rdv_type=seance_essai
   → pour une séance d'essai, titrer « Séance d'essai » (à vérifier au premier envoi sur un contact de test).
 - Aucune route d'annulation ou de modification de RDV connue : un RDV créé par erreur se corrige à la main dans Boost.
 
+## Statistiques · `GET /stats/activities`
+- `created_after` et `created_before` **requis** (92 jours maximum), `group_by` = none (défaut), prospect, user ou type.
+- Réponse : `data[]` (par groupe : `total`, `totals{calls, …}`), `total_activities`, bornes de dates.
+- Usage prévu (phase 4) : activité par commercial et par mois dans le dashboard isseo (`group_by=user`).
+
 ## Découverte du 26 oct. 2026 (La Garenne)
 157 contacts, 948 activités, 8 utilisateurs, 0 tunnel, téléphones 100 % `+33`, consentements tous null,
-pas d'en-tête de limite de débit, `/stats/activities` → 422 (paramètres requis, non utilisé).
+pas d'en-tête de limite de débit, `/stats/activities` → 422 sans les dates requises.
 
 ## Encore inconnu
 Filtre incrémental sur GET /contacts (inutile à 157 contacts : synchro complète), webhooks.
