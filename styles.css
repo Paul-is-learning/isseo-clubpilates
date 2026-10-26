@@ -3660,3 +3660,48 @@ body.dark .pre-inscrits-card .pi-input{background:#171126;color:#d5c8f2;border-c
 body.dark .pre-inscrits-card .pi-note{color:#9a8cc0}
 .pre-inscrits-card .pi-note b{color:#4a2f8f}
 body.dark .pre-inscrits-card .pi-note b{color:#c9b8f5}
+
+/* ── Bandeau d'accueil v2 (oct. 2026) : navy Club Pilates, titre serif, chiffres réels ── */
+.hero-banner.hb2{background:linear-gradient(140deg,#1B2A45 0%,#25395A 48%,#32507C 100%);border-radius:22px;padding:24px 26px 20px;margin-bottom:18px;color:#fff;overflow:hidden;position:relative;font-family:'Montserrat',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;box-shadow:0 18px 40px -24px rgba(27,42,69,.6)}
+.hero-banner.hb2::before{display:none}
+.hb2-glow{position:absolute;top:-220px;right:-160px;width:520px;height:520px;border-radius:50%;background:radial-gradient(circle,rgba(233,201,139,.13),transparent 62%);pointer-events:none}
+.hb2-inner{position:relative;z-index:1}
+.hb2-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px}
+.hb2-kicker{font-size:10.5px;font-weight:700;letter-spacing:.24em;text-transform:uppercase;color:#E9C98B}
+.hb2-title{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600;font-size:36px;line-height:1.02;margin:4px 0 5px;color:#fff;letter-spacing:-.01em}
+.hb2-sub{font-size:12.5px;color:rgba(255,255,255,.7);font-weight:500}
+.hb2-grid{margin-top:18px}
+.hb2 .kpi-card{background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.11);border-radius:16px;padding:14px 16px 13px;backdrop-filter:none;-webkit-backdrop-filter:none;box-shadow:none}
+.hb2 .kpi-card:hover{background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.18)}
+.hb2-kpi-top{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:9px}
+.hb2-kpi-label{font-size:10.5px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.64)}
+.hb2-kpi-ic{flex:0 0 auto;width:28px;height:28px;border-radius:9px;display:grid;place-items:center}
+.hb2-kpi-val{font-size:clamp(18px,2.3vw,26px);font-weight:800;letter-spacing:-.02em;line-height:1.05;color:#fff;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb2-kpi-val .counter-anim{max-width:100%}
+.hb2-kpi-sub{font-size:12px;color:rgba(255,255,255,.74);margin-top:6px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hb2-dist{display:flex;gap:2px;height:5px;border-radius:99px;overflow:hidden;margin-top:12px;background:rgba(255,255,255,.08)}
+.hb2-dist span{display:block;min-width:4px}
+.hb2-legend{display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:12px;font-size:11.5px;color:rgba(255,255,255,.74);font-weight:500}
+.hb2-legend i{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px}
+.hb2 .next-steps-widget{background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.11);border-radius:16px;box-shadow:none;padding:14px 16px;backdrop-filter:none;-webkit-backdrop-filter:none}
+.hb2 .next-steps-widget__title{font-size:10.5px;letter-spacing:.14em;color:rgba(255,255,255,.64)}
+.hb2 .next-steps-widget__count{background:rgba(233,201,139,.18);color:#E9C98B}
+.hb2 .next-steps-widget__item-name{font-size:13px;font-weight:700;color:#fff}
+.hb2 .next-steps-widget__item-step{font-size:11.5px;color:rgba(255,255,255,.66)}
+.hb2 .hero-carousel{margin-top:16px;padding-top:14px;border-top:1px solid rgba(255,255,255,.1)}
+.hb2 .hero-carousel-title{font-size:10.5px;letter-spacing:.14em;color:rgba(255,255,255,.64);font-weight:700}
+.hb2 .hero-carousel-title-icon{color:#E9C98B}
+.hb2 .hero-carousel-dot.active{background:#E9C98B;box-shadow:0 0 8px rgba(233,201,139,.5)}
+.hb2 .hero-bar-row{font-size:12px}
+.hb2 .hero-bar-label{flex-basis:170px;font-size:12px;color:rgba(255,255,255,.84)}
+.hb2 .hero-bar-track{height:7px}
+.hb2 .hero-bar-fill{background-image:none !important;box-shadow:none !important}
+.hb2 .hero-bar-val{font-size:12px;font-weight:700;min-width:90px}
+.hb2 .hero-carousel-dot{min-width:0;min-height:0;width:7px;height:7px;flex:0 0 auto}
+@media(max-width:760px){.hb2 .home-kpi-grid .kpi-card{padding:13px 14px 12px}}
+@media(max-width:600px){.hero-banner.hb2{padding:20px 16px 16px}.hb2-title{font-size:29px}
+  .hb2 .home-kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .hb2 .home-kpi-grid>.kpi-card:nth-child(3){grid-column:1 / -1}
+  .hb2-kpi-val{font-size:19px}.hb2-kpi-label{font-size:9.5px;letter-spacing:.1em}.hb2-kpi-ic{width:24px;height:24px}
+  .hb2-kpi-sub{white-space:normal;line-height:1.35}
+  .hb2 .hero-bar-label{flex-basis:110px}.hb2 .hero-bar-val{min-width:78px}}

@@ -540,6 +540,71 @@ function _renderFocusCard(){
 }
 
 // ── PAGE: Accueil ──────────────────────────────────────────────────────
+// ── Bandeau d'accueil (oct. 2026) : navy Club Pilates, titre serif, chiffres RÉELS du portefeuille ──
+// Aucune tendance simulée : les anciennes pastilles (« ↑ 12.4% ») et courbes (generateTrendSeries) ne reposaient sur aucune donnée.
+function _renderHeroBanner(allIds){
+  var esc=function(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');};
+  var list=allIds.filter(function(id){return S.studios[id];}).map(function(id){return {id:id,s:S.studios[id]};});
+  var live=list.filter(function(x){return x.s.statut!=='abandonne';});
+  var OPEN={soft:1,grand:1,ouvert:1};
+  var nOpen=live.filter(function(x){return OPEN[x.s.statut];}).length,nProj=live.length-nOpen;
+  var capexOf=function(x){return +x.s.capex||0;},caOf=function(x){return (x.s.forecast&&x.s.forecast.annualCA)||0;};
+  var capexTotal=list.reduce(function(a,x){return a+capexOf(x);},0),caTotal=list.reduce(function(a,x){return a+caOf(x);},0);
+  var nCapex=list.filter(function(x){return capexOf(x)>0;}).length,nCa=list.filter(function(x){return caOf(x)>0;}).length;
+  var PAL=['#E9C98B','#9EC5E8','#8FD3B6','#C9B6E8','#F2A7A0','#B9D7A8'],colOf={};
+  list.forEach(function(x,i){colOf[x.id]=PAL[i%PAL.length];});
+  var nameOf=function(x){return x.s.name||x.id;};
+  var dist=function(get){var items=list.filter(function(x){return get(x)>0;});if(!items.length)return '';
+    return '<div class="hb2-dist">'+items.map(function(x){return '<span style="flex:'+get(x)+';background:'+colOf[x.id]+'" title="'+esc(nameOf(x))+' · '+fmt(get(x))+'"></span>';}).join('')+'</div>';};
+  // Prochaines étapes (widget Preact monté par app.js si au moins une étape)
+  var hasNext=live.some(function(x){var STw=(typeof getStudioSteps==='function')?getStudioSteps(x.id):STEPS,done=x.s.steps||{};return STw.some(function(st){return !done[st.id];});});
+  var today=new Date().toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});
+  today=today.charAt(0).toUpperCase()+today.slice(1);
+  var ic={
+    home:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',
+    eur:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 7a6 6 0 1 0 0 10"/><line x1="4" y1="10" x2="13" y2="10"/><line x1="4" y1="14" x2="13" y2="14"/></svg>',
+    ca:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>'
+  };
+  var kpis=[
+    {label:'Studios',val:'<span class="counter-anim" data-target="'+list.length+'" data-format="int">0</span>',sub:nOpen+' ouvert'+(nOpen>1?'s':'')+' · '+nProj+' en projet',
+     dist:dist(function(){return 1;}),
+     col:'#9EC5E8',icon:ic.home,click:"setPage('projets')"},
+    {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+capexTotal+'" data-format="eur">0 €</span>',sub:nCapex?'≈ '+fmt(capexTotal/nCapex)+' par studio':'Aucun CAPEX saisi',dist:dist(capexOf),col:'#8FD3B6',icon:ic.eur,click:"setPage('bp')"},
+    {label:'CA BP année 1',val:'<span class="counter-anim" data-target="'+caTotal+'" data-format="eur">0 €</span>',sub:nCa?'≈ '+fmt(caTotal/nCa)+' par studio':'Aucun BP saisi',dist:dist(caOf),col:'#E9C98B',icon:ic.ca,click:"setPage('bp')"}
+  ];
+  var h='<div class="hero-banner hb2"><div class="hb2-glow"></div><div class="hb2-inner">';
+  h+='<div class="hb2-head"><div><div class="hb2-kicker">Isséo × Club Pilates</div><h2 class="hb2-title">Tableau de bord</h2>';
+  h+='<div class="hb2-sub">'+esc(today)+' · '+list.length+' studio'+(list.length>1?'s':'')+' suivi'+(list.length>1?'s':'')+'</div></div></div>';
+  h+='<div class="home-kpi-grid hb2-grid">';
+  kpis.forEach(function(k,ki){
+    h+='<div class="kpi-card kpi-reveal" data-idx="'+ki+'" onclick="try{navigator.vibrate&&navigator.vibrate(8)}catch(e){};'+k.click+'">';
+    h+='<div class="hb2-kpi-top"><span class="hb2-kpi-label">'+k.label+'</span><span class="hb2-kpi-ic" style="color:'+k.col+';background:'+k.col+'22">'+k.icon+'</span></div>';
+    h+='<div class="hb2-kpi-val">'+k.val+'</div><div class="hb2-kpi-sub">'+k.sub+'</div>'+k.dist+'</div>';
+  });
+  if(hasNext)h+='<div data-preact-widget="next-steps"></div>';
+  h+='</div>';
+  if(list.length>1)h+='<div class="hb2-legend">'+list.map(function(x){return '<span><i style="background:'+colOf[x.id]+'"></i>'+esc(nameOf(x))+'</span>';}).join('')+'</div>';
+  // Carrousel : CAPEX par studio · CA BP année 1 par studio · statuts
+  if(list.length){
+    var bars=function(get){var items=list.slice().sort(function(a,b){return get(b)-get(a);}).slice(0,6),mx=Math.max.apply(null,items.map(get))||1;
+      return items.map(function(x){var v=get(x);return '<div class="hero-bar-row"><div class="hero-bar-label">'+esc(nameOf(x))+'</div><div class="hero-bar-track"><div class="hero-bar-fill" style="width:'+(v/mx*100).toFixed(1)+'%;background:'+colOf[x.id]+'"></div></div><div class="hero-bar-val">'+(v?fmt(v):'·')+'</div></div>';}).join('');};
+    var stCount={};list.forEach(function(x){var k=x.s.statut||'pipeline';stCount[k]=(stCount[k]||0)+1;});
+    var stOrder=['pipeline','preparation','chantier','j30','soft','grand','ouvert','abandonne'],stMax=Math.max.apply(null,stOrder.map(function(k){return stCount[k]||0;}))||1;
+    var stCol={pipeline:'#B7BFCC',preparation:'#9EC5E8',chantier:'#E9C98B',j30:'#F2C27A',soft:'#C9B6E8',grand:'#F2A7A0',ouvert:'#8FD3B6',abandonne:'#E89A9A'};
+    var stHtml=stOrder.filter(function(k){return stCount[k];}).map(function(k){var c=stCount[k],cfg=STATUT_CFG[k]||{label:k};
+      return '<div class="hero-bar-row"><div class="hero-bar-label">'+esc(cfg.label)+'</div><div class="hero-bar-track"><div class="hero-bar-fill" style="width:'+(c/stMax*100).toFixed(1)+'%;background:'+stCol[k]+'"></div></div><div class="hero-bar-val">'+c+' studio'+(c>1?'s':'')+'</div></div>';}).join('');
+    h+='<div class="hero-carousel"><div class="hero-carousel-header"><div class="hero-carousel-title"><span class="hero-carousel-title-icon">'+ic.ca+'</span><span class="hero-carousel-title-text">CAPEX par studio</span></div>';
+    h+='<div class="hero-carousel-dots"><button class="hero-carousel-dot active" aria-label="Vue 1"></button><button class="hero-carousel-dot" aria-label="Vue 2"></button><button class="hero-carousel-dot" aria-label="Vue 3"></button></div></div>';
+    h+='<div class="hero-carousel-stage">';
+    h+='<div class="hero-carousel-view active">'+bars(capexOf)+'</div>';
+    h+='<div class="hero-carousel-view">'+bars(caOf)+'</div>';
+    h+='<div class="hero-carousel-view">'+stHtml+'</div>';
+    h+='</div></div>';
+  }
+  h+='</div></div>';
+  return h;
+}
+
 function renderAccueil(){
   if(!S._dataLoaded&&typeof skeletonGrid==='function')return '<div style="padding:24px">'+skeletonGrid(6)+'</div>';
   var allIds=_getStudioIds();
@@ -601,184 +666,8 @@ function renderAccueil(){
   // ── Centre d'attention du jour — Apple-style focus card ──
   h+=_renderFocusCard();
 
-  // ── Welcome banner — effet wahou ──
-  var _capexTotal=allIds.reduce(function(s,id){return s+S.studios[id].capex;},0);
-  var _caTotal=allIds.reduce(function(s,id){return s+(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);},0);
-  h+='<div class="hero-banner" style="background:linear-gradient(135deg,#080e1e 0%,#0f1f3d 25%,#1a3a6b 55%,#2d5a8e 80%,#3a6fa0 100%);border-radius:20px;padding:22px 28px 18px;margin-bottom:18px;color:#fff;overflow:hidden">';
-  // Shine sweep
-  h+='<div class="hero-shine"></div>';
-  // Y2K cold-culture : scanlines + étoiles + marquee
-  h+='<div class="y2k-scan"></div>';
-  h+='<span class="y2k-star">✦</span><span class="y2k-star s2">✦</span><span class="y2k-star s3">✦</span>';
-  var _mq='ISSÉO × CLUB PILATES&nbsp;&nbsp;·&nbsp;&nbsp;PORTFOLIO SYSTEM&nbsp;&nbsp;·&nbsp;&nbsp;EST. 2026&nbsp;&nbsp;·&nbsp;&nbsp;REFORMER PILATES&nbsp;&nbsp;·&nbsp;&nbsp;';
-  h+='<div class="y2k-marquee"><span>'+_mq+_mq+'</span></div>';
-  // Éléments décoratifs — orbes lumineuses
-  h+='<div class="hero-orb" style="position:absolute;top:-60px;right:-40px;width:280px;height:280px;background:radial-gradient(circle,rgba(45,90,142,0.4) 0%,transparent 70%);border-radius:50%"></div>';
-  h+='<div class="hero-orb b" style="position:absolute;bottom:-80px;left:20%;width:220px;height:220px;background:radial-gradient(circle,rgba(29,158,117,0.22) 0%,transparent 70%);border-radius:50%"></div>';
-  h+='<div class="hero-orb c" style="position:absolute;top:20px;left:60%;width:120px;height:120px;background:radial-gradient(circle,rgba(255,255,255,0.05) 0%,transparent 70%);border-radius:50%"></div>';
-  // Grille subtile en fond
-  h+='<div style="position:absolute;inset:0;background-image:radial-gradient(rgba(255,255,255,0.03) 1px,transparent 1px);background-size:24px 24px"></div>';
-  // Contenu
-  h+='<div style="position:relative;z-index:1">';
-  // Micro-label système (Gentle Monster style)
-  h+='<div class="y2k-syslabel">SYS.001 · PORTFOLIO OVERVIEW</div>';
-  // Titre
-  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">';
-  h+='<div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.1);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>';
-  h+='<div>';
-  h+='<div class="y2k-chrome" style="font-size:19px;font-weight:800">Tableau de bord Isséo × Club Pilates</div>';
-  h+='<div class="y2k-sub">Vue d\'ensemble de vos projets et activités</div>';
-  h+='</div></div>';
-  // Calcul "Prochaines étapes" par projet actif (widget intégré dans la grille ci-dessous)
-  var _nextSteps=[];
-  allIds.forEach(function(id){
-    var st=S.studios[id];
-    if(!st||st.statut==='abandonne')return;
-    var STw=(typeof getStudioSteps==='function')?getStudioSteps(id):STEPS;
-    var done=st.steps||{};
-    var next=null;
-    for(var _ni=0;_ni<STw.length;_ni++){if(!done[STw[_ni].id]){next=STw[_ni];break;}}
-    if(!next)return;
-    _nextSteps.push({id:id,name:st.name,step:next.label});
-  });
-  // KPIs — 4 vignettes, grille responsive (4 cols desktop, 2 cols mobile, widget span full)
-  h+='<div class="home-kpi-grid">';
-  // Compute trend series per KPI (deterministic-ish from real totals)
-  var _caSeries=(typeof generateTrendSeries==='function')?generateTrendSeries(_caTotal||1,12):[];
-  var _capexSeries=(typeof generateTrendSeries==='function')?generateTrendSeries(_capexTotal||1,12):[];
-  var _studiosSeries=[];
-  for(var _si=0;_si<allIds.length;_si++)_studiosSeries.push(_si+1);
-  while(_studiosSeries.length<4)_studiosSeries.unshift(0);
-  var _spark=function(vals,color){return (typeof miniSparkline==='function')?miniSparkline(vals,{width:72,height:18,color:color||'rgba(255,255,255,0.85)'}):'';};
-  var _kpis=[
-    {label:'Studios',val:'<span class="counter-anim" data-target="'+allIds.length+'" data-format="int">0</span>',click:'setPage(\'projets\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>',color:'#60A5FA',spark:_spark(_studiosSeries,'rgba(96,165,250,0.95)'),trend:{dir:'up',text:'+'+allIds.length+' actifs'}},
-    {label:'CAPEX total',val:'<span class="counter-anim" data-target="'+_capexTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>',color:'#34D399',spark:_spark(_capexSeries,'rgba(52,211,153,0.95)'),trend:{dir:'up',text:'↑ 12.4%'}},
-    {label:'CA BP A1',val:'<span class="counter-anim" data-target="'+_caTotal+'" data-format="eur">0 €</span>',click:'setPage(\'bp\')',icon:'<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',color:'#FBBF24',spark:_spark(_caSeries,'rgba(251,191,36,0.95)'),trend:{dir:'up',text:'↑ 8.7%'}}
-  ];
-  _kpis.forEach(function(k,ki){
-    h+='<div class="kpi-card kpi-reveal" data-idx="'+ki+'" onclick="try{navigator.vibrate&&navigator.vibrate(8)}catch(e){};'+k.click+'">';
-    h+='<div class="kpi-card__glow" style="background:radial-gradient(circle,'+k.color+'26,transparent 70%)"></div>';
-    h+='<div class="kpi-card__inner">';
-    h+='<div class="kpi-card__icon" style="color:'+k.color+'">'+k.icon+'</div>';
-    h+='<div class="kpi-card__value">'+k.val;
-    if(k.alert)h+='<span class="kpi-card__alert-dot"></span>';
-    h+='</div>';
-    h+='<div class="kpi-card__label">'+k.label+'</div>';
-    if(k.spark||k.trend){
-      h+='<div class="kpi-spark-wrap">';
-      if(k.trend)h+='<span class="kpi-trend '+k.trend.dir+'">'+k.trend.text+'</span>';
-      else h+='<span></span>';
-      if(k.spark)h+=k.spark;
-      h+='</div>';
-    }
-    h+='</div></div>';
-  });
-  // 4e vignette — Widget "Prochaines étapes" (rendu par Preact, Phase 5)
-  // pages-accueil.js émet un placeholder ; app.js appelle mountNextStepsWidget() après render()
-  if(_nextSteps.length){
-    h+='<div data-preact-widget="next-steps"></div>';
-  }
-  h+='</div>';
-
-  // ── Carousel rotatif (CA cumulé / Top studios / Répartition) ──
-  if(allIds.length>=1 && typeof sparkline==='function'){
-    // --- Data prep ---
-    var _sorted=allIds.slice().sort(function(a,b){
-      return (S.studios[a].forecast&&S.studios[a].forecast.annualCA||0)-(S.studios[b].forecast&&S.studios[b].forecast.annualCA||0);
-    });
-    var _cum=0;
-    var _cumVals=_sorted.map(function(id){
-      _cum+=(S.studios[id].forecast&&S.studios[id].forecast.annualCA||0);
-      return _cum;
-    });
-    _cumVals.unshift(0);
-
-    // Top 5 studios by CA
-    var _topCA=allIds.slice().sort(function(a,b){
-      return (S.studios[b].forecast&&S.studios[b].forecast.annualCA||0)-(S.studios[a].forecast&&S.studios[a].forecast.annualCA||0);
-    }).slice(0,5);
-    var _maxCA=Math.max.apply(null,_topCA.map(function(id){return S.studios[id].forecast&&S.studios[id].forecast.annualCA||0;}))||1;
-
-    // Répartition par statut
-    var _statCounts={};
-    allIds.forEach(function(id){
-      var st=S.studios[id].statut||'pipeline';
-      _statCounts[st]=(_statCounts[st]||0)+1;
-    });
-    var _statOrder=['pipeline','preparation','chantier','j30','soft','grand','ouvert','abandonne'];
-    var _statMax=Math.max.apply(null,_statOrder.map(function(k){return _statCounts[k]||0;}))||1;
-
-    h+='<div class="hero-carousel">';
-    // Header with dynamic title + dots
-    h+='<div class="hero-carousel-header">';
-    h+='<div class="hero-carousel-title"><span class="hero-carousel-title-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg></span><span class="hero-carousel-title-text">CA cumulé (BP A1)</span></div>';
-    h+='<div class="hero-carousel-dots">';
-    h+='<button class="hero-carousel-dot active" aria-label="Vue 1"></button>';
-    h+='<button class="hero-carousel-dot" aria-label="Vue 2"></button>';
-    h+='<button class="hero-carousel-dot" aria-label="Vue 3"></button>';
-    h+='</div>';
-    h+='</div>';
-
-    // Stage
-    h+='<div class="hero-carousel-stage">';
-
-    // ── View 1 : CA cumulé sparkline ──
-    h+='<div class="hero-carousel-view active">';
-    h+='<div class="hero-cumview">';
-    h+='<div class="hero-cumview-left">';
-    h+='<div class="hero-cumview-label">Total BP A1</div>';
-    h+='<div class="hero-cumview-val">'+fmt(_cum)+'</div>';
-    h+='<div class="hero-cumview-delta"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg> Projection cumulative</div>';
-    h+='</div>';
-    h+='<div class="hero-cumview-chart">'+sparkline(_cumVals,{width:300,height:60})+'</div>';
-    h+='</div>';
-    h+='</div>';
-
-    // ── View 2 : Top 5 studios CA ──
-    h+='<div class="hero-carousel-view">';
-    if(_topCA.length===0){
-      h+='<div style="font-size:11px;color:rgba(255,255,255,0.4);padding:10px 0">Aucun studio</div>';
-    } else {
-      _topCA.forEach(function(id){
-        var s=S.studios[id];
-        var ca=s.forecast&&s.forecast.annualCA||0;
-        var pct=(ca/_maxCA)*100;
-        var col=STATUT_CFG[s.statut]&&STATUT_CFG[s.statut].text||'#60A5FA';
-        // Use accent gradient based on statut text color
-        var grad='linear-gradient(90deg,rgba(96,165,250,0.9),rgba(52,211,153,0.9))';
-        h+='<div class="hero-bar-row">';
-        h+='<div class="hero-bar-label">'+(s.name||id)+'</div>';
-        h+='<div class="hero-bar-track"><div class="hero-bar-fill" style="width:'+pct.toFixed(1)+'%;background:'+grad+'"></div></div>';
-        h+='<div class="hero-bar-val">'+fmt(ca)+'</div>';
-        h+='</div>';
-      });
-    }
-    h+='</div>';
-
-    // ── View 3 : Répartition par statut ──
-    h+='<div class="hero-carousel-view">';
-    _statOrder.forEach(function(st){
-      var c=_statCounts[st]||0;
-      if(c===0)return;
-      var cfg=STATUT_CFG[st]||{text:'#60A5FA',label:st};
-      var pct=(c/_statMax)*100;
-      var col=cfg.text;
-      // Shift colors to brighter versions for dark hero bg
-      var colMap={pipeline:'#94A3B8',preparation:'#60A5FA',chantier:'#FBBF24',ouvert:'#34D399',abandonne:'#F87171'};
-      var barCol=colMap[st]||'#60A5FA';
-      h+='<div class="hero-bar-row">';
-      h+='<div class="hero-bar-label">'+cfg.label+'</div>';
-      h+='<div class="hero-bar-track"><div class="hero-bar-fill" style="width:'+pct.toFixed(1)+'%;background:linear-gradient(90deg,'+barCol+'cc,'+barCol+')"></div></div>';
-      h+='<div class="hero-bar-val">'+c+' studio'+(c>1?'s':'')+'</div>';
-      h+='</div>';
-    });
-    h+='</div>';
-
-    h+='</div>'; // stage
-    h+='</div>'; // hero-carousel
-  }
-
-  h+='</div></div>';
+  // ── Bandeau d'accueil ──
+  h+=_renderHeroBanner(allIds);
 
   // ── Mes tâches à faire ──
   h+=renderMyTasks(allIds);

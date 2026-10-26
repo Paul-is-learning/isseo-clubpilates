@@ -37,7 +37,7 @@ function _counterFormat(v,fmt,el){
     if(abs>=1e3)return Math.round(x/1e3)+' k €';
     return x+' €';
   }
-  if(fmt==='eur-compact'||(fmt==='eur'&&el&&el.closest&&el.closest('.kpi-card')&&window.innerWidth<=480))return fmtCompact(r);
+  if(fmt==='eur-compact'||(fmt==='eur'&&el&&el.closest&&el.closest('.kpi-card')&&!el.closest('.hb2')&&window.innerWidth<=480))return fmtCompact(r);
   if(fmt==='eur'){
     try{if(typeof window.fmt==='function')return window.fmt(r);}catch(e){}
     return r.toLocaleString('fr-FR').replace(/\u202f|\u00a0/g,' ')+' €';
@@ -735,8 +735,8 @@ function startHeroCarousel(){
   var views=wrap.querySelectorAll('.hero-carousel-view');
   var dots=wrap.querySelectorAll('.hero-carousel-dot');
   var titles=[
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',text:'CA cumulé (BP A1)'},
-    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',text:'Top studios — CA prévisionnel'},
+    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>',text:'CAPEX par studio'},
+    {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>',text:'CA BP année 1 par studio'},
     {icon:'<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 10 10H12z" fill="currentColor" fill-opacity=".35"/></svg>',text:'Répartition par statut'}
   ];
   var titleEl=wrap.querySelector('.hero-carousel-title');
