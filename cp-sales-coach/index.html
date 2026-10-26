@@ -655,6 +655,11 @@ a.menu-item{text-decoration:none;color:inherit}
 .pr-search input{flex:1;border:none;outline:none;font-size:14px;background:transparent;color:#16233f}
 .pr-clearf{border:none;background:#f2f3f6;color:#5b6579;font-size:11.5px;font-weight:700;padding:5px 10px;border-radius:99px;cursor:pointer;white-space:nowrap}
 .pr-card{background:#fff;border:1px solid #e7eaf1;border-radius:14px;padding:14px 15px;margin-bottom:12px;box-shadow:0 2px 10px rgba(22,35,63,.05)}
+.pr-bbs{display:flex;flex-wrap:wrap;gap:4px;margin:3px 0 2px}
+.pr-bb{font-size:10.5px;font-weight:700;border:1px solid;border-radius:99px;padding:1px 7px;white-space:nowrap}
+.pr-bnotes{margin:6px 0 2px;font-size:12.5px;color:var(--ink-mid);background:#F7F8FB;border:1px solid #E7EAF1;border-radius:10px;padding:6px 10px}
+.pr-bnotes summary{cursor:pointer;font-weight:700;color:var(--ink)}
+.pr-bnotes div{margin-top:5px;white-space:pre-wrap;max-height:180px;overflow:auto}
 .pr-card.due{box-shadow:0 4px 18px rgba(201,135,31,.18);border-color:#f0d9a8}
 .pr-top{display:flex;align-items:center;gap:11px;margin-bottom:8px}
 .pr-ava{flex:0 0 40px;height:40px;border-radius:50%;color:#fff;font-weight:800;font-size:14.5px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
@@ -2527,6 +2532,7 @@ async function syncPull(rerender){
   try{
     const d=await syncCall('pull');
     const server=d.prospects||[];
+    const tomb=new Set(d.tomb||[]);
     const studioChanged=('studio' in d)&&_adoptStudio(d);
     if(_adoptEpoch(d)){/* purge administrative : local vidé, rien à re-pousser */}
     else{
@@ -2536,7 +2542,7 @@ async function syncPull(rerender){
       const byTel=new Map();server.forEach(p=>{const k=_k(p.tel);if(k.length===9&&!byTel.has(k))byTel.set(k,p);});
       let absorbed=0;
       const localOnly=PROSPECTS.filter(p=>{
-        if(ids.has(p.id))return false;
+        if(ids.has(p.id)||tomb.has(p.id))return false; // supprimée dans Boost : jamais repoussée
         const t=byTel.get(_k(p.tel));
         if(!t||(_sk(t.studio)&&_sk(p.studio)&&_sk(t.studio)!==_sk(p.studio)))return true;
         // Même numéro qu'une fiche du serveur (ex. créée par Allo) : on fusionne la saisie locale dedans
@@ -3045,10 +3051,20 @@ const PERF_LEVELS=[
 function perfLevel(abos){let cur=PERF_LEVELS[0];for(const l of PERF_LEVELS)if(abos>=l.min)cur=l;const i=PERF_LEVELS.indexOf(cur);return{cur:cur,next:PERF_LEVELS[i+1]||null};}
 function _repKey(r){return (r||'').trim().split(' ')[0].toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
 // Fusion journal + fiches → un état par prospect (le journal gagne)
+/* ── Fitness Boost (source maîtresse des leads) : pastilles d'une fiche liée ── */
+const BOOST_ST={a_traiter:'À traiter',contacte:'Contacté',rdv_planifie:'RDV planifié',rdv_venu:'RDV venu',rdv_nok:'RDV non venu',client:'Client',ancien_client:'Ancien client',perdu:'Perdu',archive:'Archivé'};
+const BOOST_SRC={facebook_ads:'Facebook Ads',google_ads:'Google Ads',site_web:'Site web',popup_lead:'Popup',landing_page:'Landing page',parrainage:'Parrainage',bouche_a_oreille:'Bouche à oreille',reseaux_sociaux:'Réseaux sociaux',google_my_business:'Google My Business',seance_essai:'Séance d\'essai',telephone:'Téléphone',accueil:'Accueil',bsport:'Bsport'};
+function boostBadges(p){
+  if(!p.bid)return '';
+  const pill=(t,bg,c,bd)=>`<span class="pr-bb" style="background:${bg};color:${c};border-color:${bd}">${t}</span>`;
+  return `<div class="pr-bbs">${pill('Boost · '+esc(BOOST_ST[p.bst]||p.bst||'?'),'#EEF2FB','#2A3F6B','#D5DDF0')}${p.src?pill(esc(BOOST_SRC[p.src]||p.src),'#F6F4EE','#6B6252','#E6E0D2'):''}${p.bclient?pill('⭐ Client Boost','#FFF6E0','#8A5A00','#F3D58C'):''}${p.bnok?pill('N\'est pas venu','#FDECE8','#B4300F','#F5C0AE'):''}${p.noCall?pill('📵 Ne pas appeler','#FDECE8','#B4300F','#F5C0AE'):''}</div>`;
+}
 function buildStatsMap(events,prospects){
   const map={};
   const touch=id=>map[id]||(map[id]={rep:'',nom:'',appel:false,essai:false,venu:false,abo:false,perdu:false,pack:'',prime:0,ts:'',aboTs:''});
   (prospects||[]).forEach(p=>{
+    // Fiche venue de Boost sans appel dans l'outil, ou statut posé par Boost : ne compte pas dans la Perf
+    if(p.bset||(p.bid&&!(p.appels||[]).length))return;
     const m=touch(p.id);m.rep=m.rep||p.rep||'';m.nom=m.nom||p.nom||'';m.appel=true;m.ts=m.ts||p.ts||'';
     if(p.statut==='essai')m.essai=true;
     if(p.statut==='venu'){m.essai=true;m.venu=true;}
@@ -4050,18 +4066,19 @@ function showProspects(keepScroll){_vReg('prospects');
     const pi=PIPE[p.statut]||PIPE.rappeler;
     const isDue=due(p);
     const open=prOpenId===p.id;
-    const msgs=relanceMsgs(p);
+    const msgs=relanceMsgs(p).filter(m=>!(p.cSms===false&&p.cWa===false)||/^🗣️/.test(m.t));
     return `<div class="pr-card${isDue?' due':''}" style="border-left:4px solid ${pi.c}">
       <div class="pr-top">
         <div class="pr-ava" style="background:${pi.c}">${esc(prInitials(p.nom))}</div>
         <div class="pr-idbox">
-          <div class="pr-id"><b>${esc(p.nom)}</b></div>
-          <div class="pr-sub">${p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.rep?`<span class="pr-rep">· ${avaTag(avatarOf(p.rep),18,p.rep)} ${esc(p.rep.split(' ')[0])}${p.v2?` + ${esc(p.v2.split(' ')[0])}${p.fullCom?' (100 %)':' (50/50)'}`:''}</span>`:`<select class="pr-rep" onchange="setPRep('${p.id}',this.value)" style="border:1px dashed #C9C2B2;border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;color:var(--ink-mid);background:#fff;cursor:pointer"><option value="">👤 Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`}${p.statut==='abo'?`<span class="pr-rep">· ${p.icId?'🗓️ via IC':'📞 hors IC'}</span>`:''}</div>
+          <div class="pr-id"><b>${esc(p.nom)}</b></div>${boostBadges(p)}
+          <div class="pr-sub">${p.noCall?'<span class="pr-tel" style="color:#B4300F">📵 Refus d\'appel noté dans Boost</span>':p.tel?`<a class="pr-tel" href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:''}${p.email&&p.cEmail!==false?`<a class="pr-tel" href="mailto:${esc(p.email)}" title="${esc(p.email)}">✉️</a>`:''}${p.rep?`<span class="pr-rep">· ${avaTag(avatarOf(p.rep),18,p.rep)} ${esc(p.rep.split(' ')[0])}${p.v2?` + ${esc(p.v2.split(' ')[0])}${p.fullCom?' (100 %)':' (50/50)'}`:''}</span>`:p.bid?'<span class="pr-rep" style="color:var(--ink-mid)">· 👤 non assigné dans Boost</span>':`<select class="pr-rep" onchange="setPRep('${p.id}',this.value)" style="border:1px dashed #C9C2B2;border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;color:var(--ink-mid);background:#fff;cursor:pointer"><option value="">👤 Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`}${p.statut==='abo'?`<span class="pr-rep">· ${p.icId?'🗓️ via IC':'📞 hors IC'}</span>`:''}</div>
         </div>
         <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${pi.lbl}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${p.statut==='abo'?`<button class="pr-act" style="padding:5px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎</button>`:''}
       </div>
       ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
       ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
+      ${p.bnotes?`<details class="pr-bnotes"><summary>🗂️ Notes Boost</summary><div>${esc(p.bnotes)}</div></details>`:''}
       <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Essai':'Rappel'} : ${frDate(p.rappel)}${p.rappelH?' à '+p.rappelH:''}${isDue&&!p.rappelH?' · c\'est maintenant !':''}${p.rappelBy?` <small style="font-weight:600;color:var(--ink-mid)">· ${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}</span>`:'<span>Sans date</span>'}${(()=>{const u=prRdvState(p);if(!u||u.t==='plus-tard')return '';return `<span style="background:#FDE8E3;color:#B4300F;border:1px solid #F5C0AE;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">🚨 ${u.t==='imminent'?'dans '+u.diffMin+' min':u.diffMin===0?'maintenant !':'en retard de '+(-u.diffMin)+' min'}</span>`;})()}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
       ${p.statut==='abo'?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}</div>`:''}
@@ -4071,7 +4088,7 @@ function showProspects(keepScroll){_vReg('prospects');
         <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / d'essai souhaitée par le client"/>
         <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" style="flex:0 0 76px" title="Heure de rappel demandée par le client · la fiche passera en tête 1 h avant"/>
         <button onclick="viewPFiche('${p.id}')" class="pr-act" title="Lire la fiche de découverte">📄 Fiche</button>
-        <button onclick="startCallFor('${p.id}')" class="pr-act" title="Ouvrir l'assistant d'appel sur cette fiche">🎧</button>
+        ${p.noCall?'':`<button onclick="startCallFor('${p.id}')" class="pr-act" title="Ouvrir l'assistant d'appel sur cette fiche">🎧</button>`}
         <button onclick="showAppels('${p.id}')" class="pr-act" title="Résumés d'appels (Allo)">📞${(p.appels&&p.appels.length)?' '+p.appels.length:''}</button>
         <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
       </div>
@@ -4543,6 +4560,7 @@ function stopCallDiscard(){_resetCall();showHome();toast('Appel arrêté · rien
 // Assistant lancé depuis une fiche : prérempli et rattaché à cette fiche
 function startCallFor(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  if(p.noCall){toast('📵 Ce contact a refusé les appels (noté dans Boost)');return;}
   _resetCall();
   st.prospectNom=/^Contact 0/.test(p.nom||'')?'':(p.nom||'');
   st.prospectTel=p.tel||'';

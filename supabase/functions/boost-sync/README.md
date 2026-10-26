@@ -36,15 +36,29 @@ Base `https://www.app-boost.com/api/v1` · `Authorization: Bearer boost_live_…
 - `?deleted_after` / `?deleted_before`, `limit` (max 1000), `offset` → `[{ id, deleted_at }]`.
   Sert à l'effacement (RGPD) côté Sales Coach.
 
-## Correspondances pressenties (à confirmer avec discover + Paul)
-| Sales Coach | Boost |
+## Correspondance des statuts (validée par Paul le 26 oct. 2026, point 1)
+Statuts réels (/reference) : a_traiter, contacte, rdv_planifie, rdv_venu, rdv_nok, client, ancien_client, perdu, archive.
+| Boost | Sales Coach |
 |---|---|
-| rappeler | a_traiter / contacte |
-| essai (+ date) | rdv_planifie · activité `rdv_type=seance_essai`, `scheduled_at` = date de l'essai |
-| venu | `est_venu` / `date_last_rdv_venu` (pas de statut dédié) |
-| abo | client (+ `date_inscription` / `date_contrat`) · jamais de vente auto côté primes |
+| a_traiter, contacte | rappeler |
+| **rdv_planifie** | **rappeler + date/heure de rappel** (chez Club Pilates = rappel convenu avec le prospect, PAS une séance d'essai). Date : prochaine activité planifiée du contact (`rappel`/`rdv`, `scheduled_at`, UTC → heure de Paris), sinon `next_rdv` / `date_relance` / `date_rdv` |
+| rdv_venu | venu |
+| rdv_nok | rappeler + pastille « N'est pas venu » |
+| client | pastille « Client Boost » (jamais d'abo automatique : primes) |
 | perdu | perdu |
+| ancien_client, archive | non importés |
+Essai booké (Sales Coach) ← activité `seance_essai` / `rdv_type=seance_essai` planifiée.
+
+## RDV · `POST /contacts/{id}/rdv` (jeton lecture-écriture)
+- Corps : `scheduled_at` (ISO 8601, requis), `user_id` (commercial, requis · voir /users), `title`, `content`,
+  `duration` (minutes, défaut 60).
+- Réponse : activité `action_type: "rdv"`, `status: "planifie"`, `rdv_type` déduit du titre (null si non reconnu)
+  → pour une séance d'essai, titrer « Séance d'essai » (à vérifier au premier envoi sur un contact de test).
+- Aucune route d'annulation ou de modification de RDV connue : un RDV créé par erreur se corrige à la main dans Boost.
+
+## Découverte du 26 oct. 2026 (La Garenne)
+157 contacts, 948 activités, 8 utilisateurs, 0 tunnel, téléphones 100 % `+33`, consentements tous null,
+pas d'en-tête de limite de débit, `/stats/activities` → 422 (paramètres requis, non utilisé).
 
 ## Encore inconnu
-GET /contacts (liste : pagination, filtre `updated_after` ?), /me, /users, /tags, /tunnels, /reference,
-POST /contacts/{id}/rdv (corps), /stats/activities, limites de débit, webhooks.
+Filtre incrémental sur GET /contacts (inutile à 157 contacts : synchro complète), webhooks.

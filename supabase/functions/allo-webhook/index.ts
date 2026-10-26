@@ -173,7 +173,8 @@ serve(async (req: Request) => {
     // Préférer la fiche du studio de la ligne ; une fiche trouvée sans studio y est rattachée
     const findByKey = (k: string) => {
       const same = list.filter((p) => telKey(p?.tel) === k);
-      const f = same.find((p) => String(p?.studio || "") === STUDIO) || same[0];
+      // Fiche liée à Boost (source maîtresse) d'abord, puis studio de la ligne
+      const f = same.find((p) => p?.bid) || same.find((p) => String(p?.studio || "") === STUDIO) || same[0];
       if (f && !String(f.studio || "").trim()) f.studio = STUDIO;
       return f;
     };

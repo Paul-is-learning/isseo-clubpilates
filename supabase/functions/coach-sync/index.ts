@@ -39,6 +39,21 @@ const EV_TYPES = ["appel", "essai", "venu", "abo", "perdu"];
 const DEFAULT_PRIMES: Record<string, number> = { "1": 10, "2": 25, "3": 50 };
 const MAX_PROSPECTS = 5000;
 const MAX_INVITES = 50;
+// Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
+// toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
+// appartiennent aussi à Boost.
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset"];
+// deno-lint-ignore no-explicit-any
+function keepBoost(clean: any, ex: any) {
+  if (!ex) return;
+  for (const f of BOOST_FIELDS) if (f in ex) clean[f] = ex[f];
+  if (ex.bid) { clean.nom = ex.nom; clean.tel = ex.tel; clean.rep = String(ex.rep || ""); }
+  // Statut changé depuis l'outil : il n'est plus « posé par Boost »
+  if (ex.bset && clean.statut !== ex.statut) clean.bset = false;
+}
+// Refus d'appel noté dans Boost : le numéro ne quitte jamais le serveur
+// deno-lint-ignore no-explicit-any
+const outP = (p: any) => (p && p.cPhone === false ? { ...p, tel: "", noCall: true } : p);
 
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), {
@@ -539,12 +554,14 @@ serve(async (req) => {
       return json({ ok: true, prospects: [], epoch: newEpoch });
     }
 
-    if (action === "pull") return json({ ok: true, prospects: list.filter(inMine), epoch, studio: myStudio, scoped });
+    const tomb: string[] = ((await getRow(admin, "_coach_tomb")).ids as string[]) || [];
+    const tombSet = new Set(tomb);
+    if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, scoped, tomb });
 
     if (action === "push") {
       const incoming: any[] = Array.isArray(body.prospects) ? body.prospects : [];
       for (const p of incoming) {
-        if (!p || !p.id) continue;
+        if (!p || !p.id || tombSet.has(String(p.id))) continue;
         // On ne garde que les champs attendus (pas de payload arbitraire)
         const clean = {
           id: String(p.id), nom: String(p.nom || ""), tel: String(p.tel || ""),
@@ -567,6 +584,7 @@ serve(async (req) => {
         if (i >= 0 && !inMine(list[i])) continue;
         ownStudio(clean, i >= 0 ? list[i] : null);
         if (i >= 0) {
+          keepBoost(clean, list[i]);
           if ((clean.maj || "") >= (list[i].maj || "")) {
             // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
             const seen = new Set(clean.appels.map((a: any) => String(a.ts).slice(0, 16)));
@@ -590,6 +608,7 @@ serve(async (req) => {
         const base = newer ? clean : ex, other = newer ? ex : clean;
         const merged: any = { ...other, ...base };
         merged.id = clean.id; // l'id de la fiche de l'assistant (porte les événements de vente)
+        if (ex.bid) { for (const f of BOOST_FIELDS) if (f in ex) merged[f] = ex[f]; merged.nom = ex.nom; merged.tel = ex.tel; merged.rep = String(ex.rep || ""); }
         if (/^Contact 0/.test(String(merged.nom || "")) && other.nom && !/^Contact 0/.test(String(other.nom))) merged.nom = other.nom;
         merged.rep = base.rep || other.rep;
         merged.studio = base.studio || other.studio;
@@ -607,14 +626,14 @@ serve(async (req) => {
       }
       if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
       await saveList();
-      return json({ ok: true, prospects: list.filter(inMine), epoch, studio: myStudio, scoped });
+      return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, scoped, tomb });
     }
 
     if (action === "delete") {
       const rm: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
       list = list.filter((p) => !rm.includes(p.id) || !inMine(p));
       await saveList();
-      return json({ ok: true, prospects: list.filter(inMine), epoch });
+      return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, tomb });
     }
 
     return json({ error: "Action inconnue" }, 400);
