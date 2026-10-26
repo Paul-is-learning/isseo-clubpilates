@@ -131,7 +131,7 @@ async function all(token: string, path: string, limit: number, maxPages = 60): P
     items.push(...listOf(r.body));
     const p = r.body.pagination || r.body;
     if (!p?.has_more) return { items, ok: true, status: 200 };
-    await new Promise((res) => setTimeout(res, 150));
+    await new Promise((res) => setTimeout(res, 60));
   }
   return { items, ok: false, status: 0 };
 }

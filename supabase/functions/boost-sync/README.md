@@ -67,3 +67,10 @@ pas d'en-tête de limite de débit, `/stats/activities` → 422 sans les dates r
 
 ## Encore inconnu
 Filtre incrémental sur GET /contacts (inutile à 157 contacts : synchro complète), webhooks.
+
+## Règles d'import (Paul, 26 oct. 2026)
+- Seuls les leads **arrivés depuis 60 jours** (`effective_entry_at`, sinon `created_at`) sont créés dans le Sales Coach ;
+  un ancien lead entre s'il a un rappel dans les 30 jours ou s'il revient (nouvelle entrée).
+- **Un rappel au-delà de J+30 n'est pas traité** (ni comme motif d'import, ni comme date de rappel).
+- Les fiches déjà liées restent mises à jour quel que soit leur âge.
+- Montpellier Lattes (découverte du 26 oct.) : 2 826 contacts, ~80 s de lecture complète.

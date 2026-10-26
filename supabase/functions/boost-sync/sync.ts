@@ -31,6 +31,12 @@ export function parisDT(iso: string): { d: string; h: string } | null {
 const NO_CREATE = new Set(["client", "ancien_client", "archive"]);
 
 // Activité planifiée la plus proche par contact : essai (seance_essai) ou rappel (rappel / rdv)
+// Règles de Paul (26 oct. 2026) : seuls les leads arrivés depuis 60 jours entrent dans l'outil,
+// et un rappel au-delà de J+30 n'est pas traité (ignoré)
+export const MAX_AGE_DAYS = 60;
+export const RAPPEL_HORIZON_DAYS = 30;
+const horizon = (nowIso: string) => new Date(Date.parse(nowIso) + RAPPEL_HORIZON_DAYS * 864e5).toISOString();
+
 export function plannedByContact(acts: any[], nowIso: string) {
   const out = new Map<string, { at: string; essai: boolean; created: string }>();
   for (const a of acts) {
@@ -38,6 +44,7 @@ export function plannedByContact(acts: any[], nowIso: string) {
     const essai = a.action_type === "seance_essai" || a.rdv_type === "seance_essai";
     if (!essai && !["rappel", "rdv"].includes(String(a.action_type))) continue;
     if (String(a.scheduled_at) < nowIso.slice(0, 10)) continue; // passé : ignoré
+    if (String(a.scheduled_at) > horizon(nowIso)) continue; // au-delà de J+30 : non traité
     const cur = out.get(a.prospect_id);
     if (!cur || String(a.scheduled_at) < cur.at) out.set(a.prospect_id, { at: String(a.scheduled_at), essai, created: String(a.created_at || "") });
   }
@@ -45,7 +52,7 @@ export function plannedByContact(acts: any[], nowIso: string) {
 }
 
 // Statut Sales Coach + date de rappel déduits d'un contact Boost
-export function mapStatus(c: any, planned?: { at: string; essai: boolean; created?: string }) {
+export function mapStatus(c: any, planned?: { at: string; essai: boolean; created?: string }, nowIso?: string) {
   const st = String(c?.status || "");
   let statut = "rappeler";
   if (st === "rdv_venu") statut = "venu";
@@ -58,6 +65,7 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   if (planned && (planned.essai || !rel || String(planned.created || "") > String(c?.updated_at || ""))) when = planned.at;
   else if (rel) when = rel;
   else if (st === "rdv_planifie") when = String(c?.next_rdv || c?.date_rdv || "");
+  if (when && nowIso && when > horizon(nowIso)) when = ""; // rappel au-delà de J+30 : non traité
   const dt = when ? parisDT(when) : null;
   return { statut, rappel: dt?.d || "", rappelH: dt && /T\d/.test(when) ? dt.h : "", nok: st === "rdv_nok", client: st === "client" };
 }
@@ -88,7 +96,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     return inv ? String(inv.nom) : n;
   };
   const R = {
-    contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, non_importes: 0,
+    contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, non_importes: 0, trop_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
     doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
@@ -115,12 +123,16 @@ export function reconcile(prospects: any[], ctx: Ctx) {
       if (p) { fresh = true; R.lies_nouveaux++; }
     } else if (p) R.lies_deja++;
 
-    const m = mapStatus(c, planned.get(bid));
+    const m = mapStatus(c, planned.get(bid), ctx.nowIso);
     const rep = repOf(c.assigned_to);
     if (rep) R.commerciaux[rep] = (R.commerciaux[rep] || 0) + 1;
 
     if (!p) {
       if (NO_CREATE.has(String(c.status)) || c.archived === true) { R.non_importes++; continue; }
+      // Lead trop ancien (plus de 60 jours) sans rappel dans les 30 jours : il reste dans Boost
+      const arr = String(c.effective_entry_at || c.last_entry_at || c.created_at || "");
+      const recent = !arr || Date.parse(arr) >= Date.parse(ctx.nowIso) - MAX_AGE_DAYS * 864e5;
+      if (!recent && !m.rappel) { R.trop_anciens++; continue; }
       p = { id: "p_fb_" + ctx.club + "_" + bid.replace(/[^A-Za-z0-9]/g, "").slice(0, 32), rep: "", note: "", fiche: "", obj: "", pack: "", appels: [],
         statut: m.statut, rappel: m.rappel, rappelH: m.rappelH, rappelBy: m.rappel ? "Boost" : "", ts: String(c.created_at || ctx.nowIso), maj: ctx.nowIso, bset: true, brap: m.rappel + " " + m.rappelH };
       list.push(p);
