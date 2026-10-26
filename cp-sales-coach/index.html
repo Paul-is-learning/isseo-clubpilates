@@ -4310,9 +4310,9 @@ function showProspects(keepScroll){
     const late=p.rappel&&rdvAt(p)&&rdvAt(p).getTime()<Date.now()&&prOpen(p);
     const when=p.rappel
       ?`<span class="pl-when${late?' late':isDue?' due':''}">${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
-      :`<span class="pl-when muted">${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
+      :`<span class="pl-when muted">${srcLogo(p.src)}${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     const arr=new Date(prArrival(p));
-    const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">🕐 ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} · ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
+    const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} · ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     // L'heure d'arrivée est dans la colonne « prochaine étape » ; si un rappel l'occupe, elle passe sous le nom
     const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rep?esc(p.rep.split(' ')[0]):'',p.rappel?arrH:''].filter(Boolean).join(' · ');
     const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
@@ -4320,7 +4320,7 @@ function showProspects(keepScroll){
     return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
       <div class="pl-line" onclick="togglePr('${p.id}')">
         <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
-        <div class="pl-who"><b>${srcLogo(p.src)}${esc(p.nom)}</b><span>${sub}</span></div>
+        <div class="pl-who"><b>${esc(p.nom)}</b><span>${sub}</span></div>
         <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${flags}</div>
         <div class="pl-next">${when}${p.rappel&&prOpen(p)&&rdvAt(p)&&rdvAt(p).getTime()<=Date.now()+15*60000?`<label class="pl-done" onclick="event.stopPropagation()" title="Cochez quand le rappel est fait et que le prospect a décroché"><input type="checkbox" onchange="rappelDone('${p.id}',this)"/> Rappel fait</label>`:''}</div>
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
