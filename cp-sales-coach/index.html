@@ -3063,6 +3063,10 @@ function _repKey(r){return (r||'').trim().split(' ')[0].toLowerCase().normalize(
 /* ── Fitness Boost (source maîtresse des leads) : pastilles d'une fiche liée ── */
 const BOOST_ST={a_traiter:'À traiter',contacte:'Contacté',rdv_planifie:'RDV planifié',rdv_venu:'RDV venu',rdv_nok:'RDV non venu',client:'Client',ancien_client:'Ancien client',perdu:'Perdu',archive:'Archivé'};
 const BOOST_SRC={facebook_ads:'Facebook Ads',google_ads:'Google Ads',site_web:'Site web',popup_lead:'Popup',landing_page:'Landing page',parrainage:'Parrainage',bouche_a_oreille:'Bouche à oreille',reseaux_sociaux:'Réseaux sociaux',google_my_business:'Google My Business',seance_essai:'Séance d\'essai',telephone:'Téléphone',accueil:'Accueil',bsport:'Bsport'};
+// Note de fiche sans les marqueurs techniques d'origine (« Importé d'Allo · historique »…)
+function noteShow(p){
+  return String(p.note||'').split(' · ').map(x=>x.trim()).filter(x=>x&&!/^(Importé d'Allo|historique|Contact Allo)$/i.test(x)).join(' · ');
+}
 function boostBadges(p){
   if(!p.bid)return '';
   const pill=(t,bg,c,bd)=>`<span class="pr-bb" style="background:${bg};color:${c};border-color:${bd}">${t}</span>`;
@@ -4087,7 +4091,7 @@ function showProspects(keepScroll){_vReg('prospects');
         <span class="pr-chip" style="background:${pi.c}15;color:${pi.c};border-color:${pi.c}55">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${p.statut==='abo'?`<button class="pr-act" style="padding:5px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎</button>`:''}
       </div>
       ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
-      ${p.note?`<div class="pr-note">📝 ${esc(p.note)}</div>`:''}
+      ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
       ${p.bnotes?`<details class="pr-bnotes"><summary>🗂️ Notes Boost</summary><div>${esc(p.bnotes)}</div></details>`:''}
       <div class="pr-meta">${p.rappel?`<span class="${isDue?'pr-due':''}">${isDue?'🔔':'📆'} ${p.statut==='essai'?'Séance d\'essai':'RDV planifié'} : ${frDate(p.rappel)}${p.rappelH?' à '+p.rappelH:''}${isDue&&!p.rappelH?' · c\'est maintenant !':''}${p.rappelBy?` <small style="font-weight:600;color:var(--ink-mid)">· ${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}</span>`:'<span>Sans date</span>'}${(()=>{const u=prRdvState(p);if(!u||u.t==='plus-tard')return '';return `<span style="background:#FDE8E3;color:#B4300F;border:1px solid #F5C0AE;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">🚨 ${u.t==='imminent'?'dans '+u.diffMin+' min':u.diffMin===0?'maintenant !':'en retard de '+(-u.diffMin)+' min'}</span>`;})()}<span>· créé le ${new Date(p.ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</span>${prAgeChip(p)?`<span>· </span>${prAgeChip(p)}`:''}${prAppChip(p)?`<span style="margin-left:2px">${prAppChip(p)}</span>`:''}</div>
       <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
