@@ -4268,14 +4268,20 @@ function showProspects(keepScroll){
   // 🆕 Leads récents : ordre d'arrivée, le plus récent en tête (comme dans Boost)
   // 🎯 À contacter d'abord : leads ouverts sans rappel programmé · jamais appelés d'abord (les plus anciens en tête), puis dernier contact le plus ancien
   // ⏰ Rappels programmés : par date et heure, retards en tête
-  const clientView=prFilter==='abo';
+  // Une tuile du pipeline cliquée = vue complète de ce statut, sans les onglets (récents, à rappeler…)
+  const clientView=!!prFilter;
   if(!clientView&&!prFilter&&prSort==='prio')list=list.filter(p=>p.statut==='rappeler'&&!p.noCall&&!p.rappel);
   if(!clientView&&!prFilter&&prSort==='rappels')list=list.filter(p=>prOpen(p)&&p.rappel);
   // Adhérents importés de Boost : visibles via le filtre « Client », jamais mêlés aux leads
   // (avec un filtre de statut actif, on montre toutes les fiches de ce statut, adhérents compris)
   if(prSort==='recent'&&!prFilter)list=list.filter(p=>!p.bmember);
   const sorted=list.sort((a,b)=>{
-    if(clientView)return String(a.nom||'').localeCompare(String(b.nom||''),'fr',{sensitivity:'base'});
+    if(clientView){
+      if(prFilter==='essai')return (rdvAt(a)?.getTime()||9e15)-(rdvAt(b)?.getTime()||9e15); // par date de séance
+      if(prFilter==='abo')return String(a.nom||'').localeCompare(String(b.nom||''),'fr',{sensitivity:'base'});
+      if(prFilter==='perdu')return String(b.maj||'').localeCompare(String(a.maj||''));
+      return prArrival(b).localeCompare(prArrival(a));
+    }
     if(prSort==='prio'){
       const na=(a.appels||[]).length?1:0,nb=(b.appels||[]).length?1:0;if(na!==nb)return na-nb;
       return (na?prLastContact(a):prArrival(a)).localeCompare(na?prLastContact(b):prArrival(b));
@@ -4396,15 +4402,15 @@ function showProspects(keepScroll){
     <div class="hm-sec">Pipeline</div>
     <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-tools">
-    ${prFilter==='abo'?'':`<div class="pr-tabs">
+    ${prFilter?'':`<div class="pr-tabs">
       <button class="pr-tab${prSort!=='prio'&&prSort!=='journal'&&prSort!=='rappels'?' on':''}" onclick="setPrSort('recent')" title="Les leads dans leur ordre d'arrivée, le plus récent en tête (comme dans Boost)">🆕 Leads récents</button>
       <button class="pr-tab${prSort==='prio'?' on':''}" onclick="setPrSort('prio')" title="Leads sans rappel programmé : jamais appelés d'abord (les plus anciens en tête), puis ceux dont le dernier contact est le plus ancien">🎯 À contacter d'abord</button>
       <button class="pr-tab${prSort==='rappels'?' on':''}" onclick="setPrSort('rappels')" title="Les rappels convenus avec les prospects, par date et heure · l'onglet clignote quand l'heure approche">⏰ Rappels programmés <span id="prRdvBadge" class="pr-rdvb" style="${PSC().filter(rdvHot).length?'':'display:none'}">${PSC().filter(rdvHot).length}</span></button>
       <button class="pr-tab${prSort==='journal'?' on':''}" onclick="setPrSort('journal')" title="Tous les appels réalisés, du plus récent au plus ancien">📞 Journal d'appels</button>
     </div>`}
-    <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
+    <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':prFilter?'Rechercher dans « '+PIPE[prFilter].lbl+' » : nom, numéro…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
-    <div class="hm-sec">${clientView?'Clients · '+sorted.length:(prSort==='journal'?'Journal d\'appels':prSort==='rappels'?'Rappels programmés':prSort==='prio'?'À contacter d\'abord':'Leads récents')+' · '+(prSort==='journal'?'':sorted.length)}</div>
+    <div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:(prSort==='journal'?'Journal d\'appels':prSort==='rappels'?'Rappels programmés':prSort==='prio'?'À contacter d\'abord':'Leads récents')+' · '+(prSort==='journal'?'':sorted.length)}</div>
     ${!clientView&&prSort==='journal'?callJournalHTML(null,list):sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
