@@ -96,7 +96,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     return inv ? String(inv.nom) : n;
   };
   const R = {
-    contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, non_importes: 0, trop_anciens: 0,
+    contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
     doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
@@ -128,19 +128,24 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     const rep = repOf(c.assigned_to);
 
     if (!p) {
-      if (NO_CREATE.has(String(c.status)) || c.archived === true) { R.non_importes++; continue; }
+      // Adhérents (« client » dans Boost) : tous importés, quel que soit leur ancienneté (demande de Paul)
+      const member = String(c.status) === "client" && c.archived !== true;
+      if (!member && (NO_CREATE.has(String(c.status)) || c.archived === true)) { R.non_importes++; continue; }
       // Lead trop ancien (plus de 60 jours) sans rappel dans les 30 jours : il reste dans Boost
       const arr = String(c.effective_entry_at || c.last_entry_at || c.created_at || "");
       const recent = !arr || Date.parse(arr) >= Date.parse(ctx.nowIso) - MAX_AGE_DAYS * 864e5;
-      if (!recent && !m.rappel) { R.trop_anciens++; continue; }
+      if (!member && !recent && !m.rappel) { R.trop_anciens++; continue; }
       p = { id: "p_fb_" + ctx.club + "_" + bid.replace(/[^A-Za-z0-9]/g, "").slice(0, 32), rep: "", note: "", fiche: "", obj: "", pack: "", appels: [],
-        statut: m.statut, rappel: m.rappel, rappelH: m.rappelH, rappelBy: m.rappel ? "Boost" : "", ts: String(c.created_at || ctx.nowIso), maj: ctx.nowIso, bset: true, brap: m.rappel + " " + m.rappelH };
+        statut: member ? "abo" : m.statut, rappel: member ? "" : m.rappel, rappelH: m.rappelH, rappelBy: m.rappel ? "Boost" : "", ts: String(c.created_at || ctx.nowIso), maj: ctx.nowIso, bset: true, brap: m.rappel + " " + m.rappelH };
       list.push(p);
-      R.crees++;
-      const inc = (o: Record<string, number>, k: string) => { o[k] = (o[k] || 0) + 1; };
-      inc(R.crees_par_mois, String(c.effective_entry_at || c.last_entry_at || c.created_at || "?").slice(0, 7));
-      inc(R.crees_par_source, String(c.source || "?"));
-      inc(R.crees_par_statut, String(c.status || "?"));
+      if (member) R.adherents++; // adhérent : hors statistiques de leads
+      else {
+        R.crees++;
+        const inc = (o: Record<string, number>, k: string) => { o[k] = (o[k] || 0) + 1; };
+        inc(R.crees_par_mois, String(c.effective_entry_at || c.last_entry_at || c.created_at || "?").slice(0, 7));
+        inc(R.crees_par_source, String(c.source || "?"));
+        inc(R.crees_par_statut, String(c.status || "?"));
+      }
     } else if (fresh) {
       // Premier lien : le statut local est conservé (référence Boost mémorisée), écart compté
       if (m.statut !== p.statut) { const g = (p.statut || "?") + " → " + String(c.status); R.ecarts_premier_lien[g] = (R.ecarts_premier_lien[g] || 0) + 1; }
@@ -166,6 +171,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     p.src = String(c.source || "").slice(0, 40);
     p.bnotes = String(c.notes || "").slice(0, 2000);
     p.bnok = m.nok; p.bclient = m.client;
+    p.bmember = String(c.status) === "client"; // adhérent : hors tournée d'appels, jamais de vente déclarable
     if (rep) p.rep = rep;
     p.studio = ctx.studio;
     p.cPhone = c.phone_consent === false ? false : null;
