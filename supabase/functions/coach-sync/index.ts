@@ -55,10 +55,25 @@ function keepBoost(clean: any, ex: any) {
 // Changement fait dans l'outil sur une fiche Boost (statut, rappel) : mis en file pour boost-push,
 // qui l'écrira dans Boost (bq = à envoyer, bqs = signature du dernier envoi)
 // deno-lint-ignore no-explicit-any
-function markBq(next: any, ex: any, by: string) {
-  if (!ex?.bid) return;
-  if (next.statut === ex.statut && String(next.rappel || "") === String(ex.rappel || "") && String(next.rappelH || "") === String(ex.rappelH || "")) return;
+function markBq(next: any, ex: any, by: string): boolean {
+  if (!ex?.bid) return false;
+  if (next.statut === ex.statut && String(next.rappel || "") === String(ex.rappel || "") && String(next.rappelH || "") === String(ex.rappelH || "")) return false;
   next.bq = { statut: next.statut, rappel: String(next.rappel || ""), rappelH: String(next.rappelH || ""), at: new Date().toISOString(), by: String(by || "").slice(0, 60) };
+  return true;
+}
+// Envoi immédiat vers Boost (sans attendre le passage de la minute) : boost-push est appelé
+// en arrière-plan avec la clé du planificateur ; s'il échoue, le passage suivant s'en charge.
+// deno-lint-ignore no-explicit-any
+async function pushBoostNow(admin: any) {
+  try {
+    const { data } = await admin.from("coach_store").select("data").eq("id", "_boost_cron").maybeSingle();
+    const key = String(data?.data?.key || "");
+    if (!key) return;
+    const job = fetch((Deno.env.get("SUPABASE_URL") || "") + "/functions/v1/boost-push?action=run", { method: "POST", headers: { "x-sync-key": key } }).then((r) => r.body?.cancel()).catch(() => {});
+    // deno-lint-ignore no-explicit-any
+    const rt = (globalThis as any).EdgeRuntime;
+    if (rt?.waitUntil) rt.waitUntil(job); else await job;
+  } catch (_e) { /* best effort */ }
 }
 // Refus d'appel noté dans Boost : le numéro ne quitte jamais le serveur
 // deno-lint-ignore no-explicit-any
@@ -649,7 +664,29 @@ serve(async (req) => {
         bnew: { nom, tel, email, source, note, at: now, by } };
       list.push(np);
       await saveList();
+      await pushBoostNow(admin);
       return json({ ok: true, prospect: outP(np) });
+    }
+
+    // ── Laisser une note : ajoutée en tête des notes Boost (datée, signée) et envoyée aussitôt ──
+    if (action === "note_add") {
+      const i = list.findIndex((x) => x.id === String(body.id || ""));
+      if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+      const text = String(body.text || "").trim().replace(/\s+\n/g, "\n").slice(0, 600);
+      if (!text) return json({ error: "Note vide" }, 400);
+      const p = list[i];
+      const now = new Date();
+      const stamp = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(now).replace(",", "");
+      const by = String(rep || (role === "admin" ? String(body.nom || "Paul") : "")).trim().split(/\s+/)[0] || "Équipe";
+      const line = stamp + " · " + by + " : " + text;
+      if (p.bid) {
+        p.bnotes = (line + (p.bnotes ? "\n" + p.bnotes : "")).slice(0, 2000);
+        p.bqi = { nom: p.nom, tel: p.tel, email: p.email || "", notes: p.bnotes, at: now.toISOString(), by };
+      } else p.note = (line + (p.note ? " · " + p.note : "")).slice(0, 300);
+      p.maj = now.toISOString();
+      await saveList();
+      if (p.bid) await pushBoostNow(admin);
+      return json({ ok: true, prospect: outP(p), boost: !!p.bid });
     }
 
     // ── Modifier les coordonnées d'une fiche (nom, téléphone, email, notes Boost) ──
@@ -673,6 +710,7 @@ serve(async (req) => {
       p.maj = new Date().toISOString();
       if (p.bid) p.bqi = { nom, tel: keepTel ? p.tel : tel, email, ...(notes !== undefined ? { notes } : {}), at: p.maj, by: String(rep || (role === "admin" ? "Paul" : "")).slice(0, 60) };
       await saveList();
+      if (p.bid) await pushBoostNow(admin);
       return json({ ok: true, prospect: outP(p), boost: !!p.bid });
     }
 
@@ -714,6 +752,7 @@ serve(async (req) => {
 
     if (action === "push") {
       const incoming: any[] = Array.isArray(body.prospects) ? body.prospects : [];
+      let queued = false; // un statut ou un rappel à envoyer à Boost
       for (const p of incoming) {
         if (!p || !p.id || tombSet.has(String(p.id))) continue;
         // On ne garde que les champs attendus (pas de payload arbitraire)
@@ -741,7 +780,7 @@ serve(async (req) => {
         if (i >= 0) {
           keepBoost(clean, list[i]);
           if ((clean.maj || "") >= (list[i].maj || "")) {
-            markBq(clean, list[i], rep);
+            if (markBq(clean, list[i], rep)) queued = true;
             // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
             const seen = new Set(clean.appels.map((a: any) => String(a.ts).slice(0, 16)));
             for (const a of (list[i].appels || [])) if (!seen.has(String(a.ts).slice(0, 16))) clean.appels.push(a);
@@ -764,7 +803,7 @@ serve(async (req) => {
         const base = newer ? clean : ex, other = newer ? ex : clean;
         const merged: any = { ...other, ...base };
         merged.id = clean.id; // l'id de la fiche de l'assistant (porte les événements de vente)
-        if (ex.bid) { for (const f of BOOST_FIELDS) if (f in ex) merged[f] = ex[f]; merged.nom = ex.nom; merged.tel = ex.tel; merged.rep = String(ex.rep || ""); markBq(merged, ex, rep); }
+        if (ex.bid) { for (const f of BOOST_FIELDS) if (f in ex) merged[f] = ex[f]; merged.nom = ex.nom; merged.tel = ex.tel; merged.rep = String(ex.rep || ""); if (markBq(merged, ex, rep)) queued = true; }
         if (/^Contact 0/.test(String(merged.nom || "")) && other.nom && !/^Contact 0/.test(String(other.nom))) merged.nom = other.nom;
         merged.rep = base.rep || other.rep;
         merged.studio = base.studio || other.studio;
@@ -782,6 +821,7 @@ serve(async (req) => {
       }
       if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
       await saveList();
+      if (queued) await pushBoostNow(admin);
       return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, scoped, tomb });
     }
 
