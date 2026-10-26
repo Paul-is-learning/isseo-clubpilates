@@ -4468,8 +4468,9 @@ function _journalRowHTML(j){
   const co=_apCoherence(j.a,dur);
   const am=j.first.match(/ · par ([^·\n]+?)(?= · |$)/);const who=am?am[1].trim():'';
   const dir=/appel entrant/.test(j.first)?'↙':'↗';
-  const res=(j.first.match(/· (answered|voicemail|received|closed|failed|transferred_ai|blocked)\b/i)||['',''])[1].toLowerCase();
-  const resLbl={answered:'abouti',voicemail:'messagerie',received:'manqué',closed:'raccroché',failed:'échec',transferred_ai:'IA',blocked:'bloqué'}[res]||res;
+  // Résultat Allo (anglais) ou Aircall (français)
+  const res=(j.first.match(/· (answered|voicemail|received|closed|failed|transferred_ai|blocked|décroché|messagerie|sans réponse|manqué)(?= ·|$)/i)||['',''])[1].toLowerCase();
+  const resLbl={answered:'abouti',voicemail:'messagerie',received:'manqué',closed:'raccroché',failed:'échec',transferred_ai:'IA',blocked:'bloqué','décroché':'abouti','sans réponse':'sans réponse'}[res]||res;
   const durLbl=dur?(dur<1?Math.round(dur*60)+' s':Math.round(dur)+' min'):(/· 0 ?m/.test(j.first)?'< 1 min':'');
   return `<div onclick="showAppels('${j.p.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
     <b style="flex:0 0 46px;font-size:13.5px;color:var(--cp-dark);font-variant-numeric:tabular-nums">${j.tp.h}</b>
@@ -4483,7 +4484,7 @@ function _journalRowHTML(j){
 // dayS = un jour précis (onglet 📊) · null = tous les jours, regroupés (Mes prospects)
 function callJournalHTML(dayS,pool){
   const J=_journalRows(dayS,pool);
-  if(!J.length)return dayS?'':'<div class="pr-empty">Aucun appel Allo pour ces fiches.</div>';
+  if(!J.length)return dayS?'':'<div class="pr-empty">Aucun appel enregistré pour ces fiches (Allo, Aircall).</div>';
   const nbIncoh=J.filter(j=>_apCoherence(j.a,_apDurMin(j.first)).ic==='⚠️').length;
   let body='',lastDay='';
   J.forEach(j=>{
@@ -4523,7 +4524,7 @@ function showCallStats(){_vReg('calls');
     const kC=p.id+'|'+Math.floor(tp.abs/60000);if(_seenC.has(kC))return;_seenC.add(kC);
     if(!first.startsWith('📞'))return;
     total++;
-    const ok=/answered/i.test(first);if(ok)answered++;
+    const ok=/answered|· décroché/i.test(first);if(ok)answered++;
     const dm=_apDurMin(first);talk+=dm;
     const am=first.match(/ · par ([^·\n]+?)(?= · |$)/);
     const who=am?am[1].trim():'Non attribué';

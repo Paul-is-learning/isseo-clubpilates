@@ -11,6 +11,8 @@
 // POST ?action=setup_webhook     crée dans Aircall la notification « Sales Coach »
 //                                (call.ended + transcription.created → aircall-webhook)
 // POST ?action=remove_webhook    la supprime
+// POST ?action=backfill&days=60[&write=1]  range les appels passés sur les fiches de Lattes
+//                                (sans write : simulation, comptes seulement)
 // En-tête x-sync-key = BOOST_SYNC_KEY
 // Secrets : AIRCALL_API_ID, AIRCALL_API_TOKEN (Basic auth), BOOST_SYNC_KEY
 // Déployée avec --no-verify-jwt.
@@ -19,6 +21,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { AIRCALL_STUDIO, callMeta, callTs, telKey } from "../_shared/aircall.ts";
 
 const BASE = "https://api.aircall.io/v1";
 
@@ -89,6 +92,56 @@ serve(async (req: Request) => {
       if (r.status >= 300 || !w?.token) return json({ ok: false, http: r.status }, 502);
       await putRow(admin, "_aircall", { webhook_id: w.webhook_id ?? w.id, token: w.token, at: new Date().toISOString() });
       return json({ ok: true, webhook_id: w.webhook_id ?? w.id, evenements: w.events || ["call.ended", "transcription.created"] });
+    }
+    if (action === "backfill") {
+      const days = Math.max(1, Math.min(120, Number(url.searchParams.get("days")) || 60));
+      const write = url.searchParams.get("write") === "1";
+      const from = Math.floor(Date.now() / 1000) - days * 86400;
+      // deno-lint-ignore no-explicit-any
+      const calls: any[] = [];
+      let pages = 0, complete = false;
+      for (let page = 1; page <= 80; page++) {
+        const r = await get(`/calls?from=${from}&order=asc&per_page=50&page=${page}`);
+        if (r.status !== 200 || !r.body) break;
+        calls.push(...(r.body.calls || []));
+        pages++;
+        if (!r.body.meta?.next_page_link) { complete = true; break; }
+        await new Promise((res) => setTimeout(res, 1100)); // limite Aircall : 60 requêtes / minute
+      }
+      if (!complete) return json({ ok: false, error: "Lecture Aircall incomplète", pages, appels_lus: calls.length }, 502);
+      const sk = (x: unknown) => String(x ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+      const apply = (list: any[]) => { // deno-lint-ignore no-explicit-any
+        const byKey = new Map<string, any>();
+        for (const p of list) if (sk(p?.studio) === sk(AIRCALL_STUDIO)) { const k = telKey(p?.tel); if (k.length === 9 && (!byKey.has(k) || (p.bid && !byKey.get(k).bid))) byKey.set(k, p); }
+        let rattaches = 0, deja = 0, inconnus = 0; const fiches = new Set<string>();
+        for (const c of calls) {
+          const p = byKey.get(telKey(c?.raw_digits));
+          if (!p) { inconnus++; continue; }
+          p.appels = Array.isArray(p.appels) ? p.appels : [];
+          const id = "ac_" + String(c.id).slice(0, 30);
+          if (p.appels.some((a: any) => a?.id === id)) { deja++; continue; }
+          p.appels.push({ id, ts: callTs(c), rx: c?.ended_at ? new Date(Number(c.ended_at) * 1000).toISOString() : callTs(c), sv: 0, txt: callMeta(c) });
+          p.appels.sort((a: any, b: any) => String(a.ts).localeCompare(String(b.ts)));
+          if (p.appels.length > 20) p.appels = p.appels.slice(-20);
+          rattaches++; fiches.add(p.id);
+        }
+        return { rattaches, deja, inconnus, fiches: fiches.size };
+      };
+      const report = { jours: days, appels_aircall: calls.length, pages };
+      for (let attempt = 0; attempt < 4; attempt++) {
+        const { data: row } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
+        // deno-lint-ignore no-explicit-any
+        const list: any[] = structuredClone(row?.data?.prospects || []);
+        const res = apply(list);
+        if (!write) return json({ ok: true, mode: "simulation", ...report, ...res });
+        if (!res.rattaches) return json({ ok: true, mode: "import", ...report, ...res });
+        const { data: upd } = await admin.from("coach_store")
+          .update({ data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() })
+          .eq("id", "_coach_prospects").eq("updated_at", row?.updated_at).select("id");
+        if (upd && upd.length) return json({ ok: true, mode: "import", ...report, ...res });
+        await new Promise((res2) => setTimeout(res2, 400));
+      }
+      return json({ ok: false, error: "Les fiches changeaient pendant l'écriture · relancez" }, 409);
     }
     if (action !== "discover") return json({ error: "Action inconnue" }, 400);
     const report: Record<string, unknown> = { at: new Date().toISOString() };
