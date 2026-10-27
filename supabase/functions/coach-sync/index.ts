@@ -676,14 +676,10 @@ serve(async (req) => {
       const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
       return json({ ok: true, rev: String(rv?.updated_at || "") });
     }
-    const row = { data: await getRow(admin, ROW_PROSPECTS) };
-    let list: any[] = (row?.data?.prospects as any[]) || [];
-    const epoch: number = Number(row?.data?.epoch) || 0;
-    const saveList = () =>
-      putRow(admin, ROW_PROSPECTS, { prospects: list, epoch });
 
     // Remise à zéro administrative : date la purge pour que chaque appareil
-    // vide son stock local au lieu de re-pousser d'anciennes fiches.
+    // vide son stock local au lieu de re-pousser d'anciennes fiches. Écriture directe voulue :
+    // la purge efface tout, y compris ce qu'un autre écrirait pendant la requête.
     if (action === "purge_all") {
       if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
       const newEpoch = Date.now();
@@ -694,273 +690,313 @@ serve(async (req) => {
     const tomb: string[] = ((await getRow(admin, "_coach_tomb")).ids as string[]) || [];
     const tombSet = new Set(tomb);
     const revNow = async () => { const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle(); return String(rv?.updated_at || ""); };
-    if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: await revNow() });
+    // Lecture de la liste AVEC sa version (updated_at) : l'enregistrement ne passe que si personne
+    // (boost-sync, boost-push, webhooks Aircall/Allo, autre téléphone) n'a écrit entre-temps
+    const readList = async () => {
+      const q = () => admin.from("coach_store").select("data,updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
+      let { data: r, error } = await q();
+      if (error) throw new Error("Stockage indisponible");
+      if (!r) { await getRow(admin, ROW_PROSPECTS); ({ data: r } = await q()); } // migration douce depuis studios
+      return { data: r?.data || {}, rev: r?.updated_at ? String(r.updated_at) : "" };
+    };
 
-    // ── Historique d'une fiche : activités Boost (appels + durée, SMS, emails, WhatsApp, RDV…)
-    // et, pour Montpellier Lattes, les appels Aircall de ce numéro. Lu à la demande, rien n'est stocké.
-    if (action === "boost_history") {
-      const p = list.find((x) => x.id === String(body.id || ""));
-      if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
-      // deno-lint-ignore no-explicit-any
-      let items: any[] = [];
-      let boostOk = false, boost = false;
-      const TOK: Record<string, string> = { garenne: "BOOST_TOKEN_GARENNE", lattes: "BOOST_TOKEN_LATTES", defense: "BOOST_TOKEN_DEFENSE" };
-      const token = p.bid ? (Deno.env.get(TOK[p.bclub] || "") || "") : "";
-      const jobs: Promise<void>[] = [];
-      if (token) {
-        boost = true;
-        jobs.push((async () => {
-          const H = { Authorization: "Bearer " + token, Accept: "application/json" };
-          const B = "https://www.app-boost.com/api/v1";
-          const [ra, ru] = await Promise.all([
-            fetch(B + "/activities?prospect_id=" + encodeURIComponent(p.bid) + "&limit=200", { headers: H, redirect: "manual" }),
-            fetch(B + "/users", { headers: H, redirect: "manual" }),
-          ]);
-          if (ra.status !== 200) { await ra.body?.cancel(); await ru.body?.cancel(); return; }
-          // deno-lint-ignore no-explicit-any
-          const acts: any[] = (await ra.json().catch(() => ({})))?.data || [];
-          // deno-lint-ignore no-explicit-any
-          const users: any[] = ru.status === 200 ? ((await ru.json().catch(() => ({})))?.data || []) : [];
-          if (ru.status !== 200) await ru.body?.cancel();
-          const uname = new Map(users.map((u) => [String(u?.id), String(u?.name || "")]));
-          boostOk = true;
-          items = items.concat(acts.map((a) => ({
-            src: "Boost", at: String(a?.created_at || ""), sched: String(a?.scheduled_at || ""), type: String(a?.action_type || ""),
-            rdv: String(a?.rdv_type || ""), st: String(a?.status || ""), dur: Number(a?.duration) || 0,
-            title: String(a?.title || "").slice(0, 120), txt: String(a?.description || a?.content || "").slice(0, 800),
-            who: uname.get(String(a?.user_id || "")) || "", auto: a?.est_auto === true, venu: a?.est_venu ?? null,
-            ds: String(a?.delivery_status || ""),
-          })));
-        })());
+    // Écriture concurrente entre la lecture et l'enregistrement : l'action est rejouée sur une
+    // lecture fraîche (3 essais), la modification s'applique donc toujours aux données à jour.
+    // Aucune action qui enregistre n'a d'effet extérieur (Boost, Aircall, email) avant saveList :
+    // l'envoi vers Boost (pushBoostNow) ne part qu'après un enregistrement réussi. Les actions en
+    // lecture seule (pull, historique, appel et transcription Aircall) répondent au 1er passage.
+    replay: for (let attempt = 0; attempt < 3; attempt++) {
+      if (attempt) await new Promise((r) => setTimeout(r, 120 + Math.floor(Math.random() * 200)));
+      const cur = await readList();
+      let list: any[] = (cur.data.prospects as any[]) || [];
+      const epoch: number = Number(cur.data.epoch) || 0;
+      let savedRev = "";
+      // Enregistrement conditionnel : false si la liste a changé depuis la lecture (rien n'est écrit)
+      const saveList = async (): Promise<boolean> => {
+        const data = { ...cur.data, prospects: list, epoch };
+        if (!cur.rev) { await putRow(admin, ROW_PROSPECTS, data); return true; } // ligne absente : création
+        // Nouvelle version toujours différente de celle lue, même à la milliseconde (horloges décalées)
+        const last = Date.parse(cur.rev);
+        const at = new Date(isNaN(last) ? Date.now() : Math.max(Date.now(), last + 1)).toISOString();
+        const { data: upd, error } = await admin.from("coach_store").update({ data, updated_at: at })
+          .eq("id", ROW_PROSPECTS).eq("updated_at", cur.rev).select("id,updated_at");
+        if (error) throw new Error("Stockage indisponible");
+        if (!upd || !upd.length) return false;
+        savedRev = String(upd[0].updated_at || "");
+        return true;
+      };
+      // rev lu avec la liste : jamais la version d'une écriture que la liste renvoyée ne contient pas
+      if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: cur.rev || await revNow() });
+
+      // ── Historique d'une fiche : activités Boost (appels + durée, SMS, emails, WhatsApp, RDV…)
+      // et, pour Montpellier Lattes, les appels Aircall de ce numéro. Lu à la demande, rien n'est stocké.
+      if (action === "boost_history") {
+        const p = list.find((x) => x.id === String(body.id || ""));
+        if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
+        // deno-lint-ignore no-explicit-any
+        let items: any[] = [];
+        let boostOk = false, boost = false;
+        const TOK: Record<string, string> = { garenne: "BOOST_TOKEN_GARENNE", lattes: "BOOST_TOKEN_LATTES", defense: "BOOST_TOKEN_DEFENSE" };
+        const token = p.bid ? (Deno.env.get(TOK[p.bclub] || "") || "") : "";
+        const jobs: Promise<void>[] = [];
+        if (token) {
+          boost = true;
+          jobs.push((async () => {
+            const H = { Authorization: "Bearer " + token, Accept: "application/json" };
+            const B = "https://www.app-boost.com/api/v1";
+            const [ra, ru] = await Promise.all([
+              fetch(B + "/activities?prospect_id=" + encodeURIComponent(p.bid) + "&limit=200", { headers: H, redirect: "manual" }),
+              fetch(B + "/users", { headers: H, redirect: "manual" }),
+            ]);
+            if (ra.status !== 200) { await ra.body?.cancel(); await ru.body?.cancel(); return; }
+            // deno-lint-ignore no-explicit-any
+            const acts: any[] = (await ra.json().catch(() => ({})))?.data || [];
+            // deno-lint-ignore no-explicit-any
+            const users: any[] = ru.status === 200 ? ((await ru.json().catch(() => ({})))?.data || []) : [];
+            if (ru.status !== 200) await ru.body?.cancel();
+            const uname = new Map(users.map((u) => [String(u?.id), String(u?.name || "")]));
+            boostOk = true;
+            items = items.concat(acts.map((a) => ({
+              src: "Boost", at: String(a?.created_at || ""), sched: String(a?.scheduled_at || ""), type: String(a?.action_type || ""),
+              rdv: String(a?.rdv_type || ""), st: String(a?.status || ""), dur: Number(a?.duration) || 0,
+              title: String(a?.title || "").slice(0, 120), txt: String(a?.description || a?.content || "").slice(0, 800),
+              who: uname.get(String(a?.user_id || "")) || "", auto: a?.est_auto === true, venu: a?.est_venu ?? null,
+              ds: String(a?.delivery_status || ""),
+            })));
+          })());
+        }
+        // Aircall : appels de ce numéro (studio de Lattes uniquement)
+        const digits = String(p.tel || "").replace(/\D/g, "");
+        const e164 = digits.length === 10 && digits.startsWith("0") ? "+33" + digits.slice(1) : digits ? "+" + digits : "";
+        if (sk(p.studio) === sk(AIRCALL_STUDIO) && e164 && aircallHeaders()) {
+          jobs.push((async () => {
+            const r = await aircallGet("/calls/search?phone_number=" + encodeURIComponent(e164) + "&order=desc&per_page=50");
+            // deno-lint-ignore no-explicit-any
+            const calls: any[] = (r.body?.calls || []).filter((c: any) => telKey(c?.raw_digits) === telKey(e164));
+            items = items.concat(calls.map((c) => ({
+              src: "Aircall", id: String(c?.id || ""), at: callTs(c), type: c?.answered_at ? "appel_ok" : "appel_nok",
+              dir: c?.direction === "outbound" ? "sortant" : "entrant", dur: Number(c?.duration) || 0, sec: true,
+              who: String(c?.user?.name || ""), line: String(c?.number?.name || "").replace(/^Club Pilates\s*/i, ""),
+              rec: !!(c?.recording || c?.asset), vm: !!c?.voicemail,
+            })));
+          })());
+        }
+        await Promise.all(jobs);
+        return json({ ok: true, boost: boost && boostOk, items });
       }
-      // Aircall : appels de ce numéro (studio de Lattes uniquement)
-      const digits = String(p.tel || "").replace(/\D/g, "");
-      const e164 = digits.length === 10 && digits.startsWith("0") ? "+33" + digits.slice(1) : digits ? "+" + digits : "";
-      if (sk(p.studio) === sk(AIRCALL_STUDIO) && e164 && aircallHeaders()) {
-        jobs.push((async () => {
-          const r = await aircallGet("/calls/search?phone_number=" + encodeURIComponent(e164) + "&order=desc&per_page=50");
-          // deno-lint-ignore no-explicit-any
-          const calls: any[] = (r.body?.calls || []).filter((c: any) => telKey(c?.raw_digits) === telKey(e164));
-          items = items.concat(calls.map((c) => ({
-            src: "Aircall", id: String(c?.id || ""), at: callTs(c), type: c?.answered_at ? "appel_ok" : "appel_nok",
-            dir: c?.direction === "outbound" ? "sortant" : "entrant", dur: Number(c?.duration) || 0, sec: true,
-            who: String(c?.user?.name || ""), line: String(c?.number?.name || "").replace(/^Club Pilates\s*/i, ""),
-            rec: !!(c?.recording || c?.asset), vm: !!c?.voicemail,
-          })));
-        })());
+
+      // ── Créer un prospect depuis l'outil · créé dans Boost par boost-push (bnew), sans doublon ──
+      if (action === "contact_create") {
+        const nom = String(body.nom || "").trim().slice(0, 80);
+        const digits = String(body.tel || "").replace(/\D/g, "");
+        const tel = !digits ? "" : digits.length === 11 && digits.startsWith("33") ? "0" + digits.slice(2) : digits.length === 10 && digits.startsWith("0") ? digits : "+" + digits;
+        const email = String(body.email || "").trim().slice(0, 120);
+        const SRC = ["site_web", "reseaux_sociaux", "bouche_a_oreille", "publicite", "google_my_business", "autre"];
+        const source = SRC.includes(String(body.source)) ? String(body.source) : "autre";
+        const note = String(body.note || "").trim().slice(0, 300);
+        if (!nom) return json({ error: "Le nom est obligatoire" }, 400);
+        if (!digits && !email) return json({ error: "Un téléphone ou un email est nécessaire" }, 400);
+        if (digits && digits.length < 9) return json({ error: "Numéro de téléphone incomplet" }, 400);
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Adresse email invalide" }, 400);
+        const studio = scoped ? pickStudio(body.studio) : (canon(body.studio) || "");
+        if (!studio) return json({ error: "Studio obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
+        const k9 = digits.slice(-9);
+        const dup = list.find((x) => sk(x.studio) === sk(studio) && ((k9.length === 9 && String(x.tel || "").replace(/\D/g, "").slice(-9) === k9) || (email && String(x.email || "").toLowerCase() === email.toLowerCase())));
+        if (dup) return json({ ok: true, exists: true, prospect: outP(dup) });
+        const now = new Date().toISOString();
+        const by = String(rep || (role === "admin" ? String(body.rep || "Paul") : "")).slice(0, 60);
+        const np: any = { id: "p_" + Date.now() + Math.random().toString(36).slice(2, 6), nom, tel, email, note, statut: "rappeler", rappel: "", rappelH: "", rappelBy: "", obj: "", fiche: "", pack: "", appels: [],
+          rep: by, studio, ts: now, maj: now, src: source, bentry: now,
+          bnew: { nom, tel, email, source, note, at: now, by } };
+        list.push(np);
+        if (!(await saveList())) continue replay;
+        await pushBoostNow(admin);
+        return json({ ok: true, prospect: outP(np) });
       }
-      await Promise.all(jobs);
-      return json({ ok: true, boost: boost && boostOk, items });
-    }
 
-    // ── Créer un prospect depuis l'outil · créé dans Boost par boost-push (bnew), sans doublon ──
-    if (action === "contact_create") {
-      const nom = String(body.nom || "").trim().slice(0, 80);
-      const digits = String(body.tel || "").replace(/\D/g, "");
-      const tel = !digits ? "" : digits.length === 11 && digits.startsWith("33") ? "0" + digits.slice(2) : digits.length === 10 && digits.startsWith("0") ? digits : "+" + digits;
-      const email = String(body.email || "").trim().slice(0, 120);
-      const SRC = ["site_web", "reseaux_sociaux", "bouche_a_oreille", "publicite", "google_my_business", "autre"];
-      const source = SRC.includes(String(body.source)) ? String(body.source) : "autre";
-      const note = String(body.note || "").trim().slice(0, 300);
-      if (!nom) return json({ error: "Le nom est obligatoire" }, 400);
-      if (!digits && !email) return json({ error: "Un téléphone ou un email est nécessaire" }, 400);
-      if (digits && digits.length < 9) return json({ error: "Numéro de téléphone incomplet" }, 400);
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Adresse email invalide" }, 400);
-      const studio = scoped ? pickStudio(body.studio) : (canon(body.studio) || "");
-      if (!studio) return json({ error: "Studio obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
-      const k9 = digits.slice(-9);
-      const dup = list.find((x) => sk(x.studio) === sk(studio) && ((k9.length === 9 && String(x.tel || "").replace(/\D/g, "").slice(-9) === k9) || (email && String(x.email || "").toLowerCase() === email.toLowerCase())));
-      if (dup) return json({ ok: true, exists: true, prospect: outP(dup) });
-      const now = new Date().toISOString();
-      const by = String(rep || (role === "admin" ? String(body.rep || "Paul") : "")).slice(0, 60);
-      const np: any = { id: "p_" + Date.now() + Math.random().toString(36).slice(2, 6), nom, tel, email, note, statut: "rappeler", rappel: "", rappelH: "", rappelBy: "", obj: "", fiche: "", pack: "", appels: [],
-        rep: by, studio, ts: now, maj: now, src: source, bentry: now,
-        bnew: { nom, tel, email, source, note, at: now, by } };
-      list.push(np);
-      await saveList();
-      await pushBoostNow(admin);
-      return json({ ok: true, prospect: outP(np) });
-    }
+      // ── Température du lead (chaud / tiède / froid, vide = automatique) · badge Boost mis à jour ──
+      if (action === "temp_set") {
+        const i = list.findIndex((x) => x.id === String(body.id || ""));
+        if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+        const t = String(body.temp || "");
+        if (t && !["chaud", "tiede", "froid"].includes(t)) return json({ error: "Température inconnue" }, 400);
+        const p = list[i];
+        p.temp = t; p.maj = new Date().toISOString();
+        if (p.bid) p.bqi = { ...(p.bqi && p.bqi.notes !== undefined ? { notes: p.bqi.notes } : {}), nom: p.nom, tel: p.tel, email: p.email || "", badge: t, at: p.maj, by: String(rep || (role === "admin" ? "Paul" : "")).slice(0, 60) };
+        if (!(await saveList())) continue replay;
+        if (p.bid) await pushBoostNow(admin);
+        return json({ ok: true, prospect: outP(p) });
+      }
 
-    // ── Température du lead (chaud / tiède / froid, vide = automatique) · badge Boost mis à jour ──
-    if (action === "temp_set") {
-      const i = list.findIndex((x) => x.id === String(body.id || ""));
-      if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
-      const t = String(body.temp || "");
-      if (t && !["chaud", "tiede", "froid"].includes(t)) return json({ error: "Température inconnue" }, 400);
-      const p = list[i];
-      p.temp = t; p.maj = new Date().toISOString();
-      if (p.bid) p.bqi = { ...(p.bqi && p.bqi.notes !== undefined ? { notes: p.bqi.notes } : {}), nom: p.nom, tel: p.tel, email: p.email || "", badge: t, at: p.maj, by: String(rep || (role === "admin" ? "Paul" : "")).slice(0, 60) };
-      await saveList();
-      if (p.bid) await pushBoostNow(admin);
-      return json({ ok: true, prospect: outP(p) });
-    }
+      // ── Laisser une note : ajoutée en tête des notes Boost (datée, signée) et envoyée aussitôt ──
+      if (action === "note_add") {
+        const i = list.findIndex((x) => x.id === String(body.id || ""));
+        if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+        const text = String(body.text || "").trim().replace(/\s+\n/g, "\n").slice(0, 600);
+        if (!text) return json({ error: "Note vide" }, 400);
+        const p = list[i];
+        const now = new Date();
+        const stamp = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(now).replace(",", "");
+        const by = String(rep || (role === "admin" ? String(body.nom || "Paul") : "")).trim().split(/\s+/)[0] || "Équipe";
+        const line = stamp + " · " + by + " : " + text;
+        if (p.bid) {
+          p.bnotes = (line + (p.bnotes ? "\n" + p.bnotes : "")).slice(0, 2000);
+          p.bqi = { nom: p.nom, tel: p.tel, email: p.email || "", notes: p.bnotes, at: now.toISOString(), by };
+        } else p.note = (line + (p.note ? " · " + p.note : "")).slice(0, 300);
+        p.maj = now.toISOString();
+        if (!(await saveList())) continue replay;
+        if (p.bid) await pushBoostNow(admin);
+        return json({ ok: true, prospect: outP(p), boost: !!p.bid });
+      }
 
-    // ── Laisser une note : ajoutée en tête des notes Boost (datée, signée) et envoyée aussitôt ──
-    if (action === "note_add") {
-      const i = list.findIndex((x) => x.id === String(body.id || ""));
-      if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
-      const text = String(body.text || "").trim().replace(/\s+\n/g, "\n").slice(0, 600);
-      if (!text) return json({ error: "Note vide" }, 400);
-      const p = list[i];
-      const now = new Date();
-      const stamp = new Intl.DateTimeFormat("fr-FR", { timeZone: "Europe/Paris", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).format(now).replace(",", "");
-      const by = String(rep || (role === "admin" ? String(body.nom || "Paul") : "")).trim().split(/\s+/)[0] || "Équipe";
-      const line = stamp + " · " + by + " : " + text;
-      if (p.bid) {
-        p.bnotes = (line + (p.bnotes ? "\n" + p.bnotes : "")).slice(0, 2000);
-        p.bqi = { nom: p.nom, tel: p.tel, email: p.email || "", notes: p.bnotes, at: now.toISOString(), by };
-      } else p.note = (line + (p.note ? " · " + p.note : "")).slice(0, 300);
-      p.maj = now.toISOString();
-      await saveList();
-      if (p.bid) await pushBoostNow(admin);
-      return json({ ok: true, prospect: outP(p), boost: !!p.bid });
-    }
+      // ── Modifier les coordonnées d'une fiche (nom, téléphone, email, notes Boost) ──
+      // Appliqué tout de suite dans l'outil ; pour une fiche Boost, mis en file (bqi) pour boost-push,
+      // et protégé de la synchro tant que Boost n'a pas été mis à jour.
+      if (action === "contact_edit") {
+        const i = list.findIndex((x) => x.id === String(body.id || ""));
+        if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+        const p = list[i];
+        const nom = String(body.nom ?? p.nom ?? "").trim().slice(0, 80);
+        const digits = String(body.tel ?? "").replace(/\D/g, "");
+        const tel = !digits ? "" : digits.length === 11 && digits.startsWith("33") ? "0" + digits.slice(2) : digits.length === 10 && digits.startsWith("0") ? digits : "+" + digits;
+        const email = String(body.email ?? "").trim().slice(0, 120);
+        const notes = body.notes === undefined ? undefined : String(body.notes).slice(0, 2000);
+        if (!nom) return json({ error: "Le nom est obligatoire" }, 400);
+        if (digits && digits.length < 9) return json({ error: "Numéro de téléphone incomplet" }, 400);
+        if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Adresse email invalide" }, 400);
+        // Refus d'appel : le numéro n'est jamais envoyé au téléphone, un champ vide le conserve
+        const keepTel = p.cPhone === false && !digits;
+        p.nom = nom; if (!keepTel) p.tel = tel; p.email = email; if (notes !== undefined && p.bid) p.bnotes = notes;
+        p.maj = new Date().toISOString();
+        if (p.bid) p.bqi = { nom, tel: keepTel ? p.tel : tel, email, ...(notes !== undefined ? { notes } : {}), at: p.maj, by: String(rep || (role === "admin" ? "Paul" : "")).slice(0, 60) };
+        if (!(await saveList())) continue replay;
+        if (p.bid) await pushBoostNow(admin);
+        return json({ ok: true, prospect: outP(p), boost: !!p.bid });
+      }
 
-    // ── Modifier les coordonnées d'une fiche (nom, téléphone, email, notes Boost) ──
-    // Appliqué tout de suite dans l'outil ; pour une fiche Boost, mis en file (bqi) pour boost-push,
-    // et protégé de la synchro tant que Boost n'a pas été mis à jour.
-    if (action === "contact_edit") {
-      const i = list.findIndex((x) => x.id === String(body.id || ""));
-      if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
-      const p = list[i];
-      const nom = String(body.nom ?? p.nom ?? "").trim().slice(0, 80);
-      const digits = String(body.tel ?? "").replace(/\D/g, "");
-      const tel = !digits ? "" : digits.length === 11 && digits.startsWith("33") ? "0" + digits.slice(2) : digits.length === 10 && digits.startsWith("0") ? digits : "+" + digits;
-      const email = String(body.email ?? "").trim().slice(0, 120);
-      const notes = body.notes === undefined ? undefined : String(body.notes).slice(0, 2000);
-      if (!nom) return json({ error: "Le nom est obligatoire" }, 400);
-      if (digits && digits.length < 9) return json({ error: "Numéro de téléphone incomplet" }, 400);
-      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Adresse email invalide" }, 400);
-      // Refus d'appel : le numéro n'est jamais envoyé au téléphone, un champ vide le conserve
-      const keepTel = p.cPhone === false && !digits;
-      p.nom = nom; if (!keepTel) p.tel = tel; p.email = email; if (notes !== undefined && p.bid) p.bnotes = notes;
-      p.maj = new Date().toISOString();
-      if (p.bid) p.bqi = { nom, tel: keepTel ? p.tel : tel, email, ...(notes !== undefined ? { notes } : {}), at: p.maj, by: String(rep || (role === "admin" ? "Paul" : "")).slice(0, 60) };
-      await saveList();
-      if (p.bid) await pushBoostNow(admin);
-      return json({ ok: true, prospect: outP(p), boost: !!p.bid });
-    }
+      // ── Appel lancé depuis Aircall (Lattes) : l'appel démarre dans l'application Aircall du conseiller ──
+      if (action === "aircall_dial") {
+        const p = list.find((x) => x.id === String(body.id || ""));
+        if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
+        if (p.cPhone === false) return json({ ok: false, reason: "refus d'appel noté dans Boost" });
+        if (sk(p.studio) !== sk(AIRCALL_STUDIO) || !aircallHeaders()) return json({ ok: false, reason: "studio sans Aircall" });
+        const digits = String(p.tel || "").replace(/\D/g, "");
+        const to = digits.length === 10 && digits.startsWith("0") ? "+33" + digits.slice(1) : digits ? "+" + digits : "";
+        if (!to) return json({ ok: false, reason: "pas de numéro" });
+        // Le code maître (Paul) appelle depuis le compte Aircall de Tom s'il n'a pas le sien
+        const who = role === "admin" ? String(body.nom || "") : rep;
+        const ul = await aircallGet("/users?per_page=50");
+        const users = ul.body?.users || [];
+        const u = matchAircallUser(users, who) || (role === "admin" ? matchAircallUser(users, "Tom") : null);
+        if (!u?.id) return json({ ok: false, reason: "pas de compte Aircall pour " + (who || "ce poste") });
+        const ud = await aircallGet("/users/" + u.id);
+        // deno-lint-ignore no-explicit-any
+        const nums: any[] = ud.body?.user?.numbers || [];
+        if (!nums.length) return json({ ok: false, reason: "aucune ligne Aircall attribuée à " + u.name });
+        const r = await aircallPost("/users/" + u.id + "/calls", { number_id: nums[0].id, to });
+        if (r.status === 204 || r.status === 200 || r.status === 201) return json({ ok: true, ligne: String(nums[0].name || ""), conseiller: String(u.name || "") });
+        return json({ ok: false, reason: r.status === 400 || r.status === 405 ? "Aircall indisponible · ouvrez l'application Aircall et passez en disponible" : "Aircall a refusé l'appel (" + r.status + ")" });
+      }
 
-    // ── Appel lancé depuis Aircall (Lattes) : l'appel démarre dans l'application Aircall du conseiller ──
-    if (action === "aircall_dial") {
-      const p = list.find((x) => x.id === String(body.id || ""));
-      if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
-      if (p.cPhone === false) return json({ ok: false, reason: "refus d'appel noté dans Boost" });
-      if (sk(p.studio) !== sk(AIRCALL_STUDIO) || !aircallHeaders()) return json({ ok: false, reason: "studio sans Aircall" });
-      const digits = String(p.tel || "").replace(/\D/g, "");
-      const to = digits.length === 10 && digits.startsWith("0") ? "+33" + digits.slice(1) : digits ? "+" + digits : "";
-      if (!to) return json({ ok: false, reason: "pas de numéro" });
-      // Le code maître (Paul) appelle depuis le compte Aircall de Tom s'il n'a pas le sien
-      const who = role === "admin" ? String(body.nom || "") : rep;
-      const ul = await aircallGet("/users?per_page=50");
-      const users = ul.body?.users || [];
-      const u = matchAircallUser(users, who) || (role === "admin" ? matchAircallUser(users, "Tom") : null);
-      if (!u?.id) return json({ ok: false, reason: "pas de compte Aircall pour " + (who || "ce poste") });
-      const ud = await aircallGet("/users/" + u.id);
-      // deno-lint-ignore no-explicit-any
-      const nums: any[] = ud.body?.user?.numbers || [];
-      if (!nums.length) return json({ ok: false, reason: "aucune ligne Aircall attribuée à " + u.name });
-      const r = await aircallPost("/users/" + u.id + "/calls", { number_id: nums[0].id, to });
-      if (r.status === 204 || r.status === 200 || r.status === 201) return json({ ok: true, ligne: String(nums[0].name || ""), conseiller: String(u.name || "") });
-      return json({ ok: false, reason: r.status === 400 || r.status === 405 ? "Aircall indisponible · ouvrez l'application Aircall et passez en disponible" : "Aircall a refusé l'appel (" + r.status + ")" });
-    }
+      // ── Transcription Aircall d'un appel (vérifie que l'appel concerne bien ce numéro) ──
+      if (action === "aircall_transcript") {
+        const p = list.find((x) => x.id === String(body.id || ""));
+        if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
+        const callId = String(body.call || "").replace(/\D/g, "");
+        if (!callId) return json({ error: "Appel manquant" }, 400);
+        const c = await aircallGet("/calls/" + callId);
+        if (!c.body?.call || telKey(c.body.call.raw_digits) !== telKey(p.tel)) return json({ error: "Appel introuvable pour cette fiche" }, 404);
+        const t = await aircallGet("/calls/" + callId + "/transcription");
+        return json({ ok: true, text: t.status === 200 ? transcriptText(t.body).slice(0, 20000) : "", http: t.status });
+      }
 
-    // ── Transcription Aircall d'un appel (vérifie que l'appel concerne bien ce numéro) ──
-    if (action === "aircall_transcript") {
-      const p = list.find((x) => x.id === String(body.id || ""));
-      if (!p || !inMine(p)) return json({ error: "Fiche introuvable" }, 404);
-      const callId = String(body.call || "").replace(/\D/g, "");
-      if (!callId) return json({ error: "Appel manquant" }, 400);
-      const c = await aircallGet("/calls/" + callId);
-      if (!c.body?.call || telKey(c.body.call.raw_digits) !== telKey(p.tel)) return json({ error: "Appel introuvable pour cette fiche" }, 404);
-      const t = await aircallGet("/calls/" + callId + "/transcription");
-      return json({ ok: true, text: t.status === 200 ? transcriptText(t.body).slice(0, 20000) : "", http: t.status });
-    }
-
-    if (action === "push") {
-      const incoming: any[] = Array.isArray(body.prospects) ? body.prospects : [];
-      let queued = false; // un statut ou un rappel à envoyer à Boost
-      for (const p of incoming) {
-        if (!p || !p.id || tombSet.has(String(p.id))) continue;
-        // On ne garde que les champs attendus (pas de payload arbitraire)
-        const clean = {
-          id: String(p.id), nom: String(p.nom || ""), tel: String(p.tel || ""),
-          note: String(p.note || ""), statut: String(p.statut || "rappeler"),
-          rappel: String(p.rappel || ""), rappelH: String(p.rappelH || "").slice(0, 5), rappelBy: String(p.rappelBy || "").slice(0, 30), obj: String(p.obj || ""),
-          fiche: String(p.fiche || "").slice(0, 4000),
-          pack: String(p.pack || ""),
-          v2: String(p.v2 || "").slice(0, 60),
-          fullCom: p.fullCom === true,
-          icId: String(p.icId || "").slice(0, 60),
-          icBook: String(p.icBook || "").slice(0, 60), // inscription à une Intro Class (séance d'essai)
-          // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.
-          appels: Array.isArray(p.appels)
-            ? p.appels.slice(-20).map((a: any) => ({ id: String(a?.id || "").slice(0, 40), ts: String(a?.ts || "").slice(0, 30), rx: String(a?.rx || "").slice(0, 30), sv: Number(a?.sv) || 0, txt: String(a?.txt || "").slice(0, 9000) })).filter((a: any) => a.txt)
-            : [],
-          rep: String(p.rep || rep), studio: String(p.studio || ""),
-          ts: String(p.ts || new Date().toISOString()),
-          maj: String(p.maj || p.ts || new Date().toISOString()),
-        };
-        const i = list.findIndex((x) => x.id === clean.id);
-        if (i >= 0 && !inMine(list[i])) continue;
-        ownStudio(clean, i >= 0 ? list[i] : null);
-        if (i >= 0) {
-          keepBoost(clean, list[i]);
-          if ((clean.maj || "") >= (list[i].maj || "")) {
-            if (markBq(clean, list[i], rep)) queued = true;
-            // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
-            const seen = new Set(clean.appels.map((a: any) => String(a.ts).slice(0, 16)));
-            for (const a of (list[i].appels || [])) if (!seen.has(String(a.ts).slice(0, 16))) clean.appels.push(a);
-            clean.appels.sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts)));
-            if (clean.appels.length > 20) clean.appels = clean.appels.slice(-20);
-            list[i] = clean;
+      if (action === "push") {
+        const incoming: any[] = Array.isArray(body.prospects) ? body.prospects : [];
+        let queued = false; // un statut ou un rappel à envoyer à Boost
+        for (const p of incoming) {
+          if (!p || !p.id || tombSet.has(String(p.id))) continue;
+          // On ne garde que les champs attendus (pas de payload arbitraire)
+          const clean = {
+            id: String(p.id), nom: String(p.nom || ""), tel: String(p.tel || ""),
+            note: String(p.note || ""), statut: String(p.statut || "rappeler"),
+            rappel: String(p.rappel || ""), rappelH: String(p.rappelH || "").slice(0, 5), rappelBy: String(p.rappelBy || "").slice(0, 30), obj: String(p.obj || ""),
+            fiche: String(p.fiche || "").slice(0, 4000),
+            pack: String(p.pack || ""),
+            v2: String(p.v2 || "").slice(0, 60),
+            fullCom: p.fullCom === true,
+            icId: String(p.icId || "").slice(0, 60),
+            icBook: String(p.icBook || "").slice(0, 60), // inscription à une Intro Class (séance d'essai)
+            // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.
+            appels: Array.isArray(p.appels)
+              ? p.appels.slice(-20).map((a: any) => ({ id: String(a?.id || "").slice(0, 40), ts: String(a?.ts || "").slice(0, 30), rx: String(a?.rx || "").slice(0, 30), sv: Number(a?.sv) || 0, txt: String(a?.txt || "").slice(0, 9000) })).filter((a: any) => a.txt)
+              : [],
+            rep: String(p.rep || rep), studio: String(p.studio || ""),
+            ts: String(p.ts || new Date().toISOString()),
+            maj: String(p.maj || p.ts || new Date().toISOString()),
+          };
+          const i = list.findIndex((x) => x.id === clean.id);
+          if (i >= 0 && !inMine(list[i])) continue;
+          ownStudio(clean, i >= 0 ? list[i] : null);
+          if (i >= 0) {
+            keepBoost(clean, list[i]);
+            if ((clean.maj || "") >= (list[i].maj || "")) {
+              if (markBq(clean, list[i], rep)) queued = true;
+              // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
+              const seen = new Set(clean.appels.map((a: any) => String(a.ts).slice(0, 16)));
+              for (const a of (list[i].appels || [])) if (!seen.has(String(a.ts).slice(0, 16))) clean.appels.push(a);
+              clean.appels.sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts)));
+              if (clean.appels.length > 20) clean.appels = clean.appels.slice(-20);
+              list[i] = clean;
+            }
+            continue;
           }
-          continue;
+          // Nouvelle fiche avec le même numéro qu'une fiche existante (ex. créée par Allo
+          // pendant que le commercial menait l'appel dans l'assistant) : fusion, pas de doublon.
+          const tk = (s: unknown) => String(s || "").replace(/\D/g, "").slice(-9);
+          const k = tk(clean.tel);
+          // Fusion par numéro, au sein du même studio uniquement
+          const sameStudio = (x: any) => !sk(x.studio) || !sk(clean.studio) || sk(x.studio) === sk(clean.studio);
+          const j = k.length === 9 ? list.findIndex((x) => tk(x.tel) === k && sameStudio(x) && inMine(x)) : -1;
+          if (j < 0) { list.push(clean); continue; }
+          const ex = list[j];
+          const newer = (clean.maj || "") >= (ex.maj || "");
+          const base = newer ? clean : ex, other = newer ? ex : clean;
+          const merged: any = { ...other, ...base };
+          merged.id = clean.id; // l'id de la fiche de l'assistant (porte les événements de vente)
+          if (ex.bid) { for (const f of BOOST_FIELDS) if (f in ex) merged[f] = ex[f]; merged.nom = ex.nom; merged.tel = ex.tel; merged.rep = String(ex.rep || ""); if (markBq(merged, ex, rep)) queued = true; }
+          if (/^Contact 0/.test(String(merged.nom || "")) && other.nom && !/^Contact 0/.test(String(other.nom))) merged.nom = other.nom;
+          merged.rep = base.rep || other.rep;
+          merged.studio = base.studio || other.studio;
+          merged.ts = String(ex.ts || clean.ts) < String(clean.ts || ex.ts) ? ex.ts : clean.ts;
+          merged.note = [ex.note, clean.note].filter(Boolean).filter((v: string, n: number, a: string[]) => a.indexOf(v) === n).join(" · ").slice(0, 300);
+          const all = [...(ex.appels || []), ...(clean.appels || [])];
+          const byMin = new Map<string, any>();
+          for (const a of all) {
+            const km = String(a.ts).slice(0, 16);
+            const prev = byMin.get(km);
+            if (!prev || String(a.txt || "").length > String(prev.txt || "").length) byMin.set(km, { ...a, rx: a.rx || prev?.rx || "" });
+          }
+          merged.appels = [...byMin.values()].sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts))).slice(-20);
+          list[j] = merged;
         }
-        // Nouvelle fiche avec le même numéro qu'une fiche existante (ex. créée par Allo
-        // pendant que le commercial menait l'appel dans l'assistant) : fusion, pas de doublon.
-        const tk = (s: unknown) => String(s || "").replace(/\D/g, "").slice(-9);
-        const k = tk(clean.tel);
-        // Fusion par numéro, au sein du même studio uniquement
-        const sameStudio = (x: any) => !sk(x.studio) || !sk(clean.studio) || sk(x.studio) === sk(clean.studio);
-        const j = k.length === 9 ? list.findIndex((x) => tk(x.tel) === k && sameStudio(x) && inMine(x)) : -1;
-        if (j < 0) { list.push(clean); continue; }
-        const ex = list[j];
-        const newer = (clean.maj || "") >= (ex.maj || "");
-        const base = newer ? clean : ex, other = newer ? ex : clean;
-        const merged: any = { ...other, ...base };
-        merged.id = clean.id; // l'id de la fiche de l'assistant (porte les événements de vente)
-        if (ex.bid) { for (const f of BOOST_FIELDS) if (f in ex) merged[f] = ex[f]; merged.nom = ex.nom; merged.tel = ex.tel; merged.rep = String(ex.rep || ""); if (markBq(merged, ex, rep)) queued = true; }
-        if (/^Contact 0/.test(String(merged.nom || "")) && other.nom && !/^Contact 0/.test(String(other.nom))) merged.nom = other.nom;
-        merged.rep = base.rep || other.rep;
-        merged.studio = base.studio || other.studio;
-        merged.ts = String(ex.ts || clean.ts) < String(clean.ts || ex.ts) ? ex.ts : clean.ts;
-        merged.note = [ex.note, clean.note].filter(Boolean).filter((v: string, n: number, a: string[]) => a.indexOf(v) === n).join(" · ").slice(0, 300);
-        const all = [...(ex.appels || []), ...(clean.appels || [])];
-        const byMin = new Map<string, any>();
-        for (const a of all) {
-          const km = String(a.ts).slice(0, 16);
-          const prev = byMin.get(km);
-          if (!prev || String(a.txt || "").length > String(prev.txt || "").length) byMin.set(km, { ...a, rx: a.rx || prev?.rx || "" });
-        }
-        merged.appels = [...byMin.values()].sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts))).slice(-20);
-        list[j] = merged;
+        if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
+        if (!(await saveList())) continue replay;
+        if (queued) await pushBoostNow(admin);
+        // rev de NOTRE écriture (et non la dernière connue) : la liste renvoyée lui correspond
+        return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: savedRev || await revNow() });
       }
-      if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
-      await saveList();
-      if (queued) await pushBoostNow(admin);
-      return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: await revNow() });
-    }
 
-    if (action === "delete") {
-      const rm: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
-      list = list.filter((p) => !rm.includes(p.id) || !inMine(p));
-      await saveList();
-      return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, tomb });
-    }
+      if (action === "delete") {
+        const rm: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
+        list = list.filter((p) => !rm.includes(p.id) || !inMine(p));
+        if (!(await saveList())) continue replay;
+        return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, tomb });
+      }
 
-    return json({ error: "Action inconnue" }, 400);
+      return json({ error: "Action inconnue" }, 400);
+    }
+    // Trois écritures concurrentes de suite : rien n'est enregistré, l'appel peut être refait tel quel
+    return json({ error: "Enregistrement concurrent · réessayez" }, 503);
   } catch (err) {
     console.error("coach-sync", (err as Error).message);
     return json({ error: "Erreur serveur" }, 500);
