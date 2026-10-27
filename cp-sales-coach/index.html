@@ -161,9 +161,10 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .lock-logo{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:linear-gradient(135deg,#C9871F,#e6b45c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:#fff;letter-spacing:1px;box-shadow:0 10px 28px rgba(201,135,31,.4)}
 .lock-t{color:#fff;font-size:20px;font-weight:800;margin-bottom:6px}
 .lock-s{color:rgba(255,255,255,.65);font-size:13.5px;line-height:1.5;margin-bottom:22px}
-#lockCode,#nameInput{width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.09);color:#fff;font-size:17px;letter-spacing:3px;text-align:center;text-transform:uppercase;font-weight:700;outline:none}
-#lockCode:focus,#nameInput:focus{border-color:#C9871F;box-shadow:0 0 0 3px rgba(201,135,31,.25)}
-#lockCode::placeholder,#nameInput::placeholder{letter-spacing:1px;font-weight:400;color:rgba(255,255,255,.35)}
+#lockCode,#nameInput,#otpCode{width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.09);color:#fff;font-size:17px;letter-spacing:3px;text-align:center;text-transform:uppercase;font-weight:700;outline:none}
+#lockCode:focus,#nameInput:focus,#otpCode:focus{border-color:#C9871F;box-shadow:0 0 0 3px rgba(201,135,31,.25)}
+.otp-links{display:flex;justify-content:space-between;margin-top:14px;font-size:13px}.otp-links a{color:rgba(255,255,255,.75);text-decoration:underline}
+#lockCode::placeholder,#nameInput::placeholder,#otpCode::placeholder{letter-spacing:1px;font-weight:400;color:rgba(255,255,255,.35)}
 .lock-btn{width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#C9871F,#b3760f);color:#fff;font-size:15.5px;font-weight:800;cursor:pointer;transition:transform .12s}
 .lock-btn:active{transform:scale(.97)}
 #lockErr,#nameErr{color:#ff8f8f;font-size:13px;min-height:18px;margin-top:10px;font-weight:600}
@@ -2661,7 +2662,7 @@ let _pushT=null,_lastSync='';
 function _lockMsg(m){
   if(m==='rate')return 'Trop d\'essais · patientez 15 minutes avant de réessayer.';
   if(m!=='code')return 'Connexion impossible · vérifiez le réseau et réessayez.';
-  return 'Code refusé · vérifiez-le auprès de votre responsable. Nouveau téléphone ? Il peut libérer l\'appareil (bouton 📱↺ dans Équipe).';
+  return 'Code refusé · vérifiez-le auprès de votre responsable. Nouveau téléphone ? Il peut renseigner votre email dans Équipe pour valider vos appareils par code.';
 }
 async function syncCall(action,extra){
   const r=await fetch(SYNC_URL,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(Object.assign({code:COACH_CODE,action:action,device:DEVICE_ID},extra||{}))});
@@ -2673,8 +2674,13 @@ async function syncCall(action,extra){
     setTimeout(()=>{const e=document.getElementById('lockErr');if(e)e.textContent=_lockMsg('code');},0);
     throw new Error('code');
   }
+  if(r.status===428&&d.otp){
+    // Nouvel appareil : code de validation envoyé par email
+    showOtpStep(d.to||'',action==='ping'&&extra&&extra.otp?String(d.error||''):'');
+    const e=new Error('otp');e.to=d.to;throw e;
+  }
   if(r.status===429){
-    if(!COACH_CODE||document.getElementById('lockScreen')){throw new Error('rate');}
+    if(!COACH_CODE||document.getElementById('lockScreen')){if(d.error&&/patientez une minute/.test(d.error)){const er=document.getElementById('lockErr');if(er)er.textContent=d.error;}throw new Error('rate');}
     throw new Error(d.error||'Trop d\'essais');
   }
   if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
@@ -3011,11 +3017,59 @@ async function unlockCoach(){
     syncPull(true);icPull();fetchAvatars();
     if(document.querySelector('.hm-today'))showHome();
   }catch(e){
+    if(e.message==='otp')return; // l'écran du code email a pris le relais
     COACH_CODE='';
     if(err)err.textContent=_lockMsg(e.message);
     showLock();
   }
 }
+/* ── Validation d'un nouvel appareil : code à 6 chiffres reçu par email ── */
+function showOtpStep(to,msg){
+  let d=document.getElementById('otpScreen');
+  if(!d){
+    document.getElementById('lockScreen')?.remove();
+    d=document.createElement('div');d.id='otpScreen';d.className='lock-wrap';
+    d.innerHTML=`<div class="lock-box">
+      <div class="lock-logo">✉️</div>
+      <div class="lock-t">Nouvel appareil</div>
+      <div class="lock-s">Pour sécuriser votre compte, entrez le code à 6 chiffres envoyé à <b id="otpTo"></b>.<br><small>Valable 10 minutes · cet appareil sera ensuite reconnu.</small></div>
+      <input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" style="letter-spacing:8px" onkeydown="if(event.key==='Enter')otpSubmit()"/>
+      <div id="otpErr"></div>
+      <button class="lock-btn" onclick="otpSubmit()">Valider</button>
+      <div class="otp-links"><a href="#" onclick="otpResend();return false">Renvoyer le code</a><a href="#" onclick="otpCancel();return false">Changer de code studio</a></div>
+    </div>`;
+    document.body.appendChild(d);
+  }
+  document.getElementById('otpTo').textContent=to||'votre email';
+  document.getElementById('otpErr').textContent=msg||'';
+  setTimeout(()=>document.getElementById('otpCode')?.focus(),100);
+}
+async function otpSubmit(){
+  const v=(document.getElementById('otpCode')?.value||'').replace(/\D/g,'');
+  const err=document.getElementById('otpErr');
+  if(v.length!==6){if(err)err.textContent='Entrez les 6 chiffres reçus par email.';return;}
+  try{
+    const d=await syncCall('ping',{otp:v});
+    _adoptAuth(d);
+    localStorage.setItem('cpcoach_code',COACH_CODE);
+    document.getElementById('otpScreen')?.remove();
+    toast('Appareil validé · bienvenue ! ✓');
+    if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
+    syncPull(true);icPull();fetchAvatars();
+    if(document.querySelector('.hm-today'))showHome();
+  }catch(e){
+    if(e.message==='otp'){const i=document.getElementById('otpCode');if(i){i.value='';i.focus();}return;}
+    if(e.message==='code'){document.getElementById('otpScreen')?.remove();return;}
+    if(err)err.textContent=_lockMsg(e.message);
+  }
+}
+async function otpResend(){
+  try{await syncCall('ping',{resend:true});}catch(e){
+    const err=document.getElementById('otpErr');
+    if(err)err.textContent=e.message==='otp'?'Nouveau code envoyé ✓ (au plus un par minute)':_lockMsg(e.message);
+  }
+}
+function otpCancel(){document.getElementById('otpScreen')?.remove();COACH_CODE='';localStorage.removeItem('cpcoach_code');showLock();}
 function packShort(pk){const m={1:'Pack 4',2:'Pack 8',3:'Illimité'};return m[pk]||'';}
 const PIPE={
   // Vocabulaire de Fitness Boost (source maîtresse) pour rester cohérent entre les deux outils
@@ -3105,14 +3159,15 @@ function renderTeam(invites){
       <div class="pr-top">
         ${i.avatar?avaTag(i.avatar,40,i.nom):`<div class="pr-ava" style="background:${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'}">${esc(prInitials(i.nom))}</div>`}
         <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b>${isMgrInv?'<span class="tm-mgr">⭐ Recruteur</span>':''}</div>
-          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span>${COACH_ROLE==='admin'?`<select class="tm-studio" onchange="setInviteStudio('${i.id}',this.value)" style="border:1px solid ${i.studio?'#DCE4F2':'#F5C0AE'};border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;background:${i.studio?'#fff':'#FFF4F0'};color:${i.studio?'var(--cp-dark)':'#B4300F'}">${!i.studio?'<option value="" selected>⚠️ Studio non défini · accès à tous</option>':!canonStudio(i.studio)?`<option value="" selected>⚠️ ${esc(i.studio)} · non reconnu</option>`:''}${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(i.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select><button class="tm-more" onclick="inviteStudios('${i.id}')" title="Donner accès à plusieurs studios">${(i.studios||[]).length>1?'＋'+((i.studios||[]).length-1)+' studio'+((i.studios||[]).length>2?'s':''):'＋ studios'}</button>`:(i.studio?`<span class="tm-studio">📍 ${esc(i.studio)}</span>`:'<span class="tm-studio">⚠️ studio non défini</span>')}<span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span><span>${i.device?' · 📱 appareil lié':' · 📱 libre'}</span></div></div>
+          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span>${COACH_ROLE==='admin'?`<select class="tm-studio" onchange="setInviteStudio('${i.id}',this.value)" style="border:1px solid ${i.studio?'#DCE4F2':'#F5C0AE'};border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;background:${i.studio?'#fff':'#FFF4F0'};color:${i.studio?'var(--cp-dark)':'#B4300F'}">${!i.studio?'<option value="" selected>⚠️ Studio non défini · accès à tous</option>':!canonStudio(i.studio)?`<option value="" selected>⚠️ ${esc(i.studio)} · non reconnu</option>`:''}${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(i.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select><button class="tm-more" onclick="inviteStudios('${i.id}')" title="Donner accès à plusieurs studios">${(i.studios||[]).length>1?'＋'+((i.studios||[]).length-1)+' studio'+((i.studios||[]).length>2?'s':''):'＋ studios'}</button>`:(i.studio?`<span class="tm-studio">📍 ${esc(i.studio)}</span>`:'<span class="tm-studio">⚠️ studio non défini</span>')}<span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span><span>${(i.devices||[]).length?' · 📱 '+i.devices.length+' appareil'+(i.devices.length>1?'s':''):i.device?' · 📱 appareil lié':' · 📱 libre'}</span><span>${i.email?' · ✉️ '+esc(i.email):' · <b style="color:#B4300F">✉️ email manquant</b>'}</span></div></div>
         <span class="pr-chip" style="${off?'background:#f2f3f6;color:#8C95A8;border-color:#dde1e8':'background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6'}">${off?'⏸ Suspendu':'✅ Actif'}</span>
       </div>
       <div class="pr-actions">
         <button class="pr-act main" onclick="copyInvite('${i.id}')">📋 Copier l'invitation</button>
         ${canTouch?`<button class="pr-act" onclick="toggleInvite('${i.id}',${off?'true':'false'})">${off?'▶️ Réactiver':'⏸ Suspendre'}</button>`:''}
         ${COACH_ROLE==='admin'?`<button class="pr-act" title="${isMgrInv?'Retirer le droit d\'inviter':'Donner le droit d\'inviter (recruteur)'}" onclick="toggleManager('${i.id}',${isMgrInv?'false':'true'})">${isMgrInv?'⭐':'☆'}</button>`:''}
-        ${canTouch&&i.device?`<button class="pr-act" title="Libérer l'appareil (changement de téléphone)" onclick="resetDevice('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">📱↺</button>`:''}
+        ${canTouch?`<button class="pr-act" title="Email de validation des nouveaux appareils" onclick="setInviteEmail('${i.id}')">✉️</button>`:''}
+        ${canTouch&&(i.device||(i.devices||[]).length)?`<button class="pr-act" title="Déconnecter tous ses appareils" onclick="resetDevice('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">📱↺</button>`:''}
         ${canTouch?`<button class="pr-act" title="Nouveau code (l'ancien cesse de fonctionner)" onclick="regenInvite('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">🔑</button>`:''}
         ${canTouch?`<button class="pr-act danger" onclick="delInvite('${i.id}','${esc(i.nom).replace(/'/g,"\\'")}')">🗑</button>`:''}
       </div>
@@ -3126,7 +3181,7 @@ function renderTeam(invites){
       <div class="pr-howto-b">
         <div><span class="hn">1</span><span><b>Invitez un conseiller</b> : entrez son prénom, un code personnel est créé (ex. LEA-H6KU-7N8Y).</span></div>
         <div><span class="hn">2</span><span><b>Envoyez-lui l'invitation</b> (bouton copier) : le lien de l'outil + son code. Il n'a besoin de rien d'autre · aucun compte, aucun accès au reste de votre application.</span></div>
-        <div><span class="hn">🔒</span><span><b>1 code = 1 appareil</b> : le premier téléphone qui utilise un code le verrouille. Un code prêté à un tiers ne fonctionnera pas ailleurs. Changement de téléphone ? Le bouton 📱↺ libère l'appareil.</span></div>
+        <div><span class="hn">🔒</span><span><b>Connexion de partout, validée par email</b> : avec son email renseigné (✉️), un conseiller se connecte depuis n'importe quel appareil. Chaque nouvel appareil demande un code à 6 chiffres reçu par email, puis reste reconnu (4 appareils maximum, oubliés après 30 jours sans usage). Sans email : 1 code = 1 appareil. Le bouton 📱↺ déconnecte tous ses appareils.</span></div>
         <div><span class="hn">3</span><span><b>Départ ou doute ?</b> Suspendez ou supprimez son code : l'outil se verrouille chez lui à la seconde. Les fiches, elles, restent au studio.</span></div>
         <div><span class="hn">4</span><span>L'étoile <b>⭐ Recruteur</b> (réservée au code maître) donne à un conseiller l'accès à cette page pour inviter à son tour · sans jamais toucher aux primes ni aux autres recruteurs.</span></div>
         <div><span class="hn">🔑</span><span><b>Code compromis ?</b> Le bouton 🔑 crée un nouveau code : l'ancien cesse de marcher à la seconde. Après 8 codes faux, l'outil se bloque 15 minutes sur ce réseau.</span></div>
@@ -3134,6 +3189,7 @@ function renderTeam(invites){
       </div>
     </details>
     <div class="pr-capture"><div class="pr-cap-h">➕ Inviter un conseiller</div>
+      <div class="pr-cap-row"><input type="email" id="tm-email" placeholder="Email (pour valider ses appareils)" style="flex:1;min-width:0"/></div>
       <div class="pr-cap-row"><input type="text" id="tm-nom" placeholder="Prénom (ex. Léa)"/><select id="tm-studio" style="flex:1;min-width:0;padding:10px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:14px;background:#fff"${canNav()?'':' disabled'}>${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(CFG.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select></div>
       <button class="go ok" style="width:100%;padding:11px" onclick="addInvite()">Créer son code</button>
     </div>
@@ -3147,7 +3203,9 @@ async function addInvite(){
   if(!nom){toast('Entrez un prénom');$('#tm-nom')?.focus();return;}
   if(!studio){toast('Choisissez son studio d\'affectation');$('#tm-studio')?.focus();return;}
   try{
-    const d=await syncCall('team_add',{nom:nom,studio:studio});
+    const email=($('#tm-email')?.value||'').trim();
+    if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){toast('Adresse email invalide');$('#tm-email')?.focus();return;}
+    const d=await syncCall('team_add',{nom:nom,studio:studio,email:email});
     renderTeam((window._TEAM||[]).concat([d.invite]));
     toast('Code créé pour '+nom+' : '+d.invite.code);
   }catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
@@ -3181,9 +3239,18 @@ async function setInviteStudio(id,studio){
   try{const d=await syncCall('team_studio',{id:id,studio:studio});renderTeam(d.invites||[]);toast('📍 Studio mis à jour · effectif à sa prochaine connexion');}
   catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
+async function setInviteEmail(id){
+  const inv=(window._TEAM||[]).find(x=>x.id===id);if(!inv)return;
+  const v=prompt('Email de '+inv.nom+' (code de validation de chaque nouvel appareil) :',inv.email||'');
+  if(v===null)return;
+  const em=v.trim();
+  if(em&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)){toast('Adresse email invalide');return;}
+  try{const d=await syncCall('team_email',{id:id,email:em});renderTeam(d.invites||[]);toast(em?'Email enregistré · connexion possible de partout ✓':'Email retiré · 1 code = 1 appareil');}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
 async function resetDevice(id,nom){
-  if(!confirm('Libérer l\'appareil de '+nom+' ?\nSon code fonctionnera sur le prochain appareil qui l\'utilise (nouveau téléphone).'))return;
-  try{const d=await syncCall('team_device_reset',{id:id});renderTeam(d.invites||[]);toast('Appareil libéré · le prochain appareil réclamera le code');}
+  if(!confirm('Déconnecter tous les appareils de '+nom+' ?\nIl devra valider à nouveau chaque appareil (code par email, ou premier appareil sans email).'))return;
+  try{const d=await syncCall('team_device_reset',{id:id});renderTeam(d.invites||[]);toast('Appareils déconnectés ✓');}
   catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
 async function regenInvite(id,nom){

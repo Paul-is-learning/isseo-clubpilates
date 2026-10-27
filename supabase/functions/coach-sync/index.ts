@@ -105,6 +105,24 @@ function genCode(nom: string, taken: (c: string) => boolean): string {
   }
   return "";
 }
+const ROW_OTP = "_coach_otp";
+const OTP_TTL_MS = 10 * 60 * 1000, OTP_TRIES = 5, MAX_DEVICES = 4, DEVICE_TTL_MS = 30 * 24 * 3600 * 1000;
+const sha = async (t: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))).map((b) => b.toString(16).padStart(2, "0")).join("");
+const maskEmail = (e: string) => { const [u, d] = e.split("@"); return (u || "").slice(0, 2) + "•••@" + (d || ""); };
+async function sendOtpMail(to: string, nom: string, c: string): Promise<boolean> {
+  const key = Deno.env.get("RESEND_API_KEY");
+  if (!key) return false;
+  const first = nom.split(" ")[0] || "";
+  const html = `<div style="font-family:Arial,sans-serif;max-width:420px;margin:auto;padding:24px;color:#1F2A44">
+    <p>Bonjour ${first.replace(/[<>&"]/g, "")},</p><p>Votre code de connexion au <b>CP Sales Coach</b> :</p>
+    <p style="font-size:30px;font-weight:700;letter-spacing:6px;text-align:center;margin:22px 0">${c}</p>
+    <p style="font-size:13px;color:#6B7590">Valable 10 minutes. Si vous n'êtes pas à l'origine de cette connexion, prévenez votre responsable.</p></div>`;
+  try {
+    const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" },
+      body: JSON.stringify({ from: "CP Sales Coach <noreply@isseo-dev.com>", to: [to], subject: "Code de connexion · " + c, html, text: "Votre code de connexion au CP Sales Coach : " + c + " (valable 10 minutes)." }) });
+    await r.body?.cancel(); return r.ok;
+  } catch { return false; }
+}
 const DENIED = "Code invalide, ou déjà utilisé sur un autre appareil · voir le responsable";
 
 // ── Page Intro Class d'isseo : gérant connecté (jeton Supabase), jamais de code ──
@@ -184,8 +202,52 @@ serve(async (req) => {
         // Identifiant d'appareil obligatoire (sinon le verrou se contournait en l'omettant),
         // et même réponse qu'un code faux : rien n'indique de l'extérieur qu'un code existe.
         const dev = String(body.device || "").slice(0, 80);
-        if (!dev || (inv.device && inv.device !== dev)) { await rl.fail(); return json({ error: DENIED }, 401); }
-        if (!inv.device) { inv.device = dev; inv.deviceAt = new Date().toISOString(); await saveInvites(); }
+        if (!dev) { await rl.fail(); return json({ error: DENIED }, 401); }
+        // Appareils de confiance : avec un email renseigné, le salarié se connecte de partout ;
+        // tout nouvel appareil (ou inutilisé depuis 30 jours) est validé par un code reçu par email.
+        // Sans email : règle historique « 1 code = 1 appareil ».
+        const now = new Date().toISOString();
+        let devs: any[] = Array.isArray(inv.devices) ? inv.devices : [];
+        if (inv.device && !devs.some((d) => d.id === inv.device)) devs.push({ id: inv.device, at: inv.deviceAt || now, seen: now });
+        devs = devs.filter((d) => Date.now() - Date.parse(d.seen || d.at || 0) < DEVICE_TTL_MS);
+        const known = devs.find((d) => d.id === dev);
+        const email = String(inv.email || "").trim();
+        if (!known) {
+          if (!email) {
+            if (devs.length) { await rl.fail(); return json({ error: DENIED }, 401); }
+            devs.push({ id: dev, at: now, seen: now });
+          } else {
+            const otpRow = await getRow(admin, ROW_OTP);
+            const cur = otpRow[inv.id] || null;
+            const sent = cur && cur.dev === dev && Date.parse(cur.exp) > Date.now() ? cur : null;
+            const typed = String(body.otp || "").replace(/\D/g, "");
+            if (typed) {
+              if (!sent || sent.tries >= OTP_TRIES) { await rl.fail(); return json({ error: "Code expiré · demandez-en un nouveau", otp: true, to: maskEmail(email) }, 428); }
+              if (!safeEq(await sha(typed + ":" + inv.id + ":" + dev), sent.h)) {
+                sent.tries = (sent.tries || 0) + 1; otpRow[inv.id] = sent; await putRow(admin, ROW_OTP, otpRow); await rl.fail();
+                return json({ error: "Code incorrect · " + Math.max(0, OTP_TRIES - sent.tries) + " essai(s) restant(s)", otp: true, to: maskEmail(email) }, 428);
+              }
+              delete otpRow[inv.id]; await putRow(admin, ROW_OTP, otpRow);
+              devs.push({ id: dev, at: now, seen: now, ua: String(req.headers.get("user-agent") || "").slice(0, 120) });
+              if (devs.length > MAX_DEVICES) devs = devs.sort((a, b) => String(b.seen).localeCompare(String(a.seen))).slice(0, MAX_DEVICES);
+            } else {
+              // Nouveau code au plus une fois par minute (renvoi demandé ou première tentative)
+              const recent = cur && Date.now() - Date.parse(cur.at) < 60000;
+              if (recent && cur.dev !== dev) { await rl.fail(); return json({ error: "Un code vient d'être envoyé · patientez une minute" }, 429); }
+              if (!sent || body.resend === true && !recent) {
+                const c = String(crypto.getRandomValues(new Uint32Array(1))[0] % 1000000).padStart(6, "0");
+                otpRow[inv.id] = { h: await sha(c + ":" + inv.id + ":" + dev), dev, at: now, exp: new Date(Date.now() + OTP_TTL_MS).toISOString(), tries: 0 };
+                await putRow(admin, ROW_OTP, otpRow);
+                const okMail = await sendOtpMail(email, String(inv.nom || ""), c);
+                if (!okMail) return json({ error: "Envoi de l'email impossible · réessayez dans un instant" }, 502);
+              }
+              return json({ error: "Code envoyé par email", otp: true, to: maskEmail(email) }, 428);
+            }
+          }
+        } else known.seen = now;
+        delete inv.device; delete inv.deviceAt;
+        inv.devices = devs;
+        if (!known) await saveInvites(); // sinon sauvegardé au « ping » (lastSeen)
         role = "rep";
         rep = String(inv.nom || "");
         mgr = inv.manager === true;
@@ -513,7 +575,7 @@ serve(async (req) => {
         if (!inv) return json({ error: "Invitation introuvable" }, 404);
         const c = genCode(inv.nom, taken);
         if (!c) return json({ error: "Génération du code impossible" }, 500);
-        inv.code = c; delete inv.device; delete inv.deviceAt; inv.regen = new Date().toISOString();
+        inv.code = c; delete inv.device; delete inv.deviceAt; inv.devices = []; inv.regen = new Date().toISOString();
         await saveInvites();
         return json({ ok: true, invites: invites.filter(inMine) });
       }
@@ -524,7 +586,7 @@ serve(async (req) => {
         for (const inv of invites) {
           const c = genCode(inv.nom, taken);
           if (!c) return json({ error: "Génération du code impossible" }, 500);
-          inv.code = c; delete inv.device; delete inv.deviceAt; inv.regen = new Date().toISOString();
+          inv.code = c; delete inv.device; delete inv.deviceAt; inv.devices = []; inv.regen = new Date().toISOString();
         }
         await saveInvites();
         return json({ ok: true, invites: invites.filter(inMine) });
@@ -538,7 +600,9 @@ serve(async (req) => {
         if (invites.length >= MAX_INVITES) return json({ error: "Limite d'invitations atteinte" }, 400);
         const newCode = genCode(nom, taken);
         if (!newCode) return json({ error: "Génération du code impossible" }, 500);
-        const inv = { id: "inv_" + Date.now(), nom, studio, code: newCode, actif: true, manager: false, created: new Date().toISOString(), lastSeen: "" };
+        const em = String(body.email || "").trim().toLowerCase().slice(0, 120);
+        if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return json({ error: "Adresse email invalide" }, 400);
+        const inv = { id: "inv_" + Date.now(), nom, studio, code: newCode, actif: true, manager: false, created: new Date().toISOString(), lastSeen: "", email: em };
         invites.push(inv);
         await saveInvites();
         return json({ ok: true, invite: inv });
@@ -552,10 +616,21 @@ serve(async (req) => {
         return json({ ok: true, invites: invites.filter(inMine) });
       }
 
+      if (action === "team_email") {
+        const inv3 = invites.find((i) => i.id === String(body.id));
+        if (!inv3 || !inMine(inv3)) return json({ error: "Invitation introuvable" }, 404);
+        if (inv3.manager === true && role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        const em = String(body.email || "").trim().toLowerCase().slice(0, 120);
+        if (em && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(em)) return json({ error: "Adresse email invalide" }, 400);
+        inv3.email = em;
+        await saveInvites();
+        return json({ ok: true, invites: invites.filter(inMine) });
+      }
+
       if (action === "team_device_reset") {
         const inv2 = invites.find((i) => i.id === String(body.id));
         if (!inv2) return json({ error: "Invitation introuvable" }, 404);
-        delete inv2.device; delete inv2.deviceAt;
+        delete inv2.device; delete inv2.deviceAt; inv2.devices = [];
         await saveInvites();
         return json({ ok: true, invites: invites.filter(inMine) });
       }
