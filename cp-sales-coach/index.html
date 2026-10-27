@@ -4462,6 +4462,8 @@ function dayGoalHTML(){
 // ── Segments « intelligents » des leads ouverts (statut Contacté) ──
 // 🆕 Nouveaux : jamais appelés · 🔁 À recontacter : appelés, sans rappel, pas injoignables
 // ⏰ Rappels & RDV : rappel ou séance datés · 📵 Injoignables : 3 appels ou plus, aucun décroché
+// Lien d'appel au format international (+33…) : Allo, Aircall et les téléphones le comprennent tous
+function telHref(t){let d=String(t||'').replace(/[^\d+]/g,'');if(d.startsWith('00'))d='+'+d.slice(2);else if(/^0\d{9}$/.test(d))d='+33'+d.slice(1);return 'tel:'+d;}
 function prCalls(p){const c=(p.appels||[]).filter(a=>/^📞/.test(String(a.txt||'')));const ok=c.filter(a=>/answered|· décroché/.test(String(a.txt||'').split('\n')[0])).length;return {n:c.length,ok};}
 function prSeg(p){
   if(p.bmember||!prOpen(p))return '';
@@ -4557,7 +4559,7 @@ function showProspects(keepScroll){
         ${plCtx(p)}
         <div class="pl-quick" onclick="event.stopPropagation()">
           ${prSeg(p)==='unreach'&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">💬</button>`:''}
-          ${p.noCall||!p.tel?'':_sk(p.studio)===_sk('Montpellier Lattes')?`<button class="pl-btn call" onclick="aircallDial('${p.id}')" title="Appeler depuis Aircall">${ic('phone')}</button>`:`<a class="pl-btn call" href="tel:${esc(p.tel)}" title="Appeler">${ic('phone')}</a>`}
+          ${p.noCall||!p.tel?'':_sk(p.studio)===_sk('Montpellier Lattes')?`<button class="pl-btn call" onclick="aircallDial('${p.id}')" title="Appeler depuis Aircall">${ic('phone')}</button>`:`<a class="pl-btn call" href="${telHref(p.tel)}" title="Appeler avec Allo">${ic('phone')}</a>`}
           <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
         </div>
       </div>
@@ -4591,7 +4593,7 @@ function showProspects(keepScroll){
                 <small id="pe-err" style="color:#B4300F;font-weight:700"></small>
               </div>
             </div>`:''}
-            <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="tel:${esc(p.tel)}">📱 ${esc(p.tel)}</a>`:'Pas de téléphone'}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
+            <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="${telHref(p.tel)}">📱 ${esc(p.tel)}</a>`:'Pas de téléphone'}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
             <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="setPRep('${p.id}',this.value)" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
             ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
@@ -4791,8 +4793,8 @@ async function aircallDial(id){
   try{
     const d=await syncCall('aircall_dial',{id,nom:CFG.rep||''});
     if(d.ok){toast('📞 Appel lancé dans l\'Aircall de '+(d.conseiller||'votre compte')+(d.ligne?' · '+d.ligne.replace(/^Club Pilates\s*/i,''):'')+' · il démarre là où ce compte est connecté (application Aircall ouverte et « disponible »)');return;}
-    if(confirm('Aircall n\'a pas pu lancer l\'appel : '+(d.reason||'erreur')+'.\n\nAppeler '+(p.nom||'')+' depuis cet appareil à la place ?'))location.href='tel:'+p.tel;
-  }catch(e){if(e.message!=='code'&&confirm('Aircall injoignable.\n\nAppeler depuis cet appareil à la place ?'))location.href='tel:'+p.tel;}
+    if(confirm('Aircall n\'a pas pu lancer l\'appel : '+(d.reason||'erreur')+'.\n\nAppeler '+(p.nom||'')+' depuis cet appareil à la place ?'))location.href=telHref(p.tel);
+  }catch(e){if(e.message!=='code'&&confirm('Aircall injoignable.\n\nAppeler depuis cet appareil à la place ?'))location.href=telHref(p.tel);}
 }
 // Transcription d'un appel Aircall, lue à la demande
 async function aircallTr(id,call){
