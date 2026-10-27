@@ -802,9 +802,18 @@ serve(async (req) => {
         if (!studio) return json({ error: "Studio obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
         const k9 = digits.slice(-9);
         const dup = list.find((x) => sk(x.studio) === sk(studio) && ((k9.length === 9 && String(x.tel || "").replace(/\D/g, "").slice(-9) === k9) || (email && String(x.email || "").toLowerCase() === email.toLowerCase())));
-        if (dup) return json({ ok: true, exists: true, prospect: outP(dup) });
         const now = new Date().toISOString();
         const by = String(rep || (role === "admin" ? String(body.rep || "Paul") : "")).slice(0, 60);
+        // Fiche provisoire « Contact 07… » créée par la téléphonie pour un numéro inconnu (jamais liée à Boost) :
+        // elle devient la vraie fiche (nom, email, source, note) et part dans Boost, ses appels sont gardés
+        if (dup && !dup.bid && !dup.bnew && /^Contact\s/i.test(String(dup.nom || ""))) {
+          Object.assign(dup, { nom, email: email || dup.email || "", note: note || dup.note || "", src: source, rep: dup.rep || by, maj: now,
+            bnew: { nom, tel: dup.tel || tel, email: email || dup.email || "", source, note, at: now, by } });
+          if (!(await saveList())) continue replay;
+          await pushBoostNow(admin);
+          return json({ ok: true, completed: true, prospect: outP(dup) });
+        }
+        if (dup) return json({ ok: true, exists: true, prospect: outP(dup) });
         const np: any = { id: "p_" + Date.now() + Math.random().toString(36).slice(2, 6), nom, tel, email, note, statut: "rappeler", rappel: "", rappelH: "", rappelBy: "", obj: "", fiche: "", pack: "", appels: [],
           rep: by, studio, ts: now, maj: now, src: source, bentry: now,
           bnew: { nom, tel, email, source, note, at: now, by } };

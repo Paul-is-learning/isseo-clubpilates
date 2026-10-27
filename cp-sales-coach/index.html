@@ -1300,6 +1300,8 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-flag{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEF2FB;color:#2A3F6B;white-space:nowrap}
 .pl-flag.ok{background:var(--mnt);color:var(--mnt-ink)}.pl-flag.warn{background:#FFF6E0;color:#8A5A00}.pl-flag.bad{background:#FDECE8;color:#B4300F}
 .prw .pr-pipe .pr-st small{white-space:normal;line-height:1.15;text-align:center;overflow:visible;text-overflow:clip}
+.jr-new{flex:0 0 auto;border:1.5px solid #2F6FE0;background:#EEF4FF;color:#1E4FB8;border-radius:99px;padding:3px 10px;font:800 11.5px var(--sans);cursor:pointer;white-space:nowrap}
+.jr-new:hover{background:#2F6FE0;color:#fff}
 .pl-own{display:inline-flex;align-items:center;gap:3px;margin-right:6px;padding:2px 9px;border:1px solid;border-radius:99px;font-size:12px;font-weight:800;vertical-align:2px;white-space:nowrap}
 .pl-own.none{color:#8C95A8;background:#F3F4F7;border-color:#E2E5EC;font-weight:700}
 .pr-ownf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
@@ -4896,6 +4898,7 @@ function showProspects(keepScroll){
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
         ${plCtx(p)}
         <div class="pl-quick" onclick="event.stopPropagation()">
+          ${prUnknown(p)?`<button class="jr-new" onclick="newProspectForm('${p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
           ${prSeg(p)==='unreach'&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">💬</button>`:''}
           ${p.noCall||!p.tel?'':_sk(p.studio)===_sk('Montpellier Lattes')?`<button class="pl-btn call" onclick="aircallDial('${p.id}')" title="Appeler depuis Aircall">${ic('phone')}</button>`:`<a class="pl-btn call" href="${telHref(p.tel)}" title="Appeler avec Allo">${ic('phone')}</a>`}
           <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
@@ -5008,15 +5011,17 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
   rappel:['⏰','Rappel'],note:['📝','Note'],message_vocal:['🎙️','Message vocal'],tache:['✔️','Tâche'],signature:['✅','Signature'],refus_signature:['✖️','Refus de signature'],contractuel:['📄','Contrat']};
 // Créer un prospect depuis l'outil · il est créé dans Fitness Boost dans la minute (sans doublon)
 const NEW_SRC=[['bouche_a_oreille','Bouche à oreille'],['site_web','Site web'],['reseaux_sociaux','Réseaux sociaux'],['publicite','Publicité'],['google_my_business','Google My Business'],['autre','Autre (téléphone, accueil…)']];
-function newProspectForm(){
-  const adm=COACH_ROLE==='admin';
-  icSheet(`<div class="glp-tag">＋ Nouveau prospect</div><div class="glp-t">Créé dans l'outil et dans Fitness Boost</div>
+// Fiche provisoire créée par la téléphonie pour un numéro inconnu (« Contact 07… », jamais liée à Boost)
+function prUnknown(p){return !!p&&!p.bid&&!p.bnew&&/^Contact\s/i.test(String(p.nom||''));}
+function newProspectForm(fromId){
+  const adm=COACH_ROLE==='admin',src=fromId?PROSPECTS.find(x=>x.id===fromId):null;
+  icSheet(`<div class="glp-tag">＋ Nouveau prospect</div><div class="glp-t">Créé dans l'outil et dans Fitness Boost</div>${src?'<div class="fv-meta">Numéro inconnu de Boost · complétez le nom : ses appels sont conservés sur la fiche.</div>':''}
     <div class="pl-form" style="margin-top:12px">
       <label class="wide">Nom et prénom *<input id="np-nom" maxlength="80" placeholder="Camille Martin"/></label>
-      <label>Téléphone<input id="np-tel" type="tel" placeholder="06 12 34 56 78"/></label>
+      <label>Téléphone<input id="np-tel" type="tel" placeholder="06 12 34 56 78" value="${src?esc(src.tel||''):''}"/></label>
       <label>Email<input id="np-email" type="email" placeholder="camille@exemple.fr"/></label>
       <label>Source<select id="np-src">${NEW_SRC.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></label>
-      ${adm?`<label>Studio<select id="np-studio">${STUDIOS.map(x=>`<option${_sk(x)===_sk(CFG.studio||'')?' selected':''}>${esc(x)}</option>`).join('')}</select></label>`:''}
+      ${adm?`<label>Studio<select id="np-studio">${STUDIOS.map(x=>`<option${_sk(x)===_sk((src&&src.studio)||CFG.studio||'')?' selected':''}>${esc(x)}</option>`).join('')}</select></label>`:''}
       <label class="wide">Note<textarea id="np-note" rows="2" maxlength="300" placeholder="Ce qu'il cherche, quand le rappeler…"></textarea></label>
       <div class="pl-row" style="grid-column:1/-1;margin:2px 0 0"><button class="pr-act main" style="flex:0 0 auto" onclick="createProspect()">Créer le prospect</button><small id="np-err" style="color:#B4300F;font-weight:700"></small></div>
     </div>`);
@@ -5032,9 +5037,9 @@ async function createProspect(){
     const d=await syncCall('contact_create',body);
     if(!d.ok){if(err)err.textContent=d.error||'Création impossible';return;}
     document.getElementById('icPop')?.remove();
-    if(!PROSPECTS.find(x=>x.id===d.prospect.id))PROSPECTS.unshift(d.prospect);
+    {const i=PROSPECTS.findIndex(x=>x.id===d.prospect.id);if(i>=0)PROSPECTS[i]=Object.assign(PROSPECTS[i],d.prospect);else PROSPECTS.unshift(d.prospect);}
     persistProspects();prSort='new';prFilter=null;prOpenId=d.prospect.id;loadHist(d.prospect.id);showProspects();
-    toast(d.exists?'Ce prospect existe déjà · fiche ouverte':'✅ Prospect créé · envoi vers Boost dans la minute');
+    toast(d.exists?'Ce prospect existe déjà · fiche ouverte':d.completed?'✅ Fiche client créée depuis le numéro inconnu · envoi vers Boost dans la minute':'✅ Prospect créé · envoi vers Boost dans la minute');
   }catch(e){if(e.message!=='code'&&err)err.textContent=e.message||'Connexion impossible';}
 }
 // Rappel fait (et décroché) : la date de rappel est levée, la fiche sort des rappels programmés,
@@ -5374,6 +5379,7 @@ function _journalRowHTML(j){
     <b style="flex:0 0 46px;font-size:13.5px;color:var(--cp-dark);font-variant-numeric:tabular-nums">${j.tp.h}</b>
     <span style="flex:0 0 14px;color:var(--ink-mid);font-weight:800" title="${dir==='↗'?'sortant':'entrant'}">${dir}</span>
     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;color:var(--ink)">${esc(j.p.nom)}</span>
+    ${prUnknown(j.p)?`<button class="jr-new" onclick="event.stopPropagation();newProspectForm('${j.p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
     ${who?`<span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ink-mid)">${avaTag(avatarOf(who),16,who)} ${esc(who)}</span>`:''}
     <span style="flex:0 0 78px;text-align:right;font-size:11px;color:var(--ink-mid)">${durLbl}${resLbl?(durLbl?' · ':'')+resLbl:''}</span>
     <span title="${esc(co.lbl)}" style="flex:0 0 18px;text-align:center;color:${co.c};font-weight:800">${co.ic}</span>
