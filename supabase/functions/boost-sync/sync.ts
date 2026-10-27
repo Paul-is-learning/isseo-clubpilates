@@ -65,17 +65,18 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   else if (st === "perdu") statut = "perdu";
   else if (planned?.essai) statut = "essai";
   let when = "";
+  let auto = false; // rappel issu d'une séquence automatique Boost (et non posé par une personne)
   // Date de relance (écrite par le Sales Coach ou dans Boost) contre activité planifiée : la plus
   // récemment posée l'emporte ; une séance d'essai planifiée garde toujours sa date
   const rel = String(c?.date_relance || "");
   // Un rappel automatique ne remplace jamais une date de relance posée par l'équipe
-  if (planned && (planned.essai || !rel || (!planned.auto && String(planned.created || "") > String(c?.updated_at || "")))) when = planned.at;
+  if (planned && (planned.essai || !rel || (!planned.auto && String(planned.created || "") > String(c?.updated_at || "")))) { when = planned.at; auto = !!planned.auto && !planned.essai; }
   else if (rel) when = rel;
   else if (st === "rdv_planifie") when = String(c?.next_rdv || c?.date_rdv || "");
   if (when && nowIso && when > horizon(nowIso)) when = ""; // rappel au-delà de J+30 : non traité
   if (when && nowIso && when < new Date(Date.parse(nowIso) - STALE_DAYS * 864e5).toISOString()) when = ""; // rappel périmé
   const dt = when ? parisDT(when) : null;
-  return { statut, rappel: dt?.d || "", rappelH: dt && /T\d/.test(when) ? dt.h : "", nok: st === "rdv_nok", client: st === "client" };
+  return { statut, rappel: dt?.d || "", rappelH: dt && /T\d/.test(when) ? dt.h : "", nok: st === "rdv_nok", client: st === "client", auto: !!dt && auto };
 }
 
 // Rappel de la fiche déjà passé (heure de Paris ; sans heure = fin de journée)
@@ -186,6 +187,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     // et pas encore écrites dans Boost : elles ne sont pas écrasées en attendant
     const idPending = !!(p.bqi && bqiSig(p.bqi) !== p.bqis);
     p.bid = bid; p.bclub = ctx.club; p.bst = String(c.status || ""); p.bupd = String(c.updated_at || "");
+    p.bauto = m.auto; // le rappel Boost (brap) vient d'une séquence automatique : un lead jamais appelé reste « Nouveau lead »
     p.bentry = String(c.effective_entry_at || c.last_entry_at || c.created_at || ""); // arrivée du lead (tri « Leads récents »)
     if (!idPending) {
       p.nom = String(c.name || p.nom || "").slice(0, 80);
