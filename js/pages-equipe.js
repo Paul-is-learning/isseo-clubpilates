@@ -64,6 +64,20 @@
     Object.keys(S.shifts||{}).forEach(function(sid){_shifts(sid).forEach(function(s){out.push(Object.assign({_sid:sid},s));});});
     return out;
   }
+  // Mémo par passe de renderEquipe : une seule copie de _allShifts + index date/personne (lecture seule)
+  var _rIdx=null,_rLive=0;
+  function _idx(){
+    if(!_rIdx){
+      var all=_allShifts(),bd=Object.create(null),bp=Object.create(null);
+      all.forEach(function(s){(bd[s.date]||(bd[s.date]=[])).push(s);(bp[s.person_id]||(bp[s.person_id]=[])).push(s);});
+      _rIdx={all:all,byDate:bd,byPerson:bp};
+    }
+    return _rIdx;
+  }
+  // Hors rendu : _allShifts() complet comme avant · les appelants gardent leurs filtres stricts (clés d'index coercées en texte)
+  function _shAll(){return _rLive?_idx().all:_allShifts();}
+  function _shOfDate(ymd){return _rLive?(_idx().byDate[ymd]||[]):_allShifts();}
+  function _shOfPerson(id){return _rLive?(_idx().byPerson[id]||[]):_allShifts();}
   function _isAssocie(){return typeof isSuperAdmin==='function'&&isSuperAdmin();}
 
   // ── Helpers : dates ────────────────────────────────────────────────────────
@@ -134,7 +148,7 @@
     var ws=weekStartYmd;
     var we=_ymd(_addDays(_parseYmd(ws),6));
     var t=0;
-    _allShifts().forEach(function(s){
+    _shOfPerson(personId).forEach(function(s){
       if(s.person_id!==personId)return;
       if(s.date<ws||s.date>we)return;
       t+=_shiftDuration(s);
@@ -143,7 +157,7 @@
   }
   function _personMonthHours(personId,y,m){
     var t=0;
-    _allShifts().forEach(function(s){
+    _shOfPerson(personId).forEach(function(s){
       if(s.person_id!==personId)return;
       var d=_parseYmd(s.date);if(!d)return;
       if(d.getFullYear()===y&&d.getMonth()===m)t+=_shiftDuration(s);
@@ -460,7 +474,7 @@
     var hCours=0,hAccueil=0;
     var unassigned=0;
     var wsd=_parseYmd(ws),we=_ymd(_addDays(wsd,6));
-    _allShifts().forEach(function(sh){
+    _shAll().forEach(function(sh){
       if(sh.date<ws||sh.date>we)return;
       var d=_shiftDuration(sh);
       if(sh.type==='cours')hCours+=d;
@@ -630,8 +644,8 @@
   }
 
   function _dayShifts(ymd,studioFilter,roleFilter){
-    var out=[];
-    _allShifts().forEach(function(sh){
+    var out=[]; // tableau neuf : le tri ne touche pas le seau de l'index
+    _shOfDate(ymd).forEach(function(sh){
       if(sh.date!==ymd)return;
       if(studioFilter!=='all'&&sh._sid!==studioFilter)return;
       if(roleFilter!=='all'&&sh.type!==roleFilter)return;
@@ -2066,6 +2080,11 @@
   // ── RENDER ROOT ─────────────────────────────────────────────────────────────
   // ════════════════════════════════════════════════════════════════════════════
   function renderEquipe(){
+    // Index des créneaux valable le temps de cette passe synchrone (relu à chaque render, donc jamais périmé)
+    var prevIdx=_rIdx;_rIdx=null;_rLive++;
+    try{return _renderEquipe();}finally{_rLive--;_rIdx=prevIdx;}
+  }
+  function _renderEquipe(){
     _ensureStyles();
     var sub=S.equipeSubTab||'planning';
     var h='<div class="eq">';
