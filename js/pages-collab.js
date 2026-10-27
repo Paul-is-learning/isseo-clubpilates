@@ -26,15 +26,32 @@ function _loadCollabFilters(){
 function _saveCollabFilters(){
   try{localStorage.setItem('isseo_collab_filters',JSON.stringify(_collabFilters));}catch(e){}
 }
+var _collabSearchTimer=null;
 function setCollabFilter(k,v){
   _loadCollabFilters();
   _collabFilters[k]=v;
+  if(k==='search'){
+    // Recherche : sauvegarde + render groupés après 150 ms de pause, puis focus et curseur rendus à l'input recréé par render()
+    clearTimeout(_collabSearchTimer);
+    _collabSearchTimer=setTimeout(function(){
+      _collabSearchTimer=null;
+      _saveCollabFilters();
+      var el=document.querySelector('.collab-search input');
+      var had=!!el&&document.activeElement===el,a=had?el.selectionStart:0,b=had?el.selectionEnd:0;
+      render();
+      var n=had&&document.querySelector('.collab-search input');
+      if(n){try{n.focus({preventScroll:true});n.setSelectionRange(a,b);}catch(e){}}
+    },150);
+    return;
+  }
+  clearTimeout(_collabSearchTimer);_collabSearchTimer=null; // recherche en attente déjà incluse dans cette sauvegarde
   _saveCollabFilters();
   render();
 }
 // Applique un preset de filtres à partir d'un clic KPI (atomique, 1 render)
 function setCollabFromKpi(kpiKey){
   _loadCollabFilters();
+  clearTimeout(_collabSearchTimer);_collabSearchTimer=null; // la recherche est remise à zéro juste après
   // Reset systématique de la recherche et studio pour visibilité max
   _collabFilters.search='';
   _collabFilters.studio='all';
@@ -66,6 +83,7 @@ function setCollabFromKpi(kpiKey){
   },60);
 }
 function resetCollabFilters(){
+  clearTimeout(_collabSearchTimer);_collabSearchTimer=null; // évite qu'une recherche en attente réécrive les filtres effacés
   _collabFilters=null;
   try{localStorage.removeItem('isseo_collab_filters');}catch(e){}
   render();
