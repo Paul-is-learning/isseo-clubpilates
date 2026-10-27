@@ -5,7 +5,8 @@ personne ou session d'IA qui reprend le code. Il décrit comment l'application
 démarre, où vivent les données et dans quel fichier intervenir.
 
 - État décrit : le code au 27 oct. 2026 (après le retrait des rubriques
-  Prospection et Fichiers du menu).
+  Prospection, Fichiers et Récap' engagements des menus, et les allègements
+  de performance de la nuit).
 - Les noms de fichiers et de fonctions cités ont été vérifiés dans le code.
   Les numéros de ligne bougent à chaque modification : pour retrouver une
   fonction, chercher son nom, par exemple `grep -n "function renderSidebar" js/*.js`.
@@ -16,9 +17,9 @@ démarre, où vivent les données et dans quel fichier intervenir.
 ## 1. En deux minutes (pour Paul)
 
 - **Un site web d'une seule page, sans compilation.** Le navigateur charge
-  `index.html`, puis 35 fichiers JavaScript du dossier `js/`, toujours dans le
+  `index.html`, puis 33 fichiers JavaScript du dossier `js/`, toujours dans le
   même ordre. Il n'y a pas d'étape de « build » : ce qui est dans le dépôt est
-  ce qui est publié.
+  ce qui est publié (hors fichiers exclus par `.vercelignore`).
 - **Toutes les données sont dans Supabase** (base de données hébergée). Presque
   tout tient dans une seule table, `studios`, où chaque ligne est un « tiroir »
   reconnu par son identifiant (par exemple `lattes` pour la fiche du studio,
@@ -28,7 +29,8 @@ démarre, où vivent les données et dans quel fichier intervenir.
   qui reconstruit tout l'écran.
 - **Le multi-utilisateur passe par le temps réel Supabase.** Quand quelqu'un
   enregistre, les autres écrans reçoivent la ligne modifiée et se redessinent.
-  Un relevé de secours tourne toutes les 5 minutes au cas où.
+  Un relevé de secours léger (seules les lignes modifiées sont retéléchargées)
+  tourne toutes les 5 minutes au cas où, en pause quand l'onglet est caché.
 - **Mise en ligne : `git push` sur `main`.** Vercel publie alors le site sur
   https://clubpilates.isseo-dev.com.
 - **Le Sales Coach** (`cp-sales-coach/`) est un outil à part, en un seul
@@ -57,12 +59,15 @@ démarre, où vivent les données et dans quel fichier intervenir.
 | `tests/` | Tests automatiques (`bp-calc.test.js`) et filet « golden » (`tests/golden/render-snapshot.mjs`), section 13 |
 | `tests.html` | Ancienne page de tests à ouvrir dans le navigateur |
 | `types/app.d.ts` | Types TypeScript des objets métier (contrôle facultatif, `npm run typecheck`) |
-| `icons/`, `img/`, `photos/`, `plans/`, `video/`, `logo-*.png`, `logo-cp.webp` | Images, photos d'équipe, plan du local, vidéos |
+| `icons/`, `img/`, `photos/`, `plans/`, `video/`, `logo-*.png`, `logo-cp.webp` | Images, photos d'équipe, plan du local, vidéos. L'app affiche les logos allégés `logo-white-sm.png` / `logo-black-sm.png` (640 px) ; les grands `logo-white.png` / `logo-black.png` ne servent plus qu'aux e-mails de `task-notify` |
 | `scripts/generate-vapid-keys.mjs` | Génération des clés Web Push |
 | `vercel.json`, `.vercelignore` | Réglages de publication Vercel |
 
 Fichiers présents mais **non chargés** par `index.html` : `js/gdrive.js` et
-`js/gdrive-ui.js` (intégration Google Drive en pause).
+`js/gdrive-ui.js` (intégration Google Drive en pause), `js/pages-prospection.js`
+(rubrique retirée ; `migrateProspects` est recopiée dans `js/sync.js`) et
+`js/pages-fichiers.js` (rubrique retirée ; `openMyTask` vit désormais dans
+`js/pages-accueil.js`).
 
 ---
 
@@ -70,9 +75,11 @@ Fichiers présents mais **non chargés** par `index.html` : `js/gdrive.js` et
 
 ### 3.1 Chargement d'`index.html`
 
-1. Dans `<head>` : `supabase-js@2` et Leaflet 1.9.4 depuis unpkg, polices
-   Google (Montserrat, Cormorant Garamond), `styles.css?v=...`, puis un petit
-   bloc de style pour l'app installée (marges de sécurité iPhone).
+1. Dans `<head>` : `supabase-js@2` depuis unpkg, polices Google (Montserrat,
+   Cormorant Garamond), `styles.css?v=...`, puis un petit bloc de style pour
+   l'app installée (marges de sécurité iPhone). Leaflet 1.9.4 n'y est plus :
+   `js/map.js` le charge à la demande depuis unpkg (`_loadLeaflet`, une seule
+   promesse partagée) à l'ouverture de la carte Localisation.
 2. Début de `<body>` : script qui remet le mode sombre si
    `localStorage.isseo_darkMode` vaut `true`, et qui envoie les erreurs non
    gérées à `isseoCaptureError` (Sentry).
@@ -85,11 +92,10 @@ Fichiers présents mais **non chargés** par `index.html` : `js/gdrive.js` et
    partout). Il repère aussi un lien e-mail de réinitialisation de mot de passe
    (`window._isseoRecovery`) et, sur l'évènement `PASSWORD_RECOVERY`, affiche
    `renderRecoveryScreen()`.
-5. Les 35 scripts locaux, dans cet ordre (l'ordre compte, voir 3.2) :
+5. Les 33 scripts locaux, dans cet ordre (l'ordre compte, voir 3.2) :
    `js/config.js`, `js/observability.js`, `js/vendor/preact.umd.js`,
    `js/vendor/htm.umd.js`, `js/constants.js`, `js/animations.js`,
    `js/state.js`, `js/notifications.js`, `js/auth.js`, `js/pages-accueil.js`,
-   `js/pages-fichiers.js`, `js/pages-prospection.js`,
    `js/pages-engagements.js`, `js/pages-bp-consolide.js`,
    `js/pages-collab.js`, `js/pages-local.js`, `js/pages-echanges.js`,
    `js/pages-financier.js`, `js/pages-introclass.js`, `js/pages-detail.js`,
@@ -127,12 +133,14 @@ Fichiers présents mais **non chargés** par `index.html` : `js/gdrive.js` et
      déconnexion ;
    - `S.user` est rempli et un écran d'attente `#boot-wait` s'affiche
      (message « Réessayer » au bout de 20 s si la base ne répond pas) ;
-   - lecture du profil dans la table `profiles` vers `S.profile` ;
-   - `loadAll()` (section 6) ;
+   - lecture du profil dans la table `profiles` vers `S.profile` et
+     `loadAll()` (section 6), **en parallèle** (`Promise.all`, `loadAll` ne
+     lit pas `S.profile`) ;
    - le rôle peut être surchargé par `S.adminSettings.roles[uid]` ; un
      compte présent dans `S.adminSettings.blocked` est déconnecté ;
    - `S._dataLoaded=true`, `restoreNavState()`, puis atterrissage forcé sur
-     l'Accueil sauf si l'adresse contient un lien direct (`#/...`) ;
+     l'Accueil sauf si l'adresse contient un lien direct (toute ancre : `#/...`
+     ou `#tache=...`) ;
    - `_restoreFromHash()`, `render()`, `startSync()`,
      `_startSessionWatcher()`, `startPresenceHeartbeat()`,
      `recordLastLogin()`, `_loadAllProfiles()`, `loadNotifications()` puis
@@ -143,8 +151,8 @@ Fichiers présents mais **non chargés** par `index.html` : `js/gdrive.js` et
 
 ### 3.4 Connexion par le formulaire (`js/utils.js`, `doLogin`)
 
-Même enchaînement après `sb.auth.signInWithPassword` : profil, `loadAll()`,
-rôle surchargé, contrôle du blocage, atterrissage sur l'Accueil, `render()`,
+Même enchaînement après `sb.auth.signInWithPassword` : profil et `loadAll()`
+en parallèle, rôle surchargé, contrôle du blocage, atterrissage sur l'Accueil, `render()`,
 `startSync()`, présence, notifications, push, visite guidée.
 
 ### 3.5 Déconnexion (`js/exports.js`, `doLogout`)
@@ -169,7 +177,8 @@ appelle `sb.auth.signOut()`, vide l'état et supprime `isseo_nav`.
 - La barre d'onglets du bas (mobile, `#bottom-tab-bar` : Accueil, Studios,
   Collab) est créée une seule fois, puis seulement affichée ou masquée.
 - Après le HTML : `initLocalisationMap()` 60 ms plus tard si l'onglet
-  Localisation est ouvert, `_syncHash()`, `renderChat()`,
+  Localisation est ouvert (`js/map.js` y charge Leaflet à la demande, il
+  n'est plus dans le `<head>`), `_syncHash()`, `renderChat()`,
   `mountNextStepsWidget()`, `mountGDriveBrowsers()` (sans effet, Drive non
   chargé), `renderCoachFab()`.
 - Puis, grâce à l'enveloppe de `js/animations.js`, `afterRenderAnimations()` :
@@ -186,7 +195,9 @@ Conséquences pratiques :
 - Un rendu efface le champ en cours de saisie. C'est pourquoi la synchro
   (`_tryRender` dans `js/sync.js`) ne redessine pas si un `input` ou un
   `textarea` a le focus, et pourquoi `renderChat()` n'écrase pas le chat
-  pendant la frappe.
+  pendant la frappe. La recherche Collab (`setCollabFilter`,
+  `js/pages-collab.js`) attend 150 ms après la dernière frappe, fait un seul
+  rendu, puis rend le focus et le curseur au champ.
 
 ### 4.2 Pages (`S.page`)
 
@@ -229,7 +240,8 @@ Un lecteur (viewer) peut être limité à certains onglets et studios par
   acceptées par URL : `accueil`, `projets`, `collab`, `bp`, plus les fiches
   studio.
 - `#/share-received` : fichiers partagés depuis une autre app vers la PWA
-  (`handleShareReceived`, `js/app.js`).
+  (`handleShareReceived`, `js/app.js`) ; l'envoi vise le dossier Google
+  Drive du studio et reste sans effet tant que Drive n'est pas chargé.
 - La position est mémorisée dans `localStorage.isseo_nav` (`saveNavState`,
   `restoreNavState`).
 
@@ -247,14 +259,16 @@ Un lecteur (viewer) peut être limité à certains onglets et studios par
 | Équipe | `people`, `shifts`, `shiftTemplates`, `shiftProposals`, `equipe*` (filtres de la page) |
 | Partagé | `globalChat`, `adminSettings`, `userPresence`, `lastLogins`, `avatarUrls`, `notifications` |
 | Saisies en cours | `dirty`, `_dirtyBackup` (modifications non enregistrées), `editMoisIdx`, `showNewForm`, `newForm` |
-| Interface | `darkMode`, `chatOpen`, `notifOpen`, `notifFilter`, `dashView`, `dashFilter`, `search*`, `map*`, `forecastYear`, `forecastSection`, `adherentYear`, `eng*`, `fileNav` (hub fichiers de l'Accueil) |
+| Interface | `darkMode`, `chatOpen`, `notifOpen`, `notifFilter`, `dashView`, `dashFilter`, `search*`, `map*`, `forecastYear`, `forecastSection`, `adherentYear`, `eng*` |
 | Simulateur BP | `S.bpPlay[sid]`, créé à la demande par `_bpPlay` (`js/pages-financier.js`) |
-| Dormant | `prospects`, `prospect*` |
+| Dormant | `prospects`, `prospect*` (Prospection retirée), `fileNav` (ancien hub Fichiers, retiré de l'Accueil) |
 
 Mémoire locale du navigateur (`localStorage`) : `isseo_nav`,
 `isseo_darkMode`, `chatLastSeen`, `isseo_sim_<sid>` (copie du réglage du
 simulateur), `isseo_hidden_at`, `isseo_collab_filters`, `isseo_tasks_view_*`,
-compteurs de la visite guidée (`js/onboarding-tour.js`). Rien d'important n'y
+`isseo_monday_report_<date>` et `isseo_todo_reminder_<id>_<date>` (rappels
+déjà faits, `js/notifications.js`), compteurs de la visite guidée
+(`js/onboarding-tour.js` : `isseo_tour_count_*`, `isseo_tour_dismissed_*`). Rien d'important n'y
 est gardé : la vérité est dans Supabase.
 
 Modifications non enregistrées (bandeau `#dirty-bar`) : `markDirty(type, sid)`
@@ -272,34 +286,39 @@ Colonnes : `id` (texte), `data` (JSON), `updated_at`. `loadAll()` lit toute la
 table au démarrage et range chaque ligne selon la fin de son identifiant.
 La même logique de rangement existe dans `_handleRowChange` (`js/sync.js`) :
 **toute nouvelle sorte de ligne doit être ajoutée aux deux endroits**.
+Écarts actuels : `_handleRowChange` ne range pas `<sid>_topics` (la ligne
+reçue finit dans `S.studios`) et ignore `<sid>_messages` ; à l'inverse, il
+range `_login_<uid>` dans `S.lastLogins` et `_prospects` dans `S.prospects`,
+alors que `loadAll` range ces deux lignes parmi les studios.
 
 | Identifiant | Contenu (`data`) | Rangé dans | Écrit par |
 |---|---|---|---|
 | `<sid>` (ex. `lattes`, `garenne`, `levallois`, `issy`, `toulouse`, `goldgym`, `pw_occitanie`) | fiche studio : `name`, `addr`, `societe`, `ouverture`, `statut`, `cohorte`, `capex`, `emprunt`, `leasing`, `loyer_mensuel`, `steps`, `forecast`, etc. | `S.studios[sid]` | `saveStudio` (`js/notifications.js`) via `rpcPatch` |
-| `<sid>_files` | `files` | `S.files` | `uploadFichier`, `deleteFichier` (`js/simulator.js`) + stockage `studio-files` |
+| `<sid>_files` | `files` | `S.files` | `uploadFichier`, `deleteFichier` (`js/simulator.js`) + stockage `studio-files` ; plus appelées depuis l'interface (onglet et hub Fichiers retirés) |
 | `<sid>_depenses` | `depenses` | `S.depenses` | `saveDepenses` (`js/notifications.js`) |
 | `<sid>_adherents` | `actuel` (saisies mensuelles) | `S.adherents` | `saveAdherents` (fusion via `rpcPatch`), `replaceAdherents` (remplacement complet) |
 | `<sid>_scenarios` | `scenarios` | `S.scenarios` | `saveScenarios` (`js/state.js`) |
 | `<sid>_simconfig` | `config` (mix et prix du simulateur adhérents) | `S.simConfig` | `saveSimConfig` (différé 500 ms), `flushSimConfig` |
 | `<sid>_todos` | `todos` (tâches) | `S.todos` | `saveTodos` (`js/pages-echanges.js`) |
 | `<sid>_topics` | `topics` (questions / forum) | `S.topics` | `saveTopics` (`js/pages-echanges.js`) |
-| `<sid>_messages` | `messages` (ancien fil 1:1) | `S.messages` | `envoyerMessage`, relu par `rechargerMessages` toutes les 8 s sur l'onglet Questions & Tâches |
+| `<sid>_messages` | `messages` (ancien fil 1:1) | `S.messages` | `envoyerMessage`, relu par `rechargerMessages` toutes les 8 s sur l'onglet Questions & Tâches, page visible seulement |
 | `_people` | `people` (annuaire équipe) | `S.people` | `_savePeople` (`js/pages-equipe.js`) |
 | `<sid>_shifts` | `shifts` (planning) | `S.shifts` | `_saveShifts` |
 | `<sid>_shift_templates` | `templates` | `S.shiftTemplates` | `_saveTemplates` |
 | `<sid>_shift_proposals` | `proposals` | `S.shiftProposals` | `_saveProposals` |
-| `global_chat` | `messages` | `S.globalChat` | `envoyerGlobalMessage`, `supprimerGlobalMessage` (`js/chat.js`) : relit puis réécrit toute la ligne |
-| `_admin_settings` | `settings` : `blocked`, `roles`, `viewers`, `viewerPerms`, `passwords`, `invitations`, `deletedStudios` | `S.adminSettings` | `saveAdminSettings` (`js/auth.js`) |
-| `_user_presence` | `presence` : `{uid: {ts, nom}}` | `S.userPresence` | `updatePresence` (`js/utils.js`), toutes les 3 min, onglet visible seulement |
+| `global_chat` | `messages` | `S.globalChat` | `envoyerGlobalMessage` (relit la ligne, ajoute le message, réécrit toute la ligne), `supprimerGlobalMessage` (réécrit toute la ligne depuis `S.globalChat`, sans relire) (`js/chat.js`) |
+| `_admin_settings` | `settings` : `blocked`, `roles`, `viewers`, `viewerPerms`, `deletedStudios`, etc. | `S.adminSettings` | `saveAdminSettings` (`js/auth.js`) |
+| `_user_presence` | `presence` : `{uid: {ts, nom}}` | `S.userPresence` (en temps réel, rendu seulement sur l'écran Administration) | `updatePresence` (`js/utils.js`), toutes les 3 min, onglet visible seulement |
 | `_avatars` | `avatars` : `{nom: url}` | `S.avatarUrls` | `uploadAvatar` (`js/auth.js`) |
-| `_login_<uid>` | `{ts, nom, uid}` (dernière connexion, une ligne par personne) | `S.lastLogins` via `loadLastLogins` | `recordLastLogin` (`js/utils.js`) |
-| `_prospects` | `items` | `S.prospects` | dormant (rubrique Prospection retirée) |
+| `_login_<uid>` | `{ts, nom, uid}` (dernière connexion, une ligne par personne) | `S.lastLogins` : `loadLastLogins` au démarrage, `_handleRowChange` en temps réel (rendu seulement sur l'écran Administration) | `recordLastLogin` (`js/utils.js`) |
+| `_prospects` | `items` | `S.prospects` en temps réel seulement (`loadAll` la range parmi les studios, `loadProspects` n'est plus chargé) | personne : `saveProspects` est dans `js/pages-prospection.js`, que `index.html` ne charge plus |
 
 À savoir :
 
 - Une ligne qui ne correspond à aucun suffixe est traitée comme un studio.
   `_getStudioIds()` (`js/auth.js`) ne garde que les entrées qui ont un `name`,
-  ce qui écarte par exemple les lignes `_login_<uid>` et `_prospects`. Ne
+  ce qui écarte par exemple les lignes `_login_<uid>` et `_prospects`, que
+  `loadAll` range parmi les studios. Ne
   jamais donner à un studio un identifiant qui finit par un suffixe réservé.
 - **Champs réimposés depuis `INIT`** (`js/constants.js`) à chaque chargement
   et à chaque synchro : `ouverture`, `capex`, `emprunt`, `leasing`, `name`,
@@ -323,7 +342,8 @@ La même logique de rangement existe dans `_handleRowChange` (`js/sync.js`) :
 
 ### 6.3 Façons d'écrire
 
-- **`rpcPatch(id, {merge: ...})`** : fusion partielle et atomique, conflit
+- **`rpcPatch(id, {merge: ...})`** : fusion partielle et atomique ; si
+  `expected_updated_at` est fourni (seul `saveStudio` le fait), conflit
   détecté (message puis rechargement). C'est le chemin de `saveStudio`,
   `saveAdherents`, `saveDepenses` et des saisies taux / loyer / CAPEX. Les
   options `array_append` / `array_remove_key` ajoutent ou retirent un élément
@@ -339,8 +359,9 @@ La même logique de rangement existe dans `_handleRowChange` (`js/sync.js`) :
 ## 7. Synchronisation temps réel et secours (`js/sync.js`)
 
 - **Temps réel** : `subscribeDataChanges()` ouvre le canal `studios-sync` sur
-  la table `studios` (`INSERT`, `UPDATE`, `DELETE`). Chaque ligne reçue passe
-  par `_handleRowChange(r)`, qui :
+  la table `studios` (`INSERT`, `UPDATE`, `DELETE`). Chaque ligne ajoutée ou
+  modifiée passe par `_handleRowChange(r)` (une suppression retire seulement
+  `S.studios[id]`), qui :
   - ignore tout pendant une saisie mensuelle (`S.editMoisIdx`) ou le
     formulaire nouveau studio ;
   - ignore une ligne déjà connue (même `updated_at`, mémorisé dans
@@ -349,6 +370,12 @@ La même logique de rangement existe dans `_handleRowChange` (`js/sync.js`) :
     simulateur) ni un studio dont le taux est en cours d'édition
     (`_tauxPending`) ;
   - réimpose les champs `INIT` (6.1) ;
+  - range les lignes `_login_<uid>` dans `S.lastLogins` (plus dans
+    `S.studios`) et passe `_prospects` par `migrateProspects` (copie gardée
+    dans `js/sync.js`) ;
+  - présence (`_user_presence`) et dernières connexions : `S` est mis à jour,
+    mais un rendu n'est demandé que si l'écran Administration est affiché
+    (`_presenceShown`) ;
   - compare l'ancien et le nouveau contenu, puis demande un rendu par
     `_tryRender()` (sauf si un champ de saisie a le focus) ;
   - redessine à part une tâche ouverte dans sa fenêtre
@@ -357,16 +384,19 @@ La même logique de rangement existe dans `_handleRowChange` (`js/sync.js`) :
   toute la table, puis télécharge les lignes changées par paquets de 40.
   Cadence : toutes les 5 min (`SYNC_POLL_OK`) quand le temps réel marche,
   toutes les 30 s (`SYNC_POLL_DOWN`) quand il est coupé. Rien n'est lu quand
-  l'onglet est caché ; rattrapage au retour sur l'onglet (`visibilitychange`),
-  au retour du réseau (`online`) et à chaque reconnexion du temps réel.
+  l'onglet est caché ; rattrapage au retour sur l'onglet (`visibilitychange`)
+  et à chaque reconnexion du temps réel (le retour du réseau, `online`, ne fait
+  qu'enlever la bannière hors ligne).
 - **Reconnexion** : en cas d'erreur du canal, nouvel essai après 10 s, 20 s,
   puis 30 s au plus.
-- `startSync()` démarre le tout (au login), `stopSync()` l'arrête (à la
-  déconnexion).
+- `startSync()` démarre le tout (connexion par `doLogin` ou ouverture avec une
+  session existante), `stopSync()` l'arrête (à la déconnexion, `doLogout`).
 
 Autres rythmes : notifications en temps réel (canal `notif-<uid>`), présence
-toutes les 3 min (`startPresenceHeartbeat`), présence rafraîchie toutes les
-30 s sur la page Administration (`_startAdminPresenceRefresh`, `js/pages.js`),
+toutes les 3 min (`startPresenceHeartbeat`, aucune écriture quand l'onglet
+est caché), présence relue toutes les 30 s sur la page Administration
+(`_startAdminPresenceRefresh`, `js/pages.js` ; rien quand l'onglet est caché,
+nouveau rendu seulement si la colonne Statut change),
 messages de l'ancien fil toutes les 8 s (`setDetailTab`, `js/simulator.js`).
 
 ---
@@ -375,7 +405,9 @@ messages de l'ancien fil toutes les 8 s (`setDetailTab`, `js/simulator.js`).
 
 Plusieurs fichiers ont un nom qui ne reflète plus leur contenu (`js/auth.js`,
 `js/utils.js`, `js/simulator.js`, `js/animations.js` sont des fourre-tout). Se fier au
-tableau ci-dessous plutôt qu'au nom.
+tableau ci-dessous plutôt qu'au nom. `js/pages-fichiers.js` et
+`js/pages-prospection.js` (rubriques retirées) restent dans le dépôt mais ne
+sont plus chargés par `index.html`, comme `js/gdrive.js` et `js/gdrive-ui.js`.
 
 | Fichier | Rôle | Points d'entrée principaux |
 |---|---|---|
@@ -387,9 +419,7 @@ tableau ci-dessous plutôt qu'au nom.
 | `js/state.js` | État `S` et persistance | `S`, `loadAll`, `saveNavState`, `restoreNavState`, `rpcPatch`, `withRollback`, `safeSave` (inutilisé), `saveSimConfig`, `flushSimConfig`, `markDirty`, `saveAllDirty`, `discardAllDirty`, `_checkDirtyBeforeNav`, scénarios `enregistrerScenario`, `_confirmerScenario`, `chargerScenario`, `supprimerScenario`, `saveScenarios` |
 | `js/notifications.js` | Notifications, e-mails, rapport du lundi, rappels ; aussi des écritures studio | `NOTIF_TYPES`, `loadNotifications`, `createNotification`, `subscribeNotifications`, `notifyAll`, `notifyUserByNom`, `renderNotifPanel`, `handleNotifClick`, `sendEmail`, `_emailLayout`, `_emailBtn`, `checkMondayReport`, `checkEcheances`, `saveStudio`, `setStudioCohorte`, `setStudioStatut`, `saveDepenses`, `replaceAdherents`, `saveAdherents` |
 | `js/auth.js` | Fourre-tout : connexion, administration, menu, recherche | `renderAuth`, `doForgotPassword`, `renderRecoveryScreen`, `renderAdminPanel`, `saveAdminSettings`, `submitCreateUser`, `executeDeleteUser`, `setUserRole`, `toggleViewer`, `userAvatarWidget`, `uploadAvatar`, `globalSearch`, `renderSearchBar`, `openChangePassword`, `renderSidebar`, `_getStudioIds`, invitations (`showInviteViewerModal`, `submitInvitation`, `approveInvitation`, `renderInvitationsSection`), aides `htmlEscape`, `toast` (version de base), `badge`, `progBar`, `avatarHTML`, `saveTauxInteret` |
-| `js/pages-accueil.js` | Page Accueil | `renderAccueil`, `_computeFocusItems` / `_renderFocusCard` (centre d'attention), `_renderHeroBanner`, `_computeTodayBriefing`, `renderMyTasks` (se termine par `renderFichiersHub()`) ; `_computeHealthScore`, `_renderHealthGauge` inutilisés |
-| `js/pages-fichiers.js` | Rubrique Fichiers retirée du menu, encore chargée | `renderFichiersHub` (bas de l'Accueil), `openMyTask` (ouvre une tâche depuis l'Accueil), `_extractDriveFolderId` ; `renderFichiersPage` plus appelé |
-| `js/pages-prospection.js` | Rubrique Prospection retirée, dormante | encore chargée car `js/sync.js` appelle `migrateProspects` et `doLogout` lit `_lienLoyerTimer` / `_ficheLoyerTimer` |
+| `js/pages-accueil.js` | Page Accueil | `renderAccueil`, `_computeFocusItems` / `_renderFocusCard` (centre d'attention), `_renderHeroBanner`, `_computeTodayBriefing`, `renderMyTasks`, `openMyTask` (ouvre une tâche depuis le centre d'attention ou « Mes tâches à faire », déplacé depuis `js/pages-fichiers.js`) ; `_computeHealthScore`, `_renderHealthGauge` inutilisés |
 | `js/pages-engagements.js` | Engagements financiers | `renderEngagements` (onglet studio), `toggleCapexDetail`, `renderPageEngagements` (page hors menu), saisie de dépenses `ouvrirFormDepense`, `sauvegarderDepense`, `modifierDepense`, `supprimerDepense`, `uploadJustif` |
 | `js/pages-bp-consolide.js` | Page BP Consolidé | `renderBPConsolide`, `_getScenarioCA`, `_getScenarioLabel` ; bascules de la page Engagements (`toggleEngView`, `toggleEngSection`, `setEngRecapStudio`...) |
 | `js/pages-collab.js` | Page Collab (tâches et discussions de tous les studios) | `renderCollab`, `setCollabFilter`, `setCollabFromKpi`, `resetCollabFilters`, `_collabOpenTopic` |
@@ -402,12 +432,12 @@ tableau ci-dessous plutôt qu'au nom.
 | `js/bp-edit.js` | Retouches du BP par studio et validation | `build3YearBPWithOverrides`, `applyBPOverridesToYear`, `distributeAnnualToMonths`, `onEditBPAnnual`, `renderBPProposalsPanel`, `approveBPProposal`, `rejectBPProposal`, `resetBPYear`, `seedBPMetaIfMissing` |
 | `js/push.js` | Notifications Web Push | `window.isseoPush` : `isSupported`, `isEnabled`, `enable`, `disable`, `refresh`, `sendTo` |
 | `js/preact-components/next-steps-widget.js` | Widget « Prochaines étapes » | `window.mountNextStepsWidget` (après chaque rendu, dans `[data-preact-widget="next-steps"]`) |
-| `js/map.js` | Carte Leaflet et zone de chalandise | `initLocalisationMap`, `updateZoneRadius`, `calcPopZoneINSEE`, `renderLocalisationData` ; `renderFichiers` ancien |
+| `js/map.js` | Carte Leaflet (bibliothèque chargée à la demande par `_loadLeaflet`, plus dans le `<head>`) et zone de chalandise | `initLocalisationMap`, `updateZoneRadius`, `calcPopZoneINSEE` (résultats gardés dans `_inseePopCache` entre les rendus), `renderLocalisationData` ; `renderFichiers` ancien (onglet Fichiers retiré, plus appelé) |
 | `js/utils.js` | Fourre-tout : rôles, session, présence, aides tâches | `renderAI` (onglet IA), `renderNewForm` (nouveau studio), `isSuperAdmin`, `isViewer`, `_INACTIVITY_MS`, `_isMobileDevice`, `_startSessionWatcher`, `updatePresence`, `loadPresence`, `startPresenceHeartbeat`, `recordLastLogin`, `loadLastLogins`, `doLogin`, aides `_getAssignees`, `_namesMatch`, `_taskAssignedTo`, `_getPriorityMeta`, `_getStatusMeta`, `_kanbanColumns`, `TASK_REACTIONS`, `_parseMentions`, `_avatarHtml`, `_relTime`, `_escHtml` |
 | `js/exports.js` | Exports et navigation | `generateReport` (rapport imprimable), `exportStudioCSV`, `exportStudioExcel`, `doLogout`, `openDetail`, `retourProjets`, `setPage`, `toggleSidebar`, `toggleDarkMode`, `clearAppCacheAndReload` |
 | `js/simulator.js` | Fourre-tout : actions de la fiche studio et simulateur adhérents | `setDetailTab`, `setMainTab`, `setFS`, `setForecastYear`, `setAdherentYear`, `toggleNewForm`, `setNF`, `createStudio`, `openEditMois`, `saveMois`, `clearMois`, `toggleStep`, `ajouterEtape`, `supprimerEtape`, `archiverStudio`, `restaurerStudio`, `supprimerStudio`, `saisirAdherentLive`, `saisirPreInscrits`, `uploadFichier`, `deleteFichier`, `askAI`, moteur `SIM_ARPU_TOTAL_BP`, `SIM_PRIX_REF`, `SIM_BOUTIQUE_FACTOR`, `computeBPCA`, `computeSimARPU`, `computeSimCA`, vues `renderStepRepartition`, `renderStepPrix`, `renderSimResults`, `buildSimCAChart`, scénarios `toggleScenarioEditMode`, `nouveauScenario`, saisie en direct `updateSimRep`, `updateSimPrix`, `animBPBars` |
 | `js/chat.js` | Chat flottant entre associés | `renderChat`, `renderFloatingChat`, `toggleChat`, `envoyerGlobalMessage`, `supprimerGlobalMessage` ; aussi `saveLoyerMensuel`, `saveCapexLine` |
-| `js/sync.js` | Temps réel et secours (section 7) | `startSync`, `stopSync`, `subscribeDataChanges`, `_handleRowChange`, `_tryRender`, `syncDataFallback` |
+| `js/sync.js` | Temps réel et secours (section 7) | `startSync`, `stopSync`, `subscribeDataChanges`, `_handleRowChange`, `_tryRender`, `syncDataFallback`, `_presenceShown`, `migrateProspects` (copie de celle de `js/pages-prospection.js`, plus chargé) |
 | `js/pages-how.js` | Page Comment ça marche | `window.renderHowItWorks` |
 | `js/pages-equipe.js` | Page Équipe (tout dans une IIFE, styles injectés) | `window.renderEquipe` ; boutons `window._eq*` (`_eqSetSub`, `_eqWeek`, `_eqOpenPerson`, `_eqOpenShift`, `_eqSeedPlanning`...) |
 | `js/coach-marks.js` | Tuto contextuel de chaque page (IIFE) | `FLOWS` (sélecteurs par page et onglet), `window.renderCoachFab`, `window.hideCoachFab`, `window.startCoachForCurrentPage` |
@@ -439,7 +469,7 @@ tableau ci-dessous plutôt qu'au nom.
 | Modifier le BP consolidé | `js/pages-bp-consolide.js` | `renderBPConsolide` |
 | Modifier la page Équipe | `js/pages-equipe.js` | `renderEquipe` et les fonctions `_render*` internes |
 | Modifier l'Intro Class | `js/pages-introclass.js` | `renderIntroClass`, `_icCompute` ; données : `supabase/functions/coach-sync` (actions `isseo_ic`, `isseo_ic_bareme`) |
-| Modifier l'écran de connexion | `js/auth.js` | `renderAuth` ; connexion `doLogin` (`js/utils.js`) ; mot de passe oublié `renderRecoveryScreen` |
+| Modifier l'écran de connexion | `js/auth.js` | `renderAuth` ; connexion `doLogin` (`js/utils.js`) ; mot de passe oublié `doForgotPassword` (envoi du lien), puis `renderRecoveryScreen` (nouveau mot de passe) |
 | Gérer comptes, rôles et lecteurs | `js/auth.js` | `renderAdminPanel`, `submitCreateUser`, `setUserRole`, `toggleViewer`, `showInviteViewerModal` ; studios visibles par rôle : `ROLE_FILTER` (`js/constants.js`) ; super-admin : `isSuperAdmin` (`js/utils.js`) |
 | Modifier une notification ou un e-mail | `js/notifications.js` | `NOTIF_TYPES`, `createNotification`, `notifyAll`, `_emailLayout`, `checkMondayReport`, `checkEcheances` ; e-mails de tâches : `supabase/functions/task-notify` |
 | Recherche globale et palette Cmd+K | `js/auth.js`, `js/animations.js` | `globalSearch`, `renderSearchBar` ; `openCommandPalette`, `_buildCommandItems` |
@@ -525,8 +555,9 @@ Exemple : `supabase functions deploy coach-sync --no-verify-jwt --project-ref wf
 - **Exception** : `task-notify`, `ask-ai` et `send-push` sont appelées depuis
   l'app connectée. Les déployer **sans** `--no-verify-jwt`
   (`supabase functions deploy task-notify --project-ref wfqtpcujujqxgfsgbpvp`).
-- L'en-tête de chaque `index.ts` décrit ses actions, ses secrets et son mode
-  de déploiement : le lire avant de déployer.
+- L'en-tête de la plupart des `index.ts` décrit leurs actions et leurs
+  secrets : le lire avant de déployer. Pour `--no-verify-jwt`, les règles
+  ci-dessus priment sur la mention de déploiement d'un en-tête.
 - `boost-push` partage du code avec `boost-sync` (`boost-sync/sync.ts`) :
   redéployer les deux après une modification de ce fichier.
 - Quand une modification du site dépend d'une fonction, déployer la fonction
@@ -537,9 +568,13 @@ Exemple : `supabase functions deploy coach-sync --no-verify-jwt --project-ref wf
 - **SQL** : les fichiers de `supabase/migrations/` se lancent à la main dans
   l'éditeur SQL Supabase, dans l'ordre, en suivant la consigne de leur
   en-tête (« à lancer avant / après le déploiement de... »).
-- **Tâches planifiées** (pg_cron, migrations 008 à 010) : `boost-sync-garenne`
-  et `boost-sync-lattes` toutes les 10 min (décalées), `boost-push` toutes les
-  2 min, `cron-purge-journal` chaque nuit.
+- **Tâches planifiées** (pg_cron, migrations 008 à 010 ; `boost-sync-lattes`
+  n'est créée par aucun fichier, 010 ne fait que la recaler) :
+  `boost-sync-garenne` et `boost-sync-lattes` toutes les 10 min (décalées de
+  5 min), `boost-push` toutes les 2 min (il se met en veille, sans relire la
+  liste, tant qu'elle n'a pas changé depuis un passage entièrement traité :
+  marqueur `_boost_push_rev`), `cron-purge-journal` chaque nuit (journal
+  gardé 2 jours).
 
 ---
 
@@ -553,18 +588,21 @@ Exemple : `supabase functions deploy coach-sync --no-verify-jwt --project-ref wf
    `*.sql` : ces fichiers ne sont jamais servis.
 2. **Forcer les navigateurs à prendre la nouvelle version** :
    - chaque fichier est appelé avec un suffixe de version dans `index.html`,
-     par exemple `js/app.js?v=20261027lite` et `styles.css?v=20261027lite`.
+     par exemple `js/app.js?v=20261027opt` et `styles.css?v=20261027lite`.
      **Tout fichier JS ou CSS modifié doit recevoir un nouveau `?v=`**
      (habitude : date AAAAMMJJ + mot court) ;
-   - `sw.js` contient `CACHE_VERSION` (par exemple `isseo-v1-20261027-lite`).
+   - `sw.js` contient `CACHE_VERSION` (par exemple `isseo-v1-20261027-opt`).
      **Le changer à chaque mise en ligne d'assets** : le navigateur installe
      alors le nouveau service worker, qui efface les anciens caches, et l'app
      affiche « Nouvelle version disponible ».
    - La liste `APP_SHELL` de `sw.js` (fichiers mis en cache à l'installation)
-     a ses propres `?v=`, qui ne suivent plus ceux d'`index.html`. Le site
-     reste à jour car les fichiers du site sont servis « réseau d'abord » ;
-     si on remet cette liste à jour, recopier exactement les `?v=`
-     d'`index.html`.
+     reprend exactement les URL, avec leur `?v=`, que charge `index.html`,
+     plus la coquille sans suffixe (`./`, `index.html`, `manifest.json`, les
+     logos allégés `logo-white-sm.png` et `logo-black-sm.png`, `logo-cp.webp`,
+     les icônes). **Tout nouveau `?v=` d'`index.html` se recopie à
+     l'identique dans `APP_SHELL`**, sans doublon (sinon `cache.addAll`
+     rejette tout le lot). Les fichiers du site sont servis « réseau
+     d'abord », le cache ne sert que hors ligne.
    - Un utilisateur bloqué sur une ancienne version peut cliquer sur le
      bouton « Vider le cache et recharger » du menu
      (`clearAppCacheAndReload`).
@@ -628,15 +666,22 @@ lance Vite sur le port 5173). Le service worker n'est jamais actif en local.
 
 ## 14. Points d'attention connus
 
-- **Code dormant encore chargé** : `js/pages-prospection.js` (dépendances dans
-  `js/sync.js` et `doLogout`), `js/pages-fichiers.js` (le hub fichiers est
-  toujours affiché en bas de l'Accueil et `openMyTask` y vit),
-  `renderPageEngagements` (page hors menu mais routée), `renderFichiers`
-  (`js/map.js`), `renderDashboard` (`js/pages.js`), `safeSave`
-  (`js/state.js`). Les retirer demande de déplacer d'abord ce qui sert encore.
+- **Fichiers plus chargés mais encore dans le dépôt** : `js/pages-prospection.js`
+  et `js/pages-fichiers.js` ne figurent plus dans `index.html`. Ce qui servait
+  encore a été déplacé (`migrateProspects` recopiée dans `js/sync.js`,
+  `openMyTask` dans `js/pages-accueil.js`) ; `doLogout` ne touche aux
+  minuteurs de Prospection que s'ils existent (`typeof`) ; le hub Fichiers a
+  quitté l'Accueil ; une adresse vers `prospection` ou `fichiers` retombe sur
+  l'Accueil (`render()`, `js/app.js`).
+- **Code dormant encore chargé** : `renderPageEngagements` (page hors menu mais
+  routée), `renderFichiers` (`js/map.js`, plus atteint : l'onglet `fichiers`
+  est renvoyé vers `workflow` par `renderDetail`), `renderDashboard`
+  (`js/pages.js`), `safeSave` (`js/state.js`). Vérifier qu'aucun appel ne
+  subsiste avant de les retirer.
 - **Google Drive** : `js/gdrive.js` et `js/gdrive-ui.js` ne sont pas chargés ;
-  le partage de fichiers vers la PWA (`_uploadSharedFilesToStudio`) ne peut
-  donc pas aboutir (message « Google Drive non configuré »).
+  le partage de fichiers vers la PWA (`_uploadSharedFilesToStudio`, `js/app.js`)
+  ne peut donc pas aboutir (message « Pas de Drive lié » ou « Google Drive
+  non configuré »).
 - **Noms trompeurs** : `js/auth.js`, `js/utils.js`, `js/simulator.js`,
   `js/animations.js` contiennent bien plus que leur nom (section 8).
 - **Écritures « dernier qui écrit gagne »** pour les listes (tâches,
