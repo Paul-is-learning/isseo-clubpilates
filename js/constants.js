@@ -194,8 +194,11 @@ const STUDIO_COORDS={
   goldgym:{lat:48.7645,lon:1.9350},
 };
 
-const fmt=function(n){return new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0}).format(n||0).replace(/\u202f|\u00a0/g,' ');};
-const fmtN=function(n){return isNaN(n)?'--':new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0}).format(n||0).replace(/\u202f|\u00a0/g,' ');};
+// Formateurs cr\u00e9\u00e9s une seule fois (m\u00eames options) \u00b7 \u00e9vite un Intl.NumberFormat par appel au rendu
+const _NF_EUR=new Intl.NumberFormat('fr-FR',{style:'currency',currency:'EUR',maximumFractionDigits:0});
+const _NF_N=new Intl.NumberFormat('fr-FR',{maximumFractionDigits:0});
+const fmt=function(n){return _NF_EUR.format(n||0).replace(/\u202f|\u00a0/g,' ');};
+const fmtN=function(n){return isNaN(n)?'--':_NF_N.format(n||0).replace(/\u202f|\u00a0/g,' ');};
 const num=function(v,fb){if(fb===undefined)fb=0;var n=parseFloat(v);return isNaN(n)?fb:n;};
 // Expose global formatters for modules that use window.fmt
 window.fmt=fmt;window.fmtN=fmtN;
