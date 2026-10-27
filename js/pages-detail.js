@@ -249,15 +249,22 @@ function renderDetail(){
   var isAdmin=!!S.profile&&!isViewer();
   var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Business plan'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['ia','IA']];
   if(S.detailTab==='fichiers')S.detailTab='workflow'; // onglet retiré (oct. 2026)
+  // Lecteur arrivé sur un studio non autorisé (notification, navigation mémorisée...) : retour à la liste
+  if(!_viewerCanOpenStudio(S.selectedId)){
+    S.view='dashboard';S.selectedId=null;S.mainTab='studios';saveNavState();
+    toast('Accès non autorisé');
+    return renderProjets();
+  }
   // Filtrage onglets pour viewers avec permissions granulaires
-  if(isViewer()&&S.user&&S.adminSettings&&S.adminSettings.viewerPerms&&S.adminSettings.viewerPerms[S.user.id]){
-    var _allowedTabs=S.adminSettings.viewerPerms[S.user.id].tabs||[];
-    if(_allowedTabs.length>0){
-      tabs=tabs.filter(function(t){return _allowedTabs.indexOf(t[0])>=0;});
-      // Si l'onglet courant n'est pas autorisé, basculer sur le premier disponible
-      var _tabIds=tabs.map(function(t){return t[0];});
-      if(_tabIds.indexOf(S.detailTab)<0&&tabs.length>0)S.detailTab=tabs[0][0];
-    }
+  var _allowedTabs=_viewerAllowedTabs();
+  if(_allowedTabs){
+    var _allTabs=tabs;
+    tabs=tabs.filter(function(t){return _allowedTabs.indexOf(t[0])>=0;});
+    // Plus aucun onglet autorisé (ex. seul « fichiers », retiré) : repli sur le premier onglet (Workflow)
+    if(!tabs.length)tabs=_allTabs.slice(0,1);
+    // Si l'onglet courant n'est pas autorisé, basculer sur le premier disponible
+    var _tabIds=tabs.map(function(t){return t[0];});
+    if(_tabIds.indexOf(S.detailTab)<0)S.detailTab=tabs[0][0];
   }
   var content='';
   if(S.detailTab==='workflow')content=renderWorkflow(s);
