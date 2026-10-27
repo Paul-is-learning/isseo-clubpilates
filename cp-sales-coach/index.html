@@ -4626,7 +4626,7 @@ function showProspects(keepScroll){
     </details>
     ${dayGoalHTML()}
     <div class="hm-sec">Pipeline</div>
-    <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${PIPE[k].ic} ${PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
+    <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'👥 Prospects':PIPE[k].ic+' '+PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-tools">
     ${prFilter&&prFilter!=='rappeler'?'':`<div class="pr-tabs">${PR_SEGS.map(([k,l,t])=>{const n=k==='journal'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
       return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${l}${k==='journal'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;}).join('')}
