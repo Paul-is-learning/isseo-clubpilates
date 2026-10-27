@@ -4412,7 +4412,9 @@ function prArrival(p){return p.bentry||p.ts||'';}
 function rdvAt(p){if(!p.rappel)return null;const t=new Date(p.rappel+'T'+(p.rappelH||'09:00')+':00');return isNaN(t.getTime())?null:t;}
 const prOpen=p=>(p.statut==='rappeler'||p.statut==='essai')&&!p.noCall;
 // Rappels « chauds » : en retard ou dans l'heure
-function rdvHot(p){if(!prOpen(p))return false;const t=rdvAt(p);return !!t&&(t.getTime()-Date.now())/60000<=60;}
+// Rappel automatique d'une séquence Boost sur un lead jamais appelé : le lead reste un « Nouveau lead »
+function prAutoNew(p){return !!p.rappel&&p.rappelBy==='Boost'&&p.bauto===true&&p.brap===p.rappel+' '+(p.rappelH||'')&&!prCalls(p).n;}
+function rdvHot(p){if(!prOpen(p)||prAutoNew(p))return false;const t=rdvAt(p);return !!t&&(t.getTime()-Date.now())/60000<=60;}
 function fmtMin(m){m=Math.max(0,Math.round(m));if(m<60)return m+' min';if(m<1440)return Math.floor(m/60)+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'');const d=Math.floor(m/1440);return d+' j';}
 // Alerte rappel : toast + notification système 10 min avant (une seule fois par rappel)
 function rappelTick(){
@@ -4505,7 +4507,7 @@ function dayGoalHTML(){
   const all=PSC();
   const today=(tsParts(new Date().toISOString())||{}).day;
   const nNew=all.filter(p=>prSeg(p)==='new').length;
-  const nRap=all.filter(p=>prOpen(p)&&p.rappel&&rdvAt(p)&&(tsParts(rdvAt(p).toISOString())||{}).day<=today).length;
+  const nRap=all.filter(p=>prOpen(p)&&p.rappel&&!prAutoNew(p)&&rdvAt(p)&&(tsParts(rdvAt(p).toISOString())||{}).day<=today).length;
   const redo=all.filter(p=>prSeg(p)==='redo'),nHot=redo.filter(p=>(prAppetence(p)||{}).tier==='chaud').length;
   const byRep={};let total=0;
   all.forEach(p=>(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||/appel entrant/.test(l0))return;const tp=tsParts(a.ts);if(!tp||tp.day!==today)return;const who=((l0.match(/ par ([^·\n]+?)(?= · |$)/)||[])[1]||'Équipe').trim().split(/\s+/)[0];byRep[who]=(byRep[who]||0)+1;total++;}));
@@ -4532,7 +4534,7 @@ function telHref(t){let d=String(t||'').replace(/[^\d+]/g,'');if(d.startsWith('0
 function prCalls(p){const c=(p.appels||[]).filter(a=>/^📞/.test(String(a.txt||'')));const ok=c.filter(a=>/answered|· décroché/.test(String(a.txt||'').split('\n')[0])).length;return {n:c.length,ok};}
 function prSeg(p){
   if(p.bmember||!prOpen(p))return '';
-  if(p.rappel)return 'rappels';
+  if(p.rappel&&!prAutoNew(p))return 'rappels';
   if(p.statut!=='rappeler')return '';
   const c=prCalls(p);
   if(!c.n)return 'new';
