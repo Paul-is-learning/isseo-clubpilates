@@ -814,7 +814,20 @@ function renderMyTasks(allIds){
     }
   }
   h+='</div>';
-  // ── Fichiers partagés hub ──
-  h+=renderFichiersHub();
   return h;
+}
+
+// Copié de pages-fichiers.js (plus chargé) · seuls appelants : focus card et Mes tâches
+// Ouvre la tâche dans la page studio (onglet Questions & Tâches)
+function openMyTask(sid,todoId){
+  if(!S.studios[sid])return;
+  S.selectedId=sid;
+  S.view='detail';
+  S.page='projets';
+  S.detailTab='echanges';
+  render();
+  setTimeout(function(){
+    var el=document.querySelector('[data-todo-id="'+todoId+'"]');
+    if(el&&el.scrollIntoView)el.scrollIntoView({behavior:'smooth',block:'center'});
+  },200);
 }

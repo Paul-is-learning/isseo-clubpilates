@@ -542,8 +542,9 @@ async function doLogout(){
   // Clear all debounce timers
   Object.keys(_simSaveTimeout).forEach(function(k){clearTimeout(_simSaveTimeout[k]);});
   Object.keys(_tauxTimeout).forEach(function(k){clearTimeout(_tauxTimeout[k]);});
-  if(_lienLoyerTimer){clearTimeout(_lienLoyerTimer);_lienLoyerTimer=null;}
-  if(_ficheLoyerTimer){clearTimeout(_ficheLoyerTimer);_ficheLoyerTimer=null;}
+  // Timers de pages-prospection.js : absents si ce module n'est plus chargé
+  if(typeof _lienLoyerTimer!=='undefined'&&_lienLoyerTimer){clearTimeout(_lienLoyerTimer);_lienLoyerTimer=null;}
+  if(typeof _ficheLoyerTimer!=='undefined'&&_ficheLoyerTimer){clearTimeout(_ficheLoyerTimer);_ficheLoyerTimer=null;}
   try{localStorage.removeItem('isseo_hidden_at');}catch(e){}
   await sb.auth.signOut();
   // Full state reset
