@@ -3740,3 +3740,49 @@ body{background:#F3F1EC}
   .tab{white-space:nowrap;flex-shrink:0;padding:11px 14px;color:#5B6B86;font-weight:500}
   .tab.active{background:transparent;color:#0F1F3D;font-weight:700}
 }
+
+/* ═══ Connexion principale · « A project by » (maquette 2026) ═══ */
+.auth-wrap.lg{display:grid;grid-template-columns:minmax(0,1.12fr) minmax(0,1fr);align-items:stretch;justify-content:stretch;padding:0;background:#FCFBF4;min-height:100vh;position:relative;overflow:hidden}
+.auth-wrap.lg::before,.auth-wrap.lg::after{display:none}
+.lg-l{position:relative;background:#121210;color:#F3EFE4;display:flex;flex-direction:column;align-items:center;padding:clamp(56px,13vh,130px) 32px 0;overflow:hidden;min-height:100vh}
+.lg-by{font-family:'Cormorant Garamond',Georgia,serif;font-style:italic;font-weight:600;font-size:clamp(52px,6.2vw,104px);line-height:1;letter-spacing:-1px;color:#F3EFE4}
+.lg-logos{display:flex;align-items:center;gap:clamp(14px,2vw,30px);margin-top:clamp(28px,5vh,54px);flex-wrap:wrap;justify-content:center}
+.lg-isseo{height:clamp(40px,4.4vw,64px);width:auto}
+.lg-cp{height:clamp(40px,4.2vw,62px);width:auto;filter:brightness(0) invert(1)}
+.lg-x{font-size:clamp(20px,1.8vw,28px);font-weight:300;color:rgba(243,239,228,.75)}
+.lg-cobe{font-family:'Montserrat',sans-serif;font-weight:500;font-size:clamp(30px,3.1vw,48px);letter-spacing:1px;color:#F3EFE4;line-height:1}
+.lg-flower{position:absolute;left:0;right:0;bottom:0;height:58%;background:url(img/login-flower.webp) left bottom/auto 100% no-repeat;pointer-events:none}
+.lg-r{position:relative;display:flex;align-items:center;justify-content:center;padding:48px clamp(24px,6vw,96px);background:#FCFBF4}
+.lg-form{width:100%;max-width:470px;display:flex;flex-direction:column}
+.lg-emb{width:116px;height:116px;border-radius:50%;background:#111;display:flex;align-items:center;justify-content:center;outline:3px dotted #111;outline-offset:5px;margin:6px 0 30px 6px}
+.lg-emb img{width:68%;height:auto}
+.lg-t{margin:0;font-family:'Montserrat',sans-serif;font-weight:800;font-size:clamp(40px,3.6vw,56px);letter-spacing:-1.5px;color:#111;line-height:1.05}
+.lg-s{margin-top:12px;font-size:17px;color:#5E5E58;letter-spacing:.2px}
+.lg-lbl{margin:34px 0 10px;font-size:14px;font-weight:700;letter-spacing:1px;color:#111}
+.lg-lbl+.lg-in,.lg-lbl+.lg-pw{margin-bottom:0}
+.lg-r .lg-lbl:nth-of-type(2){margin-top:26px}
+.auth-wrap.lg input.lg-in{width:100%;box-sizing:border-box;margin:0;padding:17px 20px;border:1px solid #D6D3C8;border-radius:6px;background:#fff;color:#111;font:500 16px 'Montserrat',sans-serif;outline:none;box-shadow:none;transition:border-color .15s,box-shadow .15s}
+.auth-wrap.lg input.lg-in::placeholder{color:#A3A199}
+.auth-wrap.lg input.lg-in:focus{border-color:#111;background:#fff;box-shadow:0 0 0 3px rgba(17,17,17,.08)}
+.lg-pw{position:relative}
+.lg-pw input.lg-in{padding-right:56px}
+.lg-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#555;cursor:pointer;padding:6px;display:flex}
+.lg-forgot{text-align:right;margin-top:12px}
+.lg-forgot button{background:none;border:none;padding:0;color:#3A3A36;font:500 14px 'Montserrat',sans-serif;text-decoration:underline;text-underline-offset:3px;cursor:pointer}
+.lg-err{margin-top:16px;font-size:13px;color:#B42318;background:#FDECEA;border:1px solid #F5C2BC;padding:9px 12px;border-radius:6px}
+.lg-btn{margin-top:30px;width:100%;display:flex;align-items:center;justify-content:center;gap:16px;padding:17px;border:none;border-radius:6px;background:#111;color:#fff;font:600 17px 'Montserrat',sans-serif;letter-spacing:.3px;cursor:pointer;transition:background .15s,transform .1s}
+.lg-btn:hover{background:#000}.lg-btn:active{transform:scale(.99)}
+.lg-priv{display:flex;align-items:center;gap:14px;margin-top:40px;color:#4A4A45;font-size:14.5px}
+.lg-motto{position:absolute;right:clamp(24px,4vw,60px);bottom:clamp(24px,5vh,60px);color:#8E8C83;font-size:15px;letter-spacing:1.5px}
+@media(max-width:900px){
+  .auth-wrap.lg{grid-template-columns:1fr;grid-template-rows:auto 1fr;overflow-y:auto}
+  .lg-l{min-height:0;padding:40px 20px 150px}
+  .lg-by{font-size:46px}
+  .lg-isseo{height:36px}.lg-cp{height:26px}.lg-cobe{font-size:26px}
+  .lg-flower{height:150px;background-size:auto 100%}
+  .lg-r{padding:34px 20px 80px}
+  .lg-emb{width:82px;height:82px;margin-bottom:22px}
+  .lg-t{font-size:38px}
+  .lg-lbl{margin-top:26px}
+  .lg-motto{left:20px;right:auto;bottom:24px}
+}

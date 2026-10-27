@@ -140,43 +140,34 @@ function toggleAuthSound(){
 }
 
 function renderAuth(){
-  return '<div class="auth-wrap">'
-    // ── Background vidéo cinematic ────────────────────────────────────────
-    +'<video class="auth-bg-video" id="auth-bg-video" autoplay muted loop playsinline preload="auto" poster="video/login-bg-poster.jpg">'
-    +'<source src="video/login-bg.mp4" type="video/mp4">'
-    +'</video>'
-    // Overlay sombre radial : assombrit les bords, laisse le centre respirer
-    +'<div class="auth-bg-overlay"></div>'
-    // Bouton mute/unmute (discret, en bas à droite)
-    +'<button class="auth-sound-btn" id="auth-sound-btn" onclick="toggleAuthSound()" aria-label="Activer le son" title="Activer le son"><span id="auth-sound-icon">🔇</span></button>'
-    // Particules décoratives (conservées, plus subtiles au-dessus de la vidéo)
-    +'<div style="position:absolute;top:15%;left:10%;width:300px;height:300px;border-radius:50%;background:radial-gradient(circle,rgba(26,58,107,0.07) 0%,transparent 70%);pointer-events:none;z-index:2"></div>'
-    +'<div style="position:absolute;bottom:10%;right:15%;width:250px;height:250px;border-radius:50%;background:radial-gradient(circle,rgba(15,110,86,0.05) 0%,transparent 70%);pointer-events:none;z-index:2"></div>'
-    +'<div class="auth-box">'
-    // Logos en blanc — animés
-    +'<div class="auth-logos">'
-    +'<div class="auth-logo-wrap isseo-wrap"><div class="auth-logo-halo"></div><img src="logo-black.png" class="auth-logo" alt="Isseo"></div>'
-    +'<span class="auth-sep">&times;</span>'
-    +'<div class="auth-logo-wrap cp-wrap"><div class="auth-logo-halo"></div><img src="logo-cp.webp" class="auth-logo auth-logo-cp" alt="Club Pilates"></div>'
+  var eye='<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/></svg>';
+  var lock='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
+  var arrow='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg>';
+  return '<div class="auth-wrap lg">'
+    // ── Panneau marque : « A project by » + fleur en relief ──
+    +'<section class="lg-l">'
+    +'<div class="lg-by">A project by</div>'
+    +'<div class="lg-logos"><img src="logo-white.png" class="lg-isseo" alt="Isseo"><span class="lg-x">&times;</span><img src="logo-cp.webp" class="lg-cp" alt="Club Pilates"><span class="lg-x">&times;</span><span class="lg-cobe">COBE</span></div>'
+    +'<div class="lg-flower" aria-hidden="true"></div>'
+    +'</section>'
+    // ── Formulaire ──
+    +'<section class="lg-r"><div class="lg-form">'
+    +'<div class="lg-emb"><img src="img/flower-white.png" alt=""></div>'
+    +'<h1 class="lg-t">Bienvenue.</h1>'
+    +'<div class="lg-s">Connectez-vous à votre espace de gestion.</div>'
+    +'<label class="lg-lbl" for="ae">Adresse e-mail</label>'
+    +'<input id="ae" class="lg-in" type="email" placeholder="vous@exemple.fr" autocomplete="email" onkeydown="if(event.key===\'Enter\')document.getElementById(\'ap\').focus()"/>'
+    +'<label class="lg-lbl" for="ap">Mot de passe</label>'
+    +'<div class="lg-pw"><input id="ap" class="lg-in" type="password" placeholder="••••••••••" autocomplete="current-password" onkeydown="if(event.key===\'Enter\')doLogin()"/>'
+    +'<button type="button" class="lg-eye" aria-label="Afficher le mot de passe" onclick="var i=document.getElementById(\'ap\');i.type=i.type===\'password\'?\'text\':\'password\'">'+eye+'</button></div>'
+    +'<div class="lg-forgot"><button id="forgot-pwd-btn" type="button" onclick="doForgotPassword()">Mot de passe oublié ?</button></div>'
+    +'<div id="aerr" class="lg-err" style="display:none"></div>'
+    +'<button class="lg-btn" onclick="doLogin()">Se connecter '+arrow+'</button>'
+    +'<div class="lg-priv">'+lock+'<span>Espace privé · ISSEO × Club Pilates × COBE</span></div>'
     +'</div>'
-    // Sous-titre
-    +'<div style="text-align:center;font-size:12px;color:rgba(255,255,255,0.35);margin-bottom:6px;letter-spacing:2px;text-transform:uppercase;font-weight:500">Plateforme de suivi</div>'
-    +'<div style="text-align:center;font-size:11px;color:rgba(255,255,255,0.2);margin-bottom:28px">Gestion de projets Club Pilates</div>'
-    // Séparateur subtil
-    +'<div style="height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,0.08),transparent);margin-bottom:28px"></div>'
-    // Champs
-    +'<label style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Email</label>'
-    +'<input id="ae" type="email" placeholder="votre@email.com" autocomplete="email"/>'
-    +'<label style="font-size:10px;font-weight:600;color:rgba(255,255,255,0.4);text-transform:uppercase;letter-spacing:1px;display:block;margin-bottom:6px">Mot de passe</label>'
-    +'<input id="ap" type="password" placeholder="••••••••" autocomplete="current-password"/>'
-    +'<div id="aerr" style="font-size:12px;color:#ef4444;margin-bottom:10px;display:none;background:rgba(239,68,68,0.1);padding:8px 12px;border-radius:8px;border:1px solid rgba(239,68,68,0.2)"></div>'
-    // Bouton
-    +'<button onclick="doLogin()" style="width:100%;padding:14px;background:linear-gradient(135deg,#fff,#e8e8e8);color:#0a0a0a;border:none;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:all .2s ease;letter-spacing:0.5px;margin-top:4px" onmouseover="this.style.transform=\'translateY(-1px)\';this.style.boxShadow=\'0 8px 25px rgba(255,255,255,0.15)\'" onmouseout="this.style.transform=\'none\';this.style.boxShadow=\'none\'">Se connecter</button>'
-    // Mot de passe oublié
-    +'<div style="text-align:center;margin-top:16px"><button id="forgot-pwd-btn" onclick="doForgotPassword()" style="background:none;border:none;color:rgba(255,255,255,0.5);font-size:12px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px;transition:color .15s" onmouseover="this.style.color=\'rgba(255,255,255,0.85)\'" onmouseout="this.style.color=\'rgba(255,255,255,0.5)\'">Mot de passe oubli&eacute; ?</button></div>'
-    // Footer
-    +'<div style="text-align:center;margin-top:24px;font-size:10px;color:rgba(255,255,255,0.15)">ISSEO × Club Pilates · Espace sécurisé</div>'
-    +'</div></div>';
+    +'<div class="lg-motto">L’exigence, au quotidien.</div>'
+    +'</section>'
+    +'</div>';
 }
 
 var _adminUsers=[];// cache liste utilisateurs chargée async
