@@ -3725,14 +3725,8 @@ body{background:#F3F1EC}
   .sidebar-bottom .sb-name{font-size:15px}
   .sidebar-bottom .sb-role{font-size:12.5px;color:rgba(255,255,255,.55)}
 }
-/* Grand écran : tout le contenu passe à l'échelle des maquettes (textes, cartes, anneaux) */
-@media(min-width:1280px){
-  .main-content{zoom:1.16;margin-left:calc(256px / 1.16)}
-  .app{max-width:1240px;padding:1.75rem 2rem}
-}
-@media(min-width:1700px){
-  .main-content{zoom:1.24;margin-left:calc(256px / 1.24)}
-}
+/* (Zoom grand écran retiré : il décalait les fenêtres superposées et les menus) */
+@media(min-width:1280px){.app{max-width:1240px;padding:1.75rem 2rem}}
 /* Onglets de fiche studio : une seule ligne, soulignés (maquette) */
 @media(min-width:769px){
   .tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;gap:4px;border-bottom:1px solid #E3E0D8}
