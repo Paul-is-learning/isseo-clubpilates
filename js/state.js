@@ -77,9 +77,11 @@ var S={
 };
 
 async function loadAll(){
-  var res=await sb.from('studios').select('id,data');
+  var res=await sb.from('studios').select('id,data,updated_at');
   if(res.error){console.error('loadAll error:',res.error);toast('Erreur chargement données: '+res.error.message);return;}
   var data=res.data||[];
+  // Dates de mise à jour mémorisées : la synchro de secours ne retélécharge ensuite que les lignes modifiées
+  if(typeof _syncTimestamps!=='undefined')data.forEach(function(r){if(r.updated_at)_syncTimestamps[r.id]=r.updated_at;});
   var studios={};
   S.files={};S.depenses={};S.messages={};S.adherents={};S.topics={};S.todos={};
   S.people={};S.shifts={};S.shiftTemplates={};S.shiftProposals={};

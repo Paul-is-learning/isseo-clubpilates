@@ -44,11 +44,10 @@ function render(){
         else if(S.mainTab==='admin')pageContent=renderProjetsAdmin();
         else pageContent=renderProjets();
       }
-      else if(S.page==='prospection')pageContent=renderProspection();
+      else if(S.page==='prospection'||S.page==='fichiers'){S.page='accueil';pageContent=renderAccueil();} // rubriques retirées (oct. 2026)
       else if(S.page==='bp')pageContent=renderBPConsolide();
       else if(S.page==='engagements')pageContent=renderPageEngagements();
       else if(S.page==='collab')pageContent=renderCollab();
-      else if(S.page==='fichiers')pageContent=renderFichiersPage();
       else if(S.page==='equipe'&&typeof renderEquipe==='function')pageContent=renderEquipe();
       else if(S.page==='introclass'&&typeof renderIntroClass==='function')pageContent=renderIntroClass();
       else if(S.page==='how-it-works'&&typeof renderHowItWorks==='function')pageContent=renderHowItWorks();
@@ -68,8 +67,6 @@ function render(){
           {id:'accueil',l:'Accueil',svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>'},
           {id:'projets',l:'Studios',svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
           {id:'collab',l:'Collab',svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>'},
-          {id:'prospection',l:'Prospect',svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
-          {id:'fichiers',l:'Fichiers',svg:'<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>'}
         ];
         var _btnav='<nav>';
         _btLinks.forEach(function(bl){
@@ -130,7 +127,7 @@ function _restoreFromHash(){
       return true;
     }
   }
-  var validPages=['accueil','projets','collab','prospection','bp'];
+  var validPages=['accueil','projets','collab','bp'];
   if(validPages.indexOf(parts[0])>=0){S.page=parts[0];S.view='dashboard';return true;}
   return false;
 }
@@ -255,6 +252,10 @@ sb.auth.getSession().then(function(res){
     }
     try{localStorage.removeItem('isseo_hidden_at');}catch(e){}
     S.user=session.user;
+    // Écran d'attente (au lieu d'une page blanche) ; message clair si la base ne répond pas
+    var _rootW=document.getElementById('root');
+    if(_rootW&&!_rootW.innerHTML)_rootW.innerHTML='<div id="boot-wait" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#5B6B86;font-size:15px"><img src="logo-black.png" alt="Isseo" style="height:44px;opacity:.85"><div id="boot-wait-msg">Chargement de vos données…</div></div>';
+    setTimeout(function(){var m=document.getElementById('boot-wait-msg');if(m&&!S._dataLoaded)m.innerHTML='La base de données met du temps à répondre.<br><button onclick="location.reload()" style="margin-top:12px;padding:10px 18px;border:none;border-radius:10px;background:#0F1F3D;color:#fff;font-weight:600;cursor:pointer">Réessayer</button>';},20000);
     sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){
       S.profile=r.data;
       loadAll().then(function(){
@@ -268,7 +269,7 @@ sb.auth.getSession().then(function(res){
         var _hasDeeplink=(location.hash||'').length>1;
         if(!_hasDeeplink){S.page='accueil';S.view='dashboard';S.selectedId=null;S.mainTab='studios';saveNavState();}
         if(typeof _restoreFromHash==='function')_restoreFromHash();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
-        _loadAllProfiles();loadProspects();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
+        _loadAllProfiles();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
         if(window.isseoPush&&typeof window.isseoPush.refresh==='function')window.isseoPush.refresh();
         if(typeof maybeStartOnboardingTour==='function')maybeStartOnboardingTour();
         // Deeplink email → ouvre directement la tâche : #tache=SID:TASKID

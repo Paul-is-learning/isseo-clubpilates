@@ -490,7 +490,7 @@ function handleNotifClick(notifId,studioId,type){
   markNotifRead(notifId);
   S.notifOpen=false;
   if(type==='prospect'){
-    S.page='prospection';render();return;
+    S.page='accueil';render();return; // rubrique Prospection retirée
   }
   if(type==='rapport'){
     // Le rapport hebdo n'a pas de page dédiée, juste marquer comme lu
@@ -503,7 +503,7 @@ function handleNotifClick(notifId,studioId,type){
   if(S.studios[studioId]){
     S.selectedId=studioId;S.view='detail';
     if(type==='message')S.detailTab='echanges';
-    else if(type==='document')S.detailTab='fichiers';
+    else if(type==='document')S.detailTab='workflow';
     else if(type==='depense')S.detailTab='engagements';
     else if(type==='statut')S.detailTab='workflow';
     else if(type==='echeance')S.detailTab='echanges';

@@ -185,7 +185,7 @@ function _resetInactivityTimer(){
 }
 // ── Présence utilisateur (heartbeat) ─────────────────────────────────────────
 async function updatePresence(){
-  if(!S.user)return;
+  if(!S.user||document.hidden)return; // onglet caché : pas d'écriture (« vu à » reste celui du dernier passage actif)
   var now=new Date().toISOString();
   var nom=(S.profile&&S.profile.nom)||'';
   // Charger la présence existante pour merge
@@ -331,7 +331,6 @@ async function doLogin(){
   recordLastLogin();
   // Notifications + autres profils + prospects (mêmes étapes que le flux session-restore)
   _loadAllProfiles();
-  if(typeof loadProspects==='function')loadProspects();
   loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});
   subscribeNotifications();
   if(window.isseoPush&&typeof window.isseoPush.refresh==='function')window.isseoPush.refresh();

@@ -247,7 +247,8 @@ function renderDetail(){
   var s=S.studios[S.selectedId];
   if(!s)return '';
   var isAdmin=!!S.profile&&!isViewer();
-  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Business plan'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
+  var tabs=[['workflow','Workflow'],['adherents','Adhérents & Prévisionnels'],['forecast','Business plan'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['ia','IA']];
+  if(S.detailTab==='fichiers')S.detailTab='workflow'; // onglet retiré (oct. 2026)
   // Filtrage onglets pour viewers avec permissions granulaires
   if(isViewer()&&S.user&&S.adminSettings&&S.adminSettings.viewerPerms&&S.adminSettings.viewerPerms[S.user.id]){
     var _allowedTabs=S.adminSettings.viewerPerms[S.user.id].tabs||[];

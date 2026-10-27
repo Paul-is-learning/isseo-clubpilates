@@ -166,12 +166,12 @@ function subscribeDataChanges(){
         syncDataFallback();
         // Restaurer polling normal
         if(_syncInterval)clearInterval(_syncInterval);
-        _syncInterval=setInterval(syncDataFallback,60000);
+        _syncInterval=setInterval(syncDataFallback,SYNC_POLL_OK);
       } else if(status==='CHANNEL_ERROR'||status==='TIMED_OUT'){
         console.warn('[Realtime] Erreur \u2014 reconnexion...');
         // Polling rapide pendant la coupure
         if(_syncInterval)clearInterval(_syncInterval);
-        _syncInterval=setInterval(syncDataFallback,10000);
+        _syncInterval=setInterval(syncDataFallback,SYNC_POLL_DOWN);
         // Reconnexion avec backoff exponentiel
         _rtBackoff=Math.min((_rtBackoff||5)*2,30);
         if(_realtimeSub){try{sb.removeChannel(_realtimeSub);}catch(e){}_realtimeSub=null;}
@@ -180,25 +180,35 @@ function subscribeDataChanges(){
     });
 }
 
-// Fallback : polling complet toutes les 60s (en cas de déconnexion Realtime)
+// Filet de sécurité du temps réel : relevé léger (identifiants + dates de mise à jour),
+// puis téléchargement des seules lignes modifiées. Onglet caché : aucune requête,
+// rattrapage dès le retour sur l'onglet. (Avant : toute la table toutes les 60 s, 10 s en panne.)
+var SYNC_POLL_OK=5*60*1000, SYNC_POLL_DOWN=30000;
+var _syncBusy=false;
 async function syncDataFallback(){
   if(S.editMoisIdx!==null||S.showNewForm)return;
+  if(document.hidden||_syncBusy)return;
+  _syncBusy=true;
   try{
-    var res=await sb.from('studios').select('id,data,updated_at');
-    if(res.error){console.warn('Sync fallback error:',res.error.message);return;}
-    var rows=res.data||[];
+    var head=await sb.from('studios').select('id,updated_at');
+    if(head.error){console.warn('Sync fallback error:',head.error.message);return;}
+    var ids=(head.data||[]).filter(function(r){return !r.updated_at||_syncTimestamps[r.id]!==r.updated_at;}).map(function(r){return r.id;});
     var changed=false;
-    rows.forEach(function(r){
-      if(_handleRowChange(r))changed=true;
-    });
+    for(var i=0;i<ids.length;i+=40){
+      var res=await sb.from('studios').select('id,data,updated_at').in('id',ids.slice(i,i+40));
+      if(res.error){console.warn('Sync fallback error:',res.error.message);return;}
+      (res.data||[]).forEach(function(r){if(_handleRowChange(r))changed=true;});
+    }
     if(changed)_tryRender();
   }catch(e){console.warn('Sync fallback exception:',e.message);}
+  finally{_syncBusy=false;}
 }
+document.addEventListener('visibilitychange',function(){if(!document.hidden&&S.user&&S._dataLoaded)syncDataFallback();});
 
 function startSync(){
   if(_syncInterval)clearInterval(_syncInterval);
   subscribeDataChanges();
-  _syncInterval=setInterval(syncDataFallback,60000);
+  _syncInterval=setInterval(syncDataFallback,SYNC_POLL_OK);
 }
 
 function stopSync(){

@@ -148,8 +148,9 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   // Lecture incomplète = on n'écrit rien (jamais d'import partiel)
   if (!contacts.ok || !acts.ok || users.status !== 200 || !deleted.ok)
     return json({ error: "Lecture Boost incomplète", http: { contacts: contacts.status, activites: acts.status, users: users.status, suppressions: deleted.status } }, 502);
-  await getRow(admin, "_coach_prospects"); // migration douce si besoin
+  // Une seule lecture de la grosse ligne (la migration depuis `studios` est terminée)
   const { data: row } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
+  if (!row) return json({ error: "Liste des fiches introuvable · rien n'est écrit" }, 503);
   const store = row?.data || {};
   const access = await getRow(admin, "_coach_access");
   // deno-lint-ignore no-explicit-any

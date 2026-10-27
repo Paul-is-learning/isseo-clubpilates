@@ -17,10 +17,7 @@
     {id:'accueil',label:'Accueil',ico:'🏠',desc:'Briefing du jour · KPIs réseau'},
     {id:'projets',label:'Mes studios',ico:'🏢',desc:'Vue grille + détail studio'},
     {id:'bp',label:'BP consolidé',ico:'📊',desc:'CA réseau · EBITDA global'},
-    {id:'prospection',label:'Prospection',ico:'🔍',desc:'Pipeline chaud/tiède/froid'},
-    {id:'engagements',label:'Engagements',ico:'📅',desc:'Workflow ouverture studios'},
-    {id:'collab',label:'Collab',ico:'💬',desc:'Messages · tâches équipe'},
-    {id:'fichiers',label:'Fichiers',ico:'📁',desc:'Docs par studio · Drive'}
+    {id:'collab',label:'Collab',ico:'💬',desc:'Messages · tâches équipe'}
   ];
 
   // ── Styles ─────────────────────────────────────────────────────────────────

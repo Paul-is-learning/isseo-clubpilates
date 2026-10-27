@@ -47,6 +47,7 @@ function _startAdminPresenceRefresh(){
   _stopAdminPresenceRefresh();
   _adminPresenceInterval=setInterval(async function(){
     if(S.mainTab!=='admin'){_stopAdminPresenceRefresh();return;}
+    if(document.hidden)return;
     await loadPresence();
     render();
   },30000);

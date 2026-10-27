@@ -66,6 +66,9 @@ function markBq(next: any, ex: any, by: string): boolean {
 // deno-lint-ignore no-explicit-any
 async function pushBoostNow(admin: any) {
   try {
+    // Signal « quelque chose à envoyer » : le planificateur ne lance boost-push que si ce signal est plus récent que le dernier passage complet
+    const { data: pend } = await admin.from("coach_store").select("data").eq("id", "_boost_pending").maybeSingle();
+    await admin.from("coach_store").upsert({ id: "_boost_pending", data: { ...(pend?.data || {}), at: new Date().toISOString() }, updated_at: new Date().toISOString() });
     const { data } = await admin.from("coach_store").select("data").eq("id", "_boost_cron").maybeSingle();
     const key = String(data?.data?.key || "");
     if (!key) return;

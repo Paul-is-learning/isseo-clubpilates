@@ -82,6 +82,9 @@ serve(async (req: Request) => {
     if (action !== "run") return json({ error: "Action inconnue" }, 400);
 
     const nowIso = new Date().toISOString();
+    // Rien en attente depuis le dernier passage complet : on ne lit même pas la liste (base allégée)
+    const pend = await getRow(admin, "_boost_pending");
+    if (pend.done && (!pend.at || String(pend.at) <= String(pend.done)) && url.searchParams.get("force") !== "1") return json({ ok: true, mode, idle: true });
     const { data: row } = await admin.from("coach_store").select("data").eq("id", "_coach_prospects").maybeSingle();
     // deno-lint-ignore no-explicit-any
     const list: any[] = row?.data?.prospects || [];
@@ -201,6 +204,7 @@ serve(async (req: Request) => {
 
     // Marquer les envois sur les fiches · écriture atomique, réessayée si un téléphone écrit au même moment
     const ids = [...Object.keys(results).filter((id) => !results[id].retry), ...Object.keys(iresults).filter((id) => !iresults[id].retry), ...Object.keys(nresults).filter((id) => !nresults[id].retry)];
+    let marked = !ids.length;
     for (let attempt = 0; attempt < 4 && ids.length; attempt++) {
       const { data: cur } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
       // deno-lint-ignore no-explicit-any
@@ -225,10 +229,17 @@ serve(async (req: Request) => {
       const { data: upd } = await admin.from("coach_store")
         .update({ data: { ...(cur?.data || {}), prospects: plist }, updated_at: new Date().toISOString() })
         .eq("id", "_coach_prospects").eq("updated_at", cur?.updated_at).select("id");
-      if (upd && upd.length) break;
+      if (upd && upd.length) { marked = true; break; }
       await new Promise((r) => setTimeout(r, 300));
     }
     if (Object.keys(results).length || Object.keys(iresults).length || Object.keys(nresults).length) await putRow(admin, "_boost_push", { ...cfg, mode, log: log.slice(-200), last: nowIso });
+    // File entièrement traitée (aucun report, aucun nouvel essai) : passage complet noté, le planificateur se met en veille
+    const retries = [results, iresults, nresults].reduce((n, m) => n + Object.values(m).filter((x) => x.retry).length, 0);
+    const left = (ntodo.length - Object.keys(nresults).length) + (itodo.length - Object.keys(iresults).length) + skipped + retries;
+    if (!left && marked) {
+      const pnow = await getRow(admin, "_boost_pending");
+      await putRow(admin, "_boost_pending", { ...pnow, done: nowIso });
+    }
     return json({ ok: true, mode, creations: Object.keys(nresults).length, coordonnees: Object.keys(iresults).length, en_file: todo.length, traites: Object.keys(results).length, ecritures: writes, reportes: skipped });
   } catch (err) {
     console.error("boost-push", (err as Error).message);

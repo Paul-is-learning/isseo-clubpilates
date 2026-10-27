@@ -111,7 +111,7 @@ function setDetailTab(t){
   if(t==='echanges'&&S.selectedId){
     rechargerMessages(S.selectedId);
     _msgPollInterval=setInterval(function(){
-      if(S.detailTab==='echanges'&&S.selectedId){rechargerMessages(S.selectedId);}
+      if(S.detailTab==='echanges'&&S.selectedId){if(!document.hidden)rechargerMessages(S.selectedId);}
       else{clearInterval(_msgPollInterval);_msgPollInterval=null;}
     },8000); // toutes les 8 secondes
   }
