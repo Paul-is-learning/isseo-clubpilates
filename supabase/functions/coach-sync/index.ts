@@ -465,6 +465,9 @@ serve(async (req) => {
       const stRow = { data: await getRow(admin, ROW_STATS) };
       let events: any[] = (stRow?.data?.events as any[]) || [];
       const voids: Record<string, string> = (stRow?.data?.voids as Record<string, string>) || {};
+      // Une vente annulée ne revient jamais, même si elle a été réécrite avant l'annulation mémorisée
+      const voided = (e: any) => e?.type === "abo" && voids[String(e.k).replace(/:abo$/, "")] && String(e.ts || "") <= voids[String(e.k).replace(/:abo$/, "")];
+      if (events.some(voided)) { events = events.filter((e) => !voided(e)); await putRow(admin, ROW_STATS, { events, voids }); }
 
       if (action === "stats_push") {
         const incoming: any[] = Array.isArray(body.events) ? body.events : [];

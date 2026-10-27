@@ -3323,6 +3323,8 @@ function boostBadges(p){
   return `<div class="pr-bbs">${bl!==stLabel(p)?pill('Boost · '+esc(bl),'#EEF2FB','#2A3F6B','#D5DDF0'):pill('✓ Boost','#EEF2FB','#2A3F6B','#D5DDF0')}${p.bmember?pill('🏅 Adhérent','#EAF6F0','#1F7A55','#BFE8D6'):''}${p.src?srcLogo(p.src):''}${p.noCall?pill('📵 Ne pas appeler','#FDECE8','#B4300F','#F5C0AE'):''}${p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?pill('⏳ envoi vers Boost','#FFF6E0','#8A5A00','#F3D58C'):p.bqe?`<span class="pr-bb" style="background:#FDECE8;color:#B4300F;border-color:#F5C0AE" title="${esc(p.bqe)}">⚠️ Boost n'a pas accepté</span>`:''}</div>`;
 }
 let _SVOID={};
+// Vente annulée par un responsable : ce téléphone ne doit plus la renvoyer
+function _purgeVoidEvq(){const n=EVQ.length;EVQ=EVQ.filter(e=>!(e.type==='abo'&&_SVOID[String(e.k).split(':')[0]]&&String(e.ts||'')<=_SVOID[String(e.k).split(':')[0]]));if(EVQ.length!==n)_persistEvq();}
 function buildStatsMap(events,prospects){
   const map={};const _void=(id,ts)=>_SVOID[id]&&String(ts||'')<=_SVOID[id];
   const touch=id=>map[id]||(map[id]={rep:'',nom:'',appel:false,essai:false,venu:false,abo:false,perdu:false,pack:'',prime:0,ts:'',aboTs:''});
@@ -3332,7 +3334,8 @@ function buildStatsMap(events,prospects){
     const m=touch(p.id);m.rep=m.rep||p.rep||'';m.nom=m.nom||p.nom||'';m.appel=true;m.ts=m.ts||p.ts||'';
     if(p.statut==='essai')m.essai=true;
     if(p.statut==='venu'){m.essai=true;m.venu=true;}
-    if(p.statut==='abo'&&!_void(p.id,p.maj||p.ts)){m.abo=true;if(p.pack)m.pack=p.pack;m.aboTs=m.aboTs||p.maj||p.ts||'';m.v2=m.v2||p.v2||'';if(p.fullCom)m.fullCom=true;m.icId=m.icId||p.icId||'';}
+    if(p.statut==='abo'&&!_SVOID[p.id]){ // fiche d'une vente annulée : seule une nouvelle vente (événement daté après l'annulation) la refait compter
+      m.abo=true;if(p.pack)m.pack=p.pack;m.aboTs=m.aboTs||p.maj||p.ts||'';m.v2=m.v2||p.v2||'';if(p.fullCom)m.fullCom=true;m.icId=m.icId||p.icId||'';}
     if(p.statut==='perdu')m.perdu=true;
   });
   (events||[]).forEach(e=>{
@@ -4170,7 +4173,7 @@ async function loadHomePerf(){
   if(_hpBusy||!COACH_CODE)return;_hpBusy=true;
   try{
     const [d]=await Promise.all([syncCall('stats_pull'),fetchAvatars()]);
-    _SVOID=d.voids||{};const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
+    _SVOID=d.voids||{};_purgeVoidEvq();const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
     const rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name)}))
       .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
@@ -4226,7 +4229,7 @@ function showPerf(){_vReg('perf');
   $('#topPhase').textContent='Performances';$('#topSub').textContent='';
   $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';relocateBoxes();
-  Promise.all([syncCall('stats_pull'),fetchAvatars(),trainPull(),(COACH_ROLE==='admin'||IS_MGR)?syncCall('team_list').then(d=>{window._TEAM=d.invites||[];}).catch(()=>{}):Promise.resolve()]).then(([d])=>{_SVOID=d.voids||{};renderPerf(d.events||[]);}).catch(e=>{
+  Promise.all([syncCall('stats_pull'),fetchAvatars(),trainPull(),(COACH_ROLE==='admin'||IS_MGR)?syncCall('team_list').then(d=>{window._TEAM=d.invites||[];}).catch(()=>{}):Promise.resolve()]).then(([d])=>{_SVOID=d.voids||{};_purgeVoidEvq();renderPerf(d.events||[]);}).catch(e=>{
     if(e.message!=='code')renderPerf(null);
   });
 }
