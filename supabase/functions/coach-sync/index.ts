@@ -995,8 +995,17 @@ serve(async (req) => {
 
       if (action === "delete") {
         const rm: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
+        const gone = list.filter((p) => rm.includes(p.id) && inMine(p)).map((p) => String(p.id));
         list = list.filter((p) => !rm.includes(p.id) || !inMine(p));
         if (!(await saveList())) continue replay;
+        // Fiche supprimée dans l'outil : mémorisée comme celles supprimées dans Boost, pour qu'un appareil
+        // resté ouvert avec l'ancienne copie ne la recrée jamais (le push ignore les ids en pierre tombale)
+        if (gone.length) {
+          const t = await getRow(admin, "_coach_tomb");
+          const ids = [...new Set([...((t.ids as string[]) || []), ...gone])].slice(-5000);
+          await putRow(admin, "_coach_tomb", { ...t, ids });
+          for (const g of gone) if (!tomb.includes(g)) tomb.push(g);
+        }
         return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, tomb });
       }
 
