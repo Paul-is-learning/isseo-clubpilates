@@ -681,6 +681,17 @@ a.menu-item{text-decoration:none;color:inherit}
 .src-ic svg{width:14px;height:14px}
 .src-txt{font-size:10px;font-weight:700;color:var(--ink-mid);background:#F6F4EE;border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 .pl-arr{white-space:nowrap}
+.icm{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
+.icm-h{font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-mid);text-align:center;padding:2px 0}
+.icm-c{min-height:78px;background:#fff;border:1px solid var(--cream-line);border-radius:10px;padding:5px;cursor:pointer;display:flex;flex-direction:column;gap:3px}
+.icm-c:hover{border-color:var(--lav-ink)}.icm-c.off{background:transparent;border:0;cursor:default}
+.icm-c.past{opacity:.6}.icm-c.today{border:2px solid var(--accent)}
+.icm-d{font-size:11.5px;font-weight:800;color:var(--ink)}
+.icm-s{display:flex;justify-content:space-between;gap:4px;font-size:10.5px;color:var(--lav-ink);background:var(--lav);border-radius:6px;padding:2px 5px;white-space:nowrap;overflow:hidden}
+.icm-s b{font-weight:800}.icm-s.virt{background:transparent;border:1px dashed #C9C2B2;color:var(--ink-mid)}
+.icm-s.done{background:#EAF6F0;color:#1F7A55}.icm-s.ann{background:#F6F4EE;color:#8C95A8;text-decoration:line-through}
+.icm-sum{font-size:12.5px;color:var(--ink-soft);margin:2px 0 8px}
+@media(max-width:640px){.icm-c{min-height:56px}.icm-s{font-size:9.5px;padding:1px 3px}}
 .tm-more{margin-left:4px;border:1px dashed #C9C2B2;background:#fff;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800;color:var(--lav-ink);cursor:pointer}
 .pl-tb{border:1px solid var(--cream-line);background:#fff;border-radius:99px;padding:4px 11px;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer}
 .pl-tb.on.t-chaud{background:#FDEBE3;color:#B4430F;border-color:#F5C9B2}
@@ -3808,12 +3819,48 @@ function renderICPage(){
       <span class="sync-badge ok">📍 ${esc(icStudio()||'Tous les studios')}</span></div>
     <div class="ic-week"><button onclick="_icWeek--;icEnsureWeek();renderICPage()">‹</button><b>Semaine du ${fmtD(days[0])}</b><button onclick="_icWeek++;icEnsureWeek();renderICPage()">›</button>${_icWeek?`<button class="ic-today" onclick="_icWeek=0;icEnsureWeek();renderICPage()">Aujourd'hui</button>`:''}</div>
     ${days.map(d=>{const ds=sess.filter(s=>s.date===d);return ds.length?`<div class="ic-day">${fmtD(d)}</div>`+ds.map(card).join(''):'';}).join('')||'<div class="pr-empty">Aucune séance cette semaine.<br><small>Ajoutez-en une ou configurez le planning type.</small></div>'}
+    ${icMonthHTML()}
     <div class="ic-actions">
       <button class="pr-act" onclick="icAddSession()">➕ Séance ponctuelle</button>
       ${(COACH_ROLE==='admin'||IS_MGR)?'<button class="pr-act" onclick="icSlotsUI()">⚙️ Planning type</button><button class="pr-act" onclick="icCoachsUI()">👩‍🏫 Coachs</button>':''}
     </div>
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
+}
+// ── Vue par mois : séances prévues (et créneaux du planning type), inscrits / places ──
+let _icMonthOff=0;
+function icMonthHTML(){
+  const now=new Date();now.setHours(12,0,0,0);
+  const m0=new Date(now.getFullYear(),now.getMonth()+_icMonthOff,1,12);
+  const y=m0.getFullYear(),mo=m0.getMonth(),days=new Date(y,mo+1,0).getDate();
+  const lead=(m0.getDay()+6)%7; // lundi = 0
+  const today=_dstr(now);
+  const ok=s=>!icStudio()||s&&_sk(s.studio)===_sk(icStudio());
+  const cells=[];
+  for(let i=0;i<lead;i++)cells.push('<div class="icm-c off"></div>');
+  for(let d=1;d<=days;d++){
+    const date=_dstr(new Date(y,mo,d,12)),wd=(new Date(y,mo,d,12).getDay()+6)%7;
+    const real=IC.sessions.filter(s=>s.date===date&&ok(s));
+    // créneaux du planning type pas encore créés pour ce jour (affichés, sans être enregistrés)
+    const virt=date<today?[]:IC.slots.filter(s=>s.actif!==false&&s.jour===wd&&ok(s)&&!real.some(r=>r.id==='ics_'+s.id+'_'+date||r.heure===s.heure));
+    const items=[...real.map(s=>({h:s.heure,coach:s.coach,ann:s.statut==='annulee',faite:s.statut==='faite',n:icTaken(s)})),...virt.map(s=>({h:s.heure,coach:s.coach,v:true,n:0}))].sort((a,b)=>String(a.h).localeCompare(String(b.h)));
+    cells.push(`<div class="icm-c${date===today?' today':''}${date<today?' past':''}" onclick="icGoDate('${date}')" title="Voir la semaine">
+      <div class="icm-d">${d}</div>
+      ${items.map(it=>`<div class="icm-s${it.ann?' ann':it.faite?' done':it.v?' virt':''}">${esc(it.h||'--:--')}${it.coach?' · '+esc(String(it.coach).split(' ')[0]):''}<b>${it.ann?'annulée':it.n+'/'+IC_CAP}</b></div>`).join('')}
+    </div>`);
+  }
+  const tot=IC.sessions.filter(s=>ok(s)&&s.date.slice(0,7)===_dstr(m0).slice(0,7)&&s.statut!=='annulee');
+  const insc=tot.reduce((a,s)=>a+icTaken(s),0),pres=tot.reduce((a,s)=>a+(+s.show||0),0);
+  return `<div class="hm-sec" style="margin-top:22px">Vue du mois</div>
+    <div class="ic-week"><button onclick="_icMonthOff--;renderICPage()">‹</button><b>${m0.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</b><button onclick="_icMonthOff++;renderICPage()">›</button>${_icMonthOff?'<button class="ic-today" onclick="_icMonthOff=0;renderICPage()">Ce mois-ci</button>':''}</div>
+    <div class="icm-sum">${tot.length} séance${tot.length>1?'s':''} · ${insc} inscrit${insc>1?'s':''} · ${pres} présent${pres>1?'s':''}${tot.length?' · '+Math.round(insc/(tot.length*IC_CAP)*100)+' % de remplissage':''}</div>
+    <div class="icm"><div class="icm-h">Lun</div><div class="icm-h">Mar</div><div class="icm-h">Mer</div><div class="icm-h">Jeu</div><div class="icm-h">Ven</div><div class="icm-h">Sam</div><div class="icm-h">Dim</div>${cells.join('')}</div>
+    <div class="fv-meta" style="margin-top:6px">Chaque séance : heure · coach · inscrits / ${IC_CAP} places. En pointillé : créneau du planning type pas encore ouvert. Touchez un jour pour voir sa semaine.</div>`;
+}
+function icGoDate(date){
+  const mon=_monday(0),d=new Date(date+'T12:00');
+  _icWeek=Math.round((d-mon)/(7*864e5)-((d.getDay()+6)%7)/7);
+  icEnsureWeek();renderICPage();document.getElementById('screen').scrollTop=0;
 }
 function icDelSession(id){
   if(!confirm('Supprimer définitivement cette séance ?\n(Pour un cours annulé, préférez le statut ✖️ Annulée.)'))return;
