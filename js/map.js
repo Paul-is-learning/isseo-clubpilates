@@ -2,8 +2,38 @@
 var _leafletMapInst=null;
 var _leafletCircles=[];   // références aux cercles de zone (max = [2])
 
+// ── Leaflet chargé à la demande (plus dans le <head> de index.html) ──
+var _LEAFLET_CSS='https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+var _LEAFLET_JS='https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+var _leafletLoading=null; // promesse du chargement en cours, partagée par les appels concurrents (null sinon)
+var _leafletInitSeq=0;    // n° du dernier appel de initLocalisationMap
+function _loadLeaflet(){
+  if(_leafletLoading)return _leafletLoading;
+  if(typeof L!=='undefined')return Promise.resolve();
+  // css inséré avant la 1re feuille de style du <head> : même ordre de cascade qu'avant ; un échec ne bloque pas la carte
+  var cssP=new Promise(function(ok){
+    if(document.querySelector('link[href="'+_LEAFLET_CSS+'"]'))return ok();
+    var lk=document.createElement('link');lk.rel='stylesheet';lk.href=_LEAFLET_CSS;
+    lk.onload=function(){ok();};
+    lk.onerror=function(){lk.remove();ok();};
+    document.head.insertBefore(lk,document.head.querySelector('link[rel="stylesheet"],style'));
+  });
+  var jsP=new Promise(function(ok){
+    var sc=document.createElement('script');sc.src=_LEAFLET_JS;
+    sc.onload=function(){ok(true);};
+    sc.onerror=function(){sc.remove();ok(false);};
+    document.head.appendChild(sc);
+  });
+  // On attend css ET js (popup mesurée avec le css, comme avant) ; échec js : nouvel essai au prochain appel
+  _leafletLoading=Promise.all([cssP,jsP]).then(function(r){
+    _leafletLoading=null;
+    if(!r[1]||typeof L==='undefined')throw new Error('Leaflet non chargé');
+  });
+  return _leafletLoading;
+}
+
 // ── INSEE : population réelle par zone (geo.api.gouv.fr) ──────────────────────
-var _inseePopCache={};      // cache {sid_radius: result}
+var _inseePopCache={};      // cache {sid_lat_lon_rayon: result}
 var _inseeDebounceTimer=null;
 
 // Distance en mètres entre deux points GPS (Haversine)
@@ -120,10 +150,11 @@ function updateZoneRadius(val){
   _inseeDebounceTimer=setTimeout(function(){
     var sid=S.selectedId;
     var coords=S.mapCoords[sid];
-    var cacheKey=sid+'_'+r;
+    // Clé studio + coordonnées + rayon : le cache survit aux render() sans jamais servir d'anciennes coordonnées
+    var cacheKey=coords?sid+'_'+coords.lat+'_'+coords.lon+'_'+r:null;
     // Re-fetch popEl ici (évite référence obsolète si render() a été appelé entre-temps)
     var popEl=document.getElementById('map-pop-estimate');
-    if(_inseePopCache[cacheKey]){_renderINSEEPop(popEl,_inseePopCache[cacheKey],r);return;}
+    if(cacheKey&&_inseePopCache[cacheKey]){_renderINSEEPop(popEl,_inseePopCache[cacheKey],r);return;}
     if(!coords){_renderDensityPop(popEl,sid,r);return;}
     calcPopZoneINSEE(coords.lat,coords.lon,r).then(function(result){
       // Re-fetch encore une fois après les appels async (peuvent prendre 1-3s)
@@ -197,12 +228,19 @@ function _renderDensityPop(popEl,sid,radiusM){
 
 async function initLocalisationMap(sid){
   var el=document.getElementById('leaflet-map');
-  if(!el||typeof L==='undefined')return;
+  if(!el)return;
+  var seq=++_leafletInitSeq;
+  if(typeof L==='undefined'||_leafletLoading){
+    // 1er affichage : charger Leaflet puis reprendre ; seul le dernier appel en attente continue
+    try{await _loadLeaflet();}catch(e){return;}
+    if(seq!==_leafletInitSeq)return;
+    el=document.getElementById('leaflet-map');
+    if(!el)return;
+  }
   var ld=LOCALISATION_DATA[sid];
   var s=S.studios[sid];
 
-  // Vider le cache INSEE pour ce studio (évite les résultats périmés)
-  Object.keys(_inseePopCache).forEach(function(k){if(k.startsWith(sid+'_'))delete _inseePopCache[k];});
+  // Cache INSEE conservé : sa clé inclut coordonnées + rayon (vidé aussi au changement d'adresse, pages-echanges.js)
 
   // ── Géocodage de l'adresse réelle du studio ──
   if(!S.mapCoords[sid]&&s&&s.addr){
