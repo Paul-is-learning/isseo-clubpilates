@@ -4654,7 +4654,9 @@ function _ldstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,
 function prOuv(p){return !!(p&&p.ouverture&&p.ouverture.at);}
 // Commercial qui suit la fiche : p.suivi, sinon celui qui a posé le rappel
 // Commercial en charge (suivi, sinon commercial assigné dans Boost) · badge coloré, même couleur pour la même personne partout
-function prCharge(p){return prOwner(p)||String(p.rep||'').trim().split(/\s+/)[0]||'';}
+// Par défaut (personne ne suit le lead et aucun commercial assigné dans Boost) : JC à La Garenne-Colombes (demande de Paul)
+const OWNER_DEFAULT={lagarennecolombes:'JC'};
+function prCharge(p){return prOwner(p)||String(p.rep||'').trim().split(/\s+/)[0]||OWNER_DEFAULT[_sk(p.studio||CFG.studio||'')]||'';}
 const _OWN_COL=['#2F6FE0','#C2410C','#0F8A5F','#7C3AED','#B4235A','#0E7490','#A16207','#4D5B7C'];
 function ownColor(n){let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return _OWN_COL[h%_OWN_COL.length];}
 function ownPill(p){const n=prCharge(p);if(!n)return '<span class="pl-own none" title="Personne ne suit encore ce lead">👤 À attribuer</span>';const c=ownColor(n);return `<span class="pl-own" style="color:${c};background:color-mix(in srgb,${c} 12%,#fff);border-color:color-mix(in srgb,${c} 35%,#fff)" title="Commercial en charge des rappels">👤 ${esc(n)}</span>`;}
@@ -4769,7 +4771,7 @@ function teamRoadmapHTML(){
   all.forEach(p=>{
     (p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||/appel entrant/.test(l0))return;const tp=tsParts(a.ts);if(!tp||tp.day!==today)return;const w=_callWho(l0);if(!w)return;const r=get(w);r.calls++;if(/answered|· décroché/.test(l0))r.ok++;});
     if(!prOpen(p)||p.bmember||prOuv(p))return;
-    const o=prOwner(p);if(o)get(o).own++;
+    const o=prCharge(p);if(o)get(o).own++;
     if(!p.rappel||prAutoNew(p))return;
     const t=rdvAt(p);if(!t)return;
     const r=get(o),d=(tsParts(t.toISOString())||{}).day;
