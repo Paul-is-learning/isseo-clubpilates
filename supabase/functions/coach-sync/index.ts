@@ -949,6 +949,7 @@ serve(async (req) => {
             rep: String(p.rep || rep), studio: String(p.studio || ""),
             // Commercial qui suit la relation (prénom) et mise de côté « À rappeler à l'ouverture »
             suivi: String(p.suivi || "").slice(0, 40),
+            vendeur: String(p.vendeur || "").slice(0, 40), // qui a fait signer (vente, primes)
             ouverture: p.ouverture && typeof p.ouverture === "object" && p.ouverture.at
               ? { at: String(p.ouverture.at).slice(0, 30), by: String(p.ouverture.by || "").slice(0, 40), note: String(p.ouverture.note || "").slice(0, 300) }
               : undefined,

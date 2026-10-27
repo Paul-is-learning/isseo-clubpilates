@@ -3106,7 +3106,8 @@ let EVQ=[];try{EVQ=JSON.parse(localStorage.getItem('cpcoach_evq')||'[]');}catch(
 function _persistEvq(){try{localStorage.setItem('cpcoach_evq',JSON.stringify(EVQ));}catch(e){}}
 function emitEvent(p,type,extra){
   if(!p||!p.id)return;
-  const ev=Object.assign({k:p.id+':'+type,type:type,rep:(p.rep||CFG.rep||''),nom:p.nom||'',studio:(p.studio||CFG.studio||''),ts:new Date().toISOString()},extra||{});
+  // Vente : comptée pour la personne qui a fait signer (p.vendeur), pas pour le commercial de la fiche
+  const ev=Object.assign({k:p.id+':'+type,type:type,rep:(type==='abo'&&p.vendeur?p.vendeur:(p.rep||CFG.rep||'')),nom:p.nom||'',studio:(p.studio||CFG.studio||''),ts:new Date().toISOString()},extra||{});
   const i=EVQ.findIndex(e=>e.k===ev.k);if(i>=0)EVQ[i]=ev;else EVQ.push(ev);
   _persistEvq();scheduleEvFlush();
 }
@@ -3513,7 +3514,7 @@ function buildStatsMap(events,prospects){
     if(p.statut==='essai')m.essai=true;
     if(p.statut==='venu'){m.essai=true;m.venu=true;}
     if(p.statut==='abo'&&!_SVOID[p.id]){ // fiche d'une vente annulée : seule une nouvelle vente (événement daté après l'annulation) la refait compter
-      m.abo=true;if(p.pack)m.pack=p.pack;m.aboTs=m.aboTs||p.maj||p.ts||'';m.v2=m.v2||p.v2||'';if(p.fullCom)m.fullCom=true;m.icId=m.icId||p.icId||'';}
+      m.abo=true;if(p.vendeur)m.rep=p.vendeur;if(p.pack)m.pack=p.pack;m.aboTs=m.aboTs||p.maj||p.ts||'';m.v2=m.v2||p.v2||'';if(p.fullCom)m.fullCom=true;m.icId=m.icId||p.icId||'';}
     if(p.statut==='perdu')m.perdu=true;
   });
   (events||[]).forEach(e=>{
@@ -5288,7 +5289,20 @@ function editSale(id){
 function setPPack(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.pack=String(pk);p.maj=new Date().toISOString();persistProspects();schedulePush();
   emitEvent(p,'abo',{pack:String(pk),prime:+PRIMES[pk]||0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''});
   showProspects(true);toast('🎉 '+packShort(pk)+' vendu · +'+(+PRIMES[pk]||0)+' € de prime !');}
-function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+// Passage en « Client » : on demande d'abord qui a fait signer (course du mois et primes)
+function _sellers(p){const S=new Set();const add=n=>{n=String(n||'').trim().split(/\s+/)[0];if(n&&!/^(Boost|auto|équipe)$/i.test(n))S.add(n);};
+  add(p&&p.vendeur);add(p&&prCharge(p));add(CFG.rep);(window._TEAM||[]).forEach(i=>add(i.nom));
+  PSC().forEach(q=>{add(q.suivi);add(q.vendeur);(q.appels||[]).slice(-3).forEach(a=>{const w=_callWho(String(a.txt||'').split('\n')[0]);if(w)add(w);});});
+  return [...S];}
+function setPStatut(id,s,seller){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  if(s==='abo'&&p.statut!=='abo'&&!seller){
+    const L=_sellers(p),pre=p.vendeur||prCharge(p)||_me();
+    icSheet(`<div class="glp-tag">✅ Client</div><div class="glp-t">${esc(p.nom||'')}</div>
+      <div class="fv-meta">Qui a fait signer le contrat ? La vente et la prime lui sont attribuées.</div>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px">${L.map(n=>{const c=ownColor(n);return `<button class="pr-ownb${n===pre?' on':''}" style="--oc:${c};font-size:14px;padding:8px 16px" onclick="document.getElementById('icPop')?.remove();setPStatut('${id}','abo','${n.replace(/'/g,"\\'")}')">${esc(n)}</button>`;}).join('')}</div>`);
+    return;
+  }
+  if(s==='abo'&&seller)p.vendeur=String(seller).slice(0,40);
   // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
   if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo'],void:true}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}
   p.statut=s;if(s!=='rappeler'&&p.ouverture)p.ouverture=null;if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
