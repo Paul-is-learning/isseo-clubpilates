@@ -2708,6 +2708,38 @@ function _adoptAuth(d){
   if(d.rep&&CFG.rep!==d.rep){CFG.rep=d.rep;localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}
 }
 let _pushT=null,_lastSync='';
+// Fiches modifiées sur ce poste et pas encore confirmées par le serveur ({id:maj}) et suppressions en
+// attente (ids) : jamais écrasées ni rendues par une lecture, renvoyées jusqu'à confirmation
+var _DIRTY0=localStorage.getItem('cpcoach_dirty')===null,_DIRTY={},_PDEL=[];
+try{_DIRTY=JSON.parse(localStorage.getItem('cpcoach_dirty')||'{}')||{};}catch(e){_DIRTY={};}
+try{_PDEL=JSON.parse(localStorage.getItem('cpcoach_pdel')||'[]')||[];}catch(e){_PDEL=[];}
+// _SEEN : version (maj) de chaque fiche telle que reçue du serveur
+var _SEEN={},_syncSt='ok',_failSt='off',_fails=0,_retryT=null,_pushBusy=false,_pushAt=0,_pushAgain=false,_pushN=0;
+PROSPECTS.forEach(p=>{if(p&&p.id)_SEEN[p.id]=p.maj||'';});
+function _persistSync(){try{localStorage.setItem('cpcoach_dirty',JSON.stringify(_DIRTY));localStorage.setItem('cpcoach_pdel',JSON.stringify(_PDEL));}catch(e){}}
+function _hasPend(){return Object.keys(_DIRTY).length>0||_PDEL.length>0;}
+function _seenAll(list){_SEEN={};list.forEach(p=>{if(p&&p.id)_SEEN[p.id]=p.maj||'';});}
+// Une fiche dont la version diffère de la dernière reçue du serveur est une modification locale
+function _markDirty(){let n=0;PROSPECTS.forEach(p=>{if(!p||!p.id)return;const m=p.maj||'';if(_SEEN[p.id]!==m&&_DIRTY[p.id]!==m){_DIRTY[p.id]=m;n++;}});if(n)_persistSync();}
+// Confirmée (même version que le serveur) ou disparue : plus en attente
+function _cleanDirty(){const m=new Map(PROSPECTS.map(p=>[p.id,p.maj||'']));Object.keys(_DIRTY).forEach(id=>{if(!m.has(id)||m.get(id)===_SEEN[id])delete _DIRTY[id];});_persistSync();}
+// Échec réseau = hors ligne ; refus du serveur (enregistrement concurrent, erreur, trop d'essais) = en attente
+function _netErr(e){return navigator.onLine===false||!(e&&e.status);}
+function _quiet(e){return !!e&&(e.message==='code'||e.message==='otp');}
+function _why(e){return _netErr(e)?'connexion impossible, réessayez':String(e.message||'erreur serveur').replace(/^[A-ZÀ-Ý](?=[a-zà-ÿ])/,c=>c.toLowerCase());}
+// Nouvel essai automatique : 2 s, 5 s, 15 s, 30 s, puis chaque minute (et dès le retour du réseau)
+function _retryLater(e){_fails++;clearTimeout(_retryT);_retryT=setTimeout(syncPush,[2,5,15,30,60][Math.min(_fails,5)-1]*1000);_failSt=_netErr(e)?'off':'wait';_syncState(_failSt);}
+function _restSt(){return _fails?_failSt:(_pushBusy||_hasPend()?'sync':'ok');}
+// Fiche renvoyée par une action (note, température, coordonnées) : si elle porte une modification locale
+// pas encore envoyée, nos champs restent et repartent avec la nouvelle version
+const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio'];
+function _takeSrv(id,sp,own){
+  const l=PROSPECTS.find(x=>x.id===id);if(!l||!sp)return;
+  _SEEN[id]=sp.maj||'';
+  if(_DIRTY[id]===undefined){Object.assign(l,sp);return;}
+  const keep={};_MINE.forEach(k=>{if(k in l&&own.indexOf(k)<0)keep[k]=l[k];});
+  Object.assign(l,sp,keep);l.maj=new Date(Math.max(Date.now(),(Date.parse(sp.maj)||0)+1)).toISOString();schedulePush();
+}
 function _lockMsg(m){
   if(m==='rate')return 'Trop d\'essais · patientez 15 minutes avant de réessayer.';
   if(m!=='code')return 'Connexion impossible · vérifiez le réseau et réessayez.';
@@ -2730,12 +2762,14 @@ async function syncCall(action,extra){
   }
   if(r.status===429){
     if(!COACH_CODE||document.getElementById('lockScreen')){if(d.error&&/patientez une minute/.test(d.error)){const er=document.getElementById('lockErr');if(er)er.textContent=d.error;}throw new Error('rate');}
-    throw new Error(d.error||'Trop d\'essais');
+    const e=new Error(d.error||'Trop d\'essais');e.status=429;throw e;
   }
-  if(!r.ok)throw new Error(d.error||('HTTP '+r.status));
+  // Réponse du serveur (et non coupure réseau) : le code HTTP accompagne l'erreur
+  if(!r.ok){const e=new Error(d.error||('HTTP '+r.status));e.status=r.status;throw e;}
   return d;
 }
-function _syncState(s){const b=$('#syncBadge');if(!b)return;b.className='sync-badge '+s;b.textContent=s==='ok'?'☁️ Synchronisé · équipe':s==='sync'?'⏳ Synchronisation…':'📴 Hors ligne · sauvegardé sur ce poste';}
+function _syncTxt(s){return s==='ok'?'☁️ Synchronisé · équipe':s==='sync'?'⏳ Synchronisation…':s==='wait'?'⏳ Enregistrement en attente · nouvel essai…':'📴 Hors ligne · sauvegardé sur ce poste';}
+function _syncState(s){_syncSt=s;const b=$('#syncBadge');if(!b)return;b.className='sync-badge '+(s==='wait'?'sync':s);b.textContent=_syncTxt(s);}
 // Purge administrative : si le serveur a été remis à zéro après notre dernière
 // synchro, on vide le stock local au lieu de re-pousser d'anciennes fiches.
 function _adoptEpoch(d){
@@ -2744,29 +2778,67 @@ function _adoptEpoch(d){
   if(d.epoch>seen){
     localStorage.setItem('cpcoach_epoch',String(d.epoch));
     if(seen||PROSPECTS.length){PROSPECTS=(d.prospects||[]).slice();persistProspects();EVQ=[];_persistEvq();
+      _DIRTY={};_PDEL=[];_persistSync();_seenAll(PROSPECTS);
       if($('#topPhase').textContent==='Mes prospects')showProspects(true);
       return true;}
   }
   return false;
 }
-function schedulePush(){clearTimeout(_pushT);_pushT=setTimeout(syncPush,700);}
+function schedulePush(){_markDirty();clearTimeout(_pushT);_pushT=setTimeout(syncPush,700);}
+// Liste renvoyée par le serveur, sans perdre ce qui a changé ici depuis l'envoi ni rendre une fiche en cours de suppression
+function _keepLocal(server,sent){
+  const del=new Set(_PDEL),loc=new Map(PROSPECTS.map(p=>[p.id,p]));
+  server=server.filter(s=>s&&!del.has(s.id));_seenAll(server);
+  const out=server.map(s=>{const l=loc.get(s.id);return l&&_DIRTY[s.id]!==undefined&&(l.maj||'')>(s.maj||'')?l:s;});
+  const ids=new Set(out.map(p=>p.id));
+  PROSPECTS.forEach(p=>{if(p&&!ids.has(p.id)&&!del.has(p.id)&&(!sent.has(p.id)||_DIRTY[p.id]!==undefined))out.push(p);});
+  return out;
+}
+async function _sendDel(){const ids=_PDEL.slice();if(!ids.length||!COACH_CODE)return;await syncCall('delete',{ids:ids});_PDEL=_PDEL.filter(x=>ids.indexOf(x)<0);_persistSync();}
+// Un seul envoi à la fois (sauf envoi bloqué depuis 45 s) ; en cas d'échec les modifications restent
+// en attente et repartent seules
 async function syncPush(){
   if(!COACH_CODE)return;
-  _syncState('sync');
-  try{const d=await syncCall('push',{prospects:PROSPECTS});if(d&&d.rev)_rev=d.rev;if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}if(d&&'studio' in d&&_adoptStudio(d))_rerenderTop();_syncState('ok');_lastSync=new Date().toISOString();}
-  catch(e){if(e.message!=='code')_syncState('off');}
+  clearTimeout(_pushT);clearTimeout(_retryT);_markDirty();
+  if(_pushBusy&&Date.now()-_pushAt<45000){_pushAgain=true;return;}
+  const tok=_pushAt=Date.now();_pushBusy=true;_syncState('sync');
+  const sent=new Map(PROSPECTS.map(p=>[p.id,p.maj||'']));
+  let err=null;
+  try{const d=await syncCall('push',{prospects:PROSPECTS});_pushN++;_DIRTY0=false;if(d&&d.rev)_rev=d.rev;
+    // Reçu par le serveur : ce qui n'a pas bougé depuis l'envoi n'est plus en attente
+    sent.forEach((m,id)=>{if(_DIRTY[id]===m)delete _DIRTY[id];});
+    if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=_keepLocal(d.prospects,sent);persistProspects();}
+    _cleanDirty();
+    if(d&&'studio' in d&&_adoptStudio(d))_rerenderTop();}
+  catch(e){err=e;}
+  if(_PDEL.length&&!_quiet(err)){try{await _sendDel();}catch(e){if(!err)err=e;}}
+  if(_pushAt===tok)_pushBusy=false;
+  if(!err){_fails=0;_syncState(_hasPend()?'sync':'ok');_lastSync=new Date().toISOString();}
+  else if(err.message==='otp')_syncState('off');
+  else if(err.message!=='code')_retryLater(err);
+  if(_pushAgain){_pushAgain=false;schedulePush();}
 }
 async function syncPull(rerender){
   if(!COACH_CODE)return;
   _syncState('sync');
+  const n0=_pushN;
   try{
     const d=await syncCall('pull');
+    // Un envoi a répondu pendant la lecture : sa liste est au moins aussi récente, celle-ci est ignorée
+    if(_pushN!==n0){_syncState(_restSt());if(rerender&&$('#topPhase').textContent==='Mes prospects'&&!_typing())showProspects(true);return;}
     if(d&&d.rev)_rev=d.rev;
-    const server=d.prospects||[];
+    const del=new Set(_PDEL);
+    const server=(d.prospects||[]).filter(p=>p&&!del.has(p.id));
     const tomb=new Set(d.tomb||[]);
     const studioChanged=('studio' in d)&&_adoptStudio(d);
     if(_adoptEpoch(d)){/* purge administrative : local vidé, rien à re-pousser */}
     else{
+      _seenAll(server);
+      const loc=new Map(PROSPECTS.map(p=>[p.id,p]));
+      // 1re synchro après la mise à jour de l'outil : une fiche locale plus récente que le serveur n'est pas partie
+      if(_DIRTY0){server.forEach(s=>{const l=loc.get(s.id);if(l&&(l.maj||'')>(s.maj||''))_DIRTY[s.id]=l.maj;});_DIRTY0=false;}
+      // Modifiée ici et pas encore confirmée : la version locale reste et repart, sauf si le serveur a plus récent
+      server.forEach((s,i)=>{if(_DIRTY[s.id]===undefined)return;const l=loc.get(s.id);if(l&&(l.maj||'')>(s.maj||''))server[i]=l;else delete _DIRTY[s.id];});
       // Les fiches locales absentes du serveur (créées hors-ligne) sont conservées puis poussées
       const ids=new Set(server.map(p=>p.id));
       const _k=s=>String(s||'').replace(/\D/g,'').slice(-9);
@@ -2788,13 +2860,15 @@ async function syncPull(rerender){
         absorbed++;return false;
       });
       PROSPECTS=server.concat(localOnly);
-      persistProspects();
-      if(localOnly.length||absorbed)schedulePush();
+      persistProspects();_cleanDirty();
+      if(localOnly.length||absorbed||_hasPend())schedulePush();
     }
-    _syncState('ok');_lastSync=new Date().toISOString();
+    // Serveur joignable : l'attente repart de zéro (l'envoi programmé ci-dessus fait le nouvel essai)
+    _fails=0;if(!_hasPend())clearTimeout(_retryT);
+    _syncState(_restSt());_lastSync=new Date().toISOString();
     if(studioChanged)_rerenderTop();
     else if(rerender&&$('#topPhase').textContent==='Mes prospects'&&!_typing())showProspects(true);
-  }catch(e){if(e.message!=='code')_syncState('off');}
+  }catch(e){if(e.message!=='code')_syncState(!_netErr(e)&&_fails?_failSt:'off');}
 }
 
 /* ── Glossaire : termes techniques surlignés partout, définition au clic ── */
@@ -4682,7 +4756,7 @@ function showProspects(keepScroll){
   const h=`<div class="cg prw">
     <div class="pr-head">
       <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="pr-new" onclick="newProspectForm()">＋ Nouveau prospect</button><span id="syncBadge" class="sync-badge ok">☁️ Synchronisé · équipe</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="pr-new" onclick="newProspectForm()">＋ Nouveau prospect</button><span id="syncBadge" class="sync-badge ${_syncSt==='wait'?'sync':_syncSt}">${_syncTxt(_syncSt)}</span></div>
     </div>
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
@@ -4768,9 +4842,12 @@ async function rappelDone(id,box){
   const lbl=frDate(p.rappel)+(p.rappelH?' '+p.rappelH:'');
   try{
     const d=await syncCall('note_add',{id,text:'✅ Rappel du '+lbl+' fait · décroché',nom:CFG.rep||''});
-    if(d&&d.ok&&d.prospect){const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)Object.assign(PROSPECTS[i],d.prospect);}
-  }catch(e){if(e.message==='code'){if(box)box.checked=false;return;}}
-  const q=PROSPECTS.find(x=>x.id===id);
+    if(d&&d.ok&&d.prospect)_takeSrv(id,d.prospect,['note']);
+  }catch(e){
+    // Note non enregistrée : rien ne change, la case se décoche pour réessayer
+    if(box)box.checked=false;if(!_quiet(e))toast('Rappel non enregistré · '+_why(e));return;
+  }
+  const q=PROSPECTS.find(x=>x.id===id);if(!q)return;
   q.rappel='';q.rappelH='';q.rappelBy='';q.maj=new Date().toISOString();
   persistProspects();schedulePush();showProspects(true);
   toast('✅ Rappel fait · retiré des rappels programmés'+(q.bid?' · Boost mis à jour':''));
@@ -4797,17 +4874,21 @@ function smsRelance(id){
 async function smsSent(id){
   const t=document.getElementById('sms-txt')?.value||'';
   try{const d=await syncCall('note_add',{id,text:'💬 SMS de relance envoyé : '+t.slice(0,160),nom:CFG.rep||''});
-    if(d&&d.ok&&d.prospect){const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)Object.assign(PROSPECTS[i],d.prospect);persistProspects();}}catch(e){}
+    if(d&&d.ok&&d.prospect){_takeSrv(id,d.prospect,['note']);persistProspects();}}
+  // Non noté : la fenêtre reste ouverte pour réessayer
+  catch(e){if(!_quiet(e))toast('💬 SMS non noté sur la fiche · '+_why(e));return;}
   document.getElementById('icPop')?.remove();showProspects(true);toast('💬 SMS noté sur la fiche'+(PROSPECTS.find(x=>x.id===id)?.bid?' et dans Boost':''));
 }
 // Température du lead : réglée à la main, envoyée à Boost (badge) · « Auto » revient à l'estimation des appels
 async function setTemp(id,t){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const prev=p.temp;p.temp=t;showProspects(true);
-  try{const d=await syncCall('temp_set',{id,temp:t});if(!d.ok){p.temp=prev;showProspects(true);toast(d.error||'Non enregistré');return;}
-    const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)Object.assign(PROSPECTS[i],d.prospect);persistProspects();
+  // Échec : l'ancienne température revient, et on le dit
+  const back=m=>{const q=PROSPECTS.find(x=>x.id===id);if(q)q.temp=prev;showProspects(true);if(m)toast(m);};
+  try{const d=await syncCall('temp_set',{id,temp:t});if(!d.ok){back(d.error||'Non enregistré');return;}
+    _takeSrv(id,d.prospect,[]);persistProspects();
     toast(t?({chaud:'🔥 Lead chaud',tiede:'🌤 Lead tiède',froid:'❄️ Lead froid'})[t]+(p.bid&&t!=='tiede'?' · Boost mis à jour':''):'↺ Température automatique');
-  }catch(e){p.temp=prev;showProspects(true);}
+  }catch(e){back(_quiet(e)?'':'Température non enregistrée · '+_why(e));}
 }
 // Laisser une note : datée et signée, en tête des notes Boost, envoyée aussitôt à Boost
 let noteOpen=null;
@@ -4817,7 +4898,7 @@ async function addNote(id){
   try{
     const d=await syncCall('note_add',{id,text,nom:CFG.rep||''});
     if(!d.ok){toast(d.error||'Note non enregistrée');return;}
-    const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)PROSPECTS[i]={...PROSPECTS[i],...d.prospect};
+    _takeSrv(id,d.prospect,['note']);
     persistProspects();noteOpen=id;showProspects(true);
     toast(d.boost?'📝 Note enregistrée · envoyée à Boost':'📝 Note enregistrée');
   }catch(e){if(e.message!=='code')toast('Connexion impossible · note non enregistrée');}
@@ -4834,7 +4915,7 @@ async function saveContactEdit(id){
   try{
     const d=await syncCall('contact_edit',body);
     if(!d.ok){if(err)err.textContent=d.error||'Enregistrement impossible';return;}
-    const i=PROSPECTS.findIndex(x=>x.id===id);if(i>=0)PROSPECTS[i]={...PROSPECTS[i],...d.prospect};
+    _takeSrv(id,d.prospect,['nom','tel']);
     persistProspects();prEditId=null;showProspects(true);
     toast(d.boost?'✅ Fiche mise à jour · envoi vers Boost en cours':'✅ Fiche mise à jour');
   }catch(e){if(e.message!=='code'&&err)err.textContent=e.message||'Connexion impossible';}
@@ -4985,14 +5066,20 @@ function setPRappelH(id,v){
 }
 let _prTick=null;
 // Retour sur l'app (onglet ou app installée remise au premier plan) : données fraîches de l'équipe
+// (la lecture relance aussitôt l'envoi des modifications en attente)
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&COACH_CODE)syncPull(true);});
+// Retour du réseau : envoi en attente relancé tout de suite
+window.addEventListener('online',()=>{if(COACH_CODE&&(_fails||_hasPend())){_fails=0;syncPush();}});
 // Mises à jour en quasi temps réel : toutes les 15 s (onglet visible), un signal léger « rev » dit si
 // la liste a changé (saisie d'un collègue, appel Aircall/Allo, synchro Boost) ; on ne retélécharge qu'alors
 var _rev='',_revBusy=false;
 setInterval(async()=>{
   if(!COACH_CODE||document.visibilityState!=='visible'||_revBusy)return;
   _revBusy=true;
-  try{const d=await syncCall('rev');if(d&&d.rev&&d.rev!==_rev){const first=!_rev;_rev=d.rev;if(!first)await syncPull(true);}}catch(e){}
+  try{const d=await syncCall('rev');
+    // Serveur de nouveau joignable après un « hors ligne » : envoi en attente relancé, sinon liste relue
+    if(_syncSt==='off'&&!_pushBusy){_fails=0;if(_hasPend())syncPush();else await syncPull(true);}
+    else if(d&&d.rev&&d.rev!==_rev){const first=!_rev;_rev=d.rev;if(!first)await syncPull(true);}}catch(e){}
   _revBusy=false;
 },15000);
 // Ne pas redessiner la liste pendant qu'on écrit (note, coordonnées…) : on attend la fin de la saisie
@@ -5009,7 +5096,9 @@ function delProspect(id){
   const wasAbo=p.statut==='abo';
   if(!confirm('Supprimer la fiche de '+p.nom+' ?'+(wasAbo?'\n\n⚠️ C\'est une VENTE : elle sera aussi retirée du journal (primes, stats, paie).':'')))return;
   PROSPECTS=PROSPECTS.filter(x=>x.id!==id);persistProspects();showProspects(true);toast('Fiche supprimée');
-  syncCall('delete',{ids:[id]}).catch(()=>{});
+  // Suppression gardée en attente jusqu'à confirmation du serveur : la fiche ne revient pas, l'envoi est réessayé
+  delete _DIRTY[id];if(_PDEL.indexOf(id)<0)_PDEL.push(id);_persistSync();
+  _sendDel().catch(e=>{if(_quiet(e))return;toast(_netErr(e)?'📴 Hors ligne · suppression envoyée au retour du réseau':'⏳ Suppression en attente · nouvel essai automatique');_retryLater(e);});
   // Purge du journal (appel/essai/venu/abo/perdu de cette fiche) · réservé recruteurs côté serveur
   EVQ=EVQ.filter(e=>!e.k.startsWith(id+':'));_persistEvq();
   syncCall('stats_del',{prefix:id+':'}).then(()=>{if(wasAbo)toast('Vente retirée du journal ✓');}).catch(e=>{
@@ -5744,7 +5833,7 @@ window.addEventListener('popstate',function(){
   }
   if(!COACH_CODE){showLock();return;}
   try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();syncPull(true);flushEvents();icPull();fetchAvatars().then(()=>{const nv=$('#nav').innerHTML||'';if(nv.includes('next()'))renderScreen(true);else if(document.querySelector('.hm-today'))$('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);});}
-  catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */}
+  catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */if(!_quiet(e))_syncState('off');}
 })();
 </script>
 </body>
