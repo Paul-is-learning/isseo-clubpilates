@@ -785,8 +785,26 @@ function globalSearch(query){
   return results.slice(0,12);
 }
 
+// Cache des résultats : survol et flèches relisent le cache au lieu de rescanner toutes les données.
+// Clé = requête + empreinte légère (références et longueurs des listes, remplacées par la synchro) ; fresh force le recalcul (saisie, render complet)
+var _gsCache=null;
+function _gsStamp(){
+  var st=[S.studios,S.messages,S.depenses,S.todos,S.scenarios,S.prospects,S.prospects&&S.prospects.length,S.profile];
+  Object.keys(S.studios).forEach(function(id){
+    var m=S.messages[id],d=S.depenses[id],t=S.todos[id],sc=S.scenarios[id];
+    st.push(id,S.studios[id],m,m&&m.length,d,d&&d.length,t,t&&t.length,sc,sc&&sc.length);
+  });
+  return st;
+}
+function _searchResults(fresh){
+  var st=_gsStamp(),c=_gsCache,same=!fresh&&c&&c.q===S.searchQuery&&c.st.length===st.length;
+  for(var i=0;same&&i<st.length;i++)if(c.st[i]!==st[i])same=false;
+  if(!same)_gsCache={q:S.searchQuery,st:st,res:globalSearch(S.searchQuery)};
+  return _gsCache.res;
+}
+
 function handleSearchNav(idx){
-  var results=globalSearch(S.searchQuery);
+  var results=_searchResults();
   var r=results[idx];
   if(!r)return;
   S.searchQuery='';S.searchOpen=false;S.searchIdx=-1;
@@ -817,22 +835,22 @@ function onSearchInput(el){
   // Re-render just the dropdown
   var dd=document.getElementById('search-dropdown');
   if(dd){
-    if(S.searchOpen){dd.innerHTML=renderSearchResultsInner();dd.style.display='block';}
+    if(S.searchOpen){dd.innerHTML=renderSearchResultsInner(true);dd.style.display='block';}
     else{dd.style.display='none';}
   }
 }
 
 function onSearchKeydown(e){
   if(!S.searchOpen)return;
-  var results=globalSearch(S.searchQuery);
+  var results=_searchResults();
   if(e.key==='ArrowDown'){e.preventDefault();S.searchIdx=Math.min(S.searchIdx+1,results.length-1);var dd=document.getElementById('search-dropdown');if(dd)dd.innerHTML=renderSearchResultsInner();}
   else if(e.key==='ArrowUp'){e.preventDefault();S.searchIdx=Math.max(S.searchIdx-1,-1);var dd=document.getElementById('search-dropdown');if(dd)dd.innerHTML=renderSearchResultsInner();}
   else if(e.key==='Enter'&&S.searchIdx>=0){e.preventDefault();handleSearchNav(S.searchIdx);}
   else if(e.key==='Escape'){S.searchQuery='';S.searchOpen=false;S.searchIdx=-1;e.target.value='';e.target.blur();var dd=document.getElementById('search-dropdown');if(dd)dd.style.display='none';}
 }
 
-function renderSearchResultsInner(){
-  var results=globalSearch(S.searchQuery);
+function renderSearchResultsInner(fresh){
+  var results=_searchResults(fresh);
   if(!results.length)return '<div style="padding:16px 20px;text-align:center;color:#999;font-size:12px">Aucun résultat pour « '+S.searchQuery+' »</div>';
   var h='';
   var lastType='';
@@ -867,7 +885,7 @@ function renderSearchBar(){
   h+='<kbd style="position:absolute;right:8px;top:50%;transform:translateY(-50%);font-size:10px;color:#bbb;background:#f0f0ea;border:1px solid #e0e0da;border-radius:4px;padding:1px 5px;font-family:system-ui;pointer-events:none">⌘K</kbd>';
   h+='</div>';
   h+='<div id="search-dropdown" style="display:'+(S.searchOpen?'block':'none')+';position:absolute;top:calc(100% + 6px);left:0;right:0;background:#fff;border:1px solid #e8e8e3;border-radius:12px;box-shadow:0 8px 30px rgba(0,0,0,0.12);z-index:9999;max-height:380px;overflow-y:auto;padding:4px 0">';
-  if(S.searchOpen)h+=renderSearchResultsInner();
+  if(S.searchOpen)h+=renderSearchResultsInner(true);
   h+='</div>';
   h+='</div>';
   return h;
@@ -1191,7 +1209,7 @@ function showInviteViewerModal(){
   overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:10000;display:flex;align-items:center;justify-content:center;backdrop-filter:blur(2px)';
   overlay.onclick=function(e){if(e.target===overlay)overlay.remove();};
   var allStudios=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name;});
-  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Business plan'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['fichiers','Fichiers'],['ia','IA']];
+  var allTabs=[['workflow','Workflow'],['adherents','Adhérents & Prév.'],['forecast','Business plan'],['engagements','Engagements'],['echanges','Questions & Tâches'],['localisation','Localisation'],['local','Local'],['ia','IA']]; // onglet Fichiers retiré (oct. 2026) · permissions déjà enregistrées inchangées
   var box='<div style="background:#fff;border-radius:16px;padding:28px 32px;width:540px;max-width:92vw;max-height:85vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.2)">';
   box+='<div style="display:flex;align-items:center;gap:10px;margin-bottom:20px"><div style="width:40px;height:40px;border-radius:12px;background:linear-gradient(135deg,#1a3a6b,#2a5a9b);display:flex;align-items:center;justify-content:center"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg></div>';
   box+='<div><div style="font-size:16px;font-weight:700;color:#1a1a1a">Inviter un viewer</div>';
