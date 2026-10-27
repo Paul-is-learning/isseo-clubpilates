@@ -197,8 +197,12 @@ serve(async (req) => {
 
     let myAvatar = "";
     let myStudio = "";
+    let myStudiosRaw: string[] = [];
     if (role === "admin") myAvatar = String(accRow?.data?.adminAvatar?.avatar || "");
-    else { const inv = invites.find((i) => norm(i.code) === norm(code)); myAvatar = String(inv?.avatar || ""); myStudio = String(inv?.studio || ""); }
+    else {
+      const inv = invites.find((i) => norm(i.code) === norm(code)); myAvatar = String(inv?.avatar || ""); myStudio = String(inv?.studio || "");
+      myStudiosRaw = Array.isArray(inv?.studios) && inv.studios.length ? inv.studios.map(String) : (myStudio ? [myStudio] : []);
+    }
 
     // ── Cloisonnement par studio ──
     // Code maître : tous les studios. Salarié / recruteur : uniquement le studio de son
@@ -212,20 +216,25 @@ serve(async (req) => {
       return STUDIOS.find((x) => sk(x) === k) || (k.length >= 5 ? STUDIOS.find((x) => sk(x).includes(k) || k.includes(sk(x))) : "") || "";
     };
     if (myStudio && canon(myStudio)) myStudio = canon(myStudio);
-    const scoped = role !== "admin" && !!sk(myStudio);
-    const inMine = (x: any) => !scoped || sk(x?.studio) === sk(myStudio);
+    // Une invitation peut couvrir plusieurs studios (ex. Tom : Lattes + La Garenne-Colombes)
+    const myStudios = [...new Set(myStudiosRaw.map((x) => canon(x) || x).filter((x) => sk(x)))];
+    if (!myStudio && myStudios.length) myStudio = myStudios[0];
+    const scoped = role !== "admin" && myStudios.length > 0;
+    const inMine = (x: any) => !scoped || myStudios.some((st) => sk(x?.studio) === sk(st));
+    // Studio d'un élément créé par un salarié : celui qu'il a choisi s'il y a accès, sinon son 1er studio
+    const pickStudio = (want: unknown) => { const c = canon(want); return c && myStudios.some((st) => sk(st) === sk(c)) ? c : myStudio; };
     // Élément envoyé par un salarié cloisonné : toujours estampillé à SON studio (jamais refusé
     // en silence, sinon la fiche ou la vente serait perdue) ; modifier un élément existant d'un
     // autre studio reste interdit (garde « i >= 0 && !inMine(existant) » à chaque écriture).
     // existing = la version serveur de l'élément (si elle existe) : une copie sans studio ou mal
     // orthographiée n'efface jamais le studio déjà connu ; un élément neuf n'est jamais orphelin.
     const ownStudio = (x: any, existing?: any) => {
-      if (scoped) { x.studio = myStudio; return true; }
+      if (scoped) { x.studio = inMine({ studio: canon(x?.studio) }) ? canon(x?.studio) : (existing && inMine(existing) ? String(existing.studio) : myStudio); return true; }
       x.studio = canon(x?.studio) || canon(existing?.studio) || String(existing?.studio || "") || STUDIOS[0];
       return true;
     };
 
-    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio, scoped });
+    if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio, studios: myStudios, scoped });
 
     // ── Avatars : chacun définit le sien, tout le monde voit ceux des autres ──
     if (action === "avatar_set") {
@@ -472,6 +481,19 @@ serve(async (req) => {
         const st = canon(body.studio);
         if (!st) return json({ error: "Studio inconnu · choisir parmi : " + STUDIOS.join(", ") }, 400);
         inv.studio = st;
+        if (Array.isArray(inv.studios) && inv.studios.length) inv.studios = [st, ...inv.studios.filter((x: string) => sk(x) !== sk(st))];
+        await saveInvites();
+        return json({ ok: true, invites: invites.filter(inMine) });
+      }
+
+      // Plusieurs studios pour une invitation (code maître) : le 1er est le studio principal
+      if (action === "team_studios") {
+        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        const inv = invites.find((i) => i.id === String(body.id));
+        if (!inv) return json({ error: "Invitation introuvable" }, 404);
+        const list2 = [...new Set((Array.isArray(body.studios) ? body.studios : []).map((x: unknown) => canon(x)).filter(Boolean))] as string[];
+        if (!list2.length) return json({ error: "Au moins un studio" }, 400);
+        inv.studio = list2[0]; inv.studios = list2;
         await saveInvites();
         return json({ ok: true, invites: invites.filter(inMine) });
       }
@@ -503,7 +525,7 @@ serve(async (req) => {
 
       if (action === "team_add") {
         const nom = String(body.nom || "").trim().slice(0, 60);
-        const studio = scoped ? myStudio : canon(body.studio);
+        const studio = scoped ? pickStudio(body.studio) : canon(body.studio);
         if (!nom) return json({ error: "Nom requis" }, 400);
         if (!studio) return json({ error: "Studio d'affectation obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
         if (invites.length >= MAX_INVITES) return json({ error: "Limite d'invitations atteinte" }, 400);
@@ -563,6 +585,12 @@ serve(async (req) => {
     }
 
     // ── Prospects (admin + rep) ──
+    // Signal léger de changement : les téléphones interrogent « rev » toutes les ~15 s et ne
+    // retéléchargent la liste que si elle a changé
+    if (action === "rev") {
+      const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
+      return json({ ok: true, rev: String(rv?.updated_at || "") });
+    }
     const row = { data: await getRow(admin, ROW_PROSPECTS) };
     let list: any[] = (row?.data?.prospects as any[]) || [];
     const epoch: number = Number(row?.data?.epoch) || 0;
@@ -580,7 +608,8 @@ serve(async (req) => {
 
     const tomb: string[] = ((await getRow(admin, "_coach_tomb")).ids as string[]) || [];
     const tombSet = new Set(tomb);
-    if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, scoped, tomb });
+    const revNow = async () => { const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle(); return String(rv?.updated_at || ""); };
+    if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: await revNow() });
 
     // ── Historique d'une fiche : activités Boost (appels + durée, SMS, emails, WhatsApp, RDV…)
     // et, pour Montpellier Lattes, les appels Aircall de ce numéro. Lu à la demande, rien n'est stocké.
@@ -652,7 +681,7 @@ serve(async (req) => {
       if (!digits && !email) return json({ error: "Un téléphone ou un email est nécessaire" }, 400);
       if (digits && digits.length < 9) return json({ error: "Numéro de téléphone incomplet" }, 400);
       if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return json({ error: "Adresse email invalide" }, 400);
-      const studio = scoped ? myStudio : (canon(body.studio) || "");
+      const studio = scoped ? pickStudio(body.studio) : (canon(body.studio) || "");
       if (!studio) return json({ error: "Studio obligatoire · choisir parmi : " + STUDIOS.join(", ") }, 400);
       const k9 = digits.slice(-9);
       const dup = list.find((x) => sk(x.studio) === sk(studio) && ((k9.length === 9 && String(x.tel || "").replace(/\D/g, "").slice(-9) === k9) || (email && String(x.email || "").toLowerCase() === email.toLowerCase())));
@@ -836,7 +865,7 @@ serve(async (req) => {
       if (list.length > MAX_PROSPECTS) list = list.slice(-MAX_PROSPECTS);
       await saveList();
       if (queued) await pushBoostNow(admin);
-      return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, scoped, tomb });
+      return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: await revNow() });
     }
 
     if (action === "delete") {

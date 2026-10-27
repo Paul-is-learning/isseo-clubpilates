@@ -681,6 +681,7 @@ a.menu-item{text-decoration:none;color:inherit}
 .src-ic svg{width:14px;height:14px}
 .src-txt{font-size:10px;font-weight:700;color:var(--ink-mid);background:#F6F4EE;border-radius:5px;padding:1px 5px;margin-right:6px;vertical-align:1px}
 .pl-arr{white-space:nowrap}
+.tm-more{margin-left:4px;border:1px dashed #C9C2B2;background:#fff;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800;color:var(--lav-ink);cursor:pointer}
 .pl-tb{border:1px solid var(--cream-line);background:#fff;border-radius:99px;padding:4px 11px;font-size:12px;font-weight:700;color:var(--ink-soft);cursor:pointer}
 .pl-tb.on.t-chaud{background:#FDEBE3;color:#B4430F;border-color:#F5C9B2}
 .pl-tb.on.t-tiede{background:#FFF6DE;color:#8A6A14;border-color:#EFDCA6}
@@ -2572,7 +2573,10 @@ const STUDIOS=['La Garenne-Colombes','Montpellier Lattes','La Défense'];
 const STUDIO_SHORT={'La Garenne-Colombes':'Garenne','Montpellier Lattes':'Lattes','La Défense':'Défense'};
 // Avant le 1er ping de cette version : un salarié qui a déjà un studio est présumé cloisonné
 let SCOPED=(()=>{const v=localStorage.getItem('cpcoach_scoped');return v===null?null:v==='1';})();
-function canNav(){if(COACH_ROLE==='admin')return true;if(SCOPED===null)return !CFG.studio;return !SCOPED;}
+// Studios autorisés d'un salarié (une invitation peut en couvrir plusieurs, ex. Tom : Lattes + La Garenne)
+let MY_STUDIOS=(()=>{try{return JSON.parse(localStorage.getItem('cpcoach_studios')||'[]');}catch(e){return [];}})();
+function canNav(){if(COACH_ROLE==='admin')return true;if(SCOPED&&MY_STUDIOS.length>1)return true;if(SCOPED===null)return !CFG.studio;return !SCOPED;}
+function navStudios(){return COACH_ROLE==='admin'||!SCOPED?STUDIOS:STUDIOS.filter(x=>MY_STUDIOS.some(m=>_sk(m)===_sk(x)));}
 function canonStudio(s){const k=_sk(s);if(!k)return '';return STUDIOS.find(x=>_sk(x)===k)||(k.length>=5?STUDIOS.find(x=>_sk(x).includes(k)||k.includes(_sk(x))):'')||'';}
 (function(){const c=canonStudio(CFG.studio);const v=c||(canNav()?STUDIOS[0]:CFG.studio);if(v!==CFG.studio){CFG.studio=v;try{localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));}catch(e){}}})();
 function _sk(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z]/g,'');}
@@ -2597,7 +2601,7 @@ function openStudioPicker(){
     <div class="glp-t">Sur quel studio naviguer ?</div>
     <div class="fv-meta">Fiches, relances, Intro Class, appels et classement suivent ce choix. Vos salariés, eux, ne voient que leur studio.</div>
     <div style="display:flex;flex-direction:column;gap:8px;margin-top:14px">
-      ${STUDIOS.map(s=>`<button class="pr-act" style="display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;font-size:14px;${_sk(s)===_sk(CFG.studio)?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setStudio('${s.replace(/'/g,"\\'")}')"><span>📍 <b>${esc(s)}</b></span><small style="opacity:.75">${count(s)} fiche${count(s)>1?'s':''}</small></button>`).join('')}
+      ${navStudios().map(s=>`<button class="pr-act" style="display:flex;width:100%;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;font-size:14px;${_sk(s)===_sk(CFG.studio)?'background:var(--cp-dark);color:#fff;border-color:var(--cp-dark)':''}" onclick="setStudio('${s.replace(/'/g,"\\'")}')"><span>📍 <b>${esc(s)}</b></span><small style="opacity:.75">${count(s)} fiche${count(s)>1?'s':''}</small></button>`).join('')}
     </div>`);
 }
 function _rerenderTop(){
@@ -2621,9 +2625,11 @@ function _adoptStudio(d){
   if(!d)return false;
   if(typeof d.scoped==='boolean')SCOPED=d.scoped;
   else if(typeof d.studio==='string')SCOPED=COACH_ROLE!=='admin'&&!!_sk(d.studio);
+  if(Array.isArray(d.studios)){MY_STUDIOS=d.studios.map(x=>canonStudio(x)||x);try{localStorage.setItem('cpcoach_studios',JSON.stringify(MY_STUDIOS));}catch(e){}}
   try{localStorage.setItem('cpcoach_scoped',SCOPED?'1':'0');}catch(e){}
   const before=CFG.studio;
-  if(!canNav()){if(typeof d.studio==='string'&&d.studio)CFG.studio=canonStudio(d.studio)||d.studio;}
+  if(SCOPED&&MY_STUDIOS.length>1){if(!MY_STUDIOS.some(m=>_sk(m)===_sk(CFG.studio)))CFG.studio=canonStudio(MY_STUDIOS[0])||MY_STUDIOS[0];}
+  else if(!canNav()){if(typeof d.studio==='string'&&d.studio)CFG.studio=canonStudio(d.studio)||d.studio;}
   else if(!canonStudio(CFG.studio))CFG.studio=STUDIOS[0];
   else CFG.studio=canonStudio(CFG.studio);
   if(CFG.studio!==before)localStorage.setItem('cpcoach_cfg',JSON.stringify(CFG));
@@ -2681,7 +2687,7 @@ function schedulePush(){clearTimeout(_pushT);_pushT=setTimeout(syncPush,700);}
 async function syncPush(){
   if(!COACH_CODE)return;
   _syncState('sync');
-  try{const d=await syncCall('push',{prospects:PROSPECTS});if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}if(d&&'studio' in d&&_adoptStudio(d))_rerenderTop();_syncState('ok');_lastSync=new Date().toISOString();}
+  try{const d=await syncCall('push',{prospects:PROSPECTS});if(d&&d.rev)_rev=d.rev;if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=d.prospects;persistProspects();}if(d&&'studio' in d&&_adoptStudio(d))_rerenderTop();_syncState('ok');_lastSync=new Date().toISOString();}
   catch(e){if(e.message!=='code')_syncState('off');}
 }
 async function syncPull(rerender){
@@ -2689,6 +2695,7 @@ async function syncPull(rerender){
   _syncState('sync');
   try{
     const d=await syncCall('pull');
+    if(d&&d.rev)_rev=d.rev;
     const server=d.prospects||[];
     const tomb=new Set(d.tomb||[]);
     const studioChanged=('studio' in d)&&_adoptStudio(d);
@@ -2720,7 +2727,7 @@ async function syncPull(rerender){
     }
     _syncState('ok');_lastSync=new Date().toISOString();
     if(studioChanged)_rerenderTop();
-    else if(rerender&&$('#topPhase').textContent==='Mes prospects')showProspects(true);
+    else if(rerender&&$('#topPhase').textContent==='Mes prospects'&&!_typing())showProspects(true);
   }catch(e){if(e.message!=='code')_syncState('off');}
 }
 
@@ -3087,7 +3094,7 @@ function renderTeam(invites){
       <div class="pr-top">
         ${i.avatar?avaTag(i.avatar,40,i.nom):`<div class="pr-ava" style="background:${off?'#8C95A8':isMgrInv?'#C9871F':'#1F9E75'}">${esc(prInitials(i.nom))}</div>`}
         <div class="pr-idbox"><div class="pr-id"><b>${esc(i.nom)}</b>${isMgrInv?'<span class="tm-mgr">⭐ Recruteur</span>':''}</div>
-          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span>${COACH_ROLE==='admin'?`<select class="tm-studio" onchange="setInviteStudio('${i.id}',this.value)" style="border:1px solid ${i.studio?'#DCE4F2':'#F5C0AE'};border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;background:${i.studio?'#fff':'#FFF4F0'};color:${i.studio?'var(--cp-dark)':'#B4300F'}">${!i.studio?'<option value="" selected>⚠️ Studio non défini · accès à tous</option>':!canonStudio(i.studio)?`<option value="" selected>⚠️ ${esc(i.studio)} · non reconnu</option>`:''}${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(i.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select>`:(i.studio?`<span class="tm-studio">📍 ${esc(i.studio)}</span>`:'<span class="tm-studio">⚠️ studio non défini</span>')}<span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span><span>${i.device?' · 📱 appareil lié':' · 📱 libre'}</span></div></div>
+          <div class="pr-sub"><span class="tm-code">${esc(i.code)}</span>${COACH_ROLE==='admin'?`<select class="tm-studio" onchange="setInviteStudio('${i.id}',this.value)" style="border:1px solid ${i.studio?'#DCE4F2':'#F5C0AE'};border-radius:99px;padding:1px 6px;font-size:11px;font-weight:700;background:${i.studio?'#fff':'#FFF4F0'};color:${i.studio?'var(--cp-dark)':'#B4300F'}">${!i.studio?'<option value="" selected>⚠️ Studio non défini · accès à tous</option>':!canonStudio(i.studio)?`<option value="" selected>⚠️ ${esc(i.studio)} · non reconnu</option>`:''}${STUDIOS.map(s=>`<option value="${esc(s)}"${_sk(s)===_sk(i.studio)?' selected':''}>📍 ${esc(s)}</option>`).join('')}</select><button class="tm-more" onclick="inviteStudios('${i.id}')" title="Donner accès à plusieurs studios">${(i.studios||[]).length>1?'＋'+((i.studios||[]).length-1)+' studio'+((i.studios||[]).length>2?'s':''):'＋ studios'}</button>`:(i.studio?`<span class="tm-studio">📍 ${esc(i.studio)}</span>`:'<span class="tm-studio">⚠️ studio non défini</span>')}<span>· ${i.lastSeen?'vu le '+fmt(i.lastSeen):'jamais connecté'}</span><span>${i.device?' · 📱 appareil lié':' · 📱 libre'}</span></div></div>
         <span class="pr-chip" style="${off?'background:#f2f3f6;color:#8C95A8;border-color:#dde1e8':'background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6'}">${off?'⏸ Suspendu':'✅ Actif'}</span>
       </div>
       <div class="pr-actions">
@@ -3140,6 +3147,23 @@ async function toggleManager(id,mgr){
 }
 async function toggleInvite(id,actif){
   try{const d=await syncCall('team_toggle',{id:id,actif:actif});renderTeam(d.invites||[]);toast(actif?'Code réactivé ✓':'Code suspendu · outil verrouillé chez lui');}
+  catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
+}
+// Accès à plusieurs studios (code maître) : cases à cocher, le studio principal reste en tête
+function inviteStudios(id){
+  const i=(window._TEAM||[]).find(x=>x.id===id);if(!i)return;
+  const cur=(i.studios&&i.studios.length?i.studios:[i.studio]).filter(Boolean);
+  icSheet(`<div class="glp-tag">📍 Studios de ${esc(i.nom)}</div><div class="glp-t">À quels studios a-t-il accès ?</div>
+    <div class="fv-meta">Il voit et travaille les fiches de chaque studio coché, et passe de l'un à l'autre en haut de l'écran.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${STUDIOS.map(s=>`<label style="display:flex;align-items:center;gap:10px;font-size:14px;font-weight:700"><input type="checkbox" class="inv-st" value="${esc(s)}"${cur.some(c=>_sk(c)===_sk(s))?' checked':''} style="width:18px;height:18px"/> ${esc(s)}${_sk(s)===_sk(i.studio)?' <small style="color:var(--ink-mid);font-weight:600">· principal</small>':''}</label>`).join('')}</div>
+    <button class="pr-act main" style="margin-top:14px;width:100%" onclick="saveInviteStudios('${id}')">Enregistrer</button>`);
+}
+async function saveInviteStudios(id){
+  const i=(window._TEAM||[]).find(x=>x.id===id);if(!i)return;
+  let list=[...document.querySelectorAll('.inv-st:checked')].map(x=>x.value);
+  if(!list.length){toast('Cochez au moins un studio');return;}
+  list.sort((a,b)=>(_sk(a)===_sk(i.studio)?-1:_sk(b)===_sk(i.studio)?1:0));
+  try{const d=await syncCall('team_studios',{id,studios:list});document.getElementById('icPop')?.remove();renderTeam(d.invites||[]);toast('📍 '+i.nom+' · '+list.join(' + '));}
   catch(e){if(e.message!=='code')toast('Erreur : '+e.message);}
 }
 async function setInviteStudio(id,studio){
@@ -4319,7 +4343,7 @@ function showProspects(keepScroll){
   const _ae=document.activeElement,_srch=_ae&&_ae.id==='prSearchIn'?[_ae.selectionStart,_ae.selectionEnd]:null;
   _vReg('prospects');
   clearInterval(_prTick);
-  _prTick=setInterval(()=>{if(document.querySelector('.pr-search')){showProspects(true);syncPull(true);}else clearInterval(_prTick);},60000);
+  _prTick=setInterval(()=>{if(document.querySelector('.pr-search')){if(!_typing())showProspects(true);}else clearInterval(_prTick);},60000);
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
@@ -4739,7 +4763,10 @@ function editSale(id){
 function setPPack(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.pack=String(pk);p.maj=new Date().toISOString();persistProspects();schedulePush();
   emitEvent(p,'abo',{pack:String(pk),prime:+PRIMES[pk]||0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''});
   showProspects(true);toast('🎉 '+packShort(pk)+' vendu · +'+(+PRIMES[pk]||0)+' € de prime !');}
-function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.statut=s;if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
+function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
+  if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo']}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}
+  p.statut=s;if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
   if(s!=='rappeler')emitEvent(p,s,s==='abo'?{pack:p.pack||'',prime:p.pack?(+PRIMES[+p.pack]||0):0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''}:{});
   showProspects(true);
   if(s==='abo'&&p.pack)toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');
@@ -4756,6 +4783,17 @@ function setPRappelH(id,v){
 let _prTick=null;
 // Retour sur l'app (onglet ou app installée remise au premier plan) : données fraîches de l'équipe
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&COACH_CODE)syncPull(true);});
+// Mises à jour en quasi temps réel : toutes les 15 s (onglet visible), un signal léger « rev » dit si
+// la liste a changé (saisie d'un collègue, appel Aircall/Allo, synchro Boost) ; on ne retélécharge qu'alors
+var _rev='',_revBusy=false;
+setInterval(async()=>{
+  if(!COACH_CODE||document.visibilityState!=='visible'||_revBusy)return;
+  _revBusy=true;
+  try{const d=await syncCall('rev');if(d&&d.rev&&d.rev!==_rev){const first=!_rev;_rev=d.rev;if(!first)await syncPull(true);}}catch(e){}
+  _revBusy=false;
+},15000);
+// Ne pas redessiner la liste pendant qu'on écrit (note, coordonnées…) : on attend la fin de la saisie
+function _typing(){const a=document.activeElement;return !!a&&(a.tagName==='TEXTAREA'||(a.tagName==='INPUT'&&a.id!=='prSearchIn'&&a.type!=='checkbox'))&&!!a.closest('.pl-detail,.pl-form,#icPop');}
 function setPRep(id,v){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   p.rep=v;p.maj=new Date().toISOString();
