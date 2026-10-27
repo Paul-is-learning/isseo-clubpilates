@@ -1271,7 +1271,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .prw .pr-obj,.prw .pr-note{background:var(--cream);border-radius:10px;font-size:12.5px;padding:6px 10px}
 .prw .pr-bnotes{background:var(--cream);border-color:var(--cream-line);border-radius:10px;padding:5px 10px;font-size:12px}
 .prw .pr-meta{margin:7px 0 9px;font-size:11.5px;gap:8px}
-.prw .pr-pipe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:9px;overflow:visible}
+.prw .pr-pipe{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:9px;overflow:visible}
 .prw .pr-st{flex-direction:column;justify-content:center;gap:1px;min-width:0;padding:5px 2px 4px;border:1px solid var(--cream-line);background:#fff;border-radius:10px;font-size:13px;line-height:1.1}
 .prw .pr-st small{font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .prw .pr-st.on{transform:none;box-shadow:0 6px 14px -8px rgba(42,49,66,.5)}
@@ -1299,6 +1299,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-chip{font-size:11.5px;font-weight:800;border-radius:99px;padding:4px 10px;white-space:nowrap}
 .pl-flag{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEF2FB;color:#2A3F6B;white-space:nowrap}
 .pl-flag.ok{background:var(--mnt);color:var(--mnt-ink)}.pl-flag.warn{background:#FFF6E0;color:#8A5A00}.pl-flag.bad{background:#FDECE8;color:#B4300F}
+.prw .pr-pipe .pr-st small{white-space:normal;line-height:1.15;text-align:center;overflow:visible;text-overflow:clip}
 .pl-own{display:inline-flex;align-items:center;gap:3px;margin-right:6px;padding:2px 9px;border:1px solid;border-radius:99px;font-size:12px;font-weight:800;vertical-align:2px;white-space:nowrap}
 .pl-own.none{color:#8C95A8;background:#F3F4F7;border-color:#E2E5EC;font-weight:700}
 .pr-ownf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
@@ -4754,6 +4755,24 @@ async function csDone(id,mode,k){
     catch(e){if(!_quiet(e))toast('Contact enregistré · note non envoyée à Boost ('+_why(e)+')');}
   }
 }
+// Étape « À rappeler à l'ouverture » depuis la fiche : commentaire facultatif, puis rangement direct dans l'onglet
+function ouvAsk(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  if(prOuv(p)){ouvOff(id);return;}
+  icSheet(`<div class="glp-tag">🏗 À rappeler à l'ouverture</div><div class="glp-t">${esc(p.nom||'')}</div>
+    <div class="fv-meta">Le contact sort des listes d'appel et des rappels, sans être perdu. Il revient d'un clic depuis l'onglet.</div>
+    <textarea id="ouv-txt" rows="3" placeholder="Commentaire (facultatif) : ce qu'il attend, le studio visé…" style="width:100%;box-sizing:border-box;margin-top:10px;border:1px solid var(--cream-line);border-radius:12px;padding:10px;font:inherit;font-size:13.5px"></textarea>
+    <button class="pr-act main" style="width:100%;margin-top:10px" onclick="ouvSave('${id}')">Ranger dans « À rappeler à l'ouverture »</button>`);
+  setTimeout(()=>document.getElementById('ouv-txt')?.focus(),60);
+}
+async function ouvSave(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const txt=(document.getElementById('ouv-txt')?.value||'').trim(),now=new Date().toISOString();
+  if(p.statut!=='rappeler')p.statut='rappeler';
+  p.ouverture={at:now,by:_me(),note:txt.slice(0,300)};p.rappel='';p.rappelH='';p.rappelBy='';p.maj=now;
+  persistProspects();schedulePush();document.getElementById('icPop')?.remove();showProspects(true);toast('🏗 Rangé dans « À rappeler à l\'ouverture »');
+  try{const r=await syncCall('note_add',{id,text:('🏗 À rappeler à l\'ouverture'+(txt?' · '+txt:'')).slice(0,600),nom:CFG.rep||''});
+    if(r&&r.ok&&r.prospect){_takeSrv(id,r.prospect,['note']);persistProspects();if(document.querySelector('.pr-search')&&!_typing())showProspects(true);}}
+  catch(e){if(!_quiet(e))toast('Rangé · note non envoyée à Boost ('+_why(e)+')');}
+}
 // Retirer le drapeau « À rappeler à l'ouverture »
 function ouvOff(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.ouverture=null;p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);toast('↩ Remis dans les rappels · à recontacter');}
 // Ouvrir une fiche depuis la roadmap : onglet de la fiche, fiche dépliée
@@ -4889,8 +4908,9 @@ function showProspects(keepScroll){
             <div class="pr-pipe">${(()=>{const at=prATraiter(p),C='#5B6B8C';
               // Étape « À traiter » (jamais appelé) puis « Contacté » : cliquer « Contacté » sur un lead à traiter ouvre Décroché / Non décroché
               return `<button class="pr-st${at?' on':''}" style="${at?'background:'+C+';color:#fff;border-color:'+C:''}" onclick="${at?'':`toast('Lead déjà appelé · il reste dans son étape')`}">🆕<small>À traiter</small></button>`
-              +Object.keys(PIPE).map(k=>{const on=p.statut===k&&!(k==='rappeler'&&at);const oc=k==='rappeler'&&at?`contactSheet('${p.id}','new')`:`setPStatut('${p.id}','${k}')`;
-                return `<button class="pr-st${on?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="${oc}">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`;}).join('');})()}</div>
+              +Object.keys(PIPE).map(k=>{const on=p.statut===k&&!(k==='rappeler'&&(at||prOuv(p)));const oc=k==='rappeler'&&at?`contactSheet('${p.id}','new')`:`setPStatut('${p.id}','${k}')`;
+                return `<button class="pr-st${on?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="${oc}">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`;}).join('')
+              +(()=>{const ov=prOuv(p),OC='#6B5B3E';return `<button class="pr-st${ov?' on':''}" style="${ov?'background:'+OC+';color:#fff;border-color:'+OC:''}" title="${ov?'Remettre dans les rappels':'Ne souhaite plus être contacté pour le moment · à rappeler à l\'ouverture du studio'}" onclick="ouvAsk('${p.id}')">🏗<small>À rappeler à l'ouverture</small></button>`;})();})()}</div>
             ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}${p.pack?`<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎ Vendeurs</button>`:''}</div>`:''}
             <div class="pl-lbl">Température du lead</div>
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
