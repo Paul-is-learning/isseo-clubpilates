@@ -1271,7 +1271,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .prw .pr-obj,.prw .pr-note{background:var(--cream);border-radius:10px;font-size:12.5px;padding:6px 10px}
 .prw .pr-bnotes{background:var(--cream);border-color:var(--cream-line);border-radius:10px;padding:5px 10px;font-size:12px}
 .prw .pr-meta{margin:7px 0 9px;font-size:11.5px;gap:8px}
-.prw .pr-pipe{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px;margin-bottom:9px;overflow:visible}
+.prw .pr-pipe{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:5px;margin-bottom:9px;overflow:visible}
 .prw .pr-st{flex-direction:column;justify-content:center;gap:1px;min-width:0;padding:5px 2px 4px;border:1px solid var(--cream-line);background:#fff;border-radius:10px;font-size:13px;line-height:1.1}
 .prw .pr-st small{font-size:9.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
 .prw .pr-st.on{transform:none;box-shadow:0 6px 14px -8px rgba(42,49,66,.5)}
@@ -3232,8 +3232,11 @@ const PIPE={
   perdu:{ic:'✖️',lbl:'Perdu',c:'#8C95A8'}
 };
 // Libellé précis d'une fiche « à rappeler », comme dans Boost : À traiter · Contacté · RDV planifié · RDV non venu
+// « À traiter » : lead jamais appelé (aucun appel noté), quel que soit le statut ou le rappel posé côté Boost
+function prATraiter(p){return p.statut==='rappeler'&&!prCalls(p).n;}
 function stLabel(p){
   if(p.statut!=='rappeler')return (PIPE[p.statut]||PIPE.rappeler).lbl;
+  if(prATraiter(p))return 'À traiter';
   if(p.bnok)return 'RDV non venu';
   if(p.rappel)return 'RDV planifié';
   if(!(p.appels||[]).length&&(!p.bst||p.bst==='a_traiter'))return 'À traiter';
@@ -4504,7 +4507,8 @@ function rdvAt(p){if(!p.rappel)return null;const t=new Date(p.rappel+'T'+(p.rapp
 const prOpen=p=>(p.statut==='rappeler'||p.statut==='essai')&&!p.noCall;
 // Rappels « chauds » : en retard ou dans l'heure
 // Rappel automatique d'une séquence Boost sur un lead jamais appelé : le lead reste un « Nouveau lead »
-function prAutoNew(p){return !!p.rappel&&p.rappelBy==='Boost'&&p.bauto===true&&p.brap===p.rappel+' '+(p.rappelH||'')&&!prCalls(p).n;}
+// Lead jamais joint (aucun appel décroché, moins de 3 essais) : il reste TOUJOURS dans « Nouveaux leads », quel que soit le rappel posé dessus (Boost ou équipe)
+function prAutoNew(p){if(!p.rappel)return false;const c=prCalls(p);return !c.ok&&c.n<3;}
 function rdvHot(p){if(!prOpen(p)||prAutoNew(p)||prOuv(p))return false;const t=rdvAt(p);return !!t&&(t.getTime()-Date.now())/60000<=60;}
 function fmtMin(m){m=Math.max(0,Math.round(m));if(m<60)return m+' min';if(m<1440)return Math.floor(m/60)+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'');const d=Math.floor(m/1440);return d+' j';}
 // Alerte rappel : toast + notification système 10 min avant (une seule fois par rappel)
@@ -4865,7 +4869,11 @@ function showProspects(keepScroll){
         <div class="pl-dgrid">
           <div>
             <div class="pl-lbl">Étape</div>
-            <div class="pr-pipe">${Object.keys(PIPE).map(k=>`<button class="pr-st${p.statut===k?' on':''}" style="${p.statut===k?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="setPStatut('${p.id}','${k}')">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`).join('')}</div>
+            <div class="pr-pipe">${(()=>{const at=prATraiter(p),C='#5B6B8C';
+              // Étape « À traiter » (jamais appelé) puis « Contacté » : cliquer « Contacté » sur un lead à traiter ouvre Décroché / Non décroché
+              return `<button class="pr-st${at?' on':''}" style="${at?'background:'+C+';color:#fff;border-color:'+C:''}" onclick="${at?'':`toast('Lead déjà appelé · il reste dans son étape')`}">🆕<small>À traiter</small></button>`
+              +Object.keys(PIPE).map(k=>{const on=p.statut===k&&!(k==='rappeler'&&at);const oc=k==='rappeler'&&at?`contactSheet('${p.id}','new')`:`setPStatut('${p.id}','${k}')`;
+                return `<button class="pr-st${on?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="${oc}">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`;}).join('');})()}</div>
             ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}${p.pack?`<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎ Vendeurs</button>`:''}</div>`:''}
             <div class="pl-lbl">Température du lead</div>
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
