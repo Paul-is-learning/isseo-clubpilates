@@ -424,28 +424,41 @@ function renderBPlayPanel(sid){
   var r=caFromAdherents(curve,p.mix,p.prix);
   var mixTot=Math.round(p.mix.p4+p.mix.p8+p.mix.ill);
   var nets=[Math.round(p.t1/12*10)/10,Math.round((p.t2-p.t1)/12*10)/10,Math.round((p.t3-p.t2)/12*10)/10];
-  var inp=function(val,oc,w){return '<input type="number" value="'+val+'" onchange="'+oc+'" style="width:'+(w||70)+'px;padding:7px 8px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;text-align:center"/>';};
-  var h='<div class="card" style="padding:18px 20px;margin-bottom:16px;border-left:3px solid #1a3a6b">';
-  h+='<div style="font-weight:700;font-size:14px;color:#0f1f3d;margin-bottom:2px">🎯 Jouer avec le BP</div>';
-  h+='<div style="font-size:11.5px;color:#888;margin-bottom:14px">Cibles adhérents fin d\'année × mix forfaits → le CA et tout le BP se recalculent. Répartition mensuelle du CA : courbe du dossier.</div>';
-  h+='<div style="display:flex;flex-wrap:wrap;gap:18px;align-items:flex-end">';
-  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Adhérents fin A1 · A2 · A3</div><div style="display:flex;gap:6px">'
-    +inp(p.t1,"setBPlay('"+sid+"','t1',this.value)")+inp(p.t2,"setBPlay('"+sid+"','t2',this.value)")+inp(p.t3,"setBPlay('"+sid+"','t3',this.value)")+'</div></div>';
-  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Lissage des inscriptions</div>'
-    +'<select onchange="setBPlay(\''+sid+'\',\'lissage\',this.value)" style="padding:8px 10px;border:1px solid #dce1ea;border-radius:8px;font-size:13px;background:#fff">'
+  var info=function(t){return '<span class="bpx-i" title="'+t+'"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="9.5"/><path d="M12 11v6M12 7.5v.5" stroke-linecap="round"/></svg></span>';};
+  var inp=function(val,oc,unit){return '<div class="bpx-in"><input type="number" value="'+val+'" onchange="'+oc+'"/>'+(unit?'<span>'+unit+'</span>':'')+'</div>';};
+  var cell=function(lbl,html){return '<div class="bpx-cell"><div class="bpx-cl">'+lbl+'</div>'+html+'</div>';};
+  var on=function(k){return "setBPlay('"+sid+"','"+k+"',this.value)";};
+  var h='<div class="bpx">';
+  h+='<div class="bpx-head"><div class="bpx-ico"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 12h4M12 12h8M4 17h12M20 17h0"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="17" r="2"/></svg></div>'
+    +'<div><div class="bpx-t">Simulateur de business plan</div><div class="bpx-s">Ajustez vos hypothèses. Visualisez leur impact.</div></div><span class="bpx-chip">Simulation</span></div>';
+  h+='<div class="bpx-grid">';
+  // Adhérents fin d'année
+  h+='<div class="bpx-col"><div class="bpx-h">Adhérents en fin d\'année'+info('Cible d\'adhérents actifs au dernier mois de chaque année')+'</div><div class="bpx-row">'
+    +cell('A1',inp(p.t1,on('t1')))+cell('A2',inp(p.t2,on('t2')))+cell('A3',inp(p.t3,on('t3')))+'</div></div>';
+  // Rythme
+  h+='<div class="bpx-col"><div class="bpx-h">Rythme des inscriptions'+info('Répartition mensuelle des nouvelles inscriptions entre deux cibles')+'</div><div class="bpx-row"><div class="bpx-cell" style="flex:1"><div class="bpx-cl">&nbsp;</div>'
+    +'<select class="bpx-sel" onchange="'+on('lissage')+'">'
     +'<option value="dossier"'+(p.lissage==='dossier'?' selected':'')+'>Courbe du dossier (ramp-up)</option>'
     +'<option value="lineaire"'+(p.lissage==='lineaire'?' selected':'')+'>Linéaire (+N nets / mois)</option>'
-    +'</select>'
-    +(p.lissage==='lineaire'?'<div style="font-size:10.5px;color:#888;margin-top:4px">≈ +'+nets[0]+' · +'+nets[1]+' · +'+nets[2]+' nets/mois</div>':'')+'</div>';
-  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Mix % · Pack 4 / Pack 8 / Illimité'+(mixTot!==100?' <span style="color:#c53030">(= '+mixTot+' %)</span>':'')+'</div><div style="display:flex;gap:6px">'
-    +inp(p.mix.p4,"setBPlay('"+sid+"','mix.p4',this.value)",56)+inp(p.mix.p8,"setBPlay('"+sid+"','mix.p8',this.value)",56)+inp(p.mix.ill,"setBPlay('"+sid+"','mix.ill',this.value)",56)+'</div></div>';
-  h+='<div><div style="font-size:11px;font-weight:600;color:#555;margin-bottom:5px">Tarifs TTC /mois</div><div style="display:flex;gap:6px">'
-    +inp(p.prix.p4,"setBPlay('"+sid+"','prix.p4',this.value)",62)+inp(p.prix.p8,"setBPlay('"+sid+"','prix.p8',this.value)",62)+inp(p.prix.ill,"setBPlay('"+sid+"','prix.ill',this.value)",62)+'</div></div>';
+    +'</select>'+(p.lissage==='lineaire'?'<div class="bpx-note">≈ +'+nets[0]+' · +'+nets[1]+' · +'+nets[2]+' nets / mois</div>':'')+'</div></div></div>';
+  // Mix
+  var w4=Math.max(0,p.mix.p4),w8=Math.max(0,p.mix.p8),wi=Math.max(0,p.mix.ill),wt=(w4+w8+wi)||1;
+  h+='<div class="bpx-col"><div class="bpx-h">Répartition des forfaits'+info('Part de chaque forfait parmi les adhérents · le total doit faire 100 %')+(mixTot!==100?'<span class="bpx-warn">= '+mixTot+' %</span>':'')+'</div><div class="bpx-row">'
+    +cell('Pack 4',inp(p.mix.p4,on('mix.p4'),'%'))+cell('Pack 8',inp(p.mix.p8,on('mix.p8'),'%'))+cell('Illimité',inp(p.mix.ill,on('mix.ill'),'%'))+'</div>'
+    +'<div class="bpx-bar"><i style="width:'+(w4/wt*100)+'%;background:#2F6FE0"></i><i style="width:'+(w8/wt*100)+'%;background:#7FB0F5"></i><i style="width:'+(wi/wt*100)+'%;background:#CFE1FB"></i></div></div>';
+  // Tarifs
+  h+='<div class="bpx-col"><div class="bpx-h">Tarifs TTC / mois'+info('Prix mensuel TTC de chaque forfait')+'</div><div class="bpx-row">'
+    +cell('Pack 4',inp(p.prix.p4,on('prix.p4'),'€'))+cell('Pack 8',inp(p.prix.p8,on('prix.p8'),'€'))+cell('Illimité',inp(p.prix.ill,on('prix.ill'),'€'))+'</div></div>';
   h+='</div>';
-  h+='<div style="display:flex;flex-wrap:wrap;gap:14px;align-items:center;margin-top:14px;padding-top:12px;border-top:1px dashed #e3e8f1">';
-  h+='<div style="font-size:12.5px;color:#333"><b>Panier moyen : '+r.panierHT.toFixed(2).replace('.',',')+' € HT</b>/adhérent/mois · CA calculé : <b>'+fmtN(r.ca[0])+'</b> / <b>'+fmtN(r.ca[1])+'</b> / <b>'+fmtN(r.ca[2])+' €</b> <span style="color:#888">(+4,6 % privés & boutique inclus)</span></div>';
-  if(!isViewer())h+='<button class="btn btn-primary" style="margin-left:auto" onclick="applyBPlay(\''+sid+'\')">Appliquer au BP</button>';
-  h+='</div></div>';
+  // Résultat
+  h+='<div class="bpx-res">'
+    +'<div class="bpx-kpi"><span class="bpx-kico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4h2l2.4 11h10.2L20 8H6.2"/><circle cx="9" cy="19.5" r="1.3"/><circle cx="17" cy="19.5" r="1.3"/></svg></span>'
+    +'<div><div class="bpx-kl">Panier moyen</div><div class="bpx-kv">'+r.panierHT.toFixed(2).replace('.',',')+' €</div><div class="bpx-ks">HT / adhérent / mois</div></div></div>'
+    +'<div class="bpx-ca"><span class="bpx-kico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 20V11M10 20V6M15 20v-7M20 20H3"/></svg></span><div class="bpx-kl">Chiffre d\'affaires HT</div>'
+    +[0,1,2].map(function(y){return '<div class="bpx-y"><div>A'+(y+1)+'</div><b>'+fmtN(r.ca[y])+' €</b></div>';}).join('')
+    +'<div class="bpx-inc">+4,6 % privés & boutique inclus'+info('Cours privés et ventes boutique ajoutés au CA des abonnements')+'</div></div>'
+    +(!isViewer()?'<button class="bpx-btn" onclick="applyBPlay(\''+sid+'\')">Appliquer au BP <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg></button>':'')
+    +'</div></div>';
   return h;
 }
 
@@ -841,13 +854,11 @@ function renderForecast(sid,s){
   if(!isViewer()){
     var lmDefault=isLattesStudio(sid)?Math.round(38850/12):4800;
     var lmCurrent=s.loyer_mensuel>0?s.loyer_mensuel:lmDefault;
-    h+='<div style="display:flex;align-items:center;gap:10px;background:#f8f9fb;border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;margin-bottom:14px;flex-wrap:wrap">';
-    h+='<div style="width:3px;height:16px;background:#1a3a6b;border-radius:2px;flex-shrink:0"></div>';
-    h+='<span style="font-size:12px;font-weight:600;color:#1a3a6b;white-space:nowrap">Loyer mensuel HT</span>';
-    h+='<input type="number" min="0" step="100" value="'+lmCurrent+'" '
-      +'onchange="saveLoyerMensuel(\''+sid+'\',+this.value)" '
-      +'style="width:110px;padding:4px 8px;border:1px solid #dce1ea;border-radius:6px;font-size:13px;font-weight:600;text-align:right;outline:none"> €/mois';
-    h+='<span style="font-size:11px;color:#888;margin-left:4px">→ Loyer annuel BP : <b style="color:#0f1f3d">'+fmt(lmCurrent*12)+'</b>&nbsp;&nbsp;Référence : <b>'+fmt(lmDefault*12)+'</b></span>';
+    h+='<div class="bpx-rent"><span class="bpx-kico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3" width="14" height="18" rx="1"/><path d="M9 7h2M13 7h2M9 11h2M13 11h2M9 15h2M13 15h2M11 21v-3h2v3"/></svg></span>';
+    h+='<span class="bpx-rl">Loyer mensuel HT</span>';
+    h+='<div class="bpx-in bpx-in-l"><input type="number" min="0" step="100" value="'+lmCurrent+'" onchange="saveLoyerMensuel(\''+sid+'\',+this.value)"/></div><span class="bpx-ru">€ / mois</span>';
+    h+='<span class="bpx-sep"></span><span class="bpx-rm"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg>Loyer annuel BP : <b>'+fmt(lmCurrent*12)+'</b></span>';
+    h+='<span class="bpx-sep"></span><span class="bpx-ref">Référence : '+fmt(lmDefault*12)+'</span>';
     h+='</div>';
   }
   h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';

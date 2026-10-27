@@ -165,7 +165,6 @@ function renderAuth(){
     +'<button class="lg-btn" onclick="doLogin()">Se connecter '+arrow+'</button>'
     +'<div class="lg-priv">'+lock+'<span>Espace privé · ISSEO × Club Pilates × COBE</span></div>'
     +'</div>'
-    +'<div class="lg-motto">L’exigence, au quotidien.</div>'
     +'</section>'
     +'</div>';
 }

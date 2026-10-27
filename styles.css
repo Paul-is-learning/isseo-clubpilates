@@ -3786,3 +3786,74 @@ body{background:#F3F1EC}
   .lg-lbl{margin-top:26px}
   .lg-motto{left:20px;right:auto;bottom:24px}
 }
+
+/* ═══ Simulateur de business plan (maquette 2026) ═══ */
+.bpx{background:#fff;border-radius:20px;box-shadow:0 1px 2px rgba(15,31,61,.04),0 10px 30px rgba(15,31,61,.06);padding:22px 24px 20px;margin-bottom:18px;color:#0F1F3D}
+.bpx-head{display:flex;align-items:center;gap:20px;margin-bottom:22px}
+.bpx-ico{width:62px;height:62px;border-radius:50%;background:#0F1F3D;color:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bpx-t{font-size:24px;font-weight:800;letter-spacing:-.4px;color:#0F1F3D}
+.bpx-s{font-size:15px;color:#5B6B8C;margin-top:2px}
+.bpx-chip{margin-left:auto;align-self:flex-start;background:#EAF3FF;color:#2563C9;border:1px solid #D3E4FB;border-radius:10px;padding:7px 14px;font-size:14px;font-weight:600}
+.bpx-grid{display:grid;grid-template-columns:1fr .85fr 1.1fr 1.1fr;gap:0}
+.bpx-col{padding:0 16px;border-left:1px solid #E7EBF2;min-width:0}
+.bpx-col:first-child{padding-left:4px;border-left:none}
+.bpx-col:last-child{padding-right:4px}
+.bpx-h{display:flex;align-items:center;gap:7px;font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:12px;min-height:22px;line-height:1.2}
+.bpx-i{display:inline-flex;color:#8A96AE;cursor:help}
+.bpx-warn{color:#C53030;font-size:12.5px;font-weight:700;margin-left:4px}
+.bpx-row{display:flex;gap:7px}
+.bpx-cell{flex:1;min-width:0}
+.bpx-cl{text-align:center;font-size:13px;color:#5B6B8C;margin-bottom:8px}
+.bpx-in{display:flex;align-items:center;gap:4px}
+.bpx .bpx-in input,.bpx-rent .bpx-in input{width:100%;min-width:0;margin:0;box-sizing:border-box;padding:10px 2px 10px 10px;border:1px solid #D8DEE9;border-radius:10px;font-size:16px;font-weight:500;color:#0F1F3D;background:#fff;outline:none;transition:border-color .15s,box-shadow .15s}
+.bpx-in input:focus{border-color:#2F6FE0;box-shadow:0 0 0 3px rgba(47,111,224,.14)}
+.bpx-in span{font-size:13.5px;color:#3D4B66;flex-shrink:0}
+.bpx-sel{width:100%;margin:0;padding:10px 10px;border:1px solid #D8DEE9;border-radius:10px;font-size:15.5px;color:#0F1F3D;background:#fff;outline:none}
+.bpx-note{font-size:12px;color:#5B6B8C;margin-top:6px}
+.bpx-bar{display:flex;height:8px;border-radius:99px;overflow:hidden;background:#EEF2F8;margin-top:12px;gap:2px}
+.bpx-bar i{display:block;height:100%;border-radius:99px;transition:width .3s}
+.bpx-res{display:flex;align-items:center;gap:0;margin-top:22px;background:#F2F6FD;border-radius:14px;padding:16px 18px;flex-wrap:wrap;row-gap:14px}
+.bpx-kpi{display:flex;align-items:center;gap:14px;padding:0 20px 0 10px;border-left:3px solid #2F6FE0;border-right:1px solid #D9E2F0;margin-right:18px}
+.bpx-kico{width:46px;height:46px;border-radius:50%;background:#E1EBFA;color:#0F1F3D;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bpx-kl{font-size:13px;font-weight:700;letter-spacing:.6px;text-transform:uppercase;color:#3D5A8A}
+.bpx-kv{font-size:24px;white-space:nowrap;font-weight:800;color:#0F1F3D;line-height:1.15}
+.bpx-ks{font-size:14px;color:#5B6B8C}
+.bpx-ca{display:flex;align-items:center;gap:0;flex:1 1 560px;min-width:0;flex-wrap:nowrap}
+.bpx-ca>.bpx-kico{margin-right:12px}.bpx-ca>.bpx-kl{margin-right:14px;max-width:110px;line-height:1.25}
+.bpx-y{padding:0 14px;border-right:1px solid #D9E2F0}.bpx-y:nth-of-type(1){padding-left:0}
+.bpx-y div{font-size:14px;font-weight:600;color:#0F1F3D}
+.bpx-y b{font-size:19px;font-weight:800;color:#0F1F3D;white-space:nowrap}
+.bpx-inc{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#5B6B8C;padding:0 12px;max-width:170px;line-height:1.3}
+.bpx-btn{margin-left:auto;flex-shrink:0;display:flex;align-items:center;gap:10px;background:#0F1F3D;color:#fff;border:none;border-radius:10px;padding:14px 22px;font-size:16px;font-weight:700;cursor:pointer;white-space:nowrap;transition:background .15s,transform .1s}
+.bpx-btn:hover{background:#162D54}.bpx-btn:active{transform:scale(.98)}
+.bpx-rent{display:flex;align-items:center;gap:12px;background:#fff;border-radius:16px;box-shadow:0 1px 2px rgba(15,31,61,.04),0 6px 18px rgba(15,31,61,.05);padding:14px 22px;margin-bottom:16px;flex-wrap:wrap;color:#0F1F3D}
+.bpx-rl{font-size:16px;font-weight:700;white-space:nowrap}
+.bpx-in-l input{width:110px;text-align:right;font-weight:700;font-size:17px}
+.bpx-ru{font-size:16px}
+.bpx-sep{width:1px;align-self:stretch;background:#E3E8F0;margin:0 4px}
+.bpx-rm{display:flex;align-items:center;gap:10px;font-size:14.5px;color:#5B6B8C}
+.bpx-rm b{font-size:17px;color:#0F1F3D}
+.bpx-ref{font-size:14.5px;color:#7A869E}
+@media(max-width:1100px){
+  .bpx-grid{grid-template-columns:1fr 1fr;row-gap:22px}
+  .bpx-col:nth-child(3){border-left:none;padding-left:4px}
+}
+@media(max-width:640px){
+  .bpx{padding:18px 16px}
+  .bpx-head{gap:14px}.bpx-ico{width:48px;height:48px}.bpx-t{font-size:19px}.bpx-chip{display:none}
+  .bpx-grid{grid-template-columns:1fr}
+  .bpx-col{border-left:none;padding:0}
+  .bpx-kpi{border-right:none;margin-right:0;padding-right:0}
+  .bpx-y{padding:0 14px 0 0;border-right:none}
+  .bpx-btn{margin-left:0;width:100%;justify-content:center}
+  .bpx-sep{display:none}
+}
+body.dark .bpx,body.dark .bpx-rent{background:#161b22;color:#e6edf3}
+/* Onglet actif de la fiche studio : pastille bleu marine */
+@media(min-width:769px){
+  .tab.active{background:#0F1F3D;color:#fff;border-radius:12px;box-shadow:0 4px 12px rgba(15,31,61,.18)}
+  .tab.active:hover{background:#0F1F3D;color:#fff}
+  .tabs{padding:6px 4px 10px;gap:8px}
+  .tab{border-radius:12px;padding:11px 18px;font-size:14px}
+  .tab-indicator{display:none}
+}
