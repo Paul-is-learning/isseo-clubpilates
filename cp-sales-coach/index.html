@@ -3256,8 +3256,9 @@ function boostBadges(p){
   const bl=BOOST_ST[p.bst]||p.bst||'?';
   return `<div class="pr-bbs">${bl!==stLabel(p)?pill('Boost · '+esc(bl),'#EEF2FB','#2A3F6B','#D5DDF0'):pill('✓ Boost','#EEF2FB','#2A3F6B','#D5DDF0')}${p.bmember?pill('🏅 Adhérent','#EAF6F0','#1F7A55','#BFE8D6'):''}${p.src?srcLogo(p.src):''}${p.noCall?pill('📵 Ne pas appeler','#FDECE8','#B4300F','#F5C0AE'):''}${p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?pill('⏳ envoi vers Boost','#FFF6E0','#8A5A00','#F3D58C'):p.bqe?`<span class="pr-bb" style="background:#FDECE8;color:#B4300F;border-color:#F5C0AE" title="${esc(p.bqe)}">⚠️ Boost n'a pas accepté</span>`:''}</div>`;
 }
+let _SVOID={};
 function buildStatsMap(events,prospects){
-  const map={};
+  const map={};const _void=(id,ts)=>_SVOID[id]&&String(ts||'')<=_SVOID[id];
   const touch=id=>map[id]||(map[id]={rep:'',nom:'',appel:false,essai:false,venu:false,abo:false,perdu:false,pack:'',prime:0,ts:'',aboTs:''});
   (prospects||[]).forEach(p=>{
     // Fiche venue de Boost sans appel dans l'outil, ou statut posé par Boost : ne compte pas dans la Perf
@@ -3265,7 +3266,7 @@ function buildStatsMap(events,prospects){
     const m=touch(p.id);m.rep=m.rep||p.rep||'';m.nom=m.nom||p.nom||'';m.appel=true;m.ts=m.ts||p.ts||'';
     if(p.statut==='essai')m.essai=true;
     if(p.statut==='venu'){m.essai=true;m.venu=true;}
-    if(p.statut==='abo'){m.abo=true;if(p.pack)m.pack=p.pack;m.aboTs=m.aboTs||p.maj||p.ts||'';m.v2=m.v2||p.v2||'';if(p.fullCom)m.fullCom=true;m.icId=m.icId||p.icId||'';}
+    if(p.statut==='abo'&&!_void(p.id,p.maj||p.ts)){m.abo=true;if(p.pack)m.pack=p.pack;m.aboTs=m.aboTs||p.maj||p.ts||'';m.v2=m.v2||p.v2||'';if(p.fullCom)m.fullCom=true;m.icId=m.icId||p.icId||'';}
     if(p.statut==='perdu')m.perdu=true;
   });
   (events||[]).forEach(e=>{
@@ -3274,7 +3275,7 @@ function buildStatsMap(events,prospects){
     if(e.type==='appel'){m.appel=true;if(!m.ts||e.ts<m.ts)m.ts=e.ts;if(+e.dur)m.dur=+e.dur;}
     if(e.type==='essai')m.essai=true;
     if(e.type==='venu'){m.essai=true;m.venu=true;}
-    if(e.type==='abo'){m.abo=true;m.appel=true;if(e.pack)m.pack=String(e.pack);if(+e.prime)m.prime=+e.prime;m.aboTs=e.ts;m.v2=e.v2||m.v2||'';m.fullCom=e.fullCom===true;m.icId=e.icId||m.icId||'';}
+    if(e.type==='abo'&&!_void(String(e.k).split(':')[0],e.ts)){m.abo=true;m.appel=true;if(e.pack)m.pack=String(e.pack);if(+e.prime)m.prime=+e.prime;m.aboTs=e.ts;m.v2=e.v2||m.v2||'';m.fullCom=e.fullCom===true;m.icId=e.icId||m.icId||'';}
     if(e.type==='perdu')m.perdu=true;
   });
   Object.values(map).forEach(m=>{if(m.abo&&!m.prime&&m.pack)m.prime=+PRIMES[+m.pack]||0;});
@@ -4093,7 +4094,7 @@ async function removeSale(id,k){
   if(!confirm('Retirer cette vente de la course du mois et des primes ?\nSi la fiche existe, elle repasse en « Contacté ».'))return;
   const p=PROSPECTS.find(x=>x.id===id);
   if(p&&p.statut==='abo'){setPStatut(id,'rappeler');}
-  else{EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();try{await syncCall('stats_del',{ks:[id+':abo']});}catch(e){if(e.message!=='code')toast('Réservé au code maître ou à un recruteur');return;}}
+  else{EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();try{await syncCall('stats_del',{ks:[id+':abo'],void:true});}catch(e){if(e.message!=='code')toast('Réservé au code maître ou à un recruteur');return;}}
   document.getElementById('icPop')?.remove();_hpCache='';setTimeout(()=>{loadHomePerf();if(document.querySelector('.hm-today'))showHome();},800);
   toast('Vente retirée ✓');
 }
@@ -4103,7 +4104,7 @@ async function loadHomePerf(){
   if(_hpBusy||!COACH_CODE)return;_hpBusy=true;
   try{
     const [d]=await Promise.all([syncCall('stats_pull'),fetchAvatars()]);
-    const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
+    _SVOID=d.voids||{};const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
     const rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name)}))
       .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
@@ -4159,7 +4160,7 @@ function showPerf(){_vReg('perf');
   $('#topPhase').textContent='Performances';$('#topSub').textContent='';
   $('#nav').innerHTML=pageNav();
   $('#bar').style.width='100%';relocateBoxes();
-  Promise.all([syncCall('stats_pull'),fetchAvatars(),trainPull(),(COACH_ROLE==='admin'||IS_MGR)?syncCall('team_list').then(d=>{window._TEAM=d.invites||[];}).catch(()=>{}):Promise.resolve()]).then(([d])=>renderPerf(d.events||[])).catch(e=>{
+  Promise.all([syncCall('stats_pull'),fetchAvatars(),trainPull(),(COACH_ROLE==='admin'||IS_MGR)?syncCall('team_list').then(d=>{window._TEAM=d.invites||[];}).catch(()=>{}):Promise.resolve()]).then(([d])=>{_SVOID=d.voids||{};renderPerf(d.events||[]);}).catch(e=>{
     if(e.message!=='code')renderPerf(null);
   });
 }
@@ -4832,7 +4833,7 @@ function setPPack(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.pac
   showProspects(true);toast('🎉 '+packShort(pk)+' vendu · +'+(+PRIMES[pk]||0)+' € de prime !');}
 function setPStatut(id,s){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
-  if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo']}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}
+  if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo'],void:true}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}
   p.statut=s;if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
   if(s!=='rappeler')emitEvent(p,s,s==='abo'?{pack:p.pack||'',prime:p.pack?(+PRIMES[+p.pack]||0):0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''}:{});
   showProspects(true);

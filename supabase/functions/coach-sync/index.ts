@@ -391,13 +391,18 @@ serve(async (req) => {
       const ks: string[] = Array.isArray(body.ks) ? body.ks.map(String) : [];
       const pfx = String(body.prefix || "");
       events = events.filter((e) => !inMine(e) || (!ks.includes(e.k) && !(pfx && String(e.k).startsWith(pfx))));
-      await putRow(admin, ROW_STATS, { events });
-      return json({ ok: true, events: events.filter(inMine) });
+      // Vente annulée : mémorisée, pour qu'aucun appareil ni aucune fiche ne la refasse compter
+      const voids: Record<string, string> = { ...((stRow?.data?.voids as Record<string, string>) || {}) };
+      if (body.void === true) for (const k of ks) if (/:abo$/.test(k)) voids[k.slice(0, -4).slice(0, 80)] = new Date().toISOString();
+      const vk = Object.keys(voids); if (vk.length > 2000) for (const k of vk.sort((a, b) => voids[a].localeCompare(voids[b])).slice(0, vk.length - 2000)) delete voids[k];
+      await putRow(admin, ROW_STATS, { events, voids });
+      return json({ ok: true, events: events.filter(inMine), voids });
     }
 
     if (action === "stats_pull" || action === "stats_push") {
       const stRow = { data: await getRow(admin, ROW_STATS) };
       let events: any[] = (stRow?.data?.events as any[]) || [];
+      const voids: Record<string, string> = (stRow?.data?.voids as Record<string, string>) || {};
 
       if (action === "stats_push") {
         const incoming: any[] = Array.isArray(body.events) ? body.events : [];
@@ -415,6 +420,8 @@ serve(async (req) => {
             dur: Math.max(0, Math.min(14400, Math.round(Number(e.dur) || 0))),
             ts: String(e.ts || new Date().toISOString()),
           };
+          const vTs = voids[clean.k.replace(/:abo$/, "")];
+          if (clean.type === "abo" && vTs && clean.ts <= vTs) continue; // vente annulée renvoyée par un appareil
           const i = events.findIndex((x) => x.k === clean.k);
           if (i >= 0 && !inMine(events[i])) continue;
           ownStudio(clean, i >= 0 ? events[i] : null);
@@ -422,9 +429,9 @@ serve(async (req) => {
           else if ((clean.ts || "") >= (events[i].ts || "")) events[i] = clean;
         }
         if (events.length > MAX_EVENTS) events = events.slice(-MAX_EVENTS);
-        await putRow(admin, ROW_STATS, { events });
+        await putRow(admin, ROW_STATS, { events, voids });
       }
-      return json({ ok: true, events: events.filter(inMine) });
+      return json({ ok: true, events: events.filter(inMine), voids });
     }
 
     // ── Barème des primes (admin uniquement) ──
@@ -574,7 +581,7 @@ serve(async (req) => {
             const evts: any[] = (stRow?.data?.events as any[]) || [];
             const kept = evts.filter((ev) => String(ev.rep || "").trim().toLowerCase() !== nomLc);
             if (kept.length !== evts.length) {
-              await putRow(admin, ROW_STATS, { events: kept });
+              await putRow(admin, ROW_STATS, { ...(stRow?.data || {}), events: kept });
             }
           } catch (_e) { /* best effort */ }
         }
