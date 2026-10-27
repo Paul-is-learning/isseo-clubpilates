@@ -43,13 +43,20 @@ function renderProjets(){
 
 // ── PAGE: Projets Admin ────────────────────────────────────────────────
 var _adminPresenceInterval=null;
+var _adminPresenceSig=null; // ce qu'affichait la colonne Statut au dernier rendu
+// Libellés de présence affichés (données + « Il y a X min » qui avance avec l'heure)
+function _adminPresenceSignature(){
+  var pres=S.userPresence||{},ll=S.lastLogins||{};
+  return JSON.stringify(_adminUsers.map(function(u){var p=pres[u.id],l=ll[u.id];return _presenceLabel(p&&p.ts,l&&l.ts);}));
+}
 function _startAdminPresenceRefresh(){
   _stopAdminPresenceRefresh();
   _adminPresenceInterval=setInterval(async function(){
     if(S.mainTab!=='admin'){_stopAdminPresenceRefresh();return;}
     if(document.hidden)return;
     await loadPresence();
-    render();
+    // Rendu seulement si la colonne Statut changerait (présence modifiée ou libellé relatif périmé)
+    if(_adminPresenceSignature()!==_adminPresenceSig)render();
   },30000);
 }
 function _stopAdminPresenceRefresh(){
@@ -57,6 +64,7 @@ function _stopAdminPresenceRefresh(){
 }
 function renderProjetsAdmin(){
   if(!_adminPresenceInterval)_startAdminPresenceRefresh();
+  _adminPresenceSig=_adminPresenceSignature(); // pris avant renderAdminPanel : au pire un rendu de plus, jamais un libellé figé
   var h='';
   h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:18px">';
   h+='<div><div style="font-size:20px;font-weight:700;color:#1a1a1a">Administration</div><div style="font-size:12px;color:#888;margin-top:2px">Gestion des utilisateurs et paramètres</div></div>';

@@ -3,6 +3,11 @@ var _syncInterval=null;
 var _realtimeSub=null;
 var _syncTimestamps={}; // {id: updated_at} pour éviter les JSON.stringify inutiles
 
+// Présence et dernières connexions ne s'affichent que dans le panneau Administration (même test que render())
+function _presenceShown(){
+  return S.view!=='auth'&&S.view!=='detail'&&S.page==='projets'&&S.mainTab==='admin';
+}
+
 function _handleRowChange(r){
   if(S.editMoisIdx!==null||S.showNewForm)return false;
   var id=r.id;
@@ -95,7 +100,16 @@ function _handleRowChange(r){
     }
   } else if(id==='_user_presence'){
     var nv=r.data&&r.data.presence||{};
-    if(JSON.stringify(nv)!==JSON.stringify(S.userPresence)){S.userPresence=nv;changed=true;}
+    // Heartbeat 3 min de chaque utilisateur : S à jour, rendu seulement si l'écran Administration est affiché
+    if(JSON.stringify(nv)!==JSON.stringify(S.userPresence)){S.userPresence=nv;changed=_presenceShown();}
+  } else if(id.indexOf('_login_')===0){
+    // Dernière connexion : rangée dans S.lastLogins (même forme que loadLastLogins), plus dans S.studios
+    var _uidLog=id.slice(7);
+    if(_uidLog&&r.data&&r.data.ts){
+      var nv={ts:r.data.ts,nom:r.data.nom||''};
+      if(!S.lastLogins)S.lastLogins={};
+      if(JSON.stringify(nv)!==JSON.stringify(S.lastLogins[_uidLog]||{})){S.lastLogins[_uidLog]=nv;changed=_presenceShown();}
+    }
   } else if(id==='_avatars'){
     var nv=r.data&&r.data.avatars||{};
     if(JSON.stringify(nv)!==JSON.stringify(S.avatarUrls)){S.avatarUrls=nv;changed=true;}
@@ -215,5 +229,32 @@ function stopSync(){
   if(_realtimeSub){try{sb.removeChannel(_realtimeSub);}catch(e){}_realtimeSub=null;}
   if(_syncInterval){clearInterval(_syncInterval);_syncInterval=null;}
   _rtBackoff=0;
+}
+
+// Copie conforme de pages-prospection.js : appelée sans garde ci-dessus (_prospects), pour pouvoir retirer ce fichier plus tard
+function migrateProspects(){
+  (S.prospects||[]).forEach(function(p){
+    if(!p.societe)p.societe='pw';
+    if(!p.ratings)p.ratings={};
+    if(!p.comments)p.comments=[];
+    if(!p.id)p.id='p_'+((p.date||'').replace(/\//g,''))+'_'+((p.url||p.adresse||'').slice(0,20).replace(/\W/g,''))+'_'+(p.auteur||'').slice(0,5).replace(/\W/g,'');
+  });
+  // Dédupliquer par ID
+  var seen={};
+  S.prospects=(S.prospects||[]).filter(function(p){
+    if(!p.id)return true;
+    if(seen[p.id])return false;
+    seen[p.id]=true;
+    return true;
+  });
+  // Dédupliquer par contenu (même url ou même adresse+auteur+date)
+  var sigSeen={};
+  S.prospects=S.prospects.filter(function(p){
+    var sig=p.type==='lien'?(p.url||''):(p.adresse||'');
+    sig+=':'+(p.auteur||'')+':'+(p.date||'')+':'+(p.societe||'');
+    if(sigSeen[sig])return false;
+    sigSeen[sig]=true;
+    return true;
+  });
 }
 
