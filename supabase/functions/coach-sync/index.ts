@@ -674,7 +674,8 @@ serve(async (req) => {
     // retéléchargent la liste que si elle a changé
     if (action === "rev") {
       const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
-      return json({ ok: true, rev: String(rv?.updated_at || "") });
+      const { data: cv } = await admin.from("coach_store").select("updated_at").eq("id", "_allo_calls").maybeSingle();
+      return json({ ok: true, rev: String(rv?.updated_at || ""), crev: String(cv?.updated_at || "") });
     }
 
     // Remise à zéro administrative : date la purge pour que chaque appareil
@@ -726,7 +727,13 @@ serve(async (req) => {
         return true;
       };
       // rev lu avec la liste : jamais la version d'une écriture que la liste renvoyée ne contient pas
-      if (action === "pull") return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: cur.rev || await revNow() });
+      if (action === "pull") {
+        // Appels Allo sans fiche (numéros inconnus, collègues) : affichés dans l'historique d'appels
+        const { data: cl } = await admin.from("coach_store").select("data,updated_at").eq("id", "_allo_calls").maybeSingle();
+        // deno-lint-ignore no-explicit-any
+        const calls = ((cl?.data?.items as any[]) || []).filter((c) => inMine({ studio: c?.studio }));
+        return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: cur.rev || await revNow(), calls, crev: String(cl?.updated_at || "") });
+      }
 
       // ── Historique d'une fiche : activités Boost (appels + durée, SMS, emails, WhatsApp, RDV…)
       // et, pour Montpellier Lattes, les appels Aircall de ce numéro. Lu à la demande, rien n'est stocké.

@@ -160,6 +160,23 @@ function lineOwner(num: unknown): string {
   return "";
 }
 
+// Journal des appels sans fiche prospect (numéro inconnu non retenu, collègue…) : visible dans l'historique d'appels
+// du Sales Coach, avec « Créer la fiche ». 400 derniers, écriture conditionnelle (réessayée si deux appels arrivent ensemble)
+// deno-lint-ignore no-explicit-any
+async function logLooseCall(admin: any, e: Record<string, unknown>) {
+  for (let i = 0; i < 4; i++) {
+    const { data: row } = await admin.from("coach_store").select("data,updated_at").eq("id", "_allo_calls").maybeSingle();
+    // deno-lint-ignore no-explicit-any
+    const items: any[] = Array.isArray(row?.data?.items) ? row.data.items : [];
+    if (items.some((x) => x && x.id && x.id === e.id)) return;
+    const next = [e, ...items].slice(0, 400);
+    if (!row) { await admin.from("coach_store").upsert({ id: "_allo_calls", data: { items: next }, updated_at: new Date().toISOString() }); return; }
+    const { data: upd } = await admin.from("coach_store").update({ data: { items: next }, updated_at: new Date().toISOString() })
+      .eq("id", "_allo_calls").eq("updated_at", row.updated_at).select("id");
+    if (upd && upd.length) return;
+    await new Promise((r) => setTimeout(r, 150));
+  }
+}
 function entryTxt(meta: string, body: string, transcript: string): string {
   let t = meta + (body ? "\n" + body : "");
   if (transcript) {
@@ -261,14 +278,19 @@ serve(async (req: Request) => {
         p.rappelBy = "auto";
       };
       const newId = "p_allo_" + (callId || crypto.randomUUID().replace(/-/g, "").slice(0, 12));
+      const rawName0 = String((d.type === "OUTBOUND" ? d.to_name : d.from_name) || "").trim();
+      const internal = /club\s*pilates/i.test(rawName0); // appel entre collègues (contact Allo « … (Club Pilates) »)
+      let loose = false;
       // Appel réseau fait plus haut : seule la partie fiches est rejouée en cas de conflit
-      return await commit(admin, (list) => {
-        const match = findByKey(list, key);
+      const telFr0 = key.length === 9 ? "0" + key : String(phone || "");
+      const out = await commit(admin, (list) => {
+        loose = false;
+        const match = internal ? null : findByKey(list, key);
         if (!match) {
-          const creatable =
+          const creatable = !internal && (
             (d.type === "OUTBOUND" && !["BLOCKED", "FAILED", "FAILED_EXTERNAL", "CLOSED"].includes(result)) ||
-            (d.type === "INBOUND" && ["ANSWERED", "VOICEMAIL", "TRANSFERRED_AI"].includes(result));
-          if (!creatable) return { res: { ok: true, matched: false, created: false }, write: false };
+            (d.type === "INBOUND" && ["ANSWERED", "VOICEMAIL", "TRANSFERRED_AI"].includes(result)));
+          if (!creatable) { loose = true; return { res: { ok: true, matched: false, created: false, logged: true }, write: false }; }
           const telFr = key.length === 9 ? "0" + key : String(phone || "");
           const rawName = String((d.type === "OUTBOUND" ? d.to_name : d.from_name) || "").trim();
           const nom = isRealName(rawName) ? rawName : (isRealName(extractedName) ? extractedName : "Contact " + telFr);
@@ -290,7 +312,7 @@ serve(async (req: Request) => {
           return { res: { ok: true, created: true, prospect: p.nom }, write: true };
         }
 
-        if (!summary && !transcript) return { res: { ok: true, matched: true, ignored: "sans contenu" }, write: false };
+        // Appel sans résumé (non décroché, très court) : noté quand même, c'est un point de contact
         applyRdv(match);
         match.appels = Array.isArray(match.appels) ? match.appels : [];
         const entryTs = String(d.start_date || evt.timestamp || now()).slice(0, 30);
@@ -303,6 +325,12 @@ serve(async (req: Request) => {
         match.maj = now();
         return { res: { ok: true, matched: true, prospect: String(match.nom || "") }, write: true };
       });
+      if (loose) {
+        await logLooseCall(admin, { id: callId || newId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), studio: STUDIO,
+          dir: d.type === "OUTBOUND" ? "sortant" : "entrant", num: telFr0, name: rawName0.slice(0, 80), res: result.toLowerCase(),
+          len: String(d.length || "").slice(0, 20), by: author || "", sum: (summary || "").slice(0, 400), internal });
+      }
+      return out;
     }
 
     // ── 💬 SMS entrant / sortant : journalisé sur la fiche ──

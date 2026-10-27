@@ -1300,6 +1300,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-flag{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEF2FB;color:#2A3F6B;white-space:nowrap}
 .pl-flag.ok{background:var(--mnt);color:var(--mnt-ink)}.pl-flag.warn{background:#FFF6E0;color:#8A5A00}.pl-flag.bad{background:#FDECE8;color:#B4300F}
 .prw .pr-pipe .pr-st small{white-space:normal;line-height:1.15;text-align:center;overflow:visible;text-overflow:clip}
+.jr-int{flex:0 0 auto;font-size:11px;font-weight:700;color:#8C95A8;background:#F3F4F7;border-radius:99px;padding:2px 9px}
 .jr-new{flex:0 0 auto;border:1.5px solid #2F6FE0;background:#EEF4FF;color:#1E4FB8;border-radius:99px;padding:3px 10px;font:800 11.5px var(--sans);cursor:pointer;white-space:nowrap}
 .jr-new:hover{background:#2F6FE0;color:#fff}
 .hs-auto{font-size:11.5px;color:#9AA3B5;margin:2px 2px 8px;font-style:italic}
@@ -2860,6 +2861,8 @@ async function syncPull(rerender){
   const n0=_pushN;
   try{
     const d=await syncCall('pull');
+    if(d&&Array.isArray(d.calls)){CALLS=d.calls;try{localStorage.setItem('cpcoach_calls',JSON.stringify(CALLS));}catch(e){}}
+    if(d&&d.crev)_crev=d.crev;
     // Un envoi a répondu pendant la lecture : sa liste est au moins aussi récente, celle-ci est ignorée
     if(_pushN!==n0){_syncState(_restSt());if(rerender&&$('#topPhase').textContent==='Mes prospects'&&!_typing())showProspects(true);return;}
     if(d&&d.rev)_rev=d.rev;
@@ -5021,11 +5024,11 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
 const NEW_SRC=[['bouche_a_oreille','Bouche à oreille'],['site_web','Site web'],['reseaux_sociaux','Réseaux sociaux'],['publicite','Publicité'],['google_my_business','Google My Business'],['autre','Autre (téléphone, accueil…)']];
 // Fiche provisoire créée par la téléphonie pour un numéro inconnu (« Contact 07… », jamais liée à Boost)
 function prUnknown(p){return !!p&&!p.bid&&!p.bnew&&/^Contact\s/i.test(String(p.nom||''));}
-function newProspectForm(fromId){
-  const adm=COACH_ROLE==='admin',src=fromId?PROSPECTS.find(x=>x.id===fromId):null;
+function newProspectForm(fromId,pre){
+  const adm=COACH_ROLE==='admin',src=fromId?PROSPECTS.find(x=>x.id===fromId):(pre&&pre.tel?{tel:pre.tel,nom:pre.nom||'',studio:CFG.studio}:null);
   icSheet(`<div class="glp-tag">＋ Nouveau prospect</div><div class="glp-t">Créé dans l'outil et dans Fitness Boost</div>${src?'<div class="fv-meta">Numéro inconnu de Boost · complétez le nom : ses appels sont conservés sur la fiche.</div>':''}
     <div class="pl-form" style="margin-top:12px">
-      <label class="wide">Nom et prénom *<input id="np-nom" maxlength="80" placeholder="Camille Martin"/></label>
+      <label class="wide">Nom et prénom *<input id="np-nom" maxlength="80" placeholder="Camille Martin" value="${src&&src.nom&&!/^Contact\s/i.test(src.nom)&&!/club\s*pilates/i.test(src.nom)?esc(src.nom.replace(/^~/,'')):''}"/></label>
       <label>Téléphone<input id="np-tel" type="tel" placeholder="06 12 34 56 78" value="${src?esc(src.tel||''):''}"/></label>
       <label>Email<input id="np-email" type="email" placeholder="camille@exemple.fr"/></label>
       <label>Source<select id="np-src">${NEW_SRC.map(([k,l])=>`<option value="${k}">${l}</option>`).join('')}</select></label>
@@ -5296,14 +5299,16 @@ document.addEventListener('visibilitychange',()=>{if(document.visibilityState===
 window.addEventListener('online',()=>{if(COACH_CODE&&(_fails||_hasPend())){_fails=0;syncPush();}});
 // Mises à jour en quasi temps réel : toutes les 15 s (onglet visible), un signal léger « rev » dit si
 // la liste a changé (saisie d'un collègue, appel Aircall/Allo, synchro Boost) ; on ne retélécharge qu'alors
-var _rev='',_revBusy=false;
+var _rev='',_revBusy=false,_crev='';
+// Appels Allo sans fiche (numéros inconnus, collègues), relus avec la liste
+var CALLS=[];try{CALLS=JSON.parse(localStorage.getItem('cpcoach_calls')||'[]')||[];}catch(e){CALLS=[];}
 setInterval(async()=>{
   if(!COACH_CODE||document.visibilityState!=='visible'||_revBusy)return;
   _revBusy=true;
   try{const d=await syncCall('rev');
     // Serveur de nouveau joignable après un « hors ligne » : envoi en attente relancé, sinon liste relue
     if(_syncSt==='off'&&!_pushBusy){_fails=0;if(_hasPend())syncPush();else await syncPull(true);}
-    else if(d&&d.rev&&d.rev!==_rev){const first=!_rev;_rev=d.rev;if(!first)await syncPull(true);}}catch(e){}
+    else if(d&&((d.rev&&d.rev!==_rev)||(d.crev&&d.crev!==_crev))){const first=!_rev;_rev=d.rev||_rev;if(d.crev)_crev=d.crev;if(!first)await syncPull(true);}}catch(e){}
   _revBusy=false;
 },15000);
 // Ne pas redessiner la liste pendant qu'on écrit (note, coordonnées…) : on attend la fin de la saisie
@@ -5376,6 +5381,20 @@ function _journalRows(dayS,pool){
     if(prev){if(!prev.a.rx&&a.rx){prev.a=a;prev.first=first;}return;}
     const row={p,a,first,tp,abs:tp.abs};byKey.set(k,row);J.push(row);
   }));
+  // Appels Allo sans fiche (numéros inconnus, collègues) : affichés aussi, filtrés par la recherche en cours
+  {
+    const st=_sk(CFG.studio||''),q=String(typeof prQuery!=='undefined'?prQuery:'').trim().toLowerCase(),qd=q.replace(/\D/g,'');
+    (CALLS||[]).forEach(c=>{
+      if(!c||!c.ts||(st&&c.studio&&_sk(c.studio)!==st))return;
+      if(q&&!((qd.length>=3&&String(c.num||'').replace(/\D/g,'').includes(qd))||String(c.name||'').toLowerCase().includes(q)))return;
+      const tp=tsParts(c.ts);if(!tp)return;if(dayS&&tp.day!==dayS)return;
+      const first='📞 Allo · appel '+(c.dir||'sortant')+(c.len?' · '+c.len:'')+(c.res?' · '+c.res:'')+(c.by?' · par '+c.by:'');
+      const k9=String(c.num||'').replace(/\D/g,'').slice(-9);
+      const fiche=k9.length===9?PSC().find(p=>String(p.tel||'').replace(/\D/g,'').slice(-9)===k9):null;
+      const p=fiche||{id:'',nom:c.name||('Contact '+(c.num||'')),tel:c.num||'',studio:c.studio||'',_loose:c};
+      J.push({p,a:{id:c.id,ts:c.ts,txt:first+(c.sum?'\n'+c.sum:'')},first,tp,abs:tp.abs,loose:1});
+    });
+  }
   J.sort((x,y)=>y.abs-x.abs);
   return J;
 }
@@ -5388,11 +5407,11 @@ function _journalRowHTML(j){
   const res=(j.first.match(/· (answered|voicemail|received|closed|failed|transferred_ai|blocked|décroché|messagerie|sans réponse|manqué)(?= ·|$)/i)||['',''])[1].toLowerCase();
   const resLbl={answered:'abouti',voicemail:'messagerie',received:'manqué',closed:'raccroché',failed:'échec',transferred_ai:'IA',blocked:'bloqué','décroché':'abouti','sans réponse':'sans réponse'}[res]||res;
   const durLbl=dur?(dur<1?Math.round(dur*60)+' s':Math.round(dur)+' min'):(/· 0 ?m/.test(j.first)?'< 1 min':'');
-  return `<div onclick="showAppels('${j.p.id}')" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
+  return `<div onclick="${j.p.id?`showAppels('${j.p.id}')`:''}" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
     <b style="flex:0 0 46px;font-size:13.5px;color:var(--cp-dark);font-variant-numeric:tabular-nums">${j.tp.h}</b>
     <span style="flex:0 0 14px;color:var(--ink-mid);font-weight:800" title="${dir==='↗'?'sortant':'entrant'}">${dir}</span>
     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;color:var(--ink)">${esc(j.p.nom)}</span>
-    ${prUnknown(j.p)?`<button class="jr-new" onclick="event.stopPropagation();newProspectForm('${j.p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
+    ${j.p._loose?(j.p._loose.internal?'<span class="jr-int" title="Appel entre collègues">👥 interne</span>':`<button class="jr-new" onclick="event.stopPropagation();newProspectForm(null,{tel:'${String(j.p.tel||'').replace(/[^\d+]/g,'')}',nom:'${esc(String(j.p._loose.name||'')).replace(/\\/g,'').replace(/'/g,"\\'")}'})" title="Numéro inconnu · créer la fiche client">➕ Créer la fiche</button>`):prUnknown(j.p)?`<button class="jr-new" onclick="event.stopPropagation();newProspectForm('${j.p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
     ${who?`<span style="flex:0 0 auto;display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:700;color:var(--ink-mid)">${avaTag(avatarOf(who),16,who)} ${esc(who)}</span>`:''}
     <span style="flex:0 0 78px;text-align:right;font-size:11px;color:var(--ink-mid)">${durLbl}${resLbl?(durLbl?' · ':'')+resLbl:''}</span>
     <span title="${esc(co.lbl)}" style="flex:0 0 18px;text-align:center;color:${co.c};font-weight:800">${co.ic}</span>
