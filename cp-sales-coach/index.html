@@ -4911,7 +4911,7 @@ function showProspects(keepScroll){
         <div class="pl-quick" onclick="event.stopPropagation()">
           ${prUnknown(p)?`<button class="jr-new" onclick="newProspectForm('${p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
           ${prSeg(p)==='unreach'&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">💬</button>`:''}
-          ${p.noCall||!p.tel?'':_sk(p.studio)===_sk('Montpellier Lattes')?`<button class="pl-btn call" onclick="aircallDial('${p.id}')" title="Appeler depuis Aircall">${ic('phone')}</button>`:`<a class="pl-btn call" href="${telHref(p.tel)}" title="Appeler avec Allo">${ic('phone')}</a>`}
+          ${p.noCall||!p.tel?'':`<button class="pl-btn call" onclick="callMenu('${p.id}')" title="Appeler ou copier le numéro">${ic('phone')}</button>`}
           <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
         </div>
       </div>
@@ -5022,6 +5022,21 @@ const BA={appel_ok:['📞','Appel abouti'],appel_nok:['📵','Appel sans répons
   rappel:['⏰','Rappel'],note:['📝','Note'],message_vocal:['🎙️','Message vocal'],tache:['✔️','Tâche'],signature:['✅','Signature'],refus_signature:['✖️','Refus de signature'],contractuel:['📄','Contrat']};
 // Créer un prospect depuis l'outil · il est créé dans Fitness Boost dans la minute (sans doublon)
 const NEW_SRC=[['bouche_a_oreille','Bouche à oreille'],['site_web','Site web'],['reseaux_sociaux','Réseaux sociaux'],['publicite','Publicité'],['google_my_business','Google My Business'],['autre','Autre (téléphone, accueil…)']];
+// Bouton téléphone bleu : appeler (Aircall à Lattes, lien téléphone / Allo ailleurs) ou copier le numéro
+function callMenu(id){const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.tel)return;
+  const lat=_sk(p.studio)===_sk('Montpellier Lattes'),num=String(p.tel).replace(/(\d{2})(?=\d)/g,'$1 ');
+  icSheet(`<div class="glp-tag">📞 ${esc(p.nom||'')}</div><div class="glp-t" style="font-variant-numeric:tabular-nums">${esc(num)}</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">
+      ${lat?`<button class="pr-act main" onclick="document.getElementById('icPop')?.remove();aircallDial('${p.id}')">📞 Appeler avec Aircall</button>`
+        :`<a class="pr-act main" style="text-align:center;text-decoration:none" href="${telHref(p.tel)}" onclick="setTimeout(()=>document.getElementById('icPop')?.remove(),200)">📞 Appeler${_sk(p.studio)===_sk('La Garenne-Colombes')?' avec Allo':''}</a>`}
+      <button class="pr-act" onclick="copyTel('${p.id}')">📋 Copier le numéro</button>
+    </div>`);
+}
+async function copyTel(id){const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.tel)return;const t=String(p.tel).replace(/\s/g,'');
+  let ok=false;try{await navigator.clipboard.writeText(t);ok=true;}catch(e){
+    try{const ta=document.createElement('textarea');ta.value=t;ta.style.position='fixed';ta.style.opacity='0';document.body.appendChild(ta);ta.focus();ta.select();ok=document.execCommand('copy');ta.remove();}catch(_){}}
+  document.getElementById('icPop')?.remove();toast(ok?'📋 Numéro copié · '+t:'Copie impossible · numéro : '+t);
+}
 // Fiche provisoire créée par la téléphonie pour un numéro inconnu (« Contact 07… », jamais liée à Boost)
 function prUnknown(p){return !!p&&!p.bid&&!p.bnew&&/^Contact\s/i.test(String(p.nom||''));}
 function newProspectForm(fromId,pre){
