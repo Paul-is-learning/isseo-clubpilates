@@ -4638,7 +4638,7 @@ function prSeg(p){
   if(!c.ok)return 'new';
   return 'redo';
 }
-const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais joints · les jamais appelés en tête (le plus récent d\'abord), puis les essais sans réponse (le plus ancien essai d\'abord)'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
+const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais joints · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 function _ldstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -4809,8 +4809,7 @@ function showProspects(keepScroll){
     if(prSort==='unreach')return prLastContact(a).localeCompare(prLastContact(b)); // contact le plus ancien d'abord
     if(prSort==='rappels')return (rdvAt(a)?.getTime()||0)-(rdvAt(b)?.getTime()||0);
     if(prSort==='ouv')return String(b.ouverture?.at||'').localeCompare(String(a.ouverture?.at||''));
-    // 🆕 jamais appelés d'abord (le plus récent en tête), puis les essais sans réponse (le plus ancien essai en tête)
-    if(prSort==='new'){const na=prCalls(a).n,nb=prCalls(b).n;if(!na!==!nb)return na?1:-1;if(na)return prLastCall(a).localeCompare(prLastCall(b));}
+    // 🆕 Nouveaux leads : uniquement par date d'arrivée dans Boost, le plus récent en haut (demande de Paul)
     return prArrival(b).localeCompare(prArrival(a));
   });
   const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PSC().filter(p=>p.statut===k).length);
