@@ -931,6 +931,11 @@ serve(async (req) => {
               ? p.appels.slice(-20).map((a: any) => ({ id: String(a?.id || "").slice(0, 40), ts: String(a?.ts || "").slice(0, 30), rx: String(a?.rx || "").slice(0, 30), sv: Number(a?.sv) || 0, txt: String(a?.txt || "").slice(0, 9000) })).filter((a: any) => a.txt)
               : [],
             rep: String(p.rep || rep), studio: String(p.studio || ""),
+            // Commercial qui suit la relation (prénom) et mise de côté « À rappeler à l'ouverture »
+            suivi: String(p.suivi || "").slice(0, 40),
+            ouverture: p.ouverture && typeof p.ouverture === "object" && p.ouverture.at
+              ? { at: String(p.ouverture.at).slice(0, 30), by: String(p.ouverture.by || "").slice(0, 40), note: String(p.ouverture.note || "").slice(0, 300) }
+              : undefined,
             ts: String(p.ts || new Date().toISOString()),
             maj: String(p.maj || p.ts || new Date().toISOString()),
           };
@@ -942,8 +947,10 @@ serve(async (req) => {
             if ((clean.maj || "") >= (list[i].maj || "")) {
               if (markBq(clean, list[i], rep)) queued = true;
               // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
-              const seen = new Set(clean.appels.map((a: any) => String(a.ts).slice(0, 16)));
-              for (const a of (list[i].appels || [])) if (!seen.has(String(a.ts).slice(0, 16))) clean.appels.push(a);
+              // (un appel noté à la main, id « mc_ », ne masque pas un appel de la ligne passé la même minute)
+              const seen = new Set(clean.appels.filter((a: any) => !/^mc_/.test(a.id)).map((a: any) => String(a.ts).slice(0, 16)));
+              const ids = new Set(clean.appels.map((a: any) => a.id).filter(Boolean));
+              for (const a of (list[i].appels || [])) if (!(a.id && ids.has(a.id)) && !seen.has(String(a.ts).slice(0, 16))) clean.appels.push(a);
               clean.appels.sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts)));
               if (clean.appels.length > 20) clean.appels = clean.appels.slice(-20);
               list[i] = clean;
