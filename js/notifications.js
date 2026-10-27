@@ -339,6 +339,7 @@ async function checkEcheances(){
   if(!myName)return;
   // Jours de déclenchement : J-7, J-3, J-1, J-0, puis retards
   var triggerDays=[7,3,1,0,-1,-3,-7,-14];
+  var rows=[]; // rappels du jour, envoyés en une seule requête
   ids.forEach(function(sid){
     var todos=S.todos[sid]||[];
     var studioName=(S.studios[sid]?S.studios[sid].name:sid);
@@ -362,17 +363,17 @@ async function checkEcheances(){
         return n.type==='echeance'&&n.body&&n.body.indexOf(marker)>=0&&n.created_at&&n.created_at.slice(0,10)===todayStr;
       });
       if(already){localStorage.setItem(dedupKey,'1');return;}
-      // Construire le titre selon la proximité
+      // Construire le titre selon la proximité (point médian, jamais de tiret long dans un texte affiché)
       var title;
-      if(diff===0)title='🔴 À faire AUJOURD\'HUI — '+studioName;
-      else if(diff===1)title='⏰ À faire demain — '+studioName;
-      else if(diff>0)title='⏰ Rappel : dans '+diff+'j — '+studioName;
-      else if(diff===-1)title='🔴 EN RETARD de 1j — '+studioName;
-      else title='🔴 EN RETARD de '+Math.abs(diff)+'j — '+studioName;
+      if(diff===0)title='🔴 À faire AUJOURD\'HUI · '+studioName;
+      else if(diff===1)title='⏰ À faire demain · '+studioName;
+      else if(diff>0)title='⏰ Rappel : dans '+diff+'j · '+studioName;
+      else if(diff===-1)title='🔴 EN RETARD de 1j · '+studioName;
+      else title='🔴 EN RETARD de '+Math.abs(diff)+'j · '+studioName;
       // Date formatée pour le body
       var dlLabel=dl.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
       var body=t.titre+'\nÉchéance : '+dlLabel+' '+marker;
-      sb.from('notifications').insert({
+      rows.push({
         type:'echeance',
         user_id:S.user.id,
         source_user_id:S.user.id,
@@ -384,6 +385,9 @@ async function checkEcheances(){
       localStorage.setItem(dedupKey,'1');
     });
   });
+  // Rappels pour soi seul (user_id = l'utilisateur courant), 1 par tâche et par jour au plus :
+  // clé locale + contrôle des notifications relues juste avant l'appel (autre appareil déjà passé)
+  if(rows.length)sb.from('notifications').insert(rows).then(function(r){if(r&&r.error)console.warn('[save] notifications echeance',r.error.message);});
 }
 function renderNotifPanel(){
   var notifs=S.notifications.slice();

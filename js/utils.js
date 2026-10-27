@@ -320,7 +320,9 @@ async function doLogin(){
   if(S.adminSettings.roles&&!S.adminSettings.roles[S.user.id]&&S.user.email&&_emailRoleMap[S.user.email]){
     S.adminSettings.roles=S.adminSettings.roles||{};
     S.adminSettings.roles[S.user.id]=_emailRoleMap[S.user.email];
-    sb.from('studios').upsert({id:'_admin_settings',data:S.adminSettings,updated_at:new Date().toISOString()});
+    // Enveloppe {settings:...} obligatoire (sans elle, loadAll et la synchro liraient des réglages vides),
+    // et seulement sur des réglages lus à l'instant en base (sinon on écraserait la base avec des valeurs par défaut)
+    if(typeof _adminSettingsLoaded!=='undefined'&&_adminSettingsLoaded)_saveAdminSettingsQuiet('rôle');
   }
   // Appliquer override de rôle si défini par l'admin
   if(S.adminSettings.roles&&S.adminSettings.roles[S.user.id]){
