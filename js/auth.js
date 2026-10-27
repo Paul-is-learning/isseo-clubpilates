@@ -45,8 +45,8 @@ function progBar(steps,sid){
   return '<div style="display:flex;justify-content:space-between;margin-bottom:4px;font-size:11px;color:#888"><span>'+done+'/'+ST.length+'</span><span>'+p+'%</span></div><div class="prog-bar"><div style="width:'+p+'%;background:#1D9E75;border-radius:4px;height:6px"></div></div>';
 }
 
-var LI='<img src="logo-black.png" style="height:42px;width:auto;display:block" alt="Isseo">';
-var LI_LOGIN='<img src="logo-black.png" style="height:60px;width:auto;display:block;margin:0 auto" alt="Isseo">';
+var LI='<img src="logo-black-sm.png" style="height:42px;width:auto;display:block" alt="Isseo">';
+var LI_LOGIN='<img src="logo-black-sm.png" style="height:60px;width:auto;display:block;margin:0 auto" alt="Isseo">';
 var LC='<img src="logo-cp.webp" style="height:36px;width:auto;display:block" alt="Club Pilates">';
 var LC_LOGIN='<img src="logo-cp.webp" style="height:52px;width:auto;display:block" alt="Club Pilates">';
 var COLLAB_SEP='<span style="font-size:18px;font-weight:300;color:#b0b8c8;letter-spacing:1px;line-height:1;user-select:none">&times;</span>';
@@ -147,7 +147,7 @@ function renderAuth(){
     // ── Panneau marque : « A project by » + fleur en relief ──
     +'<section class="lg-l">'
     +'<div class="lg-by">A project by</div>'
-    +'<div class="lg-logos"><img src="logo-white.png" class="lg-isseo" alt="Isseo"><span class="lg-x">&times;</span><img src="logo-cp.webp" class="lg-cp" alt="Club Pilates"><span class="lg-x">&times;</span><span class="lg-cobe">COBE</span></div>'
+    +'<div class="lg-logos"><img src="logo-white-sm.png" class="lg-isseo" alt="Isseo"><span class="lg-x">&times;</span><img src="logo-cp.webp" class="lg-cp" alt="Club Pilates"><span class="lg-x">&times;</span><span class="lg-cobe">COBE</span></div>'
     +'<div class="lg-flower" aria-hidden="true"></div>'
     +'</section>'
     // ── Formulaire ──
@@ -466,7 +466,7 @@ function renderRecoveryScreen(){
     +'<div class="auth-bg-overlay"></div>'
     +'<div class="auth-box">'
     +'<div class="auth-logos">'
-    +'<div class="auth-logo-wrap isseo-wrap"><div class="auth-logo-halo"></div><img src="logo-black.png" class="auth-logo" alt="Isseo"></div>'
+    +'<div class="auth-logo-wrap isseo-wrap"><div class="auth-logo-halo"></div><img src="logo-black-sm.png" class="auth-logo" alt="Isseo"></div>'
     +'<span class="auth-sep">&times;</span>'
     +'<div class="auth-logo-wrap cp-wrap"><div class="auth-logo-halo"></div><img src="logo-cp.webp" class="auth-logo auth-logo-cp" alt="Club Pilates"></div>'
     +'</div>'
@@ -1111,7 +1111,7 @@ function renderSidebar(){
   ];
   var h='<div class="sidebar" id="app-sidebar">';
   // Logo
-  h+='<div class="sidebar-logo"><img src="logo-white.png" style="height:28px;width:auto" onerror="this.src=\'logo-black.png\';this.style.filter=\'brightness(0) invert(1)\'" alt="Isseo"><span style="font-size:14px;font-weight:300;color:rgba(255,255,255,0.3);margin:0 2px">&times;</span><img src="logo-cp.webp" style="height:24px;width:auto;filter:brightness(0) invert(1)" alt="CP"></div>';
+  h+='<div class="sidebar-logo"><img src="logo-white-sm.png" style="height:28px;width:auto" onerror="this.src=\'logo-black-sm.png\';this.style.filter=\'brightness(0) invert(1)\'" alt="Isseo"><span style="font-size:14px;font-weight:300;color:rgba(255,255,255,0.3);margin:0 2px">&times;</span><img src="logo-cp.webp" style="height:24px;width:auto;filter:brightness(0) invert(1)" alt="CP"></div>';
   // Nav links
   h+='<div class="sidebar-nav">';
   h+='<div style="font-size:9px;text-transform:uppercase;letter-spacing:1.5px;color:rgba(255,255,255,0.25);font-weight:600;padding:8px 14px 6px">Navigation</div>';

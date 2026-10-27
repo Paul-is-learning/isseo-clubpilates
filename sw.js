@@ -8,15 +8,15 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20261027-dormant';
+const CACHE_VERSION = 'isseo-v1-20261027-opt';
 // Coquille non versionnée, puis les URL exactes (avec ?v=) que demande index.html.
 // À garder synchronisé avec index.html, sans doublon (cache.addAll rejette tout le lot sinon).
 const APP_SHELL = [
   './',
   './index.html',
   './manifest.json',
-  './logo-white.png',
-  './logo-black.png',
+  './logo-white-sm.png',
+  './logo-black-sm.png',
   './logo-cp.webp',
   './icons/icon-192.png',
   './icons/icon-512.png',
@@ -29,36 +29,35 @@ const APP_SHELL = [
   './js/observability.js?v=20260830pi',
   './js/vendor/preact.umd.js?v=20260830pi',
   './js/vendor/htm.umd.js?v=20260830pi',
-  './js/constants.js?v=20261023play',
-  './js/animations.js?v=20261027lite',
+  './js/constants.js?v=20261027opt',
+  './js/animations.js?v=20261027opt',
   './js/state.js?v=20261027lite',
   './js/notifications.js?v=20261027lite',
-  './js/auth.js?v=20261027lite',
-  './js/pages-accueil.js?v=20261027lite',
-  './js/pages-prospection.js?v=20260830pi',
+  './js/auth.js?v=20261027opt',
+  './js/pages-accueil.js?v=20261027opt',
   './js/pages-engagements.js?v=20261023cnit',
   './js/pages-bp-consolide.js?v=20260830pi',
-  './js/pages-collab.js?v=20260830pi',
+  './js/pages-collab.js?v=20261027opt',
   './js/pages-local.js?v=20260830pi',
   './js/pages-echanges.js?v=20260830pi',
   './js/pages-financier.js?v=20261027bp',
   './js/pages-introclass.js?v=20261026sec',
   './js/pages-detail.js?v=20261027lite',
-  './js/pages.js?v=20261027lite',
+  './js/pages.js?v=20261027opt',
   './js/bp-edit.js?v=20260830pi',
   './js/push.js?v=20260830pi',
   './js/preact-components/next-steps-widget.js?v=20260830pi',
-  './js/map.js?v=20260830pi',
-  './js/utils.js?v=20261027lite',
-  './js/exports.js?v=20260830pi',
+  './js/map.js?v=20261027opt',
+  './js/utils.js?v=20261027opt',
+  './js/exports.js?v=20261027opt',
   './js/simulator.js?v=20261027lite',
   './js/chat.js?v=20260830pi',
-  './js/sync.js?v=20261027lite',
+  './js/sync.js?v=20261027opt',
   './js/pages-how.js?v=20261027lite',
-  './js/pages-equipe.js?v=20260830pi',
+  './js/pages-equipe.js?v=20261027opt',
   './js/coach-marks.js?v=20260830pi',
   './js/onboarding-tour.js?v=20260830pi',
-  './js/app.js?v=20261027lite'
+  './js/app.js?v=20261027opt'
 ];
 
 // ── Install : pré-cache l'app shell ──────────────────────────────────────────

@@ -254,7 +254,7 @@ sb.auth.getSession().then(function(res){
     S.user=session.user;
     // Écran d'attente (au lieu d'une page blanche) ; message clair si la base ne répond pas
     var _rootW=document.getElementById('root');
-    if(_rootW&&!_rootW.innerHTML)_rootW.innerHTML='<div id="boot-wait" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#5B6B86;font-size:15px"><img src="logo-black.png" alt="Isseo" style="height:44px;opacity:.85"><div id="boot-wait-msg">Chargement de vos données…</div></div>';
+    if(_rootW&&!_rootW.innerHTML)_rootW.innerHTML='<div id="boot-wait" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#5B6B86;font-size:15px"><img src="logo-black-sm.png" alt="Isseo" style="height:44px;opacity:.85"><div id="boot-wait-msg">Chargement de vos données…</div></div>';
     setTimeout(function(){var m=document.getElementById('boot-wait-msg');if(m&&!S._dataLoaded)m.innerHTML='La base de données met du temps à répondre.<br><button onclick="location.reload()" style="margin-top:12px;padding:10px 18px;border:none;border-radius:10px;background:#0F1F3D;color:#fff;font-weight:600;cursor:pointer">Réessayer</button>';},20000);
     // Profil et données en parallèle (loadAll ne lit pas S.profile) ; S.profile posé dès réception du profil
     var _profP=sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){S.profile=r.data;});

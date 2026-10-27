@@ -237,26 +237,7 @@ function _computeFocusItems(){
     });
   }
 
-  // 5) Prospects chauds sans relance depuis > 14 jours
-  var staleChaud=(S.prospects||[]).filter(function(p){
-    if(p.statut!=='chaud')return false;
-    var lastComment=(p.comments||[]).sort(function(a,b){return (b.ts||'').localeCompare(a.ts||'');})[0];
-    if(!lastComment)return true;
-    var age=Math.floor((now-new Date(lastComment.ts))/(1000*60*60*24));
-    return age>=14;
-  });
-  if(false&&staleChaud.length>0){ // rubrique Prospection retirée (oct. 2026)
-    items.push({
-      urg:5,
-      kind:'prospect-stale',
-      icon:'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
-      color:'#B45309',
-      bg:'#FEF3C7',
-      title:staleChaud.length+(staleChaud.length>1?' prospects chauds sans relance':' prospect chaud sans relance'),
-      detail:'Depuis plus de 14 j',
-      action:"setPage('prospection')"
-    });
-  }
+  // 5) (Alerte « prospects chauds sans relance » retirée avec la rubrique Prospection, oct. 2026)
 
   // 6) ─── ALERTS BP vs RÉEL — copilote de gestion ───────────────────────────
   //   Pour chaque studio ouvert avec des données réelles, on détecte :
