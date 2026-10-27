@@ -114,6 +114,9 @@ async function loadAll(){
         try{localStorage.setItem('isseo_sim_'+id.slice(0,-10),JSON.stringify(sc));}catch(e){}
       }
     }
+    // Dernières connexions : même rangement que _handleRowChange (sync.js), jamais comme un studio
+    else if(id.indexOf('_login_')===0){if(r.data&&r.data.ts){S.lastLogins=S.lastLogins||{};S.lastLogins[id.slice(7)]={ts:r.data.ts,nom:r.data.nom||''};}}
+    else if(id==='_prospects'){} // rubrique Prospection retirée : ligne conservée en base, plus rangée parmi les studios
     else{studios[id]=r.data;}
   });
   if(Object.keys(studios).length>0)S.studios=studios;

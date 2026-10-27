@@ -52,7 +52,7 @@ function _adminPresenceSignature(){
 function _startAdminPresenceRefresh(){
   _stopAdminPresenceRefresh();
   _adminPresenceInterval=setInterval(async function(){
-    if(S.mainTab!=='admin'){_stopAdminPresenceRefresh();return;}
+    if(!S.user||!_presenceShown()){_stopAdminPresenceRefresh();return;} // écran quitté (détail, autre page) ou déconnexion
     if(document.hidden)return;
     await loadPresence();
     // Rendu seulement si la colonne Statut changerait (présence modifiée ou libellé relatif périmé)

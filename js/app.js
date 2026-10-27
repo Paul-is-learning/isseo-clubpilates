@@ -26,6 +26,7 @@ var _rendering=false;
 function render(){
   if(_rendering)return;
   _rendering=true;
+  if(typeof _renderPending!=='undefined')_renderPending=false; // tout rendu satisfait un rendu sauté pendant la frappe (sync.js)
   try{
     var root=document.getElementById('root');
     if(!root){_rendering=false;return;}

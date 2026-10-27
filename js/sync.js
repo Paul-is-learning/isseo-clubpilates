@@ -139,11 +139,21 @@ function _handleRowChange(r){
   return changed;
 }
 
+var _renderPending=false; // un changement reçu pendant la frappe attend que le champ perde le focus
 function _tryRender(){
   var ae=document.activeElement;
   var skipRender=ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA')&&ae.id!=='global-chat-input';
-  if(!skipRender)render();
+  if(!skipRender){_renderPending=false;render();}
+  else _renderPending=true;
 }
+// Délai de 400 ms : laisse finir le clic qui a fait perdre le focus (un rendu immédiat remplacerait le bouton sous le doigt)
+document.addEventListener('focusout',function(){
+  if(!_renderPending)return;
+  setTimeout(function(){
+    var ae=document.activeElement;
+    if(_renderPending&&!(ae&&(ae.tagName==='INPUT'||ae.tagName==='TEXTAREA'))){_renderPending=false;if(S.user&&S.view!=='auth')render();}
+  },400);
+});
 
 // Supabase Realtime : écoute les changements sur la table studios en temps réel
 function subscribeDataChanges(){

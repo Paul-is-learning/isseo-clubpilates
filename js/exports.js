@@ -536,6 +536,7 @@ function exportStudioExcel(sid){
 
 async function doLogout(){
   _clearInactivityTimers();_removeInactivityWarn();
+  if(typeof _stopAdminPresenceRefresh==='function')_stopAdminPresenceRefresh();
   _stopSessionWatcher();
   stopSync();
   unsubscribeNotifications();stopPresenceHeartbeat();

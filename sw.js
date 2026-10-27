@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20261027-opt';
+const CACHE_VERSION = 'isseo-v1-20261027-opt2';
 // Coquille non versionnée, puis les URL exactes (avec ?v=) que demande index.html.
 // À garder synchronisé avec index.html, sans doublon (cache.addAll rejette tout le lot sinon).
 const APP_SHELL = [
@@ -31,7 +31,7 @@ const APP_SHELL = [
   './js/vendor/htm.umd.js?v=20260830pi',
   './js/constants.js?v=20261027opt',
   './js/animations.js?v=20261027opt',
-  './js/state.js?v=20261027lite',
+  './js/state.js?v=20261027opt2',
   './js/notifications.js?v=20261027lite',
   './js/auth.js?v=20261027opt',
   './js/pages-accueil.js?v=20261027opt',
@@ -43,21 +43,21 @@ const APP_SHELL = [
   './js/pages-financier.js?v=20261027bp',
   './js/pages-introclass.js?v=20261026sec',
   './js/pages-detail.js?v=20261027lite',
-  './js/pages.js?v=20261027opt',
+  './js/pages.js?v=20261027opt2',
   './js/bp-edit.js?v=20260830pi',
   './js/push.js?v=20260830pi',
   './js/preact-components/next-steps-widget.js?v=20260830pi',
   './js/map.js?v=20261027opt',
   './js/utils.js?v=20261027opt',
-  './js/exports.js?v=20261027opt',
+  './js/exports.js?v=20261027opt2',
   './js/simulator.js?v=20261027lite',
   './js/chat.js?v=20260830pi',
-  './js/sync.js?v=20261027opt',
+  './js/sync.js?v=20261027opt2',
   './js/pages-how.js?v=20261027lite',
   './js/pages-equipe.js?v=20261027opt',
   './js/coach-marks.js?v=20260830pi',
   './js/onboarding-tour.js?v=20260830pi',
-  './js/app.js?v=20261027opt'
+  './js/app.js?v=20261027opt2'
 ];
 
 // ── Install : pré-cache l'app shell ──────────────────────────────────────────
