@@ -62,8 +62,11 @@ const norm = (h) => h
   .replace(/style="[^"]*(?:opacity|transform|transition|animation)[^"]*"/g, (m) => m.replace(/(opacity|transform|transition|transition-delay|animation)[^;"]*;?/g, ''))
   .replace(/(<span class="counter-anim"[^>]*>)[^<]*(<\/span>)/g, '$1#$2')
   .replace(/>\s+</g, '><');
+const timings = [];
 const shot = async (name, js) => {
+  const t0 = performance.now();
   try { w.eval(js + ';_rendering=false;render();'); } catch (e) { errors.push(name + ': ' + e.message); }
+  timings.push([name, Math.round(performance.now() - t0)]);
   await new Promise((r) => setTimeout(r, 30));
   const app = w.document.querySelector('#root');
   fs.writeFileSync(path.join(OUT, name + '.html'), norm(app ? app.innerHTML : '(root absent)').replace(/></g, '>\n<'));
@@ -76,5 +79,7 @@ const TABS = ['workflow', 'adherents', 'forecast', 'engagements', 'echanges', 'l
 for (const id of ids.slice(0, 3)) for (const t of TABS) await shot(`studio-${id}-${t}`, `S.page='projets';S.mainTab='studios';S.view='detail';S.selectedId=${JSON.stringify(id)};S.detailTab='${t}'`);
 await shot('auth', `S.view='auth'`);
 fs.writeFileSync(path.join(OUT, '_errors.txt'), errors.join('\n') + '\n');
+// Temps de rendu (hors comparaison : diff -r -x _timings.txt)
+fs.writeFileSync(path.join(OUT, '_timings.txt'), timings.sort((x, y) => y[1] - x[1]).map(([n, ms]) => ms + ' ms  ' + n).join('\n') + '\n');
 console.log(`${fs.readdirSync(OUT).length - 1} écrans · ${errors.length} erreur(s) → ${OUT}`);
 await win.happyDOM.abort(); win.close(); process.exit(0);
