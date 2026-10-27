@@ -256,40 +256,39 @@ sb.auth.getSession().then(function(res){
     var _rootW=document.getElementById('root');
     if(_rootW&&!_rootW.innerHTML)_rootW.innerHTML='<div id="boot-wait" style="min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;color:#5B6B86;font-size:15px"><img src="logo-black.png" alt="Isseo" style="height:44px;opacity:.85"><div id="boot-wait-msg">Chargement de vos données…</div></div>';
     setTimeout(function(){var m=document.getElementById('boot-wait-msg');if(m&&!S._dataLoaded)m.innerHTML='La base de données met du temps à répondre.<br><button onclick="location.reload()" style="margin-top:12px;padding:10px 18px;border:none;border-radius:10px;background:#0F1F3D;color:#fff;font-weight:600;cursor:pointer">Réessayer</button>';},20000);
-    sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){
-      S.profile=r.data;
-      loadAll().then(function(){
-        if(S.adminSettings.roles&&S.adminSettings.roles[session.user.id])
-          S.profile=Object.assign({},S.profile,{role:S.adminSettings.roles[session.user.id]});
-        if(S.adminSettings.blocked&&S.adminSettings.blocked.indexOf(session.user.id)>=0){
-          sb.auth.signOut();S.user=null;S.profile=null;render();return;
-        }
-        S._dataLoaded=true;restoreNavState();
-        // Atterrissage systématique sur Accueil à l'ouverture de l'app (sauf si deeplink via hash)
-        var _hasDeeplink=(location.hash||'').length>1;
-        if(!_hasDeeplink){S.page='accueil';S.view='dashboard';S.selectedId=null;S.mainTab='studios';saveNavState();}
-        if(typeof _restoreFromHash==='function')_restoreFromHash();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
-        _loadAllProfiles();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
-        if(window.isseoPush&&typeof window.isseoPush.refresh==='function')window.isseoPush.refresh();
-        if(typeof maybeStartOnboardingTour==='function')maybeStartOnboardingTour();
-        // Deeplink email → ouvre directement la tâche : #tache=SID:TASKID
-        try{
-          var h=(location.hash||'').replace(/^#/,'');
-          var m=/^tache=([^:]+):([^&]+)/.exec(h);
-          if(m){
-            var _dsid=decodeURIComponent(m[1]);
-            var _dtid=decodeURIComponent(m[2]);
+    // Profil et données en parallèle (loadAll ne lit pas S.profile) ; S.profile posé dès réception du profil
+    var _profP=sb.from('profiles').select('*').eq('id',session.user.id).single().then(function(r){S.profile=r.data;});
+    Promise.all([_profP,loadAll()]).then(function(){
+      if(S.adminSettings.roles&&S.adminSettings.roles[session.user.id])
+        S.profile=Object.assign({},S.profile,{role:S.adminSettings.roles[session.user.id]});
+      if(S.adminSettings.blocked&&S.adminSettings.blocked.indexOf(session.user.id)>=0){
+        sb.auth.signOut();S.user=null;S.profile=null;render();return;
+      }
+      S._dataLoaded=true;restoreNavState();
+      // Atterrissage systématique sur Accueil à l'ouverture de l'app (sauf si deeplink via hash)
+      var _hasDeeplink=(location.hash||'').length>1;
+      if(!_hasDeeplink){S.page='accueil';S.view='dashboard';S.selectedId=null;S.mainTab='studios';saveNavState();}
+      if(typeof _restoreFromHash==='function')_restoreFromHash();render();startSync();_startSessionWatcher();startPresenceHeartbeat();recordLastLogin();
+      _loadAllProfiles();loadNotifications().then(function(){checkEcheances();checkMondayReport();render();});subscribeNotifications();
+      if(window.isseoPush&&typeof window.isseoPush.refresh==='function')window.isseoPush.refresh();
+      if(typeof maybeStartOnboardingTour==='function')maybeStartOnboardingTour();
+      // Deeplink email → ouvre directement la tâche : #tache=SID:TASKID
+      try{
+        var h=(location.hash||'').replace(/^#/,'');
+        var m=/^tache=([^:]+):([^&]+)/.exec(h);
+        if(m){
+          var _dsid=decodeURIComponent(m[1]);
+          var _dtid=decodeURIComponent(m[2]);
+          setTimeout(function(){
+            if(typeof openDetail==='function')openDetail(_dsid);
+            if(typeof setDetailTab==='function')setDetailTab('echanges');
             setTimeout(function(){
-              if(typeof openDetail==='function')openDetail(_dsid);
-              if(typeof setDetailTab==='function')setDetailTab('echanges');
-              setTimeout(function(){
-                if(typeof openTacheModal==='function')openTacheModal(_dsid,_dtid);
-                try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
-              },150);
-            },400);
-          }
-        }catch(e){console.warn('[deeplink]',e);}
-      });
+              if(typeof openTacheModal==='function')openTacheModal(_dsid,_dtid);
+              try{history.replaceState(null,'',location.pathname+location.search);}catch(e){}
+            },150);
+          },400);
+        }
+      }catch(e){console.warn('[deeplink]',e);}
     });
   } else {render();}
 });

@@ -162,8 +162,10 @@ function _clearInactivityTimers(){
 function _removeInactivityWarn(){
   var el=document.getElementById('isseo-inactivity-warn');if(el)el.remove();
 }
+var _lastInactivityReset=0;
 function _resetInactivityTimer(){
   if(!S.user)return;
+  _lastInactivityReset=Date.now();
   _clearInactivityTimers();
   _removeInactivityWarn();
   // Avertissement 1 minute avant
@@ -182,6 +184,12 @@ function _resetInactivityTimer(){
     _removeInactivityWarn();
     doLogout();
   },_INACTIVITY_MS);
+}
+// mousemove/scroll : au plus une remise à zéro par seconde (délai d'inactivité inchangé à 1 s près)
+function _onActivityThrottled(){
+  var d=Date.now()-_lastInactivityReset;
+  if(d>=0&&d<1000)return; // d<0 : horloge reculée, on remet à zéro
+  _resetInactivityTimer();
 }
 // ── Présence utilisateur (heartbeat) ─────────────────────────────────────────
 async function updatePresence(){
@@ -256,8 +264,11 @@ var _visibilityHandler=null;
 function _startSessionWatcher(){
   // Mobile / PWA : on reste connecté (pas de logout inactivité)
   if(_isMobileDevice())return;
-  ['mousemove','keydown','mousedown','click','scroll','touchstart'].forEach(function(ev){
+  ['keydown','mousedown','click','touchstart'].forEach(function(ev){
     document.addEventListener(ev,_resetInactivityTimer,{passive:true});
+  });
+  ['mousemove','scroll'].forEach(function(ev){
+    document.addEventListener(ev,_onActivityThrottled,{passive:true});
   });
   _resetInactivityTimer();
   // Déconnexion si l'onglet/page a été fermé plus de 5 min
@@ -277,8 +288,11 @@ function _startSessionWatcher(){
   document.addEventListener('visibilitychange',_visibilityHandler);
 }
 function _stopSessionWatcher(){
-  ['mousemove','keydown','mousedown','click','scroll','touchstart'].forEach(function(ev){
+  ['keydown','mousedown','click','touchstart'].forEach(function(ev){
     document.removeEventListener(ev,_resetInactivityTimer);
+  });
+  ['mousemove','scroll'].forEach(function(ev){
+    document.removeEventListener(ev,_onActivityThrottled);
   });
   if(_visibilityHandler){document.removeEventListener('visibilitychange',_visibilityHandler);_visibilityHandler=null;}
   _clearInactivityTimers();
@@ -298,9 +312,9 @@ async function doLogin(){
   var res=await sb.auth.signInWithPassword({email:email,password:pwd});
   if(res.error){err.style.display='block';err.textContent=res.error.message;return;}
   S.user=res.data.user;
-  var prof=await sb.from('profiles').select('*').eq('id',res.data.user.id).single();
-  S.profile=prof.data;
-  await loadAll();
+  // Profil et données en parallèle (loadAll ne lit pas S.profile) ; S.profile posé dès réception du profil
+  var _profP=sb.from('profiles').select('*').eq('id',res.data.user.id).single().then(function(prof){S.profile=prof.data;});
+  await Promise.all([_profP,loadAll()]);
   // Auto-mapping email→rôle pour utilisateurs recréés
   var _emailRoleMap={'clementcoquel@yahoo.fr':'coquel','paul@isseo.fr':'admin'};
   if(S.adminSettings.roles&&!S.adminSettings.roles[S.user.id]&&S.user.email&&_emailRoleMap[S.user.email]){
