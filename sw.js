@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20261027-noeng';
+const CACHE_VERSION = 'isseo-v1-20261027-ui';
 const APP_SHELL = [
   './',
   './index.html',

@@ -667,8 +667,9 @@ function initRipple(){
     var ripple=document.createElement('span');
     ripple.className='ripple';
     ripple.style.width=ripple.style.height=size+'px';
-    ripple.style.left=(e.clientX-r.left-size/2)+'px';
-    ripple.style.top=(e.clientY-r.top-size/2)+'px';
+    var z=_uiZoom(btn);size=size/z;ripple.style.width=ripple.style.height=size+'px';
+    ripple.style.left=((e.clientX-r.left)/z-size/2)+'px';
+    ripple.style.top=((e.clientY-r.top)/z-size/2)+'px';
     if(getComputedStyle(btn).position==='static')btn.style.position='relative';
     // N'impose pas overflow:hidden sur les sidebar-link/tab/kpi-card qui ont déjà leur style
     if(!btn.classList.contains('kpi-card')&&!btn.classList.contains('focus-today-pill'))btn.style.overflow='hidden';
@@ -1002,6 +1003,9 @@ function initLogoEasterEgg(){
   });
 }
 
+// Zoom grand écran (.main-content) : convertit une mesure d'écran en pixels de mise en page
+function _uiZoom(el){var m=el&&el.closest?el.closest('.main-content'):null;var z=m?parseFloat(getComputedStyle(m).zoom):1;return z>0?z:1;}
+window._uiZoom=_uiZoom;
 // ── 21. Tab underline morph ──
 function morphTabIndicator(){
   var tabs=document.querySelector('.tabs');
@@ -1014,10 +1018,9 @@ function morphTabIndicator(){
     indicator.className='tab-indicator';
     tabs.appendChild(indicator);
   }
-  var tabsRect=tabs.getBoundingClientRect();
-  var activeRect=active.getBoundingClientRect();
-  var left=activeRect.left-tabsRect.left;
-  var width=activeRect.width;
+  // Mesures en coordonnées de mise en page (justes avec le zoom grand écran et le défilement des onglets)
+  var left=active.offsetLeft;
+  var width=active.offsetWidth;
   if(!indicator._init){
     indicator.style.transition='none';
     indicator._init=true;

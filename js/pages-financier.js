@@ -676,8 +676,9 @@ function _adhTT(evt,i){
     +(r!=null?'<br/>Réalisé : <b>'+r+'</b> <span style="color:'+(r>=d.bp[i]?'#1D9E75':'#C0492F')+'">('+(r>=d.bp[i]?'+':'')+(r-d.bp[i])+')</span>':'');
   var wrap=document.getElementById('adh-chart-wrap');
   var wr=wrap.getBoundingClientRect();
-  var x=evt.clientX-wr.left,y=evt.clientY-wr.top;
-  tip.style.left=Math.min(x+14,wr.width-150)+'px';tip.style.top=Math.max(0,y-54)+'px';tip.style.opacity=1;
+  var z=typeof _uiZoom==='function'?_uiZoom(wrap):1;
+  var x=(evt.clientX-wr.left)/z,y=(evt.clientY-wr.top)/z;
+  tip.style.left=Math.min(x+14,wr.width/z-150)+'px';tip.style.top=Math.max(0,y-54)+'px';tip.style.opacity=1;
 }
 function _adhTTout(){
   var tip=document.getElementById('adh-tip'),gl=document.getElementById('adh-guide');
