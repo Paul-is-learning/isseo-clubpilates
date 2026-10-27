@@ -64,7 +64,7 @@ données, fichiers, « où intervenir pour... ») est dans `ARCHITECTURE.md`.
    version.
 5. Mise en ligne : `git push origin main` (Vercel publie). Fonctions serveur :
    `supabase functions deploy NOM --no-verify-jwt --project-ref wfqtpcujujqxgfsgbpvp`,
-   sauf `task-notify` et `ask-ai`, à déployer sans `--no-verify-jwt`
+   sauf `task-notify`, `ask-ai` et `send-push`, à déployer sans `--no-verify-jwt`
    (`ARCHITECTURE.md`, section 11). Déployer la fonction avant le site
    quand le site en dépend.
 6. Sales Coach : la source est `~/Desktop/cp-sales-coach/index.html`, à

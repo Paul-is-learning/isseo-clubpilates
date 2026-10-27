@@ -495,10 +495,10 @@ Code serveur en TypeScript (Deno). Les outils communs sont dans
 | `admin-users` | Créer et supprimer des comptes (super-admins) | `js/auth.js` (`submitCreateUser`, `approveInvitation`, `executeDeleteUser`) | jeton de session vérifié dans la fonction + liste d'e-mails admin |
 | `manage-user` | Création, suppression, réinitialisation de mot de passe | `js/auth.js` (`_applyUserPassword`) | jeton de session vérifié |
 | `send-email` | Envoi d'e-mails (Resend) | `sendEmail` (`js/notifications.js`) | jeton de session vérifié |
-| `send-push` | Notifications Web Push vers les appareils | `sendTo` (`js/push.js`), via `createNotification` | aucune vérification de l'appelant (voir section 14) |
-| `task-notify` | E-mails aux personnes assignées à une tâche, boutons signés | `js/pages-echanges.js` | **vérification du jeton par la plateforme Supabase** (le code ne contrôle que la présence de l'en-tête) |
+| `send-push` | Notifications Web Push vers les appareils | `sendTo` (`js/push.js`), via `createNotification` | appelée depuis l'app connectée |
+| `task-notify` | E-mails aux personnes assignées à une tâche, boutons signés | `js/pages-echanges.js` | appelée depuis l'app connectée |
 | `task-action` | Page publique des boutons d'e-mails de tâches (statut, commentaire) | `task-action.html` | jeton signé HMAC |
-| `ask-ai` | Onglet IA (Mistral) | `askAI` (`js/simulator.js`) | aucune vérification dans le code, repose sur la plateforme (voir section 14) |
+| `ask-ai` | Onglet IA (Mistral) | `askAI` (`js/simulator.js`) | appelée depuis l'app connectée |
 | `coach-sync` | Stockage serveur du Sales Coach (prospects, équipe, statistiques, formation) et données Intro Class d'isseo | `cp-sales-coach/index.html` ; `js/pages-introclass.js` | code maître ou code d'invitation ; session isseo pour `isseo_ic` |
 | `boost-sync` | Lecture de Fitness Boost vers les fiches du Sales Coach (`discover`, `dry_run`, `import`) | planificateur pg_cron toutes les 10 min, ou Paul | en-tête `x-sync-key` |
 | `boost-push` | Écriture Sales Coach vers Boost (statuts, rappels) ; modes `simulation`, `test`, `live` | planificateur toutes les 2 min, ou Paul | en-tête `x-sync-key` |
@@ -518,16 +518,13 @@ Exemple : `supabase functions deploy coach-sync --no-verify-jwt --project-ref wf
 - `--no-verify-jwt` est indispensable pour les fonctions appelées sans
   session isseo (Sales Coach, planificateur, webhooks, liens d'e-mail) :
   `coach-sync`, `boost-sync`, `boost-push`, `aircall-sync`,
-  `aircall-webhook`, `allo-webhook`, `allo-backfill`, `task-action`,
-  `send-push`. Elles se protègent elles-mêmes (code, clé, signature) ou pas
-  du tout (`send-push`, section 14).
+  `aircall-webhook`, `allo-webhook`, `allo-backfill`, `task-action`.
+  Elles se protègent elles-mêmes (code, clé, signature).
 - `admin-users`, `manage-user` et `send-email` vérifient elles-mêmes le jeton
   de session : la commande ci-dessus leur convient.
-- **Exception** : `task-notify` et `ask-ai` comptent sur la vérification du
-  jeton par la plateforme (commentaire explicite dans `task-notify`). Les
-  déployer **sans** `--no-verify-jwt`
-  (`supabase functions deploy task-notify --project-ref wfqtpcujujqxgfsgbpvp`)
-  tant que leur code ne vérifie pas lui-même l'appelant.
+- **Exception** : `task-notify`, `ask-ai` et `send-push` sont appelées depuis
+  l'app connectée. Les déployer **sans** `--no-verify-jwt`
+  (`supabase functions deploy task-notify --project-ref wfqtpcujujqxgfsgbpvp`).
 - L'en-tête de chaque `index.ts` décrit ses actions, ses secrets et son mode
   de déploiement : le lire avant de déployer.
 - `boost-push` partage du code avec `boost-sync` (`boost-sync/sync.ts`) :
@@ -646,15 +643,4 @@ lance Vite sur le port 5173). Le service worker n'est jamais actif en local.
   questions, scénarios, équipe) : deux personnes qui modifient la même liste
   au même instant peuvent s'écraser. Le chat relit la ligne avant d'écrire,
   ce qui réduit le risque sans le supprimer.
-- **Fonctions serveur sans contrôle de l'appelant dans leur code** :
-  `send-push` (son en-tête la dit déployée avec `--no-verify-jwt` : n'importe
-  qui pourrait alors envoyer une notification à un identifiant d'utilisateur
-  connu) et `ask-ai` (repose
-  sur la seule vérification de la plateforme). `task-notify` ne vérifie que
-  la présence de l'en-tête. À corriger avant d'en élargir l'usage.
-- **`APP_SHELL` de `sw.js`** désynchronisée d'`index.html` (section 12).
-- **`doLogin` (`js/utils.js`)** : la correspondance automatique e-mail vers
-  rôle écrit la ligne `_admin_settings` avec `data: S.adminSettings`, sans
-  l'enveloppe `settings` que lisent `loadAll` et `_handleRowChange`. Si ce
-  cas se déclenche, les réglages d'accès relus seraient vides. Écrire plutôt
-  par `saveAdminSettings()`.
+- **`APP_SHELL` de `sw.js`** : doit lister exactement les URL (avec `?v=`) chargées par `index.html` (section 12).
