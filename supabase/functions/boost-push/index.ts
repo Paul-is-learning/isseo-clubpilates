@@ -12,7 +12,8 @@
 //   test       : n'écrit que pour les contacts Boost dont le nom commence par « TEST »
 //   live       : écrit pour tous
 // Garde-fous : 30 écritures max par passage · Boost modifié depuis le changement
-// → on n'écrase pas · jamais de recul depuis « client » · un changement = un envoi.
+// → on n'écrase pas · jamais de recul depuis « client » · un changement = un envoi ·
+// réponse temporaire de Boost (429, délai, redirection, coupure réseau) → nouvel essai.
 //
 // POST ?action=run            (planificateur ou Paul)   x-sync-key
 // POST ?action=mode&set=…     (Paul uniquement)         x-sync-key = BOOST_SYNC_KEY
@@ -34,16 +35,33 @@ function json(obj: unknown, status = 200) {
 }
 
 async function call(token: string, method: string, path: string, body?: unknown) {
-  const r = await fetch(BASE + path, {
-    method, redirect: "manual",
-    headers: { Authorization: "Bearer " + token, Accept: "application/json", ...(body ? { "Content-Type": "application/json" } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  const txt = await r.text();
+  let r: Response, txt: string;
+  try {
+    r = await fetch(BASE + path, {
+      method, redirect: "manual",
+      headers: { Authorization: "Bearer " + token, Accept: "application/json", ...(body ? { "Content-Type": "application/json" } : {}) },
+      body: body ? JSON.stringify(body) : undefined,
+    });
+    txt = await r.text();
+  } catch { return { status: 0, data: null }; } // coupure réseau : statut 0, la fiche est réessayée, le passage continue
   // deno-lint-ignore no-explicit-any
   let data: any = null;
   try { data = JSON.parse(txt)?.data ?? null; } catch { /* corps non JSON */ }
   return { status: r.status, data };
+}
+// Réponse temporaire de Boost (réseau, redirection, délai, trop de requêtes, panne) : nouvel essai au prochain passage.
+// Les autres refus (400, 404, 422...) sont définitifs : marqués, avec l'erreur.
+const temp = (s: number) => s === 0 || (s >= 300 && s < 400) || s === 408 || s === 425 || s === 429 || s >= 500;
+const code = (s: number) => (s ? String(s) : "réseau");
+// Boost horodate aussi nos propres écritures : un statut changé dans Boost avant la fin de notre dernière
+// écriture (q.w, marge pour l'écart d'horloge et l'arrondi à la seconde) n'est pas une modification faite dans Boost
+const OWN_MARGIN_MS = 5000;
+// deno-lint-ignore no-explicit-any
+function editedInBoost(c: any, q: any) {
+  const sc = String(c?.status_changed_at || "");
+  if (!(sc > String(q.at))) return false;
+  const w = Date.parse(String(q.w || "")), b = Date.parse(sc);
+  return !(w && b <= w + OWN_MARGIN_MS); // sinon : c'est notre propre écriture
 }
 
 serve(async (req: Request) => {
@@ -126,13 +144,14 @@ serve(async (req: Request) => {
         entry.res = r.status === 200 ? "déjà dans Boost (même email) : fiche rattachée" : "créé dans Boost";
         if (p.bnew.note) { await call(token, "PATCH", "/contacts/" + encodeURIComponent(nid), { notes: p.bnew.note }); nwrites++; }
         log.push(entry); nresults[p.id] = { at: p.bnew.at, bid: nid, club };
-      } else { entry.res = "création refusée " + r.status; log.push(entry); nresults[p.id] = r.status >= 500 ? { at: p.bnew.at, retry: true } : { at: p.bnew.at, bqe: entry.res }; }
+      } else { entry.res = "création refusée " + code(r.status); log.push(entry); nresults[p.id] = temp(r.status) ? { at: p.bnew.at, retry: true } : { at: p.bnew.at, bqe: entry.res }; }
       await new Promise((res) => setTimeout(res, 120));
     }
 
     // 1. Coordonnées modifiées dans l'outil (nom, téléphone, email, notes)
     const itodo = list.filter((p) => p?.bid && p.bqi && bqiSig(p.bqi) !== p.bqis);
-    const iresults: Record<string, { at: string; sig: string; bqe?: string; retry?: boolean }> = {};
+    // w : heure de notre écriture réussie dans Boost (Boost détient alors sig, même si la fiche a changé depuis)
+    const iresults: Record<string, { at: string; sig: string; bqe?: string; retry?: boolean; w?: string }> = {};
     let iwrites = nwrites;
     for (const p of itodo) {
       if (iwrites >= MAX_WRITES) break;
@@ -141,7 +160,7 @@ serve(async (req: Request) => {
       const entry = { at: nowIso, mode, fiche: p.id, statut: "coordonnées", par: p.bqi.by || "", res: "" };
       if (!token) { entry.res = "pas de token d'écriture pour ce club"; log.push(entry); iresults[p.id] = { at: p.bqi.at, sig, bqe: entry.res }; continue; }
       const got = await call(token, "GET", "/contacts/" + encodeURIComponent(p.bid));
-      if (got.status !== 200 || !got.data) { entry.res = "lecture Boost " + got.status; log.push(entry); iresults[p.id] = got.status === 404 ? { at: p.bqi.at, sig, bqe: entry.res } : { at: p.bqi.at, sig, retry: true }; continue; }
+      if (got.status !== 200 || !got.data) { entry.res = "lecture Boost " + code(got.status); log.push(entry); iresults[p.id] = got.status === 404 ? { at: p.bqi.at, sig, bqe: entry.res } : { at: p.bqi.at, sig, retry: true }; continue; }
       const c = got.data;
       if (mode === "test" && !/^test\b/i.test(String(c.name || "").trim())) { entry.res = "ignoré (mode test : seuls les contacts « TEST… »)"; log.push(entry); iresults[p.id] = { at: p.bqi.at, sig }; continue; }
       const patch = identityPatch(p.bqi, c);
@@ -149,16 +168,17 @@ serve(async (req: Request) => {
       if (mode === "simulation") { entry.res = "simulé : champs " + Object.keys(patch).join(", "); log.push(entry); iresults[p.id] = { at: p.bqi.at, sig }; continue; }
       const r = await call(token, "PATCH", "/contacts/" + encodeURIComponent(p.bid), patch);
       iwrites++;
-      entry.res = r.status === 200 ? "coordonnées mises à jour (" + Object.keys(patch).join(", ") + ")" : "mise à jour refusée " + r.status;
+      entry.res = r.status === 200 ? "coordonnées mises à jour (" + Object.keys(patch).join(", ") + ")" : "mise à jour refusée " + code(r.status);
       log.push(entry);
-      iresults[p.id] = r.status >= 500 ? { at: p.bqi.at, sig, retry: true } : { at: p.bqi.at, sig, bqe: r.status === 200 ? "" : entry.res };
+      iresults[p.id] = temp(r.status) ? { at: p.bqi.at, sig, retry: true }
+        : { at: p.bqi.at, sig, bqe: r.status === 200 ? "" : entry.res, w: r.status === 200 ? new Date().toISOString() : undefined };
       await new Promise((res) => setTimeout(res, 120));
     }
 
     // 2. Statuts et rappels
     const todo = list.filter((p) => p?.bid && p.bq && bqSig(p.bq) !== p.bqs);
     // deno-lint-ignore no-explicit-any
-    const results: Record<string, { at: string; sig: string; bqr?: string; bqe?: string; retry?: boolean }> = {};
+    const results: Record<string, { at: string; sig: string; bqr?: string; bqe?: string; retry?: boolean; w?: string }> = {};
     let writes = iwrites;
     for (const p of todo) {
       if (writes >= MAX_WRITES) break;
@@ -168,7 +188,7 @@ serve(async (req: Request) => {
       if (!token) { entry.res = "pas de token d'écriture pour ce club"; log.push(entry); results[p.id] = { at: p.bq.at, sig, bqe: entry.res }; continue; }
       const got = await call(token, "GET", "/contacts/" + encodeURIComponent(p.bid));
       if (got.status !== 200 || !got.data) {
-        entry.res = "lecture Boost " + got.status;
+        entry.res = "lecture Boost " + code(got.status);
         log.push(entry);
         // 404 : contact supprimé → on n'insiste pas ; autre erreur → nouvel essai au prochain passage
         results[p.id] = got.status === 404 ? { at: p.bq.at, sig, bqe: entry.res } : { at: p.bq.at, sig, retry: true };
@@ -178,8 +198,8 @@ serve(async (req: Request) => {
       if (mode === "test" && !/^test\b/i.test(String(c.name || "").trim())) {
         entry.res = "ignoré (mode test : seuls les contacts « TEST… »)"; log.push(entry); results[p.id] = { at: p.bq.at, sig }; continue;
       }
-      // Boost a changé ce contact après le changement fait dans l'outil : Boost reste maître
-      if (String(c.status_changed_at || "") > String(p.bq.at)) {
+      // Boost a changé ce contact après le changement fait dans l'outil (hors notre propre écriture) : Boost reste maître
+      if (editedInBoost(c, p.bq)) {
         entry.res = "ignoré (modifié dans Boost entre-temps)"; log.push(entry); results[p.id] = { at: p.bq.at, sig }; continue;
       }
       const ops = buildOps(p.bq, c, nowIso, p.bqr);
@@ -189,29 +209,30 @@ serve(async (req: Request) => {
         log.push(entry); results[p.id] = { at: p.bq.at, sig }; continue;
       }
       const out: string[] = [];
-      let bqr: string | undefined;
+      let bqr: string | undefined, w: string | undefined;
       let failed = false;
       if (ops.rdv) {
         const r = await call(token, "POST", "/contacts/" + encodeURIComponent(p.bid) + "/rdv", ops.rdv);
         writes++;
-        if (r.status === 200 || r.status === 201) { out.push("RDV créé"); bqr = "essai|" + ops.rdv.scheduled_at; }
-        else { out.push("RDV refusé " + r.status); failed = r.status >= 500; }
+        if (r.status === 200 || r.status === 201) { out.push("RDV créé"); bqr = "essai|" + ops.rdv.scheduled_at; w = new Date().toISOString(); }
+        else { out.push("RDV refusé " + code(r.status)); failed = temp(r.status); }
       }
       if (ops.patch) {
         const r = await call(token, "PATCH", "/contacts/" + encodeURIComponent(p.bid), ops.patch);
         writes++;
-        if (r.status === 200) out.push("mis à jour (" + Object.keys(ops.patch).join(", ") + ")");
-        else { out.push("mise à jour refusée " + r.status); failed = failed || r.status >= 500; }
+        if (r.status === 200) { out.push("mis à jour (" + Object.keys(ops.patch).join(", ") + ")"); w = new Date().toISOString(); }
+        else { out.push("mise à jour refusée " + code(r.status)); failed = failed || temp(r.status); }
       }
       entry.res = out.join(" · ");
       log.push(entry);
-      results[p.id] = failed ? { at: p.bq.at, sig, retry: true } : { at: p.bq.at, sig, bqr, bqe: /refus/.test(entry.res) ? entry.res : "" };
+      // Nouvel essai : le RDV déjà créé (bqr) et l'heure d'écriture (w) sont quand même notés, jamais de second RDV
+      results[p.id] = failed ? { at: p.bq.at, sig, retry: true, bqr, w } : { at: p.bq.at, sig, bqr, w, bqe: /refus/.test(entry.res) ? entry.res : "" };
       await new Promise((r) => setTimeout(r, 120));
     }
     const skipped = Math.max(0, todo.length - Object.keys(results).length);
 
     // Marquer les envois sur les fiches · écriture atomique, réessayée si un téléphone écrit au même moment
-    const ids = [...Object.keys(results).filter((id) => !results[id].retry), ...Object.keys(iresults).filter((id) => !iresults[id].retry), ...Object.keys(nresults).filter((id) => !nresults[id].retry)];
+    const ids = [...Object.keys(results).filter((id) => !results[id].retry || results[id].w), ...Object.keys(iresults).filter((id) => !iresults[id].retry), ...Object.keys(nresults).filter((id) => !nresults[id].retry)];
     // Version « propre » : la liste telle qu'elle est après ce passage, seulement si personne
     // d'autre ne l'a modifiée entre la lecture et le marquage (sinon : pas de veille, on repasse)
     let cleanRev: string | null = ids.length ? null : readRev;
@@ -222,14 +243,20 @@ serve(async (req: Request) => {
         const r = results[p?.id], ir = iresults[p?.id];
         // deno-lint-ignore no-explicit-any
         let n: any = p;
-        if (r && !r.retry && p.bq && p.bq.at === r.at) { // sinon changé depuis : traité au prochain passage
-          n = { ...n, bqs: r.sig };
-          if (r.bqr) n.bqr = r.bqr;
-          if (r.bqe !== undefined) n.bqe = r.bqe;
+        if (r && p.bq) {
+          // Fiche changée depuis la lecture (correction rapide) : si Boost a été écrit, on note ce qu'il
+          // détient désormais (bqs = envoi fait), la nouvelle valeur reste en file et lui sera comparée ;
+          // sans écriture, rien n'est noté et le passage suivant la traite
+          const same = p.bq.at === r.at;
+          if (same ? !r.retry : !!r.w) { n = { ...n, bqs: r.sig }; if (r.bqe !== undefined) n.bqe = r.bqe; }
+          if (r.bqr) n = { ...n, bqr: r.bqr };
+          // Heure de notre écriture, rangée dans bq (recopiée telle quelle par coach-sync, remplacée au changement suivant)
+          if (r.w) n = { ...n, bq: { ...p.bq, w: r.w } };
         }
-        if (ir && !ir.retry && p.bqi && p.bqi.at === ir.at) { n = { ...n, bqis: ir.sig }; if (ir.bqe) n.bqe = ir.bqe; }
+        if (ir && !ir.retry && p.bqi && (p.bqi.at === ir.at || ir.w)) { n = { ...n, bqis: ir.sig }; if (ir.bqe) n.bqe = ir.bqe; }
         const nr = nresults[p?.id];
-        if (nr && !nr.retry && p.bnew && p.bnew.at === nr.at && !p.bid) {
+        // Contact créé ou rattaché dans Boost : toujours lié, même si la demande a changé depuis (jamais de doublon)
+        if (nr && !nr.retry && p.bnew && (p.bnew.at === nr.at || nr.bid) && !p.bid) {
           n = { ...n, bnews: nr.at };
           if (nr.bid) { n.bid = nr.bid; n.bclub = nr.club; n.bst = "a_traiter"; }
           if (nr.bqe) n.bqe = nr.bqe;
