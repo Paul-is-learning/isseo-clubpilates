@@ -4530,8 +4530,8 @@ function rdvAt(p){if(!p.rappel)return null;const t=new Date(p.rappel+'T'+(p.rapp
 const prOpen=p=>(p.statut==='rappeler'||p.statut==='essai')&&!p.noCall;
 // Rappels « chauds » : en retard ou dans l'heure
 // Rappel automatique d'une séquence Boost sur un lead jamais appelé : le lead reste un « Nouveau lead »
-// Lead jamais joint (aucun appel décroché, moins de 3 essais) : il reste TOUJOURS dans « Nouveaux leads », quel que soit le rappel posé dessus (Boost ou équipe)
-function prAutoNew(p){if(!p.rappel)return false;const c=prCalls(p);return !c.ok&&c.n<3;}
+// Lead jamais appelé (aucun appel noté) : il reste TOUJOURS dans « Nouveaux leads », quel que soit le rappel posé dessus ; dès le premier essai il en sort (demande de Paul)
+function prAutoNew(p){return !!p.rappel&&!prCalls(p).n;}
 function rdvHot(p){if(!prOpen(p)||prAutoNew(p)||prOuv(p))return false;const t=rdvAt(p);return !!t&&(t.getTime()-Date.now())/60000<=60;}
 function fmtMin(m){m=Math.max(0,Math.round(m));if(m<60)return m+' min';if(m<1440)return Math.floor(m/60)+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'');const d=Math.floor(m/1440);return d+' j';}
 // Alerte rappel : toast + notification système 10 min avant (une seule fois par rappel)
@@ -4650,18 +4650,20 @@ function dayGoalHTML(){
 // Lien d'appel au format international (+33…) : Allo, Aircall et les téléphones le comprennent tous
 function telHref(t){let d=String(t||'').replace(/[^\d+]/g,'');if(d.startsWith('00'))d='+'+d.slice(2);else if(/^0\d{9}$/.test(d))d='+33'+d.slice(1);return 'tel:'+d;}
 function prCalls(p){const c=(p.appels||[]).filter(a=>/^📞/.test(String(a.txt||'')));const ok=c.filter(a=>/answered|· décroché/.test(String(a.txt||'').split('\n')[0])).length;return {n:c.length,ok};}
-// 🆕 Nouveaux : jamais joints (aucun appel décroché, moins de 3 essais) · 🏗 À rappeler à l'ouverture : mis de côté
+// 🆕 Nouveaux : jamais appelés (aucun appel noté) · 🏗 À rappeler à l'ouverture : mis de côté
 function prSeg(p){
   if(p.bmember||!prOpen(p))return '';
   if(prOuv(p)&&p.statut==='rappeler')return 'ouv';
+  const c=prCalls(p);
+  // 3 essais sans jamais joindre : Injoignables, même si un rappel automatique est posé (aucun rappel n'a pu être convenu)
+  if(p.statut==='rappeler'&&c.n>=3&&!c.ok)return 'unreach';
   if(p.rappel&&!prAutoNew(p))return 'rappels';
   if(p.statut!=='rappeler')return '';
-  const c=prCalls(p);
+  if(!c.n)return 'new';
   if(c.n>=3&&!c.ok)return 'unreach';
-  if(!c.ok)return 'new';
   return 'redo';
 }
-const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais joints · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
+const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 function _ldstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -4722,7 +4724,7 @@ function contactSheet(id,mode){
       <small id="cs-err" style="color:#B4300F;font-weight:700"></small>
       <button class="glp-ok" id="cs-go" data-k="ok" onclick="csDone('${id}','${mode}',this.dataset.k)">Enregistrer</button>
     </div>
-    <div class="cs-hint">${r?'📵 Non répondu : le rappel passe à demain'+(p.rappelH?' à '+esc(p.rappelH):'')+', à votre nom.':'📵 Non décroché : le lead reste dans les nouveaux leads, en bas de la liste (injoignable après 3 essais).'} ⏸ : rangé dans « À rappeler à l'ouverture », hors des listes d'appel.</div>`);
+    <div class="cs-hint">${r?'📵 Non répondu : le rappel passe à demain'+(p.rappelH?' à '+esc(p.rappelH):'')+', à votre nom.':'📵 Non décroché : rappel programmé demain à la même heure, le lead passe dans Rappels & RDV (injoignable après 3 essais).'} ⏸ : rangé dans « À rappeler à l'ouverture », hors des listes d'appel.</div>`);
 }
 function csPick(b,k){
   document.querySelectorAll('#icPop .cs-b').forEach(x=>x.classList.toggle('on',x===b));
@@ -4745,7 +4747,10 @@ async function csDone(id,mode,k){
   if(k==='ko'){
     const added=_logCall(p,false,'');
     if(r){const t=new Date();t.setDate(t.getDate()+1);p.rappel=_ldstr(t);p.rappelBy=me;_takeSuivi(p);msg='📵 Non répondu · rappel reprogrammé demain'+(p.rappelH?' à '+p.rappelH:'');}
-    else{const c=prCalls(p);msg=c.n>=3&&!c.ok?'📵 3e essai sans réponse · le lead passe dans Injoignables':'📵 Essai noté · le lead reste dans les nouveaux leads, en bas de la liste';}
+    else{const c=prCalls(p);
+      if(c.n>=3&&!c.ok)msg='📵 3e essai sans réponse · le lead passe dans Injoignables';
+      else{const t=new Date();t.setDate(t.getDate()+1);p.rappel=_ldstr(t);p.rappelH=String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');p.rappelBy=me;_takeSuivi(p);
+        msg='📵 Sans réponse · rappel programmé demain à '+p.rappelH+' · le lead passe dans Rappels & RDV';}}
     if(!added)msg+=' (appel déjà enregistré par la ligne)';
   }else if(k==='ok'){
     _logCall(p,true,txt);
