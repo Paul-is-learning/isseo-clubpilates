@@ -186,7 +186,7 @@ function _computeFocusItems(){
       bg:'#FEF3C7',
       title:pendingDeblocages.length+(pendingDeblocages.length>1?' déblocages en attente':' déblocage en attente'),
       detail:fmt(totalMontant)+' · plus ancien '+top.age+' j ('+studioName+')',
-      action:"setPage('engagements');toggleEngSection('recap');setEngRecapStudio('"+top.sid+"')"
+      action:"S.page='projets';S.view='detail';S.selectedId='"+top.sid+"';S.detailTab='engagements';saveNavState();render();"
     });
   }
 
@@ -681,7 +681,6 @@ function renderAccueil(){
     {label:'Voir les projets',desc:allIds.length+' studios en cours',page:'projets',color:'#1a3a6b',gradient:'linear-gradient(135deg,#1a3a6b,#2d5a8e)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>'},
     {label:'Prospection',desc:'Annonces & prospects',page:'prospection',color:'#0F6E56',gradient:'linear-gradient(135deg,#0F6E56,#1a9e7a)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>'},
     {label:'BP Consolidé',desc:'Vue financière globale',page:'bp',color:'#854F0B',gradient:'linear-gradient(135deg,#854F0B,#b8860b)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>'},
-    {label:"R\u00e9cap' engagements",desc:'Suivi consolidé',page:'engagements',color:'#92630a',gradient:'linear-gradient(135deg,#92630a,#d4a843)',icon:'<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/></svg>'}
   ];
   shortcuts.forEach(function(sc){
     h+='<div onclick="setPage(\''+sc.page+'\')" style="background:'+(S.darkMode?'#161b22':'#fff')+';border:1px solid '+(S.darkMode?'#30363d':'#e8e8e0')+';border-radius:14px;padding:18px 20px;cursor:pointer;transition:all .3s cubic-bezier(.4,0,.2,1);display:flex;align-items:center;gap:14px;position:relative;overflow:hidden" onmouseenter="this.style.transform=\'translateY(-3px)\';this.style.boxShadow=\'0 8px 25px rgba(0,0,0,\'+(S.darkMode?\'0.3\':\'0.1\')+\')\';this.style.borderColor=\''+sc.color+'\'" onmouseleave="this.style.transform=\'none\';this.style.boxShadow=\'none\';this.style.borderColor=\''+(S.darkMode?'#30363d':'#e8e8e0')+'\'">';

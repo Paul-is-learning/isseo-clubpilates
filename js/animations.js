@@ -392,7 +392,7 @@ function emptyState(icon,title,sub){
 
 // ── 12. Page transitions — direction-aware cinematic ──
 var _lastPageKey=null;
-var _NAV_ORDER=['accueil','projets','collab','prospection','bp','engagements'];
+var _NAV_ORDER=['accueil','projets','collab','prospection','bp'];
 function triggerPageTransition(){
   var root=document.getElementById('root');
   if(!root)return;
@@ -567,8 +567,7 @@ function _buildCommandItems(){
     {l:'Studios',p:'projets',c:'#10b981',i:'📂'},
     {l:'Collab — Tâches & Discussions',p:'collab',c:'#7C3AED',i:'✨'},
     {l:'Prospection',p:'prospection',c:'#0F6E56',i:'🔍'},
-    {l:'BP Consolidé',p:'bp',c:'#854F0B',i:'📊'},
-    {l:'Récap engagements',p:'engagements',c:'#92630a',i:'📋'}
+    {l:'BP Consolidé',p:'bp',c:'#854F0B',i:'📊'}
   ];
   pages.forEach(function(p){
     items.push({label:p.l,sub:'Naviguer vers '+p.l,icon:p.i,color:p.c,cat:'Page',action:function(){if(typeof setPage==='function')setPage(p.p);}});
