@@ -176,6 +176,9 @@ async function loadAdminUsers(){
   _adminUsers=(res.data||[]).sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');});
   await loadPresence();
   await loadLastLogins();
+  // Nettoyage et enregistrement seulement si la liste des profils a bien été lue et n'est pas vide :
+  // sinon chaque compte paraîtrait orphelin et blocages, lecteurs, rôles et mots de passe seraient effacés
+  if(res.error||!_adminUsers.length){render();return;}
   // Nettoyer les IDs orphelins dans adminSettings (utilisateurs supprimés/recréés)
   var validIds=new Set(_adminUsers.map(function(u){return u.id;}));
   var dirty=false;
@@ -200,8 +203,8 @@ async function loadAdminUsers(){
   }
   if(dirty){
     saveAdminSettings();
-    // Présence sans les comptes supprimés ; jamais si la liste des profils n'a pas été lue (tout serait vu orphelin)
-    if(!res.error&&_adminUsers.length)sb.from('studios').upsert({id:'_user_presence',data:{presence:S.userPresence},updated_at:new Date().toISOString()})
+    // Présence sans les comptes supprimés (liste des profils lue, voir plus haut)
+    sb.from('studios').upsert({id:'_user_presence',data:{presence:S.userPresence},updated_at:new Date().toISOString()})
       .then(function(r){if(r&&r.error)console.warn('[save] _user_presence',r.error.message);});
     console.log('[Admin] IDs orphelins nettoyés');
   }

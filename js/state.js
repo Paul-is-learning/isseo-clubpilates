@@ -86,13 +86,24 @@ function _saveAdminSettingsQuiet(tag){
     .then(function(r){if(r&&r.error)console.warn('[save] _admin_settings ('+tag+')',r.error.message);return r;});
 }
 function _patchStudioQuiet(id,merge,tag){
-  // Fusion atomique des seules clés données (jamais toute la ligne), sans contrôle de conflit
+  // Fusion atomique des seules clés données (jamais toute la ligne), sans contrôle de conflit.
+  // Ne touche jamais _lastKnownTimestamps : cette date ne suit que les enregistrements faits par l'utilisateur
+  // (posée ici, elle ferait refuser tous ses enregistrements suivants dès qu'un autre modifie ce studio).
+  // Studio déjà enregistré par l'utilisateur dans cette session : rien (la fusion décalerait sa date de contrôle
+  // et ferait refuser son prochain enregistrement) ; ce prochain enregistrement envoie de toute façon tout le studio.
+  if(_lastKnownTimestamps[id])return Promise.resolve(null);
   return sb.rpc('patch_studio_data',{p_id:id,p_merge:merge})
-    .then(function(r){
-      if(r&&r.error)console.warn('[save] '+tag+' '+id,r.error.message);
-      else if(r&&r.data&&r.data.ok)_lastKnownTimestamps[id]=new Date().toISOString(); // comme rpcPatch : pas de faux conflit au prochain saveStudio
-      return r;
-    });
+    .then(function(r){if(r&&r.error)console.warn('[save] '+tag+' '+id,r.error.message);return r;});
+}
+// Écritures automatiques du chargement (encodage, graine bpMeta, studios INIT manquants) : seulement sur des
+// réglages admin lus à l'instant en base, et jamais pour un compte lecteur ou bloqué (ces comptes consultent)
+function _bootWritesAllowed(){
+  if(!_adminSettingsLoaded||!S.user||!S.user.id)return false;
+  var a=S.adminSettings||{},uid=S.user.id;
+  if(a.blocked&&a.blocked.indexOf(uid)>=0)return false;
+  if(typeof isViewer==='function'&&isViewer())return false;
+  if(a.roles&&a.roles[uid]==='viewer')return false; // rôle « Lecture seule »
+  return true;
 }
 
 async function loadAll(){
@@ -151,8 +162,9 @@ async function loadAll(){
         S.adminSettings.passwords[uid]=encodePwd(v);_pwdDirty=true;
       }
     });
-    // Écrit une seule fois (valeurs ensuite reconnues comme encodées), et seulement sur des réglages lus à l'instant en base
-    if(_pwdDirty&&_adminSettingsLoaded)_saveAdminSettingsQuiet('encodage');
+    // Écrit une seule fois (valeurs ensuite reconnues comme encodées), seulement sur des réglages lus à l'instant
+    // en base, et jamais par un lecteur ou un compte bloqué
+    if(_pwdDirty&&_bootWritesAllowed())_saveAdminSettingsQuiet('encodage');
   }
   // Fallback localStorage pour studios sans simConfig Supabase
   Object.keys(S.studios).forEach(function(k){
@@ -192,25 +204,25 @@ async function loadAll(){
       _initMissing.push(k);
       return;
     }
-    var diff={};
+    // Champs réimposés depuis INIT : en mémoire seulement, volontairement JAMAIS écrits en base.
+    // L'adresse (onglet Local) et le loyer se modifient dans l'app : réécrire ici les valeurs INIT en base
+    // effacerait ces modifications pour tout le monde. L'ancien code ne l'envoyait déjà pas : ne pas la rétablir.
     ['ouverture','capex','emprunt','leasing','name','addr','loyerVarPct'].forEach(function(f){
-      if(INIT[k][f]!==undefined&&S.studios[k][f]!==INIT[k][f]){S.studios[k][f]=INIT[k][f];diff[f]=INIT[k][f];}
+      if(INIT[k][f]!==undefined&&S.studios[k][f]!==INIT[k][f])S.studios[k][f]=INIT[k][f];
     });
     // Loyer custom : semé une fois depuis INIT, puis la main reste à l'éditeur in-app
-    if(INIT[k].loyer_mensuel!==undefined&&!(S.studios[k].loyer_mensuel>0)){S.studios[k].loyer_mensuel=INIT[k].loyer_mensuel;diff.loyer_mensuel=INIT[k].loyer_mensuel;}
+    if(INIT[k].loyer_mensuel!==undefined&&!(S.studios[k].loyer_mensuel>0))S.studios[k].loyer_mensuel=INIT[k].loyer_mensuel;
     if(INIT[k].forecast&&INIT[k].forecast.moisDebut!==undefined&&S.studios[k].forecast&&S.studios[k].forecast.moisDebut!==INIT[k].forecast.moisDebut){
-      S.studios[k].forecast.moisDebut=INIT[k].forecast.moisDebut;diff.forecast=S.studios[k].forecast;
+      S.studios[k].forecast.moisDebut=INIT[k].forecast.moisDebut;
     }
-    // Base alignée sur INIT (les e-mails serveur lisent le nom en base) : fusion des seuls champs réimposés,
-    // pour une ligne lue à ce chargement. Une fois alignée, plus aucune écriture aux démarrages suivants.
-    if(Object.keys(diff).length&&_inDb[k])_patchStudioQuiet(k,diff,'INIT');
   });
+  var _bootOk=_bootWritesAllowed();
   // Seed rétroactif : attribue Paul comme créateur du BP initial pour studios sans bpMeta
-  // (écrit seulement pour les lignes lues en base à ce chargement)
-  if(typeof seedBPMetaIfMissing==='function')seedBPMetaIfMissing(_inDb);
+  // (écrit seulement pour les lignes lues en base à ce chargement ; lecteur ou compte bloqué : en mémoire seulement)
+  if(typeof seedBPMetaIfMissing==='function')seedBPMetaIfMissing(_bootOk?_inDb:null);
   // Création en base des studios INIT manquants, bpMeta compris : insertion seule (une ligne existante n'est
-  // jamais écrasée), et seulement si les pierres tombales ont bien été lues à ce chargement
-  if(_adminSettingsLoaded)_initMissing.forEach(function(k){
+  // jamais écrasée), seulement si les pierres tombales ont bien été lues à ce chargement, jamais par un lecteur
+  if(_bootOk)_initMissing.forEach(function(k){
     sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()},{onConflict:'id',ignoreDuplicates:true})
       .then(function(r){if(r&&r.error)console.warn('[save] INIT '+k,r.error.message);});
   });

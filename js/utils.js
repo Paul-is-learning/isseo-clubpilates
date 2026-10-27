@@ -320,9 +320,8 @@ async function doLogin(){
   if(S.adminSettings.roles&&!S.adminSettings.roles[S.user.id]&&S.user.email&&_emailRoleMap[S.user.email]){
     S.adminSettings.roles=S.adminSettings.roles||{};
     S.adminSettings.roles[S.user.id]=_emailRoleMap[S.user.email];
-    // Enveloppe {settings:...} obligatoire (sans elle, loadAll et la synchro liraient des réglages vides),
-    // et seulement sur des réglages lus à l'instant en base (sinon on écraserait la base avec des valeurs par défaut)
-    if(typeof _adminSettingsLoaded!=='undefined'&&_adminSettingsLoaded)_saveAdminSettingsQuiet('rôle');
+    // En mémoire seulement, pour cette session : volontairement JAMAIS enregistré dans _admin_settings.
+    // L'écrire fixerait ce rôle pour de bon à la personne (accès restreint) alors que l'admin ne l'a pas choisi.
   }
   // Appliquer override de rôle si défini par l'admin
   if(S.adminSettings.roles&&S.adminSettings.roles[S.user.id]){

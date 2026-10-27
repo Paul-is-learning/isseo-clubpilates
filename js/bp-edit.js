@@ -296,7 +296,9 @@ function seedBPMetaIfMissing(inDb){
   // écraserait une modification faite entre-temps. Uniquement une ligne de studio (avec un nom) lue en base :
   // une fusion sur une ligne absente la créerait avec bpMeta seul. Un studio INIT absent de la base reçoit
   // son bpMeta avec l'insertion faite par loadAll. Une fois écrit, plus rien aux démarrages suivants.
+  // Lecteur ou compte bloqué : bpMeta reste en mémoire (aucune écriture), même si inDb est fourni.
   if(!changed.length||!inDb||typeof _patchStudioQuiet!=='function')return;
+  if(typeof _bootWritesAllowed==='function'&&!_bootWritesAllowed())return;
   changed.forEach(function(sid){
     if(inDb[sid]&&S.studios[sid].name)_patchStudioQuiet(sid,{bpMeta:S.studios[sid].bpMeta},'bpMeta');
   });
