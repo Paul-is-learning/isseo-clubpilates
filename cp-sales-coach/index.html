@@ -1302,6 +1302,14 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .prw .pr-pipe .pr-st small{white-space:normal;line-height:1.15;text-align:center;overflow:visible;text-overflow:clip}
 .jr-new{flex:0 0 auto;border:1.5px solid #2F6FE0;background:#EEF4FF;color:#1E4FB8;border-radius:99px;padding:3px 10px;font:800 11.5px var(--sans);cursor:pointer;white-space:nowrap}
 .jr-new:hover{background:#2F6FE0;color:#fff}
+.hs-auto{font-size:11.5px;color:#9AA3B5;margin:2px 2px 8px;font-style:italic}
+.hs-it.hs-call{border-left:3px solid #C9D3E3}
+.hs-it.hs-call.r-ok{border-left-color:#1E8E3E;background:#F4FBF6}
+.hs-it.hs-call.r-vm{border-left-color:#C9871F;background:#FDF8EE}
+.hs-it.hs-call.r-ko{border-left-color:#D9DDE5}
+.hs-res{font-size:11px;font-weight:800;border-radius:99px;padding:2px 8px;margin-left:6px;white-space:nowrap}
+.hs-res.r-ok{background:#E3F4E8;color:#1E8E3E}.hs-res.r-vm{background:#FBEFD5;color:#9A6512}.hs-res.r-ko{background:#EEF0F4;color:#6B7590}
+.hs-call .hs-s{font-weight:600;color:var(--ink)}
 .pl-own{display:inline-flex;align-items:center;gap:3px;margin-right:6px;padding:2px 9px;border:1px solid;border-radius:99px;font-size:12px;font-weight:800;vertical-align:2px;white-space:nowrap}
 .pl-own.none{color:#8C95A8;background:#F3F4F7;border-color:#E2E5EC;font-weight:700}
 .pr-ownf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
@@ -5164,6 +5172,8 @@ async function aircallTr(id,call){
     icSheet(`<div class="glp-tag">📞 Aircall · transcription</div><div class="glp-t">${esc(p?.nom||'')}</div>${t?`<div style="margin-top:10px;font-size:13px;line-height:1.6;color:#333B4E;white-space:pre-wrap">${esc(t)}</div>`:'<div class="ics-empty">Pas de transcription pour cet appel (appel trop court ou non enregistré).</div>'}`);
   }catch(e){if(e.message!=='code')icSheet('<div class="ics-empty">📴 Transcription indisponible pour le moment.</div>');}
 }
+// Résultat d'un appel à partir de sa ligne de résumé : ok (décroché), vm (messagerie), ko (sans réponse / manqué)
+function _callRes(meta){const m=String(meta||'');return /messagerie|voicemail/.test(m)?'vm':/décroché|answered/.test(m)?'ok':/sans réponse|manqué|missed|échec|failed|reçu|received|bloqué/.test(m)?'ko':'';}
 function histPanel(p){
   const h=HIST[p.id];
   const dt=iso=>{const t=new Date(iso);return isNaN(t)?'':t.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});};
@@ -5181,7 +5191,7 @@ function histPanel(p){
     const RES={answered:'décroché',voicemail:'messagerie',received:'reçu',closed:'clôturé',failed:'échec',transferred_ai:'transféré à l\'IA',blocked:'bloqué',missed:'manqué'};
     const ac=/^📞\s*Aircall/.test(l0);
     const meta=/^📞/.test(l0)?l0.replace(/^📞\s*(Allo|Aircall)\s*·\s*/,'').replace(/ · import historique/,'').replace(/\b(answered|voicemail|received|closed|failed|transferred_ai|blocked|missed)\b/g,m=>RES[m]):'résumé d\'appel';
-    items.push({at:a.ts,ic:/sans réponse|manqué/.test(meta)?'📵':'📞',lbl:ac?'Appel Aircall':'Appel Allo',sub:meta,src:ac?'Aircall':'Allo',allo:a.ts});
+    items.push({at:a.ts,ic:/sans réponse|manqué/.test(meta)?'📵':'📞',lbl:ac?'Appel Aircall':'Appel Allo',sub:meta,src:ac?'Aircall':'Allo',allo:a.ts,res:_callRes(meta),call:1});
   });
   // Activités Boost (un appel déjà présent dans Allo à ±3 min n'est pas affiché deux fois)
   const alloT=allo.map(a=>new Date(a.ts).getTime()).filter(x=>!isNaN(x));
@@ -5190,16 +5200,18 @@ function histPanel(p){
   const fmtS=sec=>sec>=60?Math.floor(sec/60)+' m '+(sec%60)+' s':sec+' s';
   ACI.forEach(a=>{
     const ok=a.type==='appel_ok';
-    items.push({at:a.at,ic:ok?'📞':'📵',lbl:'Appel Aircall',sub:['appel '+a.dir,ok&&a.dur?fmtS(a.dur):'',ok?'décroché':a.vm?'messagerie':a.dir==='sortant'?'sans réponse':'manqué',a.who?'par '+a.who.split(' ')[0]:'',a.line].filter(Boolean).join(' · '),src:'Aircall',allo:a.at,acId:ok&&a.rec?a.id:''});
+    items.push({at:a.at,call:1,res:ok?'ok':a.vm?'vm':'ko',ic:ok?'📞':'📵',lbl:'Appel Aircall',sub:['appel '+a.dir,ok&&a.dur?fmtS(a.dur):'',ok?'décroché':a.vm?'messagerie':a.dir==='sortant'?'sans réponse':'manqué',a.who?'par '+a.who.split(' ')[0]:'',a.line].filter(Boolean).join(' · '),src:'Aircall',allo:a.at,acId:ok&&a.rec?a.id:''});
     const t=new Date(a.at).getTime();if(!isNaN(t))alloT.push(t);
   });
   // Rappel posé par l'équipe : il remplace les rappels automatiques Boost prévus avant lui
   const nowT=Date.now();
   const humanT=(((h&&h.items)||[]).filter(a=>!a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()>nowT).map(a=>new Date(a.sched).getTime()).sort((x,y)=>x-y)[0])
     ||(p.rappel&&p.rappelBy&&!/^(Boost|auto)$/.test(p.rappelBy)?rdvAt(p)?.getTime():0)||0;
-  let replaced=0;
+  let replaced=0,autoHid=0;
   ((h&&h.items)||[]).forEach(a=>{
     if(a.src==='Aircall')return;
+    // Rappels automatiques des séquences Boost (J+1, J+2, J+3…) : masqués, seuls les vrais points de contact restent
+    if(a.auto&&/^(rappel|rdv)$/.test(a.type)){autoHid++;return;}
     if(humanT&&a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()<humanT){replaced++;return;}
     const [ic,lbl]=BA[a.type]||['•',a.type||'Activité'];
     const t=new Date(a.at).getTime();
@@ -5223,6 +5235,7 @@ function histPanel(p){
   return `<div class="pr-msgs hs">
     <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/)+alloSms.length,'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
     ${!h||h.loading?'<div class="hs-load">⏳ Chargement de l\'historique Boost…</div>':h.err||!h.ok?'<div class="hs-load">📴 Historique Boost indisponible pour le moment · seuls les appels Allo sont affichés.</div>':!h.boost&&!p.bid?'<div class="hs-load">Fiche absente de Boost · seuls les appels Allo sont affichés.</div>':''}
+    ${autoHid?`<div class="hs-auto">🤖 ${autoHid} rappel${autoHid>1?'s':''} automatique${autoHid>1?'s':''} Boost (J+1, J+2…) masqué${autoHid>1?'s':''}</div>`:''}
     ${replaced?`<div class="hs-load">🧹 ${replaced} rappel${replaced>1?'s':''} automatique${replaced>1?'s':''} Boost masqué${replaced>1?'s':''} : remplacé${replaced>1?'s':''} par le rappel convenu du ${new Date(humanT).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} à ${new Date(humanT).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}.</div>`:''}
     ${(()=>{ // Prochaine étape convenue : affichée en tête de l'historique
       const t=rdvAt(p);if(!t||!prOpen(p))return '';
@@ -5233,8 +5246,8 @@ function histPanel(p){
         <div class="hs-h"><b>Prochaine étape · ${p.statut==='essai'?(ic?esc(icLabel(ic)):'Séance d\'essai'):'Rappel'}</b>${late?'<span class="hs-src" style="background:#FDECE8;color:#B4300F">en retard</span>':''}<span class="hs-d">${dt(t.toISOString())}</span></div>
         <div class="hs-s">${p.rappelBy?(p.rappelBy==='auto'?'⚡ détecté dans un appel':'posé par '+esc(p.rappelBy)):''}${p.bid?(pend?' · ⏳ envoi vers Boost en cours':' · ✓ noté dans Boost'):''}</div>
       </div></div>`;})()}
-    <div class="hs-list">${items.length?items.map(i=>`<div class="hs-it"><div class="hs-ic">${i.ic}</div><div class="hs-b">
-      <div class="hs-h"><b>${esc(i.lbl)}</b><span class="hs-src ${i.src==='Allo'?'a':i.src==='Aircall'?'c':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
+    <div class="hs-list">${items.length?items.map(i=>`<div class="hs-it${i.call?' hs-call r-'+(i.res||'na'):''}"><div class="hs-ic">${i.ic}</div><div class="hs-b">
+      <div class="hs-h"><b>${esc(i.lbl)}</b>${i.call&&i.res?`<span class="hs-res r-${i.res}">${{ok:'✅ Décroché',vm:'📭 Messagerie',ko:'📵 Sans réponse'}[i.res]||''}</span>`:''}<span class="hs-src ${i.src==='Allo'?'a':i.src==='Aircall'?'c':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
       ${i.sub?`<div class="hs-s">${esc(i.sub)}</div>`:''}
       ${i.txt?`<div class="hs-t">${esc(i.txt)}</div>`:''}
       ${i.acId?`<button class="hs-more" onclick="aircallTr('${p.id}','${i.acId}')">📜 Transcription</button>`:i.allo&&(p.appels||[]).some(x=>x.ts===i.allo)?`<button class="hs-more" onclick="showAppels('${p.id}')">📜 ${i.src==='Aircall'?'Transcription':'Résumé et transcription'}</button>`:''}
