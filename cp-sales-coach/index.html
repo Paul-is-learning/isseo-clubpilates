@@ -1299,6 +1299,14 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-chip{font-size:11.5px;font-weight:800;border-radius:99px;padding:4px 10px;white-space:nowrap}
 .pl-flag{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEF2FB;color:#2A3F6B;white-space:nowrap}
 .pl-flag.ok{background:var(--mnt);color:var(--mnt-ink)}.pl-flag.warn{background:#FFF6E0;color:#8A5A00}.pl-flag.bad{background:#FDECE8;color:#B4300F}
+.pl-own{display:inline-flex;align-items:center;gap:3px;margin-right:6px;padding:2px 9px;border:1px solid;border-radius:99px;font-size:12px;font-weight:800;vertical-align:2px;white-space:nowrap}
+.pl-own.none{color:#8C95A8;background:#F3F4F7;border-color:#E2E5EC;font-weight:700}
+.pr-ownf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
+.pr-ownf-l{font-size:12px;font-weight:800;color:#5B6B86;margin-right:2px}
+.pr-ownb{--oc:#0F1F3D;border:1.5px solid color-mix(in srgb,var(--oc) 35%,#fff);background:#fff;color:var(--oc);border-radius:99px;padding:5px 12px;font:700 13px var(--sans);cursor:pointer}
+.pr-ownb b{font-weight:800;opacity:.75;margin-left:3px}
+.pr-ownb.on{background:var(--oc);color:#fff;border-color:var(--oc)}
+.pr-ownb.on b{opacity:.9}
 .pl-when{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;display:inline-flex;align-items:center}
 .pl-when.muted{font-weight:600;color:var(--ink-mid)}
 .pl-when.due{color:#B07A1C}.pl-when.late{color:#C0492F}
@@ -4645,6 +4653,13 @@ function _ldstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,
 // Fiche mise de côté jusqu'à l'ouverture du studio (statut inchangé : Contacté)
 function prOuv(p){return !!(p&&p.ouverture&&p.ouverture.at);}
 // Commercial qui suit la fiche : p.suivi, sinon celui qui a posé le rappel
+// Commercial en charge (suivi, sinon commercial assigné dans Boost) · badge coloré, même couleur pour la même personne partout
+function prCharge(p){return prOwner(p)||String(p.rep||'').trim().split(/\s+/)[0]||'';}
+const _OWN_COL=['#2F6FE0','#C2410C','#0F8A5F','#7C3AED','#B4235A','#0E7490','#A16207','#4D5B7C'];
+function ownColor(n){let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return _OWN_COL[h%_OWN_COL.length];}
+function ownPill(p){const n=prCharge(p);if(!n)return '<span class="pl-own none" title="Personne ne suit encore ce lead">👤 À attribuer</span>';const c=ownColor(n);return `<span class="pl-own" style="color:${c};background:color-mix(in srgb,${c} 12%,#fff);border-color:color-mix(in srgb,${c} 35%,#fff)" title="Commercial en charge des rappels">👤 ${esc(n)}</span>`;}
+let prOwnF=localStorage.getItem('cpcoach_ownf')||'';
+function setOwnF(v){prOwnF=v;localStorage.setItem('cpcoach_ownf',v);showProspects(true);}
 function prOwner(p){return String(p.suivi||'').trim().split(/\s+/)[0]||(p.rappelBy&&!/^(Boost|auto|équipe)$/.test(p.rappelBy)?String(p.rappelBy).trim().split(/\s+/)[0]:'');}
 // Premier contact décroché ou rappel posé : la fiche est attribuée à ce commercial (jamais écrasé)
 function _takeSuivi(p){const m=_me();if(!p.suivi&&m)p.suivi=m;}
@@ -4793,6 +4808,7 @@ function showProspects(keepScroll){
   if(!clientView&&prSort!=='journal'){
     if(prSort==='all')list=list.filter(p=>prOpen(p)&&!p.bmember);
     else list=list.filter(p=>prSeg(p)===prSort);
+    if(prSort==='rappels'&&prOwnF)list=list.filter(p=>(prCharge(p)||'·')===prOwnF);
   }
   const sorted=list.sort((a,b)=>{
     if(clientView){
@@ -4844,13 +4860,13 @@ function showProspects(keepScroll){
     const arr=new Date(prArrival(p));
     const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} · ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     // L'heure d'arrivée est dans la colonne « prochaine étape » ; si un rappel l'occupe, elle passe sous le nom
-    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rep?esc(p.rep.split(' ')[0]):'',p.suivi?'🤝 Suivi par '+esc(p.suivi):'',p.rappel?arrH:''].filter(Boolean).join(' · ');
+    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rappel?arrH:''].filter(Boolean).join(' · ');
     const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
     const flags=[p.bmember?'<span class="pl-flag ok">🏅 Adhérent</span>':'',prOuv(p)?'<span class="pl-flag warn">🏗 À rappeler à l\'ouverture</span>':'',p.bid&&bl&&({a_traiter:'rappeler',contacte:'rappeler',rdv_planifie:'rappeler',rdv_nok:'rappeler',rdv_venu:'venu',client:'abo',perdu:'perdu'}[p.bst]||'')!==p.statut&&!(p.statut==='essai'&&p.bst==='rdv_planifie')?`<span class="pl-flag">Boost : ${esc(bl)}</span>`:'',p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?'<span class="pl-flag warn">⏳ envoi Boost</span>':p.bqe?'<span class="pl-flag bad">⚠️ Boost</span>':''].join('');
     return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
       <div class="pl-line" onclick="togglePr('${p.id}')">
         <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
-        <div class="pl-who"><b>${esc(p.nom)}</b><span>${sub}</span></div>
+        <div class="pl-who"><b>${esc(p.nom)}</b><span>${ownPill(p)}${sub?" "+sub:""}</span></div>
         <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${flags}</div>
         <div class="pl-next">${prOuv(p)?`<span class="pl-when muted">🏗 Le ${new Date(p.ouverture.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.ouverture.by?' · '+esc(p.ouverture.by):''}${studioOpening(p)?' · ouverture '+esc(studioOpening(p)):''}</span><button class="pl-cbtn" onclick="event.stopPropagation();ouvOff('${p.id}')" title="Retirer de « À rappeler à l'ouverture »">↩ Remettre dans les rappels</button>`
           :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${prCalls(p).n?'📞 Contacté · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'📞 À traiter'}</button>`
@@ -4942,6 +4958,8 @@ function showProspects(keepScroll){
     <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':prFilter?'Rechercher dans « '+PIPE[prFilter].lbl+' » : nom, numéro…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
     <div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}</div>
+    ${!clientView&&prSort==='rappels'?(()=>{const L=PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
+      return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
     ${!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
