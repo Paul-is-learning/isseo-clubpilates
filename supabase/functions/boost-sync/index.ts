@@ -155,9 +155,11 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   const access = await getRow(admin, "_coach_access");
   // deno-lint-ignore no-explicit-any
   const prospects: any[] = store.prospects || [];
+  const tomb0 = await getRow(admin, "_coach_tomb");
   const res = reconcile(prospects, {
     studio: club.studio, club: clubKey, nowIso, contacts: contacts.items, acts: acts.items,
     users: listOf(users.body), invites: access.invites || [], deletedIds: deleted.items.map((d) => String(d?.id || "")),
+    toolDeleted: (tomb0.tool as string[]) || [],
   });
   const report = { club: club.studio, mode: write ? "import" : "simulation", at: nowIso, fiches_avant: prospects.length, fiches_apres: res.list.length, ...res.report };
   if (!write) return json({ ok: true, report });
@@ -184,7 +186,7 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   const t = await getRow(admin, "_coach_tomb");
   const live = new Set(res.list.map((p: any) => p.id)); // deno-lint-ignore no-explicit-any
   const ids = [...new Set([...(t.ids || []), ...res.tomb])].filter((id) => !live.has(id)).slice(-5000);
-  if (JSON.stringify(ids) !== JSON.stringify(t.ids || [])) await putRow(admin, "_coach_tomb", { ids });
+  if (JSON.stringify(ids) !== JSON.stringify(t.ids || [])) await putRow(admin, "_coach_tomb", { ...t, ids }); // garde la liste « tool » (supprimées dans l'outil)
   // Index des téléphones et emails Boost du club : boost-push s'y réfère avant de créer un contact
   const idx = await getRow(admin, "_boost_index");
   const tel: Record<string, string> = {}, mail: Record<string, string> = {};

@@ -91,6 +91,7 @@ const pendingTool = (p: any) => !!(p?.bq && [p.bq.statut, p.bq.rappel, p.bq.rapp
 export type Ctx = {
   studio: string; club: string; nowIso: string;
   contacts: any[]; acts: any[]; users: any[]; invites: any[]; deletedIds: string[];
+  toolDeleted?: string[]; // fiches supprimées dans l'outil : jamais réimportées depuis Boost
 };
 
 export function reconcile(prospects: any[], ctx: Ctx) {
@@ -116,7 +117,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const R = {
     contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
-    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, sans_telephone: 0,
+    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
     crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
@@ -153,7 +154,9 @@ export function reconcile(prospects: any[], ctx: Ctx) {
       const arr = String(c.effective_entry_at || c.last_entry_at || c.created_at || "");
       const recent = !arr || Date.parse(arr) >= Date.parse(ctx.nowIso) - MAX_AGE_DAYS * 864e5;
       if (!member && !recent && !m.rappel) { R.trop_anciens++; continue; }
-      p = { id: "p_fb_" + ctx.club + "_" + bid.replace(/[^A-Za-z0-9]/g, "").slice(0, 32), rep: "", note: "", fiche: "", obj: "", pack: "", appels: [],
+      const newId = "p_fb_" + ctx.club + "_" + bid.replace(/[^A-Za-z0-9]/g, "").slice(0, 32);
+      if ((ctx.toolDeleted || []).includes(newId)) { R.supprimes_outil++; continue; } // supprimée dans l'outil par l'équipe
+      p = { id: newId, rep: "", note: "", fiche: "", obj: "", pack: "", appels: [],
         statut: member ? "abo" : m.statut, rappel: member ? "" : m.rappel, rappelH: m.rappelH, rappelBy: m.rappel ? "Boost" : "", ts: String(c.created_at || ctx.nowIso), maj: ctx.nowIso, bset: true, brap: m.rappel + " " + m.rappelH };
       list.push(p);
       if (member) R.adherents++; // adhérent : hors statistiques de leads

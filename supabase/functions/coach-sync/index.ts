@@ -1012,7 +1012,8 @@ serve(async (req) => {
         if (gone.length) {
           const t = await getRow(admin, "_coach_tomb");
           const ids = [...new Set([...((t.ids as string[]) || []), ...gone])].slice(-5000);
-          await putRow(admin, "_coach_tomb", { ...t, ids });
+          const tool = [...new Set([...((t.tool as string[]) || []), ...gone])].slice(-5000); // jamais réimportées depuis Boost
+          await putRow(admin, "_coach_tomb", { ...t, ids, tool });
           for (const g of gone) if (!tomb.includes(g)) tomb.push(g);
         }
         return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, tomb });
