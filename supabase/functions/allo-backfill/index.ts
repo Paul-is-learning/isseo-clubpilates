@@ -99,9 +99,9 @@ const tsMin = (s: unknown): string => {
 };
 
 // Propriétaire de la ligne Allo : identification déterministe fournie par Paul.
-// Ligne 01 88 83 34 18 → JC · ligne 07 45 80 42 39 → Caroline.
+// Ligne 01 88 83 34 18 → Caroline · ligne 07 45 80 42 39 → JC (corrigé par Paul le 27 oct. 2026).
 // Extensible par secret ALLO_LINES ("33612345678=Nom,…", chiffres seuls).
-const LINE_DEFAULTS: Record<string, string> = { "33188833418": "JC", "33745804239": "Caroline" };
+const LINE_DEFAULTS: Record<string, string> = { "33188833418": "Caroline", "33745804239": "JC" };
 function lineOwner(num: unknown): string {
   const k = String(num || "").replace(/\D/g, "");
   if (k.length < 9) return "";
