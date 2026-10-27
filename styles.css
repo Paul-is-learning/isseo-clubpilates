@@ -3851,3 +3851,169 @@ body.dark .bpx,body.dark .bpx-rent{background:#161b22;color:#e6edf3}
   .tab{border-radius:12px;padding:11px 18px;font-size:14px}
   .tab-indicator{display:none}
 }
+
+/* ═══ Onglet Business plan · vue Détail complet (maquette 2026) ═══
+ * Classes .bpd-* posées par renderForecast (js/pages-financier.js).
+ * .yr-tab, .bp-subtab, .bp-detail-wrap, .bp-detail-table et .bp-months-toggle
+ * restent sur la page (animations, visite guidée) : les règles ci-dessous
+ * priment sur leurs anciens styles. */
+.bpd{color:#0F1F3D}
+/* Sélecteur d'année */
+.bpd-years{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+.yr-tab.bpd-yr{display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:9px 18px;border:none;border-radius:10px;background:transparent;color:#0F1F3D;font-family:inherit;text-align:left;cursor:pointer;transition:background .15s,box-shadow .15s}
+.yr-tab.bpd-yr:hover{background:#E9EEF6}
+.yr-tab.bpd-yr.active{background:#0F1F3D;color:#fff;box-shadow:0 4px 12px rgba(15,31,61,.18)}
+.bpd-yr-t{font-size:14px;font-weight:700;line-height:1.2}
+.bpd-yr-s{font-size:11px;font-weight:500;color:#7A869E;white-space:nowrap}
+.yr-tab.bpd-yr.active .bpd-yr-s{color:rgba(255,255,255,.72)}
+/* 8 KPIs */
+.bpd-kpis{display:grid;grid-template-columns:repeat(8,minmax(0,1fr));gap:10px;margin-bottom:16px}
+.bpd-kpi{display:flex;flex-direction:column;justify-content:space-between;gap:8px;min-width:0;padding:12px 12px 13px;background:#fff;border:1px solid #E6EAF2;border-radius:12px;box-shadow:0 1px 2px rgba(15,31,61,.04),0 3px 10px rgba(15,31,61,.04)}
+.bpd-kpi-l{font-size:9.5px;font-weight:700;letter-spacing:.5px;line-height:1.35;text-transform:uppercase;color:#7A869E}
+.bpd-kpi-v{font-size:clamp(15px,1.25vw,18px);font-weight:800;letter-spacing:-.3px;line-height:1.1;color:#0F1F3D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bpd-kpi-cash{background:#EEF4FF;border-color:#D7E3FA}
+.bpd-kpi-cash .bpd-kpi-l{color:#2F5BD3}
+.bpd-kpi-cash .bpd-kpi-v{color:#1E4FB8}
+.bpd-kpi.bpd-pos .bpd-kpi-v{color:#1E8E3E}
+.bpd-kpi.bpd-neg .bpd-kpi-v{color:#D93025}
+/* 3 cartes de vue */
+.bpd-subs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-bottom:14px}
+.bp-subtab.bpd-sub{flex-direction:row;align-items:center;gap:12px;height:64px;min-height:64px;padding:0 16px;border:1px solid #E6EAF2;border-radius:12px;background:#fff;color:#0F1F3D;box-shadow:0 1px 2px rgba(15,31,61,.04);transform:none}
+.bp-subtab.bpd-sub:hover{transform:translateY(-1px);border-color:#C9D6EE;color:#0F1F3D;box-shadow:0 8px 18px -10px rgba(15,31,61,.25)}
+.bp-subtab.bpd-sub.active{background:linear-gradient(135deg,#14284d 0%,#1f3d73 100%);border-color:#14284d;color:#fff;box-shadow:0 10px 22px -12px rgba(15,31,61,.55);transform:none}
+.bp-subtab.bpd-sub.active::after{display:none}
+.bpd-sub-ic{display:flex;align-items:center;justify-content:center;flex-shrink:0;width:38px;height:38px;border-radius:10px;background:#F1F4F9;color:#0F1F3D}
+.bp-subtab.bpd-sub.active .bpd-sub-ic{background:rgba(255,255,255,.14);color:#fff}
+.bpd-sub-tx{display:flex;flex-direction:column;gap:2px;min-width:0}
+.bpd-sub-t{font-size:14px;font-weight:700;color:inherit;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bpd-sub-s{font-size:11.5px;font-weight:500;color:#7A869E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.bp-subtab.bpd-sub.active .bpd-sub-s{color:rgba(255,255,255,.7)}
+/* Bandeau d'aide, bouton "Détail mois" (mobile) */
+.bpd-info{display:flex;align-items:center;gap:10px;margin-bottom:12px;padding:10px 14px;background:#EEF4FF;border:1px solid #D7E3FA;border-radius:10px;font-size:12.5px;line-height:1.4;color:#1E3A6E}
+.bpd-info svg{flex-shrink:0;color:#2F5BD3}
+.bpd .bp-months-toggle{color:#1E4FB8;background:#EEF4FF;border-color:#D7E3FA}
+.bpd .bp-months-toggle.active{color:#fff;background:#0F1F3D;border-color:#0F1F3D}
+/* Tableau dans sa carte */
+.bpd-card{background:#fff;border:1px solid #E6EAF2;border-radius:12px;box-shadow:0 1px 2px rgba(15,31,61,.04);overflow:hidden}
+.bpd-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-x:contain}
+table.bpd-table.bp-detail-table{display:table;width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;color:#3D4757}
+.bpd-table.bp-detail-table tbody{display:table-row-group}
+.bpd-table.bp-detail-table tr,.bpd-table.bp-detail-table tr:first-child{display:table-row}
+.bpd-table.bp-detail-table tr:nth-child(n){background:transparent}
+.bpd-table th,.bpd-table td{padding:4px 8px;text-align:right;line-height:16px;white-space:nowrap;border-bottom:1px solid #EEF1F6;color:#3D4757}
+.bpd-table th{padding:9px 8px;font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;color:#7A869E;background:#fff;border-bottom-color:#E6EAF2}
+.bpd-table th.bpd-l,.bpd-table td.bpd-l{text-align:left;padding-left:14px}
+.bpd-table td.bpd-l{min-width:180px;color:#2B3445;background:#fff}
+/* Colonne Ligne et titres de section figés quand le tableau défile en largeur */
+.bpd-table th.bpd-l,.bpd-table td.bpd-l{position:sticky;left:0;z-index:1}
+.bpd-table tr.bpd-sec span{position:sticky;left:14px}
+.bpd-table th.bpd-tot{background:#EEF4FF;color:#0F1F3D;font-weight:800}
+.bpd-pen{color:#2F5BD3;font-size:11px}
+.bpd-table tr[data-bp-line]:hover td{background:#F8FAFD}
+.bpd-table td.bpd-tot{min-width:100px;padding:1px 10px;font-weight:700;color:#0F1F3D}
+.bpd-table td.bpd-neg{color:#D93025}
+.bpd-in{width:100%;min-width:88px;margin:0;padding:2px 8px;border:1px solid #D5DCE8;border-radius:6px;background:#fff;font:inherit;font-weight:700;color:#0F1F3D;text-align:right;outline:none;-moz-appearance:textfield;transition:border-color .15s,box-shadow .15s}
+.bpd-in::-webkit-outer-spin-button,.bpd-in::-webkit-inner-spin-button{-webkit-appearance:none;margin:0}
+.bpd-in:hover{border-color:#AFC0DD}
+.bpd-in:focus{border-color:#2F6FE0;box-shadow:0 0 0 3px rgba(47,111,224,.14)}
+.bpd-hint{display:none}
+.bpd-act{font-size:10px;font-weight:700;line-height:13px;color:#2F5BD3}
+.bpd-act.pos{color:#1E8E3E}.bpd-act.neg{color:#D93025}
+/* Bandes de section, sommes, IS, indicateurs */
+.bpd-table tr.bpd-sec td{padding:7px 14px;text-align:left;font-size:10.5px;font-weight:800;letter-spacing:.6px;color:#0F1F3D;background:#F3F6FB}
+.bpd-table tr.bpd-sum td{font-weight:700;color:#1E4FB8;background:#EEF4FF}
+.bpd-table tr.bpd-ro td:not(.bpd-l){font-style:italic;font-weight:500;color:#8A94A6}
+.bpd-auto{display:inline-block;margin-left:5px;padding:0 5px;border-radius:4px;background:#E6EEFC;color:#2F5BD3;font-size:10px;font-weight:700;font-style:normal;line-height:15px;letter-spacing:.4px;text-transform:uppercase;vertical-align:1px}
+.bpd-table tr.bpd-ind td{font-weight:600;color:#0F1F3D}
+.bpd-table tr.bpd-ind td.bpd-l{font-weight:700}
+.bpd-table tr.bpd-ind td.bpd-neg{color:#D93025}
+.bpd-table tr.bpd-caf td{font-weight:700;color:#fff;background:#0F1F3D;border-bottom-color:#0F1F3D}
+.bpd-table tr.bpd-caf td.bpd-l{color:#fff}
+.bpd-table tr.bpd-caf td.bpd-neg{color:#FFB3AD}
+.bpd-table tr.bpd-caf .bpd-auto{background:rgba(255,255,255,.16);color:#fff}
+.bpd-cafbox{display:inline-block;min-width:78px;padding:1px 8px;border:1px solid rgba(255,255,255,.8);border-radius:6px;text-align:right}
+/* Pied du tableau */
+.bpd-foot{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px;color:#7A869E}
+.bpd-foot-r{display:flex;align-items:center;flex-wrap:wrap;gap:10px}
+.bpd-reset{padding:4px 11px;border:1px solid #D5DCE8;border-radius:7px;background:#fff;font:inherit;font-size:11px;font-weight:600;color:#3D4757;cursor:pointer;transition:border-color .15s,color .15s}
+.bpd-reset:hover{border-color:#AFC0DD;color:#0F1F3D}
+/* Écrans moyens : KPIs sur 2 lignes */
+@media(max-width:1280px){.bpd-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+/* Mobile : KPIs 2 par ligne, cartes de vue empilées, tableau défilant dans sa carte */
+@media(max-width:767px){
+  .bpd-years{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:4px}
+  .yr-tab.bpd-yr{padding:8px 10px;min-width:0}
+  .bpd-yr-s{white-space:normal;font-size:10.5px;line-height:1.3}
+  .bpd-kpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .bpd-kpi-v{font-size:17px}
+  .bpd-subs{grid-template-columns:1fr;gap:8px}
+  .bp-subtab.bpd-sub{height:60px;min-height:60px;padding:0 14px}
+  .bpd-info{align-items:flex-start}
+  .bpd-table th.bpd-l,.bpd-table td.bpd-l{box-shadow:1px 0 0 #EEF1F6}
+  .bpd-table td.bpd-l{min-width:150px}
+}
+/* Téléphone sans "Détail mois" : seules Ligne et Total annuel restent visibles */
+@media(max-width:640px){
+  .bpd-wrap:not(.bpd-months-on) .bpd-table th:not(:first-child):not(:last-child),
+  .bpd-wrap:not(.bpd-months-on) .bpd-table td:not(:first-child):not(:last-child){display:none}
+  .bpd-wrap:not(.bpd-months-on) .bpd-table td.bpd-l{min-width:0;white-space:normal}
+  .bpd-wrap:not(.bpd-months-on) .bpd-table td.bpd-tot{width:1%;padding:5px 10px}
+  .bpd-wrap:not(.bpd-months-on) .bpd-hint{display:block;margin-top:2px;font-size:9.5px;font-weight:500;line-height:13px;color:#8A94A6}
+  .bpd-in{min-width:104px;padding:6px 8px}
+  .bpd-foot{flex-direction:column;align-items:flex-start}
+}
+/* Mode sombre */
+body.dark .bpd{color:#e6edf3}
+body.dark .yr-tab.bpd-yr{color:#e6edf3!important;background:transparent!important;border-color:transparent!important}
+body.dark .yr-tab.bpd-yr:hover{background:#1c2128!important}
+body.dark .yr-tab.bpd-yr.active{background:#1f3d73!important;color:#fff!important}
+body.dark .bpd-yr-s{color:#8b949e}
+body.dark .yr-tab.bpd-yr.active .bpd-yr-s{color:rgba(255,255,255,.72)}
+body.dark .bpd-kpi,body.dark .bpd-card{background:#161b22;border-color:#30363d;box-shadow:none}
+body.dark .bpd-kpi-l{color:#8b949e}
+body.dark .bpd-kpi-v{color:#e6edf3}
+body.dark .bpd-kpi-cash{background:#0d1f3d;border-color:#1f3d73}
+body.dark .bpd-kpi-cash .bpd-kpi-l{color:#9cc0ff}
+body.dark .bpd-kpi-cash .bpd-kpi-v{color:#79b8ff}
+body.dark .bpd-kpi.bpd-pos .bpd-kpi-v{color:#3fb950}
+body.dark .bpd-kpi.bpd-neg .bpd-kpi-v{color:#ff7b72}
+body.dark .bp-subtab.bpd-sub{background:#161b22;border-color:#30363d;color:#e6edf3;box-shadow:none}
+body.dark .bp-subtab.bpd-sub:hover{border-color:#58a6ff;color:#e6edf3}
+body.dark .bp-subtab.bpd-sub.active{background:linear-gradient(135deg,#14284d 0%,#1f3d73 100%);border-color:#1f3d73;color:#fff}
+body.dark .bpd-sub-ic{background:#21262d;color:#9cc0ff}
+body.dark .bp-subtab.bpd-sub.active .bpd-sub-ic{background:rgba(255,255,255,.14);color:#fff}
+body.dark .bpd-sub-s{color:#8b949e}
+body.dark .bpd-info{background:#0d1f3d;border-color:#1f3d73;color:#c9d8f0}
+body.dark .bpd-info svg{color:#79b8ff}
+body.dark .bpd .bp-months-toggle{background:#0d1f3d;color:#9cc0ff;border-color:#1f3d73}
+body.dark .bpd .bp-months-toggle.active{background:#1f3d73;color:#fff}
+body.dark .bpd-table th{background:#161b22!important;color:#8b949e!important;border-bottom-color:#30363d!important}
+body.dark .bpd-table th.bpd-tot{background:#0d1f3d!important;color:#c9d8f0!important}
+body.dark .bpd-pen{color:#79b8ff}
+body.dark .bpd-table td{color:#c9d1d9!important;border-bottom-color:#21262d!important}
+body.dark .bpd-table td.bpd-l{color:#e6edf3!important;background:#161b22}
+body.dark .bpd-table td.bpd-tot{color:#e6edf3!important}
+body.dark .bpd-table td.bpd-neg{color:#ff7b72!important}
+body.dark .bpd-table tr[data-bp-line]:hover td{background:#1c2128}
+body.dark .bpd-in:hover{border-color:#58a6ff!important}
+body.dark .bpd-act{color:#79b8ff}
+body.dark .bpd-act.pos{color:#3fb950}body.dark .bpd-act.neg{color:#ff7b72}
+body.dark .bpd-table tr.bpd-sec td{background:#1c2433;color:#9cc0ff!important}
+body.dark .bpd-table tr.bpd-sum td{background:#0d1f3d;color:#79b8ff!important}
+body.dark .bpd-table tr.bpd-ro td:not(.bpd-l){color:#6e7681!important}
+body.dark .bpd-auto{background:#1f2f4d;color:#9cc0ff}
+body.dark .bpd-table tr.bpd-ind td{color:#e6edf3!important}
+body.dark .bpd-table tr.bpd-ind td.bpd-neg{color:#ff7b72!important}
+body.dark .bpd-table tr.bpd-caf td{background:#1f3d73;color:#fff!important;border-bottom-color:#1f3d73!important}
+body.dark .bpd-table tr.bpd-caf td.bpd-neg{color:#ffb3ad!important}
+body.dark .bpd-table tr.bpd-caf .bpd-auto{background:rgba(255,255,255,.16);color:#fff}
+body.dark .bpd-foot{color:#8b949e}
+body.dark .bpd-reset{background:#21262d;border-color:#30363d;color:#c9d1d9}
+body.dark .bpd-reset:hover{border-color:#58a6ff;color:#e6edf3}
+/* Business plan · cartes KPI : jamais de montant coupé (8 par ligne quand la place le permet, sinon retour à la ligne) */
+.bpd-kpis{grid-template-columns:repeat(8,minmax(0,1fr))}
+@media(max-width:1389px){.bpd-kpis{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:768px){.bpd-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}}
+.bpd-kpi-v{overflow:visible;text-overflow:clip;font-size:clamp(15px,1.15vw,18px)}
+@media(min-width:769px) and (max-width:1100px){.bpd-subs{grid-template-columns:1fr}.bp-subtab.bpd-sub{height:56px;min-height:56px}}
+@media(max-width:1500px){.bpd-table th,.bpd-table td{padding-left:5px;padding-right:5px}.bpd-table td{font-size:11.5px}}

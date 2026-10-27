@@ -609,7 +609,9 @@ function _buildCommandItems(){
   });
   // Studios
   if(window.S&&S.studios){
-    Object.keys(S.studios).forEach(function(id){
+    // Lecteur : seulement ses studios autorisés (comme la liste des studios)
+    var _ids=(typeof isViewer==='function'&&isViewer()&&typeof _getStudioIds==='function')?_getStudioIds():Object.keys(S.studios);
+    _ids.forEach(function(id){
       var st=S.studios[id];
       items.push({label:st.nom||id,sub:'Ouvrir le studio',icon:'🏢',color:'#6366f1',cat:'Studio',action:function(){if(typeof openDetail==='function')openDetail(id);}});
     });

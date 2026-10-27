@@ -1,6 +1,15 @@
 // ── NOTIFICATIONS ENGINE ────────────────────────────────────────────────────
 // ══════════════════════════════════════════════════════════════════════════════
 var NOTIF_TYPES={message:{icon:'\uD83D\uDCAC',label:'Message',color:'#3B6FB6'},document:{icon:'\uD83D\uDCC4',label:'Document',color:'#0F6E56'},depense:{icon:'\uD83D\uDCB3',label:'D\u00e9pense',color:'#B8860B'},statut:{icon:'\uD83D\uDD04',label:'Statut',color:'#7C3AED'},echeance:{icon:'\u23F0',label:'\u00c9ch\u00e9ance',color:'#DC2626'},prospect:{icon:'\uD83C\uDFE0',label:'Prospection',color:'#F59E0B'},rapport:{icon:'\uD83D\uDCCB',label:'Rapport',color:'#0E7490'}};
+// Texte affiché d'une notification : sans le repère interne [todo:id] des rappels d'échéance
+// (gardé dans la base, il sert au contrôle « déjà notifié aujourd'hui » de checkEcheances)
+function _notifTxt(s){return String(s==null?'':s).replace(/[ \t]*\[todo:[^\]]*\]/g,'');}
+// Titre précédé de l'icône du type, sauf s'il commence déjà par un pictogramme (une seule icône)
+function _notifHead(icon,title){
+  var t=_notifTxt(title);
+  if(!icon||/^(?:[\uD83C-\uD83E][\uDC00-\uDFFF]|[\u2190-\u21FF\u2300-\u23FF\u2460-\u27BF\u2900-\u2BFF])/.test(t))return t;
+  return icon+' '+t;
+}
 async function loadNotifications(){
   if(!S.user)return;
   var res=await sb.from('notifications').select('*').eq('user_id',S.user.id).order('created_at',{ascending:false}).limit(100);
@@ -52,8 +61,8 @@ function subscribeNotifications(){
     S.notifications.unshift(payload.new);
     _updateNotifBadge();
     var nt=NOTIF_TYPES[payload.new.type]||{icon:'',label:''};
-    // Toast in-app
-    toast(nt.icon+' '+payload.new.title);
+    // Toast in-app (une seule icône)
+    toast(_notifHead(nt.icon,payload.new.title));
     // Notification OS native si permission accordée et onglet pas focus
     showNativeNotification(payload.new,nt);
     render();
@@ -71,12 +80,14 @@ function shouldShowNativeNotif(){
 function showNativeNotification(notif,meta){
   if(!shouldShowNativeNotif())return;
   meta=meta||{};
+  // Une seule icône, et pas de repère interne [todo:id] dans le texte affiché
+  var _nTitle=_notifHead(meta.icon,notif.title),_nBody=_notifTxt(notif.body);
   try{
     // Préférer le SW si enregistré (permet tap → ouvrir l'app)
     if('serviceWorker' in navigator&&navigator.serviceWorker.ready){
       navigator.serviceWorker.ready.then(function(reg){
-        reg.showNotification((meta.icon||'')+' '+notif.title,{
-          body:notif.body||'',
+        reg.showNotification(_nTitle,{
+          body:_nBody,
           icon:'/icons/icon-192.png',
           badge:'/icons/icon-192.png',
           tag:'isseo-notif-'+(notif.id||Date.now()),
@@ -86,7 +97,7 @@ function showNativeNotification(notif,meta){
         });
       });
     } else if(typeof Notification!=='undefined'){
-      new Notification((meta.icon||'')+' '+notif.title,{body:notif.body||'',icon:'/icons/icon-192.png',tag:'isseo-notif'});
+      new Notification(_nTitle,{body:_nBody,icon:'/icons/icon-192.png',tag:'isseo-notif'});
     }
   }catch(e){console.warn('[notif native]',e);}
 }
@@ -328,6 +339,7 @@ async function checkMondayReport(){
 }
 
 // Vérification échéances (appelée au login)
+var _echeanceEnCours={}; // clés de rappel en cours d'envoi : pas de doublon si checkEcheances repasse avant la réponse
 async function checkEcheances(){
   if(!S.user)return;
   var now=new Date();
@@ -339,6 +351,7 @@ async function checkEcheances(){
   if(!myName)return;
   // Jours de déclenchement : J-7, J-3, J-1, J-0, puis retards
   var triggerDays=[7,3,1,0,-1,-3,-7,-14];
+  var rows=[],keys=[]; // rappels du jour, envoyés en une seule requête, et leurs clés de dédoublonnage
   ids.forEach(function(sid){
     var todos=S.todos[sid]||[];
     var studioName=(S.studios[sid]?S.studios[sid].name:sid);
@@ -355,24 +368,24 @@ async function checkEcheances(){
       if(triggerDays.indexOf(diff)<0)return;
       // Dedup local : 1 rappel max par (tâche, jour)
       var dedupKey='isseo_todo_reminder_'+t.id+'_'+todayStr;
-      if(localStorage.getItem(dedupKey))return;
+      if(localStorage.getItem(dedupKey)||_echeanceEnCours[dedupKey])return;
       // Dedup serveur : éviter de recréer si notif existe déjà aujourd'hui pour cette tâche
       var marker='[todo:'+t.id+']';
       var already=S.notifications.find(function(n){
         return n.type==='echeance'&&n.body&&n.body.indexOf(marker)>=0&&n.created_at&&n.created_at.slice(0,10)===todayStr;
       });
       if(already){localStorage.setItem(dedupKey,'1');return;}
-      // Construire le titre selon la proximité
+      // Construire le titre selon la proximité (point médian, jamais de tiret long dans un texte affiché)
       var title;
-      if(diff===0)title='🔴 À faire AUJOURD\'HUI — '+studioName;
-      else if(diff===1)title='⏰ À faire demain — '+studioName;
-      else if(diff>0)title='⏰ Rappel : dans '+diff+'j — '+studioName;
-      else if(diff===-1)title='🔴 EN RETARD de 1j — '+studioName;
-      else title='🔴 EN RETARD de '+Math.abs(diff)+'j — '+studioName;
+      if(diff===0)title='🔴 À faire AUJOURD\'HUI · '+studioName;
+      else if(diff===1)title='⏰ À faire demain · '+studioName;
+      else if(diff>0)title='⏰ Rappel : dans '+diff+'j · '+studioName;
+      else if(diff===-1)title='🔴 EN RETARD de 1j · '+studioName;
+      else title='🔴 EN RETARD de '+Math.abs(diff)+'j · '+studioName;
       // Date formatée pour le body
       var dlLabel=dl.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
       var body=t.titre+'\nÉchéance : '+dlLabel+' '+marker;
-      sb.from('notifications').insert({
+      rows.push({
         type:'echeance',
         user_id:S.user.id,
         source_user_id:S.user.id,
@@ -381,9 +394,17 @@ async function checkEcheances(){
         body:body,
         read:false
       });
-      localStorage.setItem(dedupKey,'1');
+      keys.push(dedupKey);_echeanceEnCours[dedupKey]=1;
     });
   });
+  // Rappels pour soi seul (user_id = l'utilisateur courant), 1 par tâche et par jour au plus :
+  // clé locale + contrôle des notifications relues juste avant l'appel (autre appareil déjà passé).
+  // La clé locale n'est posée qu'une fois l'insertion confirmée : en cas d'échec, le rappel repart au passage suivant.
+  if(!rows.length)return;
+  function _fin(ok){keys.forEach(function(k){delete _echeanceEnCours[k];if(ok){try{localStorage.setItem(k,'1');}catch(e){}}});}
+  return sb.from('notifications').insert(rows).then(function(r){
+    if(r&&r.error){console.warn('[save] notifications echeance',r.error.message);_fin(false);}else _fin(true);
+  },function(e){console.warn('[save] notifications echeance',e&&e.message||e);_fin(false);});
 }
 function renderNotifPanel(){
   var notifs=S.notifications.slice();
@@ -467,14 +488,16 @@ function renderNotifPanel(){
         // Content
         h+='<div style="flex:1;min-width:0">';
         h+='<div style="display:flex;justify-content:space-between;align-items:center;gap:6px">';
-        h+='<div style="font-size:11px;font-weight:'+(n.read?'500':'700')+';color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+n.title+'</div>';
+        // Textes saisis par des utilisateurs (titres de tâches, messages, noms) : échappés, repère [todo:id] retiré
+        h+='<div style="font-size:11px;font-weight:'+(n.read?'500':'700')+';color:#1e293b;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+_escHtml(_notifTxt(n.title))+'</div>';
         h+='<span style="font-size:8px;color:#94a3b8;white-space:nowrap">'+time+'</span>';
         h+='</div>';
-        if(n.body){var _multiline=n.body.indexOf('\n')>=0;h+='<div style="font-size:10px;color:#64748b;margin-top:2px;'+(_multiline?'white-space:pre-line;line-height:1.5':'white-space:nowrap;overflow:hidden;text-overflow:ellipsis')+'">'+n.body+'</div>';}
+        var _nb=_notifTxt(n.body);
+        if(_nb){var _multiline=_nb.indexOf('\n')>=0;h+='<div style="font-size:10px;color:#64748b;margin-top:2px;'+(_multiline?'white-space:pre-line;line-height:1.5':'white-space:nowrap;overflow:hidden;text-overflow:ellipsis')+'">'+_escHtml(_nb)+'</div>';}
         h+='<div style="display:flex;gap:6px;margin-top:3px;align-items:center">';
         h+='<span style="font-size:8px;padding:1px 6px;border-radius:4px;background:'+nt.color+'15;color:'+nt.color+';font-weight:600">'+nt.label+'</span>';
-        h+='<span style="font-size:8px;color:#94a3b8">'+sName+'</span>';
-        if(srcName)h+='<span style="font-size:8px;color:#94a3b8">\u00b7 '+srcName+'</span>';
+        h+='<span style="font-size:8px;color:#94a3b8">'+_escHtml(sName)+'</span>';
+        if(srcName)h+='<span style="font-size:8px;color:#94a3b8">\u00b7 '+_escHtml(srcName)+'</span>';
         h+='</div>';
         h+='</div>';
         // Unread dot

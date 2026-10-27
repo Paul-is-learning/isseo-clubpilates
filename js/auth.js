@@ -176,6 +176,9 @@ async function loadAdminUsers(){
   _adminUsers=(res.data||[]).sort(function(a,b){return (a.nom||'').localeCompare(b.nom||'');});
   await loadPresence();
   await loadLastLogins();
+  // Nettoyage et enregistrement seulement si la liste des profils a bien été lue et n'est pas vide :
+  // sinon chaque compte paraîtrait orphelin et blocages, lecteurs, rôles et mots de passe seraient effacés
+  if(res.error||!_adminUsers.length){render();return;}
   // Nettoyer les IDs orphelins dans adminSettings (utilisateurs supprimés/recréés)
   var validIds=new Set(_adminUsers.map(function(u){return u.id;}));
   var dirty=false;
@@ -200,7 +203,9 @@ async function loadAdminUsers(){
   }
   if(dirty){
     saveAdminSettings();
-    sb.from('studios').upsert({id:'_user_presence',data:{presence:S.userPresence},updated_at:new Date().toISOString()});
+    // Présence sans les comptes supprimés (liste des profils lue, voir plus haut)
+    sb.from('studios').upsert({id:'_user_presence',data:{presence:S.userPresence},updated_at:new Date().toISOString()})
+      .then(function(r){if(r&&r.error)console.warn('[save] _user_presence',r.error.message);});
     console.log('[Admin] IDs orphelins nettoyés');
   }
   render();
@@ -710,13 +715,28 @@ async function uploadAvatar(input){
   input.value='';
 }
 
+// ── Lecteur (viewer) : studios et onglets autorisés ────────────────────────
+// Mêmes règles que la liste des studios (_getStudioIds) ; sans effet pour les autres comptes
+function _viewerCanOpenStudio(id){
+  if(!isViewer())return true;
+  return _getStudioIds().indexOf(id)>=0;
+}
+// Onglets autorisés du lecteur, ou null si aucune restriction
+function _viewerAllowedTabs(){
+  if(!isViewer()||!S.user||!S.adminSettings.viewerPerms||!S.adminSettings.viewerPerms[S.user.id])return null;
+  var t=S.adminSettings.viewerPerms[S.user.id].tabs||[];
+  return t.length?t:null;
+}
+
 // ── Recherche globale ──────────────────────────────────────────────────────
 function globalSearch(query){
   if(!query||query.length<2)return[];
   var q=query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
   var results=[];
+  var _viewer=isViewer();
   var filter=ROLE_FILTER[S.profile&&S.profile.role];
-  var ids=Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&(!filter||filter(st));});
+  // Lecteur : seulement ses studios autorisés (comme la liste des studios)
+  var ids=_viewer?_getStudioIds():Object.keys(S.studios).filter(function(id){var st=S.studios[id];return st&&st.name&&(!filter||filter(st));});
   ids.forEach(function(id){
     var s=S.studios[id];
     // Studios
@@ -759,8 +779,8 @@ function globalSearch(query){
       if(st.indexOf(q)>=0)results.push({type:'scenario',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"/><path d="M22 12A10 10 0 0 0 12 2v10z"/></svg>',title:(sc.comment||'').substring(0,50)+((sc.comment||'').length>50?'…':''),subtitle:s.name+' · '+sc.auteur+' — '+sc.date,studioId:id,tab:'adherents',color:'#854F0B',scenarioId:sc.id});
     });
   });
-  // Prospects (liens + fiches)
-  (S.prospects||[]).forEach(function(p){
+  // Prospects (liens + fiches) : rattachés à aucun studio, jamais montrés à un lecteur
+  (_viewer?[]:(S.prospects||[])).forEach(function(p){
     var txt='';
     if(p.type==='lien')txt=(p.titre||'')+' '+(p.url||'');
     else if(p.type==='fiche')txt=(p.adresse||'')+' '+(p.notes||'');
@@ -782,6 +802,12 @@ function globalSearch(query){
     var pn=pg.label.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
     if(pn.indexOf(q)>=0)results.push({type:'page',icon:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>',title:pg.label,subtitle:pg.desc,tab:null,color:'#555',pageId:pg.pageId});
   });
+  // Lecteur limité à certains onglets : on retire les résultats tirés d'un onglet interdit
+  var _tabsOk=_viewer?_viewerAllowedTabs():null;
+  if(_tabsOk){
+    var _srcTab={workflow:'workflow',message:'echanges',tache:'echanges',depense:'engagements',scenario:'adherents',document:'fichiers'};
+    results=results.filter(function(r){var t=_srcTab[r.type];return !t||_tabsOk.indexOf(t)>=0;});
+  }
   return results.slice(0,12);
 }
 
@@ -789,7 +815,7 @@ function globalSearch(query){
 // Clé = requête + empreinte légère (références et longueurs des listes, remplacées par la synchro) ; fresh force le recalcul (saisie, render complet)
 var _gsCache=null;
 function _gsStamp(){
-  var st=[S.studios,S.messages,S.depenses,S.todos,S.scenarios,S.prospects,S.prospects&&S.prospects.length,S.profile];
+  var st=[S.studios,S.messages,S.depenses,S.todos,S.scenarios,S.prospects,S.prospects&&S.prospects.length,S.profile,S.adminSettings];
   Object.keys(S.studios).forEach(function(id){
     var m=S.messages[id],d=S.depenses[id],t=S.todos[id],sc=S.scenarios[id];
     st.push(id,S.studios[id],m,m&&m.length,d,d&&d.length,t,t&&t.length,sc,sc&&sc.length);
@@ -807,6 +833,8 @@ function handleSearchNav(idx){
   var results=_searchResults();
   var r=results[idx];
   if(!r)return;
+  // Lecteur : jamais d'ouverture d'un studio non autorisé (résultat resté en cache)
+  if(r.studioId&&!_viewerCanOpenStudio(r.studioId)){toast('Accès non autorisé');return;}
   S.searchQuery='';S.searchOpen=false;S.searchIdx=-1;
   var _sInp=document.getElementById('global-search-input');if(_sInp)_sInp.value='';
   var _sDd=document.getElementById('search-dropdown');if(_sDd)_sDd.style.display='none';

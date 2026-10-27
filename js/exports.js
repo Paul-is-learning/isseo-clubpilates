@@ -558,6 +558,8 @@ async function doLogout(){
   render();
 }
 function openDetail(id,ev){
+  // Lecteur : studio hors de ses autorisations refusé, on reste sur place
+  if(typeof _viewerCanOpenStudio==='function'&&!_viewerCanOpenStudio(id)){toast('Accès non autorisé');return;}
   if(!_checkDirtyBeforeNav()){return;}
   if(hasDirty())discardAllDirty();
   // Shared element transition : la card source morphe vers la page détail

@@ -8,6 +8,8 @@
 // Auth d'appel : header `x-admin-code` = secret COACH_CODE (le code maître).
 // Secrets requis : ALLO_API_KEY (scope CONVERSATIONS_READ), ALLO_STUDIO.
 // Déployée avec --no-verify-jwt. Relançable sans doublons (dédup par id).
+// Tout l'historique est lu avant les fiches, puis écriture conditionnelle
+// (relue et rejouée en cas de conflit, 503 si le conflit persiste).
 //
 // Usage :
 //   curl -X POST https://<ref>.supabase.co/functions/v1/allo-backfill \
@@ -16,15 +18,28 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { getRow, rateLimit, safeEq } from "../_shared/store.ts";
 
 const ROW_PROSPECTS = "_coach_prospects";
 const TXT_MAX = 9000;
 const API = "https://api.withallo.com";
+const SEP_TRANSCRIPT = "\n\n\u2014 Transcription \u2014\n"; // séparateur déjà stocké sur les fiches
+const TRIES = 4;
 
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 }
+
+// Ligne des fiches avec sa date d'écriture (absente : migration douce depuis studios)
+async function readProspects(admin: any): Promise<any> {
+  const read = () => admin.from("coach_store").select("data,updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
+  const first = await read();
+  if (first.error) throw new Error("Stockage indisponible");
+  if (first.data) return first.data;
+  await getRow(admin, ROW_PROSPECTS);
+  return (await read()).data;
+}
+
 const telKey = (s: unknown) => String(s ?? "").replace(/\D/g, "").slice(-9);
 const idEq = (a: unknown, b: unknown) =>
   !!a && !!b && String(a).replace(/[^a-zA-Z0-9]/g, "") === String(b).replace(/[^a-zA-Z0-9]/g, "");
@@ -159,13 +174,9 @@ serve(async (req: Request) => {
     }
     if (!alloNumbers.length) return json({ error: "Aucun numéro Allo trouvé" }, 404);
 
-    // 2. Les fiches actuelles
-    const row = { data: await getRow(admin, ROW_PROSPECTS) };
-    const list: any[] = (row?.data?.prospects as any[]) || [];
-    const now = () => new Date().toISOString();
-
-    let convs = 0, created = 0, added = 0, dedup = 0, skipped = 0, auteursCorriges = 0;
-
+    // 2. Historique Allo lu en entier AVANT de toucher aux fiches : en cas de
+    //    conflit d'écriture, seule l'étape 3 (sans appel réseau) est rejouée.
+    const items: any[] = [];
     for (const alloNum of alloNumbers) {
       for (let page = 1; page <= 20; page++) {
         const r = await fetch(API + "/v2/api/conversations?allo_number=" + encodeURIComponent(alloNum)
@@ -175,38 +186,10 @@ serve(async (req: Request) => {
         const data: any[] = body?.data || [];
         if (!data.length) break;
         for (const conv of data) {
-          convs++;
           const li = conv?.last_item;
-          const key = telKey(conv?.contact_number);
-          if (key.length < 9) { skipped++; continue; }
-          // Réattribution par LIGNE, avant tout filtre (messageries et appels sans
-          // résumé compris) : chaque appel de la fiche non attribué à un titulaire de
-          // ligne (ex. « Clément » venu de l'email du compte) passe au titulaire.
-          const owner = lineOwner(alloNum);
-          const p0 = owner ? list.find((x) => telKey(x?.tel) === key) : null;
-          if (p0) {
-            const owners = lineOwners();
-            for (const e of (Array.isArray(p0.appels) ? p0.appels : [])) {
-              const t0 = String(e?.txt || "");
-              if (!t0.startsWith("📞")) continue;
-              const nl = t0.indexOf("\n");
-              const first = nl < 0 ? t0 : t0.slice(0, nl), rest = nl < 0 ? "" : t0.slice(nl);
-              const m = first.match(/ · par ([^·]+?)(?= · |$)/);
-              const cur = m ? m[1].trim() : "";
-              if (cur === owner || (cur && owners.has(cur))) continue;
-              const nf = m ? first.replace(" · par " + m[1], " · par " + owner)
-                : first.includes(" · import historique") ? first.replace(" · import historique", " · par " + owner + " · import historique")
-                : first + " · par " + owner;
-              e.txt = (nf + rest).slice(0, TXT_MAX);
-              p0.maj = now();
-              auteursCorriges++;
-            }
-            const imported = /^(Importé d'Allo|Contact Allo)/.test(String(p0.note || ""));
-            if (imported && ["", "Clément", "Clement"].includes(String(p0.rep || "")) && p0.rep !== owner) {
-              p0.rep = owner; p0.maj = now(); auteursCorriges++;
-            }
-          }
-          if (!li || li.type !== "CALL") { skipped++; continue; }
+          const item: any = { alloNum, key: telKey(conv?.contact_number), call: null };
+          items.push(item);
+          if (item.key.length < 9 || !li || li.type !== "CALL") continue;
           const summary = String(li.summary || "").trim();
           let transcript = "";
           const t = li.transcript;
@@ -237,104 +220,164 @@ serve(async (req: Request) => {
               }
             } catch (_e) { /* best effort */ }
           }
-          if (!summary && !transcript) { skipped++; continue; }
-
-          let p = list.find((x) => telKey(x?.tel) === key);
-          if (!p) {
-            const cName = String(conv?.contacts?.[0]?.name || "").trim();
-            p = {
-              id: "p_allo_" + String(li.id || crypto.randomUUID()).replace(/[^a-zA-Z0-9]/g, "").slice(-12),
-              nom: isRealName(cName) ? cName.slice(0, 80) : "Contact 0" + key,
-              tel: "0" + key, note: "Importé d'Allo · historique", statut: "rappeler", rappel: "",
-              obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
-              appels: [], rep: author || "", studio: STUDIO, ts: String(li.date || now()).slice(0, 30), maj: now(),
-            };
-            list.push(p);
-            created++;
-          }
-          p.appels = Array.isArray(p.appels) ? p.appels : [];
-          const existing = (li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null)
-            || p.appels.find((a: any) => tsMin(a?.ts) === tsMin(li.date));
-          if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
-          if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
-          const rdv = detectRappel(summary + " " + transcript, String(li.date || ""));
-          if (rdv && (p.statut === "rappeler" || p.statut === "essai") && (!p.rappel || p.rappel < new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10))) {
-            p.rappel = rdv.date; if (rdv.h) p.rappelH = rdv.h; p.rappelBy = "auto"; p.maj = now();
-          }
-          if (existing) {
-            // Auteur manquant sur une entrée déjà importée → on complète la ligne méta
-            if (author && String(existing.txt || "").split("\n")[0].indexOf("· par ") < 0) {
-              const lines = String(existing.txt || "").split("\n");
-              lines[0] = lines[0] + " · par " + author;
-              existing.txt = lines.join("\n").slice(0, TXT_MAX);
-              p.maj = now();
-            }
-            if (transcript && String(existing.txt || "").indexOf("— Transcription —") < 0) {
-              const room = TXT_MAX - String(existing.txt).length - 40;
-              if (room > 200) {
-                existing.txt = (existing.txt + "\n\n— Transcription —\n" + (transcript.length > room ? transcript.slice(0, room) + "\n…[transcription tronquée]" : transcript)).slice(0, TXT_MAX);
-                p.maj = now();
-                added++;
-                continue;
-              }
-            }
-            dedup++;
-            continue;
-          }
-          const meta = "📞 Allo · " + (li.direction === "OUTBOUND" ? "appel sortant" : "appel entrant")
-            + (li.duration ? " · " + Math.round(li.duration / 60) + " min" : "")
-            + (li.result ? " · " + String(li.result).toLowerCase() : "")
-            + (author ? " · par " + author : "") + " · import historique";
-          let txt = meta + (summary ? "\n" + summary : "");
-          if (transcript) {
-            const room = TXT_MAX - txt.length - 40;
-            if (room > 200) txt += "\n\n— Transcription —\n" + (transcript.length > room ? transcript.slice(0, room) + "\n…[transcription tronquée]" : transcript);
-          }
-          p.appels.push({ id: String(li.id || "").slice(0, 40), ts: String(li.date || now()).slice(0, 30), txt: txt.slice(0, TXT_MAX) });
-          if (p.appels.length > 20) p.appels = p.appels.slice(-20);
-          if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) p.nom = exName.slice(0, 80);
-          if (exEmail && String(p.note || "").indexOf("@") < 0) p.note = (String(p.note || "") + " · " + exEmail).slice(0, 200);
-          p.maj = now();
-          added++;
+          // Rappel cherché dans tout le texte ; au-delà de TXT_MAX, la
+          // transcription n'est jamais recopiée sur la fiche (mémoire réduite)
+          item.call = {
+            id: li.id, date: li.date, direction: li.direction, duration: li.duration, result: li.result,
+            summary, transcript: transcript.slice(0, TXT_MAX), exName, exEmail, author,
+            rdv: detectRappel(summary + " " + transcript, String(li.date || "")),
+            cName: String(conv?.contacts?.[0]?.name || "").trim(),
+          };
         }
         if (!body?.pagination?.has_more) break;
       }
     }
 
-    // Nettoyage : doublons d'entrées (même horodatage) → on garde la plus riche
-    let dedupliques = 0;
-    for (const p of list) {
-      if (!Array.isArray(p?.appels) || p.appels.length < 2) continue;
-      const byTs = new Map<string, any>();
-      for (const a of p.appels) {
-        // Même minute = même appel, qu'il vienne de l'import ou du direct
-        const k = (String(a?.txt || "").startsWith("💬") ? "sms|" : "call|") + tsMin(a?.ts);
-        const prev = byTs.get(k);
-        if (!prev) { byTs.set(k, a); continue; }
-        dedupliques++;
-        const richer = String(a?.txt || "").length > String(prev?.txt || "").length ? a : prev;
-        if (!richer.id && (a?.id || prev?.id)) richer.id = a?.id || prev?.id;
-        if (!richer.rx && (a?.rx || prev?.rx)) richer.rx = a?.rx || prev?.rx;
-        byTs.set(k, richer);
-      }
-      if (byTs.size !== p.appels.length) {
-        p.appels = [...byTs.values()].sort((x: any, y: any) => String(x?.ts || "").localeCompare(String(y?.ts || "")));
-        p.maj = new Date().toISOString();
-      }
-    }
+    // 3. Application sur les fiches fraîches (rejouable, aucun appel réseau)
+    const now = () => new Date().toISOString();
+    const apply = (list: any[]) => {
+      let convs = 0, created = 0, added = 0, dedup = 0, skipped = 0, auteursCorriges = 0;
+      for (const { alloNum, key, call: li } of items) {
+        convs++;
+        if (key.length < 9) { skipped++; continue; }
+        // Réattribution par LIGNE, avant tout filtre (messageries et appels sans
+        // résumé compris) : chaque appel de la fiche non attribué à un titulaire de
+        // ligne (ex. « Clément » venu de l'email du compte) passe au titulaire.
+        const owner = lineOwner(alloNum);
+        const p0 = owner ? list.find((x) => telKey(x?.tel) === key) : null;
+        if (p0) {
+          const owners = lineOwners();
+          for (const e of (Array.isArray(p0.appels) ? p0.appels : [])) {
+            const t0 = String(e?.txt || "");
+            if (!t0.startsWith("📞")) continue;
+            const nl = t0.indexOf("\n");
+            const first = nl < 0 ? t0 : t0.slice(0, nl), rest = nl < 0 ? "" : t0.slice(nl);
+            const m = first.match(/ · par ([^·]+?)(?= · |$)/);
+            const cur = m ? m[1].trim() : "";
+            if (cur === owner || (cur && owners.has(cur))) continue;
+            const nf = m ? first.replace(" · par " + m[1], " · par " + owner)
+              : first.includes(" · import historique") ? first.replace(" · import historique", " · par " + owner + " · import historique")
+              : first + " · par " + owner;
+            e.txt = (nf + rest).slice(0, TXT_MAX);
+            p0.maj = now();
+            auteursCorriges++;
+          }
+          const imported = /^(Importé d'Allo|Contact Allo)/.test(String(p0.note || ""));
+          if (imported && ["", "Clément", "Clement"].includes(String(p0.rep || "")) && p0.rep !== owner) {
+            p0.rep = owner; p0.maj = now(); auteursCorriges++;
+          }
+        }
+        if (!li) { skipped++; continue; }
+        const { summary, transcript, exName, exEmail, author } = li;
+        if (!summary && !transcript) { skipped++; continue; }
 
-    // Réparation : les conseillers fantômes fabriqués depuis un email Allo
-    // (ex. « Jeancharlesclubpilates ») sont remappés vers le vrai prénom, ou vidés.
-    let repares = 0;
-    for (const p of list) {
-      const r = String(p?.rep || "");
-      if (!r || /\s/.test(r) || r.length <= 12) continue;
-      const mapped = resolveRep(r + "@x");
-      if (mapped && mapped !== r) { p.rep = mapped; p.maj = new Date().toISOString(); repares++; }
-      else if (/clubpilates|allo/i.test(r)) { p.rep = ""; p.maj = new Date().toISOString(); repares++; }
+        let p = list.find((x) => telKey(x?.tel) === key);
+        if (!p) {
+          const cName = li.cName;
+          p = {
+            id: "p_allo_" + String(li.id || crypto.randomUUID()).replace(/[^a-zA-Z0-9]/g, "").slice(-12),
+            nom: isRealName(cName) ? cName.slice(0, 80) : "Contact 0" + key,
+            tel: "0" + key, note: "Importé d'Allo · historique", statut: "rappeler", rappel: "",
+            obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
+            appels: [], rep: author || "", studio: STUDIO, ts: String(li.date || now()).slice(0, 30), maj: now(),
+          };
+          list.push(p);
+          created++;
+        }
+        p.appels = Array.isArray(p.appels) ? p.appels : [];
+        const existing = (li.id ? p.appels.find((a: any) => idEq(a?.id, li.id)) : null)
+          || p.appels.find((a: any) => tsMin(a?.ts) === tsMin(li.date));
+        if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) { p.nom = exName.slice(0, 80); p.maj = now(); }
+        if (!String(p.rep || "") && author) { p.rep = author; p.maj = now(); }
+        const rdv = li.rdv;
+        if (rdv && (p.statut === "rappeler" || p.statut === "essai") && (!p.rappel || p.rappel < new Date(Date.now() + 2 * 3600000).toISOString().slice(0, 10))) {
+          p.rappel = rdv.date; if (rdv.h) p.rappelH = rdv.h; p.rappelBy = "auto"; p.maj = now();
+        }
+        if (existing) {
+          // Auteur manquant sur une entrée déjà importée → on complète la ligne méta
+          if (author && String(existing.txt || "").split("\n")[0].indexOf("· par ") < 0) {
+            const lines = String(existing.txt || "").split("\n");
+            lines[0] = lines[0] + " · par " + author;
+            existing.txt = lines.join("\n").slice(0, TXT_MAX);
+            p.maj = now();
+          }
+          if (transcript && String(existing.txt || "").indexOf(SEP_TRANSCRIPT.trim()) < 0) {
+            const room = TXT_MAX - String(existing.txt).length - 40;
+            if (room > 200) {
+              existing.txt = (existing.txt + SEP_TRANSCRIPT + (transcript.length > room ? transcript.slice(0, room) + "\n…[transcription tronquée]" : transcript)).slice(0, TXT_MAX);
+              p.maj = now();
+              added++;
+              continue;
+            }
+          }
+          dedup++;
+          continue;
+        }
+        const meta = "📞 Allo · " + (li.direction === "OUTBOUND" ? "appel sortant" : "appel entrant")
+          + (li.duration ? " · " + Math.round(li.duration / 60) + " min" : "")
+          + (li.result ? " · " + String(li.result).toLowerCase() : "")
+          + (author ? " · par " + author : "") + " · import historique";
+        let txt = meta + (summary ? "\n" + summary : "");
+        if (transcript) {
+          const room = TXT_MAX - txt.length - 40;
+          if (room > 200) txt += SEP_TRANSCRIPT + (transcript.length > room ? transcript.slice(0, room) + "\n…[transcription tronquée]" : transcript);
+        }
+        p.appels.push({ id: String(li.id || "").slice(0, 40), ts: String(li.date || now()).slice(0, 30), txt: txt.slice(0, TXT_MAX) });
+        if (p.appels.length > 20) p.appels = p.appels.slice(-20);
+        if (/^Contact 0/.test(String(p.nom || "")) && isRealName(exName)) p.nom = exName.slice(0, 80);
+        if (exEmail && String(p.note || "").indexOf("@") < 0) p.note = (String(p.note || "") + " · " + exEmail).slice(0, 200);
+        p.maj = now();
+        added++;
+      }
+
+      // Nettoyage : doublons d'entrées (même horodatage) → on garde la plus riche
+      let dedupliques = 0;
+      for (const p of list) {
+        if (!Array.isArray(p?.appels) || p.appels.length < 2) continue;
+        const byTs = new Map<string, any>();
+        for (const a of p.appels) {
+          // Même minute = même appel, qu'il vienne de l'import ou du direct
+          const k = (String(a?.txt || "").startsWith("💬") ? "sms|" : "call|") + tsMin(a?.ts);
+          const prev = byTs.get(k);
+          if (!prev) { byTs.set(k, a); continue; }
+          dedupliques++;
+          const richer = String(a?.txt || "").length > String(prev?.txt || "").length ? a : prev;
+          if (!richer.id && (a?.id || prev?.id)) richer.id = a?.id || prev?.id;
+          if (!richer.rx && (a?.rx || prev?.rx)) richer.rx = a?.rx || prev?.rx;
+          byTs.set(k, richer);
+        }
+        if (byTs.size !== p.appels.length) {
+          p.appels = [...byTs.values()].sort((x: any, y: any) => String(x?.ts || "").localeCompare(String(y?.ts || "")));
+          p.maj = new Date().toISOString();
+        }
+      }
+
+      // Réparation : les conseillers fantômes fabriqués depuis un email Allo
+      // (ex. « Jeancharlesclubpilates ») sont remappés vers le vrai prénom, ou vidés.
+      let repares = 0;
+      for (const p of list) {
+        const r = String(p?.rep || "");
+        if (!r || /\s/.test(r) || r.length <= 12) continue;
+        const mapped = resolveRep(r + "@x");
+        if (mapped && mapped !== r) { p.rep = mapped; p.maj = new Date().toISOString(); repares++; }
+        else if (/clubpilates|allo/i.test(r)) { p.rep = ""; p.maj = new Date().toISOString(); repares++; }
+      }
+      return { conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares, appelsDedupliques: dedupliques, auteursCorriges };
+    };
+
+    // 4. Écriture conditionnelle : si une autre écriture (téléphone, Boost,
+    //    Aircall, webhook) passe entre la lecture et l'écriture, on relit et on rejoue.
+    for (let attempt = 0; attempt < TRIES; attempt++) {
+      const row = await readProspects(admin);
+      const list: any[] = (row?.data?.prospects as any[]) || [];
+      const res = apply(list);
+      const { data: upd } = await admin.from("coach_store")
+        .update({ data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() })
+        .eq("id", ROW_PROSPECTS).eq("updated_at", row?.updated_at).select("id");
+      if (upd && upd.length) return json({ ok: true, numeros: alloNumbers, ...res });
+      if (attempt < TRIES - 1) await new Promise((r) => setTimeout(r, 150 + Math.floor(Math.random() * 250)));
     }
-    await putRow(admin, ROW_PROSPECTS, { ...(row?.data || {}), prospects: list });
-    return json({ ok: true, numeros: alloNumbers, conversations: convs, fichesCreees: created, resumesAjoutes: added, dejaPresents: dedup, ignores: skipped, conseillersRepares: repares, appelsDedupliques: dedupliques, auteursCorriges });
+    return json({ error: "Les fiches changeaient pendant l'écriture · relancez l'import" }, 503);
   } catch (e) {
     return json({ error: String((e as Error)?.message || e) }, 500);
   }

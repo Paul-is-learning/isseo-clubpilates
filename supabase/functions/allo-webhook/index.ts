@@ -17,18 +17,51 @@
 // Secrets : ALLO_WEBHOOK_SECRET (signature Svix), ALLO_STUDIO (studio des
 // fiches créées), ALLO_API_KEY (optionnel, enrichissement extracted_data).
 // Déployée avec --no-verify-jwt. Livraison "at least once" → dédup par id.
+// Écriture conditionnelle (date de la ligne) : relue et rejouée en cas de
+// conflit, 503 si le conflit persiste (Allo renvoie alors le webhook).
 // ═══════════════════════════════════════════════════════════════════════════
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRow, putRow } from "../_shared/store.ts";
+import { getRow } from "../_shared/store.ts";
 
 const ROW_PROSPECTS = "_coach_prospects";
 const TXT_MAX = 9000;
 const SEP_TRANSCRIPT = "\n\n— Transcription —\n";
+const TRIES = 4;
 
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
+}
+
+// Ligne des fiches avec sa date d'écriture (absente : migration douce depuis studios)
+async function readProspects(admin: any): Promise<any> {
+  const read = () => admin.from("coach_store").select("data,updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
+  const first = await read();
+  if (first.error) throw new Error("Stockage indisponible");
+  if (first.data) return first.data;
+  await getRow(admin, ROW_PROSPECTS);
+  return (await read()).data;
+}
+
+// Lecture, modification, écriture conditionnelle : si une autre écriture
+// (téléphone, Boost, Aircall) passe entre la lecture et l'écriture, on relit
+// et on réapplique `apply` sur la liste fraîche. `apply` rend la réponse et
+// write:false quand il n'y a rien à écrire.
+type Step = { res: Record<string, unknown>; write: boolean };
+async function commit(admin: any, apply: (list: any[]) => Step): Promise<Response> {
+  for (let attempt = 0; attempt < TRIES; attempt++) {
+    const row = await readProspects(admin);
+    const list: any[] = (row?.data?.prospects as any[]) || [];
+    const step = apply(list);
+    if (!step.write) return json(step.res);
+    const { data: upd } = await admin.from("coach_store")
+      .update({ data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() })
+      .eq("id", ROW_PROSPECTS).eq("updated_at", row?.updated_at).select("id");
+    if (upd && upd.length) return json(step.res);
+    if (attempt < TRIES - 1) await new Promise((r) => setTimeout(r, 150 + Math.floor(Math.random() * 250)));
+  }
+  return json({ error: "Conflit d'écriture" }, 503); // Allo renverra le webhook
 }
 
 const telKey = (s: unknown) => String(s ?? "").replace(/\D/g, "").slice(-9);
@@ -166,12 +199,8 @@ serve(async (req: Request) => {
     const STUDIO = Deno.env.get("ALLO_STUDIO") || "La Garenne-Colombes";
 
     const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
-    const row = { data: await getRow(admin, ROW_PROSPECTS) };
-    const list: any[] = (row?.data?.prospects as any[]) || [];
-    const save = () =>
-      putRow(admin, ROW_PROSPECTS, { ...(row?.data || {}), prospects: list });
     // Préférer la fiche du studio de la ligne ; une fiche trouvée sans studio y est rattachée
-    const findByKey = (k: string) => {
+    const findByKey = (list: any[], k: string) => {
       const same = list.filter((p) => telKey(p?.tel) === k);
       // Fiche liée à Boost (source maîtresse) d'abord, puis studio de la ligne
       const f = same.find((p) => p?.bid) || same.find((p) => String(p?.studio || "") === STUDIO) || same[0];
@@ -231,47 +260,49 @@ serve(async (req: Request) => {
         if (rdv.h) p.rappelH = rdv.h;
         p.rappelBy = "auto";
       };
-      const match = findByKey(key);
-      if (!match) {
-        const creatable =
-          (d.type === "OUTBOUND" && !["BLOCKED", "FAILED", "FAILED_EXTERNAL", "CLOSED"].includes(result)) ||
-          (d.type === "INBOUND" && ["ANSWERED", "VOICEMAIL", "TRANSFERRED_AI"].includes(result));
-        if (!creatable) return json({ ok: true, matched: false, created: false });
-        const telFr = key.length === 9 ? "0" + key : String(phone || "");
-        const rawName = String((d.type === "OUTBOUND" ? d.to_name : d.from_name) || "").trim();
-        const nom = isRealName(rawName) ? rawName : (isRealName(extractedName) ? extractedName : "Contact " + telFr);
-        const voicemail = result === "VOICEMAIL";
-        const p: any = {
-          id: "p_allo_" + (callId || crypto.randomUUID().replace(/-/g, "").slice(0, 12)),
-          nom: nom.slice(0, 80), tel: telFr,
-          note: "Importé d'Allo" + (voicemail ? " · messagerie laissée" : ""),
-          statut: "rappeler",
-          rappel: voicemail ? new Date(Date.now() + 864e5).toISOString().slice(0, 10) : "",
-          obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
-          appels: (summary || transcript)
-            ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), rx: now(), txt: entryTxt(meta0, summary + extraInfo, transcript) }]
-            : [],
-          rep: author || "", studio: STUDIO, ts: now(), maj: now(),
-        };
-        applyRdv(p);
-        list.push(p);
-        await save();
-        return json({ ok: true, created: true, prospect: p.nom });
-      }
+      const newId = "p_allo_" + (callId || crypto.randomUUID().replace(/-/g, "").slice(0, 12));
+      // Appel réseau fait plus haut : seule la partie fiches est rejouée en cas de conflit
+      return await commit(admin, (list) => {
+        const match = findByKey(list, key);
+        if (!match) {
+          const creatable =
+            (d.type === "OUTBOUND" && !["BLOCKED", "FAILED", "FAILED_EXTERNAL", "CLOSED"].includes(result)) ||
+            (d.type === "INBOUND" && ["ANSWERED", "VOICEMAIL", "TRANSFERRED_AI"].includes(result));
+          if (!creatable) return { res: { ok: true, matched: false, created: false }, write: false };
+          const telFr = key.length === 9 ? "0" + key : String(phone || "");
+          const rawName = String((d.type === "OUTBOUND" ? d.to_name : d.from_name) || "").trim();
+          const nom = isRealName(rawName) ? rawName : (isRealName(extractedName) ? extractedName : "Contact " + telFr);
+          const voicemail = result === "VOICEMAIL";
+          const p: any = {
+            id: newId,
+            nom: nom.slice(0, 80), tel: telFr,
+            note: "Importé d'Allo" + (voicemail ? " · messagerie laissée" : ""),
+            statut: "rappeler",
+            rappel: voicemail ? new Date(Date.now() + 864e5).toISOString().slice(0, 10) : "",
+            obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
+            appels: (summary || transcript)
+              ? [{ id: callId, ts: String(d.start_date || evt.timestamp || now()).slice(0, 30), rx: now(), txt: entryTxt(meta0, summary + extraInfo, transcript) }]
+              : [],
+            rep: author || "", studio: STUDIO, ts: now(), maj: now(),
+          };
+          applyRdv(p);
+          list.push(p);
+          return { res: { ok: true, created: true, prospect: p.nom }, write: true };
+        }
 
-      if (!summary && !transcript) return json({ ok: true, matched: true, ignored: "sans contenu" });
-      applyRdv(match);
-      match.appels = Array.isArray(match.appels) ? match.appels : [];
-      const entryTs = String(d.start_date || evt.timestamp || now()).slice(0, 30);
-      if ((callId && match.appels.some((a: any) => idEq(a?.id, callId)))
-        || match.appels.some((a: any) => !String(a?.txt || "").startsWith("💬") && tsMin(a?.ts) === tsMin(entryTs))) return json({ ok: true, dedup: true });
-      match.appels.push({ id: callId, ts: entryTs, rx: now(), txt: entryTxt(meta0, summary + extraInfo, transcript) });
-      if (match.appels.length > 20) match.appels = match.appels.slice(-20);
-      if (/^Contact 0/.test(String(match.nom || "")) && isRealName(extractedName)) match.nom = extractedName.slice(0, 80);
-      if (!String(match.rep || "") && author) match.rep = author;
-      match.maj = now();
-      await save();
-      return json({ ok: true, matched: true, prospect: String(match.nom || "") });
+        if (!summary && !transcript) return { res: { ok: true, matched: true, ignored: "sans contenu" }, write: false };
+        applyRdv(match);
+        match.appels = Array.isArray(match.appels) ? match.appels : [];
+        const entryTs = String(d.start_date || evt.timestamp || now()).slice(0, 30);
+        if ((callId && match.appels.some((a: any) => idEq(a?.id, callId)))
+          || match.appels.some((a: any) => !String(a?.txt || "").startsWith("💬") && tsMin(a?.ts) === tsMin(entryTs))) return { res: { ok: true, dedup: true }, write: false };
+        match.appels.push({ id: callId, ts: entryTs, rx: now(), txt: entryTxt(meta0, summary + extraInfo, transcript) });
+        if (match.appels.length > 20) match.appels = match.appels.slice(-20);
+        if (/^Contact 0/.test(String(match.nom || "")) && isRealName(extractedName)) match.nom = extractedName.slice(0, 80);
+        if (!String(match.rep || "") && author) match.rep = author;
+        match.maj = now();
+        return { res: { ok: true, matched: true, prospect: String(match.nom || "") }, write: true };
+      });
     }
 
     // ── 💬 SMS entrant / sortant : journalisé sur la fiche ──
@@ -285,30 +316,31 @@ serve(async (req: Request) => {
       const smsAuthor = lineOwner(inbound ? d.to_number : d.from_number) || resolveRep(d.user_email);
       const meta = inbound ? "💬 SMS reçu" : "💬 SMS envoyé" + (smsAuthor ? " par " + smsAuthor : "");
       const entry = { id: msgId, ts: String(d.sent_at || evt.timestamp || now()).slice(0, 30), rx: now(), txt: (meta + "\n" + content).slice(0, TXT_MAX) };
-      const match = findByKey(key);
-      if (match) {
-        match.appels = Array.isArray(match.appels) ? match.appels : [];
-        if (msgId && match.appels.some((a: any) => idEq(a?.id, msgId))) return json({ ok: true, dedup: true });
-        match.appels.push(entry);
-        if (match.appels.length > 20) match.appels = match.appels.slice(-20);
-        match.maj = now();
-        await save();
-        return json({ ok: true, matched: true });
-      }
-      if (!inbound) return json({ ok: true, ignored: "sms sortant vers inconnu" });
-      const telFr = "0" + key;
-      const rawName = String(d.from_name || "").trim();
-      const p: any = {
-        id: "p_allo_" + (msgId || crypto.randomUUID().replace(/-/g, "").slice(0, 12)),
-        nom: isRealName(rawName) ? rawName.slice(0, 80) : "Contact " + telFr,
-        tel: telFr, note: "Importé d'Allo · SMS entrant", statut: "rappeler",
-        rappel: new Date().toISOString().slice(0, 10),
-        obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
-        appels: [entry], rep: smsAuthor || "", studio: STUDIO, ts: now(), maj: now(),
-      };
-      list.push(p);
-      await save();
-      return json({ ok: true, created: true, prospect: p.nom });
+      const newId = "p_allo_" + (msgId || crypto.randomUUID().replace(/-/g, "").slice(0, 12));
+      return await commit(admin, (list) => {
+        const match = findByKey(list, key);
+        if (match) {
+          match.appels = Array.isArray(match.appels) ? match.appels : [];
+          if (msgId && match.appels.some((a: any) => idEq(a?.id, msgId))) return { res: { ok: true, dedup: true }, write: false };
+          match.appels.push({ ...entry });
+          if (match.appels.length > 20) match.appels = match.appels.slice(-20);
+          match.maj = now();
+          return { res: { ok: true, matched: true }, write: true };
+        }
+        if (!inbound) return { res: { ok: true, ignored: "sms sortant vers inconnu" }, write: false };
+        const telFr = "0" + key;
+        const rawName = String(d.from_name || "").trim();
+        const p: any = {
+          id: newId,
+          nom: isRealName(rawName) ? rawName.slice(0, 80) : "Contact " + telFr,
+          tel: telFr, note: "Importé d'Allo · SMS entrant", statut: "rappeler",
+          rappel: new Date().toISOString().slice(0, 10),
+          obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
+          appels: [{ ...entry }], rep: smsAuthor || "", studio: STUDIO, ts: now(), maj: now(),
+        };
+        list.push(p);
+        return { res: { ok: true, created: true, prospect: p.nom }, write: true };
+      });
     }
 
     // ── 👤 Contact Allo créé / modifié ──
@@ -317,30 +349,31 @@ serve(async (req: Request) => {
       const key = numbers.map(telKey).find((k) => k.length >= 9) || "";
       if (!key) return json({ ok: true, ignored: "contact sans numéro" });
       const nomC = (String(d.name || "") + " " + String(d.last_name || "")).trim();
-      const match = findByKey(key);
-      if (match) {
-        if (/^Contact 0/.test(String(match.nom || "")) && isRealName(nomC)) {
-          match.nom = nomC.slice(0, 80);
-          match.maj = now();
-          await save();
-          return json({ ok: true, matched: true, renamed: nomC });
+      const newId = "p_alloc_" + String(d.id || crypto.randomUUID()).replace(/[^a-zA-Z0-9]/g, "").slice(-12);
+      return await commit(admin, (list) => {
+        const match = findByKey(list, key);
+        if (match) {
+          if (/^Contact 0/.test(String(match.nom || "")) && isRealName(nomC)) {
+            match.nom = nomC.slice(0, 80);
+            match.maj = now();
+            return { res: { ok: true, matched: true, renamed: nomC }, write: true };
+          }
+          return { res: { ok: true, matched: true }, write: false };
         }
-        return json({ ok: true, matched: true });
-      }
-      if (topic !== "contact.created") return json({ ok: true, ignored: "contact inconnu modifié" });
-      const email = Array.isArray(d.emails) && d.emails[0] ? String(d.emails[0]) : "";
-      const p: any = {
-        id: "p_alloc_" + String(d.id || crypto.randomUUID()).replace(/[^a-zA-Z0-9]/g, "").slice(-12),
-        nom: isRealName(nomC) ? nomC.slice(0, 80) : "Contact 0" + key,
-        tel: "0" + key,
-        note: "Contact Allo" + (d.company ? " · " + String(d.company).slice(0, 40) : "") + (email ? " · " + email.slice(0, 60) : ""),
-        statut: "rappeler", rappel: "",
-        obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
-        appels: [], rep: "", studio: STUDIO, ts: now(), maj: now(),
-      };
-      list.push(p);
-      await save();
-      return json({ ok: true, created: true, prospect: p.nom });
+        if (topic !== "contact.created") return { res: { ok: true, ignored: "contact inconnu modifié" }, write: false };
+        const email = Array.isArray(d.emails) && d.emails[0] ? String(d.emails[0]) : "";
+        const p: any = {
+          id: newId,
+          nom: isRealName(nomC) ? nomC.slice(0, 80) : "Contact 0" + key,
+          tel: "0" + key,
+          note: "Contact Allo" + (d.company ? " · " + String(d.company).slice(0, 40) : "") + (email ? " · " + email.slice(0, 60) : ""),
+          statut: "rappeler", rappel: "",
+          obj: "", fiche: "", pack: "", v2: "", fullCom: false, icId: "",
+          appels: [], rep: "", studio: STUDIO, ts: now(), maj: now(),
+        };
+        list.push(p);
+        return { res: { ok: true, created: true, prospect: p.nom }, write: true };
+      });
     }
 
     // ── ✏️ Résumé corrigé dans Allo → corrigé sur la fiche ──
@@ -348,21 +381,22 @@ serve(async (req: Request) => {
       const cid = String(d.call_id || "");
       const content = String(d.content || "").trim();
       if (!cid || !content) return json({ ok: true, ignored: "sans contenu" });
-      for (const p of list) {
-        const a = (Array.isArray(p?.appels) ? p.appels : []).find((x: any) => idEq(x?.id, cid));
-        if (!a) continue;
-        if (a.sv && Number(a.sv) >= Number(d.version || 0)) return json({ ok: true, dedup: "version plus ancienne" });
-        const old = String(a.txt || "");
-        const metaLine = old.split("\n")[0] || "📞 Allo";
-        const tIdx = old.indexOf(SEP_TRANSCRIPT);
-        const transcriptPart = tIdx >= 0 ? old.slice(tIdx) : "";
-        a.txt = (metaLine + "\n" + content + "\n✏️ Résumé corrigé dans Allo" + transcriptPart).slice(0, TXT_MAX);
-        a.sv = Number(d.version || 1);
-        p.maj = now();
-        await save();
-        return json({ ok: true, updated: true, prospect: String(p.nom || "") });
-      }
-      return json({ ok: true, matched: false });
+      return await commit(admin, (list) => {
+        for (const p of list) {
+          const a = (Array.isArray(p?.appels) ? p.appels : []).find((x: any) => idEq(x?.id, cid));
+          if (!a) continue;
+          if (a.sv && Number(a.sv) >= Number(d.version || 0)) return { res: { ok: true, dedup: "version plus ancienne" }, write: false };
+          const old = String(a.txt || "");
+          const metaLine = old.split("\n")[0] || "📞 Allo";
+          const tIdx = old.indexOf(SEP_TRANSCRIPT);
+          const transcriptPart = tIdx >= 0 ? old.slice(tIdx) : "";
+          a.txt = (metaLine + "\n" + content + "\n✏️ Résumé corrigé dans Allo" + transcriptPart).slice(0, TXT_MAX);
+          a.sv = Number(d.version || 1);
+          p.maj = now();
+          return { res: { ok: true, updated: true, prospect: String(p.nom || "") }, write: true };
+        }
+        return { res: { ok: true, matched: false }, write: false };
+      });
     }
 
     return json({ ok: true, ignored: topic });

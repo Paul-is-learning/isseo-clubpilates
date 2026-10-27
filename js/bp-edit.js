@@ -280,20 +280,26 @@ function renderBPProposalsPanel(sid){
 }
 
 // ── Seed retroactif : attribue Paul comme créateur initial pour studios sans bpMeta ─
-function seedBPMetaIfMissing(){
+// inDb : identifiants des lignes studio lues en base par loadAll ({id: true}). Sans lui, bpMeta reste local (aucune écriture).
+function seedBPMetaIfMissing(inDb){
   if(!S.studios)return;
   var changed=[];
   Object.keys(S.studios).forEach(function(sid){
     var s=S.studios[sid];
+    if(!s)return;
     if(!s.bpMeta||!s.bpMeta.createdBy){
       s.bpMeta=Object.assign({createdBy:'Paul',createdAt:new Date().toISOString()},s.bpMeta||{});
       changed.push(sid);
     }
   });
-  // Save en background — ne bloque pas le render
-  if(changed.length&&typeof sb!=='undefined'){
-    changed.forEach(function(sid){
-      try{sb.from('studios').upsert({id:sid,data:S.studios[sid],updated_at:new Date().toISOString()});}catch(e){}
-    });
-  }
+  // Save en background, ne bloque pas le render. Fusion atomique de bpMeta seul : réécrire toute la ligne
+  // écraserait une modification faite entre-temps. Uniquement une ligne de studio (avec un nom) lue en base :
+  // une fusion sur une ligne absente la créerait avec bpMeta seul. Un studio INIT absent de la base reçoit
+  // son bpMeta avec l'insertion faite par loadAll. Une fois écrit, plus rien aux démarrages suivants.
+  // Lecteur ou compte bloqué : bpMeta reste en mémoire (aucune écriture), même si inDb est fourni.
+  if(!changed.length||!inDb||typeof _patchStudioQuiet!=='function')return;
+  if(typeof _bootWritesAllowed==='function'&&!_bootWritesAllowed())return;
+  changed.forEach(function(sid){
+    if(inDb[sid]&&S.studios[sid].name)_patchStudioQuiet(sid,{bpMeta:S.studios[sid].bpMeta},'bpMeta');
+  });
 }

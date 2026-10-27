@@ -320,7 +320,8 @@ async function doLogin(){
   if(S.adminSettings.roles&&!S.adminSettings.roles[S.user.id]&&S.user.email&&_emailRoleMap[S.user.email]){
     S.adminSettings.roles=S.adminSettings.roles||{};
     S.adminSettings.roles[S.user.id]=_emailRoleMap[S.user.email];
-    sb.from('studios').upsert({id:'_admin_settings',data:S.adminSettings,updated_at:new Date().toISOString()});
+    // En mémoire seulement, pour cette session : volontairement JAMAIS enregistré dans _admin_settings.
+    // L'écrire fixerait ce rôle pour de bon à la personne (accès restreint) alors que l'admin ne l'a pas choisi.
   }
   // Appliquer override de rôle si défini par l'admin
   if(S.adminSettings.roles&&S.adminSettings.roles[S.user.id]){

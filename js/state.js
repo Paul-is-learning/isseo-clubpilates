@@ -76,7 +76,38 @@ var S={
   equipeCostYear:null,equipeCostMonth:null
 };
 
+// Vrai quand la ligne _admin_settings a été lue au dernier loadAll : sans elle, pas d'écriture automatique
+// des réglages (on écraserait la base avec des valeurs par défaut) ni de création de studio INIT (pierres tombales inconnues)
+var _adminSettingsLoaded=false;
+// Écritures automatiques en arrière-plan (chargement, connexion) : pas de toast, simple avertissement console
+function _saveAdminSettingsQuiet(tag){
+  // Même enveloppe {settings:...} que saveAdminSettings (auth.js), lue par loadAll et _handleRowChange
+  return sb.from('studios').upsert({id:'_admin_settings',data:{settings:S.adminSettings},updated_at:new Date().toISOString()})
+    .then(function(r){if(r&&r.error)console.warn('[save] _admin_settings ('+tag+')',r.error.message);return r;});
+}
+function _patchStudioQuiet(id,merge,tag){
+  // Fusion atomique des seules clés données (jamais toute la ligne), sans contrôle de conflit.
+  // Ne touche jamais _lastKnownTimestamps : cette date ne suit que les enregistrements faits par l'utilisateur
+  // (posée ici, elle ferait refuser tous ses enregistrements suivants dès qu'un autre modifie ce studio).
+  // Studio déjà enregistré par l'utilisateur dans cette session : rien (la fusion décalerait sa date de contrôle
+  // et ferait refuser son prochain enregistrement) ; ce prochain enregistrement envoie de toute façon tout le studio.
+  if(_lastKnownTimestamps[id])return Promise.resolve(null);
+  return sb.rpc('patch_studio_data',{p_id:id,p_merge:merge})
+    .then(function(r){if(r&&r.error)console.warn('[save] '+tag+' '+id,r.error.message);return r;});
+}
+// Écritures automatiques du chargement (encodage, graine bpMeta, studios INIT manquants) : seulement sur des
+// réglages admin lus à l'instant en base, et jamais pour un compte lecteur ou bloqué (ces comptes consultent)
+function _bootWritesAllowed(){
+  if(!_adminSettingsLoaded||!S.user||!S.user.id)return false;
+  var a=S.adminSettings||{},uid=S.user.id;
+  if(a.blocked&&a.blocked.indexOf(uid)>=0)return false;
+  if(typeof isViewer==='function'&&isViewer())return false;
+  if(a.roles&&a.roles[uid]==='viewer')return false; // rôle « Lecture seule »
+  return true;
+}
+
 async function loadAll(){
+  _adminSettingsLoaded=false;
   var res=await sb.from('studios').select('id,data,updated_at');
   if(res.error){console.error('loadAll error:',res.error);toast('Erreur chargement données: '+res.error.message);return;}
   var data=res.data||[];
@@ -90,7 +121,7 @@ async function loadAll(){
     if(id.endsWith('_files')){S.files[id.slice(0,-6)]=r.data&&r.data.files||[];}
     else if(id.endsWith('_depenses')){S.depenses[id.slice(0,-9)]=r.data&&r.data.depenses||[];}
     else if(id==='global_chat'){S.globalChat=r.data&&r.data.messages||[];}
-    else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{},viewers:[]},r.data&&r.data.settings||{});}
+    else if(id==='_admin_settings'){S.adminSettings=Object.assign({blocked:[],roles:{},viewers:[]},r.data&&r.data.settings||{});_adminSettingsLoaded=true;}
     else if(id==='_avatars'){S.avatarUrls=r.data&&r.data.avatars||{};}
     else if(id==='_user_presence'){S.userPresence=r.data&&r.data.presence||{};}
     else if(id.endsWith('_messages')){S.messages[id.slice(0,-9)]=r.data&&r.data.messages||[];}
@@ -120,6 +151,8 @@ async function loadAll(){
     else{studios[id]=r.data;}
   });
   if(Object.keys(studios).length>0)S.studios=studios;
+  // Lignes studio réellement lues en base (S.studios, même objet que studios, reçoit ensuite les studios INIT injectés)
+  var _inDb={};Object.keys(studios).forEach(function(k){if(studios[k])_inDb[k]=true;});
   // Migration : encoder les mots de passe en clair existants
   if(S.adminSettings.passwords){
     var _pwdDirty=false;
@@ -129,7 +162,9 @@ async function loadAll(){
         S.adminSettings.passwords[uid]=encodePwd(v);_pwdDirty=true;
       }
     });
-    if(_pwdDirty)sb.from('studios').upsert({id:'_admin_settings',data:{settings:S.adminSettings},updated_at:new Date().toISOString()});
+    // Écrit une seule fois (valeurs ensuite reconnues comme encodées), seulement sur des réglages lus à l'instant
+    // en base, et jamais par un lecteur ou un compte bloqué
+    if(_pwdDirty&&_bootWritesAllowed())_saveAdminSettingsQuiet('encodage');
   }
   // Fallback localStorage pour studios sans simConfig Supabase
   Object.keys(S.studios).forEach(function(k){
@@ -159,28 +194,38 @@ async function loadAll(){
     }
   });
   // Inject INIT studios missing from Supabase + patch config fields
+  var _initMissing=[]; // studios INIT absents de la base : créés plus bas, après le seed bpMeta
   Object.keys(INIT).forEach(function(k){
     if(!S.studios[k]){
       // Studio supprimé volontairement (pierre tombale) → ne jamais le ressusciter
       if((S.adminSettings.deletedStudios||[]).indexOf(k)>=0)return;
       // Studio défini dans INIT mais absent de Supabase → l'injecter
       S.studios[k]=JSON.parse(JSON.stringify(INIT[k]));
-      sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()});
+      _initMissing.push(k);
       return;
     }
-    var changed=false;
+    // Champs réimposés depuis INIT : en mémoire seulement, volontairement JAMAIS écrits en base.
+    // L'adresse (onglet Local) et le loyer se modifient dans l'app : réécrire ici les valeurs INIT en base
+    // effacerait ces modifications pour tout le monde. L'ancien code ne l'envoyait déjà pas : ne pas la rétablir.
     ['ouverture','capex','emprunt','leasing','name','addr','loyerVarPct'].forEach(function(f){
-      if(INIT[k][f]!==undefined&&S.studios[k][f]!==INIT[k][f]){S.studios[k][f]=INIT[k][f];changed=true;}
+      if(INIT[k][f]!==undefined&&S.studios[k][f]!==INIT[k][f])S.studios[k][f]=INIT[k][f];
     });
     // Loyer custom : semé une fois depuis INIT, puis la main reste à l'éditeur in-app
-    if(INIT[k].loyer_mensuel!==undefined&&!(S.studios[k].loyer_mensuel>0)){S.studios[k].loyer_mensuel=INIT[k].loyer_mensuel;changed=true;}
+    if(INIT[k].loyer_mensuel!==undefined&&!(S.studios[k].loyer_mensuel>0))S.studios[k].loyer_mensuel=INIT[k].loyer_mensuel;
     if(INIT[k].forecast&&INIT[k].forecast.moisDebut!==undefined&&S.studios[k].forecast&&S.studios[k].forecast.moisDebut!==INIT[k].forecast.moisDebut){
-      S.studios[k].forecast.moisDebut=INIT[k].forecast.moisDebut;changed=true;
+      S.studios[k].forecast.moisDebut=INIT[k].forecast.moisDebut;
     }
-    if(changed)sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()});
   });
+  var _bootOk=_bootWritesAllowed();
   // Seed rétroactif : attribue Paul comme créateur du BP initial pour studios sans bpMeta
-  if(typeof seedBPMetaIfMissing==='function')seedBPMetaIfMissing();
+  // (écrit seulement pour les lignes lues en base à ce chargement ; lecteur ou compte bloqué : en mémoire seulement)
+  if(typeof seedBPMetaIfMissing==='function')seedBPMetaIfMissing(_bootOk?_inDb:null);
+  // Création en base des studios INIT manquants, bpMeta compris : insertion seule (une ligne existante n'est
+  // jamais écrasée), seulement si les pierres tombales ont bien été lues à ce chargement, jamais par un lecteur
+  if(_bootOk)_initMissing.forEach(function(k){
+    sb.from('studios').upsert({id:k,data:S.studios[k],updated_at:new Date().toISOString()},{onConflict:'id',ignoreDuplicates:true})
+      .then(function(r){if(r&&r.error)console.warn('[save] INIT '+k,r.error.message);});
+  });
 }
 
 // ── Navigation persistante ─────────────────────────────────────────────────────
@@ -268,7 +313,11 @@ function saveSimConfig(sid){
   // 2. Supabase avec debounce 500ms — partage inter-utilisateurs
   if(_simSaveTimeout[sid])clearTimeout(_simSaveTimeout[sid]);
   _simSaveTimeout[sid]=setTimeout(function(){
-    sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
+    delete _simSaveTimeout[sid];
+    if(!S.simConfig[sid])return; // rien à enregistrer (jamais de config vide écrite en base)
+    // Appelé seulement par un enregistrement voulu (bandeau « Enregistrer », suppression de scénario)
+    sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()})
+      .then(function(r){if(r&&r.error){console.warn('[save] '+sid+'_simconfig',r.error.message);toast('Erreur sauvegarde simulateur : '+r.error.message);}});
   },500);
 }
 // ── DIRTY STATE : modifications non sauvegardées ─────────────────────────────
@@ -458,7 +507,9 @@ function chargerScenario(sid,scenarioId){
   }
   // Sauvegarder immédiatement (pas de debounce) pour éviter les conflits
   try{localStorage.setItem('isseo_sim_'+sid,JSON.stringify(S.simConfig[sid]));}catch(e){}
-  sb.from('studios').upsert({id:sid+'_simconfig',data:{config:S.simConfig[sid]},updated_at:new Date().toISOString()});
+  // Réglage partagé aligné sur le scénario chargé (comme les adhérents ci-dessous) ; flushSimConfig annule aussi
+  // un enregistrement différé en attente. Lecteur (lecture seule) : simple consultation, rien n'est réécrit.
+  if(!(typeof isViewer==='function'&&isViewer()))flushSimConfig(sid).then(function(r){if(r&&r.error)console.warn('[save] '+sid+'_simconfig',r.error.message);});
   replaceAdherents(sid);
   toast(scenarioId==='bp_default'?'Valeurs BP par défaut restaurées':'Scénario chargé');
   render();

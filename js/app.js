@@ -127,6 +127,12 @@ function _restoreFromHash(){
       S.detailTab=parts[2]||'workflow';
       return true;
     }
+    // Lecteur : lien vers un studio existant mais non autorisé → refus, retour à la liste
+    if(isViewer()&&Object.keys(S.studios).some(function(id){var st=S.studios[id];return st&&st.name&&st.name.replace(/\s+/g,'-').toLowerCase()===slug;})){
+      S.page='projets';S.view='dashboard';S.selectedId=null;S.mainTab='studios';
+      toast('Accès non autorisé');
+      return true;
+    }
   }
   var validPages=['accueil','projets','collab','bp'];
   if(validPages.indexOf(parts[0])>=0){S.page=parts[0];S.view='dashboard';return true;}
