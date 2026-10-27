@@ -4077,13 +4077,33 @@ function leadImport(){
   showProspects();
 }
 
+/* ── Ventes du mois d'un commercial (code maître / recruteur) : vérifier et retirer une vente saisie par erreur ── */
+let _hpMap=null;
+function showRepSales(k){
+  const map=_hpMap||{};const month=new Date().toISOString().slice(0,7);
+  const list=Object.entries(map).filter(([id,m])=>m.abo&&(m.aboTs||'').startsWith(month)&&(_repKey(m.rep)===k||_repKey(m.v2||'')===k));
+  const name=(list[0]&&list[0][1].rep||k).split(' ')[0];
+  icSheet(`<div class="glp-tag">🏁 Ventes du mois</div><div class="glp-t">${esc(name)}</div>
+    <div class="fv-meta">Chaque vente compte dans la course du mois et dans les primes. Retirez celles saisies par erreur ou pour un test.</div>
+    <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px">${list.length?list.map(([id,m])=>`<div style="display:flex;align-items:center;gap:10px;background:#F8FAFD;border:1px solid #E3E8F1;border-radius:12px;padding:9px 12px">
+      <div style="flex:1;min-width:0"><b>${esc(m.nom||'Fiche supprimée')}</b><div class="fv-meta" style="margin:0">${m.pack?packShort(+m.pack)+' · ':''}${m.prime?m.prime+' € · ':''}${m.aboTs?new Date(m.aboTs).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}):''}${m.v2?' · partagée avec '+esc(m.v2):''}</div></div>
+      <button class="pr-act danger" onclick="removeSale('${id}','${k}')">Retirer</button></div>`).join(''):'<div class="ics-empty">Aucune vente ce mois-ci.</div>'}</div>`);
+}
+async function removeSale(id,k){
+  if(!confirm('Retirer cette vente de la course du mois et des primes ?\nSi la fiche existe, elle repasse en « Contacté ».'))return;
+  const p=PROSPECTS.find(x=>x.id===id);
+  if(p&&p.statut==='abo'){setPStatut(id,'rappeler');}
+  else{EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();try{await syncCall('stats_del',{ks:[id+':abo']});}catch(e){if(e.message!=='code')toast('Réservé au code maître ou à un recruteur');return;}}
+  document.getElementById('icPop')?.remove();_hpCache='';setTimeout(()=>{loadHomePerf();if(document.querySelector('.hm-today'))showHome();},800);
+  toast('Vente retirée ✓');
+}
 /* ── Accueil : la course du mois, en direct ── */
 let _hpCache='',_hpBusy=false;
 async function loadHomePerf(){
   if(_hpBusy||!COACH_CODE)return;_hpBusy=true;
   try{
     const [d]=await Promise.all([syncCall('stats_pull'),fetchAvatars()]);
-    const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());
+    const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
     const rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name)}))
       .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
@@ -4101,7 +4121,7 @@ async function loadHomePerf(){
       <div class="hp-h">🏁 La course du mois <button class="hp-more" onclick="showPerf()">Tout voir →</button></div>
       <div class="hp-head">${head}</div>
       ${rows.slice(0,5).map((r,i)=>{const w=rows[0].a.primeMois?Math.max(6,Math.round(r.a.primeMois/rows[0].a.primeMois*100)):6;
-        return `<div class="hp-row${r.k===meK?' me':''}">
+        return `<div class="hp-row${r.k===meK?' me':''}"${COACH_ROLE==='admin'||IS_MGR?` style="cursor:pointer" title="Voir et corriger ses ventes du mois" onclick="showRepSales('${r.k}')"`:''}>
           <span class="hp-rank">${['🥇','🥈','🥉'][i]||(i+1)+'e'}</span>
           ${avaTag(avatarOf(r.name),24,r.name)}
           <span class="hp-name">${esc(r.name)}${r.k===meK?' <small>· vous</small>':''}</span>
