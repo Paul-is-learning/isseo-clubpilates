@@ -786,23 +786,7 @@ function renderAdherentChart(labels,bp,real,annee){
 }
 
 // ── Forecast ──────────────────────────────────────────────────────────────────
-// Mini bar chart 12 mois — visualisation didactique de la ventilation annuelle
-// shape: 'ramp' = CA avec saisonnalité préservée, 'flat' = charges fixes /12
-function _renderBPMiniBar(values,color,shape){
-  if(!values||values.length!==12)return '';
-  var max=Math.max.apply(null,values)||1;
-  if(max<=0)max=1;
-  var h='<div class="bp-minibar" title="Ventilation sur 12 mois ('+(shape==='ramp'?'ramp-up saisonnalité':'charges fixes /12')+')">';
-  h+='<svg viewBox="0 0 60 16" preserveAspectRatio="none" aria-hidden="true">';
-  values.forEach(function(v,i){
-    var bh=Math.max(1.2,(v/max)*14);
-    var x=i*5;
-    h+='<rect x="'+x+'" y="'+(15-bh).toFixed(2)+'" width="3.5" height="'+bh.toFixed(2)+'" fill="'+color+'" rx=".6" opacity=".82"><animate attributeName="height" from="0" to="'+bh.toFixed(2)+'" dur=".55s" begin="'+(i*.04).toFixed(2)+'s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1"/><animate attributeName="y" from="15" to="'+(15-bh).toFixed(2)+'" dur=".55s" begin="'+(i*.04).toFixed(2)+'s" fill="freeze" calcMode="spline" keySplines="0.2 0.8 0.2 1"/></rect>';
-  });
-  h+='</svg></div>';
-  return h;
-}
-
+// Vue « Business plan » (maquette 2026) : styles .bpd-* en fin de styles.css
 function renderForecast(sid,s){
   var fy=S.forecastYear||1;
   var fs=S.forecastSection||'detail';
@@ -849,7 +833,7 @@ function renderForecast(sid,s){
   var moisLabels=[];
   for(var i=0;i<12;i++){moisLabels.push(MOIS[(moisDebut+i)%12]);}
 
-  var h='<div>'+renderBPlayPanel(sid);
+  var h='<div class="bpd">'+renderBPlayPanel(sid);
   // ── Réglage loyer mensuel (règle i) ─────────────────────────────────────────
   if(!isViewer()){
     var lmDefault=isLattesStudio(sid)?Math.round(38850/12):4800;
@@ -861,212 +845,147 @@ function renderForecast(sid,s){
     h+='<span class="bpx-sep"></span><span class="bpx-ref">Référence : '+fmt(lmDefault*12)+'</span>';
     h+='</div>';
   }
-  h+='<div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap">';
-  // Utiliser la somme réelle des 12 mois pour chaque année — cohérent avec le tableau
+  // Icône trait (24x24) des cartes de vue et du bandeau
+  var _svg=function(p,sz){return '<svg width="'+(sz||18)+'" height="'+(sz||18)+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">'+p+'</svg>';};
+  // ── Sélecteur d'année : somme réelle des 12 mois, cohérente avec le tableau ──
+  h+='<div class="bpd-years">';
   [1,2,3].forEach(function(y){
     var ys=y===1?bps.a1:y===2?bps.a2:bps.a3;
     var yCAtotal=ys.reduce(function(s,r){return s+r._ca;},0);
-    var yRex=ys.reduce(function(s,r){return s+r._rex;},0);
     var yRN=ys.reduce(function(s,r){return s+r._result;},0);
-    var isActive=fy===y;
-    h+='<button class="yr-tab '+(isActive?'active':'')+'" onclick="setForecastYear('+y+')" style="text-align:left;padding:6px 14px">';
-    h+='<div style="font-weight:600">A'+y+' ('+(( fc.annee||2026)+(y-1))+')</div>';
-    h+='<div style="font-size:10px;opacity:0.8">CA '+fmt(yCAtotal)+' &middot; RN '+(yRN>=0?'+':'')+fmt(yRN)+'</div>';
-    h+='</button>';
+    h+='<button type="button" class="yr-tab bpd-yr'+(fy===y?' active':'')+'" onclick="setForecastYear('+y+')">';
+    h+='<span class="bpd-yr-t">A'+y+' ('+((fc.annee||2026)+(y-1))+')</span>';
+    h+='<span class="bpd-yr-s">CA '+fmt(yCAtotal)+' &middot; RN '+(yRN>=0?'+':'')+fmt(yRN)+'</span></button>';
   });
   h+='</div>';
 
-  // KPIs enrichis avec les 5 indicateurs clés du dossier
-  h+='<div class="kpis" style="margin-bottom:16px">';
-  h+='<div class="kpi"><div class="kpi-label">CA BP (dossier : '+fmt(refDossier.ca)+')</div><div class="kpi-val">'+fmt(cumBPCA)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">CA reel saisi</div><div class="kpi-val" style="color:#185FA5">'+fmt(cumActCA)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">Ecart CA</div><div class="kpi-val" style="color:'+(ecartCA>=0?'#3B6D11':'#A32D2D')+'">'+(ecartCA>=0?'+':'')+ecartCA+'%</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">REX BP (dossier : '+fmt(refDossier.rex)+')</div><div class="kpi-val" style="color:#0F6E56">'+fmt(cumBPREX)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">EBITDA BP</div><div class="kpi-val" style="color:#854F0B">'+fmt(cumBPEBITDA)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">RN BP (dossier : '+fmt(refDossier.rnet)+')</div><div class="kpi-val">'+fmt(cumBPRes)+'</div></div>';
-  h+='<div class="kpi"><div class="kpi-label">CAF BP (dossier : '+fmt(refDossier.caf)+')</div><div class="kpi-val">'+fmt(cumBPCAF)+'</div></div>';
-  h+='<div class="kpi" style="border:1.5px solid #d0d9ec;background:#f0f4fc"><div class="kpi-label" style="color:#1a3a6b;font-weight:600">Cash net disponible</div><div class="kpi-val" style="color:'+(cumBPCashnet>=0?'#1a3a6b':'#A32D2D')+'">'+fmt(cumBPCashnet)+'</div></div>';
+  // ── 8 KPIs : indicateurs clés du dossier + réel saisi ──
+  var _kpi=function(lbl,val,cls){return '<div class="bpd-kpi'+(cls?' '+cls:'')+'"><div class="bpd-kpi-l">'+lbl+'</div><div class="bpd-kpi-v">'+val+'</div></div>';};
+  h+='<div class="bpd-kpis">';
+  h+=_kpi('CA BP (dossier : '+fmt(refDossier.ca)+')',fmt(cumBPCA));
+  h+=_kpi('CA r&eacute;el saisi',fmt(cumActCA));
+  h+=_kpi('&Eacute;cart CA',(ecartCA>=0?'+':'')+ecartCA+'%',ecartCA>=0?'bpd-pos':'bpd-neg');
+  h+=_kpi('REX BP (dossier : '+fmt(refDossier.rex)+')',fmt(cumBPREX));
+  h+=_kpi('EBITDA BP',fmt(cumBPEBITDA));
+  h+=_kpi('RN BP (dossier : '+fmt(refDossier.rnet)+')',fmt(cumBPRes));
+  h+=_kpi('CAF BP (dossier : '+fmt(refDossier.caf)+')',fmt(cumBPCAF));
+  h+=_kpi('Cash net disponible',fmt(cumBPCashnet),'bpd-kpi-cash'+(cumBPCashnet<0?' bpd-neg':''));
   h+='</div>';
 
-  // ── Sub-tabs BP (3D, dynamiques) ────────────────────────────────────────────
-  h+='<div class="bp-subtabs">';
-  h+='<button class="bp-subtab '+(fs==='detail'?'active':'')+'" onclick="setFS(\'detail\')">';
-  h+='<span class="bp-subtab-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3h18v4H3z"/><path d="M3 11h18v4H3z"/><path d="M3 19h18v2H3z"/></svg></span>';
-  h+='<span class="bp-subtab-label">Detail complet</span>';
-  h+='<span class="bp-subtab-sub">CA, charges, IS &mdash; Y'+fy+'</span></button>';
-  h+='<button class="bp-subtab '+(fs==='saisie'?'active':'')+'" onclick="setFS(\'saisie\')">';
-  h+='<span class="bp-subtab-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4z"/></svg></span>';
-  h+='<span class="bp-subtab-label">Saisie mensuelle</span>';
-  h+='<span class="bp-subtab-sub">R&eacute;el saisi par mois</span></button>';
-  h+='<button class="bp-subtab '+(fs==='recap3'?'active':'')+'" onclick="setFS(\'recap3\')">';
-  h+='<span class="bp-subtab-ic"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/></svg></span>';
-  h+='<span class="bp-subtab-label">R&eacute;cap 3 ans</span>';
-  h+='<span class="bp-subtab-sub">Y1 &middot; Y2 &middot; Y3</span></button>';
+  // ── 3 cartes de vue (Détail complet, Saisie mensuelle, Récap 3 ans) ──
+  var _sub=function(k,ic,t,st){return '<button type="button" class="bp-subtab bpd-sub'+(fs===k?' active':'')+'" onclick="setFS(\''+k+'\')"><span class="bpd-sub-ic">'+ic+'</span><span class="bpd-sub-tx"><span class="bpd-sub-t">'+t+'</span><span class="bpd-sub-s">'+st+'</span></span></button>';};
+  h+='<div class="bpd-subs">';
+  h+=_sub('detail',_svg('<path d="M9 6h11M9 12h11M9 18h11M4 6h.01M4 12h.01M4 18h.01"/>'),'D&eacute;tail complet','CA, charges, IS &middot; Y'+fy);
+  h+=_sub('saisie',_svg('<path d="M12 20h9"/><path d="M16.5 3.5a2.12 2.12 0 1 1 3 3L7 19l-4 1 1-4z"/>'),'Saisie mensuelle','R&eacute;el saisi par mois');
+  h+=_sub('recap3',_svg('<path d="M3 3v18h18"/><polyline points="7 14 11 10 15 14 21 8"/>'),'R&eacute;cap 3 ans','Y1 &middot; Y2 &middot; Y3');
   h+='</div>';
 
   if(fs==='detail'){
     var _bpEdit=isSuperAdmin()||(!isViewer());
 
-    // ── Bandeau didactique : comment saisir ? ─────────────────────────────
+    // ── Bandeau d'aide (éditeurs seulement) ──
     if(_bpEdit){
-      h+='<div class="bp-help-banner">';
-      h+='<div class="bp-help-ic">💡</div>';
-      h+='<div style="flex:1">';
-      h+='<div class="bp-help-title">Comment modifier le BP ?</div>';
-      h+='<div class="bp-help-txt">Saisissez un <b>montant annuel</b> dans la colonne <b>Total</b> à droite — l\'app répartit automatiquement sur les 12 mois. '
-        +'Pour le <b>CA</b>, la saisonnalité du dossier (ramp-up) est conservée ; pour les charges fixes, le montant est divisé par 12. '
-        +'<b>IS</b>, <b>EBITDA</b> et <b>CAF</b> se recalculent en direct.</div>';
-      h+='</div></div>';
+      h+='<div class="bpd-info" title="CA : saisonnalit&eacute; du dossier (ramp-up) conserv&eacute;e &middot; charges fixes : montant divis&eacute; par 12 &middot; IS, EBITDA et CAF recalcul&eacute;s en direct">';
+      h+=_svg('<circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/>',17);
+      h+='<span>Modifiez les montants annuels : les 12 mois et les indicateurs se recalculent automatiquement.</span></div>';
     }
 
-    // ── Toggle "Détail mois" (mobile uniquement, ≤ 640px) ─────────────────
+    // ── Toggle "Détail mois" (mobile ≤ 640px) : sinon seules Ligne et Total annuel s'affichent ──
     var _showMonths=!!S.bpShowMonthsMobile;
     h+='<button class="bp-months-toggle'+(_showMonths?' active':'')+'" onclick="toggleBPMonthsMobile()" type="button">';
     h+='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>';
     h+=(_showMonths?'Masquer le d&eacute;tail mois':'Voir le d&eacute;tail mois');
     h+='</button>';
 
-    h+='<div class="bp-detail-wrap'+(_showMonths?' bp-detail-show-months':'')+'" style="overflow-x:auto"><table class="bp-detail-table">';
-    h+='<tr><th style="text-align:left;padding-left:8px;min-width:180px">Ligne</th>';
+    // Cellule mois : valeur BP (+ réel saisi dessous s'il existe), rouge si négative
+    var _cell=function(v,a,cls){return '<td'+(v<0?' class="bpd-neg"':'')+'>'+fmtN(v)+(a!=null?'<div class="bpd-act'+(cls?' '+cls:'')+'">'+fmtN(a)+'</div>':'')+'</td>';};
+    // Total annuel : champ éditable (réparti sur 12 mois par onEditBPAnnual) ou simple valeur.
+    // Affiché formaté (448 800) : espaces retirés et virgule convertie avant l'envoi
+    var _totCell=function(lid,tot,editable,isCA){
+      if(!editable)return '<td class="bpd-tot">'+fmtN(tot)+'</td>';
+      return '<td class="bpd-tot"><input type="text" inputmode="numeric" class="bpd-in" value="'+fmtN(tot)+'" '
+        +'onchange="onEditBPAnnual(\''+sid+'\',\''+lid+'\','+fy+',this.value.replace(/\\s/g,\'\').replace(\',\',\'.\'))" '
+        +'onfocus="try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}" '
+        +'title="Montant annuel Y'+fy+' &middot; r&eacute;parti sur 12 mois'+(isCA?' (saisonnalit&eacute; CA pr&eacute;serv&eacute;e)':'')+'" />'
+        +'<div class="bpd-hint">'+(isCA?'💡 Saisonnalité ramp-up préservée':'💡 Divisé en 12 mois égaux')+'</div></td>';
+    };
+
+    h+='<div class="bpd-card"><div class="bp-detail-wrap bpd-wrap'+(_showMonths?' bpd-months-on':'')+'"><table class="bp-detail-table bpd-table">';
+    h+='<tr class="bpd-hd"><th class="bpd-l">Ligne</th>';
     moisLabels.forEach(function(m){h+='<th>'+m+'</th>';});
-    h+='<th class="bp-total-col-head">Total annuel'+(_bpEdit?' <span class="bp-edit-hint">✎</span>':'')+'</th></tr>';
+    h+='<th class="bpd-tot">Total annuel'+(_bpEdit?' <span class="bpd-pen">✎</span>':'')+'</th></tr>';
 
     // ── Produits ──
-    h+='<tr class="bp-section-head produits"><td colspan="14">PRODUITS</td></tr>';
+    h+='<tr class="bpd-sec"><td colspan="14"><span>PRODUITS</span></td></tr>';
     var monthProd=Array(12).fill(0);
     PRODUITS.forEach(function(l){
       var tot=0;
-      var lineVals=[];
-      h+='<tr class="bp-line" data-bp-line="'+l.id+'"><td class="lbl" style="padding-left:18px">'+l.label+'</td>';
+      h+='<tr data-bp-line="'+l.id+'"><td class="bpd-l">'+l.label+'</td>';
       bp.forEach(function(r,i){
-        var bv=r[l.id];tot+=bv;monthProd[i]+=bv;lineVals.push(bv);
-        var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td class="bp-cell"><span class="bp-val-month">'+moisLabels[i]+'</span><div class="bp-val">'+fmtN(bv)+'</div>';
-        if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
-        h+='</td>';
+        var bv=r[l.id];tot+=bv;monthProd[i]+=bv;
+        h+=_cell(bv,actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null);
       });
-      // Colonne Total = input annuel éditable + mini bar chart (ventilation visuelle)
-      h+='<td class="bp-total-cell">';
-      h+=_renderBPMiniBar(lineVals,'#1a3a6b','ramp');
-      if(_bpEdit){
-        h+='<input type="number" class="bp-annual-input" value="'+tot+'" '
-          +'onchange="onEditBPAnnual(\''+sid+'\',\''+l.id+'\','+fy+',this.value)" '
-          +'onfocus="try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}" '
-          +'title="Montant annuel Y'+fy+' — r&eacute;parti sur 12 mois (saisonnalit&eacute; CA pr&eacute;serv&eacute;e)" />';
-        h+='<div class="bp-annual-hint">💡 Saisonnalité ramp-up préservée</div>';
-      } else {
-        h+='<div class="bp-total">'+fmtN(tot)+'</div>';
-      }
-      h+='</td></tr>';
+      h+=_totCell(l.id,tot,_bpEdit,true)+'</tr>';
     });
-    // Sum row Produits (non éditable — c'est une somme)
+    // Somme Produits (non éditable)
     var totProd=monthProd.reduce(function(s,v){return s+v;},0);
-    h+='<tr class="bp-sum-row produits"><td class="lbl">Total Produits</td>';
+    h+='<tr class="bpd-sum"><td class="bpd-l">Total Produits</td>';
     monthProd.forEach(function(v){h+='<td>'+fmtN(v)+'</td>';});
-    h+='<td class="bp-total">'+fmtN(totProd)+'</td></tr>';
+    h+='<td class="bpd-tot">'+fmtN(totProd)+'</td></tr>';
 
     // ── Charges ──
-    h+='<tr class="bp-section-head charges"><td colspan="14">CHARGES</td></tr>';
+    h+='<tr class="bpd-sec"><td colspan="14"><span>CHARGES</span></td></tr>';
     var monthCh=Array(12).fill(0);
     CHARGES.forEach(function(l){
       // Ligne loyer variable : affichée seulement quand le bail en a une
       if(l.id==='loyer_var'&&!bp.some(function(r){return (r.loyer_var||0)>0;}))return;
       var tot=0;
-      var lineVals=[];
-      // IS est auto-calculé — verrouillé (read-only)
+      // IS auto-calculé : verrouillé (lecture seule)
       var isReadonly=(l.id==='is');
-      h+='<tr class="bp-line'+(isReadonly?' bp-line-readonly':'')+'" data-bp-line="'+l.id+'"><td class="lbl" style="padding-left:18px">'+l.label;
-      if(isReadonly)h+=' <span class="bp-auto-badge" title="Calcul&eacute; automatiquement (15% jusqu\'&agrave; 42 500 &euro;, 25% au-del&agrave;)">auto</span>';
+      h+='<tr'+(isReadonly?' class="bpd-ro"':'')+' data-bp-line="'+l.id+'"><td class="bpd-l">'+l.label;
+      if(isReadonly)h+=' <span class="bpd-auto" title="Calcul&eacute; automatiquement (15% jusqu\'&agrave; 42 500 &euro;, 25% au-del&agrave;)">auto</span>';
       h+='</td>';
       bp.forEach(function(r,i){
-        var bv=r[l.id];tot+=bv;monthCh[i]+=bv;lineVals.push(bv);
-        var a=actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null;
-        h+='<td class="bp-cell"><span class="bp-val-month">'+moisLabels[i]+'</span><div class="bp-val'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(bv)+'</div>';
-        if(a!==null)h+='<div class="bp-actual">'+fmtN(a)+'</div>';
-        h+='</td>';
+        var bv=r[l.id];tot+=bv;monthCh[i]+=bv;
+        h+=_cell(bv,actuel[i]&&actuel[i][l.id]!=null?actuel[i][l.id]:null);
       });
-      // Colonne Total éditable (sauf IS) + mini bar chart
-      h+='<td class="bp-total-cell">';
-      h+=_renderBPMiniBar(lineVals,isReadonly?'#94a3b8':'#854F0B','flat');
-      if(_bpEdit&&!isReadonly){
-        h+='<input type="number" class="bp-annual-input" value="'+tot+'" '
-          +'onchange="onEditBPAnnual(\''+sid+'\',\''+l.id+'\','+fy+',this.value)" '
-          +'onfocus="try{navigator.vibrate&&navigator.vibrate(6)}catch(e){}" '
-          +'title="Montant annuel Y'+fy+' — r&eacute;parti sur 12 mois" />';
-        h+='<div class="bp-annual-hint">💡 Divisé en 12 mois égaux</div>';
-      } else {
-        h+='<div class="bp-total'+(isReadonly?' bp-val-auto':'')+'">'+fmtN(tot)+'</div>';
-      }
-      h+='</td></tr>';
+      h+=_totCell(l.id,tot,_bpEdit&&!isReadonly,false)+'</tr>';
     });
-    // Sum row Charges
+    // Somme Charges
     var totCh=monthCh.reduce(function(s,v){return s+v;},0);
-    h+='<tr class="bp-sum-row charges"><td class="lbl">Total Charges</td>';
+    h+='<tr class="bpd-sum"><td class="bpd-l">Total Charges</td>';
     monthCh.forEach(function(v){h+='<td>'+fmtN(v)+'</td>';});
-    h+='<td class="bp-total">'+fmtN(totCh)+'</td></tr>';
+    h+='<td class="bpd-tot">'+fmtN(totCh)+'</td></tr>';
 
-    // ── Indicateurs dérivés (EBITDA, RN, CAF) ──
-    h+='<tr class="bp-section-head indicateurs"><td colspan="14">INDICATEURS (recalcul&eacute;s)</td></tr>';
-
-    // EBITDA mensuel = REX + Amort (CA - charges hors amort/IS/charges_fin)
-    var totEB=0;
-    h+='<tr class="bp-indic ebitda"><td class="lbl">EBITDA <span class="bp-auto-badge">auto</span></td>';
-    totals.forEach(function(t){
-      totEB+=t.bpEBITDA;
-      h+='<td><div class="bp-val-indic">'+fmtN(t.bpEBITDA)+'</div>';
-      if(t.hasReal)h+='<div class="bp-actual '+(t.aEBITDA>=0?'pos':'neg')+'">'+fmtN(t.aEBITDA)+'</div>';
-      h+='</td>';
+    // ── Indicateurs dérivés : EBITDA = REX + amort, CAF apparente = RN + amort ──
+    // [libellé, champ BP, champ réel (ou null), classe de ligne]
+    h+='<tr class="bpd-sec"><td colspan="14"><span>INDICATEURS RECALCUL&Eacute;S</span></td></tr>';
+    [['EBITDA','bpEBITDA','aEBITDA',''],['R&eacute;sultat d\'exploitation','bpREX',null,''],['R&eacute;sultat net','bpResult','aResult',''],['CAF apparente','bpCAF',null,' bpd-caf']].forEach(function(d){
+      var tI=0,isCAF=!!d[3];
+      h+='<tr class="bpd-ind'+d[3]+'"><td class="bpd-l">'+d[0]+' <span class="bpd-auto">auto</span></td>';
+      totals.forEach(function(t){
+        tI+=t[d[1]];
+        h+=_cell(t[d[1]],d[2]&&t.hasReal?t[d[2]]:null,d[2]&&t.hasReal?(t[d[2]]>=0?'pos':'neg'):'');
+      });
+      h+='<td class="bpd-tot'+(tI<0?' bpd-neg':'')+'">'+(isCAF?'<span class="bpd-cafbox">'+fmtN(tI)+'</span>':fmtN(tI))+'</td></tr>';
     });
-    h+='<td class="bp-total">'+fmtN(totEB)+'</td></tr>';
+    h+='</table></div></div>';
 
-    // REX
-    var totREX=0;
-    h+='<tr class="bp-indic rex"><td class="lbl">R&eacute;sultat d\'exploitation <span class="bp-auto-badge">auto</span></td>';
-    totals.forEach(function(t){
-      totREX+=t.bpREX;
-      h+='<td><div class="bp-val-indic">'+fmtN(t.bpREX)+'</div></td>';
-    });
-    h+='<td class="bp-total">'+fmtN(totREX)+'</td></tr>';
-
-    // Résultat Net
-    var totRN=0;
-    h+='<tr class="bp-indic rn"><td class="lbl">R&eacute;sultat net <span class="bp-auto-badge">auto</span></td>';
-    totals.forEach(function(t){
-      totRN+=t.bpResult;
-      h+='<td><div class="bp-val-indic strong">'+fmtN(t.bpResult)+'</div>';
-      if(t.hasReal)h+='<div class="bp-actual '+(t.aResult>=0?'pos':'neg')+'">'+fmtN(t.aResult)+'</div>';
-      h+='</td>';
-    });
-    h+='<td class="bp-total">'+fmtN(totRN)+'</td></tr>';
-
-    // CAF apparent = RN + Amort
-    var totCAF=0;
-    h+='<tr class="bp-indic caf"><td class="lbl">CAF apparente <span class="bp-auto-badge">auto</span></td>';
-    totals.forEach(function(t){
-      totCAF+=t.bpCAF;
-      h+='<td><div class="bp-val-indic">'+fmtN(t.bpCAF)+'</div></td>';
-    });
-    h+='<td class="bp-total">'+fmtN(totCAF)+'</td></tr>';
-
-    h+='</table></div>';
-
-    // Panel propositions en attente (si existe)
-    if(typeof renderBPProposalsPanel==='function')h+=renderBPProposalsPanel(sid);
-
-    // Légende + metadata
+    // ── Légende + auteur du BP, bouton Reset (superadmin) ──
     var bpMeta=(s.bpMeta||{});
     var metaTxt=bpMeta.createdBy?('BP initial enregistr&eacute; par <b>'+bpMeta.createdBy+'</b>'+(bpMeta.createdAt?' &middot; '+new Date(bpMeta.createdAt).toLocaleDateString('fr-FR'):'')):'BP par d&eacute;faut (mod&egrave;le La Garenne-Colombes)';
     if(bpMeta.lastModifiedBy&&bpMeta.lastModifiedBy!==bpMeta.createdBy){
       metaTxt+=' &middot; derni&egrave;re modif : '+bpMeta.lastModifiedBy+(bpMeta.lastModifiedAt?' le '+new Date(bpMeta.lastModifiedAt).toLocaleDateString('fr-FR'):'');
     }
-    h+='<div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px;flex-wrap:wrap;gap:10px">';
-    h+='<div style="font-size:11px;color:#888">'+metaTxt+'</div>';
-    h+='<div style="display:flex;gap:8px;align-items:center">';
-    h+='<div style="font-size:10px;color:#888">Cellules &eacute;ditables &middot; <span class="bp-auto-badge">auto</span> = recalcul&eacute; (IS 15/25%, EBITDA, CAF)</div>';
+    h+='<div class="bpd-foot"><div class="bpd-meta">'+metaTxt+'</div><div class="bpd-foot-r">';
+    h+='<span>Cellules &eacute;ditables &middot; <span class="bpd-auto">auto</span> = recalcul&eacute; (IS 15/25%, EBITDA, CAF)</span>';
     if(isSuperAdmin()){
-      h+='<button class="btn" style="font-size:10px;padding:4px 10px;color:#6b7280" onclick="resetBPYear(\''+sid+'\','+fy+')" title="Revenir aux valeurs La Garenne-Colombes pour l\'ann&eacute;e Y'+fy+'">Reset Y'+fy+'</button>';
+      h+='<button type="button" class="bpd-reset" onclick="resetBPYear(\''+sid+'\','+fy+')" title="Revenir aux valeurs La Garenne-Colombes pour l\'ann&eacute;e Y'+fy+'">Reset Y'+fy+'</button>';
     }
     h+='</div></div>';
+
+    // Panel propositions en attente (si existe)
+    if(typeof renderBPProposalsPanel==='function')h+=renderBPProposalsPanel(sid);
   }
 
   if(fs==='saisie'){
