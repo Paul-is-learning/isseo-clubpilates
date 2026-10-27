@@ -16,6 +16,8 @@ window.fmtC=function(n){
 // Optionnel : data-morph-key pour identifier le compteur à travers les renders.
 // Si absent : clé auto basée sur position DOM + format.
 var _counterValues={}; // key → last target value (pour détecter changements)
+var _counterGens={},_counterGen=0,_counterScreen=null; // key → écran où la valeur a été affichée
+var _counterStarts={}; // key → début du comptage 0→cible (repris si re-render pendant le comptage)
 
 function _counterKey(el){
   if(el.getAttribute('data-morph-key'))return el.getAttribute('data-morph-key');
@@ -71,6 +73,9 @@ function _renderMorph(el,oldStr,newStr){
 function animateCounters(root){
   var els=(root||document).querySelectorAll('.counter-anim');
   var reducedMotion=window.matchMedia&&window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+  // Nouvel écran (page|fiche|vue) → les compteurs rejouent ; simple re-render du même écran → non
+  var scr=(window.S&&S.page?S.page:'')+'|'+(window.S&&S.selectedId?S.selectedId:'')+'|'+(window.S&&S.view?S.view:'');
+  if(scr!==_counterScreen){_counterScreen=scr;_counterGen++;}
   els.forEach(function(el){
     if(el._animated)return;
     if(el.closest&&el.closest('.ca-hero-card:not(.ca-animated)'))return;
@@ -80,18 +85,27 @@ function animateCounters(root){
     var key=_counterKey(el);
     var prev=_counterValues[key];
     var newStr=_counterFormat(target,fmt,el);
-    // Mode MORPH : valeur connue précédente ET différente → slide digits
-    if(prev!==undefined&&prev!==target&&!reducedMotion){
+    var sameScreen=_counterGens[key]===_counterGen;
+    _counterGens[key]=_counterGen;
+    var duration=parseInt(el.getAttribute('data-duration')||'1200',10);
+    var start=performance.now();
+    // Valeur inchangée sur le même écran → pas de recomptage 0→cible :
+    // texte final, ou reprise du comptage en cours (re-render pendant la 1re apparition)
+    if(prev===target&&sameScreen){
+      if(reducedMotion||!(start-_counterStarts[key]<duration)){el.textContent=newStr;return;}
+      start=_counterStarts[key];
+    } else if(prev!==undefined&&prev!==target&&!reducedMotion){
+      // Mode MORPH : valeur connue précédente ET différente → slide digits
       var oldStr=_counterFormat(prev,fmt,el);
       _renderMorph(el,oldStr,newStr);
       _counterValues[key]=target;
+      delete _counterStarts[key];
       return;
     }
     // Mode premier run → counter incrémental classique
     _counterValues[key]=target;
-    var duration=parseInt(el.getAttribute('data-duration')||'1200',10);
     if(reducedMotion){el.textContent=newStr;return;}
-    var start=performance.now();
+    _counterStarts[key]=start;
     function ease(t){return 1-Math.pow(1-t,3);}
     function tick(now){
       var p=Math.min(1,(now-start)/duration);
@@ -109,17 +123,25 @@ function attachCardTilt(){
   var cards=document.querySelectorAll('.card:not([data-tilt-bound])');
   cards.forEach(function(card){
     card.setAttribute('data-tilt-bound','1');
-    card.addEventListener('mousemove',function(e){
+    // Un seul calcul par frame : on garde la dernière position, rect lu une fois dans le rAF
+    var mx=0,my=0,raf=0;
+    function tilt(){
+      raf=0;
       var r=card.getBoundingClientRect();
-      var x=(e.clientX-r.left)/r.width;
-      var y=(e.clientY-r.top)/r.height;
+      var x=(mx-r.left)/r.width;
+      var y=(my-r.top)/r.height;
       var rx=(0.5-y)*6; // max 3° each side
       var ry=(x-0.5)*6;
       card.style.transform='perspective(900px) rotateX('+rx.toFixed(2)+'deg) rotateY('+ry.toFixed(2)+'deg) translateY(-4px)';
       card.style.setProperty('--mx',(x*100).toFixed(1)+'%');
       card.style.setProperty('--my',(y*100).toFixed(1)+'%');
+    }
+    card.addEventListener('mousemove',function(e){
+      mx=e.clientX;my=e.clientY;
+      if(!raf)raf=requestAnimationFrame(tilt);
     });
     card.addEventListener('mouseleave',function(){
+      if(raf){cancelAnimationFrame(raf);raf=0;} // pas de tilt en attente après la sortie
       card.style.transform='';
     });
   });
@@ -422,10 +444,12 @@ function staggerChildren(){
   if(!els.length)return;
   var vh=window.innerHeight;
   var idx=0;
+  // Lectures groupées avant les écritures (évite un recalcul de layout par élément)
+  var tops=new Array(els.length);
+  for(var j=0;j<els.length;j++)tops[j]=els[j].getBoundingClientRect().top;
   for(var i=0;i<els.length;i++){
     var el=els[i];
-    var r=el.getBoundingClientRect();
-    if(r.top>=vh)continue;
+    if(tops[i]>=vh)continue;
     el.setAttribute('data-stagger-done','1');
     el.style.opacity='0';
     el.style.transform='translateY(14px)';
@@ -469,6 +493,7 @@ function morphSidebarPill(){
 
 // ── 13. Scroll reveal ──
 var _revealObserver=null;
+var _revealTargets=[]; // éléments observés, purgés à chaque passage
 function initScrollReveal(){
   if(!window.IntersectionObserver)return;
   if(!_revealObserver){
@@ -481,6 +506,16 @@ function initScrollReveal(){
       });
     },{threshold:0.08,rootMargin:'0px 0px -40px 0px'});
   }
+  // Cibles retirées par un render → unobserve (sinon la liste de l'observer grossit à chaque render).
+  // On libère aussi data-reveal-bound : si le nœud revenait un jour, il serait ré-observé.
+  var alive=[];
+  for(var k=0;k<_revealTargets.length;k++){
+    var t=_revealTargets[k];
+    if(t.classList.contains('reveal-in'))continue; // déjà unobserve par le callback
+    if(!document.contains(t)){_revealObserver.unobserve(t);t.removeAttribute('data-reveal-bound');continue;}
+    alive.push(t);
+  }
+  _revealTargets=alive;
   // Observe targets : .card, .box, .cards > div
   var targets=document.querySelectorAll('.card:not([data-reveal-bound]),.box:not([data-reveal-bound])');
   targets.forEach(function(el,i){
@@ -489,6 +524,7 @@ function initScrollReveal(){
     // subtle stagger — up to 6 items
     el.style.transitionDelay=Math.min(i,6)*40+'ms';
     _revealObserver.observe(el);
+    _revealTargets.push(el);
   });
 }
 
@@ -962,15 +998,20 @@ function animateCACards(){
 function initMagneticButtons(){
   if(window._magneticInit)return;
   window._magneticInit=true;
-  document.addEventListener('mousemove',function(e){
-    var btns=document.querySelectorAll('.btn-primary');
-    for(var i=0;i<btns.length;i++){
+  // Collection vivante (suit les renders) ; un passage par frame, toutes les lectures puis toutes les écritures
+  var btns=document.getElementsByClassName('btn-primary');
+  var mx=0,my=0,raf=0;
+  function magnetFrame(){
+    raf=0;
+    var n=btns.length,rects=new Array(n),i;
+    for(i=0;i<n;i++)rects[i]=btns[i].getBoundingClientRect();
+    for(i=0;i<n;i++){
       var b=btns[i];
-      var r=b.getBoundingClientRect();
+      var r=rects[i];
       var cx=r.left+r.width/2;
       var cy=r.top+r.height/2;
-      var dx=e.clientX-cx;
-      var dy=e.clientY-cy;
+      var dx=mx-cx;
+      var dy=my-cy;
       var dist=Math.sqrt(dx*dx+dy*dy);
       if(dist<60){
         var pull=Math.min(4,(1-dist/60)*4);
@@ -981,6 +1022,10 @@ function initMagneticButtons(){
         b.style.transform='';
       }
     }
+  }
+  document.addEventListener('mousemove',function(e){
+    mx=e.clientX;my=e.clientY;
+    if(!raf)raf=requestAnimationFrame(magnetFrame);
   },{passive:true});
 }
 
@@ -1042,8 +1087,11 @@ function initSwipeGestures(){
   function _hasHScrollAncestor(el){
     while(el&&el.nodeType===1&&el!==document.body){
       try{
-        var cs=window.getComputedStyle(el);
-        if((cs.overflowX==='auto'||cs.overflowX==='scroll')&&(el.scrollWidth-el.clientWidth)>1)return true;
+        // Sortie rapide : pas de débordement horizontal → pas besoin de getComputedStyle (même résultat)
+        if((el.scrollWidth-el.clientWidth)>1){
+          var cs=window.getComputedStyle(el);
+          if(cs.overflowX==='auto'||cs.overflowX==='scroll')return true;
+        }
       }catch(_){}
       el=el.parentElement;
     }
