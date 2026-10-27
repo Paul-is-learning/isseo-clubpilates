@@ -161,12 +161,61 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .lock-logo{width:64px;height:64px;margin:0 auto 18px;border-radius:18px;background:linear-gradient(135deg,#C9871F,#e6b45c);display:flex;align-items:center;justify-content:center;font-weight:900;font-size:24px;color:#fff;letter-spacing:1px;box-shadow:0 10px 28px rgba(201,135,31,.4)}
 .lock-t{color:#fff;font-size:20px;font-weight:800;margin-bottom:6px}
 .lock-s{color:rgba(255,255,255,.65);font-size:13.5px;line-height:1.5;margin-bottom:22px}
-#lockCode,#nameInput,#otpCode{width:100%;box-sizing:border-box;padding:14px 16px;border-radius:12px;border:1.5px solid rgba(255,255,255,.25);background:rgba(255,255,255,.09);color:#fff;font-size:17px;letter-spacing:3px;text-align:center;text-transform:uppercase;font-weight:700;outline:none}
-#lockCode:focus,#nameInput:focus,#otpCode:focus{border-color:#C9871F;box-shadow:0 0 0 3px rgba(201,135,31,.25)}
+
+
 .otp-links{display:flex;justify-content:space-between;margin-top:14px;font-size:13px}.otp-links a{color:rgba(255,255,255,.75);text-decoration:underline}
-#lockCode::placeholder,#nameInput::placeholder,#otpCode::placeholder{letter-spacing:1px;font-weight:400;color:rgba(255,255,255,.35)}
+
 .lock-btn{width:100%;margin-top:14px;padding:14px;border:none;border-radius:12px;background:linear-gradient(135deg,#C9871F,#b3760f);color:#fff;font-size:15.5px;font-weight:800;cursor:pointer;transition:transform .12s}
 .lock-btn:active{transform:scale(.97)}
+/* ── Connexion · écran partagé (panneau marque + formulaire) ── */
+#lockScreen.lk,#nameScreen.lk,#otpScreen.lk{display:grid;overflow-y:auto;padding:0;background:#fff;align-items:stretch;justify-content:stretch}
+.lk{position:fixed;inset:0;z-index:9999;display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);background:#fff;overflow-y:auto;font-family:var(--sans)}
+.lk-l{position:relative;overflow:hidden;background:#0B1A3A;color:#fff;padding:clamp(28px,5vw,64px);display:flex;flex-direction:column;min-height:100%}
+.lk-logo{height:46px;width:auto;align-self:flex-start;filter:brightness(0) invert(1)}
+.lk-chip{align-self:flex-start;margin-top:clamp(40px,9vh,86px);background:#C8F24A;color:#0B1A3A;font-weight:800;font-size:13px;letter-spacing:.4px;text-transform:uppercase;padding:7px 18px;border-radius:99px}
+.lk-h{position:relative;z-index:1;margin:22px 0 0;font-size:clamp(32px,3.7vw,64px);line-height:1.04;font-weight:900;letter-spacing:-1.8px}
+.lk-h em{font-style:normal;color:#C8F24A}
+.lk-sub{position:relative;z-index:1;margin-top:18px;font-size:clamp(16px,1.6vw,24px);color:rgba(255,255,255,.88);font-weight:500}
+.lk-rib{position:absolute;left:0;right:0;bottom:0;width:100%;height:44%;pointer-events:none}
+.lk-r{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:clamp(28px,5vw,60px) clamp(20px,5vw,64px);background:#FCFCFD;min-height:100%;box-sizing:border-box}
+.lk-form{width:100%;max-width:520px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.lk-emb{width:clamp(96px,10vw,148px);aspect-ratio:1;border-radius:50%;background:#4A86E0;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 5px #FCFCFD,0 0 0 8px #4A86E0;outline:3px dotted #4A86E0;outline-offset:12px;margin:14px 0 30px}
+.lk-emb img{width:62%;height:auto}
+.lk-emb.ic{font-size:clamp(40px,4vw,60px)}
+.lk-t{color:#0B1A3A;font-size:clamp(30px,3vw,48px);white-space:nowrap;font-weight:900;letter-spacing:-1.5px;line-height:1.05}
+.lk-s{color:#6475A0;font-size:clamp(15px,1.3vw,20px);margin-top:10px;line-height:1.45}
+.lk-lbl{align-self:stretch;text-align:left;color:#0B1A3A;font-weight:800;font-size:15px;margin:clamp(28px,5vh,56px) 0 10px}
+.lk-field{align-self:stretch;position:relative}
+.lk .lk-field input{width:100%;box-sizing:border-box;padding:18px 52px 18px 20px;border:1.5px solid #CBD3E3;border-radius:12px;background:#fff;color:#0B1A3A;font:600 17px var(--sans);letter-spacing:1px;text-align:left;text-transform:none;outline:none;transition:border-color .15s,box-shadow .15s}
+.lk .lk-field input::placeholder{color:#7C89A8;font-weight:500;letter-spacing:0}
+.lk .lk-field input:focus{border-color:#2F5BD3;box-shadow:0 0 0 4px rgba(47,91,211,.14)}
+.lk-field svg{position:absolute;right:18px;top:50%;transform:translateY(-50%);color:#5A6788}
+.lk-err{align-self:stretch;text-align:left;color:#C2341B;font-size:13.5px;font-weight:600;min-height:20px;margin-top:10px}
+.lk-btn{align-self:stretch;display:flex;align-items:center;justify-content:center;gap:14px;margin-top:8px;padding:19px;border:none;border-radius:12px;background:#C8F24A;color:#0B1A3A;font:800 20px var(--sans);cursor:pointer;transition:transform .1s,filter .15s}
+.lk-btn:hover{filter:brightness(.96)}.lk-btn:active{transform:scale(.98)}
+.lk-note{color:#6475A0;font-size:14px;margin-top:26px}
+.lk-links{align-self:stretch;display:flex;justify-content:space-between;margin-top:20px;font-size:14px}
+.lk-links a{color:#2F5BD3;font-weight:600}
+.lk-foot{align-self:stretch;border-top:1px solid #E3E7EF;margin-top:clamp(40px,10vh,100px);padding-top:26px;text-align:center}
+.lk-foot b{display:block;color:#0B1A3A;font-size:16px}
+.lk-foot span{color:#6475A0;font-size:14px}
+@media (max-width:820px){
+  .lk{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .lk-l{min-height:0;padding:20px 20px 74px}
+  .lk-logo{height:34px}
+  .lk-chip{margin-top:18px;font-size:11px;padding:5px 14px}
+  .lk-h{font-size:clamp(26px,7.4vw,40px);letter-spacing:-1px;margin-top:14px}
+  .lk-sub{font-size:14px;margin-top:10px}
+  .lk-rib{height:78px}
+  .lk-emb{width:76px;outline-offset:8px}
+  .lk-t{font-size:30px}
+  .lk-lbl{margin-top:22px}
+  .lk-btn{padding:16px;font-size:18px}
+  .lk-t{white-space:normal}
+  .lk-r{padding:28px 18px 32px;justify-content:flex-start}
+  .lk-emb{margin:6px 0 22px}
+  .lk-foot{margin-top:36px}
+}
 #lockErr,#nameErr{color:#ff8f8f;font-size:13px;min-height:18px;margin-top:10px;font-weight:600}
 .sync-badge{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:700;padding:5px 11px;border-radius:99px;white-space:nowrap;border:1px solid transparent}
 .sync-badge.ok{background:#e7f6ef;color:#1F9E75;border-color:#bfe8d6}
@@ -2961,34 +3010,50 @@ async function flushEvents(){
 }
 
 /* ── Verrou : code studio à la première ouverture ── */
+const LK_RIBBON=`<svg class="lk-rib" viewBox="0 0 900 520" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><g transform="translate(0 70)">
+  <defs><linearGradient id="lkB" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1E3FD8"/><stop offset=".55" stop-color="#2A55F0"/><stop offset="1" stop-color="#1533B8"/></linearGradient>
+  <linearGradient id="lkL" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#B9E83A"/><stop offset="1" stop-color="#D4F75E"/></linearGradient></defs>
+  <path d="M-40 150 C 120 60, 260 160, 360 330 S 560 560, 700 420 S 860 120, 720 140 S 520 330, 430 470" fill="none" stroke="url(#lkL)" stroke-width="46" stroke-linecap="round" opacity=".95"/>
+  <path d="M-60 60 C 160 -10, 300 120, 420 300 S 640 600, 820 470 S 960 160, 780 120 S 520 260, 470 560" fill="none" stroke="url(#lkB)" stroke-width="62" stroke-linecap="round"/>
+  <path d="M-60 470 C 120 380, 300 420, 470 540" fill="none" stroke="url(#lkB)" stroke-width="58" stroke-linecap="round" opacity=".9"/>
+</g></svg>`;
+const LK_LOCK='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><circle cx="12" cy="16" r="1.2" fill="currentColor"/></svg>';
+const LK_ARROW='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>';
+// Écran d'accès partagé (connexion, code email, prénom) : panneau marque à gauche, formulaire à droite
+function lkShell(id,form){
+  const d=document.createElement('div');d.id=id;d.className='lk';
+  d.innerHTML=`<section class="lk-l">
+      <img class="lk-logo" src="logo-cp.webp" alt="Club Pilates"/>
+      <span class="lk-chip">L'espace équipe</span>
+      <h1 class="lk-h">De belles rencontres.<br>De <em>nouveaux départs.</em></h1>
+      <div class="lk-sub">Chaque échange fait grandir votre studio.</div>
+      ${LK_RIBBON}
+    </section>
+    <section class="lk-r"><div class="lk-form">${form}
+      <div class="lk-foot"><b>CP Sales Coach</b><span>L'espace commercial Club Pilates</span></div></div></section>`;
+  document.body.appendChild(d);return d;
+}
 function showLock(){
   if(document.getElementById('lockScreen'))return;
-  const d=document.createElement('div');
-  d.id='lockScreen';
-  d.innerHTML=`<div class="lock-box">
-    <img class="lock-brand" src="logo-cp.webp" alt="Club Pilates"/>
-    <div class="lock-t">CP Sales Coach</div>
-    <div class="lock-s">Outil réservé à l'équipe commerciale.<br>Entrez le code studio pour continuer.</div>
-    <input id="lockCode" type="text" placeholder="Code studio" autocomplete="off" autocapitalize="characters" onkeydown="if(event.key==='Enter')unlockCoach()"/>
-    <div id="lockErr"></div>
-    <button class="lock-btn" onclick="unlockCoach()">Déverrouiller</button>
-  </div>`;
-  document.body.appendChild(d);
+  lkShell('lockScreen',`<div class="lk-emb"><img src="flower-white.png" alt=""/></div>
+    <div class="lk-t">À vous de jouer.</div>
+    <div class="lk-s">Connectez-vous à votre studio.</div>
+    <label class="lk-lbl" for="lockCode">Code studio</label>
+    <div class="lk-field"><input id="lockCode" type="text" placeholder="Saisissez votre code" autocomplete="off" autocapitalize="characters" spellcheck="false" onkeydown="if(event.key==='Enter')unlockCoach()"/>${LK_LOCK}</div>
+    <div id="lockErr" class="lk-err"></div>
+    <button class="lk-btn" onclick="unlockCoach()">C'est parti ${LK_ARROW}</button>
+    <div class="lk-note">Accès réservé aux équipes Club Pilates.</div>`);
   setTimeout(()=>document.getElementById('lockCode')?.focus(),100);
 }
 function showNameStep(){
   if(document.getElementById('nameScreen'))return;
-  const d=document.createElement('div');
-  d.id='nameScreen';d.className='lock-wrap';
-  d.innerHTML=`<div class="lock-box">
-    <div class="lock-logo">👋</div>
-    <div class="lock-t">Bienvenue !</div>
-    <div class="lock-s">Votre prénom, pour personnaliser vos scripts d'appel<br>(« Bonjour, c'est <b>vous</b>, de Club Pilates… »)</div>
-    <input id="nameInput" type="text" placeholder="Votre prénom" autocomplete="given-name" style="text-transform:none;letter-spacing:.5px" onkeydown="if(event.key==='Enter')saveNameStep()"/>
-    <div id="nameErr"></div>
-    <button class="lock-btn" onclick="saveNameStep()">C'est parti</button>
-  </div>`;
-  document.body.appendChild(d);
+  lkShell('nameScreen',`<div class="lk-emb ic">👋</div>
+    <div class="lk-t">Bienvenue !</div>
+    <div class="lk-s">Votre prénom, pour personnaliser vos scripts d'appel<br>(« Bonjour, c'est <b>vous</b>, de Club Pilates… »)</div>
+    <label class="lk-lbl" for="nameInput">Prénom</label>
+    <div class="lk-field"><input id="nameInput" type="text" placeholder="Votre prénom" autocomplete="given-name" onkeydown="if(event.key==='Enter')saveNameStep()"/></div>
+    <div id="nameErr" class="lk-err"></div>
+    <button class="lk-btn" onclick="saveNameStep()">C'est parti ${LK_ARROW}</button>`);
   setTimeout(()=>document.getElementById('nameInput')?.focus(),100);
 }
 function saveNameStep(){
@@ -3027,17 +3092,14 @@ function showOtpStep(to,msg){
   let d=document.getElementById('otpScreen');
   if(!d){
     document.getElementById('lockScreen')?.remove();
-    d=document.createElement('div');d.id='otpScreen';d.className='lock-wrap';
-    d.innerHTML=`<div class="lock-box">
-      <div class="lock-logo">✉️</div>
-      <div class="lock-t">Nouvel appareil</div>
-      <div class="lock-s">Pour sécuriser votre compte, entrez le code à 6 chiffres envoyé à <b id="otpTo"></b>.<br><small>Valable 10 minutes · cet appareil sera ensuite reconnu.</small></div>
-      <input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" style="letter-spacing:8px" onkeydown="if(event.key==='Enter')otpSubmit()"/>
-      <div id="otpErr"></div>
-      <button class="lock-btn" onclick="otpSubmit()">Valider</button>
-      <div class="otp-links"><a href="#" onclick="otpResend();return false">Renvoyer le code</a><a href="#" onclick="otpCancel();return false">Changer de code studio</a></div>
-    </div>`;
-    document.body.appendChild(d);
+    d=lkShell('otpScreen',`<div class="lk-emb ic">✉️</div>
+      <div class="lk-t">Nouvel appareil.</div>
+      <div class="lk-s">Entrez le code à 6 chiffres envoyé à <b id="otpTo"></b>.<br><small>Valable 10 minutes · cet appareil sera ensuite reconnu.</small></div>
+      <label class="lk-lbl" for="otpCode">Code reçu par email</label>
+      <div class="lk-field"><input id="otpCode" type="text" inputmode="numeric" autocomplete="one-time-code" maxlength="6" placeholder="••••••" style="letter-spacing:8px" onkeydown="if(event.key==='Enter')otpSubmit()"/>${LK_LOCK}</div>
+      <div id="otpErr" class="lk-err"></div>
+      <button class="lk-btn" onclick="otpSubmit()">Valider ${LK_ARROW}</button>
+      <div class="lk-links"><a href="#" onclick="otpResend();return false">Renvoyer le code</a><a href="#" onclick="otpCancel();return false">Changer de code studio</a></div>`);
   }
   document.getElementById('otpTo').textContent=to||'votre email';
   document.getElementById('otpErr').textContent=msg||'';
