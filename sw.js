@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20261027-fix';
+const CACHE_VERSION = 'isseo-v1-20261029-jo';
 // Coquille non versionnée, puis les URL exactes (avec ?v=) que demande index.html.
 // À garder synchronisé avec index.html, sans doublon (cache.addAll rejette tout le lot sinon).
 const APP_SHELL = [

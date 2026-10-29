@@ -199,8 +199,11 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .lk-foot{align-self:stretch;border-top:1px solid #E3E7EF;margin-top:clamp(40px,10vh,100px);padding-top:26px;text-align:center}
 .lk-foot b{display:block;color:#0B1A3A;font-size:16px}
 .lk-foot span{color:#6475A0;font-size:14px}
+/* Panneau « Joseph » (même image que la connexion isseo) */
+.lk-l.lk-joseph{background:url(login-joseph.webp) center/contain no-repeat,linear-gradient(90deg,#F3F0E9,#EBE7E0);padding:0}
 @media (max-width:820px){
   .lk{grid-template-columns:1fr;grid-template-rows:auto 1fr}
+  .lk-l.lk-joseph{min-height:0;aspect-ratio:921/931;max-height:58vh;padding:0}
   .lk-l{min-height:0;padding:20px 20px 74px}
   .lk-logo{height:34px}
   .lk-chip{margin-top:18px;font-size:11px;padding:5px 14px}
@@ -3136,13 +3139,7 @@ const LK_ARROW='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stro
 // Écran d'accès partagé (connexion, code email, prénom) : panneau marque à gauche, formulaire à droite
 function lkShell(id,form){
   const d=document.createElement('div');d.id=id;d.className='lk';
-  d.innerHTML=`<section class="lk-l">
-      <img class="lk-logo" src="logo-cp.webp" alt="Club Pilates"/>
-      <span class="lk-chip">L'espace équipe</span>
-      <h1 class="lk-h">De belles rencontres.<br>De <em>nouveaux départs.</em></h1>
-      <div class="lk-sub">Chaque échange fait grandir votre studio.</div>
-      ${LK_RIBBON}
-    </section>
+  d.innerHTML=`<section class="lk-l lk-joseph" role="img" aria-label="Joseph Pilates · L'esprit Pilates. La gestion en plus. · Isseo × Club Pilates × COBE"></section>
     <section class="lk-r"><div class="lk-form">${form}
       <div class="lk-foot"><b>CP Sales Coach</b><span>L'espace commercial Club Pilates</span></div></div></section>`;
   document.body.appendChild(d);return d;

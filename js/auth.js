@@ -144,12 +144,8 @@ function renderAuth(){
   var lock='<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="11" width="16" height="10" rx="2.5"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg>';
   var arrow='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12h16M14 6l6 6-6 6"/></svg>';
   return '<div class="auth-wrap lg">'
-    // ── Panneau marque : « A project by » + fleur en relief ──
-    +'<section class="lg-l">'
-    +'<div class="lg-by">A project by</div>'
-    +'<div class="lg-logos"><img src="logo-white-sm.png" class="lg-isseo" alt="Isseo"><span class="lg-x">&times;</span><img src="logo-cp.webp" class="lg-cp" alt="Club Pilates"><span class="lg-x">&times;</span><span class="lg-cobe">COBE</span></div>'
-    +'<div class="lg-flower" aria-hidden="true"></div>'
-    +'</section>'
+    // ── Panneau marque : « Joseph » (Joseph Pilates · Isseo × Club Pilates × COBE) ──
+    +'<section class="lg-l lg-joseph" role="img" aria-label="Joseph Pilates · L\'esprit Pilates. La gestion en plus. · Isseo × Club Pilates × COBE"></section>'
     // ── Formulaire ──
     +'<section class="lg-r"><div class="lg-form">'
     +'<div class="lg-emb"><img src="img/flower-white.png" alt=""></div>'

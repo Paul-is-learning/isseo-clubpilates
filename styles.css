@@ -3768,12 +3768,15 @@ body{background:#F3F1EC}
 .lg-btn:hover{background:#000}.lg-btn:active{transform:scale(.99)}
 .lg-priv{display:flex;align-items:center;gap:14px;margin-top:40px;color:#4A4A45;font-size:14.5px}
 .lg-motto{position:absolute;right:clamp(24px,4vw,60px);bottom:clamp(24px,5vh,60px);color:#8E8C83;font-size:15px;letter-spacing:1.5px}
+/* Panneau « Joseph » : image de la maquette, fond en dégradé raccord avec ses bords */
+.lg-l.lg-joseph{background:url(img/login-joseph.webp) center/contain no-repeat,linear-gradient(90deg,#F3F0E9,#EBE7E0);padding:0}
 @media(max-width:900px){
   .auth-wrap.lg{grid-template-columns:1fr;grid-template-rows:auto 1fr;overflow-y:auto}
   .lg-l{min-height:0;padding:40px 20px 150px}
   .lg-by{font-size:46px}
   .lg-isseo{height:36px}.lg-cp{height:26px}.lg-cobe{font-size:26px}
   .lg-flower{height:150px;background-size:auto 100%}
+  .lg-l.lg-joseph{min-height:0;height:auto;aspect-ratio:921/931;max-height:62vh;padding:0}
   .lg-r{padding:34px 20px 80px}
   .lg-emb{width:82px;height:82px;margin-bottom:22px}
   .lg-t{font-size:38px}
