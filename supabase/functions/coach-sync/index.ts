@@ -39,11 +39,12 @@ const MAX_EVENTS = 20000;
 const EV_TYPES = ["appel", "essai", "venu", "abo", "perdu"];
 const DEFAULT_PRIMES: Record<string, number> = { "1": 10, "2": 25, "3": 50 };
 const MAX_PROSPECTS = 5000;
+const TRASH_MAX = 500; // fiches gardées dans la corbeille
 const MAX_INVITES = 50;
 // Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
 // toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
 // appartiennent aussi à Boost.
-const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis", "bnew", "bnews", "temp", "btemp", "bauto"];
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis", "bnew", "bnews", "temp", "btemp", "bauto", "bconv"];
 // deno-lint-ignore no-explicit-any
 function keepBoost(clean: any, ex: any) {
   if (!ex) return;
@@ -1012,9 +1013,18 @@ serve(async (req) => {
 
       if (action === "delete") {
         const rm: string[] = Array.isArray(body.ids) ? body.ids.map(String) : [];
-        const gone = list.filter((p) => rm.includes(p.id) && inMine(p)).map((p) => String(p.id));
+        const goneP = list.filter((p) => rm.includes(p.id) && inMine(p));
+        const gone = goneP.map((p) => String(p.id));
         list = list.filter((p) => !rm.includes(p.id) || !inMine(p));
         if (!(await saveList())) continue replay;
+        // Corbeille : copie complète de chaque fiche supprimée, restaurable depuis l'onglet « Clients supprimés »
+        if (goneP.length) {
+          const tr = await getRow(admin, "_coach_trash");
+          const at = new Date().toISOString();
+          // deno-lint-ignore no-explicit-any
+          const items = [...((tr.items as any[]) || []).filter((x) => !gone.includes(String(x?.p?.id))), ...goneP.map((p) => ({ at, by: rep || "responsable", p }))].slice(-TRASH_MAX);
+          await putRow(admin, "_coach_trash", { ...tr, items });
+        }
         // Fiche supprimée dans l'outil : mémorisée comme celles supprimées dans Boost, pour qu'un appareil
         // resté ouvert avec l'ancienne copie ne la recrée jamais (le push ignore les ids en pierre tombale)
         if (gone.length) {
@@ -1025,6 +1035,31 @@ serve(async (req) => {
           for (const g of gone) if (!tomb.includes(g)) tomb.push(g);
         }
         return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, tomb });
+      }
+
+      // ── Corbeille : fiches supprimées dans l'outil (les plus récentes en premier)
+      if (action === "trash_list") {
+        const tr = await getRow(admin, "_coach_trash");
+        // deno-lint-ignore no-explicit-any
+        const items = ((tr.items as any[]) || []).filter((x) => x?.p && inMine(x.p)).reverse()
+          .map((x) => ({ id: String(x.p.id), nom: String(x.p.nom || ""), tel: String(x.p.tel || ""), statut: String(x.p.statut || ""), pack: String(x.p.pack || ""), studio: String(x.p.studio || ""), at: String(x.at || ""), by: String(x.by || "") }));
+        return json({ ok: true, items });
+      }
+      if (action === "trash_restore") {
+        const id = String(body.id || "");
+        const tr = await getRow(admin, "_coach_trash");
+        // deno-lint-ignore no-explicit-any
+        const it = ((tr.items as any[]) || []).find((x) => String(x?.p?.id) === id);
+        if (!it || !inMine(it.p)) return json({ error: "Fiche introuvable dans la corbeille" }, 404);
+        if (!list.some((p) => p.id === id)) list.push({ ...it.p, maj: new Date().toISOString() });
+        if (!(await saveList())) continue replay;
+        // Plus de pierre tombale : la fiche peut de nouveau être synchronisée (appareils et Boost)
+        const t = await getRow(admin, "_coach_tomb");
+        await putRow(admin, "_coach_tomb", { ...t, ids: ((t.ids as string[]) || []).filter((x) => x !== id), tool: ((t.tool as string[]) || []).filter((x) => x !== id) });
+        const tr2 = await getRow(admin, "_coach_trash");
+        // deno-lint-ignore no-explicit-any
+        await putRow(admin, "_coach_trash", { ...tr2, items: ((tr2.items as any[]) || []).filter((x) => String(x?.p?.id) !== id) });
+        return json({ ok: true });
       }
 
       return json({ error: "Action inconnue" }, 400);

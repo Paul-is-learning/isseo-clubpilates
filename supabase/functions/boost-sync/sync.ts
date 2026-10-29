@@ -117,7 +117,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const R = {
     contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
-    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, sans_telephone: 0,
+    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
     crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
@@ -186,6 +186,12 @@ export function reconcile(prospects: any[], ctx: Ctx) {
         p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.brap = rap; p.maj = ctx.nowIso; R.rappel_maj++;
       }
     }
+    // Lead devenu client dans Boost (inscrit directement dans Boost, ou vente de l'outil confirmée) :
+    // la fiche passe « Client » dans l'outil et reste une vente (pack à renseigner), jamais un simple adhérent masqué
+    if (String(c.status) === "client" && !p.bconv && ((fresh && !!c.date_inscription && String(c.date_inscription) >= String(p.ts || "")) || (p.bst && String(p.bst) !== "client") || (p.statut === "abo" && !p.bmember && p.bst))) {
+      p.bconv = true;
+      if (p.statut !== "abo") { p.statut = "abo"; p.rappel = ""; p.rappelH = ""; p.rappelBy = ""; p.bset = true; p.maj = ctx.nowIso; R.devenus_clients++; }
+    }
     // Champs maîtres Boost (réservés au serveur) · sauf des coordonnées modifiées dans l'outil
     // et pas encore écrites dans Boost : elles ne sont pas écrasées en attendant
     const idPending = !!(p.bqi && bqiSig(p.bqi) !== p.bqis);
@@ -206,7 +212,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
       p.btemp = b;
     }
     p.bnok = m.nok; p.bclient = m.client;
-    p.bmember = String(c.status) === "client"; // adhérent : hors tournée d'appels, jamais de vente déclarable
+    p.bmember = String(c.status) === "client" && !p.bconv; // adhérent : hors tournée d'appels, jamais de vente déclarable
     if (rep) p.rep = rep;
     p.studio = ctx.studio;
     p.cPhone = c.phone_consent === false ? false : null;
