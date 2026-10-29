@@ -4957,12 +4957,12 @@ function showProspects(keepScroll){
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
             <div class="pl-lbl">Séance d'essai · Intro Class</div>
             <div class="pl-row">${icBookSelect(p)}</div>
-            <div class="pl-lbl">Rappel convenu</div>
+${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
             <div class="pl-row">
               <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / de séance d'essai convenue avec le client"/>
               <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" title="Heure du rappel · la fiche passe en tête 1 h avant"/>
               ${p.rappelBy?`<small class="pl-by">${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}
-            </div>
+            </div>`}
           </div>
           <div>
             <div class="pl-lbl">Coordonnées <button class="pl-edit" onclick="prEditId='${p.id}';showProspects(true)">✏️ Modifier</button></div>
@@ -5343,14 +5343,18 @@ function aboGo(){const p=PROSPECTS.find(x=>x.id===_ABO.id);if(!p)return;const e=
   if(p.statut==='abo'){p.vendeur=String(_ABO.seller).slice(0,40);setPPack(p.id,+_ABO.pack);}
   else{p.pack=String(_ABO.pack);setPStatut(p.id,'abo',_ABO.seller);}}
 // Pack et vendeur notés dans Boost (note sur la fiche du contact)
-function _aboNote(p){if(!p||!p.bid||!p.pack)return;
-  syncCall('note_add',{id:p.id,text:'✅ Client · '+(PACK_META[+p.pack]?.name||packShort(+p.pack))+(p.vendeur?' · signé par '+p.vendeur:''),nom:CFG.rep||''}).catch(()=>{});}
+// Envoyée APRÈS l'enregistrement du pack et du vendeur : sinon la note, plus récente, écraserait la vente
+async function _aboNote(p){if(!p||!p.bid||!p.pack)return;const id=p.id;
+  try{await syncPush();for(let i=0;i<24&&_DIRTY[id]!==undefined;i++)await new Promise(r=>setTimeout(r,500));
+    if(_DIRTY[id]!==undefined)return; // pas encore enregistré : pas de note (la vente prime)
+    const s=await syncCall('note_add',{id,text:'✅ Client · '+(PACK_META[+p.pack]?.name||packShort(+p.pack))+(p.vendeur?' · signé par '+p.vendeur:''),nom:CFG.rep||''});
+    if(s&&s.ok&&s.prospect){_takeSrv(id,s.prospect,['note']);persistProspects();}}catch(e){}}
 function setPStatut(id,s,seller){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   if(s==='abo'&&p.statut!=='abo'&&!seller){aboAsk(id);return;}
   if(s==='abo'&&seller)p.vendeur=String(seller).slice(0,40);
   // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
   if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo'],void:true}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}
-  p.statut=s;if(s!=='rappeler'&&p.ouverture)p.ouverture=null;if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
+  p.statut=s;if(s!=='rappeler'&&p.ouverture)p.ouverture=null;if(s==='abo'){p.rappel='';p.rappelH='';p.rappelBy='';}if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
   if(s!=='rappeler')emitEvent(p,s,s==='abo'?{pack:p.pack||'',prime:p.pack?(+PRIMES[+p.pack]||0):0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''}:{});
   showProspects(true);
   if(s==='abo'&&p.pack){_aboNote(p);toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');}

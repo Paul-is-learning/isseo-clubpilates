@@ -117,7 +117,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const R = {
     contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
-    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, sans_telephone: 0,
+    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
     crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
@@ -171,7 +171,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
       // Premier lien : le statut local est conservé (référence Boost mémorisée), écart compté
       if (m.statut !== p.statut) { const g = (p.statut || "?") + " → " + String(c.status); R.ecarts_premier_lien[g] = (R.ecarts_premier_lien[g] || 0) + 1; }
       // Un rappel convenu dans Boost est repris si la fiche n'en a pas, ou si le sien est déjà passé
-      if (m.rappel && (!p.rappel || rappelPast(p, ctx.nowIso)) && !pendingTool(p)) { p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.maj = ctx.nowIso; R.rappel_maj++; }
+      if (m.rappel && p.statut !== "abo" && (!p.rappel || rappelPast(p, ctx.nowIso)) && !pendingTool(p)) { p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.maj = ctx.nowIso; R.rappel_maj++; }
       p.brap = m.rappel + " " + m.rappelH;
     } else {
       // Fiche déjà liée : Boost gagne dès que son statut ou son rappel change
@@ -182,7 +182,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
       // Boost gagne quand son rappel change, ou quand celui de la fiche est passé alors qu'un rappel
       // à venir existe dans Boost (jamais quand un changement fait dans l'outil attend son envoi)
       const cur = String(p.rappel || "") + " " + String(p.rappelH || "");
-      if (rap.trim() && cur !== rap && !pendingTool(p) && (rap !== p.brap || !p.rappel || rappelPast(p, ctx.nowIso))) {
+      if (rap.trim() && p.statut !== "abo" && cur !== rap && !pendingTool(p) && (rap !== p.brap || !p.rappel || rappelPast(p, ctx.nowIso))) {
         p.rappel = m.rappel; p.rappelH = m.rappelH; p.rappelBy = "Boost"; p.brap = rap; p.maj = ctx.nowIso; R.rappel_maj++;
       }
     }
@@ -192,6 +192,8 @@ export function reconcile(prospects: any[], ctx: Ctx) {
       p.bconv = true;
       if (p.statut !== "abo") { p.statut = "abo"; p.rappel = ""; p.rappelH = ""; p.rappelBy = ""; p.bset = true; p.maj = ctx.nowIso; R.devenus_clients++; }
     }
+    // Client : plus aucun rappel programmé (demande de Paul)
+    if (p.statut === "abo" && (p.rappel || p.rappelH) && !pendingTool(p)) { p.rappel = ""; p.rappelH = ""; p.rappelBy = ""; p.maj = ctx.nowIso; R.rappels_clients_retires++; }
     // Champs maîtres Boost (réservés au serveur) · sauf des coordonnées modifiées dans l'outil
     // et pas encore écrites dans Boost : elles ne sont pas écrasées en attendant
     const idPending = !!(p.bqi && bqiSig(p.bqi) !== p.bqis);
