@@ -4797,7 +4797,10 @@ function ouvOff(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.ouvertur
 // Ouvrir une fiche depuis la roadmap : onglet de la fiche, fiche dépliée
 function openPr(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
-  prFilter=null;prQuery='';prQueryRaw='';prSort=prSeg(p)||'all';try{localStorage.setItem('cpcoach_prsort',prSort);}catch(e){}
+  const sg=prSeg(p);prQuery='';prQueryRaw='';
+  // Fiche hors des listes d'appel (client, séance d'essai, perdu…) : ouverte dans la liste de son étape
+  if(sg||!PIPE[p.statut]||(p.statut==='rappeler'&&prOpen(p))){prFilter=null;prSort=sg||'all';}else prFilter=p.statut;
+  try{localStorage.setItem('cpcoach_prsort',prSort);}catch(e){}
   prOpenId=id;loadHist(id);showProspects();
   setTimeout(()=>document.querySelector('.pr-card.open')?.scrollIntoView({block:'center'}),30);
 }
@@ -4949,7 +4952,7 @@ function showProspects(keepScroll){
               +Object.keys(PIPE).map(k=>{const on=p.statut===k&&!(k==='rappeler'&&(at||prOuv(p)));const oc=k==='rappeler'&&at?`contactSheet('${p.id}','new')`:`setPStatut('${p.id}','${k}')`;
                 return `<button class="pr-st${on?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" onclick="${oc}">${PIPE[k].ic}<small>${PIPE[k].lbl}</small></button>`;}).join('')
               +(()=>{const ov=prOuv(p),OC='#6B5B3E';return `<button class="pr-st${ov?' on':''}" style="${ov?'background:'+OC+';color:#fff;border-color:'+OC:''}" title="${ov?'Remettre dans les rappels':'Ne souhaite plus être contacté pour le moment · à rappeler à l\'ouverture du studio'}" onclick="ouvAsk('${p.id}')">🏗<small>À rappeler à l'ouverture</small></button>`;})();})()}</div>
-            ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="setPPack('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}${p.pack?`<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeurs & IC d'origine" onclick="editSale('${p.id}')">✎ Vendeurs</button>`:''}</div>`:''}
+            ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="aboAsk('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeur ayant réalisé la vente" onclick="aboAsk('${p.id}')">👤 ${p.vendeur?'Vendeur : '+esc(p.vendeur):'Choisir le vendeur'}</button></div>`:''}
             <div class="pl-lbl">Température du lead</div>
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
             <div class="pl-lbl">Séance d'essai · Intro Class</div>
@@ -5320,18 +5323,22 @@ function _sellers(p){const S=new Set();const add=n=>{n=String(n||'').trim().spli
 // Passage en « Client » (ou pack choisi sur un client devenu client dans Boost) : pack acheté + qui a fait signer
 let _ABO={};
 function aboAsk(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
-  const L=_sellers(p),pre=p.vendeur||prCharge(p)||_me();_ABO={id,pack:String(pk||p.pack||''),seller:pre};
+  const L=_sellerList(p),cand=[p.vendeur].map(_sellerName),pre=cand.find(n=>n&&L.includes(n))||'';_ABO={id,pack:String(pk||p.pack||''),seller:pre};
   icSheet(`<div class="glp-tag">✅ Client</div><div class="glp-t">${esc(p.nom||'')}</div>
     <div class="ics-lbl" style="margin-top:10px">Pack acheté *</div>
     <div class="pr-pack-row">${[1,2,3].map(k=>`<button class="pr-pack${String(k)===_ABO.pack?' on':''}" onclick="aboPick('pack','${k}',this)">${packShort(k)}</button>`).join('')}</div>
-    <div class="ics-lbl">Qui a fait signer le contrat ? La vente et la prime lui sont attribuées.</div>
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin:8px 0 12px">${L.map(n=>{const c=ownColor(n);return `<button class="pr-ownb${n===pre?' on':''}" style="--oc:${c};font-size:14px;padding:8px 16px" onclick="aboPick('seller','${n.replace(/'/g,"\\'")}',this)">${esc(n)}</button>`;}).join('')}</div>
+    <label class="ics-lbl" for="abo-sel">Vendeur ayant réalisé la vente * · la vente et la prime lui sont attribuées</label>
+    <select id="abo-sel" class="ics-in" style="margin:8px 0 12px" onchange="_ABO.seller=this.value"><option value="">Choisir le vendeur…</option>${L.map(n=>`<option value="${esc(n)}"${n===pre?' selected':''}>${esc(n)}</option>`).join('')}</select>
     <small id="abo-err" style="color:#B4300F;font-weight:700"></small>
     <button class="glp-ok" onclick="aboGo()">✅ Enregistrer le client</button>`);}
+// Vendeurs proposés : liste fixe par studio (demande de Paul), sinon l'équipe connue
+const SELLERS_BY_STUDIO={lagarennecolombes:['Noa','Clement','Caroline','JC']};
+function _sellerName(n){n=String(n||'').trim().split(/\s+/)[0];if(/^noah?$/i.test(n))return 'Noa';if(/^cl[ée]ment$/i.test(n))return 'Clement';return n;}
+function _sellerList(p){const f=SELLERS_BY_STUDIO[_sk(p&&p.studio||CFG.studio)];return f?f.slice():_sellers(p);}
 function aboPick(k,v,b){_ABO[k]=v;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));}
-function aboGo(){const p=PROSPECTS.find(x=>x.id===_ABO.id);if(!p)return;const e=document.getElementById('abo-err');
+function aboGo(){const p=PROSPECTS.find(x=>x.id===_ABO.id);if(!p)return;const e=document.getElementById('abo-err');const sel=document.getElementById('abo-sel');if(sel)_ABO.seller=sel.value;
   if(!_ABO.pack){if(e)e.textContent='Choisissez le pack acheté';return;}
-  if(!_ABO.seller){if(e)e.textContent='Choisissez qui a fait signer';return;}
+  if(!_ABO.seller){if(e)e.textContent='Choisissez le vendeur ayant réalisé la vente';return;}
   document.getElementById('icPop')?.remove();
   if(p.statut==='abo'){p.vendeur=String(_ABO.seller).slice(0,40);setPPack(p.id,+_ABO.pack);}
   else{p.pack=String(_ABO.pack);setPStatut(p.id,'abo',_ABO.seller);}}
@@ -5474,7 +5481,7 @@ function _journalRowHTML(j){
   const res=(j.first.match(/· (answered|voicemail|received|closed|failed|transferred_ai|blocked|décroché|messagerie|sans réponse|manqué)(?= ·|$)/i)||['',''])[1].toLowerCase();
   const resLbl={answered:'abouti',voicemail:'messagerie',received:'manqué',closed:'raccroché',failed:'échec',transferred_ai:'IA',blocked:'bloqué','décroché':'abouti','sans réponse':'sans réponse'}[res]||res;
   const durLbl=dur?(dur<1?Math.round(dur*60)+' s':Math.round(dur)+' min'):(/· 0 ?m/.test(j.first)?'< 1 min':'');
-  return `<div onclick="${j.p.id?`showAppels('${j.p.id}')`:''}" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
+  return `<div onclick="${j.p.id&&!j.p._loose?`openPr('${j.p.id}')`:''}" title="${j.p._loose?'':'Ouvrir la fiche'}" style="display:flex;align-items:center;gap:10px;padding:9px 13px;border-bottom:1px solid #F1EDE3;cursor:pointer">
     <b style="flex:0 0 46px;font-size:13.5px;color:var(--cp-dark);font-variant-numeric:tabular-nums">${j.tp.h}</b>
     <span style="flex:0 0 14px;color:var(--ink-mid);font-weight:800" title="${dir==='↗'?'sortant':'entrant'}">${dir}</span>
     <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:13px;font-weight:700;color:var(--ink)">${esc(j.p.nom)}</span>
@@ -5503,7 +5510,7 @@ function callJournalHTML(dayS,pool){
   return `${dayS?`<div class="hm-sec" style="margin-top:22px">Journal des appels · ${J.length}</div>`:''}
     ${nbIncoh?`<div class="pr-alert" style="margin-bottom:8px">⚠️ <b>${nbIncoh} appel${nbIncoh>1?'s':''}</b> reçu${nbIncoh>1?'s':''} avant l'heure affichée : problème de fuseau à signaler.</div>`:''}
     <div style="max-height:${dayS?'440px':'64vh'};overflow-y:auto;border:1px solid var(--cream-line);border-radius:14px;background:#fff">${body}</div>
-    <div class="fv-meta" style="margin-top:6px">Du plus récent au plus ancien · survolez ✓ pour l'heure d'arrivée sur la plateforme · touchez une ligne pour ouvrir l'appel.</div>`;
+    <div class="fv-meta" style="margin-top:6px">Du plus récent au plus ancien · survolez ✓ pour l'heure d'arrivée sur la plateforme · touchez une ligne pour ouvrir la fiche du client.</div>`;
 }
 
 /* ── 📊 Compteur d'appels journalier : total + par commercial ── */
