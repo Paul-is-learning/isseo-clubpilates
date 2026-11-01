@@ -57,6 +57,24 @@ export function weekendLeadMonday(entryIso: string, nowIso: string): string {
   const today = parisDT(nowIso)?.d || "";
   return mon >= today ? mon : "";
 }
+// Répartition des nouveaux leads entre commerciaux (demande de Paul, 1er nov. 2026) : parts par studio.
+// Chaque nouveau lead jamais appelé et sans suivi va au commercial le plus « en retard » sur sa part,
+// compté sur les leads arrivés le même jour (Paris). Sans réglage pour un studio : pas d'attribution.
+export const DISPATCH: Record<string, Record<string, number>> = { lagarennecolombes: { JC: 40, Clement: 30, Caroline: 30 } };
+const parisDay = (iso: string) => { const p = parisDT(iso); return p ? p.d : ""; };
+export function pickOwner(list: any[], p: any, nowIso: string): string {
+  const shares = DISPATCH[sk(p.studio)];
+  if (!shares) return "";
+  const day = parisDay(String(p.bentry || p.ts || nowIso));
+  const n: Record<string, number> = {};
+  for (const k of Object.keys(shares)) n[k] = 0;
+  for (const x of list) {
+    if (x === p || sk(x.studio) !== sk(p.studio) || !(x.suivi in n)) continue;
+    if (parisDay(String(x.bentry || x.ts || "")) === day) n[x.suivi]++;
+  }
+  // Le moins servi par rapport à sa part ; à égalité, la plus grande part d'abord
+  return Object.keys(shares).sort((a, b) => (n[a] / shares[a]) - (n[b] / shares[b]) || shares[b] - shares[a])[0];
+}
 const horizon = (nowIso: string) => new Date(Date.parse(nowIso) + RAPPEL_HORIZON_DAYS * 864e5).toISOString();
 
 export function plannedByContact(acts: any[], nowIso: string) {
@@ -143,7 +161,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const R = {
     contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
-    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, rappels_weekend: 0, sans_telephone: 0,
+    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, rappels_weekend: 0, attribues: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
     crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
@@ -217,6 +235,11 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     if (String(c.status) === "client" && !p.bconv && ((fresh && !!c.date_inscription && String(c.date_inscription) >= String(p.ts || "")) || (p.bst && String(p.bst) !== "client") || (p.statut === "abo" && !p.bmember && p.bst))) {
       p.bconv = true;
       if (p.statut !== "abo") { p.statut = "abo"; p.rappel = ""; p.rappelH = ""; p.rappelBy = ""; p.bset = true; p.maj = ctx.nowIso; R.devenus_clients++; }
+    }
+    // Nouveau lead jamais appelé et sans suivi : attribué selon les parts du studio
+    if (p.statut === "rappeler" && !p.suivi && !(p.appels || []).length && !p.bmember) {
+      const o = pickOwner(list, p, ctx.nowIso);
+      if (o) { p.suivi = o; p.maj = ctx.nowIso; R.attribues++; }
     }
     // Lead arrivé du samedi 12h au dimanche, jamais appelé et sans rappel : à rappeler le lundi (date seule),
     // sans attendre la séquence Boost (demande de Paul, 1er nov. 2026)
