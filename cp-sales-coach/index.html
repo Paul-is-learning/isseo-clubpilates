@@ -4770,6 +4770,8 @@ function prAgeChip(p){
   if(p.statut!=='rappeler'&&p.statut!=='essai')return '';
   const d=prDaysSince(p);if(d===null||d<3)return '';
   const col=d>=14?'#C0492F':d>=7?'#B4710F':'#8C95A8';
+  // Jamais appelé : le compteur part de l'arrivée du lead, pas d'un contact qui n'a pas eu lieu
+  if(!prCalls(p).n){const a=Math.floor((Date.now()-new Date(prArrival(p)).getTime())/864e5);return isNaN(a)||a<3?'':`<span style="color:${col};font-weight:700">⏳ jamais appelé · arrivé il y a ${a} j</span>`;}
   return `<span style="color:${col};font-weight:700">⏳ ${d} j sans contact</span>`;
 }
 // ── Objectif du jour : ce qu'il reste à faire, appels passés par commercial, objectif fixé par Paul ──
