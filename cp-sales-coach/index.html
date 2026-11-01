@@ -5152,7 +5152,7 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
             </div>`:''}
             <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="${telHref(p.tel)}">📱 ${esc(p.tel)}</a>`:'Pas de téléphone'}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
             <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="selDefer(this,()=>setPRep('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
-            <div class="pl-info">🤝 Suivi par ${(COACH_ROLE==='admin'||IS_MGR)?`<select onchange="selDefer(this,()=>setPSuivi('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">personne</option>${[...new Set(teamNames().concat(p.suivi?[p.suivi]:[]))].map(n=>`<option${n===p.suivi?' selected':''}>${esc(n)}</option>`).join('')}</select>`:p.suivi?'<b>'+esc(p.suivi)+'</b>':'personne pour l\'instant <small class="pl-by">le premier contact décroché ou rappel posé l\'attribue</small>'}</div>
+            <div class="pl-info">🤝 Suivi par ${(COACH_ROLE==='admin'||IS_MGR)?`<select onchange="selDefer(this,()=>setPSuivi('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">personne</option>${teamFor(p).map(n=>`<option${n===p.suivi?' selected':''}>${esc(n)}</option>`).join('')}</select>`:p.suivi?'<b>'+esc(p.suivi)+'</b>':'personne pour l\'instant <small class="pl-by">le premier contact décroché ou rappel posé l\'attribue</small>'}</div>
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
             ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
             ${p.bnotes?`<details class="pr-bnotes"${noteOpen===p.id?' open':''}><summary>🗂️ Notes Boost</summary><div>${esc(p.bnotes)}</div></details>`:''}
@@ -5544,7 +5544,10 @@ function aboAsk(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
     <small id="abo-err" style="color:#B4300F;font-weight:700"></small>
     <button class="glp-ok" onclick="aboGo()">✅ Enregistrer le client</button>`);}
 // Vendeurs proposés : liste fixe par studio (demande de Paul), sinon l'équipe connue
-const SELLERS_BY_STUDIO={lagarennecolombes:['Noa','Clement','Caroline','JC']};
+// Commerciaux par studio (demande de Paul) : vendeurs du pack et « Suivi par »
+const SELLERS_BY_STUDIO={lagarennecolombes:['Noa','Clement','Caroline','JC'],montpellierlattes:['Solène','Tom','Lucie']};
+// Liste « Suivi par » d'une fiche : l'équipe de son studio (plus le suivi actuel s'il n'y figure pas), sinon l'équipe connue
+function teamFor(p){const f=SELLERS_BY_STUDIO[_sk(p&&p.studio||CFG.studio)];const base=f?f.slice():teamNames();const cur=String(p&&p.suivi||'').trim();if(cur&&!base.includes(cur))base.push(cur);return base;}
 function _sellerName(n){n=String(n||'').trim().split(/\s+/)[0];if(/^noah?$/i.test(n))return 'Noa';if(/^cl[ée]ment$/i.test(n))return 'Clement';return n;}
 function _sellerList(p){const f=SELLERS_BY_STUDIO[_sk(p&&p.studio||CFG.studio)];return f?f.slice():_sellers(p);}
 function aboPick(k,v,b){_ABO[k]=v;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));}
