@@ -1319,6 +1319,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pr-ownf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
 .pr-ownf-l{font-size:12px;font-weight:800;color:#5B6B86;margin-right:2px}
 .pr-ownb{--oc:#0F1F3D;border:1.5px solid color-mix(in srgb,var(--oc) 35%,#fff);background:#fff;color:var(--oc);border-radius:99px;padding:5px 12px;font:700 13px var(--sans);cursor:pointer}
+.pf-mnav{background:none;border:1px solid #d9b86a;color:inherit;text-transform:none;letter-spacing:0;border-radius:6px;padding:0 6px;font-size:11px;cursor:pointer;vertical-align:middle}.pf-mnav:disabled{opacity:.3;cursor:default}
 .pr-ownb b{font-weight:800;opacity:.75;margin-left:3px}
 .pr-ownb.on{background:var(--oc);color:#fff;border-color:var(--oc)}
 .pr-ownb.on b{opacity:.9}
@@ -3532,9 +3533,18 @@ function saleShare(m,repName){
   if(m.fullCom)return k===k2?1:0;
   return (k===k1||k===k2)?0.5:0;
 }
-function aggStats(map,repName){
+// Mois en cours (heure locale) · _statsMonth = mois affiché dans Performances (navigation ◀ ▶)
+function _mKey(d){d=d||new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');}
+function _mPrev(k){const d=new Date(k+'-15T12:00');d.setMonth(d.getMonth()-1);return _mKey(d);}
+function _mNext(k){const d=new Date(k+'-15T12:00');d.setMonth(d.getMonth()+1);return _mKey(d);}
+function _mLbl(k){return new Date(k+'-15T12:00').toLocaleDateString('fr-FR',{month:'long',year:'numeric'});}
+// « d'octobre », « de novembre » · « Octobre »
+function _mDe(k){const m=_mLbl(k).split(' ')[0];return (/^[aeiouy]/i.test(m)?"d'":'de ')+m;}
+function _mCap(k){const m=_mLbl(k).split(' ')[0];return m.charAt(0).toUpperCase()+m.slice(1);}
+let _statsMonth='';
+function aggStats(map,repName,monthKey){
   const rows=Object.values(map).filter(m=>!repName||_repKey(m.rep)===_repKey(repName)||_repKey(m.v2||'')===_repKey(repName));
-  const month=new Date().toISOString().slice(0,7);
+  const month=monthKey||_statsMonth||_mKey();
   const a={appels:0,essais:0,venus:0,abos:0,perdus:0,primeTotal:0,primeMois:0,abosMois:0,maxAbosMois:0,maxAbosJour:0,durSum:0,durN:0,packs:{1:0,2:0,3:0},packsMois:{1:0,2:0,3:0}};
   const perMonth={},perDay={};
   rows.forEach(m=>{
@@ -4351,20 +4361,25 @@ async function loadHomePerf(){
     const [d]=await Promise.all([syncCall('stats_pull'),fetchAvatars()]);
     _SVOID=d.voids||{};_purgeVoidEvq();const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
-    const rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name)}))
-      .sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
+    const mkNow=_mKey(),mkPrev=_mPrev(mkNow);
+    let mk=mkNow,rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name,mkNow)}));
+    // Début de mois sans vente : le classement clôturé du mois précédent reste affiché (les primes ne « disparaissent » pas)
+    if(!rows.some(r=>r.a.abosMois)){const pr=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name,mkPrev)}));if(pr.some(r=>r.a.abosMois)){rows=pr;mk=mkPrev;}}
+    rows.sort((x,y)=>y.a.primeMois-x.a.primeMois||y.a.primeTotal-x.a.primeTotal);
+    const closed=mk!==mkNow;
     const meK=_repKey(CFG.rep||'');
     const myIdx=rows.findIndex(r=>r.k===meK);
     const _mine=myIdx>=0?rows[myIdx]:null;
     const _se=document.getElementById('hm-sales');
-    if(_se)_se.innerHTML=`<span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>${_mine?_mine.a.abosMois:0}</b>${_mine&&_mine.a.primeMois?` · ${_mine.a.primeMois} € de primes`:''}</span>`;
+    if(_se)_se.innerHTML=`<span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes ${closed?_mDe(mk):'du mois'} : <b>${_mine?_mine.a.abosMois:0}</b>${_mine&&_mine.a.primeMois?` · ${_mine.a.primeMois} € de primes`:''}</span>`;
     let head='';
-    if(myIdx===0&&rows[0].a.primeMois>0&&rows.length===1){head=`🥇 <b>En tête du mois !</b> Personne d'autre n'a encore marqué · creusez l'écart.`;}
+    if(closed){head=`🏆 <b>Classement ${esc(_mDe(mk))} clôturé.</b> ${esc(_mCap(mkNow))} : la course est ouverte · première vente = première place !`;}
+    else if(myIdx===0&&rows[0].a.primeMois>0&&rows.length===1){head=`🥇 <b>En tête du mois !</b> Personne d'autre n'a encore marqué · creusez l'écart.`;}
     else if(myIdx===0&&rows.length>1&&rows[0].a.primeMois>0){const gap=rows[0].a.primeMois-(rows[1]?rows[1].a.primeMois:0);head=`🥇 <b>En tête du mois !</b>${gap>0?` ${esc(rows[1].name)} est à ${gap} € derrière · ne lâchez rien.`:' Égalité parfaite · la prochaine vente fait la différence.'}`;}
     else if(myIdx>0){const gap=rows[myIdx-1].a.primeMois-rows[myIdx].a.primeMois;head=`${['🥈','🥉'][myIdx-1]||'🎽'} <b>${myIdx+1}e du mois</b> · à ${gap>0?gap+' €':'égalité'} de ${esc(rows[myIdx-1].name)}. ${gap>0&&gap<=45?'Une seule vente peut suffire !':'Chaque appel compte.'}`;}
     else head=`🚀 <b>La course du mois est ouverte.</b> Première vente = première place !`;
     const h=`<div class="hp-box">
-      <div class="hp-h">🏁 La course du mois <button class="hp-more" onclick="showPerf()">Tout voir →</button></div>
+      <div class="hp-h">🏁 ${closed?'La course '+esc(_mDe(mk)):'La course du mois'} <button class="hp-more" onclick="${closed?`_statsMonth='${mk}';`:''}showPerf()">Tout voir →</button></div>
       <div class="hp-head">${head}</div>
       ${rows.slice(0,5).map((r,i)=>{const w=rows[0].a.primeMois?Math.max(6,Math.round(r.a.primeMois/rows[0].a.primeMois*100)):6;
         return `<div class="hp-row${r.k===meK?' me':''}"${COACH_ROLE==='admin'||IS_MGR?` style="cursor:pointer" title="Voir et corriger ses ventes du mois" onclick="showRepSales('${r.k}')"`:''}>
@@ -4438,7 +4453,7 @@ function renderPerf(events){
     </div>
 
     <div class="pf-prime">
-      <div class="pf-prime-main"><div class="pf-prime-lbl">💰 Primes ce mois-ci</div><div class="pf-prime-n"><span data-cnt="${Math.round(me.primeMois)}">0</span> €</div>
+      <div class="pf-prime-main"><div class="pf-prime-lbl">💰 Primes · <button class="pf-mnav" onclick="_statsMonth=_mPrev(_statsMonth||_mKey());showPerf()" title="Mois précédent">◀</button> ${esc(_mLbl(_statsMonth||_mKey()))} <button class="pf-mnav" ${(_statsMonth||_mKey())>=_mKey()?'disabled':''} onclick="_statsMonth=_mNext(_statsMonth||_mKey());if(_statsMonth>=_mKey())_statsMonth='';showPerf()" title="Mois suivant">▶</button></div><div class="pf-prime-n"><span data-cnt="${Math.round(me.primeMois)}">0</span> €</div>
         <div class="pf-pks">${packRow(1,me.packsMois[1],+PRIMES[1])}${packRow(2,me.packsMois[2],+PRIMES[2])}${packRow(3,me.packsMois[3],+PRIMES[3])}${me.abosMois?'':'<span class="pf-pk muted">Aucune vente ce mois-ci · le prochain appel est le bon !</span>'}</div></div>
       <div class="pf-prime-side"><div>Depuis le début</div><b><span data-cnt="${Math.round(me.primeTotal)}">0</span> €</b><small>${me.abos} vente${me.abos>1?'s':''}</small></div>
     </div>
@@ -5726,7 +5741,7 @@ function _hmToday(){
   return `<div class="hm-today">
     <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">${ic('bell',18)}</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
     <button class="hm-chip" id="hm-ic" onclick="${nxt?`icGoto('${nxt.date}')`:'showICPage()'}">${_hmIcChip()}</button>
-    <button class="hm-chip" id="hm-sales" onclick="showPerf()"><span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>…</b></span></button>
+    <button class="hm-chip" id="hm-sales" onclick="_statsMonth='';showPerf()"><span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>…</b></span></button>
   </div>`;
 }
 function showHome(){_vReg('home');
@@ -5765,7 +5780,7 @@ function showHome(){_vReg('home');
     <div class="hm-sec">Piloter</div>
     <div class="ht-grid pilot">
       <button class="ht-tile" onclick="showCallStats()"><span class="ht-ic">${ic('chart',22)}</span><span class="ht-lbl">Appels du jour</span></button>
-      <button class="ht-tile" onclick="showPerf()"><span class="ht-ic">${ic('trophy',22)}</span><span class="ht-lbl">Performances</span></button>
+      <button class="ht-tile" onclick="_statsMonth='';showPerf()"><span class="ht-ic">${ic('trophy',22)}</span><span class="ht-lbl">Performances</span></button>
       ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">${ic('users',22)}</span><span class="ht-lbl">Équipe</span></button>`:''}
       <button class="ht-tile" onclick="openSet()"><span class="ht-ic">${ic('sliders',22)}</span><span class="ht-lbl">Réglages</span></button>
     </div>
@@ -5875,7 +5890,7 @@ function openMenu(){
     <a class="menu-item" href="livret-formation-commerciale.pdf?v=2026102520" target="_blank" rel="noopener" onclick="return openLivret(event)"><span class="mic">📘</span><span>Livret de formation (PDF)<small>7 pages · tout savoir avant de décrocher</small></span></a>
     ${COACH_ROLE==='admin'?`<button class="menu-item" onclick="closeMenu();showTrainAdmin()"><span class="mic">👥</span><span>Suivi de la formation<small>Qui a fait quoi, scores et taux de réussite</small></span></button>`:''}
     <button class="menu-item" onclick="closeMenu();showCallStats()"><span class="mic">📊</span><span>Appels du jour<small>Compteur d'activité : total et par commercial</small></span></button>
-    <button class="menu-item" onclick="closeMenu();showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
+    <button class="menu-item" onclick="closeMenu();_statsMonth='';showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PSC().length?' <span class="menu-count">'+PSC().length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
     <button class="menu-item" onclick="closeMenu();st.idx=buildFlow().length-1;renderScreen()"><span class="mic">📋</span><span>Voir la fiche prospect<small>Récap + copier pour le CRM</small></span></button>
