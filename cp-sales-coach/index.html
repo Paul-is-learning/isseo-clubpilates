@@ -4635,8 +4635,8 @@ function prioListHTML(sorted,card){
   close();return out;
 }
 // ── 🙋 Ma journée : file personnelle du commercial, « Appel suivant » ouvre la fiche en tête ──
-// Admin et managers : « Tous » montre toute la journée du studio, le filtre « En charge » isole un commercial ; un commercial ne voit que la sienne
-function mineCount(){const t=todayStr(),me=_me(),all=(COACH_ROLE==='admin'||IS_MGR);return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return prOwnF?o===prOwnF:all||o===me;}).length;}
+// « Tous » = toute la journée du studio, pour tout le monde (chacun peut intervenir sur le prospect d'un collègue) ; « En charge » isole un commercial
+function mineCount(){const t=todayStr();return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;return !prOwnF||(prCharge(p)||'·')===prOwnF;}).length;}
 function nextCallHTML(sorted){return pushBtnHTML()+(sorted.length?'':`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`);}
 // Après un appel sortant passé par la ligne (Allo) : la fenêtre « Décroché / Non décroché » s'ouvre
 // d'elle-même sur la bonne fiche, le bon bouton présélectionné. Une fois par appel, appels de moins de 20 min
@@ -4818,7 +4818,7 @@ function prSeg(p){
   if(c.n>=3&&!c.ok)return 'unreach';
   return 'redo';
 }
-const PR_SEGS=[['mine','🙋 Ma journée','Mes rappels du jour et mes leads jamais appelés : promesses, puis leads frais, puis le reste du tri du jour'],['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, 🆕 leads frais, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
+const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : promesses, puis leads frais, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, 🆕 leads frais, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 // Rappel automatique (demain, sans réponse) : jamais du samedi 12h au dimanche, reporté au lundi même heure
@@ -5035,7 +5035,7 @@ function showProspects(keepScroll){
   const clientView=!!prFilter&&prFilter!=='rappeler';
   if(!clientView&&prSort!=='journal'){
     if(prSort==='all')list=list.filter(p=>prOpen(p)&&!p.bmember);
-    else if(prSort==='mine'){const t=todayStr(),me=_me();list=list.filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return prOwnF?o===prOwnF:(COACH_ROLE==='admin'||IS_MGR)||o===me;});}
+    else if(prSort==='mine'){const t=todayStr(),me=_me();list=list.filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return !prOwnF||o===prOwnF;});}
     else list=list.filter(p=>prSeg(p)===prSort);
     if(prSort==='rappels'&&prOwnF)list=list.filter(p=>(prCharge(p)||'·')===prOwnF);
   }
