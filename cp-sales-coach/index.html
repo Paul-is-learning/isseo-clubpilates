@@ -1307,6 +1307,22 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .jr-new{flex:0 0 auto;border:1.5px solid #2F6FE0;background:#EEF4FF;color:#1E4FB8;border-radius:99px;padding:3px 10px;font:800 11.5px var(--sans);cursor:pointer;white-space:nowrap}
 .jr-new:hover{background:#2F6FE0;color:#fff}
 .hs-auto{font-size:11.5px;color:#9AA3B5;margin:2px 2px 8px;font-style:italic}
+/* ── Historique des échanges : frise sobre (date à gauche, fil vertical, icône, contenu) ── */
+.ht .hs-kpis{gap:0;border:1px solid #E6E8F0;border-radius:12px;background:#fff;overflow:hidden;margin-bottom:14px}
+.ht .hs-k{border:0;border-radius:0;border-right:1px solid #E6E8F0;padding:10px 4px}.ht .hs-k:last-child{border-right:0}.ht .hs-k b{font-size:16px;color:var(--ink)}.ht .hs-k span{font-size:11px;color:var(--ink-mid)}
+.ht-head{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 12px;margin:4px 0 8px}.ht-head b{font-size:15px;color:var(--ink)}.ht-head span{font-size:12px;color:var(--ink-mid)}.ht-head a{color:#3F51C9;font-weight:700;text-decoration:none}
+.ht .hs-list{gap:0;padding-right:0;max-height:none;overflow:visible}
+.ht-row{display:grid;grid-template-columns:52px 14px 34px minmax(0,1fr);gap:0 10px;align-items:start;padding:10px 0;background:#fff;border:0;border-top:1px solid #EEF0F4}
+.ht-row:first-child{border-top:0}
+.ht-when{font-size:11.5px;color:var(--ink-mid);line-height:1.3;padding-top:4px}.ht-when b{display:block;color:var(--ink);font-weight:700}.ht-when span{display:block}
+.ht-line{position:relative;align-self:stretch}.ht-line::before{content:'';position:absolute;left:6px;top:-10px;bottom:-10px;width:2px;background:#E6E8F0}.ht-line i{position:absolute;left:3px;top:9px;width:8px;height:8px;border-radius:50%;background:#C5CAD8}
+.ht-row.r-ok .ht-line i{background:#1E8E3E}.ht-row.r-ko .ht-line i,.ht-row.r-vm .ht-line i{background:#C9871F}.ht-next .ht-line i{background:#3F51C9}.ht-next.late .ht-line i{background:#B4300F}
+.ht .hs-list .ht-row:last-child .ht-line::before{bottom:auto;height:20px}
+.ht-ic{width:34px;height:34px;border-radius:50%;background:#F3F4F8;border:1px solid #E6E8F0;display:flex;align-items:center;justify-content:center;font-size:16px}
+.ht .hs-h{font-size:13.5px}.ht .hs-h b{font-weight:800}.ht .hs-res{font-size:11px;font-weight:700;margin-left:2px;padding:2px 9px}.ht .hs-res.r-late{background:#FDECEC;color:#B4300F}.ht .hs-res.r-next{background:#EEF0FB;color:#3F51C9}
+.ht .hs-s{color:var(--ink-mid);font-weight:500}.ht .hs-more{color:#3F51C9;font-size:12.5px;margin-top:4px}
+.ht-next{background:#FBFBFD}
+@media(max-width:640px){.ht-row{grid-template-columns:44px 12px 30px minmax(0,1fr);gap:0 7px}.ht-ic{width:30px;height:30px;font-size:14px}.ht .hs-k b{font-size:14px}}
 .hs-it.hs-call{border-left:3px solid #C9D3E3}
 .hs-it.hs-call.r-ok{border-left-color:#1E8E3E;background:#F4FBF6}
 .hs-it.hs-call.r-vm{border-left-color:#C9871F;background:#FDF8EE}
@@ -5434,6 +5450,8 @@ async function aircallTr(id,call){
 }
 // Résultat d'un appel à partir de sa ligne de résumé : ok (décroché), vm (messagerie), ko (sans réponse / manqué)
 function _callRes(meta){const m=String(meta||'');return /messagerie|voicemail/.test(m)?'vm':/décroché|answered/.test(m)?'ok':/sans réponse|manqué|missed|échec|failed|reçu|received|bloqué/.test(m)?'ko':'';}
+let _HSAUTO={};
+function hsAutoToggle(id){_HSAUTO[id]=!_HSAUTO[id];showProspects(true);}
 function histPanel(p){
   const h=HIST[p.id];
   const dt=iso=>{const t=new Date(iso);return isNaN(t)?'':t.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})+' · '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});};
@@ -5471,7 +5489,7 @@ function histPanel(p){
   ((h&&h.items)||[]).forEach(a=>{
     if(a.src==='Aircall')return;
     // Rappels automatiques des séquences Boost (J+1, J+2, J+3…) : masqués, seuls les vrais points de contact restent
-    if(a.auto&&/^(rappel|rdv)$/.test(a.type)){autoHid++;return;}
+    if(a.auto&&/^(rappel|rdv)$/.test(a.type)){autoHid++;if(!_HSAUTO[p.id])return;}
     if(humanT&&a.auto&&a.st==='planifie'&&/^(rappel|rdv)$/.test(a.type)&&a.sched&&new Date(a.sched).getTime()<humanT){replaced++;return;}
     const [ic,lbl]=BA[a.type]||['•',a.type||'Activité'];
     const t=new Date(a.at).getTime();
@@ -5492,25 +5510,26 @@ function histPanel(p){
   const alloSec=allo.reduce((s,a)=>{const l0=String(a.txt||'').split('\n')[0];const m=l0.match(/(?:(\d+)\s*h\s*)?(?:(\d+)\s*m(?:in)?\s*)?(\d+)\s*s\b/)||l0.match(/(?:(\d+)\s*h\s*)?(\d+)\s*m(?:in)?\b()/);return s+(m?((+m[1]||0)*3600+(+m[2]||0)*60+(+m[3]||0)):0);},0);
   const callMin=Math.round((alloSec+ACI.reduce((s,a)=>s+(a.type==='appel_ok'?a.dur||0:0),0))/60)+B.filter(a=>/^appel_ok/.test(a.type)&&!alloT.some(x=>Math.abs(x-new Date(a.at).getTime())<=180000)).reduce((s,a)=>s+(a.dur||0),0);
   const kpi=(ic,v,l)=>`<div class="hs-k"><b>${ic} ${v}</b><span>${l}</span></div>`;
-  return `<div class="pr-msgs hs">
+  const when=iso=>{const t=new Date(iso);return isNaN(t)?'<b>?</b>':`<b>${t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</b><span>${t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;};
+  return `<div class="pr-msgs hs ht">
     <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/)+alloSms.length,'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
     ${!h||h.loading?'<div class="hs-load">⏳ Chargement de l\'historique Boost…</div>':h.err||!h.ok?'<div class="hs-load">📴 Historique Boost indisponible pour le moment · seuls les appels Allo sont affichés.</div>':!h.boost&&!p.bid?'<div class="hs-load">Fiche absente de Boost · seuls les appels Allo sont affichés.</div>':''}
-    ${autoHid?`<div class="hs-auto">🤖 ${autoHid} rappel${autoHid>1?'s':''} automatique${autoHid>1?'s':''} Boost (J+1, J+2…) masqué${autoHid>1?'s':''}</div>`:''}
+    <div class="ht-head"><b>Historique des échanges</b>${autoHid?`<span>${autoHid} rappel${autoHid>1?'s':''} automatique${autoHid>1?'s':''} Boost ${_HSAUTO[p.id]?'affiché':'masqué'}${autoHid>1?'s':''} · <a href="#" onclick="event.preventDefault();hsAutoToggle('${p.id}')">${_HSAUTO[p.id]?'Masquer':'Afficher'}</a></span>`:''}</div>
     ${replaced?`<div class="hs-load">🧹 ${replaced} rappel${replaced>1?'s':''} automatique${replaced>1?'s':''} Boost masqué${replaced>1?'s':''} : remplacé${replaced>1?'s':''} par le rappel convenu du ${new Date(humanT).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} à ${new Date(humanT).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}.</div>`:''}
     ${(()=>{ // Prochaine étape convenue : affichée en tête de l'historique
       const t=rdvAt(p);if(!t||!prOpen(p))return '';
       const ic=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;
       const late=t.getTime()<Date.now();
       const pend=p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs;
-      return `<div class="hs-next${late?' late':''}"><div class="hs-ic">${p.statut==='essai'?'🎟️':'⏰'}</div><div class="hs-b">
-        <div class="hs-h"><b>Prochaine étape · ${p.statut==='essai'?(ic?esc(icLabel(ic)):'Séance d\'essai'):'Rappel'}</b>${late?'<span class="hs-src" style="background:#FDECE8;color:#B4300F">en retard</span>':''}<span class="hs-d">${dt(t.toISOString())}</span></div>
-        <div class="hs-s">${p.rappelBy?(p.rappelBy==='auto'?'⚡ détecté dans un appel':'posé par '+esc(p.rappelBy)):''}${p.bid?(pend?' · ⏳ envoi vers Boost en cours':' · ✓ noté dans Boost'):''}</div>
+      return `<div class="ht-row ht-next${late?' late':''}"><div class="ht-when">${when(t.toISOString())}</div><div class="ht-line"><i></i></div><div class="ht-ic">${p.statut==='essai'?'🎟️':'⏰'}</div><div class="hs-b">
+        <div class="hs-h"><b>Prochaine étape · ${p.statut==='essai'?(ic?esc(icLabel(ic)):'Séance d\'essai'):'Rappel'}</b>${late?'<span class="hs-res r-late">En retard</span>':'<span class="hs-res r-next">À venir</span>'}</div>
+        <div class="hs-s">${p.rappelBy?(p.rappelBy==='auto'?'détecté dans un appel':'posé par '+esc(p.rappelBy)):''}${p.bid?(pend?' · envoi vers Boost en cours':' · noté dans Boost'):''}</div>
       </div></div>`;})()}
-    <div class="hs-list">${items.length?items.map(i=>`<div class="hs-it${i.call?' hs-call r-'+(i.res||'na'):''}"><div class="hs-ic">${i.ic}</div><div class="hs-b">
-      <div class="hs-h"><b>${esc(i.lbl)}</b>${i.call&&i.res?`<span class="hs-res r-${i.res}">${{ok:'✅ Décroché',vm:'📭 Messagerie',ko:'📵 Sans réponse'}[i.res]||''}</span>`:''}<span class="hs-src ${i.src==='Allo'?'a':i.src==='Aircall'?'c':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
+    <div class="hs-list">${items.length?items.map(i=>`<div class="ht-row${i.call?' hs-call r-'+(i.res||'na'):''}"><div class="ht-when">${when(i.at)}</div><div class="ht-line"><i></i></div><div class="ht-ic">${i.ic}</div><div class="hs-b">
+      <div class="hs-h"><b>${esc(i.lbl)}</b>${i.call&&i.res?`<span class="hs-res r-${i.res}">${{ok:'Décroché',vm:'Messagerie',ko:'Sans réponse'}[i.res]||''}</span>`:''}${i.src!=='Allo'&&i.src!=='Aircall'?`<span class="hs-src b">${i.src}</span>`:''}${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}</div>
       ${i.sub?`<div class="hs-s">${esc(i.sub)}</div>`:''}
       ${i.txt?`<div class="hs-t">${esc(i.txt)}</div>`:''}
-      ${i.acId?`<button class="hs-more" onclick="aircallTr('${p.id}','${i.acId}')">📜 Transcription</button>`:i.allo&&(p.appels||[]).some(x=>x.ts===i.allo)?`<button class="hs-more" onclick="showAppels('${p.id}','${i.allo}')">📜 ${i.src==='Aircall'?'Transcription':'Résumé et transcription'}</button>`:''}
+      ${i.acId?`<button class="hs-more" onclick="aircallTr('${p.id}','${i.acId}')">› Transcription</button>`:i.allo&&(p.appels||[]).some(x=>x.ts===i.allo)?`<button class="hs-more" onclick="showAppels('${p.id}','${i.allo}')">› ${i.src==='Aircall'?'Transcription':'Résumé et transcription'}</button>`:''}
     </div></div>`).join(''):(!h||h.loading?'':'<div class="hs-load">Aucun point de contact enregistré.</div>')}</div>
   </div>`;
 }
