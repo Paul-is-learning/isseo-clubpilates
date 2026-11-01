@@ -5062,7 +5062,7 @@ function togglePr(id){prOpenId=prOpenId===id?null:id;if(prOpenId){loadHist(prOpe
    Le serveur ne rappelle l'IA que si la matière a changé ; ici on ne demande que pour les fiches
    qui ont bougé depuis leur dernier résumé (ou jamais résumées), une à la fois. */
 const SUM_STUDIOS=['lagarennecolombes']; // même liste que côté serveur (déploiement progressif)
-const _SUMCHK={};let _sumQ=[],_sumBusy=false,_sumFail=0;
+const _SUMCHK={},_SUMERR={};let _sumQ=[],_sumBusy=false,_sumFail=0;
 function sumOn(p){return SUM_STUDIOS.includes(_sk(p&&p.studio||CFG.studio));}
 function sumHas(p){return !!((p.appels||[]).length||p.bnotes||p.note||p.fiche);}
 function sumStale(p){if(!sumOn(p)||!sumHas(p))return false;if(_SUMCHK[p.id]===(p.maj||''))return false;return !p.sum||(p.maj||'')>(p.sum.at||'');}
@@ -5073,25 +5073,26 @@ function sumScan(){if(!COACH_CODE||_sumFail>=3)return;PSC().filter(sumStale).sor
 async function sumKick(){if(_sumBusy||!_sumQ.length)return;_sumBusy=true;const id=_sumQ.shift();
   try{const p=PROSPECTS.find(x=>x.id===id);if(p){const d=await syncCall('summary_refresh',{id,had:!!p.sum});
       _SUMCHK[id]=p.maj||'';
-      if(d&&d.ok){if(d.status==='updated'){p.sum=d.sum;persistProspects();_sumRender(id);}else if(d.status==='empty'&&p.sum){delete p.sum;persistProspects();_sumRender(id);}}
-      _sumFail=0;}}
-  catch(e){_sumFail++;if(!_quiet(e)&&_sumFail===1&&!_netErr(e))console.warn('résumé',e.message);}
+      delete _SUMERR[id];
+      if(d&&d.ok){if(d.status==='updated'){p.sum=d.sum;persistProspects();}else if(d.status==='empty'&&p.sum){delete p.sum;persistProspects();}}
+      _sumRender(id);_sumFail=0;}}
+  catch(e){_sumFail++;_SUMERR[id]=_why(e);_sumRender(id);}
   _sumBusy=false;if(_sumQ.length)setTimeout(sumKick,400);}
 async function sumForce(id){const b=document.getElementById('sum-btn-'+id);if(b){b.disabled=true;b.textContent='⏳ Analyse…';}
   try{const p=PROSPECTS.find(x=>x.id===id);const d=await syncCall('summary_refresh',{id,force:true,had:!!(p&&p.sum)});
     if(p&&d&&d.ok){if(d.sum)p.sum=d.sum;else delete p.sum;_SUMCHK[id]=p.maj||'';persistProspects();}
     if(d&&d.status==='off')toast('Résumé automatique non activé pour ce studio');else if(d&&d.status==='empty')toast('Aucun échange à résumer');else toast('🧭 Situation mise à jour');}
-  catch(e){toast('Résumé indisponible ('+_why(e)+')');}
+  catch(e){_SUMERR[id]=_why(e);toast('Résumé indisponible ('+_why(e)+')');}
   _sumRender(id);}
 function _sumRender(id){if(prOpenId===id&&document.querySelector('.pr-search')&&!_typing())showProspects(true);}
 function sumBlockHTML(p){
   if(!sumOn(p))return '';
-  const s=p.sum,st=sumStale(p),pend=_sumQ.includes(p.id)||(_sumBusy&&!s);
+  const s=p.sum,err=_SUMERR[p.id],st=!err&&sumStale(p),pend=!err&&(_sumQ.includes(p.id)||(_sumBusy&&!s));
   const lines=s?String(s.txt).split('\n').map(x=>x.trim()).filter(Boolean):[];
   const when=s&&s.at?new Date(s.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   return `<div class="pl-sum"><div class="pl-sum-h">🧭 Situation${s?` <small>· d'après ${s.n||'les'} dernier${s.n>1?'s':''} échange${s.n>1?'s':''}${when?' · '+esc(when):''}${st?' · <b>échanges plus récents, mise à jour en cours</b>':''}</small>`:''}
       <button id="sum-btn-${p.id}" onclick="event.stopPropagation();sumForce('${p.id}')" title="Relire les derniers échanges et réécrire la situation">↻ Actualiser</button></div>
-    ${lines.length?`<ul>${lines.map(l=>`<li class="${/^À faire\s*:/i.test(l)?'todo':''}">${esc(l)}</li>`).join('')}</ul>`:`<div class="muted">${pend||st?'⏳ Lecture des derniers échanges…':sumHas(p)?'Pas encore de résumé · cliquez sur Actualiser.':'Aucun échange enregistré pour l\'instant : la situation s\'écrira après le premier appel ou la première note.'}</div>`}
+    ${err?`<div class="muted" style="color:#B4300F">⚠️ Résumé indisponible : ${esc(err)} · réessayez avec Actualiser.</div>`:''}${lines.length?`<ul>${lines.map(l=>`<li class="${/^À faire\s*:/i.test(l)?'todo':''}">${esc(l)}</li>`).join('')}</ul>`:err?'':`<div class="muted">${pend||st?'⏳ Lecture des derniers échanges…':sumHas(p)?'Pas encore de résumé · cliquez sur Actualiser.':'Aucun échange enregistré pour l\'instant : la situation s\'écrira après le premier appel ou la première note.'}</div>`}
   </div>`;}
 /* ── Historique complet des points de contact : appels Allo (enregistrés sur la fiche)
    + activités Fitness Boost (appels et durée, SMS, emails, WhatsApp, RDV, notes), lues à la demande ── */
