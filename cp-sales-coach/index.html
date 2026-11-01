@@ -1348,6 +1348,9 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-row .pr-date{flex:0 0 auto!important;width:auto}
 .pl-ic{min-width:0;max-width:100%}
 .pl-by{font-size:11px;color:var(--ink-mid);font-weight:600}
+.pl-hint{font-size:11px;color:var(--ink-mid);margin:-2px 0 8px}
+.pl-cbtn.rap-save.on{background:#2F5D8C;color:#fff;border-color:#2F5D8C;box-shadow:0 0 0 3px rgba(47,93,140,.18)}
+.pl-cbtn.rap-del{color:#B4300F}
 .pl-info{font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}.pl-info a{color:var(--lav-ink);text-decoration:none;font-weight:600}
 @media(max-width:1100px){.pl-line{grid-template-columns:44px minmax(0,1fr) 160px 220px 88px}.pl-st .pl-flag{display:none}.pl-meta{display:none}}
 @media(max-width:640px){.pl-line{grid-template-columns:40px minmax(0,1fr) auto;gap:4px 10px;padding:10px 10px 10px 16px}.pl-st{grid-column:2/3;grid-row:2}.pl-next{grid-column:2/4;grid-row:3}.pl-quick{grid-column:3;grid-row:1/3}.pl-ava{width:40px;height:40px}.pl-dgrid{grid-template-columns:1fr;gap:6px}}
@@ -5056,10 +5059,13 @@ function showProspects(keepScroll){
             <div class="pl-row">${icBookSelect(p)}</div>
 ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
             <div class="pl-row">
-              <input type="date" value="${p.rappel||''}" onchange="setPRappel('${p.id}',this.value)" class="pr-date" title="Date de rappel / de séance d'essai convenue avec le client"/>
-              <input type="time" value="${p.rappelH||''}" onchange="setPRappelH('${p.id}',this.value)" class="pr-date" title="Heure du rappel · la fiche passe en tête 1 h avant"/>
+              <input type="date" id="rap-d-${p.id}" value="${p.rappel||''}" oninput="rapDirty('${p.id}')" onkeydown="if(event.key==='Enter')savePRappel('${p.id}')" class="pr-date" title="Date de rappel / de séance d'essai convenue avec le client"/>
+              <input type="time" id="rap-h-${p.id}" value="${p.rappelH||''}" oninput="rapDirty('${p.id}')" onkeydown="if(event.key==='Enter')savePRappel('${p.id}')" class="pr-date" title="Heure du rappel · la fiche passe en tête 1 h avant"/>
+              <button id="rap-s-${p.id}" class="pl-cbtn rap-save" onclick="savePRappel('${p.id}')" title="Enregistrer la date et l'heure du rappel">💾 Enregistrer</button>
+              ${p.rappel?`<button class="pl-cbtn rap-del" onclick="savePRappel('${p.id}',true)" title="Retirer le rappel programmé">✕ Retirer</button>`:''}
               ${p.rappelBy?`<small class="pl-by">${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}
-            </div>`}
+            </div>
+            <div class="pl-hint">Renseignez la date et l'heure, puis 💾 Enregistrer : la fiche ne bouge pas avant.</div>`}
           </div>
           <div>
             <div class="pl-lbl">Coordonnées <button class="pl-edit" onclick="prEditId='${p.id}';showProspects(true)">✏️ Modifier</button></div>
@@ -5494,6 +5500,19 @@ function setPStatut(id,s,seller){const p=PROSPECTS.find(x=>x.id===id);if(!p)retu
   showProspects(true);
   if(s==='abo'&&p.pack){_aboNote(p);toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');}
   else toast(PIPE[s].ic+' '+PIPE[s].lbl);}
+// Saisie du rappel sur la fiche : date + heure dans une zone tampon, rien ne bouge avant « 💾 Enregistrer »
+// (avant, la fiche changeait de liste dès la date saisie, sans laisser le temps de renseigner l'heure)
+function rapDirty(id){const b=document.getElementById('rap-s-'+id);if(b){b.classList.add('on');b.textContent='💾 Enregistrer';}}
+function savePRappel(id,clear){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const d=clear?'':(document.getElementById('rap-d-'+id)?.value||''),h=clear?'':(document.getElementById('rap-h-'+id)?.value||'').slice(0,5);
+  if(!d&&h){toast('Choisissez aussi la date du rappel');document.getElementById('rap-d-'+id)?.focus();return;}
+  if(d===(p.rappel||'')&&h===(p.rappelH||'')){toast('Rappel déjà enregistré');return;}
+  p.rappel=d;p.rappelH=h;delete p.rk;p.rappelBy=d?(CFG.rep?CFG.rep.split(' ')[0]:''):'';
+  if(d){_takeSuivi(p);if(p.ouverture)p.ouverture=null;}
+  p.maj=new Date().toISOString();persistProspects();schedulePush();
+  showProspects(true);toast(d?'⏰ Rappel enregistré · '+frDate(d)+(h?' à '+h:'')+(prSeg(p)==='rappels'?' · dans Rappels & RDV':''):'Rappel retiré');
+}
 function setPRappelH(id,v){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   p.rappelH=(v||'').slice(0,5);
