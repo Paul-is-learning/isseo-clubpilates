@@ -4830,7 +4830,7 @@ function contactSheet(id,mode){
       <small id="cs-err" style="color:#B4300F;font-weight:700"></small>
       <button class="glp-ok" id="cs-go" data-k="ok" onclick="csDone('${id}','${mode}',this.dataset.k)">Enregistrer</button>
     </div>
-    <div class="cs-hint">${r?'📵 Non répondu : commentaire facultatif, le rappel passe à demain'+(p.rappelH?' à '+esc(p.rappelH):'')+', à votre nom.':'📵 Non décroché : commentaire facultatif, rappel programmé demain à la même heure, le lead passe dans Rappels & RDV (injoignable après 3 essais).'} ⏸ : rangé dans « À rappeler à l'ouverture », hors des listes d'appel.</div>`);
+    <div class="cs-hint">${r?'📵 Non répondu : commentaire facultatif, le rappel passe à demain'+(p.rappelH?' à '+esc(p.rappelH):'')+', à votre nom.':'📵 Non décroché : commentaire facultatif, rappel programmé demain (heure à votre choix), le lead passe dans Rappels & RDV (injoignable après 3 essais).'} ⏸ : rangé dans « À rappeler à l'ouverture », hors des listes d'appel.</div>`);
 }
 function csPick(b,k){
   document.querySelectorAll('#icPop .cs-b').forEach(x=>x.classList.toggle('on',x===b));
@@ -4839,7 +4839,7 @@ function csPick(b,k){
   document.getElementById('cs-go').textContent=k==='ouv'?'🏗 Ranger dans « À rappeler à l\'ouverture »':k==='ko'?'📵 Enregistrer · sans réponse':'Enregistrer le contact';
   document.getElementById('cs-lbl').textContent=k==='ok'?'Commentaire *':'Commentaire (facultatif)';
   document.getElementById('cs-rap').style.display=k==='ouv'?'none':'';
-  const rl=document.querySelector('#cs-rap .ics-lbl');if(rl)rl.textContent=k==='ko'?'Rappel (facultatif · sinon demain à la même heure)':'Nouveau rappel (facultatif)';
+  const rl=document.querySelector('#cs-rap .ics-lbl');if(rl)rl.textContent=k==='ko'?'Rappel (facultatif · sinon demain, heure libre)':'Nouveau rappel (facultatif)';
   const t=document.getElementById('cs-txt');t.placeholder=k==='ouv'?'Ex. : attend de voir le studio, rappeler dès l\'ouverture':k==='ko'?'Ex. : messagerie, message laissé, SMS envoyé…':'Ce qui a été dit, la suite convenue…';t.focus();
   document.getElementById('cs-err').textContent='';
 }
@@ -4857,8 +4857,8 @@ async function csDone(id,mode,k){
     if(r){const t=new Date();t.setDate(t.getDate()+1);p.rappel=_ldstr(_wkMonday(t,p.rappelH));p.rappelBy=me;_takeSuivi(p);msg='📵 Non répondu · rappel reprogrammé '+(t.getDate()===new Date().getDate()+1?'demain':'lundi')+(p.rappelH?' à '+p.rappelH:'');}
     else{const c=prCalls(p);
       if(c.n>=3&&!c.ok)msg='📵 3e essai sans réponse · le lead passe dans Injoignables';
-      else{const t=new Date();t.setDate(t.getDate()+1);p.rappelH=String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');_wkMonday(t,p.rappelH);p.rappel=_ldstr(t);p.rappelBy=me;_takeSuivi(p);
-        msg='📵 Sans réponse · rappel programmé '+(t.getDay()===1&&new Date().getDay()!==0?'lundi':'demain')+' à '+p.rappelH+' · le lead passe dans Rappels & RDV';}}
+      else{const t=new Date();t.setDate(t.getDate()+1);const hh=String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');_wkMonday(t,hh);p.rappel=_ldstr(t);p.rappelH='';p.rappelBy=me;_takeSuivi(p); // sans heure : le commercial choisit le meilleur moment
+        msg='📵 Sans réponse · à rappeler '+(t.getDay()===1&&new Date().getDay()!==0?'lundi':'demain')+' (heure libre) · le lead passe dans Rappels & RDV';}}
     if(d&&!(c0=>c0.n>=3&&!c0.ok)(prCalls(p))){p.rappel=d;p.rappelH=h;p.rappelBy=me;_takeSuivi(p);msg='📵 Sans réponse · rappel le '+frDate(d)+(h?' à '+h:'')+' · Rappels & RDV';}
     if(txt)note='📵 '+(r?'Rappelé · non répondu':'Non décroché')+' : '+txt;
     if(!added)msg+=' (appel déjà enregistré par la ligne)';

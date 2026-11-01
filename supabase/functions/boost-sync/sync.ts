@@ -88,8 +88,9 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   if (when && nowIso && when > horizon(nowIso)) when = ""; // rappel au-delà de J+30 : non traité
   if (when && nowIso && when < new Date(Date.parse(nowIso) - STALE_DAYS * 864e5).toISOString()) when = ""; // rappel périmé
   const dt = when ? parisDT(when) : null;
-  const rappelH = dt && /T\d/.test(when) ? dt.h : "";
-  const rappel = dt ? (auto ? weekendToMonday(dt.d, rappelH) : dt.d) : "";
+  // Rappel automatique (séquence Boost) : la date seulement, le commercial choisit l'heure (demande de Paul, 1er nov. 2026)
+  const rappelH = dt && !auto && /T\d/.test(when) ? dt.h : "";
+  const rappel = dt ? (auto ? weekendToMonday(dt.d, dt.h) : dt.d) : "";
   return { statut, rappel, rappelH, nok: st === "rdv_nok", client: st === "client", auto: !!dt && auto };
 }
 
