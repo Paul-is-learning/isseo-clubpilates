@@ -5509,7 +5509,7 @@ function histPanel(p){
       <div class="hs-h"><b>${esc(i.lbl)}</b>${i.call&&i.res?`<span class="hs-res r-${i.res}">${{ok:'✅ Décroché',vm:'📭 Messagerie',ko:'📵 Sans réponse'}[i.res]||''}</span>`:''}<span class="hs-src ${i.src==='Allo'?'a':i.src==='Aircall'?'c':'b'}">${i.src}</span>${i.who?`<span class="hs-who">${esc(i.who.split(' ')[0])}</span>`:''}<span class="hs-d">${dt(i.at)}</span></div>
       ${i.sub?`<div class="hs-s">${esc(i.sub)}</div>`:''}
       ${i.txt?`<div class="hs-t">${esc(i.txt)}</div>`:''}
-      ${i.acId?`<button class="hs-more" onclick="aircallTr('${p.id}','${i.acId}')">📜 Transcription</button>`:i.allo&&(p.appels||[]).some(x=>x.ts===i.allo)?`<button class="hs-more" onclick="showAppels('${p.id}')">📜 ${i.src==='Aircall'?'Transcription':'Résumé et transcription'}</button>`:''}
+      ${i.acId?`<button class="hs-more" onclick="aircallTr('${p.id}','${i.acId}')">📜 Transcription</button>`:i.allo&&(p.appels||[]).some(x=>x.ts===i.allo)?`<button class="hs-more" onclick="showAppels('${p.id}','${i.allo}')">📜 ${i.src==='Aircall'?'Transcription':'Résumé et transcription'}</button>`:''}
     </div></div>`).join(''):(!h||h.loading?'':'<div class="hs-load">Aucun point de contact enregistré.</div>')}</div>
   </div>`;
 }
@@ -5818,12 +5818,13 @@ function tsParts(ts){
   const hh=p.hour==='24'?'00':p.hour;
   return {date:(+p.day)+' '+['','janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][+p.month]+' '+p.year,h:hh+':'+p.minute,day:p.year+'-'+p.month+'-'+p.day,abs:d.getTime()};
 }
-function showAppels(id){
+function showAppels(id,only){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
-  const list=(p.appels||[]).slice().reverse();
-  icSheet(`<div class="glp-tag">📞 Appels · Allo et Aircall</div>
+  const all=(p.appels||[]).slice().reverse();
+  const list=only?all.filter(a=>a.ts===only):all;
+  icSheet(`<div class="glp-tag">📞 ${only?'Appel du '+((tsParts(only)||{date:'?'}).date)+' à '+((tsParts(only)||{h:''}).h):'Appels · Allo et Aircall'}</div>
     <div class="glp-t">${esc(p.nom)}</div>
-    <div class="fv-meta">Résumés et transcriptions des appels Allo et Aircall · toute l'équipe les voit sur la fiche.</div>
+    <div class="fv-meta">${only?`Résumé et transcription de cet appel · <a href="#" onclick="event.preventDefault();showAppels('${p.id}')">voir les ${all.length} appels de la fiche</a>`:'Résumés et transcriptions des appels Allo et Aircall · toute l\'équipe les voit sur la fiche.'}</div>
     <div style="margin-top:12px">${list.length?list.map(a=>{
       const t=a.txt||'';const i=t.indexOf('\n\n— Transcription —\n');
       let main=i>=0?t.slice(0,i):t;const tr=i>=0?t.slice(i+20):'';
@@ -5841,7 +5842,7 @@ function showAppels(id){
           <button style="opacity:.6" title="Supprimer ce résumé" onclick="delAppel('${p.id}','${a.ts}')">🗑</button>
         </div>
         <div style="font-size:13px;line-height:1.55;color:#333B4E;white-space:pre-wrap">${esc(main)}</div>
-        ${tr?`<details style="margin-top:8px"><summary style="font-size:11.5px;font-weight:700;color:var(--cp-deep);cursor:pointer">📜 Transcription complète</summary><div style="font-size:12px;line-height:1.5;color:#55607A;white-space:pre-wrap;margin-top:6px;max-height:300px;overflow:auto">${esc(tr)}</div></details>`:''}
+        ${tr?`<details style="margin-top:8px"${only?' open':''}><summary style="font-size:11.5px;font-weight:700;color:var(--cp-deep);cursor:pointer">📜 Transcription complète</summary><div style="font-size:12px;line-height:1.5;color:#55607A;white-space:pre-wrap;margin-top:6px;max-height:300px;overflow:auto">${esc(tr)}</div></details>`:''}
       </div>`;}).join(''):'<div class="ics-empty">Aucun résumé pour l\'instant.</div>'}</div>
     <div class="ics-lbl" style="margin-top:14px">Ajouter un résumé</div>
     <textarea id="ap-txt" placeholder="Collez le résumé IA d'Allo…" style="width:100%;min-height:96px;padding:11px 12px;border:1.5px solid #dce1ea;border-radius:12px;font-size:13.5px;font-family:inherit;resize:vertical;box-sizing:border-box"></textarea>
