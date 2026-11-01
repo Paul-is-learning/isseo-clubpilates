@@ -96,6 +96,9 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   if (when && nowIso && when > horizon(nowIso)) when = ""; // rappel au-delà de J+30 : non traité
   if (when && nowIso && when < new Date(Date.parse(nowIso) - STALE_DAYS * 864e5).toISOString()) when = ""; // rappel périmé
   const dt = when ? parisDT(when) : null;
+  // Heure « de séquence » (07:31, 08:02, 08:16…) : posée par un automatisme Boost, pas par une personne.
+  // Une heure vraiment convenue tombe au quart d'heure (09:00, 12:30, 18:00). Hors quart d'heure = automatique
+  if (dt && /T\d/.test(when) && !/:(00|15|30|45)$/.test(dt.h)) auto = true;
   // Rappel automatique (séquence Boost) : la date seulement, le commercial choisit l'heure (demande de Paul, 1er nov. 2026)
   const rappelH = dt && !auto && /T\d/.test(when) ? dt.h : "";
   const rappel = dt ? (auto ? weekendToMonday(dt.d, dt.h) : dt.d) : "";
