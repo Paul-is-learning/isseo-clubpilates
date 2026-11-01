@@ -1349,6 +1349,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-ic{min-width:0;max-width:100%}
 .pl-by{font-size:11px;color:var(--ink-mid);font-weight:600}
 .pl-hint{font-size:11px;color:var(--ink-mid);margin:-2px 0 8px}
+.nc-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;margin:6px 0 10px;padding:10px 14px;border-radius:14px;background:#223354;color:#fff;box-shadow:var(--sh-s)}.nc-bar.done{background:#2F7D4F;justify-content:center;font-weight:600}.nc-l{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.nc-l b{font-size:14px}.nc-l span{font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nc-go{background:#fff;color:#223354;border:0;border-radius:10px;padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}
 .pl-cbtn.rap-save.on{background:#2F5D8C;color:#fff;border-color:#2F5D8C;box-shadow:0 0 0 3px rgba(47,93,140,.18)}
 .pl-cbtn.rap-del{color:#B4300F}
 .pl-info{font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}.pl-info a{color:var(--lav-ink);text-decoration:none;font-weight:600}
@@ -2932,6 +2933,7 @@ async function syncPull(rerender){
       });
       PROSPECTS=server.concat(localOnly);
       persistProspects();_cleanDirty();
+      setTimeout(autoSheet,400);
       if(localOnly.length||absorbed||_hasPend())schedulePush();
     }
     // Serveur joignable : l'attente repart de zéro (l'envoi programmé ci-dessus fait le nouvel essai)
@@ -4595,6 +4597,7 @@ function prPrio(p){
     const o=_otherSlot(p);return {r:5,why:'📵 '+ord(c.n)+' essai sans réponse'+(lastD?' · '+lastD:'')+(o?' · '+o:'')+who};
   }
   const arr=new Date(prArrival(p)),ageH=(Date.now()-arr.getTime())/36e5;
+  if(!c.n)return {r:3,why:'🆕 Lead'+(p.src?' '+p.src:'')+' arrivé '+(isNaN(arr)?'':_relDay(arr.toISOString()))+' · jamais appelé'};
   if(!c.ok){
     if(ageH<FRESH_H)return {r:3,why:'🆕 Lead'+(p.src?' '+p.src:'')+' arrivé '+_relDay(arr.toISOString())+' · jamais joint'+(c.n?' · '+ord(c.n)+' essai fait':'')};
     const o=_otherSlot(p);return {r:5,why:'📵 '+ord(c.n)+' essai sans réponse'+(lastD?' · '+lastD:'')+(o?' · '+o:'')+' · rappel automatique'};
@@ -4626,6 +4629,37 @@ function prioListHTML(sorted,card){
     out+=card(p);
   });
   close();return out;
+}
+// ── 🙋 Ma journée : file personnelle du commercial, « Appel suivant » ouvre la fiche en tête ──
+function mineCount(){const t=todayStr(),me=_me(),all=(COACH_ROLE==='admin'&&!teamNames().includes(me));return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return prOwnF?o===prOwnF:all||o===me;}).length;}
+function nextCallHTML(sorted){
+  const nxt=sorted.find(p=>p.id!==prOpenId&&!p.noCall&&p.tel)||sorted.find(p=>p.id!==prOpenId);
+  if(!nxt)return `<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
+  const pr=prPrio(nxt);
+  return `<div class="nc-bar"><div class="nc-l"><b>📞 Appel suivant</b><span>${esc(nxt.nom||'Prospect')} · ${esc(pr.why.slice(0,90))}</span></div><button class="nc-go" onclick="nextCall('${nxt.id}')">Ouvrir la fiche ▸</button></div>`;
+}
+function nextCall(id){prOpenId=id;loadHist(id);sumAsk(id,true);showProspects(true);setTimeout(()=>{const el=document.querySelector('.pr-card.open');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},50);}
+// Après un appel sortant passé par la ligne (Allo) : la fenêtre « Décroché / Non décroché » s'ouvre
+// d'elle-même sur la bonne fiche, le bon bouton présélectionné. Une fois par appel, appels de moins de 20 min
+let _ASEEN=null;
+function autoSheet(){
+  if(!COACH_CODE)return;const me=_me();if(!me)return;
+  const first=_ASEEN===null;if(first){try{_ASEEN=JSON.parse(localStorage.getItem('cpcoach_aseen')||'{}')||{};}catch(e){_ASEEN={};}}
+  const now=Date.now();let cand=null;
+  PSC().forEach(p=>{(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||/Appel manuel|appel entrant|import historique/.test(l0))return;
+    const k=a.id||(p.id+'|'+a.ts);if(_ASEEN[k])return;const age=now-Date.parse(a.ts);
+    if(first||age>20*60000||age<-60000||_callWho(l0)!==me){_ASEEN[k]=1;return;}
+    if(!prOpen(p)||p.bmember)return;
+    if(!cand||a.ts>cand.a.ts)cand={p,a,k,l0};});});
+  Object.keys(_ASEEN).forEach(k=>{if(Object.keys(_ASEEN).length>400)delete _ASEEN[k];});
+  try{localStorage.setItem('cpcoach_aseen',JSON.stringify(_ASEEN));}catch(e){}
+  if(!cand||document.getElementById('icPop')||_typing())return;
+  _ASEEN[cand.k]=1;try{localStorage.setItem('cpcoach_aseen',JSON.stringify(_ASEEN));}catch(e){}
+  const p=cand.p,ok=_callOk(cand.l0),mode=p.rappel&&!prAutoNew(p)?'rappel':'new';
+  prOpenId=p.id;if($('#topPhase').textContent==='Mes prospects')showProspects(true);
+  contactSheet(p.id,mode);
+  const tag=document.querySelector('#icPop .glp-tag');if(tag)tag.innerHTML='📞 Appel de la ligne détecté · '+esc(_relDay(cand.a.ts))+(ok?' · décroché':' · sans réponse')+' <small style="font-weight:400">(que s\'est-il dit ?)</small>';
+  const b=document.querySelector('#icPop .cs-b.'+(ok?'ok':'ko'));if(b)csPick(b,ok?'ok':'ko');
 }
 function sumTodo(p){const t=p&&p.sum&&p.sum.txt;if(!t)return '';return (String(t).split('\n').find(l=>/^À faire\s*:/i.test(l))||'').trim();}
 function rdvHot(p){if(!prOpen(p)||prAutoNew(p)||prOuv(p))return false;const t=rdvAt(p);return !!t&&(t.getTime()-Date.now())/60000<=60;}
@@ -4761,7 +4795,7 @@ function prSeg(p){
   if(c.n>=3&&!c.ok)return 'unreach';
   return 'redo';
 }
-const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🆕 leads frais, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
+const PR_SEGS=[['mine','🙋 Ma journée','Mes rappels du jour et mes leads jamais appelés, dans l\'ordre du tri du jour · « Appel suivant » enchaîne'],['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🆕 leads frais, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 // Rappel automatique (demain, sans réponse) : jamais du samedi 12h au dimanche, reporté au lundi même heure
@@ -4978,6 +5012,7 @@ function showProspects(keepScroll){
   const clientView=!!prFilter&&prFilter!=='rappeler';
   if(!clientView&&prSort!=='journal'){
     if(prSort==='all')list=list.filter(p=>prOpen(p)&&!p.bmember);
+    else if(prSort==='mine'){const t=todayStr(),me=_me();list=list.filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return prOwnF?o===prOwnF:(COACH_ROLE==='admin'&&!teamNames().includes(me))||o===me;});}
     else list=list.filter(p=>prSeg(p)===prSort);
     if(prSort==='rappels'&&prOwnF)list=list.filter(p=>(prCharge(p)||'·')===prOwnF);
   }
@@ -4994,7 +5029,7 @@ function showProspects(keepScroll){
       return prLastContact(a).localeCompare(prLastContact(b));
     }
     if(prSort==='unreach')return prLastContact(a).localeCompare(prLastContact(b)); // contact le plus ancien d'abord
-    if(prSort==='rappels')return prioCmp(a,b); // tri du jour : journée, puis rang, puis départage du rang
+    if(prSort==='rappels'||prSort==='mine')return prioCmp(a,b); // tri du jour : journée, puis rang, puis départage du rang
     if(prSort==='ouv')return String(b.ouverture?.at||'').localeCompare(String(a.ouverture?.at||''));
     // 🆕 Nouveaux leads : uniquement par date d'arrivée dans Boost, le plus récent en haut (demande de Paul)
     return prArrival(b).localeCompare(prArrival(a));
@@ -5016,7 +5051,7 @@ function showProspects(keepScroll){
     else lastH='<span class="pl-c muted"><b>Dernier contact</b> aucun appel enregistré</span>';
     const vol=calls.length||sms.length?`<span class="pl-c">${calls.length} appel${calls.length>1?'s':''}${calls.length?' · '+ok+' abouti'+(ok>1?'s':''):''}${sms.length?' · '+sms.length+' SMS':''}</span>`:'';
     const note=(sumLine(p)||noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
-    const prio=!clientView&&prSort==='rappels'?prPrio(p):null,todo=prio?sumTodo(p):'';
+    const prio=!clientView&&(prSort==='rappels'||prSort==='mine')?prPrio(p):null,todo=prio?sumTodo(p):'';
     return `<div class="pl-ctx">${prio?`<span class="pl-c prio">${esc(prio.why)}</span>${todo?`<span class="pl-c todo">🧭 ${esc(todo)}</span>`:''}`:''}${prOuv(p)&&p.ouverture.note?`<span class="pl-c note" title="${esc(p.ouverture.note)}">🏗 ${esc(p.ouverture.note)}</span>`:''}${lastH}${vol}${note?`<span class="pl-c note" title="${esc(note)}">${sumLine(p)?'🧭':'📝'} ${esc(note.length>140?note.slice(0,140)+'…':note)}</span>`:''}</div>`;
   };
   const card=p=>{
@@ -5130,15 +5165,16 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
     <div class="hm-sec">Pipeline</div>
     <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'👥 Prospects':PIPE[k].ic+' '+PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-tools">
-    ${prFilter&&prFilter!=='rappeler'?'':`<div class="pr-tabs">${PR_SEGS.map(([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
+    ${prFilter&&prFilter!=='rappeler'?'':`<div class="pr-tabs">${PR_SEGS.map(([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
       return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${l}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;}).join('')}
     </div>`}
     <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':prFilter?'Rechercher dans « '+PIPE[prFilter].lbl+' » : nom, numéro…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
-    <div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
-    ${!clientView&&prSort==='rappels'?(()=>{const L=PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
+    <div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&(prSort==='rappels'||prSort==='mine')&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
+    ${!clientView&&prSort==='mine'?nextCallHTML(sorted):''}
+    ${!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(p=>{const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===todayStr());}):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
       return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
-    ${!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
+    ${!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='rappels'||prSort==='mine'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   if(_srch){const n=document.getElementById('prSearchIn');if(n){n.focus({preventScroll:true});try{n.setSelectionRange(_srch[0],_srch[1]);}catch(e){}}}
