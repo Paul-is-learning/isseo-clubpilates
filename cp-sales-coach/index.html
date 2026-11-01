@@ -4614,7 +4614,8 @@ function _prioTie(a,b,r){
   if(r===5)return prCalls(a).n-prCalls(b).n||prArrival(b).localeCompare(prArrival(a));
   return (rdvAt(a)?.getTime()||0)-(rdvAt(b)?.getTime()||0);
 }
-function prioCmp(a,b){const da=_prioDay(a),db=_prioDay(b);if(da!==db)return da<db?-1:1;const ra=prPrio(a).r,rb=prPrio(b).r;return ra-rb||_prioTie(a,b,ra);}
+const MINE_ORDER={1:1,3:2,2:3,4:4,5:5,6:6}; // Ma journée : promesses, leads frais, puis le reste
+function prioCmp(a,b){const da=_prioDay(a),db=_prioDay(b);if(da!==db)return da<db?-1:1;const ra=prPrio(a).r,rb=prPrio(b).r;const o=prSort==='mine'?MINE_ORDER:null;return (o?o[ra]-o[rb]:ra-rb)||_prioTie(a,b,ra);}
 let _PFOLD={};try{_PFOLD=JSON.parse(localStorage.getItem('cpcoach_pfold')||'{}')||{};}catch(e){}
 function prFold(r,open){_PFOLD[r]=!open;try{localStorage.setItem('cpcoach_pfold',JSON.stringify(_PFOLD));}catch(e){}}
 function _dayLbl(d){const t=todayStr();if(d<=t)return 'Aujourd\'hui';const n=new Date(d+'T12:00:00'),dd=Math.round((n-new Date(t+'T12:00:00'))/864e5);return dd===1?'Demain':n.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long'});}
@@ -4634,13 +4635,7 @@ function prioListHTML(sorted,card){
 }
 // ── 🙋 Ma journée : file personnelle du commercial, « Appel suivant » ouvre la fiche en tête ──
 function mineCount(){const t=todayStr(),me=_me(),all=(COACH_ROLE==='admin'&&!teamNames().includes(me));return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return prOwnF?o===prOwnF:all||o===me;}).length;}
-function nextCallHTML(sorted){
-  const nxt=sorted.find(p=>p.id!==prOpenId&&!p.noCall&&p.tel)||sorted.find(p=>p.id!==prOpenId);
-  if(!nxt)return `${pushBtnHTML()}<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
-  const pr=prPrio(nxt);
-  return `${pushBtnHTML()}<div class="nc-bar"><div class="nc-l"><b>📞 Appel suivant</b><span>${esc(nxt.nom||'Prospect')} · ${esc(pr.why.slice(0,90))}</span></div><button class="nc-go" onclick="nextCall('${nxt.id}')">Ouvrir la fiche ▸</button></div>`;
-}
-function nextCall(id){prOpenId=id;loadHist(id);sumAsk(id,true);showProspects(true);setTimeout(()=>{const el=document.querySelector('.pr-card.open');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},50);}
+function nextCallHTML(sorted){return pushBtnHTML()+(sorted.length?'':`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`);}
 // Après un appel sortant passé par la ligne (Allo) : la fenêtre « Décroché / Non décroché » s'ouvre
 // d'elle-même sur la bonne fiche, le bon bouton présélectionné. Une fois par appel, appels de moins de 20 min
 let _ASEEN=null;
@@ -4821,7 +4816,7 @@ function prSeg(p){
   if(c.n>=3&&!c.ok)return 'unreach';
   return 'redo';
 }
-const PR_SEGS=[['mine','🙋 Ma journée','Mes rappels du jour et mes leads jamais appelés, dans l\'ordre du tri du jour · « Appel suivant » enchaîne'],['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🆕 leads frais, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
+const PR_SEGS=[['mine','🙋 Ma journée','Mes rappels du jour et mes leads jamais appelés : promesses, puis leads frais, puis le reste du tri du jour'],['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🆕 leads frais, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 // Rappel automatique (demain, sans réponse) : jamais du samedi 12h au dimanche, reporté au lundi même heure
