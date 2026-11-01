@@ -75,6 +75,8 @@ export function pickOwner(list: any[], p: any, nowIso: string): string {
   // Le moins servi par rapport à sa part ; à égalité, la plus grande part d'abord
   return Object.keys(shares).sort((a, b) => (n[a] / shares[a]) - (n[b] / shares[b]) || shares[b] - shares[a])[0];
 }
+// « Dès que possible » : aujourd'hui, ou lundi si on est samedi après 12h ou dimanche
+export function asapDay(nowIso: string): string { const n = parisDT(nowIso); return n ? weekendToMonday(n.d, n.h) : ""; }
 const horizon = (nowIso: string) => new Date(Date.parse(nowIso) + RAPPEL_HORIZON_DAYS * 864e5).toISOString();
 
 export function plannedByContact(acts: any[], nowIso: string) {
@@ -161,7 +163,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const R = {
     contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
-    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, rappels_weekend: 0, attribues: 0, sans_telephone: 0,
+    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, rappels_weekend: 0, attribues: 0, rappels_rapproches: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
     crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
@@ -240,6 +242,12 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     if (p.statut === "rappeler" && !p.suivi && !(p.appels || []).length && !p.bmember) {
       const o = pickOwner(list, p, ctx.nowIso);
       if (o) { p.suivi = o; p.maj = ctx.nowIso; R.attribues++; }
+    }
+    // Lead jamais appelé avec un rappel automatique Boost lointain (étape de séquence J+7, J+20…) :
+    // on l'appelle dès que possible, la date devient aujourd'hui (ou lundi le week-end) · demande de Paul
+    if (p.statut === "rappeler" && p.rappel && p.rappelBy === "Boost" && (p.bauto || m.auto) && !(p.appels || []).length && !p.bmember && !pendingTool(p)) {
+      const asap = asapDay(ctx.nowIso);
+      if (p.rappel > asap) { p.rappel = asap; p.rappelH = ""; p.maj = ctx.nowIso; R.rappels_rapproches++; }
     }
     // Lead arrivé du samedi 12h au dimanche, jamais appelé et sans rappel : à rappeler le lundi (date seule),
     // sans attendre la séquence Boost (demande de Paul, 1er nov. 2026)
