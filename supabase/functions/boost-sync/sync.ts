@@ -49,6 +49,14 @@ export function weekendToMonday(d: string, h: string): string {
   t.setUTCDate(t.getUTCDate() + (dow === 6 ? 2 : 1));
   return t.toISOString().slice(0, 10);
 }
+// Lead arrivé le week-end (samedi 12h → dimanche) : lundi suivant, si ce lundi n'est pas déjà passé
+export function weekendLeadMonday(entryIso: string, nowIso: string): string {
+  const e = parisDT(entryIso); if (!e) return "";
+  const mon = weekendToMonday(e.d, e.h);
+  if (mon === e.d) return "";
+  const today = parisDT(nowIso)?.d || "";
+  return mon >= today ? mon : "";
+}
 const horizon = (nowIso: string) => new Date(Date.parse(nowIso) + RAPPEL_HORIZON_DAYS * 864e5).toISOString();
 
 export function plannedByContact(acts: any[], nowIso: string) {
@@ -132,7 +140,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const R = {
     contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
-    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, sans_telephone: 0,
+    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, rappels_weekend: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
     crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
@@ -206,6 +214,12 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     if (String(c.status) === "client" && !p.bconv && ((fresh && !!c.date_inscription && String(c.date_inscription) >= String(p.ts || "")) || (p.bst && String(p.bst) !== "client") || (p.statut === "abo" && !p.bmember && p.bst))) {
       p.bconv = true;
       if (p.statut !== "abo") { p.statut = "abo"; p.rappel = ""; p.rappelH = ""; p.rappelBy = ""; p.bset = true; p.maj = ctx.nowIso; R.devenus_clients++; }
+    }
+    // Lead arrivé du samedi 12h au dimanche, jamais appelé et sans rappel : à rappeler le lundi (date seule),
+    // sans attendre la séquence Boost (demande de Paul, 1er nov. 2026)
+    if (p.statut === "rappeler" && !p.rappel && !(p.appels || []).length && !p.bmember && !pendingTool(p)) {
+      const we = weekendLeadMonday(String(c.effective_entry_at || c.last_entry_at || c.created_at || ""), ctx.nowIso);
+      if (we) { p.rappel = we; p.rappelH = ""; p.rappelBy = "Boost"; p.maj = ctx.nowIso; R.rappels_weekend++; }
     }
     // Client : plus aucun rappel programmé (demande de Paul)
     if (p.statut === "abo" && (p.rappel || p.rappelH) && !pendingTool(p)) { p.rappel = ""; p.rappelH = ""; p.rappelBy = ""; p.maj = ctx.nowIso; R.rappels_clients_retires++; }

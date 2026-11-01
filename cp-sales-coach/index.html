@@ -5030,7 +5030,7 @@ function showProspects(keepScroll){
       ?`<span class="pl-when${late?' late':isDue?' due':''}">${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
       :`<span class="pl-when muted">${srcLogo(p.src)}${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     const arr=new Date(prArrival(p));
-    const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} · ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
+    const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${p.bentry?'Arrivé':'Créé'} le ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     // L'heure d'arrivée est dans la colonne « prochaine étape » ; si un rappel l'occupe, elle passe sous le nom
     const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rappel?arrH:''].filter(Boolean).join(' · ');
     const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
