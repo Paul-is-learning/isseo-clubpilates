@@ -22,7 +22,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { refreshSummary, summaryOn } from "../_shared/summary.ts";
+import { RateLimited, refreshSummary, summaryOn } from "../_shared/summary.ts";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
 import { AIRCALL_STUDIO, aircallGet, aircallHeaders, aircallPost, callTs, matchAircallUser, telKey, transcriptText } from "../_shared/aircall.ts";
 
@@ -1047,7 +1047,11 @@ serve(async (req) => {
         if (!summaryOn(p.studio)) return json({ ok: true, status: "off" });
         let status: string;
         try { status = await refreshSummary(p, body.force === true); }
-        catch (e) { console.error("summary", (e as Error).message); return json({ error: "Résumé indisponible pour le moment" }, 503); }
+        catch (e) {
+          console.error("summary", (e as Error).message);
+          if (e instanceof RateLimited) return json({ error: "Quota Mistral atteint · nouvel essai dans une minute", rate: true }, 503);
+          return json({ error: "Résumé indisponible pour le moment" }, 503);
+        }
         if (status === "updated" || (status === "empty" && body.had === true)) { if (!(await saveList())) continue replay; }
         return json({ ok: true, status, sum: p.sum || null });
       }

@@ -71,9 +71,17 @@ Ordre : 1) où en est le prospect et pourquoi (intéressé, hésite, attend, ref
 Règles absolues : n'invente rien, ne cite que ce qui est dans les échanges ; le plus récent prime en cas de contradiction ; pas de chiffres qui ne figurent pas dans le texte ; pas de formule de politesse, pas de titre, pas de puces, une idée par ligne ; n'utilise jamais le tiret long ni le demi-cadratin (écris « · » ou une virgule) ; 90 mots maximum ; « vous » désigne l'équipe du studio. Si la matière est trop mince, écris une seule ligne factuelle.`;
 
 // Appel Mistral : renvoie le texte, ou lève une erreur (clé absente, API en erreur)
+export class RateLimited extends Error { constructor() { super("Mistral 429"); } }
 export async function summarize(digest: string): Promise<string> {
   const key = Deno.env.get("MISTRAL_API_KEY");
   if (!key) throw new Error("Clé Mistral absente");
+  // Plan gratuit Mistral : 1 requête par seconde. Un 429 est retenté une fois après 2 s
+  for (let attempt = 0; ; attempt++) {
+    try { return await mistralCall(key, digest); }
+    catch (e) { if (e instanceof RateLimited && attempt === 0) { await new Promise((r) => setTimeout(r, 2000)); continue; } throw e; }
+  }
+}
+async function mistralCall(key: string, digest: string): Promise<string> {
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 25000);
   try {
@@ -83,6 +91,7 @@ export async function summarize(digest: string): Promise<string> {
       body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "system", content: SYSTEM }, { role: "user", content: digest }], max_tokens: 320, temperature: 0.2 }),
       signal: ctl.signal,
     });
+    if (r.status === 429) throw new RateLimited();
     if (!r.ok) throw new Error("Mistral " + r.status);
     const d = await r.json();
     const text = noDash(String(d?.choices?.[0]?.message?.content || "").trim()).replace(/^[-•*]\s*/gm, "").replace(/\n{2,}/g, "\n").trim();

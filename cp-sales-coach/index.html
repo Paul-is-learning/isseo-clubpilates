@@ -5062,23 +5062,23 @@ function togglePr(id){prOpenId=prOpenId===id?null:id;if(prOpenId){loadHist(prOpe
    Le serveur ne rappelle l'IA que si la matière a changé ; ici on ne demande que pour les fiches
    qui ont bougé depuis leur dernier résumé (ou jamais résumées), une à la fois. */
 const SUM_STUDIOS=['lagarennecolombes']; // même liste que côté serveur (déploiement progressif)
-const _SUMCHK={},_SUMERR={};let _sumQ=[],_sumBusy=false,_sumFail=0;
+const _SUMCHK={},_SUMERR={};let _sumQ=[],_sumBusy=false,_sumFail=0,_sumPause=0;
 function sumOn(p){return SUM_STUDIOS.includes(_sk(p&&p.studio||CFG.studio));}
 function sumHas(p){return !!((p.appels||[]).length||p.bnotes||p.note||p.fiche);}
 function sumStale(p){if(!sumOn(p)||!sumHas(p))return false;if(_SUMCHK[p.id]===(p.maj||''))return false;return !p.sum||(p.maj||'')>(p.sum.at||'');}
 function sumLine(p){const t=p&&p.sum&&p.sum.txt;if(!t)return '';return String(t).split('\n').filter(Boolean).filter(l=>!/^À faire\s*:/i.test(l)).join(' · ');}
 function sumAsk(id,first){if(!COACH_CODE)return;const p=PROSPECTS.find(x=>x.id===id);if(!p||!sumStale(p)||_sumQ.includes(id))return;if(first)_sumQ.unshift(id);else _sumQ.push(id);sumKick();}
 // Après chaque lecture serveur : les fiches qui ont bougé (3 au plus par passage, les plus récentes d'abord)
-function sumScan(){if(!COACH_CODE||_sumFail>=3)return;PSC().filter(sumStale).sort((a,b)=>(b.maj||'').localeCompare(a.maj||'')).slice(0,3).forEach(p=>sumAsk(p.id));}
-async function sumKick(){if(_sumBusy||!_sumQ.length)return;_sumBusy=true;const id=_sumQ.shift();
+function sumScan(){if(!COACH_CODE||_sumFail>=3||Date.now()<_sumPause)return;PSC().filter(sumStale).sort((a,b)=>(b.maj||'').localeCompare(a.maj||'')).slice(0,1).forEach(p=>sumAsk(p.id));}
+async function sumKick(){if(_sumBusy||!_sumQ.length)return;if(Date.now()<_sumPause){setTimeout(sumKick,_sumPause-Date.now()+200);return;}_sumBusy=true;const id=_sumQ.shift();
   try{const p=PROSPECTS.find(x=>x.id===id);if(p){const d=await syncCall('summary_refresh',{id,had:!!p.sum});
       _SUMCHK[id]=p.maj||'';
       delete _SUMERR[id];
       if(d&&d.ok){if(d.status==='updated'){p.sum=d.sum;persistProspects();}else if(d.status==='empty'&&p.sum){delete p.sum;persistProspects();}}
       _sumRender(id);_sumFail=0;}}
-  catch(e){_sumFail++;_SUMERR[id]=_why(e);_sumRender(id);}
-  _sumBusy=false;if(_sumQ.length)setTimeout(sumKick,400);}
-async function sumForce(id){const b=document.getElementById('sum-btn-'+id);if(b){b.disabled=true;b.textContent='⏳ Analyse…';}
+  catch(e){_sumFail++;_SUMERR[id]=_why(e);if(/Quota Mistral/.test(String(e.message)))_sumPause=Date.now()+90000;_sumRender(id);}
+  _sumBusy=false;if(_sumQ.length)setTimeout(sumKick,1500);}
+async function sumForce(id){_sumFail=0;_sumPause=0;const b=document.getElementById('sum-btn-'+id);if(b){b.disabled=true;b.textContent='⏳ Analyse…';}
   try{const p=PROSPECTS.find(x=>x.id===id);const d=await syncCall('summary_refresh',{id,force:true,had:!!(p&&p.sum)});
     if(p&&d&&d.ok){if(d.sum)p.sum=d.sum;else delete p.sum;_SUMCHK[id]=p.maj||'';persistProspects();}
     if(d&&d.status==='off')toast('Résumé automatique non activé pour ce studio');else if(d&&d.status==='empty')toast('Aucun échange à résumer');else toast('🧭 Situation mise à jour');}
