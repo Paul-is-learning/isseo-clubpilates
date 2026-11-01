@@ -30,8 +30,28 @@ const STATUTS: Record<string, string> = { rappeler: "à rappeler / contacté", e
 
 // Matière du résumé : contexte de la fiche + les 5 derniers échanges, du plus récent au plus ancien
 // deno-lint-ignore no-explicit-any
-export function buildDigest(p: any): { text: string; n: number } {
+const FR_DAYS = ["dimanche", "lundi", "mardi", "mercredi", "jeudi", "vendredi", "samedi"];
+const FR_MONTHS = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+// « jeudi 29 oct. » depuis AAAA-MM-JJ (dates absolues : un résumé lu trois jours plus tard reste juste)
+function frDate(d: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || "");
+  if (!m) return d;
+  const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  return FR_DAYS[t.getUTCDay()] + " " + t.getUTCDate() + " " + FR_MONTHS[t.getUTCMonth()];
+}
+const parisDay = (iso: string) => new Intl.DateTimeFormat("fr-CA", { timeZone: "Europe/Paris", year: "numeric", month: "2-digit", day: "2-digit" }).format(new Date(iso));
+// Appel sans échange réel (messagerie, non décroché, moins de 20 s) : compté, jamais décrit
+function isVoid(first: string): boolean {
+  if (!/^📞/.test(first)) return false;
+  if (!/answered|· décroché/.test(first)) return true;
+  const m = /· (\d+) ?m(?:in)?(?: (\d+) ?s)?\b|· (\d+) ?s\b/.exec(first);
+  if (!m) return false;
+  const sec = m[3] ? +m[3] : (+m[1] || 0) * 60 + (+(m[2] || 0));
+  return sec < 20;
+}
+export function buildDigest(p: any, nowIso = new Date().toISOString()): { text: string; n: number } {
   const items: { ts: string; txt: string }[] = [];
+  let voids = 0, lastVoid = "";
   for (const a of (p.appels || [])) {
     const raw = String(a?.txt || "");
     const i = raw.indexOf(SEP_TRANSCRIPT);
@@ -39,10 +59,11 @@ export function buildDigest(p: any): { text: string; n: number } {
     const tr = i >= 0 ? raw.slice(i + SEP_TRANSCRIPT.length).trim() : "";
     const first = head.split("\n")[0];
     const body = head.split("\n").slice(1).join("\n").trim();
-    // SMS et appels sans contenu : un simple repère daté
+    if (isVoid(first) && !tr) { voids++; if (String(a?.ts || "") > lastVoid) lastVoid = String(a?.ts || ""); continue; }
+    // La transcription (ce qui a vraiment été dit) avant le résumé automatique d'Allo, parfois approximatif
     let txt = first;
-    if (body) txt += "\n" + body;
-    if (tr) txt += "\nTranscription : " + tr;
+    if (tr) txt += "\nTranscription (source fiable) : " + tr.slice(0, MAX_ITEM - 300);
+    if (body) txt += "\nRésumé automatique de l'appel (indicatif) : " + body;
     items.push({ ts: String(a?.ts || ""), txt: txt.slice(0, MAX_ITEM) });
   }
   // Notes Boost (une ligne par note, la plus récente en premier) et commentaires locaux
@@ -52,11 +73,18 @@ export function buildDigest(p: any): { text: string; n: number } {
   if (!items.length && !p.fiche) return { text: "", n: 0 };
   items.sort((x, y) => y.ts.localeCompare(x.ts));
   const kept = items.slice(0, MAX_ITEMS);
+  const today = parisDay(nowIso);
+  const nom = String(p.nom || "").trim();
+  const rap = !p.rappel ? "Aucun rappel programmé"
+    : p.rappel < today ? "Rappel prévu le " + frDate(p.rappel) + (p.rappelH ? " à " + p.rappelH : "") + " : date passée, il n'a pas eu lieu, ce n'est plus un rendez-vous"
+    : "Prochain rappel : " + frDate(p.rappel) + (p.rappelH ? " à " + p.rappelH + " (heure convenue)" : " (heure libre, à choisir par le commercial)");
   const ctx = [
-    "Prospect : " + String(p.nom || "").trim(),
+    "Date du jour : " + frDate(today),
+    "Prospect : " + nom + " (c'est la seule personne à rappeler ; tout autre prénom dans les échanges est un proche ou une erreur de transcription)",
     "Statut dans l'outil : " + (STATUTS[String(p.statut)] || String(p.statut || "")),
     p.pack ? "Pack : " + (PACKS[String(p.pack)] || p.pack) : "",
-    p.rappel ? "Rappel programmé : " + p.rappel + (p.rappelH ? " " + p.rappelH : "") + (p.rappelBy ? " (posé par " + p.rappelBy + ")" : "") : "Aucun rappel programmé",
+    rap,
+    voids ? voids + " appel" + (voids > 1 ? "s" : "") + " sans échange (messagerie ou non décroché)" + (lastVoid ? ", le dernier le " + frDate(parisDay(lastVoid)) : "") : "",
     p.obj ? "Objectif noté : " + String(p.obj).slice(0, 200) : "",
     p.fiche ? "Fiche de découverte :\n" + String(p.fiche).slice(0, 1200) : "",
   ].filter(Boolean).join("\n");
@@ -68,7 +96,7 @@ export const digestHash = (text: string) => hash(text);
 
 const SYSTEM = `Tu es l'assistant commercial d'un studio Club Pilates (Reformer) en France. On te donne les derniers échanges avec un prospect (résumés et transcriptions d'appels, notes de l'équipe). Rédige la situation du prospect en 4 à 6 lignes courtes, en français, pour qu'un commercial sache en 10 secondes où il en est avant de le rappeler.
 Ordre : 1) où en est le prospect et pourquoi (intéressé, hésite, attend, refuse) ; 2) son profil utile à la vente (pratique actuelle, objectif, contraintes, budget) ; 3) ce qui a été promis ou convenu (pack, offre, rappel, séance d'essai) ; 4) la prochaine action conseillée, en une phrase qui commence par « À faire : ».
-Règles absolues : n'invente rien, ne cite que ce qui est dans les échanges ; le plus récent prime en cas de contradiction ; pas de chiffres qui ne figurent pas dans le texte ; pas de formule de politesse, pas de titre, pas de puces ; une idée par ligne, chaque ligne séparée par un retour à la ligne (jamais tout sur une seule ligne) ; n'utilise jamais le tiret long ni le demi-cadratin (écris « · » ou une virgule) ; 90 mots maximum ; « vous » désigne l'équipe du studio. Si la matière est trop mince, écris une seule ligne factuelle.`;
+Règles absolues : n'invente rien, ne cite que ce qui est dans les échanges ; le plus récent prime en cas de contradiction ; toute date est absolue (« jeudi 29 oct. »), n'écris jamais « aujourd'hui », « hier », « demain », « ce soir » ou « cette semaine » ; ne propose jamais de rappeler à une date ou une heure déjà passée ; la ligne « À faire » nomme uniquement le prospect indiqué, jamais un autre prénom ; si un prochain rappel est indiqué, « À faire » le reprend tel quel ; pas de chiffres qui ne figurent pas dans le texte ; pas de formule de politesse, pas de titre, pas de puces ; une idée par ligne, chaque ligne séparée par un retour à la ligne (jamais tout sur une seule ligne) ; n'utilise jamais le tiret long ni le demi-cadratin (écris « · » ou une virgule) ; 90 mots maximum ; « vous » désigne l'équipe du studio. Si la matière est trop mince, écris une seule ligne factuelle.`;
 
 // Tout sur une ligne malgré la consigne : une phrase par ligne, « À faire : » toujours isolé
 export function splitLines(t: string): string {
@@ -115,13 +143,20 @@ async function mistralCall(key: string, digest: string): Promise<string> {
 // "updated" (nouveau résumé). force = recalcul demandé par l'équipe même si rien n'a changé.
 // p.sum = { txt, h (empreinte de la matière), n (échanges retenus), at (date du résumé) }
 // deno-lint-ignore no-explicit-any
+const RELATIVE = /\b(aujourd'hui|hier|demain|ce soir|ce matin|cet après-midi|cette semaine)\b/i;
 export async function refreshSummary(p: any, force = false): Promise<"same" | "empty" | "updated"> {
   const now = new Date().toISOString();
-  const { text, n } = buildDigest(p);
+  const { text, n } = buildDigest(p, now);
   if (!text) { if (p.sum) delete p.sum; return "empty"; }
   const h = digestHash(text);
   if (!force && p.sum && p.sum.h === h) return "same"; // rien à enregistrer
-  const txt = await summarize(text);
+  let txt = await summarize(text);
+  // Garde-fou gratuit : une formule relative (« aujourd'hui »…) devient fausse dès le lendemain → une seule nouvelle demande
+  if (RELATIVE.test(txt)) {
+    const again = await summarize(text + "\n\nRappel de consigne : la version précédente contenait « " + (RELATIVE.exec(txt) || [""])[0] + " ». Réécris avec des dates absolues uniquement.").catch(() => "");
+    if (again && !RELATIVE.test(again)) txt = again;
+    else if (p.sum && p.sum.txt) { p.sum = { ...p.sum, h, at: now }; return "updated"; } // on garde l'ancien texte, matière marquée vue
+  }
   p.sum = { txt, h, n, at: now };
   return "updated";
 }
