@@ -216,9 +216,10 @@ serve(async (req: Request) => {
     const STUDIO = Deno.env.get("ALLO_STUDIO") || "La Garenne-Colombes";
 
     const admin = createClient(Deno.env.get("SUPABASE_URL") ?? "", Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "");
-    // Préférer la fiche du studio de la ligne ; une fiche trouvée sans studio y est rattachée
+    // Uniquement les fiches du studio de la ligne (ou sans studio, alors rattachées) : un appel de
+    // La Garenne ne va jamais sur une fiche de Lattes, même numéro ou pas (demande de Paul, 1er nov. 2026)
     const findByKey = (list: any[], k: string) => {
-      const same = list.filter((p) => telKey(p?.tel) === k);
+      const same = list.filter((p) => telKey(p?.tel) === k && (!String(p?.studio || "").trim() || String(p?.studio || "") === STUDIO));
       // Fiche liée à Boost (source maîtresse) d'abord, puis studio de la ligne
       const f = same.find((p) => p?.bid) || same.find((p) => String(p?.studio || "") === STUDIO) || same[0];
       if (f && !String(f.studio || "").trim()) f.studio = STUDIO;

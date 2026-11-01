@@ -5785,7 +5785,7 @@ function showCallStats(){_vReg('calls');
   $('#bar').style.width='100%';
   $('#nav').innerHTML=pageNav();
   $('#screen').innerHTML=`<div class="cg">
-    <div class="pr-head"><div><h2 class="pr-h2">📊 Appels du jour</h2><div class="pr-h2s">activité téléphonique Allo · toute l'équipe</div></div><span class="sync-badge ok">☁️ Équipe</span></div>
+    <div class="pr-head"><div><h2 class="pr-h2">📊 Appels du jour</h2><div class="pr-h2s">activité téléphonique · ${esc(CFG.studio||'tous les studios')}</div></div><span class="sync-badge ok">☁️ Équipe</span></div>
     <div class="ic-week"><button onclick="csShift(-1)">‹</button><b>${fmtD}</b><button onclick="csShift(1)"${dateS>=todayS?' disabled style="opacity:.3"':''}>›</button>${dateS!==todayS?`<button class="ic-today" onclick="_csDate=null;showCallStats()">Aujourd'hui</button>`:''}</div>
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin:14px 0">
       ${big(total,'Appels passés','var(--cp-dark)')}
