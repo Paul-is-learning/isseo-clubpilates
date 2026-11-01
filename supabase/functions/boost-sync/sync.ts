@@ -37,6 +37,18 @@ export const MAX_AGE_DAYS = 60;
 export const RAPPEL_HORIZON_DAYS = 30;
 // Un rappel passé depuis plus de 14 jours est périmé : ni date affichée, ni motif d'import
 export const STALE_DAYS = 14;
+// Règle de Paul (1er nov. 2026) : un rappel automatique (séquence Boost) qui tombe du samedi 12h
+// au dimanche soir est reporté au lundi suivant, même heure. Un rappel posé par une personne n'est pas touché
+export function weekendToMonday(d: string, h: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(d || "");
+  if (!m) return d;
+  const t = new Date(Date.UTC(+m[1], +m[2] - 1, +m[3]));
+  const dow = t.getUTCDay(); // 0 dimanche, 6 samedi
+  const sat = dow === 6 && (!h || h >= "12:00");
+  if (!sat && dow !== 0) return d;
+  t.setUTCDate(t.getUTCDate() + (dow === 6 ? 2 : 1));
+  return t.toISOString().slice(0, 10);
+}
 const horizon = (nowIso: string) => new Date(Date.parse(nowIso) + RAPPEL_HORIZON_DAYS * 864e5).toISOString();
 
 export function plannedByContact(acts: any[], nowIso: string) {
@@ -76,7 +88,9 @@ export function mapStatus(c: any, planned?: { at: string; essai: boolean; create
   if (when && nowIso && when > horizon(nowIso)) when = ""; // rappel au-delà de J+30 : non traité
   if (when && nowIso && when < new Date(Date.parse(nowIso) - STALE_DAYS * 864e5).toISOString()) when = ""; // rappel périmé
   const dt = when ? parisDT(when) : null;
-  return { statut, rappel: dt?.d || "", rappelH: dt && /T\d/.test(when) ? dt.h : "", nok: st === "rdv_nok", client: st === "client", auto: !!dt && auto };
+  const rappelH = dt && /T\d/.test(when) ? dt.h : "";
+  const rappel = dt ? (auto ? weekendToMonday(dt.d, rappelH) : dt.d) : "";
+  return { statut, rappel, rappelH, nok: st === "rdv_nok", client: st === "client", auto: !!dt && auto };
 }
 
 // Rappel de la fiche déjà passé (heure de Paris ; sans heure = fin de journée)

@@ -4689,6 +4689,8 @@ function prSeg(p){
 const PR_SEGS=[['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Rappels et séances d\'essai convenus, par date et heure'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
+// Rappel automatique (demain, sans réponse) : jamais du samedi 12h au dimanche, reporté au lundi même heure
+function _wkMonday(d,h){const w=d.getDay();if(w===0)d.setDate(d.getDate()+1);else if(w===6&&(!h||h>='12:00'))d.setDate(d.getDate()+2);return d;}
 function _ldstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 // Fiche mise de côté jusqu'à l'ouverture du studio (statut inchangé : Contacté)
 function prOuv(p){return !!(p&&p.ouverture&&p.ouverture.at);}
@@ -4771,11 +4773,11 @@ async function csDone(id,mode,k){
   let note='',msg='';
   if(k==='ko'){
     const added=_logCall(p,false,'');
-    if(r){const t=new Date();t.setDate(t.getDate()+1);p.rappel=_ldstr(t);p.rappelBy=me;_takeSuivi(p);msg='📵 Non répondu · rappel reprogrammé demain'+(p.rappelH?' à '+p.rappelH:'');}
+    if(r){const t=new Date();t.setDate(t.getDate()+1);p.rappel=_ldstr(_wkMonday(t,p.rappelH));p.rappelBy=me;_takeSuivi(p);msg='📵 Non répondu · rappel reprogrammé '+(t.getDate()===new Date().getDate()+1?'demain':'lundi')+(p.rappelH?' à '+p.rappelH:'');}
     else{const c=prCalls(p);
       if(c.n>=3&&!c.ok)msg='📵 3e essai sans réponse · le lead passe dans Injoignables';
-      else{const t=new Date();t.setDate(t.getDate()+1);p.rappel=_ldstr(t);p.rappelH=String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');p.rappelBy=me;_takeSuivi(p);
-        msg='📵 Sans réponse · rappel programmé demain à '+p.rappelH+' · le lead passe dans Rappels & RDV';}}
+      else{const t=new Date();t.setDate(t.getDate()+1);p.rappelH=String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');_wkMonday(t,p.rappelH);p.rappel=_ldstr(t);p.rappelBy=me;_takeSuivi(p);
+        msg='📵 Sans réponse · rappel programmé '+(t.getDay()===1&&new Date().getDay()!==0?'lundi':'demain')+' à '+p.rappelH+' · le lead passe dans Rappels & RDV';}}
     if(d&&!(c0=>c0.n>=3&&!c0.ok)(prCalls(p))){p.rappel=d;p.rappelH=h;p.rappelBy=me;_takeSuivi(p);msg='📵 Sans réponse · rappel le '+frDate(d)+(h?' à '+h:'')+' · Rappels & RDV';}
     if(txt)note='📵 '+(r?'Rappelé · non répondu':'Non décroché')+' : '+txt;
     if(!added)msg+=' (appel déjà enregistré par la ligne)';
