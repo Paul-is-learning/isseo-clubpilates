@@ -2085,6 +2085,10 @@ const $=s=>document.querySelector(s);
 function esc(s){return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;')}
 function lbl(list,id){const o=list.find(x=>x.id===id);return o?o.label:id}
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');setTimeout(()=>t.classList.remove('on'),1700)}
+// Erreur imprévue : message visible (au lieu d'un écran qui ne réagit plus) et remontée au serveur, 3 max par session
+let _errN=0;function _report(msg,src,where){if(_errN++>=3||typeof syncCall!=='function'||!COACH_CODE)return;try{syncCall('client_error',{msg:String(msg).slice(0,300),src:String(src||'').slice(0,120),where:String(where||'').slice(0,80)}).catch(()=>{});}catch(e){}}
+window.addEventListener('error',e=>{const m=(e.message||'')+' @'+(e.lineno||0)+':'+(e.colno||0);_report(m,e.filename,document.querySelector('#topPhase')?.textContent||'');try{toast('⚠️ Une erreur est survenue · '+String(e.message||'').slice(0,80));}catch(x){}});
+window.addEventListener('unhandledrejection',e=>{const r=e.reason;_report('promise: '+(r&&r.message||r),'',document.querySelector('#topPhase')?.textContent||'');});
 function ageBand(){return AGE_BANDS.find(b=>b.id===st.ageBand)||null}
 function trig(){return TRIGGERS.find(t=>t.id===st.trigger)||null}
 function emo(){return EMOTIONS.find(e=>e.id===st.emotion)||null}
@@ -4789,7 +4793,12 @@ function teamNames(){
   PSC().forEach(p=>{add(p.suivi);(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(/^📞/.test(l0)&&String(a.ts||'')>=lim)add(_callWho(l0));});});
   return Object.values(m).sort((a,b)=>a.localeCompare(b,'fr'));
 }
-function setPSuivi(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.suivi=String(v||'').slice(0,40);p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);toast(p.suivi?'🤝 Suivi par '+p.suivi:'Suivi retiré');}
+// Changement du commercial qui suit la fiche : envoyé tout de suite au serveur, avec confirmation ou message d'échec
+async function setPSuivi(id,v){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const before=p.suivi||'';p.suivi=String(v||'').slice(0,40);p.maj=new Date().toISOString();persistProspects();
+  try{showProspects(true);}catch(e){_report('setPSuivi/render: '+(e&&e.message),'','Mes prospects');}
+  toast(p.suivi?'🤝 Suivi par '+p.suivi+' · enregistrement…':'Suivi retiré · enregistrement…');
+  try{await syncPush();const q=PROSPECTS.find(x=>x.id===id);if(q&&(q.suivi||'')!==(p.suivi||''))throw new Error('le serveur a gardé « '+(q.suivi||'personne')+' »');toast(q&&q.suivi?'✅ Suivi par '+q.suivi+' · enregistré':'✅ Suivi retiré · enregistré');}
+  catch(e){_report('setPSuivi/push: '+(e&&e.message),'','Mes prospects');toast('⚠️ Changement non enregistré ('+String(e&&e.message||e).slice(0,60)+') · réessayez');}}
 // Appel noté à la main : compté dans les essais et l'objectif du jour ; un appel de même issue déjà rangé
 // par Allo ou Aircall dans les 15 dernières minutes n'est pas doublé
 function _logCall(p,ok,txt){

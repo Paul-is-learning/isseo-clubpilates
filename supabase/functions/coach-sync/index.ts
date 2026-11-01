@@ -952,6 +952,7 @@ serve(async (req) => {
             // Commercial qui suit la relation (prénom) et mise de côté « À rappeler à l'ouverture »
             suivi: String(p.suivi || "").slice(0, 40),
             vendeur: String(p.vendeur || "").slice(0, 40), // qui a fait signer (vente, primes)
+            rk: p.rk === "rdv" || p.rk === "retry" ? p.rk : undefined, // rappel convenu avec le prospect ou retentative (tri du jour)
             ouverture: p.ouverture && typeof p.ouverture === "object" && p.ouverture.at
               ? { at: String(p.ouverture.at).slice(0, 30), by: String(p.ouverture.by || "").slice(0, 40), note: String(p.ouverture.note || "").slice(0, 300) }
               : undefined,
@@ -1057,6 +1058,15 @@ serve(async (req) => {
       }
 
       // ── Corbeille : fiches supprimées dans l'outil (les plus récentes en premier)
+      // ── Erreurs JavaScript remontées par l'application (message, ligne, action) ──
+      // Sans donnée personnelle : sert à comprendre un « ça bugue » sans accès au téléphone
+      if (action === "client_error") {
+        const row = { at: new Date().toISOString(), msg: String(body.msg || "").slice(0, 300), src: String(body.src || "").slice(0, 120), where: String(body.where || "").slice(0, 80), ua: String(req.headers.get("user-agent") || "").slice(0, 120), role };
+        const { data: cur } = await admin.from("coach_store").select("data").eq("id", "_coach_errors").maybeSingle();
+        const items = (Array.isArray(cur?.data?.items) ? cur.data.items : []).concat([row]).slice(-80);
+        await admin.from("coach_store").upsert({ id: "_coach_errors", data: { items }, updated_at: new Date().toISOString() });
+        return json({ ok: true });
+      }
       if (action === "trash_list") {
         const tr = await getRow(admin, "_coach_trash");
         // deno-lint-ignore no-explicit-any
