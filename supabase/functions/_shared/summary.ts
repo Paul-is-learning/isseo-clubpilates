@@ -68,8 +68,14 @@ export const digestHash = (text: string) => hash(text);
 
 const SYSTEM = `Tu es l'assistant commercial d'un studio Club Pilates (Reformer) en France. On te donne les derniers échanges avec un prospect (résumés et transcriptions d'appels, notes de l'équipe). Rédige la situation du prospect en 4 à 6 lignes courtes, en français, pour qu'un commercial sache en 10 secondes où il en est avant de le rappeler.
 Ordre : 1) où en est le prospect et pourquoi (intéressé, hésite, attend, refuse) ; 2) son profil utile à la vente (pratique actuelle, objectif, contraintes, budget) ; 3) ce qui a été promis ou convenu (pack, offre, rappel, séance d'essai) ; 4) la prochaine action conseillée, en une phrase qui commence par « À faire : ».
-Règles absolues : n'invente rien, ne cite que ce qui est dans les échanges ; le plus récent prime en cas de contradiction ; pas de chiffres qui ne figurent pas dans le texte ; pas de formule de politesse, pas de titre, pas de puces, une idée par ligne ; n'utilise jamais le tiret long ni le demi-cadratin (écris « · » ou une virgule) ; 90 mots maximum ; « vous » désigne l'équipe du studio. Si la matière est trop mince, écris une seule ligne factuelle.`;
+Règles absolues : n'invente rien, ne cite que ce qui est dans les échanges ; le plus récent prime en cas de contradiction ; pas de chiffres qui ne figurent pas dans le texte ; pas de formule de politesse, pas de titre, pas de puces ; une idée par ligne, chaque ligne séparée par un retour à la ligne (jamais tout sur une seule ligne) ; n'utilise jamais le tiret long ni le demi-cadratin (écris « · » ou une virgule) ; 90 mots maximum ; « vous » désigne l'équipe du studio. Si la matière est trop mince, écris une seule ligne factuelle.`;
 
+// Tout sur une ligne malgré la consigne : une phrase par ligne, « À faire : » toujours isolé
+export function splitLines(t: string): string {
+  if (t.includes("\n")) return t;
+  const parts = t.replace(/\s+(À faire\s*:)/i, "\n$1").split("\n");
+  return parts.map((seg, i) => i === parts.length - 1 && /^À faire/i.test(seg) ? seg : seg.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÝÉÈ«(])/).join("\n")).join("\n");
+}
 // Appel Mistral : renvoie le texte, ou lève une erreur (clé absente, API en erreur)
 export class RateLimited extends Error { constructor() { super("Mistral 429"); } }
 export async function summarize(digest: string): Promise<string> {
@@ -91,12 +97,17 @@ async function mistralCall(key: string, digest: string): Promise<string> {
       body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "system", content: SYSTEM }, { role: "user", content: digest }], max_tokens: 320, temperature: 0.2 }),
       signal: ctl.signal,
     });
-    if (r.status === 429) throw new RateLimited();
-    if (!r.ok) throw new Error("Mistral " + r.status);
+    if (!r.ok) {
+      // Détail de la réponse Mistral (sans clé) dans les journaux : quota, capacité du modèle, plan…
+      const body = (await r.text().catch(() => "")).replace(/\s+/g, " ").slice(0, 300);
+      console.error("mistral", r.status, body);
+      if (r.status === 429) throw new RateLimited();
+      throw new Error("Mistral " + r.status);
+    }
     const d = await r.json();
     const text = noDash(String(d?.choices?.[0]?.message?.content || "").trim()).replace(/^[-•*]\s*/gm, "").replace(/\n{2,}/g, "\n").trim();
     if (!text) throw new Error("Réponse vide");
-    return text.slice(0, 900);
+    return splitLines(text).slice(0, 900);
   } finally { clearTimeout(t); }
 }
 

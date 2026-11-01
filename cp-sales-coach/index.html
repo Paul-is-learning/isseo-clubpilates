@@ -5088,7 +5088,9 @@ function _sumRender(id){if(prOpenId===id&&document.querySelector('.pr-search')&&
 function sumBlockHTML(p){
   if(!sumOn(p))return '';
   const s=p.sum,err=_SUMERR[p.id],st=!err&&sumStale(p),pend=!err&&(_sumQ.includes(p.id)||(_sumBusy&&!s));
-  const lines=s?String(s.txt).split('\n').map(x=>x.trim()).filter(Boolean):[];
+  // Résumé livré sur une seule ligne (anciens résumés) : une phrase par ligne, « À faire » isolé
+  const raw=s?String(s.txt):'';const txt=raw.includes('\n')?raw:raw.replace(/\s+(À faire\s*:)/i,'\n$1').split('\n').map((seg,i,arr)=>i===arr.length-1&&/^À faire/i.test(seg)?seg:seg.split(/(?<=[.!?])\s+(?=[A-ZÀ-ÝÉÈ«(])/).join('\n')).join('\n');
+  const lines=s?txt.split('\n').map(x=>x.trim()).filter(Boolean):[];
   const when=s&&s.at?new Date(s.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   return `<div class="pl-sum"><div class="pl-sum-h">🧭 Situation${s?` <small>· d'après ${s.n||'les'} dernier${s.n>1?'s':''} échange${s.n>1?'s':''}${when?' · '+esc(when):''}${st?' · <b>échanges plus récents, mise à jour en cours</b>':''}</small>`:''}
       <button id="sum-btn-${p.id}" onclick="event.stopPropagation();sumForce('${p.id}')" title="Relire les derniers échanges et réécrire la situation">↻ Actualiser</button></div>
