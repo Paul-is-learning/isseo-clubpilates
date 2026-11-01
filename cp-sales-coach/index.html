@@ -4670,7 +4670,9 @@ function dayGoalHTML(){
 // ⏰ Rappels & RDV : rappel ou séance datés · 📵 Injoignables : 3 appels ou plus, aucun décroché
 // Lien d'appel au format international (+33…) : Allo, Aircall et les téléphones le comprennent tous
 function telHref(t){let d=String(t||'').replace(/[^\d+]/g,'');if(d.startsWith('00'))d='+'+d.slice(2);else if(/^0\d{9}$/.test(d))d='+33'+d.slice(1);return 'tel:'+d;}
-function prCalls(p){const c=(p.appels||[]).filter(a=>/^📞/.test(String(a.txt||'')));const ok=c.filter(a=>/answered|· décroché/.test(String(a.txt||'').split('\n')[0])).length;return {n:c.length,ok};}
+// Appel « joint » : décroché ET au moins 20 s (un appel Allo de 0 min tombé sur messagerie est marqué « answered » mais personne n'a parlé)
+function _callOk(l0){if(!/answered|· décroché/.test(l0))return false;const d=/· \d+\s*(m(in)?|s)\b/.test(l0)?_apDurMin(l0):-1;return d<0||d>=20/60;}
+function prCalls(p){const c=(p.appels||[]).filter(a=>/^📞/.test(String(a.txt||'')));const ok=c.filter(a=>_callOk(String(a.txt||'').split('\n')[0])).length;return {n:c.length,ok};}
 // 🆕 Nouveaux : jamais appelés (aucun appel noté) · 🏗 À rappeler à l'ouverture : mis de côté
 function prSeg(p){
   if(p.bmember||!prOpen(p))return '';
@@ -4693,8 +4695,9 @@ function prOuv(p){return !!(p&&p.ouverture&&p.ouverture.at);}
 // Commercial qui suit la fiche : p.suivi, sinon celui qui a posé le rappel
 // Commercial en charge (suivi, sinon commercial assigné dans Boost) · badge coloré, même couleur pour la même personne partout
 // Par défaut (personne ne suit le lead et aucun commercial assigné dans Boost) : JC à La Garenne-Colombes (demande de Paul)
-const OWNER_DEFAULT={lagarennecolombes:'JC'};
-function prCharge(p){return prOwner(p)||String(p.rep||'').trim().split(/\s+/)[0]||OWNER_DEFAULT[_sk(p.studio||CFG.studio||'')]||'';}
+// Commercial du studio : en charge de tout contact jamais joint (aucun appel décroché), sauf suivi posé à la main
+const OWNER_DEFAULT={lagarennecolombes:'JC',montpellierlattes:'Solène'};
+function prCharge(p){const d=OWNER_DEFAULT[_sk(p.studio||CFG.studio||'')]||'';const o=prOwner(p);if(o)return o;if(d&&!prCalls(p).ok)return d;return String(p.rep||'').trim().split(/\s+/)[0]||d;}
 const _OWN_COL=['#2F6FE0','#C2410C','#0F8A5F','#7C3AED','#B4235A','#0E7490','#A16207','#4D5B7C'];
 function ownColor(n){let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return _OWN_COL[h%_OWN_COL.length];}
 function ownPill(p){const n=prCharge(p);if(!n)return '<span class="pl-own none" title="Personne ne suit encore ce lead">👤 À attribuer</span>';const c=ownColor(n);return `<span class="pl-own" style="color:${c};background:color-mix(in srgb,${c} 12%,#fff);border-color:color-mix(in srgb,${c} 35%,#fff)" title="Commercial en charge des rappels">👤 ${esc(n)}</span>`;}
