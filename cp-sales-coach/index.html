@@ -1349,6 +1349,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-ic{min-width:0;max-width:100%}
 .pl-by{font-size:11px;color:var(--ink-mid);font-weight:600}
 .pl-hint{font-size:11px;color:var(--ink-mid);margin:-2px 0 8px}
+.nc-bell{display:inline-block;margin:4px 0 8px;background:#FFF3EA;border:1px solid #F0C9A8;color:#8A4B12;border-radius:10px;padding:7px 12px;font-weight:700;font-size:12.5px;cursor:pointer}
 .nc-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;margin:6px 0 10px;padding:10px 14px;border-radius:14px;background:#223354;color:#fff;box-shadow:var(--sh-s)}.nc-bar.done{background:#2F7D4F;justify-content:center;font-weight:600}.nc-l{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.nc-l b{font-size:14px}.nc-l span{font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nc-go{background:#fff;color:#223354;border:0;border-radius:10px;padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}
 .pl-cbtn.rap-save.on{background:#2F5D8C;color:#fff;border-color:#2F5D8C;box-shadow:0 0 0 3px rgba(47,93,140,.18)}
 .pl-cbtn.rap-del{color:#B4300F}
@@ -2934,6 +2935,7 @@ async function syncPull(rerender){
       PROSPECTS=server.concat(localOnly);
       persistProspects();_cleanDirty();
       setTimeout(autoSheet,400);
+      if(_openWanted&&PROSPECTS.some(p=>p.id===_openWanted)){const id=_openWanted;_openWanted='';setTimeout(()=>openPr(id),300);}
       if(localOnly.length||absorbed||_hasPend())schedulePush();
     }
     // Serveur joignable : l'attente repart de zéro (l'envoi programmé ci-dessus fait le nouvel essai)
@@ -4634,9 +4636,9 @@ function prioListHTML(sorted,card){
 function mineCount(){const t=todayStr(),me=_me(),all=(COACH_ROLE==='admin'&&!teamNames().includes(me));return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return prOwnF?o===prOwnF:all||o===me;}).length;}
 function nextCallHTML(sorted){
   const nxt=sorted.find(p=>p.id!==prOpenId&&!p.noCall&&p.tel)||sorted.find(p=>p.id!==prOpenId);
-  if(!nxt)return `<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
+  if(!nxt)return `${pushBtnHTML()}<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
   const pr=prPrio(nxt);
-  return `<div class="nc-bar"><div class="nc-l"><b>📞 Appel suivant</b><span>${esc(nxt.nom||'Prospect')} · ${esc(pr.why.slice(0,90))}</span></div><button class="nc-go" onclick="nextCall('${nxt.id}')">Ouvrir la fiche ▸</button></div>`;
+  return `${pushBtnHTML()}<div class="nc-bar"><div class="nc-l"><b>📞 Appel suivant</b><span>${esc(nxt.nom||'Prospect')} · ${esc(pr.why.slice(0,90))}</span></div><button class="nc-go" onclick="nextCall('${nxt.id}')">Ouvrir la fiche ▸</button></div>`;
 }
 function nextCall(id){prOpenId=id;loadHist(id);sumAsk(id,true);showProspects(true);setTimeout(()=>{const el=document.querySelector('.pr-card.open');if(el)el.scrollIntoView({behavior:'smooth',block:'start'});},50);}
 // Après un appel sortant passé par la ligne (Allo) : la fenêtre « Décroché / Non décroché » s'ouvre
@@ -4684,10 +4686,34 @@ function rappelTick(){
   const b=document.getElementById('prRdvBadge');if(b){const n=PSC().filter(rdvHot).length;b.textContent=n;b.style.display=n?'':'none';}
 }
 setInterval(()=>{try{rappelTick();}catch(e){}},30000);
-function askRdvNotif(){
+// ── Alertes push : abonnement de cet appareil (service worker sw.js), envoi par le serveur 10 min avant chaque rappel à l'heure ──
+// Clé publique VAPID du projet (publique par nature, même clé que l'application isseo)
+const PUSH_PUBLIC_KEY='BKse61EsQ76DAz5vVmuontGOyt7nYvYMpRgyM-GH10_Vz33c0Nlu1svCIX4GIlPXZwh6-G8jUEc9l21wSnupek4';
+function _b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));const o=new Uint8Array(b.length);for(let i=0;i<b.length;i++)o[i]=b.charCodeAt(i);return o;}
+let _swReg=null;
+function swInit(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(r=>{_swReg=r;}).catch(()=>{});
+  navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='OPEN_PROSPECT'&&d.id)_openLater(d.id);});}
+let _openWanted='';
+function _openLater(id){_openWanted=id;if(PROSPECTS.some(p=>p.id===id)){_openWanted='';openPr(id);}}
+function pushOn(){try{return localStorage.getItem('cpcoach_push')==='1';}catch(e){return false;}}
+const pushSupported=()=>'Notification' in window&&'serviceWorker' in navigator&&'PushManager' in window;
+async function askRdvNotif(){
   if(!('Notification' in window)){toast('Notifications non disponibles sur ce navigateur · l\'onglet clignote quand un rappel approche');return;}
-  Notification.requestPermission().then(r=>{toast(r==='granted'?'🔔 Notifications activées · alerte 10 min avant chaque rappel':'Notifications refusées · l\'onglet clignote quand même');showProspects(true);});
+  const r=await Notification.requestPermission();
+  if(r!=='granted'){toast('Notifications refusées · l\'onglet clignote quand même');showProspects(true);return;}
+  if(!pushSupported()){toast('🔔 Alertes activées quand l\'app est ouverte · ce navigateur ne reçoit pas d\'alerte app fermée');showProspects(true);return;}
+  try{
+    const reg=_swReg||await navigator.serviceWorker.ready;
+    let sub=await reg.pushManager.getSubscription();
+    if(!sub)sub=await reg.pushManager.subscribe({userVisibleOnly:true,applicationServerKey:_b64u(PUSH_PUBLIC_KEY)});
+    const d=await syncCall('push_test',{sub:sub.toJSON(),studio:CFG.studio||'',nom:CFG.rep||''});
+    await syncCall('push_sub',{sub:sub.toJSON(),studio:CFG.studio||'',nom:CFG.rep||''});
+    try{localStorage.setItem('cpcoach_push','1');}catch(e){}
+    toast(d&&d.ok?'🔔 Alertes activées · une notification de test vient d\'arriver':'🔔 Alertes enregistrées · test non reçu, réessayez plus tard');
+  }catch(e){_report('push: '+(e&&e.message),'','Mes prospects');toast('Alertes impossibles sur cet appareil ('+String(e&&e.message||e).slice(0,50)+')');}
+  showProspects(true);
 }
+function pushBtnHTML(){if(!('Notification' in window)||pushOn())return '';return `<button class="nc-bell" onclick="askRdvNotif()" title="Recevoir une alerte 10 min avant chaque rappel à l'heure, même app fermée (ajoutez l'app à l'écran d'accueil sur iPhone)">🔔 Activer les alertes</button>`;}
 /* Rappel programmé à l'heure : priorité absolue quand l'échéance approche (60 min) */
 function prRdvState(p){
   if(!p.rappel)return null;
@@ -5171,7 +5197,7 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
     <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':prFilter?'Rechercher dans « '+PIPE[prFilter].lbl+' » : nom, numéro…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
     <div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&(prSort==='rappels'||prSort==='mine')&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
-    ${!clientView&&prSort==='mine'?nextCallHTML(sorted):''}
+    ${!clientView&&prSort==='mine'?nextCallHTML(sorted):!clientView&&prSort==='rappels'?pushBtnHTML():''}
     ${!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(p=>{const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===todayStr());}):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
       return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
     ${!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='rappels'||prSort==='mine'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
@@ -6333,6 +6359,8 @@ window.addEventListener('popstate',function(){
   try{
     const u=new URL(location.href);
     urlCode=(u.searchParams.get('code')||'').trim();
+    const op=(u.searchParams.get('open')||'').trim();if(op){_openWanted=op;u.searchParams.delete('open');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
+    swInit();
     if(urlCode){u.searchParams.delete('code');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
   }catch(e){}
   if(urlCode&&urlCode.toUpperCase()!==(COACH_CODE||'').toUpperCase()){

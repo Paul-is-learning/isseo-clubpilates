@@ -24,6 +24,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { RateLimited, refreshSummary, summaryOn } from "../_shared/summary.ts";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { ROW_PUSH, rappelPush, sendPush } from "../_shared/push.ts";
 import { AIRCALL_STUDIO, aircallGet, aircallHeaders, aircallPost, callTs, matchAircallUser, telKey, transcriptText } from "../_shared/aircall.ts";
 
 const CORS = {
@@ -178,6 +179,16 @@ serve(async (req) => {
     );
 
     if (action === "isseo_ic" || action === "isseo_ic_bareme") return await isseoIC(admin, req, body, action);
+
+    // ── Planificateur (toutes les 5 min) : alertes « rappel dans 10 min » · clé du planificateur, jamais un code ──
+    if (action === "rappel_push") {
+      const given = req.headers.get("x-sync-key") || "";
+      const { data: cron } = await admin.from("coach_store").select("data").eq("id", "_boost_cron").maybeSingle();
+      const cronKey = String(cron?.data?.key || "");
+      if (!(cronKey.length >= 32 && safeEq(given, cronKey))) return json({ error: "Clé invalide" }, 401);
+      const store = await getRow(admin, "_coach_prospects");
+      return json({ ok: true, ...(await rappelPush(admin, Array.isArray(store?.prospects) ? store.prospects : [])) });
+    }
 
     // ── Limite d'essais : 8 échecs en 15 min depuis une même adresse → blocage 15 min ──
     const rl = await rateLimit(admin, req);
@@ -1058,6 +1069,28 @@ serve(async (req) => {
       }
 
       // ── Corbeille : fiches supprimées dans l'outil (les plus récentes en premier)
+      // ── Alertes push : abonnement de l'appareil (un par navigateur), test, désabonnement ──
+      if (action === "push_sub" || action === "push_unsub" || action === "push_test") {
+        const sub = body.sub && typeof body.sub === "object" ? body.sub : null;
+        const endpoint = String(sub?.endpoint || body.endpoint || "").slice(0, 600);
+        if (!endpoint) return json({ error: "Abonnement manquant" }, 400);
+        const { data: row } = await admin.from("coach_store").select("data").eq("id", ROW_PUSH).maybeSingle();
+        let items: any[] = Array.isArray(row?.data?.items) ? row.data.items : [];
+        const sent = row?.data?.sent || {};
+        if (action === "push_unsub") items = items.filter((it) => it.endpoint !== endpoint);
+        else if (action === "push_sub") {
+          if (!sub?.keys?.p256dh || !sub?.keys?.auth) return json({ error: "Abonnement incomplet" }, 400);
+          const who = String(role === "admin" ? (body.nom || "Paul") : rep).trim().split(/\s+/)[0] || "";
+          items = items.filter((it) => it.endpoint !== endpoint).concat([{ endpoint, sub: { endpoint, keys: { p256dh: String(sub.keys.p256dh), auth: String(sub.keys.auth) } }, rep: who, role, studio: String(body.studio || "").slice(0, 60), at: new Date().toISOString(), ua: String(req.headers.get("user-agent") || "").slice(0, 120) }]).slice(-200);
+        }
+        await admin.from("coach_store").upsert({ id: ROW_PUSH, data: { items, sent }, updated_at: new Date().toISOString() });
+        if (action === "push_test") {
+          const it = items.find((x) => x.endpoint === endpoint);
+          const r = it ? await sendPush(it.sub, { title: "🔔 Alertes activées", body: "Vous recevrez un rappel 10 min avant chaque rendez-vous à l'heure.", tag: "test" }) : "err";
+          return json({ ok: r === "ok", result: r });
+        }
+        return json({ ok: true, n: items.length });
+      }
       // ── Erreurs JavaScript remontées par l'application (message, ligne, action) ──
       // Sans donnée personnelle : sert à comprendre un « ça bugue » sans accès au téléphone
       if (action === "client_error") {
