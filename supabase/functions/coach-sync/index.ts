@@ -22,6 +22,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { refreshSummary, summaryOn } from "../_shared/summary.ts";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
 import { AIRCALL_STUDIO, aircallGet, aircallHeaders, aircallPost, callTs, matchAircallUser, telKey, transcriptText } from "../_shared/aircall.ts";
 
@@ -44,7 +45,7 @@ const MAX_INVITES = 50;
 // Champs maîtres venus de Fitness Boost (boost-sync) : jamais acceptés depuis un téléphone,
 // toujours recopiés depuis la fiche serveur. Sur une fiche liée (bid), nom, tel et commercial
 // appartiennent aussi à Boost.
-const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis", "bnew", "bnews", "temp", "btemp", "bauto", "bconv"];
+const BOOST_FIELDS = ["bid", "bclub", "bst", "bupd", "email", "src", "bnotes", "bnok", "bclient", "cPhone", "cSms", "cEmail", "cWa", "brap", "bsync", "bset", "bentry", "bq", "bqs", "bqr", "bqe", "bmember", "bqi", "bqis", "bnew", "bnews", "temp", "btemp", "bauto", "bconv", "sum"];
 // deno-lint-ignore no-explicit-any
 function keepBoost(clean: any, ex: any) {
   if (!ex) return;
@@ -1035,6 +1036,20 @@ serve(async (req) => {
           for (const g of gone) if (!tomb.includes(g)) tomb.push(g);
         }
         return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, tomb });
+      }
+
+      // ── 🧭 Situation du prospect : résumé automatique des derniers échanges (studios activés seulement).
+      // Déclenché par l'app quand une fiche a bougé depuis son dernier résumé ; sans changement, rien n'est envoyé à l'IA
+      if (action === "summary_refresh") {
+        const i = list.findIndex((x) => x.id === String(body.id || ""));
+        if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+        const p = list[i];
+        if (!summaryOn(p.studio)) return json({ ok: true, status: "off" });
+        let status: string;
+        try { status = await refreshSummary(p, body.force === true); }
+        catch (e) { console.error("summary", (e as Error).message); return json({ error: "Résumé indisponible pour le moment" }, 503); }
+        if (status === "updated" || (status === "empty" && body.had === true)) { if (!(await saveList())) continue replay; }
+        return json({ ok: true, status, sum: p.sum || null });
       }
 
       // ── Corbeille : fiches supprimées dans l'outil (les plus récentes en premier)

@@ -1335,6 +1335,14 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .prw .pr-card.pl.open{box-shadow:var(--sh-m)}
 .pl-detail{border-top:1px solid var(--cream-line);padding:14px 18px 16px 20px}
 .pl-dgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:22px;margin-bottom:12px}
+.pl-sum{margin:0 0 14px;padding:12px 14px;border:1px solid #E3DCC8;background:linear-gradient(180deg,#FBF8EF,#F6F1E3);border-radius:12px}
+.pl-sum-h{display:flex;align-items:center;gap:8px;font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#8a5c0a}
+.pl-sum-h small{font-weight:600;letter-spacing:0;text-transform:none;color:var(--ink-mid)}
+.pl-sum-h button{margin-left:auto;background:#fff;border:1px solid #E3DCC8;border-radius:8px;padding:3px 9px;font-size:11px;font-weight:700;color:#8a5c0a;cursor:pointer}
+.pl-sum-h button:disabled{opacity:.5;cursor:default}
+.pl-sum ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;line-height:1.45;color:var(--ink)}
+.pl-sum li.todo{list-style:'👉 ';font-weight:700}
+.pl-sum .muted{font-size:12.5px;color:var(--ink-mid);margin-top:6px}
 .pl-lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);margin:2px 0 7px}
 .pl-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:10px}
 .pl-row .pr-date{flex:0 0 auto!important;width:auto}
@@ -2870,6 +2878,7 @@ async function syncPull(rerender){
     // Un envoi a répondu pendant la lecture : sa liste est au moins aussi récente, celle-ci est ignorée
     if(_pushN!==n0){_syncState(_restSt());if(rerender&&$('#topPhase').textContent==='Mes prospects'&&!_typing())showProspects(true);return;}
     if(d&&d.rev)_rev=d.rev;
+    setTimeout(sumScan,1500);
     const del=new Set(_PDEL);
     const server=(d.prospects||[]).filter(p=>p&&!del.has(p.id));
     const tomb=new Set(d.tomb||[]);
@@ -4920,8 +4929,8 @@ function showProspects(keepScroll){
       lastH=`<span class="pl-c"><b>Dernier contact</b> ${isNaN(t)?'':t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' · '}${kind}${dur?' · '+dur:''}${who?' · '+esc(who.split(' ')[0]):''}</span>`;}
     else lastH='<span class="pl-c muted"><b>Dernier contact</b> aucun appel enregistré</span>';
     const vol=calls.length||sms.length?`<span class="pl-c">${calls.length} appel${calls.length>1?'s':''}${calls.length?' · '+ok+' abouti'+(ok>1?'s':''):''}${sms.length?' · '+sms.length+' SMS':''}</span>`:'';
-    const note=(noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
-    return `<div class="pl-ctx">${prOuv(p)&&p.ouverture.note?`<span class="pl-c note" title="${esc(p.ouverture.note)}">🏗 ${esc(p.ouverture.note)}</span>`:''}${lastH}${vol}${note?`<span class="pl-c note" title="${esc(note)}">📝 ${esc(note.length>140?note.slice(0,140)+'…':note)}</span>`:''}</div>`;
+    const note=(sumLine(p)||noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
+    return `<div class="pl-ctx">${prOuv(p)&&p.ouverture.note?`<span class="pl-c note" title="${esc(p.ouverture.note)}">🏗 ${esc(p.ouverture.note)}</span>`:''}${lastH}${vol}${note?`<span class="pl-c note" title="${esc(note)}">${sumLine(p)?'🧭':'📝'} ${esc(note.length>140?note.slice(0,140)+'…':note)}</span>`:''}</div>`;
   };
   const card=p=>{
     const pi=PIPE[p.statut]||PIPE.rappeler;
@@ -4958,6 +4967,7 @@ function showProspects(keepScroll){
         </div>
       </div>
       ${open?`<div class="pl-detail">
+        ${sumBlockHTML(p)}
         <div class="pl-dgrid">
           <div>
             <div class="pl-lbl">Étape</div>
@@ -5047,7 +5057,42 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
   $('#bar').style.width='100%';
   if(!COACH_CODE)_syncState('off');
 }
-function togglePr(id){prOpenId=prOpenId===id?null:id;if(prOpenId){loadHist(prOpenId);icEnsureAhead();}showProspects(true);}
+function togglePr(id){prOpenId=prOpenId===id?null:id;if(prOpenId){loadHist(prOpenId);icEnsureAhead();sumAsk(prOpenId,true);}showProspects(true);}
+/* ── 🧭 Situation du prospect : résumé automatique des derniers échanges (serveur + Mistral) ──
+   Le serveur ne rappelle l'IA que si la matière a changé ; ici on ne demande que pour les fiches
+   qui ont bougé depuis leur dernier résumé (ou jamais résumées), une à la fois. */
+const SUM_STUDIOS=['lagarennecolombes']; // même liste que côté serveur (déploiement progressif)
+const _SUMCHK={};let _sumQ=[],_sumBusy=false,_sumFail=0;
+function sumOn(p){return SUM_STUDIOS.includes(_sk(p&&p.studio||CFG.studio));}
+function sumHas(p){return !!((p.appels||[]).length||p.bnotes||p.note||p.fiche);}
+function sumStale(p){if(!sumOn(p)||!sumHas(p))return false;if(_SUMCHK[p.id]===(p.maj||''))return false;return !p.sum||(p.maj||'')>(p.sum.at||'');}
+function sumLine(p){const t=p&&p.sum&&p.sum.txt;if(!t)return '';return String(t).split('\n').filter(Boolean).filter(l=>!/^À faire\s*:/i.test(l)).join(' · ');}
+function sumAsk(id,first){if(!COACH_CODE)return;const p=PROSPECTS.find(x=>x.id===id);if(!p||!sumStale(p)||_sumQ.includes(id))return;if(first)_sumQ.unshift(id);else _sumQ.push(id);sumKick();}
+// Après chaque lecture serveur : les fiches qui ont bougé (3 au plus par passage, les plus récentes d'abord)
+function sumScan(){if(!COACH_CODE||_sumFail>=3)return;PSC().filter(sumStale).sort((a,b)=>(b.maj||'').localeCompare(a.maj||'')).slice(0,3).forEach(p=>sumAsk(p.id));}
+async function sumKick(){if(_sumBusy||!_sumQ.length)return;_sumBusy=true;const id=_sumQ.shift();
+  try{const p=PROSPECTS.find(x=>x.id===id);if(p){const d=await syncCall('summary_refresh',{id,had:!!p.sum});
+      _SUMCHK[id]=p.maj||'';
+      if(d&&d.ok){if(d.status==='updated'){p.sum=d.sum;persistProspects();_sumRender(id);}else if(d.status==='empty'&&p.sum){delete p.sum;persistProspects();_sumRender(id);}}
+      _sumFail=0;}}
+  catch(e){_sumFail++;if(!_quiet(e)&&_sumFail===1&&!_netErr(e))console.warn('résumé',e.message);}
+  _sumBusy=false;if(_sumQ.length)setTimeout(sumKick,400);}
+async function sumForce(id){const b=document.getElementById('sum-btn-'+id);if(b){b.disabled=true;b.textContent='⏳ Analyse…';}
+  try{const p=PROSPECTS.find(x=>x.id===id);const d=await syncCall('summary_refresh',{id,force:true,had:!!(p&&p.sum)});
+    if(p&&d&&d.ok){if(d.sum)p.sum=d.sum;else delete p.sum;_SUMCHK[id]=p.maj||'';persistProspects();}
+    if(d&&d.status==='off')toast('Résumé automatique non activé pour ce studio');else if(d&&d.status==='empty')toast('Aucun échange à résumer');else toast('🧭 Situation mise à jour');}
+  catch(e){toast('Résumé indisponible ('+_why(e)+')');}
+  _sumRender(id);}
+function _sumRender(id){if(prOpenId===id&&document.querySelector('.pr-search')&&!_typing())showProspects(true);}
+function sumBlockHTML(p){
+  if(!sumOn(p))return '';
+  const s=p.sum,st=sumStale(p),pend=_sumQ.includes(p.id)||(_sumBusy&&!s);
+  const lines=s?String(s.txt).split('\n').map(x=>x.trim()).filter(Boolean):[];
+  const when=s&&s.at?new Date(s.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
+  return `<div class="pl-sum"><div class="pl-sum-h">🧭 Situation${s?` <small>· d'après ${s.n||'les'} dernier${s.n>1?'s':''} échange${s.n>1?'s':''}${when?' · '+esc(when):''}${st?' · <b>échanges plus récents, mise à jour en cours</b>':''}</small>`:''}
+      <button id="sum-btn-${p.id}" onclick="event.stopPropagation();sumForce('${p.id}')" title="Relire les derniers échanges et réécrire la situation">↻ Actualiser</button></div>
+    ${lines.length?`<ul>${lines.map(l=>`<li class="${/^À faire\s*:/i.test(l)?'todo':''}">${esc(l)}</li>`).join('')}</ul>`:`<div class="muted">${pend||st?'⏳ Lecture des derniers échanges…':sumHas(p)?'Pas encore de résumé · cliquez sur Actualiser.':'Aucun échange enregistré pour l\'instant : la situation s\'écrira après le premier appel ou la première note.'}</div>`}
+  </div>`;}
 /* ── Historique complet des points de contact : appels Allo (enregistrés sur la fiche)
    + activités Fitness Boost (appels et durée, SMS, emails, WhatsApp, RDV, notes), lues à la demande ── */
 const HIST={};
