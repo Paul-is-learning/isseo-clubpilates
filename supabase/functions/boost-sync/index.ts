@@ -139,15 +139,21 @@ async function all(token: string, path: string, limit: number, maxPages = 60): P
 // deno-lint-ignore no-explicit-any
 async function runSync(admin: any, token: string, club: { secret: string; studio: string }, clubKey: string, write: boolean) {
   const nowIso = new Date().toISOString();
-  const [contacts, acts, users, deleted] = [
+  // Appels notés dans Boost (appel_ok / appel_nok terminés) : première lecture sur 120 jours, puis depuis
+  // le dernier passage (moins 1 jour de marge) · curseur par club dans _boost_calls_cursor
+  const cursorRow = await getRow(admin, "_boost_calls_cursor");
+  const since = String(cursorRow?.[clubKey] || "") || new Date(Date.now() - 120 * 864e5).toISOString();
+  const callsAfter = new Date(Math.min(Date.parse(since), Date.now() - 864e5)).toISOString();
+  const [contacts, acts, users, deleted, calls] = [
     await all(token, "/contacts", 50),
     await all(token, "/activities?status=planifie", 200),
     await get(token, "/users"),
     await all(token, "/contacts/deleted", 1000, 10),
+    await all(token, "/activities?type=appel_ok,appel_nok&status=termine&created_after=" + encodeURIComponent(callsAfter), 200, 40),
   ];
   // Lecture incomplète = on n'écrit rien (jamais d'import partiel)
-  if (!contacts.ok || !acts.ok || users.status !== 200 || !deleted.ok)
-    return json({ error: "Lecture Boost incomplète", http: { contacts: contacts.status, activites: acts.status, users: users.status, suppressions: deleted.status } }, 502);
+  if (!contacts.ok || !acts.ok || users.status !== 200 || !deleted.ok || !calls.ok)
+    return json({ error: "Lecture Boost incomplète", http: { contacts: contacts.status, activites: acts.status, users: users.status, suppressions: deleted.status, appels: calls.status } }, 502);
   // Une seule lecture de la grosse ligne (la migration depuis `studios` est terminée)
   const { data: row } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
   if (!row) return json({ error: "Liste des fiches introuvable · rien n'est écrit" }, 503);
@@ -157,7 +163,7 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   const prospects: any[] = store.prospects || [];
   const tomb0 = await getRow(admin, "_coach_tomb");
   const res = reconcile(prospects, {
-    studio: club.studio, club: clubKey, nowIso, contacts: contacts.items, acts: acts.items,
+    studio: club.studio, club: clubKey, nowIso, contacts: contacts.items, acts: acts.items, calls: calls.items,
     users: listOf(users.body), invites: access.invites || [], deletedIds: deleted.items.map((d) => String(d?.id || "")),
     toolDeleted: (tomb0.tool as string[]) || [],
   });
@@ -200,6 +206,7 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   if (JSON.stringify(idx[clubKey]?.tel) !== JSON.stringify(tel) || JSON.stringify(idx[clubKey]?.mail) !== JSON.stringify(mail)) await putRow(admin, "_boost_index", nextIdx);
   const st = await getRow(admin, "_boost_sync");
   await putRow(admin, "_boost_sync", { ...st, [clubKey]: { last: nowIso, changed, report } });
+  await putRow(admin, "_boost_calls_cursor", { ...cursorRow, [clubKey]: nowIso });
   return json({ ok: true, report });
 }
 

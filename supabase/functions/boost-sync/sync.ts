@@ -137,12 +137,15 @@ const pendingTool = (p: any) => !!(p?.bq && [p.bq.statut, p.bq.rappel, p.bq.rapp
 export type Ctx = {
   studio: string; club: string; nowIso: string;
   contacts: any[]; acts: any[]; users: any[]; invites: any[]; deletedIds: string[];
+  calls?: any[]; // appels notés dans Boost (appel_ok / appel_nok terminés)
   toolDeleted?: string[]; // fiches supprimées dans l'outil : jamais réimportées depuis Boost
 };
 
 export function reconcile(prospects: any[], ctx: Ctx) {
   const list = prospects.map((p) => ({ ...p }));
   const planned = plannedByContact(ctx.acts, ctx.nowIso);
+  const callsBy = new Map<string, any[]>();
+  for (const a of (ctx.calls || [])) { if (!a?.prospect_id) continue; const k = String(a.prospect_id); if (!callsBy.has(k)) callsBy.set(k, []); callsBy.get(k)!.push(a); }
   const userName = new Map(ctx.users.map((u: any) => [String(u?.id), String(u?.name || "")]));
   // Commercial Boost → nom du conseiller dans le Sales Coach (même prénom), sinon nom Boost
   const repOf = (uid: unknown) => {
@@ -163,7 +166,7 @@ export function reconcile(prospects: any[], ctx: Ctx) {
   const R = {
     contacts: ctx.contacts.length, lies_deja: 0, lies_nouveaux: 0, crees: 0, adherents: 0, non_importes: 0, trop_anciens: 0, rappels_perimes: 0, retires_anciens: 0,
     statut_change: 0, rappel_maj: 0, ecarts_premier_lien: {} as Record<string, number>,
-    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, rappels_weekend: 0, attribues: 0, rappels_rapproches: 0, sans_telephone: 0,
+    doublons_sales_coach: 0, doublons_boost: 0, refus_appel: 0, supprimes: 0, supprimes_outil: 0, devenus_clients: 0, rappels_clients_retires: 0, rappels_weekend: 0, attribues: 0, rappels_rapproches: 0, appels_boost: 0, sans_telephone: 0,
     orphelins_sales_coach: 0, commerciaux: {} as Record<string, number>,
     crees_par_mois: {} as Record<string, number>, crees_par_source: {} as Record<string, number>, crees_par_statut: {} as Record<string, number>,
   };
@@ -262,6 +265,21 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     const idPending = !!(p.bqi && bqiSig(p.bqi) !== p.bqis);
     p.bid = bid; p.bclub = ctx.club; p.bst = String(c.status || ""); p.bupd = String(c.updated_at || "");
     p.bauto = m.auto; // le rappel Boost (brap) vient d'une séquence automatique : un lead jamais appelé reste « Nouveau lead »
+    // Appels notés dans Boost (par l'équipe ou par Aircall/Allo via Boost) : ajoutés à la fiche pour que
+    // « jamais appelé », les essais et les listes soient justes. Un appel déjà présent (ligne, à la main,
+    // même minute ±3 min) n'est pas doublé
+    for (const a of (callsBy.get(bid) || [])) {
+      const aid = "bx_" + String(a.id);
+      const ts = String(a.ended_at || a.created_at || "");
+      if (!ts || (p.appels || []).some((x: any) => x?.id === aid)) continue;
+      const t = Date.parse(ts);
+      if ((p.appels || []).some((x: any) => /^📞/.test(String(x?.txt || "")) && Math.abs(Date.parse(x.ts) - t) <= 180000)) continue;
+      const ok = String(a.action_type) === "appel_ok", dur = Number(a.duration) || 0;
+      const who = repOf(a.user_id) || String(userName.get(String(a.user_id || "")) || "").trim().split(/\s+/)[0];
+      const txt = "📞 Boost · appel sortant" + (ok && dur ? " · " + (dur >= 60 ? Math.round(dur / 60) + " min" : dur + " s") : "") + " · " + (ok ? "décroché" : "sans réponse") + (who ? " · par " + who : "") + (a.content ? "\n" + String(a.content).slice(0, 300) : "");
+      p.appels = (p.appels || []).concat([{ id: aid, ts, rx: ts, sv: 0, txt }]).sort((x: any, y: any) => String(x.ts).localeCompare(String(y.ts))).slice(-20);
+      p.maj = ctx.nowIso; R.appels_boost++;
+    }
     p.bentry = String(c.effective_entry_at || c.last_entry_at || c.created_at || ""); // arrivée du lead (tri « Leads récents »)
     if (!idPending) {
       p.nom = String(c.name || p.nom || "").slice(0, 80);
