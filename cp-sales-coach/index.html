@@ -4607,7 +4607,8 @@ function prPrio(p){
   return {r:6,why:'🤖 Rappel automatique Boost · lead du '+(isNaN(arr)?'?':arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'}))+(lastD?' · joint '+lastD:'')};
 }
 // Journée du rappel : tout ce qui est passé compte pour aujourd'hui
-function _prioDay(p){const t=todayStr();return (p.rappel||t)<=t?t:p.rappel;}
+// Un lead jamais appelé est toujours « à faire aujourd'hui », même si sa date de rappel automatique est plus tard
+function _prioDay(p){const t=todayStr();if(p.statut==='rappeler'&&!prCalls(p).n)return t;return (p.rappel||t)<=t?t:p.rappel;}
 function _prioTie(a,b,r){
   if(r===3)return prArrival(b).localeCompare(prArrival(a));
   if(r===4){const rk=x=>({chaud:0,tiede:1,froid:3}[(prAppetence(x)||{}).tier]??2);return rk(a)-rk(b)||prLastContact(a).localeCompare(prLastContact(b));}
