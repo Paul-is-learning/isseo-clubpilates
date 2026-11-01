@@ -40,6 +40,10 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .top-mid{flex:1;min-width:0}
 .top-phase{font-size:12.5px;font-weight:800;letter-spacing:.02em;line-height:1.1}
 .top-jj{height:20px;width:auto;margin:0 2px 0 6px;flex:0 0 auto;opacity:.95;border-radius:0;background:none}
+/* Barre du haut : plus de « Bonjour » à gauche (élément conservé, masqué, pour la logique d'écran) ; prénom à droite, à côté du studio */
+.top-mid{display:none!important}
+.top-user{margin-left:auto;font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;padding:0 4px}
+.top-user:empty{display:none}
 @media(max-width:640px){.top-jj{height:16px;margin-left:2px}}
 .top-sub{font-size:10px;color:var(--cp-soft);font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin-top:1px}
 .top-btn{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.12);display:grid;place-items:center;flex:0 0 auto;transition:.15s}
@@ -1419,7 +1423,7 @@ body.v-pr #screen{background:var(--pr-bg)}
 .pl-cbtn.rap-del{color:#B4300F}
 .pl-info{font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}.pl-info a{color:var(--lav-ink);text-decoration:none;font-weight:600}
 @media(max-width:1100px){.pl-line{grid-template-columns:44px minmax(0,1fr) 160px 220px 88px}.pl-st .pl-flag{display:none}.pl-meta{display:none}}
-@media(max-width:640px){.pl-line{grid-template-columns:40px minmax(0,1fr) auto;gap:4px 10px;padding:10px 10px 10px 16px}.pl-st{grid-column:2/3;grid-row:2}.pl-next{grid-column:2/4;grid-row:3}.pl-quick{grid-column:3;grid-row:1/3}.pl-ava{width:40px;height:40px}.pl-dgrid{grid-template-columns:1fr;gap:6px}}
+@media(max-width:640px){.pl-line{grid-template-columns:40px minmax(0,1fr) auto;gap:6px 10px;padding:10px 12px}.prw .pl-line>.pl-st{display:none}.prw .pl-line>.pl-act{display:block;grid-column:2/4;grid-row:2;border:0;padding:0}.prw .pl-line>.pl-next{grid-column:2/4;grid-row:3;justify-self:start}.prw .pl-line>.pl-quick{grid-column:3;grid-row:1}.prw .pr-fun-l{font-size:10.5px;white-space:normal;line-height:1.15;text-align:center}.prw .pr-fun{padding:8px 4px}.pl-ava{width:40px;height:40px}.pl-dgrid{grid-template-columns:1fr;gap:6px}}
 
 /* Ligne prospect : 2e ligne de contexte */
 .pl-line{row-gap:6px}
@@ -1439,7 +1443,58 @@ body.v-pr #screen{background:var(--pr-bg)}
 .pl-quick{grid-column:-2/-1;grid-row:1/3;align-self:center;justify-content:flex-end}
 .pl-ava{grid-column:1;grid-row:1/3;align-self:start}
 .pl-who,.pl-st,.pl-next,.pl-meta{grid-row:1}
-@media(max-width:640px){.prw .pr-funnel{grid-template-columns:repeat(2,minmax(0,1fr))}.prw .pr-fun{padding:12px 10px;gap:8px}.pr-fun-i{width:34px;height:34px}.prw .pr-fun-l{font-size:12px;white-space:normal;line-height:1.2}.prw .pr-fun-n{font-size:20px}.pr-fun-c{display:none}.prw .pr-h2{font-size:24px}.prw .pl-btn.call span{display:none}.prw .pl-btn.call{padding:0 12px}.pl-ava{grid-row:1/3}.pl-who{grid-row:1}.pl-st{grid-row:2}.pl-next{grid-row:3}.pl-ctx{grid-column:1/-1;grid-row:4}.pl-quick{grid-column:3;grid-row:1/3}.pl-c.note{white-space:normal}}
+.pr-ttl{display:flex;align-items:baseline;gap:14px}.prw .pr-ttl .pr-h2s{font-size:15px;color:var(--pr-mid);margin:0}
+.prw .pr-funnel{display:flex;align-items:center;gap:0;border:1px solid var(--pr-line);border-radius:12px;background:#fff;padding:0 6px;margin:12px 0 0;overflow-x:auto}
+.pr-fun-t{font-weight:700;color:var(--pr-ink);font-size:15px;padding:0 24px 0 12px;white-space:nowrap}
+.prw .pr-fun{flex:1;display:flex;align-items:center;gap:10px;justify-content:center;border:0;border-left:1px solid var(--pr-line);border-radius:0;padding:14px 10px;background:transparent;min-width:0;cursor:pointer}
+.prw .pr-fun-n{font-size:22px;font-weight:800;color:var(--pr-ink)}.prw .pr-fun-l{font-size:14px;color:#3C4252;font-weight:500;white-space:nowrap}
+.prw .pr-fun.active{background:var(--pr-acc-soft)}.prw .pr-fun.active .pr-fun-n,.prw .pr-fun.active .pr-fun-l{color:var(--pr-acc)}
+.prw .dg{border:0;background:transparent;padding:10px 4px 0;margin:4px 0 0;box-shadow:none}
+.prw .dg-h{gap:0}.dg-t{font-size:18px;margin-right:14px}.prw .dg-k{background:transparent;border-left:1px solid var(--pr-line);border-radius:0;padding:4px 16px;font-size:14px}.prw .dg-k:first-of-type{border-left:0;padding-left:0}.prw .dg-k:hover{background:#F2F3F7}
+.prw .dg-k.hot{background:transparent;color:var(--pr-red)}
+.prw .dg-bar{display:none}.prw .dg-f{margin-top:6px;padding-left:2px}
+.prw .pr-tools{margin-top:8px;gap:0;flex-direction:column;align-items:stretch}
+.prw .pr-tabs{border:0;border-bottom:1px solid var(--pr-line);border-radius:0;padding:0;gap:0;background:transparent;box-shadow:none}
+.prw .pr-tab{border-radius:0;padding:14px 16px;font-size:15px;color:var(--pr-ink);border-bottom:2px solid transparent;margin-bottom:-1px;border-right:1px solid var(--pr-line)}.prw .pr-tab:hover{background:#F7F8FA}
+.prw .pr-tab.on{background:transparent;color:var(--pr-acc);border-bottom-color:var(--pr-acc)}.prw .pr-tab.on .lic{color:var(--pr-acc)}.prw .pr-tab.on .pr-tabn{background:var(--pr-acc-soft);color:var(--pr-acc)}
+.pr-sech{background:#fff;border:1px solid var(--pr-line);border-bottom:0;border-radius:12px 12px 0 0;padding:14px 16px;margin-top:16px;gap:14px}
+.pr-sech .hm-sec{font-size:24px}.prw .pr-sech .pr-search{flex:1 1 260px;margin:0;padding:9px 14px;border-radius:10px}
+.prw .pr-ownf{background:#fff;border:1px solid var(--pr-line);border-top:1px solid var(--pr-line);border-bottom:0;margin:0;padding:12px 16px}
+.prw .pr-ownf-l{color:var(--pr-ink);font-weight:600}
+.prw .pr-ownf::after{content:attr(data-right);margin-left:auto;font-size:13px;color:var(--pr-mid)}
+.prw .pr-day{background:#fff;border:1px solid var(--pr-line);border-bottom:0;margin:0;padding:12px 16px 6px}
+.prw .pr-grp{border:1px solid var(--pr-line);border-radius:0;margin:0;border-top:0}.prw .pr-grp>summary{background:#fff;border-bottom:1px solid var(--pr-line);padding:12px 16px;font-size:15px}.prw .pr-grp .pr-list{padding:0;gap:0}
+.prw .pr-grp>summary small{font-size:13px}
+.prw .pr-list{gap:0;background:#fff;border:1px solid var(--pr-line);border-radius:12px;overflow:hidden}.prw .pr-grp .pr-list{border:0;border-radius:0}
+.prw .pr-card.pl{border:0;border-bottom:1px solid var(--pr-line);border-radius:0!important}.prw .pr-card.pl:last-child{border-bottom:0}.prw .pr-card.pl.open{background:#FAFBFC}
+.pl-line{display:grid;grid-template-columns:52px minmax(260px,1.4fr) minmax(200px,1fr) 150px 170px auto;align-items:center;gap:14px;padding:12px 16px;cursor:pointer}
+.prw .pl-line{row-gap:0}
+.prw .pl-line>.pl-ava{grid-column:1;grid-row:1}.prw .pl-line>.pl-who{grid-column:2;grid-row:1}.prw .pl-line>.pl-act{grid-column:3;grid-row:1}.prw .pl-line>.pl-st{grid-column:4;grid-row:1}.prw .pl-line>.pl-next{grid-column:5;grid-row:1}.prw .pl-line>.pl-quick{grid-column:6;grid-row:1}
+.prw .pr-ownf-l{display:inline-flex;align-items:center;gap:5px;white-space:nowrap}
+.prw .pl-ava{width:52px;height:52px;font-size:14px;font-weight:700}
+.prw .pl-who b{font-size:16px;display:inline-block;margin-right:8px}.prw .pl-who .pl-flag{vertical-align:2px}
+.pl-id{display:flex!important;flex-wrap:wrap;align-items:center;gap:4px;font-size:12.5px;color:var(--pr-mid);margin-top:3px;white-space:normal!important}.pl-id .lic{color:var(--pr-mid)}.pl-id img{height:14px;width:14px;vertical-align:-2px;margin-right:3px}
+.pl-sep{display:inline-block;width:1px;height:12px;background:var(--pr-line);margin:0 6px}.pl-idi{display:inline-flex;align-items:center;white-space:nowrap}
+.pl-act{min-width:0;border-left:1px solid var(--pr-line);padding-left:14px}.pl-act small{display:block;font-size:12.5px;color:var(--pr-mid);margin-bottom:2px}.pl-act b{display:block;font-size:14px;color:var(--pr-ink);font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prw .pl-st{justify-content:flex-start}.prw .pl-chip.late{background:var(--pr-red-soft)!important;color:var(--pr-red)!important}.prw .pl-chip.ouv{background:#FFF3E6!important;color:#8A4B12!important}
+.pl-date{display:inline-flex;align-items:center;gap:6px;border:0;border-radius:8px;padding:8px 12px;font:600 13.5px var(--sans);color:var(--pr-acc);background:var(--pr-acc-soft);cursor:pointer;white-space:nowrap}.pl-date.late{color:var(--pr-red);background:var(--pr-red-soft)}.pl-date.muted{color:var(--pr-mid);background:#F2F3F7}.pl-date em{font-style:normal;font-weight:700}
+.prw .pl-quick{justify-content:flex-end}
+.prw .pl-ctx{display:none}
+@media(max-width:1100px){.pl-line{grid-template-columns:44px minmax(0,1.4fr) minmax(0,1fr) auto}.prw .pl-line>.pl-act{display:none}.prw .pl-line>.pl-st{display:none}.prw .pl-line>.pl-next{grid-column:3;justify-self:end}.prw .pl-line>.pl-quick{grid-column:4}}
+@media(max-width:640px){.prw .pr-funnel{display:flex;padding:0 4px}.pr-fun-t{display:none}.prw .pr-fun{flex-direction:column;gap:0;padding:10px 6px}.prw .pr-fun-l{font-size:11px}.prw .pr-fun-n{font-size:18px}.prw .dg-k{border-left:0;padding:6px 10px;background:#F2F3F7;border-radius:8px;margin:2px 4px 2px 0}.prw .pr-tab{padding:10px 10px;font-size:13.5px;border-right:0}.pr-sech{padding:12px}.pr-sech .hm-sec{font-size:18px}.prw .pr-h2{font-size:24px}.prw .pl-btn.call span{display:none}.prw .pl-btn.call{padding:0 12px}.pl-ava{grid-row:1/3}.pl-who{grid-row:1}.pl-st{grid-row:2}.pl-next{grid-row:3}.pl-ctx{grid-column:1/-1;grid-row:4}.pl-quick{grid-column:3;grid-row:1/3}.pl-c.note{white-space:normal}}
+/* Mobile · ligne compacte et tuiles (après toutes les autres règles pour avoir le dernier mot) */
+@media(max-width:640px){
+.prw .pr-funnel .pr-fun-l{white-space:normal!important;font-size:10.5px!important;line-height:1.15;text-align:center}
+.prw .pr-funnel .pr-fun{padding:8px 3px!important;min-width:0}
+.prw .pl-line{grid-template-columns:40px minmax(0,1fr) auto!important;gap:6px 10px!important;padding:10px 12px!important}
+.prw .pl-line>.pl-ava{grid-column:1!important;grid-row:1!important}
+.prw .pl-line>.pl-who{grid-column:2!important;grid-row:1!important}
+.prw .pl-line>.pl-quick{grid-column:3!important;grid-row:1!important}
+.prw .pl-line>.pl-act{display:block!important;grid-column:2/4!important;grid-row:2!important;border:0;padding:0}
+.prw .pl-line>.pl-st{display:none!important}
+.prw .pl-line>.pl-next{grid-column:2/4!important;grid-row:3!important;justify-self:start!important}
+.prw .pl-who b{font-size:15px}.pl-id{font-size:12px}.pl-arr2{display:none!important}
+}
 </style>
 </head>
 <body>
@@ -1457,6 +1512,7 @@ body.v-pr #screen{background:var(--pr-bg)}
         <div class="top-phase" id="topHello">Bonjour !</div>
         <div class="top-sub"><span id="topPhase">Sales Coach</span><span id="topSub"></span><span id="topTimer"></span></div>
       </div>
+      <span class="top-user" id="topUser"></span>
       <button class="top-studio" id="topStudio" onclick="openStudioPicker()" style="display:none"></button>
       <img class="top-brand" src="flower-white.png" alt="Club Pilates"/>
       <button class="top-btn" onclick="openMenu()" aria-label="Menu">
@@ -2449,7 +2505,7 @@ function renderScreen(keepScroll){
   st.idx=Math.max(0,Math.min(st.idx,flow.length-1));
   const s=flow[st.idx];
   $('#topPhase').textContent=s.phase||'Sales Coach';
-  $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
+  $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';const _tu=document.getElementById('topUser');if(_tu)_tu.textContent=CFG.rep?CFG.rep.split(' ')[0]:'';
   $('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);
   $('#topSub').textContent=st.prospectNom?(' · 📞 '+st.prospectNom.split(' ')[0]):'';
   $('#bar').style.width=Math.round((st.idx+1)/flow.length*100)+'%';
@@ -4726,6 +4782,20 @@ function autoSheet(){
   const tag=document.querySelector('#icPop .glp-tag');if(tag)tag.innerHTML='📞 Appel de la ligne détecté · '+esc(_relDay(cand.a.ts))+(ok?' · décroché':' · sans réponse')+' <small style="font-weight:400">(que s\'est-il dit ?)</small>';
   const b=document.querySelector('#icPop .cs-b.'+(ok?'ok':'ko'));if(b)csPick(b,ok?'ok':'ko');
 }
+// ── Ligne compacte (référence de Paul, 2 nov. 2026) : dernier appel, action à mener, date lisible ──
+const SRC_NAMES={facebook:'Facebook',facebook_ads:'Facebook',instagram:'Instagram',google:'Google',google_ads:'Google',site:'Site web',web:'Site web',siteweb:'Site web',bsport:'Bsport',recommandation:'Recommandation',parrainage:'Recommandation',walkin:'Passage studio',walk_in:'Passage studio'};
+function srcName(src){const k=String(src||'').toLowerCase().replace(/[^a-z_]/g,'');if(!k)return '';return SRC_NAMES[k]||String(src).charAt(0).toUpperCase()+String(src).slice(1);}
+function rowLast(p){const last=_lastCall(p);if(!last)return 'Aucun appel pour le moment';const t=new Date(last.ts);return 'Dernier appel : '+t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' à '+t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});}
+// Action en une ligne : le « À faire » du résumé, sinon la raison du tri du jour, sinon l'étape
+function rowAction(p){
+  const todo=sumTodo(p).replace(/^À faire\s*:\s*/i,'').trim();
+  let full=todo;
+  if(!full&&prOpen(p)&&!p.bmember){const c=prCalls(p);full=!c.n?'Premier appel':prPrio(p).why.replace(/^[^\w\sÀ-ÿ]+\s*/,'');}
+  if(!full)full=p.statut==='abo'?'Client'+(p.pack?' · '+packShort(+p.pack):''):stLabel(p);
+  const txt=full.length>44?full.slice(0,43).replace(/\s\S*$/,'')+'…':full;
+  return {txt,full};
+}
+function rowDate(p){if(!p.rappel)return '';const t=todayStr(),d=p.rappel;const n=new Date(t+'T12:00:00'),x=new Date(d+'T12:00:00');const dd=Math.round((x-n)/864e5);const h=p.rappelH?' '+p.rappelH:'';return (dd===0?'Aujourd\'hui':dd===1?'Demain':dd===-1?'Hier':x.toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'}))+h;}
 function sumTodo(p){const t=p&&p.sum&&p.sum.txt;if(!t)return '';return (String(t).split('\n').find(l=>/^À faire\s*:/i.test(l))||'').trim();}
 function rdvHot(p){if(!prOpen(p)||prAutoNew(p)||prOuv(p))return false;const t=rdvAt(p);return !!t&&(t.getTime()-Date.now())/60000<=60;}
 function fmtMin(m){m=Math.max(0,Math.round(m));if(m<60)return m+' min';if(m<1440)return Math.floor(m/60)+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'');const d=Math.floor(m/1440);return d+' j';}
@@ -5164,17 +5234,15 @@ function showProspects(keepScroll){
     return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
       <div class="pl-line" onclick="togglePr('${p.id}')">
         <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
-        <div class="pl-who"><b>${esc(p.nom)}</b><span>${ownPill(p)}${sub?" "+sub:""}</span></div>
-        <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${ic({rappeler:'phone',essai:'calendar',venu:'check',unit:'ticket',abo:'check',perdu:'xcircle'}[p.statut]||'phone',13)} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>${flags}</div>
-        <div class="pl-next">${prOuv(p)?`<span class="pl-when muted">🏗 Le ${new Date(p.ouverture.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.ouverture.by?' · '+esc(p.ouverture.by):''}${studioOpening(p)?' · ouverture '+esc(studioOpening(p)):''}</span><button class="pl-cbtn" onclick="event.stopPropagation();ouvOff('${p.id}')" title="Retirer de « À rappeler à l'ouverture »">↩ Remettre dans les rappels</button>`
-          :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${ic('phone',13)} ${prCalls(p).n?'Contacté · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'À traiter'}</button>`
-          :p.statut==='rappeler'&&p.rappel&&prOpen(p)&&!prAutoNew(p)?`${when}<button class="pl-cbtn rap" onclick="event.stopPropagation();contactSheet('${p.id}','rappel')" title="Rappelé · répondu, non répondu, ou à rappeler à l'ouverture">${ic('check',13)} Rappelé ?</button>`
-          :`${when}${p.rappel&&prOpen(p)&&rdvAt(p)&&rdvAt(p).getTime()<=Date.now()+15*60000?`<label class="pl-done" onclick="event.stopPropagation()" title="Cochez quand le rappel est fait et que le prospect a décroché"><input type="checkbox" onchange="rappelDone('${p.id}',this)"/> Rappel fait</label>`:''}`}</div>
-        <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
-        ${plCtx(p)}
+        <div class="pl-who"><b>${esc(p.nom)}</b>${flags}<span class="pl-id">${ownPill(p)}${p.noCall?'<span class="pl-idi"><i class="pl-sep"></i><em style="color:#B4300F">ne pas appeler</em></span>':p.tel?`<span class="pl-idi"><i class="pl-sep"></i>${ic('phone',12)} ${esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 '))}</span>`:''}${srcName(p.src)?`<span class="pl-idi"><i class="pl-sep"></i>${esc(srcName(p.src))}</span>`:''}${isNaN(arr)?'':`<span class="pl-idi pl-arr2"><i class="pl-sep"></i>${p.bentry?'Arrivée':'Créée'} le ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`}</span></div>
+        <div class="pl-act"><small>${esc(rowLast(p))}</small><b title="${esc(rowAction(p).full)}">${esc(rowAction(p).txt)}</b></div>
+        <div class="pl-st">${prOuv(p)?`<span class="pl-chip ouv">${ic('door',13)} À l'ouverture</span>`:late?`<span class="pl-chip late">${ic('clock',13)} En retard</span>`:`<span class="pl-chip">${ic({rappeler:'phone',essai:'calendar',venu:'check',unit:'ticket',abo:'check',perdu:'xcircle'}[p.statut]||'phone',13)} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}</span>`}</div>
+        <div class="pl-next">${prOuv(p)?`<button class="pl-cbtn" onclick="event.stopPropagation();ouvOff('${p.id}')" title="Retirer de « À rappeler à l'ouverture »">Remettre dans les rappels</button>`
+          :p.rappel&&prOpen(p)?`<button class="pl-date${late?' late':isDue?' due':''}" onclick="event.stopPropagation();contactSheet('${p.id}',prSeg(p)==='new'?'new':'rappel')" title="${prSeg(p)==='new'?'Noter l\'appel : décroché ou non décroché':'Rappelé · répondu, non répondu, ou à rappeler à l\'ouverture'}">${ic(p.statut==='essai'?'ticket':'calendar',14)} ${rowDate(p)}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:''}</button>`
+          :prOpen(p)?`<button class="pl-date muted" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${ic('phone',14)} ${prCalls(p).n?'Contacté · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'À traiter'}</button>`:''}</div>
         <div class="pl-quick" onclick="event.stopPropagation()">
-          ${prUnknown(p)?`<button class="jr-new" onclick="newProspectForm('${p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
-          ${prSeg(p)==='unreach'&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">💬</button>`:''}
+          ${prUnknown(p)?`<button class="jr-new" onclick="newProspectForm('${p.id}')" title="Numéro inconnu de Boost · créer la fiche client">${ic('userplus',15)} Créer la fiche</button>`:''}
+          ${prSeg(p)==='unreach'&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">${ic('messages',17)}</button>`:''}
           ${p.noCall||!p.tel?'':`<button class="pl-btn call" onclick="callMenu('${p.id}')" title="Appeler ou copier le numéro">${ic('phone',17)}<span>Appeler</span></button>`}
           <button class="pl-btn chev${open?' up':''}" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${ic('chevron',18)}</button>
         </div>
@@ -5240,7 +5308,7 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
   };
   const h=`<div class="cg prw">
     <div class="pr-head">
-      <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
+      <div class="pr-ttl"><h2 class="pr-h2">Mes prospects</h2><span class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''}</span></div>
       <div class="pr-headr"><button class="pr-help" onclick="const d=document.querySelector('.pr-howto');d.open=!d.open;d.open&&d.scrollIntoView({behavior:'smooth',block:'nearest'})">${ic('help',18)} Comment ça marche ?</button><span id="syncBadge" class="sync-badge ${_syncSt==='wait'?'sync':_syncSt}">${_syncTxt(_syncSt)}</span><button class="pr-new" onclick="newProspectForm()">${ic('plus',18)} Nouveau prospect</button></div>
     </div>
     <details class="pr-howto"><summary>Comment ça marche ?</summary>
@@ -5253,19 +5321,19 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
       </div>
     </details>
     ${dayGoalHTML()}
-    <div class="hm-sec">Pipeline</div>
-    <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><span class="pr-fun-i">${ic({rappeler:'users',essai:'calendar',unit:'ticket',abo:'check',perdu:'xcircle'}[k]||'users',22)}</span><span class="pr-fun-b"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'Prospects':PIPE[k].lbl}</div></span><span class="pr-fun-c">${ic('chevr',18)}</span></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
+    <div class="pr-funnel"><span class="pr-fun-t">Pipeline</span>${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><span class="pr-fun-n">${counts[k]}</span><span class="pr-fun-l">${k==='rappeler'?'Prospects':PIPE[k].lbl}</span></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
     <div class="pr-tools">
     ${prFilter&&prFilter!=='rappeler'?'':`<div class="pr-tabs">${PR_SEGS.map(([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
       const TI={mine:'calcheck',new:'fileplus',rappels:'calendar',redo:'refresh',unreach:'phoneoff',ouv:'door',team:'users',all:'folder',journal:'history',trash:'trash'};
       return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${ic(TI[k]||'folder',17)} ${l.replace(/^\S+\s/,'')}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;}).join('')}
     </div>`}
-    <div class="pr-search"><span class="pr-search-i">${ic('search',18)}</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':prFilter?'Rechercher dans « '+PIPE[prFilter].lbl+' » : nom, numéro…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
     <div class="pr-sech"><div class="hm-sec">${clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&(prSort==='rappels'||prSort==='mine')&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
+    <div class="pr-search"><span class="pr-search-i">${ic('search',18)}</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="${prFilter==='abo'?'Rechercher un client : nom, numéro, email…':prFilter?'Rechercher dans « '+PIPE[prFilter].lbl+' » : nom, numéro…':'Rechercher un nom, un numéro…'}" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     ${!clientView&&prSort==='mine'?nextCallHTML(sorted):!clientView&&prSort==='rappels'?pushBtnHTML():''}</div>
     ${!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(p=>{const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===todayStr());}):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
-      return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
+      const t0=todayStr(),T=L.filter(p=>_prioDay(p)===t0),late=T.filter(p=>p.rappel&&rdvAt(p)&&rdvAt(p).getTime()<Date.now()).length;
+      return `<div class="pr-ownf" data-right="${T.length} rappel${T.length>1?'s':''}${late?' · '+late+' en retard':''}"><span class="pr-ownf-l">${ic('user',15)} En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
     ${!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='rappels'||prSort==='mine'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
@@ -6052,7 +6120,7 @@ function _hmToday(){
 function showHome(){_vReg('home');
   closeMenu();
   $('#topPhase').textContent='Accueil';
-  $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';
+  $('#topHello').textContent='Bonjour '+(CFG.rep?CFG.rep.split(' ')[0]:'')+' 👋';const _tu=document.getElementById('topUser');if(_tu)_tu.textContent=CFG.rep?CFG.rep.split(' ')[0]:'';
   $('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);
   $('#topSub').textContent='';
   $('#bar').style.width='0%';
