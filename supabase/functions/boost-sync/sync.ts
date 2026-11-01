@@ -366,6 +366,7 @@ export function buildOps(q: any, contact: any, nowIso: string, lastRdvSig?: stri
   switch (q.statut) {
     case "abo": patch.status = "client"; patch.date_inscription = nowIso; break;
     case "perdu": patch.status = "perdu"; break;
+    case "unit": if (bst === "a_traiter") patch.status = "contacte"; break; // classe unitaire : pas de statut Boost dédié, le contact reste un prospect
     case "venu": patch.status = "rdv_venu"; patch.est_venu = true; patch.date_last_rdv_venu = nowIso; break;
     case "essai":
       patch.status = "rdv_planifie";

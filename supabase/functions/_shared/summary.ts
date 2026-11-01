@@ -26,7 +26,7 @@ function hash(s: string): string {
 }
 
 const PACKS: Record<string, string> = { "1": "Pack 4 (1x/semaine)", "2": "Pack 8 (2x/semaine)", "3": "Pack illimité" };
-const STATUTS: Record<string, string> = { rappeler: "à rappeler / contacté", essai: "séance d'essai réservée", venu: "venu en séance d'essai", abo: "client", perdu: "perdu" };
+const STATUTS: Record<string, string> = { rappeler: "à rappeler / contacté", essai: "séance d'essai réservée", venu: "venu en séance d'essai", abo: "client", unit: "a acheté une classe à l'unité (pas abonné)", perdu: "perdu" };
 
 // Matière du résumé : contexte de la fiche + les 5 derniers échanges, du plus récent au plus ancien
 // deno-lint-ignore no-explicit-any

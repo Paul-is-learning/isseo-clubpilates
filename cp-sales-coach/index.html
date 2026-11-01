@@ -3281,6 +3281,7 @@ const PIPE={
   rappeler:{ic:'📞',lbl:'Contacté',c:'#C9871F'},
   essai:{ic:'🎟️',lbl:'Séance d\'essai',c:'#185FA5'},
   venu:{ic:'🧘',lbl:'RDV venu',c:'#6b40b8'},
+  unit:{ic:'🎫',lbl:'Classe unitaire',c:'#B4710F'}, // a acheté une séance à l'unité : pas un abonné (hors ventes, primes et course du mois)
   abo:{ic:'✅',lbl:'Client',c:'#1F9E75'},
   perdu:{ic:'✖️',lbl:'Perdu',c:'#8C95A8'}
 };
@@ -5572,7 +5573,7 @@ function setPStatut(id,s,seller){const p=PROSPECTS.find(x=>x.id===id);if(!p)retu
   // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
   if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo'],void:true}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}
   p.statut=s;if(s!=='rappeler'&&p.ouverture)p.ouverture=null;if(s==='abo'){p.rappel='';p.rappelH='';p.rappelBy='';}if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
-  if(s!=='rappeler')emitEvent(p,s,s==='abo'?{pack:p.pack||'',prime:p.pack?(+PRIMES[+p.pack]||0):0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''}:{});
+  if(s!=='rappeler'&&s!=='unit')emitEvent(p,s,s==='abo'?{pack:p.pack||'',prime:p.pack?(+PRIMES[+p.pack]||0):0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''}:{}); // classe unitaire : aucun événement de vente
   showProspects(true);
   if(s==='abo'&&p.pack){_aboNote(p);toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');}
   else toast(PIPE[s].ic+' '+PIPE[s].lbl);}
