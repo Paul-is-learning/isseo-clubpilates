@@ -963,6 +963,10 @@ serve(async (req) => {
             // Commercial qui suit la relation (prénom) et mise de côté « À rappeler à l'ouverture »
             suivi: String(p.suivi || "").slice(0, 40),
             vendeur: String(p.vendeur || "").slice(0, 40), // qui a fait signer (vente, primes)
+            // Classe unitaire : pack de séances (n) et prix pratiqué, propres à chaque fiche
+            unit: p.unit && typeof p.unit === "object" && Number(p.unit.n) > 0
+              ? { n: Math.round(Number(p.unit.n)), prix: Number(p.unit.prix) > 0 ? Math.round(Number(p.unit.prix) * 100) / 100 : null, at: String(p.unit.at || "").slice(0, 30) }
+              : undefined,
             rk: p.rk === "rdv" || p.rk === "retry" ? p.rk : undefined, // rappel convenu avec le prospect ou retentative (tri du jour)
             ouverture: p.ouverture && typeof p.ouverture === "object" && p.ouverture.at
               ? { at: String(p.ouverture.at).slice(0, 30), by: String(p.ouverture.by || "").slice(0, 40), note: String(p.ouverture.note || "").slice(0, 300) }
