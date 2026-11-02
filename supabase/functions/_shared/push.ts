@@ -65,7 +65,9 @@ export async function rappelPush(admin: any, prospects: any[], nowDate = new Dat
     const subs = items.filter((it) => sk(it.rep) === owner && (!it.studio || !p.studio || sk(it.studio) === sk(p.studio)));
     if (!subs.length) { R.sans_appareil++; sent[key] = Date.now(); continue; }
     const todo = todoOf(p);
-    const payload = { title: "⏰ Rappel à " + p.rappelH + (lead > 1 ? " · dans " + lead + " min" : " · maintenant"), body: String(p.nom || "Prospect") + (p.statut === "essai" ? " · séance d'essai" : "") + (todo ? "\n" + todo : ""), tag: key, data: { open: p.id } };
+    // Pastille de l'icône : rappels du jour (avec ou sans heure) encore ouverts pour ce commercial
+    const badge = prospects.filter((q) => q && q.rappel && q.rappel <= now.d && !q.noCall && ["rappeler", "essai"].includes(String(q.statut)) && sk(ownerOf(q)) === owner && (!q.studio || !p.studio || sk(q.studio) === sk(p.studio))).length;
+    const payload = { badge, title: "⏰ Rappel à " + p.rappelH + (lead > 1 ? " · dans " + lead + " min" : " · maintenant"), body: String(p.nom || "Prospect") + (p.statut === "essai" ? " · séance d'essai" : "") + (todo ? "\n" + todo : ""), tag: key, data: { open: p.id } };
     for (const it of subs) {
       const r = await sendPush(it.sub, payload);
       if (r === "ok") R.envoyes++; else if (r === "gone") { gone.add(it.endpoint); R.morts++; } else R.erreurs++;

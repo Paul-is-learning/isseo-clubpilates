@@ -5,6 +5,7 @@ self.addEventListener('activate',function(e){e.waitUntil(self.clients.claim());}
 self.addEventListener('push',function(event){
   var payload={};
   try{payload=event.data?event.data.json():{};}catch(e){payload={title:'Sales Coach',body:event.data?event.data.text():''};}
+  if(typeof payload.badge==='number'&&self.navigator&&'setAppBadge' in self.navigator){try{(payload.badge?self.navigator.setAppBadge(payload.badge):self.navigator.clearAppBadge()).catch(function(){});}catch(e){}}
   event.waitUntil(self.registration.showNotification(payload.title||'Sales Coach',{
     body:payload.body||'',icon:'./icons/icon-192.png',badge:'./icons/icon-192.png',tag:payload.tag||'cpcoach',
     data:payload.data||{},vibrate:[40,30,40],renotify:true

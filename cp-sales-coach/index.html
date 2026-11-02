@@ -2742,7 +2742,11 @@ function copyRecap(){const t=buildRecap();navigator.clipboard?.writeText(t).then
    Stockage local au poste du commercial (localStorage).
    ════════════════════════════════════════════════════════════════ */
 let PROSPECTS=[];try{PROSPECTS=JSON.parse(localStorage.getItem('cpcoach_prospects')||'[]');}catch(e){PROSPECTS=[];}
-function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.stringify(PROSPECTS));}catch(e){}}
+function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.stringify(PROSPECTS));}catch(e){}badgeSync();}
+/* ── Pastille sur l'icône de l'app (iPhone écran d'accueil, iOS 16.4+) : mes leads frais + mes rappels du jour, effacée quand tout est traité ── */
+let _bdgT=null;
+function badgeCount(){try{const t=todayStr(),me=_sk(_me());if(!me)return 0;return PSC().filter(p=>{if(_sk(prCharge(p)||'')!==me)return false;const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===t);}).length;}catch(e){return 0;}}
+function badgeSync(){if(!('setAppBadge' in navigator)||!COACH_CODE)return;clearTimeout(_bdgT);_bdgT=setTimeout(()=>{const n=badgeCount();try{(n?navigator.setAppBadge(n):navigator.clearAppBadge()).catch(()=>{});}catch(e){}},300);}
 
 /* ── Synchronisation équipe : stockage central via coach-sync (code studio requis) ──
    Les salariés n'ont AUCUN compte backend : la fonction serveur ne manipule
@@ -3004,7 +3008,7 @@ async function syncPull(rerender){
       });
       PROSPECTS=server.concat(localOnly);
       persistProspects();_cleanDirty();
-      setTimeout(autoSheet,400);
+      setTimeout(autoSheet,400);badgeSync();
       if(_openWanted&&PROSPECTS.some(p=>p.id===_openWanted)){const id=_openWanted;_openWanted='';setTimeout(()=>openPr(id),300);}
       if(localOnly.length||absorbed||_hasPend())schedulePush();
     }
