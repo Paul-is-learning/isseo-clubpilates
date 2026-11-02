@@ -3241,7 +3241,7 @@ const LK_ARROW='<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stro
 function lkShell(id,form){
   const d=document.createElement('div');d.id=id;d.className='lk';
   // Animation d'arrivée : composée une fois par jour, simple fondu ensuite
-  const _day=todayStr();let _anim=false;try{_anim=localStorage.getItem('cpcoach_splash')!==_day;if(_anim)localStorage.setItem('cpcoach_splash',_day);}catch(e){}
+  const _day=todayStr()+':v2';let _anim=false;try{_anim=localStorage.getItem('cpcoach_splash')!==_day;if(_anim)localStorage.setItem('cpcoach_splash',_day);}catch(e){}
   d.innerHTML=`<section class="lk-l lk-joseph ${_anim?'lk-anim':'lk-soft'}" role="img" aria-label="Joseph Pilates · L'esprit Pilates. La gestion en plus. · Isseo × Club Pilates × COBE">${_anim?'<div class="lk-stage"><div class="lk-card"><div class="lk-face">'+[0,1,2,3,4].map(i=>`<div class="lk-strip" style="--i:${i}"></div>`).join('')+'</div><div class="lk-face back"><img src="flower-white.png" alt=""/><b>Joseph</b><small>L\'esprit Pilates</small></div></div></div>':''}</section>
     <section class="lk-r"><div class="lk-form">${form}
       <div class="lk-foot"><b>CP Sales Coach</b><span>L'espace commercial Club Pilates</span></div></div></section>`;
