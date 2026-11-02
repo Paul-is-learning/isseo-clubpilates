@@ -3300,7 +3300,6 @@ function saveNameStep(){
   document.getElementById('nameScreen')?.remove();
   toast('Bienvenue '+v.split(' ')[0]+' ! Vos scripts sont personnalisés ✓');
   showHome();
-  if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
 }
 async function unlockCoach(){
   const v=(document.getElementById('lockCode')?.value||'').trim();
@@ -3313,7 +3312,7 @@ async function unlockCoach(){
     localStorage.setItem('cpcoach_code',v);
     document.getElementById('lockScreen')?.remove();
     toast('Bienvenue ! ✓');
-    if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
+    if(!CFG.rep)showNameStep(); /* plus de pop-up au démarrage (demande de Paul, 2 nov. 2026) : avatar et guide restent dans le menu et les réglages */
     syncPull(true);icPull();fetchAvatars();
     if(document.querySelector('.hm-today'))showHome();
   }catch(e){
@@ -3351,7 +3350,7 @@ async function otpSubmit(){
     localStorage.setItem('cpcoach_code',COACH_CODE);
     document.getElementById('otpScreen')?.remove();
     toast('Appareil validé · bienvenue ! ✓');
-    if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();
+    if(!CFG.rep)showNameStep(); /* plus de pop-up au démarrage (demande de Paul, 2 nov. 2026) : avatar et guide restent dans le menu et les réglages */
     syncPull(true);icPull();fetchAvatars();
     if(document.querySelector('.hm-today'))showHome();
   }catch(e){
@@ -6654,7 +6653,7 @@ window.addEventListener('popstate',function(){
     }
   }
   if(!COACH_CODE){showLock();return;}
-  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep();else if(!MY_AVATAR)showAvatarStep();else maybeOnboard();syncPull(true);flushEvents();icPull();fetchAvatars().then(()=>{const nv=$('#nav').innerHTML||'';if(nv.includes('next()'))renderScreen(true);else if(document.querySelector('.hm-today'))$('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);});}
+  try{const d=await syncCall('ping');_adoptAuth(d);if(!CFG.rep)showNameStep(); /* plus de pop-up au démarrage (demande de Paul, 2 nov. 2026) : avatar et guide restent dans le menu et les réglages */syncPull(true);flushEvents();icPull();fetchAvatars().then(()=>{const nv=$('#nav').innerHTML||'';if(nv.includes('next()'))renderScreen(true);else if(document.querySelector('.hm-today'))$('#topAva').innerHTML=avaTag(MY_AVATAR||avatarOf(CFG.rep),32,CFG.rep);});}
   catch(e){/* hors-ligne : on laisse travailler en local ; 401 → showLock déjà déclenché */if(!_quiet(e))_syncState('off');}
 })();
 </script>
