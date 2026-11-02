@@ -424,6 +424,16 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .hm-chip b{font-size:15px;color:var(--cp-dark)}
 .hm-chip.hot{border-color:var(--gold);background:linear-gradient(135deg,#FFF9EE,#FDF3DE)}
 .hm-chip .hc-ic{font-size:17px}
+.hm-chip.ok{border-color:#BFE3D3;background:#F0FAF5}
+.hm-chip.warn{border-color:#F5C9B2;background:linear-gradient(135deg,#FFF6F1,#FDEBE3)}
+.fx-list{background:#fff;border:1px solid var(--cream-line);border-radius:14px;box-shadow:var(--sh-s);overflow:hidden}
+.fx-row{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid #F1EDE3;cursor:pointer;font-size:13px}
+.fx-row:last-child{border-bottom:0}.fx-row:hover{background:#FAF8F2}
+.fx-row b{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ink)}
+.fx-own{flex:0 0 auto;font-size:11px;font-weight:700;color:var(--ink-mid);background:#F1EFE8;border-radius:99px;padding:2px 8px}
+.fx-x{flex:0 1 auto;font-size:11.5px;color:var(--ink-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:40%}
+.fx-go{color:#c4cad6;font-weight:800}
+
 .hm-sec{font-size:11.5px;font-weight:800;letter-spacing:.09em;text-transform:uppercase;color:var(--ink-mid);margin:20px 0 9px;display:flex;align-items:center;gap:8px}
 .hm-sec::after{content:'';flex:1;height:1px;background:#E3E9F2}
 .hm-grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
@@ -5899,6 +5909,30 @@ function showCallStats(){_vReg('calls');
   $('#screen').scrollTop=0;relocateBoxes();
 }
 
+/* ── 🧹 À corriger (managers) : anomalies de données du studio, chaque ligne ouvre la fiche ── */
+function fixGroups(){
+  const L=PSC().filter(p=>!p.bmember),now=Date.now();
+  const g=[
+    {k:'tel',ic:'📵',t:'Numéro manquant',s:'Fiches ouvertes sans téléphone · à saisir, envoyé à Boost',list:L.filter(p=>prOpen(p)&&!p.noCall&&!String(p.tel||'').replace(/\D/g,''))},
+    {k:'pack',ic:'🎉',t:'Vente à compléter',s:'Clients sans pack ou sans vendeur renseigné · nécessaire pour les commissions',list:L.filter(p=>p.statut==='abo'&&(!p.pack||!p.vendeur))},
+    {k:'old',ic:'⏳',t:'Lead oublié',s:'Jamais contacté depuis plus de 48 h, tous commerciaux confondus',list:L.filter(p=>prATraiter(p)&&!prOuv(p)&&now-new Date(prArrival(p)).getTime()>48*36e5).sort((a,b)=>prArrival(a).localeCompare(prArrival(b)))},
+  ];
+  return g.filter(x=>x.list.length);
+}
+function showFixList(){_vReg('fix');
+  closeMenu();
+  $('#topPhase').textContent='À corriger';$('#topSub').textContent='';
+  $('#nav').innerHTML=pageNav();$('#bar').style.width='100%';
+  const G=fixGroups(),n=G.reduce((a,g)=>a+g.list.length,0);
+  const row=(p,extra)=>`<div class="fx-row" onclick="openPr('${p.id}')"><b>${esc(p.nom||'Sans nom')}</b><span class="fx-own">${esc(prCharge(p)||'À attribuer')}</span><span class="fx-x">${extra(p)}</span><span class="fx-go">›</span></div>`;
+  const ex={tel:p=>p.email?esc(p.email):'aucune coordonnée',pack:p=>(p.pack?packShort(+p.pack):'pack ?')+' · '+(p.vendeur?esc(p.vendeur):'vendeur ?'),old:p=>'arrivé il y a '+Math.floor((Date.now()-new Date(prArrival(p)).getTime())/864e5)+' j'};
+  $('#screen').innerHTML=`<div class="cg">
+    <div class="pr-head"><div><h2 class="pr-h2">🧹 À corriger</h2><div class="pr-h2s">${esc(CFG.studio||'')} · ${n?n+' anomalie'+(n>1?'s':'')+' de données':'rien à signaler'}</div></div></div>
+    ${G.length?G.map(g=>`<div class="hm-sec" style="margin-top:16px">${g.ic} ${g.t} <span class="pr-tabn">${g.list.length}</span></div><div class="fv-meta" style="margin:-4px 0 8px">${g.s}</div><div class="fx-list">${g.list.slice(0,60).map(p=>row(p,ex[g.k])).join('')}${g.list.length>60?`<div class="fv-meta" style="padding:8px 12px">… et ${g.list.length-60} autres</div>`:''}</div>`).join(''):'<div class="pr-empty">✅ Aucune anomalie : numéros, ventes et leads sont à jour.</div>'}
+  </div>`;
+  $('#screen').scrollTop=0;relocateBoxes();
+}
+
 /* ── 📈 Performances passées : semaine ou mois, comparés à la période précédente ── */
 let _ppKind='week',_ppOff=0; // kind: 'week'|'month' · off: 0 = période en cours, -1 = précédente…
 function _ppRange(kind,off){
@@ -6152,10 +6186,12 @@ function icGoto(dateS){
 }
 function _hmToday(){
   const d=new Date();d.setHours(12,0,0,0);const todayS=d.toISOString().slice(0,10);
-  const due=PSC().filter(p=>p.rappel&&p.rappel<=todayS&&(p.statut==='rappeler'||p.statut==='essai')).length;
+  const todo=badgeCount();
+  const fix=(COACH_ROLE==='admin'||IS_MGR)?fixGroups().reduce((n,g)=>n+g.list.length,0):0;
   const nxt=_hmNextIC();
   return `<div class="hm-today">
-    <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">${ic('bell',18)}</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
+    <button class="hm-chip${todo?' hot':' ok'}" onclick="prOwnF='';try{localStorage.setItem('cpcoach_ownf','');}catch(e){}prFilter=null;setPrSort('mine')" title="Mes leads frais et mes rappels du jour · même chiffre que la pastille de l'icône"><span class="hc-ic">${ic('bell',18)}</span><span>${todo?`<b>${todo}</b> à traiter aujourd'hui`:'✅ Tout est à jour'}</span></button>
+    ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="hm-chip${fix?' warn':''}" onclick="showFixList()" title="Anomalies de données du studio : numéros manquants, ventes à compléter, leads oubliés"><span class="hc-ic">${ic('sliders',18)}</span><span>${fix?`<b>${fix}</b> à corriger`:'🧹 Rien à corriger'}</span></button>`:''}
     <button class="hm-chip" id="hm-ic" onclick="${nxt?`icGoto('${nxt.date}')`:'showICPage()'}">${_hmIcChip()}</button>
     <button class="hm-chip" id="hm-sales" onclick="_statsMonth='';showPerf()"><span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>…</b></span></button>
   </div>`;
