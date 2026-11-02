@@ -57,10 +57,10 @@ export function weekendLeadMonday(entryIso: string, nowIso: string): string {
   const today = parisDT(nowIso)?.d || "";
   return mon >= today ? mon : "";
 }
-// Répartition des nouveaux leads entre commerciaux (demande de Paul, 1er nov. 2026) : parts par studio.
+// Répartition des nouveaux leads entre commerciaux (demande de Paul, 2 nov. 2026 : JC 60, Caroline 25, Clement 15) : parts par studio.
 // Chaque nouveau lead jamais appelé et sans suivi va au commercial le plus « en retard » sur sa part,
 // compté sur les leads arrivés le même jour (Paris). Sans réglage pour un studio : pas d'attribution.
-export const DISPATCH: Record<string, Record<string, number>> = { lagarennecolombes: { JC: 40, Clement: 30, Caroline: 30 } };
+export const DISPATCH: Record<string, Record<string, number>> = { lagarennecolombes: { JC: 60, Caroline: 25, Clement: 15 } };
 const parisDay = (iso: string) => { const p = parisDT(iso); return p ? p.d : ""; };
 export function pickOwner(list: any[], p: any, nowIso: string): string {
   const shares = DISPATCH[sk(p.studio)];
