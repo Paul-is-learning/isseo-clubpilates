@@ -8,7 +8,7 @@
 //   • Reste → network-first avec fallback cache
 // ═══════════════════════════════════════════════════════════════════════════
 
-const CACHE_VERSION = 'isseo-v1-20261029-jo';
+const CACHE_VERSION = 'isseo-v1-20261102-menu';
 // Coquille non versionnée, puis les URL exactes (avec ?v=) que demande index.html.
 // À garder synchronisé avec index.html, sans doublon (cache.addAll rejette tout le lot sinon).
 const APP_SHELL = [
@@ -57,7 +57,7 @@ const APP_SHELL = [
   './js/pages-equipe.js?v=20261027opt',
   './js/coach-marks.js?v=20260830pi',
   './js/onboarding-tour.js?v=20260830pi',
-  './js/app.js?v=20261027fix'
+  './js/app.js?v=20261102menu'
 ];
 
 // ── Install : pré-cache l'app shell ──────────────────────────────────────────

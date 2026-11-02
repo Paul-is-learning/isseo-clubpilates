@@ -57,9 +57,10 @@ function render(){
       var _pageChanged=window._lastRenderedPage!==S.page||window._lastRenderedView!==S.view;
       window._lastRenderedPage=S.page;window._lastRenderedView=S.view;
       root.innerHTML=renderSidebar()+'<div class="main-content'+(_pageChanged?' page-transition':'')+'"><div class="app">'+pageContent+'</div></div>';
-      // Bottom tab bar (mobile) — show if hidden
+      // Bottom tab bar (mobile) et bouton menu · réaffichés après l'écran de connexion
       var _btbExist=document.getElementById('bottom-tab-bar');
       if(_btbExist)_btbExist.style.display='';
+      var _hbShow=document.getElementById('hamburger-btn');if(_hbShow)_hbShow.style.display='';
       if(!_btbExist){
         var _btb=document.createElement('div');
         _btb.id='bottom-tab-bar';
