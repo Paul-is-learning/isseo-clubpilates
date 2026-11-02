@@ -248,13 +248,15 @@ export function reconcile(prospects: any[], ctx: Ctx) {
     }
     // Lead jamais appelé avec un rappel automatique Boost lointain (étape de séquence J+7, J+20…) :
     // on l'appelle dès que possible, la date devient aujourd'hui (ou lundi le week-end) · demande de Paul
-    if (p.statut === "rappeler" && p.rappel && p.rappelBy === "Boost" && (p.bauto || m.auto) && !(p.appels || []).length && !p.bmember && !pendingTool(p)) {
+    // « Jamais contacté » = aucun appel ET encore « À traiter » dans Boost (un statut Contacté / RDV posé par l'équipe vaut contact, même sans appel)
+    const untouched = !(p.appels || []).length && (!c.status || String(c.status) === "a_traiter");
+    if (p.statut === "rappeler" && p.rappel && p.rappelBy === "Boost" && (p.bauto || m.auto) && untouched && !p.bmember && !pendingTool(p)) {
       const asap = asapDay(ctx.nowIso);
       if (p.rappel > asap) { p.rappel = asap; p.rappelH = ""; p.maj = ctx.nowIso; R.rappels_rapproches++; }
     }
     // Lead arrivé du samedi 12h au dimanche, jamais appelé et sans rappel : à rappeler le lundi (date seule),
     // sans attendre la séquence Boost (demande de Paul, 1er nov. 2026)
-    if (p.statut === "rappeler" && !p.rappel && !(p.appels || []).length && !p.bmember && !pendingTool(p)) {
+    if (p.statut === "rappeler" && !p.rappel && untouched && !p.bmember && !pendingTool(p)) {
       const we = weekendLeadMonday(String(c.effective_entry_at || c.last_entry_at || c.created_at || ""), ctx.nowIso);
       if (we) { p.rappel = we; p.rappelH = ""; p.rappelBy = "Boost"; p.maj = ctx.nowIso; R.rappels_weekend++; }
     }

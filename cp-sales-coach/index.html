@@ -3358,7 +3358,10 @@ const PIPE={
 };
 // Libellé précis d'une fiche « à rappeler », comme dans Boost : À traiter · Contacté · RDV planifié · RDV non venu
 // « À traiter » : lead jamais appelé (aucun appel noté), quel que soit le statut ou le rappel posé côté Boost
-function prATraiter(p){return p.statut==='rappeler'&&!prCalls(p).n;}
+// Lead déjà pris en main dans Boost (statut autre que « À traiter ») : contacté par email, Instagram, sur place… sans appel enregistrable
+function prTouched(p){const b=String(p.bst||'');return !!b&&b!=='a_traiter';}
+function prNever(p){return !prCalls(p).n&&!prTouched(p);}
+function prATraiter(p){return p.statut==='rappeler'&&prNever(p);}
 function stLabel(p){
   if(p.statut!=='rappeler')return (PIPE[p.statut]||PIPE.rappeler).lbl;
   if(prATraiter(p))return 'À traiter';
@@ -4649,7 +4652,7 @@ const prOpen=p=>(p.statut==='rappeler'||p.statut==='essai')&&!p.noCall;
 // Rappels « chauds » : en retard ou dans l'heure
 // Rappel automatique d'une séquence Boost sur un lead jamais appelé : le lead reste un « Nouveau lead »
 // Lead jamais appelé (aucun appel noté) : il reste TOUJOURS dans « Nouveaux leads », quel que soit le rappel posé dessus ; dès le premier essai il en sort (demande de Paul)
-function prAutoNew(p){return !!p.rappel&&!prCalls(p).n;}
+function prAutoNew(p){return !!p.rappel&&prNever(p);}
 // ── Tri du jour (⏰ Rappels & RDV) : la journée d'abord, puis 6 rangs de priorité (validés par Paul, 1er nov. 2026) ──
 const PRIO=[null,['🎯','Promesses au prospect','RDV ou rappel convenu avec lui : on a donné notre parole'],['⚡','Moments clés','RDV non venu : relancer dans la journée'],['🆕','Leads frais jamais joints','Arrivés depuis moins de 48 h : rappeler vite'],['🔥','Déjà joints, à faire avancer','Un vrai échange a eu lieu, le dossier est vivant'],['📵','Sans réponse, à retenter','1 ou 2 essais : tenter à un autre moment'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés']];
 const FRESH_H=48;
@@ -4673,6 +4676,7 @@ function prPrio(p){
     const o=_otherSlot(p);return {r:5,why:'📵 '+ord(c.n)+' essai sans réponse'+(lastD?' · '+lastD:'')+(o?' · '+o:'')+who};
   }
   const arr=new Date(prArrival(p)),ageH=(Date.now()-arr.getTime())/36e5;
+  if(!c.n&&prTouched(p))return {r:4,why:'🔥 Contacté dans Boost (sans appel enregistré)'+(p.bst==='rdv_planifie'?' · RDV planifié':p.bst==='rdv_nok'?' · RDV non venu':'')+' · à faire avancer'};
   if(!c.n)return {r:3,why:'🆕 Lead'+(p.src?' '+p.src:'')+' arrivé '+(isNaN(arr)?'':_relDay(arr.toISOString()))+' · jamais appelé'};
   if(!c.ok){
     if(ageH<FRESH_H)return {r:3,why:'🆕 Lead'+(p.src?' '+p.src:'')+' arrivé '+_relDay(arr.toISOString())+' · jamais joint'+(c.n?' · '+ord(c.n)+' essai fait':'')};
@@ -4682,7 +4686,7 @@ function prPrio(p){
 }
 // Journée du rappel : tout ce qui est passé compte pour aujourd'hui
 // Un lead jamais appelé est toujours « à faire aujourd'hui », même si sa date de rappel automatique est plus tard
-function _prioDay(p){const t=todayStr();if(p.statut==='rappeler'&&!prCalls(p).n)return t;return (p.rappel||t)<=t?t:p.rappel;}
+function _prioDay(p){const t=todayStr();if(p.statut==='rappeler'&&prNever(p))return t;return (p.rappel||t)<=t?t:p.rappel;}
 function _prioTie(a,b,r){
   if(r===3)return prArrival(b).localeCompare(prArrival(a));
   if(r===4){const rk=x=>({chaud:0,tiede:1,froid:3}[(prAppetence(x)||{}).tier]??2);return rk(a)-rk(b)||prLastContact(a).localeCompare(prLastContact(b));}
@@ -4845,7 +4849,7 @@ function prAgeChip(p){
   const d=prDaysSince(p);if(d===null||d<3)return '';
   const col=d>=14?'#C0492F':d>=7?'#B4710F':'#8C95A8';
   // Jamais appelé : le compteur part de l'arrivée du lead, pas d'un contact qui n'a pas eu lieu
-  if(!prCalls(p).n){const a=Math.floor((Date.now()-new Date(prArrival(p)).getTime())/864e5);return isNaN(a)||a<3?'':`<span style="color:${col};font-weight:700">⏳ jamais appelé · arrivé il y a ${a} j</span>`;}
+  if(prNever(p)){const a=Math.floor((Date.now()-new Date(prArrival(p)).getTime())/864e5);return isNaN(a)||a<3?'':`<span style="color:${col};font-weight:700">⏳ jamais appelé · arrivé il y a ${a} j</span>`;}
   return `<span style="color:${col};font-weight:700">⏳ ${d} j sans contact</span>`;
 }
 // ── Objectif du jour : ce qu'il reste à faire, appels passés par commercial, objectif fixé par Paul ──
@@ -4890,11 +4894,11 @@ function prSeg(p){
   if(p.statut==='rappeler'&&c.n>=3&&!c.ok)return 'unreach';
   if(p.rappel&&!prAutoNew(p))return 'rappels';
   if(p.statut!=='rappeler')return '';
-  if(!c.n)return 'new';
+  if(!c.n&&!prTouched(p))return 'new';
   if(c.n>=3&&!c.ok)return 'unreach';
   return 'redo';
 }
-const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : leads frais, puis promesses, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Nouveaux leads','Jamais appelés · par date d\'arrivée dans Boost, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🆕 leads frais, 🎯 promesses, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
+const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : leads frais, puis promesses, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Nouveaux leads','Jamais contactés (aucun appel, et « À traiter » dans Boost) · par date d\'arrivée, le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🆕 leads frais, 🎯 promesses, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 // Rappel automatique (demain, sans réponse) : jamais du samedi 12h au dimanche, reporté au lundi même heure
