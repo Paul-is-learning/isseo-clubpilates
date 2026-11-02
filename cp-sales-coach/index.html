@@ -4667,7 +4667,8 @@ let prQueryRaw='',_prSearchT=null;
 // objectif, fiche découverte, résumés d'appels… Tous les mots tapés doivent être présents (sans accents ni casse).
 const _fold=x=>String(x||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
 function prHayParts(p){return [['Nom',p.nom],['Email',p.email],['Note',p.note],['Notes Boost',p.bnotes],['Situation',p.sum&&p.sum.txt],['Objectif',p.obj],['Fiche',p.fiche],['Suivi',p.suivi],['Vendeur',p.vendeur]].concat((p.appels||[]).map(a=>['Appel',a.txt]));}
-function prWords(){return _fold(prQuery).split(/\s+/).filter(Boolean);}
+// Variantes d'un mot (coiffeur / coiffeuse, abonné / abonnement…) : un mot de 6 lettres ou plus se cherche aussi sans ses 2 dernières lettres
+function prWords(){return _fold(prQuery).split(/\s+/).filter(Boolean).map(w=>w.length>=6?w.slice(0,-2):w);}
 function prMatch(p){const ws=prWords();if(!ws.length)return true;const qd=prQuery.replace(/\D/g,'');if(qd.length>=3&&String(p.tel||'').replace(/\D/g,'').includes(qd))return true;
   const hay=_fold(prHayParts(p).map(x=>x[1]).join(' \n '));return ws.every(w=>hay.includes(w));}
 function _hitRe(ws,g){return new RegExp(ws.map(w=>w.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').split('').map(c=>c+'[\\u0300-\\u036f]*').join('')).join('|'),g?'gi':'i');}
