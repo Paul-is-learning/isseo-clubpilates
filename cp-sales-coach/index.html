@@ -763,6 +763,28 @@ a.menu-item{text-decoration:none;color:inherit}
 .pl-next{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
 .pl-cbtn{margin-left:4px;font-size:11px;font-weight:800;border-radius:99px;padding:3px 10px;border:1px solid #F2D7A8;background:#FFF6E0;color:#8A5A00;cursor:pointer;white-space:nowrap}
 .pl-cbtn.tried{border-color:#E3E7EF;background:#F4F6FA;color:#55607A}.pl-cbtn.rap{border-color:#BFE8D6;background:#EAF6F0;color:#1F7A55}
+.pp-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0 14px}
+.pp-seg{display:inline-flex;border:1.5px solid #dce1ea;border-radius:12px;overflow:hidden;background:#fff}
+.pp-seg button{border:0;background:transparent;padding:8px 14px;font-size:13px;font-weight:800;color:var(--ink-mid);cursor:pointer}
+.pp-seg button.on{background:var(--cp-deep);color:#fff}
+.pp-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pp-tile{background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:13px 14px;box-shadow:var(--sh-s);min-width:0}
+.pp-l{font-size:11.5px;font-weight:800;color:var(--ink-mid);text-transform:uppercase;letter-spacing:.04em}
+.pp-v{font-size:26px;font-weight:900;line-height:1.1;margin-top:4px;overflow-wrap:anywhere}
+.pp-s{font-size:11.5px;color:var(--ink-mid);margin-top:3px;line-height:1.35}
+.pp-d{display:inline-block;margin-top:6px;font-size:11px;font-weight:800;padding:2px 8px;border-radius:99px;background:#F1EFE8;color:#5F5E5A}
+.pp-d.up{background:#E1F5EE;color:#0F6E56}.pp-d.down{background:#FCEBEB;color:#A32D2D}
+.pp-tbl-wrap{overflow-x:auto;background:#fff;border:1px solid var(--cream-line);border-radius:16px;box-shadow:var(--sh-s)}
+.pp-tbl{width:100%;border-collapse:collapse;font-size:13px;min-width:560px}
+.pp-tbl th{text-align:right;padding:10px 10px;font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-mid);border-bottom:1px solid var(--cream-line)}
+.pp-tbl th:first-child{text-align:left}
+.pp-tbl td{text-align:right;padding:10px 10px;border-bottom:1px solid #F3F0E9;font-variant-numeric:tabular-nums;white-space:nowrap}
+.pp-tbl tr:last-child td{border-bottom:0}
+.pp-tbl td.pp-who{text-align:left;display:flex;align-items:center;gap:7px}
+.pp-tbl small{font-weight:600;color:var(--ink-mid)}.pp-tbl small.up{color:#0F6E56}.pp-tbl small.down{color:#A32D2D}
+.pp-chart{background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:14px 12px 8px;box-shadow:var(--sh-s)}
+@media(min-width:900px){.pp-grid{grid-template-columns:repeat(4,minmax(0,1fr))}.hm-grid2{grid-template-columns:repeat(5,1fr)}}
+@media(max-width:640px){.pp-v{font-size:22px}.pp-v.txt{font-size:15px;line-height:1.3;margin-top:7px}.pp-chart{overflow-x:auto}.pp-chart svg{min-width:560px}}
 .cs-btns{display:flex;flex-direction:column;gap:8px;margin-top:14px}
 .cs-b{padding:12px;border-radius:12px;border:1.5px solid #dce1ea;background:#fff;font-weight:800;font-size:14px;cursor:pointer;text-align:left;color:var(--cp-dark)}
 .cs-b.on{border-color:var(--cp-deep);background:#F3F5FB}.cs-b.ok:hover{background:#EAF6F0}.cs-b.ko:hover{background:#FDECE8}.cs-b.ouv{font-weight:700;font-size:13px}
@@ -5842,6 +5864,112 @@ function showCallStats(){_vReg('calls');
   $('#screen').scrollTop=0;relocateBoxes();
 }
 
+/* ── 📈 Performances passées : semaine ou mois, comparés à la période précédente ── */
+let _ppKind='week',_ppOff=0; // kind: 'week'|'month' · off: 0 = période en cours, -1 = précédente…
+function _ppRange(kind,off){
+  const d=new Date();d.setHours(0,0,0,0);
+  let from,to,lbl;
+  if(kind==='week'){
+    const back=(d.getDay()+6)%7;from=new Date(d);from.setDate(d.getDate()-back+off*7);to=new Date(from);to.setDate(from.getDate()+7);
+    const f=x=>x.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});const end=new Date(to);end.setDate(to.getDate()-1);
+    lbl=f(from)+' au '+f(end);
+  }else{
+    from=new Date(d.getFullYear(),d.getMonth()+off,1);to=new Date(d.getFullYear(),d.getMonth()+off+1,1);
+    lbl=from.toLocaleDateString('fr-FR',{month:'long',year:'numeric'});lbl=lbl.charAt(0).toUpperCase()+lbl.slice(1);
+  }
+  return {from:from.toISOString(),to:to.toISOString(),fromD:from.toISOString().slice(0,10),toD:to.toISOString().slice(0,10),lbl};
+}
+function _ppCompute(r){
+  const inP=s=>{s=String(s||'');return !!s&&s>=r.from&&s<r.to;};
+  const map=_hpMap||{};
+  const R={leads:0,src:{google:0,meta:0,site:0},joints:0,calls:0,answered:0,icSess:0,icBook:0,icShow:0,ventes:0,packs:{},prime:0,closeSum:0,closeN:0,reps:{}};
+  const rep=n=>{n=(n||'').trim().split(/\s+/)[0]||'·';return R.reps[n]||(R.reps[n]={n:n,leads:0,joints:0,calls:0,answered:0,ic:0,ventes:0,closeSum:0,closeN:0});};
+  const seen=new Set();
+  PSC().forEach(p=>{
+    if(p.bmember)return;
+    if(inP(prArrival(p))){
+      R.leads++;const s=String(p.src||'');if(/google/i.test(s))R.src.google++;else if(/facebook|meta/i.test(s))R.src.meta++;else if(/site/i.test(s))R.src.site++;
+      const o=rep(prCharge(p));o.leads++;
+      if(prCalls(p).ok){R.joints++;o.joints++;}
+    }
+    (p.appels||[]).forEach(a=>{
+      const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||/appel entrant/.test(l0))return;
+      const tp=tsParts(a.ts);if(!tp||!inP(new Date(tp.abs).toISOString()))return;
+      const k=p.id+'|'+Math.floor(tp.abs/60000);if(seen.has(k))return;seen.add(k);
+      R.calls++;const w=rep(_callWho(l0));w.calls++;
+      if(/answered|· décroché/i.test(l0)){R.answered++;w.answered++;}
+    });
+    if(p.icBook){const s=(IC.sessions||[]).find(x=>x.id===p.icBook);if(s&&s.date>=r.fromD&&s.date<r.toD)rep(prCharge(p)).ic++;}
+  });
+  (IC.sessions||[]).forEach(s=>{if(!inStudio(s)||s.date<r.fromD||s.date>=r.toD)return;R.icSess++;R.icBook+=icTaken(s);R.icShow+=(+s.show||0);});
+  Object.entries(map).forEach(([id,m])=>{
+    if(!m.abo||!inP(m.aboTs))return;
+    R.ventes++;const pk=packShort(+m.pack)||'Pack ?';R.packs[pk]=(R.packs[pk]||0)+1;R.prime+=(+m.prime||0);
+    const names=[m.rep,m.v2].filter(Boolean);names.forEach(n=>{rep(n).ventes+=saleShare(m,n);});
+    // Appel de closing : dernier appel décroché avant la vente (tolérance d'un jour)
+    const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+    let best=null;(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||!/answered|· décroché/i.test(l0))return;const tp=tsParts(a.ts);if(!tp)return;const t=new Date(tp.abs).toISOString();if(t>String(m.aboTs).slice(0,19)+'Z'&&tp.abs-new Date(m.aboTs).getTime()>86400000)return;if(!best||tp.abs>best.abs)best={abs:tp.abs,d:_apDurMin(l0)};});
+    if(best&&best.d>0){R.closeSum+=best.d;R.closeN++;const o=rep(m.rep);o.closeSum+=best.d;o.closeN++;}
+  });
+  return R;
+}
+function _ppDelta(cur,prev,unit,invert){
+  if(prev==null||cur==null)return '';
+  const d=cur-prev;if(!d)return '<span class="pp-d flat">= période précédente</span>';
+  const good=invert?d<0:d>0;const v=unit==='pts'?Math.round(d*10)/10:Math.round(d);
+  return `<span class="pp-d ${good?'up':'down'}">${d>0?'+':'−'}${Math.abs(v)}${unit==='pts'?' pts':unit==='min'?' min':''} vs ${unit==='pts'?Math.round(prev*10)/10+' %':unit==='min'?fmtTalk(prev):prev}</span>`;
+}
+function _ppPct(a,b){return b?Math.round(a/b*1000)/10:null;}
+function ppSet(kind,off){if(kind)_ppKind=kind;if(off!==undefined)_ppOff=off;showPerfPast(true);}
+async function showPerfPast(keep){_vReg('perf');
+  closeMenu();
+  $('#topPhase').textContent='Performances passées';$('#topSub').textContent='';
+  $('#nav').innerHTML=pageNav();$('#bar').style.width='100%';
+  if(!keep||!_hpMap){
+    $('#screen').innerHTML=`<div class="cg"><div class="pr-head"><div><h2 class="pr-h2">📈 Performances passées</h2><div class="pr-h2s">Chargement…</div></div></div><div class="pr-empty">⏳</div></div>`;
+    try{const [d]=await Promise.all([syncCall('stats_pull'),icPull()]);_SVOID=d.voids||{};_purgeVoidEvq();_hpMap=buildStatsMap((d.events||[]).concat(EVQ).filter(inStudio),PSC());}catch(e){_hpMap=_hpMap||buildStatsMap(EVQ.filter(inStudio),PSC());}
+  }
+  const r=_ppRange(_ppKind,_ppOff),rp=_ppRange(_ppKind,_ppOff-1);
+  const C=_ppCompute(r),P=_ppCompute(rp);
+  const pctJ=_ppPct(C.joints,C.leads),pctJp=_ppPct(P.joints,P.leads);
+  const pctT=_ppPct(C.ventes,C.leads),pctTp=_ppPct(P.ventes,P.leads);
+  const pctD=_ppPct(C.answered,C.calls),pctDp=_ppPct(P.answered,P.calls);
+  const closeAvg=C.closeN?C.closeSum/C.closeN:null,closeAvgP=P.closeN?P.closeSum/P.closeN:null;
+  const tile=(v,l,s,c,d)=>`<div class="pp-tile"><div class="pp-l">${l}</div><div class="pp-v${/[a-zé]{3}/i.test(String(v))?' txt':''}" style="color:${c}">${v}</div>${s?`<div class="pp-s">${s}</div>`:''}${d||''}</div>`;
+  const packs=Object.entries(C.packs).map(([k,n])=>n+' × '+k).join(' · ');
+  const reps=Object.values(C.reps).filter(o=>o.n!=='·'||o.leads||o.calls).sort((a,b)=>b.ventes-a.ventes||b.calls-a.calls||b.leads-a.leads);
+  const trendN=_ppKind==='week'?8:6;
+  const trend=[];for(let i=trendN-1;i>=0;i--){const rr=_ppRange(_ppKind,_ppOff-i);const x=_ppCompute(rr);trend.push({lbl:_ppKind==='week'?rr.lbl.split(' au ')[0]:rr.lbl.slice(0,3),leads:x.leads,ventes:x.ventes});}
+  const maxL=Math.max(1,...trend.map(t=>t.leads)),maxV=Math.max(1,...trend.map(t=>t.ventes));
+  const W=640,H=140,x0=28,x1=W-28,y0=34,y1=H-26;const px=i=>x0+(x1-x0)*(trend.length>1?i/(trend.length-1):0);
+  const line=(key,max,col)=>`<polyline fill="none" stroke="${col}" stroke-width="2.5" stroke-linejoin="round" points="${trend.map((t,i)=>px(i)+','+(y1-(y1-y0)*t[key]/max)).join(' ')}"/>${trend.map((t,i)=>`<circle cx="${px(i)}" cy="${y1-(y1-y0)*t[key]/max}" r="3.5" fill="${col}"/><text x="${px(i)}" y="${y1-(y1-y0)*t[key]/max-7}" text-anchor="middle" font-size="10" font-weight="700" fill="${col}">${t[key]}</text>`).join('')}`;
+  const chart=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;overflow:visible">${line('leads',maxL,'#2F6FE0')}${line('ventes',maxV,'#1F9E75')}${trend.map((t,i)=>`<text x="${px(i)}" y="${H-8}" text-anchor="middle" font-size="10" fill="#8C95A8">${esc(t.lbl)}</text>`).join('')}<text x="${x0}" y="${H-8}" font-size="10" font-weight="700" fill="#2F6FE0" text-anchor="start" dy="-108">● leads</text><text x="${x0+52}" y="${H-8}" font-size="10" font-weight="700" fill="#1F9E75" text-anchor="start" dy="-108">● ventes</text></svg>`;
+  $('#screen').innerHTML=`<div class="cg">
+    <div class="pr-head"><div><h2 class="pr-h2">📈 Performances passées</h2><div class="pr-h2s">${esc(CFG.studio||'tous les studios')} · comparé à la période précédente</div></div><span class="sync-badge ok">☁️ Équipe</span></div>
+    <div class="pp-bar">
+      <div class="pp-seg"><button class="${_ppKind==='week'?'on':''}" onclick="ppSet('week',0)">Semaine</button><button class="${_ppKind==='month'?'on':''}" onclick="ppSet('month',0)">Mois</button></div>
+      <div class="ic-week"><button onclick="ppSet(null,_ppOff-1)">‹</button><b>${esc(r.lbl)}${_ppOff===0?' <small>(en cours)</small>':''}</b><button onclick="ppSet(null,_ppOff+1)"${_ppOff>=0?' disabled style="opacity:.3"':''}>›</button>${_ppOff<0?`<button class="ic-today" onclick="ppSet(null,0)">Aujourd'hui</button>`:''}</div>
+    </div>
+    <div class="pp-grid">
+      ${tile(C.leads,'Nouveaux leads',C.leads?`${C.src.google} Google · ${C.src.meta} Meta · ${C.src.site} site`:'aucun lead sur la période','#2F6FE0',_ppDelta(C.leads,P.leads))}
+      ${tile(pctJ==null?'·':pctJ+' %','Leads joints',C.leads?`${C.joints} sur ${C.leads} ont décroché au moins une fois`:'','#B07A1C',_ppDelta(pctJ,pctJp,'pts'))}
+      ${tile(C.calls,'Appels passés',C.calls?`${C.answered} abouti${C.answered>1?'s':''} · ${pctD} % de décroché`:'aucun appel enregistré','var(--cp-dark)',_ppDelta(C.calls,P.calls))}
+      ${tile(C.icSess,'Intro Class',C.icSess?`${C.icBook} réservée${C.icBook>1?'s':''} · ${C.icShow?C.icShow+' présent'+(C.icShow>1?'s':''):'présents non saisis'}`:'aucune séance sur la période','#7C3AED',_ppDelta(C.icSess,P.icSess))}
+      ${tile(C.ventes,'Nouveaux adhérents',pctT!=null?`${pctT} % des leads de la période`:'','#1F9E75',_ppDelta(C.ventes,P.ventes))}
+      ${tile(packs||'·','Packs vendus',C.prime?`${C.prime} € de commissions`:'ventes déclarées dans l\'outil','#B07A1C','')}
+      ${tile(closeAvg?fmtTalk(closeAvg):'·','Appel de closing',closeAvg?`durée moyenne · ${C.closeN} vente${C.closeN>1?'s':''} avec appel`:'dernier appel décroché avant la vente','#0E7490',_ppDelta(closeAvg,closeAvgP,'min'))}
+    </div>
+    <div class="hm-sec" style="margin-top:18px">Par commercial</div>
+    ${reps.length?`<div class="pp-tbl-wrap"><table class="pp-tbl"><thead><tr><th>Sales</th><th>Leads</th><th>Appels</th><th>Joints</th><th>IC</th><th>Ventes</th><th>Transfo</th><th>Closing</th></tr></thead><tbody>
+      ${reps.map(o=>{const tr=o.leads?Math.round(o.ventes/o.leads*1000)/10:null;const prev=P.reps[o.n];const dv=prev?o.ventes-prev.ventes:o.ventes;return `<tr><td class="pp-who">${o.n==='·'?'👤':avaTag(avatarOf(o.n),22,o.n)} <b>${o.n==='·'?'À attribuer':esc(o.n)}</b></td><td>${o.leads}</td><td>${o.calls}<small>${o.calls?' · '+Math.round(o.answered/o.calls*100)+' %':''}</small></td><td>${o.joints}<small>${o.leads?' · '+Math.round(o.joints/o.leads*100)+' %':''}</small></td><td>${o.ic}</td><td><b>${Math.round(o.ventes*10)/10}</b>${dv?`<small class="${dv>0?'up':'down'}"> ${dv>0?'+':'−'}${Math.abs(Math.round(dv*10)/10)}</small>`:''}</td><td>${tr==null?'·':`<b style="color:${tr>=5?'#1F9E75':'var(--ink)'}">${tr} %</b>`}</td><td>${o.closeN?fmtTalk(o.closeSum/o.closeN):'·'}</td></tr>`;}).join('')}
+    </tbody></table></div>`:'<div class="pr-empty">Aucune activité enregistrée sur cette période.</div>'}
+    <div class="hm-sec" style="margin-top:18px">Tendance · ${trendN} ${_ppKind==='week'?'semaines':'mois'}</div>
+    <div class="pp-chart">${chart}</div>
+    <div class="fv-meta" style="margin-top:10px">Leads : arrivée dans Boost · appels : Allo et Aircall attachés aux fiches · ventes et packs : déclarés dans l'outil (vendeur, et co-vendeur à moitié) · Intro Class : séances saisies dans l'onglet Intro Class · transfo : ventes ÷ leads de la période.</div>
+  </div>`;
+  $('#screen').scrollTop=0;relocateBoxes();
+}
+
 // Horodatages Allo = UTC, avec ou sans « Z » (vérifié sur données réelles :
 // les appels reçus en direct arrivent 0-2 min après la fin quand on lit leur
 // heure en UTC). Affichage en heure de Paris, quel que soit l'appareil.
@@ -6012,6 +6140,7 @@ function showHome(){_vReg('home');
     <div class="hm-grid2">
       <button class="hm-big call" onclick="homeStartCall()"><span class="hm-icbox wh">${ic('phone')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">${inCall?'Reprendre l\'appel':'Démarrer un appel'}</span><span class="s">${inCall&&st.prospectNom?esc(st.prospectNom.split(' ')[0])+' est en cours':'Votre guide, étape par étape'}</span></button>
       <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, historique, rappels</span>${PSC().length?`<span class="hm-count">${PSC().length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
+      <button class="hm-big" onclick="showPerfPast()"><span class="hm-icbox mnt">${ic('chart')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Performances passées</span><span class="s">Semaine, mois, par commercial</span></button>
       <button class="hm-big" onclick="showICPage()"><span class="hm-icbox pch">${ic('calcheck')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Intro Class</span><span class="s">Séances, présents, signés</span></button>
       <button class="hm-big" onclick="showLeadImport()"><span class="hm-icbox mnt">${ic('download')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Importer des leads</span><span class="s">Fitness Boost, bsport, tableur</span></button>
     </div>
@@ -6142,6 +6271,7 @@ function openMenu(){
     <a class="menu-item" href="livret-formation-commerciale.pdf?v=2026102520" target="_blank" rel="noopener" onclick="return openLivret(event)"><span class="mic">📘</span><span>Livret de formation (PDF)<small>7 pages · tout savoir avant de décrocher</small></span></a>
     ${COACH_ROLE==='admin'?`<button class="menu-item" onclick="closeMenu();showTrainAdmin()"><span class="mic">👥</span><span>Suivi de la formation<small>Qui a fait quoi, scores et taux de réussite</small></span></button>`:''}
     <button class="menu-item" onclick="closeMenu();showCallStats()"><span class="mic">📊</span><span>Appels du jour<small>Compteur d'activité : total et par commercial</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showPerfPast()"><span class="mic">📈</span><span>Performances passées<small>Leads, transfo, ventes, closing · semaine ou mois</small></span></button>
     <button class="menu-item" onclick="closeMenu();_statsMonth='';showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
     <button class="menu-item" onclick="closeMenu();showProspects()"><span class="mic">📇</span><span>Mes prospects${PSC().length?' <span class="menu-count">'+PSC().length+'</span>':''}<small>Suivi du processus de vente + relances par étape</small></span></button>
     ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="menu-item" onclick="closeMenu();showTeam()"><span class="mic">👥</span><span>Équipe & invitations<small>Codes personnels : inviter, suspendre, révoquer</small></span></button>`:''}
