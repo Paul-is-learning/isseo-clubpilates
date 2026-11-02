@@ -4995,8 +4995,14 @@ function openPr(id){
   // Fiche hors des listes d'appel (client, séance d'essai, perdu…) : ouverte dans la liste de son étape
   if(sg||!PIPE[p.statut]||(p.statut==='rappeler'&&prOpen(p))){prFilter=null;prSort=sg||'all';}else prFilter=p.statut;
   try{localStorage.setItem('cpcoach_prsort',prSort);}catch(e){}
+  // Le filtre « En charge » ne doit jamais cacher la fiche demandée
+  if(prOwnF){prOwnF='';try{localStorage.setItem('cpcoach_ownf','');}catch(e){}}
   prOpenId=id;loadHist(id);showProspects();
-  setTimeout(()=>document.querySelector('.pr-card.open')?.scrollIntoView({block:'center'}),30);
+  // Fiche absente de la liste choisie (cas limite) : repli sur « Tous », puis sur son étape
+  if(!document.querySelector('.pr-card.open')){prFilter=null;prSort='all';showProspects();}
+  if(!document.querySelector('.pr-card.open')&&PIPE[p.statut]){prFilter=p.statut;showProspects();}
+  // Groupe replié du tri du jour : on l'ouvre pour montrer la fiche
+  setTimeout(()=>{const c=document.querySelector('.pr-card.open');if(!c)return;const g=c.closest('details.pr-grp');if(g&&!g.open)g.open=true;c.scrollIntoView({block:'center'});},30);
 }
 // 👥 Roadmap équipe : par commercial, appels sortants du jour et rappels / RDV qu'il suit
 // 🗑 Fiches supprimées : gardées côté serveur, restaurables par l'équipe
