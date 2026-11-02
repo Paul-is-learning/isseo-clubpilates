@@ -14,6 +14,7 @@
 // ═════════════════════════════════════════════════════════════════
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { AIRCALL_STUDIO, aircallGet } from "../_shared/aircall.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -77,7 +78,7 @@ function parisMondayIso(now: Date): string {
 
 const fmtDay = (iso: string) => new Date(iso).toLocaleDateString("fr-FR", { timeZone: "Europe/Paris", day: "numeric", month: "long" });
 
-type Stats = { leads: number; inscrits: number; packs: number; packsDetail: string; ic: number; icDetail: string; ok: boolean; sources: { leads: number; google: number; meta: number; site: number } };
+type Stats = { leads: number; inscrits: number; packs: number; packsDetail: string; ic: number; icDetail: string; ok: boolean; aircall?: { total: number; rattaches: number; pct: number; ok: boolean }; sources: { leads: number; google: number; meta: number; site: number } };
 
 // deno-lint-ignore no-explicit-any
 function countContacts(contacts: any[], from: string, to: string): Omit<Stats, "packs" | "packsDetail" | "ok" | "icDetail"> {
@@ -146,6 +147,29 @@ Deno.serve(async (req) => {
     stats[s.id] = { ...c, ic, icDetail, packs: packsEv.length, packsDetail, ok: contacts.ok };
   }
 
+  // ── Contrôle Aircall (Lattes) : part des appels de la semaine rattachés à une fiche ──
+  const sk = (x: unknown) => String(x ?? "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z]/g, "");
+  const acStudio = studios.find((x) => sk(CLUBS[x.id].coach) === sk(AIRCALL_STUDIO));
+  if (acStudio && Deno.env.get("AIRCALL_API_ID")) {
+    let total = 0, ok = false;
+    const f = Math.floor(new Date(from).getTime() / 1000), t = Math.floor(new Date(to).getTime() / 1000);
+    for (let page = 1; page <= 20; page++) {
+      const r = await aircallGet(`/calls?from=${f}&to=${t}&order=asc&per_page=50&page=${page}`);
+      if (r.status !== 200 || !r.body) break;
+      // deno-lint-ignore no-explicit-any
+      total += (r.body.calls || []).filter((c: any) => c?.direction === "outbound" || c?.direction === "inbound").length;
+      if (!r.body.meta?.next_page_link) { ok = true; break; }
+      await new Promise((res) => setTimeout(res, 1100));
+    }
+    const { data: prRow } = await sb.from("coach_store").select("data").eq("id", "_coach_prospects").maybeSingle();
+    // deno-lint-ignore no-explicit-any
+    const plist: any[] = Array.isArray(prRow?.data?.prospects) ? prRow!.data.prospects : [];
+    let rattaches = 0;
+    // deno-lint-ignore no-explicit-any
+    for (const p of plist) if (sk(p?.studio) === sk(AIRCALL_STUDIO)) for (const a of (p.appels || [])) if (String(a?.id || "").startsWith("ac_") && String(a?.ts || "") >= from && String(a?.ts || "") < to) rattaches++;
+    stats[acStudio.id].aircall = { total, rattaches, pct: total ? Math.round(rattaches / total * 100) : 100, ok };
+  }
+
   if (dry) return new Response(JSON.stringify({ from, to, stats, diag }, null, 1), { headers: { "Content-Type": "application/json" } });
   if (!RESEND_API_KEY) return new Response(JSON.stringify({ error: "RESEND_API_KEY manquant" }), { status: 500 });
 
@@ -177,7 +201,7 @@ Deno.serve(async (req) => {
       studiosHtml += `<div style="background:#fff;border:1px solid #e8e8e0;border-radius:12px;padding:18px 14px;margin-bottom:16px">
 <div style="font-weight:700;font-size:16px;margin:0 0 4px">${s.name}</div>
 <div style="font-size:12px;color:#888;margin-bottom:10px">${st.ok ? "Chiffres Boost et Sales Coach" : "Boost indisponible ce matin : seuls les packs déclarés dans l'outil sont affichés"}</div>
-<table role="presentation" style="width:100%;border-collapse:collapse"><tr>${tile(st.leads, "Nouveaux leads", srcLbl, "#185FA5")}${tile(st.inscrits, "Nouveaux inscrits", "inscrits dans Boost", "#0F6E56")}</tr><tr>${tile(st.packs, st.packs > 1 ? "Packs signés" : "Pack signé", st.packsDetail || "déclarés dans le Sales Coach", "#C9871F")}${tile(st.ic, st.ic > 1 ? "Intro Class réalisées" : "Intro Class réalisée", st.icDetail, "#6b40b8")}</tr></table></div>`;
+<table role="presentation" style="width:100%;border-collapse:collapse"><tr>${tile(st.leads, "Nouveaux leads", srcLbl, "#185FA5")}${tile(st.inscrits, "Nouveaux inscrits", "inscrits dans Boost", "#0F6E56")}</tr><tr>${tile(st.packs, st.packs > 1 ? "Packs signés" : "Pack signé", st.packsDetail || "déclarés dans le Sales Coach", "#C9871F")}${tile(st.ic, st.ic > 1 ? "Intro Class réalisées" : "Intro Class réalisée", st.icDetail, "#6b40b8")}</tr></table>${st.aircall ? `<div style="margin-top:10px;font-size:12px;color:#555;padding:8px 10px;border-radius:8px;background:${!st.aircall.ok ? "#F1EFE8" : st.aircall.pct < 70 ? "#FCEBEB" : "#F1EFE8"}">${!st.aircall.ok ? "Contrôle Aircall indisponible ce matin" : `Appels Aircall de la semaine : <b>${st.aircall.total}</b> · rattachés à une fiche : <b>${st.aircall.rattaches}</b> (${st.aircall.pct} %)${st.aircall.pct < 70 ? ` · <span style="color:#A32D2D;font-weight:700">⚠️ ${st.aircall.total - st.aircall.rattaches} appels sans fiche : numéros absents ou différents de Boost, à compléter</span>` : ""}`}</div>` : ""}</div>`;
     }
 
     const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f0;font-family:-apple-system,Segoe UI,sans-serif"><div style="max-width:600px;margin:0 auto;padding:24px 16px">

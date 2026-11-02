@@ -1393,6 +1393,8 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-when.muted{font-weight:600;color:var(--ink-mid)}
 .pl-when.due{color:#B07A1C}.pl-when.late{color:#C0492F}
 .pl-when em{font-style:normal;font-size:11px;font-weight:800;background:#FDECE8;color:#B4300F;border-radius:99px;padding:1px 7px;margin-left:4px}
+.pl-notel{border:1px solid #F5C9B2;background:#FDEBE3;color:#B4430F;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:800;cursor:pointer}
+.pl-notel.big{font-size:12.5px;padding:5px 12px}
 .pl-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
 .pl-quick{display:flex;gap:6px}
 .pl-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--cream-line);background:#fff;display:grid;place-items:center;color:var(--ink-soft);font-size:14px;cursor:pointer;text-decoration:none}
@@ -5176,7 +5178,7 @@ function showProspects(keepScroll){
     const arr=new Date(prArrival(p));
     const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${p.bentry?'Arrivé':'Créé'} le ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     // L'heure d'arrivée est dans la colonne « prochaine étape » ; si un rappel l'occupe, elle passe sous le nom
-    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):'',p.rappel?arrH:''].filter(Boolean).join(' · ');
+    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):(p.bmember?'':`<button class="pl-notel" onclick="event.stopPropagation();prOpenId='${p.id}';prEditId='${p.id}';showProspects(true)" title="Aucun numéro : saisissez-le, il sera envoyé à Boost">⚠️ Numéro manquant · ajouter</button>`),p.rappel?arrH:''].filter(Boolean).join(' · ');
     const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
     const flags=[p.bmember?'<span class="pl-flag ok">🏅 Adhérent</span>':'',prOuv(p)?'<span class="pl-flag warn">🏗 À rappeler à l\'ouverture</span>':'',p.bid&&bl&&({a_traiter:'rappeler',contacte:'rappeler',rdv_planifie:'rappeler',rdv_nok:'rappeler',rdv_venu:'venu',client:'abo',perdu:'perdu'}[p.bst]||'')!==p.statut&&!(p.statut==='essai'&&p.bst==='rdv_planifie')?`<span class="pl-flag">Boost : ${esc(bl)}</span>`:'',p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?'<span class="pl-flag warn">⏳ envoi Boost</span>':p.bqe?'<span class="pl-flag bad">⚠️ Boost</span>':''].join('');
     return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
@@ -5236,7 +5238,7 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
                 <small id="pe-err" style="color:#B4300F;font-weight:700"></small>
               </div>
             </div>`:''}
-            <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="${telHref(p.tel)}">📱 ${esc(p.tel)}</a>`:'Pas de téléphone'}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
+            <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="${telHref(p.tel)}">📱 ${esc(p.tel)}</a>`:`<button class="pl-notel big" onclick="prEditId='${p.id}';showProspects(true)">⚠️ Numéro manquant · le saisir (envoyé à Boost)</button>`}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
             <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="selDefer(this,()=>setPRep('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
             <div class="pl-info">🤝 Suivi par ${(COACH_ROLE==='admin'||IS_MGR)?`<select onchange="selDefer(this,()=>setPSuivi('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">personne</option>${teamFor(p).map(n=>`<option${n===p.suivi?' selected':''}>${esc(n)}</option>`).join('')}</select>`:p.suivi?'<b>'+esc(p.suivi)+'</b>':'personne pour l\'instant <small class="pl-by">le premier contact décroché ou rappel posé l\'attribue</small>'}</div>
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
