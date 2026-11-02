@@ -5883,7 +5883,8 @@ function _ppCompute(r){
   const inP=s=>{s=String(s||'');return !!s&&s>=r.from&&s<r.to;};
   const map=_hpMap||{};
   const R={leads:0,src:{google:0,meta:0,site:0},joints:0,calls:0,answered:0,icSess:0,icBook:0,icShow:0,ventes:0,packs:{},prime:0,closeSum:0,closeN:0,reps:{}};
-  const rep=n=>{n=(n||'').trim().split(/\s+/)[0]||'·';return R.reps[n]||(R.reps[n]={n:n,leads:0,joints:0,calls:0,answered:0,ic:0,ventes:0,closeSum:0,closeN:0});};
+  // Même personne quelle que soit la graphie (Clément / Clement, majuscules) : regroupement par clé sans accent ; affichage = nom de l'équipe s'il existe
+  const rep=n=>{n=(n||'').trim().split(/\s+/)[0]||'·';const k=n==='·'?'·':_repKey(n);if(!R.reps[k]){const team=(typeof SELLERS_BY_STUDIO!=='undefined'&&SELLERS_BY_STUDIO[_sk(CFG.studio||'')]||[]).find(x=>_repKey(x)===k);R.reps[k]={n:team||n,leads:0,joints:0,calls:0,answered:0,ic:0,ventes:0,closeSum:0,closeN:0};}return R.reps[k];};
   const seen=new Set();
   PSC().forEach(p=>{
     if(p.bmember)return;
@@ -5961,7 +5962,7 @@ async function showPerfPast(keep){_vReg('perf');
     </div>
     <div class="hm-sec" style="margin-top:18px">Par commercial</div>
     ${reps.length?`<div class="pp-tbl-wrap"><table class="pp-tbl"><thead><tr><th>Sales</th><th>Leads</th><th>Appels</th><th>Joints</th><th>IC</th><th>Ventes</th><th>Transfo</th><th>Closing</th></tr></thead><tbody>
-      ${reps.map(o=>{const tr=o.leads?Math.round(o.ventes/o.leads*1000)/10:null;const prev=P.reps[o.n];const dv=prev?o.ventes-prev.ventes:o.ventes;return `<tr><td class="pp-who">${o.n==='·'?'👤':avaTag(avatarOf(o.n),22,o.n)} <b>${o.n==='·'?'À attribuer':esc(o.n)}</b></td><td>${o.leads}</td><td>${o.calls}<small>${o.calls?' · '+Math.round(o.answered/o.calls*100)+' %':''}</small></td><td>${o.joints}<small>${o.leads?' · '+Math.round(o.joints/o.leads*100)+' %':''}</small></td><td>${o.ic}</td><td><b>${Math.round(o.ventes*10)/10}</b>${dv?`<small class="${dv>0?'up':'down'}"> ${dv>0?'+':'−'}${Math.abs(Math.round(dv*10)/10)}</small>`:''}</td><td>${tr==null?'·':`<b style="color:${tr>=5?'#1F9E75':'var(--ink)'}">${tr} %</b>`}</td><td>${o.closeN?fmtTalk(o.closeSum/o.closeN):'·'}</td></tr>`;}).join('')}
+      ${reps.map(o=>{const tr=o.leads?Math.round(o.ventes/o.leads*1000)/10:null;const prev=P.reps[o.n==='·'?'·':_repKey(o.n)];const dv=prev?o.ventes-prev.ventes:o.ventes;return `<tr><td class="pp-who">${o.n==='·'?'👤':avaTag(avatarOf(o.n),22,o.n)} <b>${o.n==='·'?'À attribuer':esc(o.n)}</b></td><td>${o.leads}</td><td>${o.calls}<small>${o.calls?' · '+Math.round(o.answered/o.calls*100)+' %':''}</small></td><td>${o.joints}<small>${o.leads?' · '+Math.round(o.joints/o.leads*100)+' %':''}</small></td><td>${o.ic}</td><td><b>${Math.round(o.ventes*10)/10}</b>${dv?`<small class="${dv>0?'up':'down'}"> ${dv>0?'+':'−'}${Math.abs(Math.round(dv*10)/10)}</small>`:''}</td><td>${tr==null?'·':`<b style="color:${tr>=5?'#1F9E75':'var(--ink)'}">${tr} %</b>`}</td><td>${o.closeN?fmtTalk(o.closeSum/o.closeN):'·'}</td></tr>`;}).join('')}
     </tbody></table></div>`:'<div class="pr-empty">Aucune activité enregistrée sur cette période.</div>'}
     <div class="hm-sec" style="margin-top:18px">Tendance · ${trendN} ${_ppKind==='week'?'semaines':'mois'}</div>
     <div class="pp-chart">${chart}</div>
