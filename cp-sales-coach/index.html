@@ -6186,12 +6186,10 @@ function icGoto(dateS){
 }
 function _hmToday(){
   const d=new Date();d.setHours(12,0,0,0);const todayS=d.toISOString().slice(0,10);
-  const todo=badgeCount();
-  const fix=(COACH_ROLE==='admin'||IS_MGR)?fixGroups().reduce((n,g)=>n+g.list.length,0):0;
+  const due=PSC().filter(p=>p.rappel&&p.rappel<=todayS&&(p.statut==='rappeler'||p.statut==='essai')).length;
   const nxt=_hmNextIC();
   return `<div class="hm-today">
-    <button class="hm-chip${todo?' hot':' ok'}" onclick="prOwnF='';try{localStorage.setItem('cpcoach_ownf','');}catch(e){}prFilter=null;setPrSort('mine')" title="Mes leads frais et mes rappels du jour · même chiffre que la pastille de l'icône"><span class="hc-ic">${ic('bell',18)}</span><span>${todo?`<b>${todo}</b> à traiter aujourd'hui`:'✅ Tout est à jour'}</span></button>
-    ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="hm-chip${fix?' warn':''}" onclick="showFixList()" title="Anomalies de données du studio : numéros manquants, ventes à compléter, leads oubliés"><span class="hc-ic">${ic('sliders',18)}</span><span>${fix?`<b>${fix}</b> à corriger`:'🧹 Rien à corriger'}</span></button>`:''}
+    <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">${ic('bell',18)}</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
     <button class="hm-chip" id="hm-ic" onclick="${nxt?`icGoto('${nxt.date}')`:'showICPage()'}">${_hmIcChip()}</button>
     <button class="hm-chip" id="hm-sales" onclick="_statsMonth='';showPerf()"><span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>…</b></span></button>
   </div>`;
