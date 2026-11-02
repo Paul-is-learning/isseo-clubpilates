@@ -181,7 +181,7 @@ Deno.serve(async (req) => {
     }
 
     const html = `<!DOCTYPE html><html><body style="margin:0;padding:0;background:#f5f5f0;font-family:-apple-system,Segoe UI,sans-serif"><div style="max-width:600px;margin:0 auto;padding:24px 16px">
-<div style="background:#1a1a1a;border-radius:12px 12px 0 0;padding:22px 28px"><div style="color:#fff;font-size:20px;font-weight:700">Isseo · Club Pilates</div><div style="color:#aaa;font-size:12px;margin-top:4px">Bilan commercial · semaine du ${weekLbl}</div></div>
+<div style="background:#F8F5EE;border:1px solid #e8e8e0;border-bottom:none;border-radius:12px 12px 0 0;padding:20px 24px"><table role="presentation" style="border-collapse:collapse"><tr><td style="vertical-align:middle;padding-right:12px"><img src="${APP_URL}/cp-sales-coach/icons/icon-192.png" width="44" height="44" alt="" style="display:block;border-radius:50%"></td><td style="vertical-align:middle"><img src="${APP_URL}/cp-sales-coach/logo-jjoseph.png" height="30" alt="Joseph" style="display:block;height:30px;width:auto"><div style="font-size:12px;color:#6b6b66;margin-top:6px;white-space:nowrap">by <img src="${APP_URL}/logo-black-sm.png" height="16" alt="Isseo" style="height:16px;width:auto;vertical-align:middle;margin-left:3px"></div></td></tr></table><div style="color:#6b6b66;font-size:12px;margin-top:14px">Bilan commercial · semaine du ${weekLbl}</div></div>
 <div style="background:#fff;padding:26px 24px;border:1px solid #e8e8e0;border-top:none">
 <h1 style="font-size:20px;font-weight:700;color:#1a1a1a;margin:0 0 6px">Bonjour ${first}</h1>
 <p style="font-size:14px;color:#555;margin:0 0 20px">Voici les résultats de la semaine passée pour ${mine.length > 1 ? "vos studios" : "votre studio"}.</p>
