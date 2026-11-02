@@ -4596,6 +4596,8 @@ function prLastContact(p){
 function prArrival(p){return p.bentry||p.ts||'';}
 // Date-heure du rappel programmé (09:00 si seule la date est posée)
 function rdvAt(p){if(!p.rappel)return null;const t=new Date(p.rappel+'T'+(p.rappelH||'09:00')+':00');return isNaN(t.getTime())?null:t;}
+// En retard : date passée, ou heure convenue dépassée. Un rappel du jour sans heure est « à traiter aujourd'hui », jamais en retard
+function rappelLate(p){if(!p||!p.rappel)return false;const t=todayStr();if(p.rappel<t)return true;if(p.rappel>t||!p.rappelH)return false;const d=rdvAt(p);return !!d&&d.getTime()<Date.now();}
 const prOpen=p=>(p.statut==='rappeler'||p.statut==='essai')&&!p.noCall;
 // Rappels « chauds » : en retard ou dans l'heure
 // Rappel automatique d'une séquence Boost sur un lead jamais appelé : le lead reste un « Nouveau lead »
@@ -4651,7 +4653,7 @@ function prioListHTML(sorted,card){
   const close=()=>{if(openGrp)out+='</div></details>';openGrp=false;};
   sorted.forEach(p=>{
     const d=_prioDay(p),r=prPrio(p).r;
-    if(d!==day){close();day=d;rank=0;const L=sorted.filter(x=>_prioDay(x)===d),late=L.filter(x=>x.rappel<todayStr()||(rdvAt(x)&&rdvAt(x).getTime()<Date.now())).length;
+    if(d!==day){close();day=d;rank=0;const L=sorted.filter(x=>_prioDay(x)===d),late=L.filter(rappelLate).length;
       out+=`<div class="pr-day"><b>${_dayLbl(d)}</b><span>${L.length} rappel${L.length>1?'s':''}${late&&d<=todayStr()?' · <em>'+late+' en retard</em>':''}</span></div>`;}
     if(r!==rank){close();rank=r;const n=sorted.filter(x=>_prioDay(x)===d&&prPrio(x).r===r).length;
       out+=`<details class="pr-grp pg${r}"${_PFOLD[r]?'':' open'} ontoggle="prFold(${r},this.open)"><summary><span class="pr-grp-i">${PRIO[r][0]}</span><b>${PRIO[r][1]}</b><span class="pr-grp-n">${n}</span><small>${PRIO[r][2]}</small></summary><div class="pr-list">`;openGrp=true;}
@@ -4686,7 +4688,7 @@ function autoSheet(){
   const b=document.querySelector('#icPop .cs-b.'+(ok?'ok':'ko'));if(b)csPick(b,ok?'ok':'ko');
 }
 function sumTodo(p){const t=p&&p.sum&&p.sum.txt;if(!t)return '';return (String(t).split('\n').find(l=>/^À faire\s*:/i.test(l))||'').trim();}
-function rdvHot(p){if(!prOpen(p)||prAutoNew(p)||prOuv(p))return false;const t=rdvAt(p);return !!t&&(t.getTime()-Date.now())/60000<=60;}
+function rdvHot(p){if(!prOpen(p)||prAutoNew(p)||prOuv(p))return false;const t=rdvAt(p);if(!t)return false;if(rappelLate(p))return true;return !!p.rappelH&&(t.getTime()-Date.now())/60000<=60;}
 function fmtMin(m){m=Math.max(0,Math.round(m));if(m<60)return m+' min';if(m<1440)return Math.floor(m/60)+' h'+(m%60?' '+String(m%60).padStart(2,'0'):'');const d=Math.floor(m/1440);return d+' j';}
 // Alerte rappel : toast + notification système 10 min avant (une seule fois par rappel)
 function rappelTick(){
@@ -5034,7 +5036,7 @@ function teamRoadmapHTML(){
     if(!p.rappel||prAutoNew(p))return;
     const t=rdvAt(p);if(!t)return;
     const r=get(o),d=(tsParts(t.toISOString())||{}).day;
-    (t.getTime()<now?r.late:d===today?r.today:r.next).push(p);
+    (rappelLate(p)?r.late:d===today?r.today:r.next).push(p);
   });
   const by=prioCmp;
   const reps=Object.values(R).sort((a,b)=>(a.k==='_')-(b.k==='_')||(b.k===me)-(a.k===me)||(b.late.length+b.today.length)-(a.late.length+a.today.length)||b.calls-a.calls);
@@ -5116,7 +5118,7 @@ function showProspects(keepScroll){
     const open=prOpenId===p.id;
     const hot=prSort==='rappels'&&rdvHot(p);
     const u=prRdvState(p);
-    const late=p.rappel&&rdvAt(p)&&rdvAt(p).getTime()<Date.now()&&prOpen(p);
+    const late=rappelLate(p)&&prOpen(p);
     const when=p.rappel
       ?`<span class="pl-when${late?' late':isDue?' due':''}">${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
       :`<span class="pl-when muted">${srcLogo(p.src)}${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
@@ -5533,7 +5535,7 @@ function histPanel(p){
     ${(()=>{ // Prochaine étape convenue : affichée en tête de l'historique
       const t=rdvAt(p);if(!t||!prOpen(p))return '';
       const ic=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;
-      const late=t.getTime()<Date.now();
+      const late=rappelLate(p);
       const pend=p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs;
       return `<div class="ht-row ht-next${late?' late':''}"><div class="ht-when">${when(t.toISOString())}</div><div class="ht-line"><i></i></div><div class="ht-ic">${p.statut==='essai'?'🎟️':'⏰'}</div><div class="hs-b">
         <div class="hs-h"><b>Prochaine étape · ${p.statut==='essai'?(ic?esc(icLabel(ic)):'Séance d\'essai'):'Rappel'}</b>${late?'<span class="hs-res r-late">En retard</span>':'<span class="hs-res r-next">À venir</span>'}</div>
