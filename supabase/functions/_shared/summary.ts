@@ -7,7 +7,7 @@
 // Champ serveur : jamais accepté depuis un téléphone (BOOST_FIELDS).
 // ═════════════════════════════════════════════════
 
-export const SUMMARY_STUDIOS = ["lagarennecolombes"]; // déploiement progressif (demande de Paul)
+export const SUMMARY_STUDIOS = ["lagarennecolombes", "montpellierlattes"]; // déploiement progressif (demande de Paul)
 const MAX_ITEMS = 5; // derniers échanges retenus
 const MAX_ITEM = 1800; // caractères par échange
 const MAX_DIGEST = 7000;

@@ -5298,7 +5298,7 @@ function togglePr(id){prOpenId=prOpenId===id?null:id;if(prOpenId){loadHist(prOpe
 /* ── 🧭 Situation du prospect : résumé automatique des derniers échanges (serveur + Mistral) ──
    Le serveur ne rappelle l'IA que si la matière a changé ; ici on ne demande que pour les fiches
    qui ont bougé depuis leur dernier résumé (ou jamais résumées), une à la fois. */
-const SUM_STUDIOS=['lagarennecolombes']; // même liste que côté serveur (déploiement progressif)
+const SUM_STUDIOS=['lagarennecolombes','montpellierlattes']; // même liste que côté serveur (déploiement progressif)
 const _SUMCHK={},_SUMERR={};let _sumQ=[],_sumBusy=false,_sumFail=0,_sumPause=0;
 function sumOn(p){return SUM_STUDIOS.includes(_sk(p&&p.studio||CFG.studio));}
 function sumHas(p){return !!((p.appels||[]).length||p.bnotes||p.note||p.fiche);}
