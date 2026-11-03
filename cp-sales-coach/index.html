@@ -3023,7 +3023,7 @@ async function syncPull(rerender){
       });
       PROSPECTS=server.concat(localOnly);
       persistProspects();_cleanDirty();
-      setTimeout(autoSheet,400);badgeSync();
+      badgeSync(); /* plus d'ouverture automatique de la fenêtre de sortie d'appel (demande de Paul, 3 nov. 2026) : elle s'ouvre seulement quand le commercial clique sur la fiche */
       if(_openWanted&&PROSPECTS.some(p=>p.id===_openWanted)){const id=_openWanted;_openWanted='';setTimeout(()=>openPr(id),300);}
       if(localOnly.length||absorbed||_hasPend())schedulePush();
     }
@@ -4760,7 +4760,8 @@ function prioListHTML(sorted,card){
 // « Tous » = toute la journée du studio, pour tout le monde (chacun peut intervenir sur le prospect d'un collègue) ; « En charge » isole un commercial
 function mineCount(){const t=todayStr();return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;return !prOwnF||(prCharge(p)||'·')===prOwnF;}).length;}
 function nextCallHTML(sorted){return pushBtnHTML()+(sorted.length?'':`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`);}
-// Après un appel sortant passé par la ligne (Allo, Aircall) : la fenêtre « Décroché / Non décroché » s'ouvre
+// (Désactivé le 3 nov. 2026 à la demande de Paul : la fenêtre ne s'ouvre jamais seule.) Ancien mécanisme :
+// après un appel sortant passé par la ligne (Allo, Aircall), la fenêtre « Décroché / Non décroché » s'ouvrait
 // d'elle-même sur la bonne fiche, le bon bouton présélectionné. Une fois par appel, appels de moins de 20 min.
 // Jamais pour un appel noté dans Boost ou à la main (déjà traité par le commercial), ni si l'issue a été
 // saisie à la main dans le quart d'heure (demande de Paul, 3 nov. 2026)
