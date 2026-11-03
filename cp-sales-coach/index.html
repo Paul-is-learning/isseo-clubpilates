@@ -519,7 +519,6 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .icb-k small{display:block;font-size:10px;font-weight:700;color:#8C95A8;text-transform:uppercase;letter-spacing:.04em}
 .icb-k b{display:block;font-size:19px;color:var(--cp-dark);margin:2px 0}
 .icb-k b+small{text-transform:none;letter-spacing:0;color:#1F9E75}
-.ics-pk,.ics-vd{text-transform:none}
 .icb-fs{display:flex;gap:6px;margin-bottom:10px}
 .icb-f{flex:1;min-width:0;border:1.5px solid #E3E9F2;border-radius:9px;padding:7px 8px;font:inherit;font-size:12px;font-weight:700;color:var(--cp-dark);background:#fff;outline:none}
 /* ── Liste des studios France ── */
@@ -656,6 +655,7 @@ a.menu-item{text-decoration:none;color:inherit}
 .ics-days{display:flex;gap:6px;flex-wrap:wrap}
 .ics-packs{display:flex;gap:8px}
 .ics-chip{flex:1;min-width:0;padding:9px 4px;border:1.5px solid #dce1ea;border-radius:11px;background:#fff;font-size:12.5px;font-weight:700;color:#5a6478;text-transform:capitalize;cursor:pointer;transition:all .15s}
+.ics-pk,.ics-vd{text-transform:none}
 .ics-chip.on{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark));border-color:var(--cp-dark);color:#fff;transform:scale(1.04)}
 .ics-slot{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e3e8f1;border-radius:12px;margin-bottom:6px;background:#f8fafd}
 .ics-slot b{font-size:13.5px;color:var(--cp-dark);white-space:nowrap}
@@ -4166,22 +4166,23 @@ function icBookSelect(p){
   const opt=s=>{const left=IC_CAP-icTaken(s);return `<option value="${s.id}"${p.icBook===s.id?' selected':''}${left<=0&&p.icBook!==s.id?' disabled':''}>${icLabel(s)} · ${left>0?left+' place'+(left>1?'s':'')+' restante'+(left>1?'s':''):'complet'}</option>`;};
   return `<select class="pr-date pl-ic" onchange="selDefer(this,()=>icBookProspect('${p.id}',this.value))"><option value="">🎟️ Inscrire à une Intro Class…</option>${list.map(opt).join('')}${cur&&!list.includes(cur)?`<option value="${cur.id}" selected>${icLabel(cur)} (passée)</option>`:''}${p.icBook?'<option value="__none">✖ Retirer de l\'Intro Class</option>':''}</select>`;
 }
-function icBookProspect(id,sessId){
+function icBookProspect(id,sessId,quiet){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const refresh=()=>{if(quiet){renderICPage();icOpen(quiet);}else showProspects(true);};
   const prev=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;
   if(sessId==='__none'||!sessId){
     if(prev){prev.booked=Math.max(0,(+prev.booked||0)-1);prev.maj=new Date().toISOString();icPush([],[prev]);}
-    p.icBook='';p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);toast('Retiré de l\'Intro Class');return;
+    p.icBook='';p.maj=new Date().toISOString();persistProspects();schedulePush();refresh();toast('Retiré de l\'Intro Class');return;
   }
   const s=IC.sessions.find(x=>x.id===sessId);if(!s)return;
-  if(IC_CAP-icTaken(s)<=0){toast('Cette Intro Class est complète');showProspects(true);return;}
+  if(IC_CAP-icTaken(s)<=0){toast('Cette Intro Class est complète');refresh();return;}
   if(prev&&prev.id!==s.id){prev.booked=Math.max(0,(+prev.booked||0)-1);prev.maj=new Date().toISOString();}
   if(!prev||prev.id!==s.id){s.booked=(+s.booked||0)+1;s.maj=new Date().toISOString();}
   icPush([],[s].concat(prev&&prev.id!==s.id?[prev]:[]));
   p.icBook=s.id;p.rappel=s.date;p.rappelH=s.heure||'';p.rappelBy=(CFG.rep||'').split(' ')[0]||'équipe';_takeSuivi(p);if(p.ouverture)p.ouverture=null;
   const was=p.statut;p.statut='essai';p.maj=new Date().toISOString();persistProspects();schedulePush();
   if(was!=='essai')emitEvent(p,'essai',{});
-  showProspects(true);toast('🎟️ '+(p.nom||'Prospect').split(' ')[0]+' inscrit·e · '+icLabel(s));
+  refresh();toast('🎟️ '+(p.nom||'Prospect').split(' ')[0]+' inscrit·e · '+icLabel(s));
 }
 function icSalesOf(sessId){return PROSPECTS.filter(p=>p.statut==='abo'&&p.icId===sessId);}
 function icSet(id,field,val){
@@ -4281,7 +4282,7 @@ function icOpen(id){
       <div class="ic-cnt"><span>Présents</span><div><button onclick="icSet('${s.id}','show',-1)">−</button><b>${+s.show||0}</b><button onclick="icSet('${s.id}','show',1)">+</button></div></div>
       <div class="ic-pct">${taken?pct+'%':'·'}<small>présence</small></div>
     </div>
-    ${icBooked(s.id).length?`<div class="fv-meta" style="margin-bottom:6px">🎟️ Inscrits depuis Mes prospects : ${icBooked(s.id).map(p=>esc((p.nom||'').split(' ')[0])).join(', ')}</div>`:''}
+    ${icInscHTML(s)}
     <div class="ics-lbl">Personnes signées${sig.length?' · '+sig.length:''}</div>
     ${sig.length?sig.map(x=>`<div class="ics-slot"><b>${esc(x.nom)}</b><span>${icPackLbl(x.pack)}${(x.v||[]).length?' · '+esc(x.v.join(' + ')):''}${x.src==='pr'?' · fiche prospect':''}</span>${x.src==='ic'?`<button onclick="icSignDel('${s.id}','${x.id}')" title="Retirer">🗑</button>`:''}</div>`).join(''):'<div class="ics-empty">Personne signée pour l\'instant.</div>'}
     <div class="ics-lbl">Nouvelle signature</div>
@@ -4292,6 +4293,44 @@ function icOpen(id){
     <div class="ics-days">${team.map(n=>`<button class="ics-chip ics-vd${n===_me()?' on':''}" data-v="${esc(n)}" onclick="icsVdToggle(this)">${esc(n)}</button>`).join('')}</div>
     <div class="fv-btns"><button class="glp-ok" style="flex:1" onclick="icSignAdd('${s.id}')">🎉 Enregistrer la signature</button></div>`}
     ${mgr?`<div style="margin-top:14px;text-align:center"><button class="pr-act" onclick="icDelSession('${s.id}')">🗑 Supprimer la séance</button></div>`:''}`);
+}
+// ── Inscrits d'une séance : fiches Mes prospects rattachées (icBook) · ajout par recherche ou création directe ──
+function icInscHTML(s){
+  const past=s.date<_dstr(new Date()),list=icBooked(s.id);
+  const stl={rappeler:'À traiter',contacte:'Contacté',essai:'Séance d\'essai',venu:'RDV venu',abo:'Client',perdu:'Perdu',unit:'Classe unitaire'};
+  return `<div class="ics-lbl">Inscrits${list.length?' · '+list.length:''}</div>
+    ${list.length?list.map(p=>`<div class="ics-slot"><b onclick="document.getElementById('icPop')?.remove();openPr('${p.id}')" style="cursor:pointer">${esc(p.nom||'?')}</b><span>${p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 '))+' · ':''}${stl[p.statut]||''}</span><button onclick="icBookProspect('${p.id}','__none','${s.id}')" title="Retirer de la séance">✖</button></div>`).join(''):`<div class="ics-empty">${past?'Aucun inscrit saisi.':'Personne inscrite pour l\'instant.'}</div>`}
+    <div class="ics-lbl"><small>Inscrire une personne</small></div>
+    <input type="text" id="ici-q" class="ics-in" placeholder="Prénom et nom · fiche existante ou nouvelle" autocomplete="off" oninput="icInscSearch('${s.id}')"/>
+    <div id="ici-res"></div>`;
+}
+function icInscSearch(sessId){
+  const box=document.getElementById('ici-res');if(!box)return;
+  const q=_fold(document.getElementById('ici-q')?.value||'').trim();
+  if(q.length<2){box.innerHTML='';return;}
+  const words=q.split(/\s+/).filter(Boolean),digits=q.replace(/\D/g,'');
+  const hits=PSC().filter(p=>p.icBook!==sessId&&(words.every(w=>_fold(p.nom||'').includes(w))||(digits.length>=4&&String(p.tel||'').replace(/\D/g,'').includes(digits)))).slice(0,6);
+  box.innerHTML=hits.map(p=>`<div class="ics-slot" style="cursor:pointer" onclick="icBookProspect('${p.id}','${sessId}','${sessId}')"><b>${esc(p.nom||'?')}</b><span>${p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 '))+' · ':''}${p.icBook?'déjà sur une autre séance':'fiche existante'}</span><span style="flex:0 0 auto">➕</span></div>`).join('')+
+    `<div class="ics-slot" style="flex-wrap:wrap;gap:8px"><b style="white-space:normal;flex:1 1 100%">➕ Nouvelle fiche « ${esc(document.getElementById('ici-q').value.trim())} »</b>
+      <input type="tel" id="ici-tel" class="ics-in" style="flex:1 1 140px" placeholder="06 12 34 56 78" autocomplete="off"/>
+      <select id="ici-src" class="ics-in" style="flex:1 1 140px">${NEW_SRC.map(([k,l])=>`<option value="${k}"${k==='autre'?' selected':''}>${l}</option>`).join('')}</select>
+      <button class="pr-act main" style="flex:1 1 100%;margin:0;padding:11px;font-size:14px" onclick="icInscCreate('${sessId}')">Créer la fiche et l'inscrire</button></div>`;
+}
+async function icInscCreate(sessId){
+  const s=IC.sessions.find(x=>x.id===sessId);if(!s)return;
+  const nom=(document.getElementById('ici-q')?.value||'').trim(),tel=(document.getElementById('ici-tel')?.value||'').trim(),src=document.getElementById('ici-src')?.value||'autre';
+  if(!nom){toast('Le nom est requis');return;}
+  if(tel.replace(/\D/g,'').length<9){toast('Le téléphone est requis pour créer la fiche');return;}
+  if(IC_CAP-icTaken(s)<=0){toast('Cette Intro Class est complète');return;}
+  const btn=document.querySelector('#ici-res .pr-act.main');if(btn){btn.disabled=true;btn.textContent='Création…';}
+  try{
+    const d=await syncCall('contact_create',{nom,tel,email:'',source:src,note:'Inscrit·e à l\''+icLabel(s),studio:s.studio||CFG.studio||'',rep:CFG.rep||''});
+    if(!d.ok){toast(d.error||'Création impossible');if(btn){btn.disabled=false;btn.textContent='Créer la fiche et l\'inscrire';}return;}
+    {const i=PROSPECTS.findIndex(x=>x.id===d.prospect.id);if(i>=0)PROSPECTS[i]=Object.assign(PROSPECTS[i],d.prospect);else PROSPECTS.unshift(d.prospect);}
+    persistProspects();
+    if(d.exists)toast('Cette fiche existait déjà · inscrite à la séance');
+    icBookProspect(d.prospect.id,sessId,sessId);
+  }catch(e){if(e.message!=='code')toast(e.message||'Connexion impossible');if(btn){btn.disabled=false;btn.textContent='Créer la fiche et l\'inscrire';}}
 }
 function icsVdToggle(b){const on=[...document.querySelectorAll('.ics-vd.on')];if(b.classList.contains('on')){b.classList.remove('on');return;}if(on.length>=2){toast('2 vendeurs maximum');return;}b.classList.add('on');}
 function icSignAdd(sessId){
