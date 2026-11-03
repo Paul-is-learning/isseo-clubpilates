@@ -502,6 +502,26 @@ button{font:inherit;cursor:pointer;border:0;background:0;color:inherit}
 .ic-addsale{margin-left:auto;background:var(--cp-deep);color:#fff;font-size:11.5px;font-weight:800;border-radius:9px;padding:6px 11px}
 .ic-annmsg{font-size:12px;color:#8C95A8;font-style:italic}
 .ic-actions{display:flex;gap:9px;margin-top:12px}
+.ic-day.today{color:var(--cp-deep)}
+.icr{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EBEFF6;border-left:4px solid var(--cp-deep);border-radius:13px;padding:11px 13px;margin-bottom:7px;box-shadow:var(--sh-s);cursor:pointer}
+.icr:active{background:#F6F8FC}
+.icr.ann{opacity:.55;border-left-color:#8C95A8}
+.icr b{font-size:15px;color:var(--cp-dark);min-width:44px}
+.icr-c{flex:1;min-width:0;font-size:13.5px;font-weight:600;color:var(--cp-dark);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.icr-n{font-size:12px;color:#5a6478;white-space:nowrap}
+.icr-tag{font-size:10.5px;font-weight:800;border-radius:99px;padding:3px 8px;background:#F2F4F9;color:#5a6478;white-space:nowrap}
+.icr-tag.ok{background:#e7f6ef;color:#155e43}.icr-tag.todo{background:#FFF3DC;color:#8a5a00}.icr-tag.off{background:#F2F4F9;color:#8C95A8}
+.icr-go{color:#B4BCCB;font-size:18px;font-weight:800}
+.icr.add{justify-content:center;border:1.5px dashed #c9d2e3;border-left-width:1.5px;background:transparent;box-shadow:none;color:var(--cp-deep);font-weight:800;font-size:13px;margin-top:4px}
+.icb{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+@media(min-width:640px){.icb{grid-template-columns:repeat(6,1fr)}}
+.icb-k{background:#fff;border:1px solid #EBEFF6;border-radius:12px;padding:9px 10px;box-shadow:var(--sh-s)}
+.icb-k small{display:block;font-size:10px;font-weight:700;color:#8C95A8;text-transform:uppercase;letter-spacing:.04em}
+.icb-k b{display:block;font-size:19px;color:var(--cp-dark);margin:2px 0}
+.icb-k b+small{text-transform:none;letter-spacing:0;color:#1F9E75}
+.ics-pk,.ics-vd{text-transform:none}
+.icb-fs{display:flex;gap:6px;margin-bottom:10px}
+.icb-f{flex:1;min-width:0;border:1.5px solid #E3E9F2;border-radius:9px;padding:7px 8px;font:inherit;font-size:12px;font-weight:700;color:var(--cp-dark);background:#fff;outline:none}
 /* ── Liste des studios France ── */
 .st-row{display:flex;align-items:baseline;gap:8px;padding:6px 0;border-bottom:1px dashed #E3E9F2;font-size:13px}
 .st-row b{color:var(--cp-dark);flex:0 0 auto}
@@ -4067,7 +4087,7 @@ let _icWeek=0;
 async function icPull(){try{const d=await syncCall('ic_pull');if(d){IC.slots=d.slots||[];IC.sessions=d.sessions||[];IC.baremes=d.baremes||[];IC.coachs=d.coachs||[];_hmRefreshIC();}}catch(e){}}
 function icPush(slots,sessions,coachs){syncCall('ic_push',{slots:slots||[],sessions:sessions||[],coachs:coachs||[]}).catch(()=>{});}
 function icBaremeAt(date){
-  let b={coach:12,p1:10,p2:25,p3:50};
+  let b={coach:12,p1:10,p2:25,p3:50,pu:0}; // défauts du cahier des charges (Lattes) ; « 10 séances » à fixer par le manager
   (IC.baremes||[]).forEach(x=>{if(x.effet<=date)b=x;});
   return b;
 }
@@ -4168,8 +4188,21 @@ function icSet(id,field,val){
   const s=IC.sessions.find(x=>x.id===id);if(!s)return;
   if(field==='booked'||field==='show'){val=Math.max(0,Math.min(99,(+s[field]||0)+val));if(field==='show'&&val>(+s.booked||0))s.booked=val;}
   s[field]=val;s.maj=new Date().toISOString();
-  icPush([],[s]);showICPage(true);
+  icPush([],[s]);renderICPage();if(document.getElementById('icPop'))icOpen(id);
 }
+const IC_PACKS=[['1','Pack 4'],['2','Pack 8'],['3','Illimité'],['u','10 séances']];
+function icPackLbl(k){const m={1:'Pack 4',2:'Pack 8',3:'Illimité',u:'10 séances'};return m[k]||'?';}
+function icComm(b,k){return k==='1'?+b.p1||0:k==='2'?+b.p2||0:k==='3'?+b.p3||0:k==='u'?+b.pu||0:0;}
+function icOk(s){return !icStudio()||s&&_sk(s.studio)===_sk(icStudio());}
+function icFmtD(d,long){return new Date(d+'T12:00').toLocaleDateString('fr-FR',long?{weekday:'long',day:'numeric',month:'long'}:{weekday:'long',day:'numeric',month:'short'});}
+// Personnes signées d'une séance : celles saisies ici (s.signes) + les fiches Mes prospects rattachées à la séance
+function icSignes(s){
+  const own=(s.signes||[]).map(x=>Object.assign({src:'ic'},x));
+  const pr=icSalesOf(s.id).filter(p=>!own.some(x=>_fold(x.nom)===_fold(p.nom))).map(p=>({id:'pr_'+p.id,nom:p.nom||'Prospect',pack:String(p.pack||''),v:[p.rep,p.v2].filter(Boolean),src:'pr'}));
+  return own.concat(pr);
+}
+// Commission d'une signature, par vendeur : partagée à parts égales entre les vendeurs nommés ; « Équipe » ne touche rien
+function icCommSplit(b,x){const c=icComm(b,x.pack),v=(x.v||[]).filter(n=>n&&!/^équipe$/i.test(n));const out={};if(!v.length||!c)return out;v.forEach(n=>{out[n]=(out[n]||0)+c/v.length;});return out;}
 function showICPage(keep){_vReg('ic');
   $('#topPhase').textContent='Intro Class';$('#topSub').textContent='';
   $('#nav').innerHTML=pageNav();
@@ -4185,74 +4218,124 @@ function renderICPage(){
   const scrollY=$('#screen').scrollTop;
   const mon=_monday(_icWeek);
   const days=[...Array(7)].map((x,j)=>_dstr(new Date(mon.getTime()+j*864e5)));
-  const sess=IC.sessions.filter(s=>days.includes(s.date)&&(!icStudio()||s&&_sk(s.studio)===_sk(icStudio()))).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
-  const fmtD=d=>new Date(d+'T12:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'short'});
-  const card=s=>{
-    const sales=icSalesOf(s.id),ann=s.statut==='annulee';
-    const pct=s.booked?Math.round(s.show/s.booked*100):0;
-    return `<div class="ic-card${ann?' ann':''}">
-      <div class="ic-top">
-        <div class="ic-when"><b>${s.heure||'--:--'}</b><span>${esc(s.coach||'coach ?')}</span></div>
-        <select class="ic-coach" onchange="icCoachPick(this,'${s.id}')">${icCoachOpts(s.coach||'')}</select>
-        <div class="ic-st">${['prevue','faite','annulee'].map(st=>`<button class="ic-stb${s.statut===st?' on':''}" onclick="icSet('${s.id}','statut','${st}')">${st==='prevue'?'🕐':st==='faite'?'✅':'✖️'}</button>`).join('')}${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ic-stb" title="Supprimer la séance (erreur de saisie)" onclick="icDelSession('${s.id}')">🗑</button>`:''}</div>
-      </div>
-      ${ann?'<div class="ic-annmsg">Séance annulée · exclue de toutes les stats</div>':`
-      <div class="ic-counts">
-        <div class="ic-cnt"><span>Inscrits</span><div><button onclick="icSet('${s.id}','booked',-1)">−</button><b>${s.booked||0}</b><button onclick="icSet('${s.id}','booked',1)">+</button></div></div>
-        <div class="ic-cnt"><span>Présents</span><div><button onclick="icSet('${s.id}','show',-1)">−</button><b>${s.show||0}</b><button onclick="icSet('${s.id}','show',1)">+</button></div></div>
-        <div class="ic-pct">${s.booked?pct+'%':'·'}<small>show</small></div>
-      </div>
-      ${icBooked(s.id).length?`<div class="ic-sales">${icBooked(s.id).map(p=>`<span class="ic-sale" style="background:#EEF2FB;color:#2A3F6B">🎟️ ${esc((p.nom||'').split(' ')[0])}</span>`).join('')}<span class="ic-nosale">${Math.max(0,IC_CAP-icTaken(s))} place${IC_CAP-icTaken(s)>1?'s':''} restante${IC_CAP-icTaken(s)>1?'s':''}</span></div>`:''}
-      <div class="ic-sales">${sales.length?sales.map(p=>`<span class="ic-sale">✅ ${esc(p.nom.split(' ')[0])} · ${packShort(+p.pack)||'?'}</span>`).join(''):'<span class="ic-nosale">Personne signée pour l\'instant</span>'}<button class="ic-addsale" onclick="icQuickSale('${s.id}')">+ Vente</button></div>`}
-    </div>`;
+  const now=new Date(),today=_dstr(new Date(new Date().setHours(12,0,0,0))),hhmm=now.toTimeString().slice(0,5);
+  const sess=IC.sessions.filter(s=>days.includes(s.date)&&icOk(s)).sort((a,b)=>(a.date+a.heure).localeCompare(b.date+b.heure));
+  const row=s=>{
+    const n=icSignes(s).length,ann=s.statut==='annulee',past=s.date<today||(s.date===today&&(s.heure||'')<=hhmm);
+    const done=(+s.show||0)>0||n>0; // séance passée : présents ou signés saisis
+    const tag=ann?'<span class="icr-tag off">annulée</span>':n?`<span class="icr-tag ok">${n} signé${n>1?'s':''}</span>`:!past?'':done?'<span class="icr-tag">saisie</span>':'<span class="icr-tag todo">à saisir</span>';
+    return `<div class="icr${ann?' ann':''}" onclick="icOpen('${s.id}')"><b>${esc(s.heure||'--:--')}</b><span class="icr-c">${esc(s.coach||'coach ?')}</span><span class="icr-n">${ann?'':icTaken(s)+' insc'+(past?' · '+(+s.show||0)+' prés':'')}</span>${tag}<span class="icr-go">›</span></div>`;
   };
+  const mgr=COACH_ROLE==='admin'||IS_MGR;
   let h=`<div class="cg">
-    <div class="pr-head"><div><h2 class="pr-h2">🗓️ Intro Class</h2><div class="pr-h2s">inscrits, présents, signés · tout se calcule</div></div>
+    <div class="pr-head"><div><h2 class="pr-h2">🗓️ Intro Class</h2><div class="pr-h2s">touchez une séance : inscrits, présents, signés · le reste se calcule</div></div>
       <span class="sync-badge ok">📍 ${esc(icStudio()||'Tous les studios')}</span></div>
-    <div class="ic-week"><button onclick="_icWeek--;icEnsureWeek();renderICPage()">‹</button><b>Semaine du ${fmtD(days[0])}</b><button onclick="_icWeek++;icEnsureWeek();renderICPage()">›</button>${_icWeek?`<button class="ic-today" onclick="_icWeek=0;icEnsureWeek();renderICPage()">Aujourd'hui</button>`:''}</div>
-    ${days.map(d=>{const ds=sess.filter(s=>s.date===d);return ds.length?`<div class="ic-day">${fmtD(d)}</div>`+ds.map(card).join(''):'';}).join('')||'<div class="pr-empty">Aucune séance cette semaine.<br><small>Ajoutez-en une ou configurez le planning type.</small></div>'}
-    ${icMonthHTML()}
-    <div class="ic-actions">
-      <button class="pr-act" onclick="icAddSession()">➕ Séance ponctuelle</button>
-      ${(COACH_ROLE==='admin'||IS_MGR)?'<button class="pr-act" onclick="icSlotsUI()">⚙️ Planning type</button><button class="pr-act" onclick="icCoachsUI()">👩‍🏫 Coachs</button>':''}
-    </div>
+    <div class="ic-week"><button onclick="_icWeek--;icEnsureWeek();renderICPage()">‹</button><b>Semaine du ${icFmtD(days[0])}</b><button onclick="_icWeek++;icEnsureWeek();renderICPage()">›</button>${_icWeek?`<button class="ic-today" onclick="_icWeek=0;icEnsureWeek();renderICPage()">Aujourd'hui</button>`:''}</div>
+    ${days.map(d=>{const ds=sess.filter(s=>s.date===d);return ds.length?`<div class="ic-day${d===today?' today':''}">${icFmtD(d)}${d===today?' · aujourd\'hui':''}</div>`+ds.map(row).join(''):'';}).join('')||'<div class="pr-empty">Aucune séance cette semaine.<br><small>Ajoutez-en une ci-dessous'+(mgr?', ou définissez le planning type':'')+'.</small></div>'}
+    <div class="icr add" onclick="icAddSession()">➕ Ajouter une Intro Class</div>
+    ${icBilanHTML()}
+    ${mgr?'<div class="ic-actions"><button class="pr-act" onclick="icSlotsUI()">⚙️ Planning type</button><button class="pr-act" onclick="icCoachsUI()">👩‍🏫 Coachs</button><button class="pr-act" onclick="icBaremeUI()">💶 Barèmes</button></div>':''}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
 }
-// ── Vue par mois : séances prévues (et créneaux du planning type), inscrits / places ──
-let _icMonthOff=0;
-function icMonthHTML(){
-  const now=new Date();now.setHours(12,0,0,0);
-  const m0=new Date(now.getFullYear(),now.getMonth()+_icMonthOff,1,12);
-  const y=m0.getFullYear(),mo=m0.getMonth(),days=new Date(y,mo+1,0).getDate();
-  const lead=(m0.getDay()+6)%7; // lundi = 0
-  const today=_dstr(now);
-  const ok=s=>!icStudio()||s&&_sk(s.studio)===_sk(icStudio());
-  const cells=[];
-  for(let i=0;i<lead;i++)cells.push('<div class="icm-c off"></div>');
-  for(let d=1;d<=days;d++){
-    const date=_dstr(new Date(y,mo,d,12)),wd=(new Date(y,mo,d,12).getDay()+6)%7;
-    const real=IC.sessions.filter(s=>s.date===date&&ok(s));
-    // créneaux du planning type pas encore créés pour ce jour (affichés, sans être enregistrés)
-    const virt=date<today?[]:IC.slots.filter(s=>s.actif!==false&&s.jour===wd&&ok(s)&&!real.some(r=>r.id==='ics_'+s.id+'_'+date||r.heure===s.heure));
-    const items=[...real.map(s=>({h:s.heure,coach:s.coach,ann:s.statut==='annulee',faite:s.statut==='faite',n:icTaken(s)})),...virt.map(s=>({h:s.heure,coach:s.coach,v:true,n:0}))].sort((a,b)=>String(a.h).localeCompare(String(b.h)));
-    cells.push(`<div class="icm-c${date===today?' today':''}${date<today?' past':''}" onclick="icGoDate('${date}')" title="Voir la semaine">
-      <div class="icm-d">${d}</div>
-      ${items.map(it=>`<div class="icm-s${it.ann?' ann':it.faite?' done':it.v?' virt':''}">${esc(it.h||'--:--')}${it.coach?' · '+esc(String(it.coach).split(' ')[0]):''}<b>${it.ann?'annulée':it.n+'/'+IC_CAP}</b></div>`).join('')}
-    </div>`);
-  }
-  const tot=IC.sessions.filter(s=>ok(s)&&s.date.slice(0,7)===_dstr(m0).slice(0,7)&&s.statut!=='annulee');
-  const insc=tot.reduce((a,s)=>a+icTaken(s),0),pres=tot.reduce((a,s)=>a+(+s.show||0),0);
-  return `<div class="hm-sec" style="margin-top:22px">Vue du mois</div>
-    <div class="ic-week"><button onclick="_icMonthOff--;renderICPage()">‹</button><b>${m0.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</b><button onclick="_icMonthOff++;renderICPage()">›</button>${_icMonthOff?'<button class="ic-today" onclick="_icMonthOff=0;renderICPage()">Ce mois-ci</button>':''}</div>
-    <div class="icm-sum">${tot.length} séance${tot.length>1?'s':''} · ${insc} inscrit${insc>1?'s':''} · ${pres} présent${pres>1?'s':''}${tot.length?' · '+Math.round(insc/(tot.length*IC_CAP)*100)+' % de remplissage':''}</div>
-    <div class="icm"><div class="icm-h">Lun</div><div class="icm-h">Mar</div><div class="icm-h">Mer</div><div class="icm-h">Jeu</div><div class="icm-h">Ven</div><div class="icm-h">Sam</div><div class="icm-h">Dim</div>${cells.join('')}</div>
-    <div class="fv-meta" style="margin-top:6px">Chaque séance : heure · coach · inscrits / ${IC_CAP} places. En pointillé : créneau du planning type pas encore ouvert. Touchez un jour pour voir sa semaine.</div>`;
+// ── Bilan du mois : inscrits, présents, signés, primes et commissions · tout est calculé ──
+let _icBilanOff=0,_icBF={coach:'',v:'',pack:''};
+function icBF(k,v){_icBF[k]=v;renderICPage();}
+function icBilanHTML(){
+  const m0=new Date();m0.setHours(12,0,0,0);m0.setDate(1);m0.setMonth(m0.getMonth()+_icBilanOff);
+  const ym=_dstr(m0).slice(0,7),f=_icBF;
+  const all=IC.sessions.filter(s=>icOk(s)&&s.date.slice(0,7)===ym&&s.statut!=='annulee');
+  const rows=[];all.forEach(s=>icSignes(s).forEach(x=>rows.push({s,x})));
+  const coachs=[...new Set(all.map(s=>s.coach).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const vend=[...new Set(rows.flatMap(r=>r.x.v||[]).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'fr'));
+  const sessF=all.filter(s=>!f.coach||s.coach===f.coach);
+  const rowsF=rows.filter(r=>(!f.coach||r.s.coach===f.coach)&&(!f.v||(r.x.v||[]).includes(f.v))&&(!f.pack||r.x.pack===f.pack)).sort((a,b)=>(a.s.date+a.s.heure).localeCompare(b.s.date+b.s.heure));
+  const booked=sessF.reduce((a,s)=>a+icTaken(s),0),show=sessF.reduce((a,s)=>a+(+s.show||0),0),sig=rowsF.length;
+  const prime={},comm={};
+  rowsF.forEach(r=>{const b=icBaremeAt(r.s.date);if(r.s.coach)prime[r.s.coach]=(prime[r.s.coach]||0)+(+b.coach||0);const c=icCommSplit(b,r.x);Object.keys(c).forEach(n=>{comm[n]=(comm[n]||0)+c[n];});});
+  const primeT=Object.values(prime).reduce((a,v)=>a+v,0),commT=Object.values(comm).reduce((a,v)=>a+v,0);
+  const sel=(k,opts,lbl)=>`<select class="icb-f" onchange="icBF('${k}',this.value)"><option value="">${lbl}</option>${opts.map(([v,l])=>`<option value="${esc(v)}"${f[k]===v?' selected':''}>${esc(l)}</option>`).join('')}</select>`;
+  const kpi=(l,v,sub)=>`<div class="icb-k"><small>${l}</small><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
+  const who=o=>Object.keys(o).sort((a,b)=>a.localeCompare(b,'fr')).map(n=>`<span class="ic-sale">${esc(n)} · ${fmtEur(Math.round(o[n]*100)/100)}</span>`).join('');
+  return `<div class="hm-sec" style="margin-top:24px">Bilan</div>
+    <div class="ic-week"><button onclick="_icBilanOff--;renderICPage()">‹</button><b>${m0.toLocaleDateString('fr-FR',{month:'long',year:'numeric'})}</b><button onclick="_icBilanOff++;renderICPage()">›</button>${_icBilanOff?'<button class="ic-today" onclick="_icBilanOff=0;renderICPage()">Ce mois</button>':''}</div>
+    <div class="icb-fs">${sel('coach',coachs.map(c=>[c,c]),'Tous les coachs')}${sel('v',vend.map(v=>[v,v]),'Tous les vendeurs')}${sel('pack',IC_PACKS,'Tous les packs')}</div>
+    <div class="icb">${kpi('Séances',sessF.length)}${kpi('Inscrits',booked)}${kpi('Présents',show,booked?Math.round(show/booked*100)+' % de présence':'')}${kpi('Signés',sig,show?Math.round(sig/show*100)+' % des présents':'')}${kpi('Primes coachs',fmtEur(primeT))}${kpi('Commissions',fmtEur(commT))}</div>
+    ${Object.keys(prime).length||Object.keys(comm).length?`<div class="ic-sales" style="border:0;padding:0;margin:10px 0 0">${Object.keys(prime).length?'<span class="ic-nosale">Primes :</span>'+who(prime):''}${Object.keys(comm).length?'<span class="ic-nosale">Commissions :</span>'+who(comm):''}</div>`:''}
+    <div class="ics-lbl" style="margin-top:14px">Signés du mois${rowsF.length?' · '+rowsF.length:''}</div>
+    ${rowsF.length?rowsF.map(r=>`<div class="ics-slot" onclick="icOpen('${r.s.id}')" style="cursor:pointer"><b>${r.s.date.slice(8,10)}/${r.s.date.slice(5,7)}</b><span><b>${esc(r.x.nom)}</b> · ${icPackLbl(r.x.pack)}${r.s.coach?' · IC '+esc(r.s.coach):''}${(r.x.v||[]).length?' · vendu par '+esc(r.x.v.join(' + ')):''}</span></div>`).join(''):'<div class="ics-empty">Aucune signature ce mois-ci avec ces filtres.</div>'}
+    <div class="fv-meta" style="margin-top:8px">Prime coach : ${fmtEur(icBaremeAt(ym+'-01').coach)} par personne signée dans sa séance. Commission : barème du pack, partagée à parts égales entre les vendeurs nommés (« Équipe » ne touche rien). Séances annulées exclues.</div>`;
 }
-function icGoDate(date){
-  const mon=_monday(0),d=new Date(date+'T12:00');
-  _icWeek=Math.round((d-mon)/(7*864e5)-((d.getDay()+6)%7)/7);
-  icEnsureWeek();renderICPage();document.getElementById('screen').scrollTop=0;
+// ── Fiche séance : compteurs, personnes signées, nouvelle signature ──
+function icOpen(id){
+  const s=IC.sessions.find(x=>x.id===id);if(!s)return;
+  const ann=s.statut==='annulee',sig=icSignes(s),mgr=COACH_ROLE==='admin'||IS_MGR;
+  const taken=icTaken(s),pct=taken?Math.round((+s.show||0)/taken*100):0;
+  const team=teamNames().concat(['Équipe']);
+  icSheet(`<div class="glp-tag">🗓️ ${esc(icStudio()||'Intro Class')}</div>
+    <div class="glp-t">${icFmtD(s.date,true)} · ${esc(s.heure||'')}</div>
+    <div class="ics-row" style="align-items:center"><select class="ics-in" style="flex:1" onchange="icCoachPick(this,'${s.id}')">${icCoachOpts(s.coach||'')}</select><button class="pr-act" style="flex:0 0 auto" onclick="icSet('${s.id}','statut','${ann?'prevue':'annulee'}')">${ann?'↩️ Rétablir':'✖️ Annulée'}</button></div>
+    ${ann?'<div class="ic-annmsg" style="margin:14px 0">Séance annulée · exclue de toutes les stats.</div>':`
+    <div class="ic-counts" style="margin-top:14px">
+      <div class="ic-cnt"><span>Inscrits</span><div><button onclick="icSet('${s.id}','booked',-1)">−</button><b>${taken}</b><button onclick="icSet('${s.id}','booked',1)">+</button></div></div>
+      <div class="ic-cnt"><span>Présents</span><div><button onclick="icSet('${s.id}','show',-1)">−</button><b>${+s.show||0}</b><button onclick="icSet('${s.id}','show',1)">+</button></div></div>
+      <div class="ic-pct">${taken?pct+'%':'·'}<small>présence</small></div>
+    </div>
+    ${icBooked(s.id).length?`<div class="fv-meta" style="margin-bottom:6px">🎟️ Inscrits depuis Mes prospects : ${icBooked(s.id).map(p=>esc((p.nom||'').split(' ')[0])).join(', ')}</div>`:''}
+    <div class="ics-lbl">Personnes signées${sig.length?' · '+sig.length:''}</div>
+    ${sig.length?sig.map(x=>`<div class="ics-slot"><b>${esc(x.nom)}</b><span>${icPackLbl(x.pack)}${(x.v||[]).length?' · '+esc(x.v.join(' + ')):''}${x.src==='pr'?' · fiche prospect':''}</span>${x.src==='ic'?`<button onclick="icSignDel('${s.id}','${x.id}')" title="Retirer">🗑</button>`:''}</div>`).join(''):'<div class="ics-empty">Personne signée pour l\'instant.</div>'}
+    <div class="ics-lbl">Nouvelle signature</div>
+    <input type="text" id="ics-nom" class="ics-in" placeholder="Prénom et nom" autocomplete="off"/>
+    <div class="ics-lbl"><small>Pack</small></div>
+    <div class="ics-packs">${IC_PACKS.map(([v,l])=>`<button class="ics-chip ics-pk" data-p="${v}" onclick="document.querySelectorAll('.ics-pk').forEach(c=>c.classList.toggle('on',c===this))">${l}</button>`).join('')}</div>
+    <div class="ics-lbl"><small>Vendu par · 1 ou 2 personnes</small></div>
+    <div class="ics-days">${team.map(n=>`<button class="ics-chip ics-vd${n===_me()?' on':''}" data-v="${esc(n)}" onclick="icsVdToggle(this)">${esc(n)}</button>`).join('')}</div>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1" onclick="icSignAdd('${s.id}')">🎉 Enregistrer la signature</button></div>`}
+    ${mgr?`<div style="margin-top:14px;text-align:center"><button class="pr-act" onclick="icDelSession('${s.id}')">🗑 Supprimer la séance</button></div>`:''}`);
+}
+function icsVdToggle(b){const on=[...document.querySelectorAll('.ics-vd.on')];if(b.classList.contains('on')){b.classList.remove('on');return;}if(on.length>=2){toast('2 vendeurs maximum');return;}b.classList.add('on');}
+function icSignAdd(sessId){
+  const s=IC.sessions.find(x=>x.id===sessId);if(!s)return;
+  const nom=(document.getElementById('ics-nom')?.value||'').trim();
+  const pk=document.querySelector('.ics-pk.on');
+  const v=[...document.querySelectorAll('.ics-vd.on')].map(b=>b.dataset.v);
+  if(!nom){toast('Le nom de la personne est requis');return;}
+  if(!pk){toast('Choisissez le pack');return;}
+  if(!v.length){toast('Qui a vendu ?');return;}
+  if(!s.signes)s.signes=[];
+  s.signes.push({id:'sg_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),nom:nom.slice(0,80),pack:pk.dataset.p,v:v,at:new Date().toISOString(),by:_me()});
+  s.maj=new Date().toISOString();icPush([],[s]);
+  toast('🎉 '+nom.split(' ')[0]+' · '+icPackLbl(pk.dataset.p)+' signé · bravo !');
+  renderICPage();icOpen(sessId);
+}
+function icSignDel(sessId,id){
+  const s=IC.sessions.find(x=>x.id===sessId);if(!s)return;
+  const x=(s.signes||[]).find(y=>y.id===id);if(!x)return;
+  if(!confirm('Retirer la signature de '+x.nom+' ?'))return;
+  s.signes=s.signes.filter(y=>y.id!==id);s.maj=new Date().toISOString();icPush([],[s]);
+  renderICPage();icOpen(sessId);toast('Signature retirée');
+}
+// ── Barèmes (managers et responsable) : prime coach et commissions par pack, avec date d'effet ──
+function icBaremeUI(){
+  const b=icBaremeAt(_dstr(new Date())),hist=(IC.baremes||[]).slice().reverse();
+  const num=(id,l,v)=>`<label class="pr-ulab" style="flex:1;flex-direction:column;align-items:stretch;gap:3px"><span>${l}</span><input class="ics-in" id="${id}" type="number" min="0" step="0.5" inputmode="decimal" value="${v}"/></label>`;
+  icSheet(`<div class="glp-tag">💶 ${esc(icStudio()||'Tous les studios')}</div>
+    <div class="glp-t">Barèmes</div>
+    <div class="fv-meta">Montants en euros, par personne signée. Un nouveau barème s'applique à partir de sa date d'effet ; les mois passés ne bougent pas.</div>
+    <div class="ics-lbl">Prime coach</div>
+    <div class="ics-row">${num('icb-coach','par signé dans sa séance',b.coach)}<label class="pr-ulab" style="flex:1;flex-direction:column;align-items:stretch;gap:3px"><span>à partir du</span><input class="ics-in" id="icb-effet" type="date" value="${_dstr(new Date())}"/></label></div>
+    <div class="ics-lbl">Commission vendeur, par pack</div>
+    <div class="ics-row">${num('icb-p1','Pack 4',b.p1)}${num('icb-p2','Pack 8',b.p2)}</div>
+    <div class="ics-row" style="margin-top:8px">${num('icb-p3','Illimité',b.p3)}${num('icb-pu','10 séances',b.pu||0)}</div>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1" onclick="icBaremeSave()">Enregistrer le barème ✓</button></div>
+    ${hist.length?`<div class="ics-lbl" style="margin-top:14px">Historique</div>${hist.slice(0,6).map(x=>`<div class="ics-slot"><b>${x.effet.slice(8,10)}/${x.effet.slice(5,7)}/${x.effet.slice(0,4)}</b><span>coach ${fmtEur(x.coach)} · P4 ${fmtEur(x.p1)} · P8 ${fmtEur(x.p2)} · Illimité ${fmtEur(x.p3)} · 10 séances ${fmtEur(x.pu||0)}</span></div>`).join('')}`:''}`);
+}
+async function icBaremeSave(){
+  const g=id=>parseFloat(String(document.getElementById(id)?.value||'').replace(',','.'))||0;
+  const bareme={effet:document.getElementById('icb-effet').value,coach:g('icb-coach'),p1:g('icb-p1'),p2:g('icb-p2'),p3:g('icb-p3'),pu:g('icb-pu')};
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(bareme.effet)){toast('Choisissez la date d\'effet');return;}
+  try{const d=await syncCall('ic_bareme_set',{bareme});if(d&&d.baremes)IC.baremes=d.baremes;document.getElementById('icPop')?.remove();renderICPage();toast('💶 Barème enregistré ✓');}
+  catch(e){toast('⚠️ '+String(e&&e.message||e).slice(0,80));}
 }
 function icDelSession(id){
   if(!confirm('Supprimer définitivement cette séance ?\n(Pour un cours annulé, préférez le statut ✖️ Annulée.)'))return;
@@ -4297,14 +4380,13 @@ function icsSubmitSession(){
   if(!/^\d{2}:\d{2}$/.test(heure)){toast('Choisissez une heure');return;}
   const s={id:'ics_man_'+Date.now(),studio:icStudio(),date:date,heure:heure,coach:coach,statut:'prevue',booked:0,show:0,maj:new Date().toISOString()};
   IC.sessions.push(s);icPush([],[s]);
-  document.getElementById('icPop')?.remove();
-  renderICPage();toast('Séance ajoutée ✓');
+  renderICPage();icOpen(s.id);toast('Séance ajoutée ✓');
 }
 function icSlotsUI(){
   icSheet(`<div class="glp-tag">⚙️ ${esc(icStudio()||'Tous les studios')}</div>
     <div class="glp-t">Planning type</div>
     <div class="fv-meta" style="margin-bottom:4px">Chaque créneau génère automatiquement sa séance, semaine après semaine.</div>
-    <div class="fv-meta" style="margin-bottom:4px;color:var(--gold);font-weight:700">📡 En préparation : import automatique du planning depuis bsport.</div>
+    <div class="fv-meta" style="margin-bottom:4px">Quand Bsport sera connecté, les séances et les inscrits arriveront ici automatiquement.</div>
     <div id="ics-slots" style="margin-top:10px"></div>
     <div class="ics-lbl" style="margin-top:14px">Ajouter un créneau</div>
     <div class="ics-row">
@@ -4381,37 +4463,6 @@ function icsImportLegacy(){
   IC.coachs.push(...adds);icPush([],[],adds);
   icsRenderCoachs();renderICPage();toast(adds.length+' coach'+(adds.length>1?'s':'')+' repris ✓');
 }
-function icQuickSale(sessId){
-  const s=IC.sessions.find(x=>x.id===sessId);
-  const team=[...new Set(Object.keys(AVATARS).map(k=>k.charAt(0).toUpperCase()+k.slice(1)).concat(['Équipe']))];
-  icSheet(`<div class="glp-tag">🎉 Vente Intro Class</div>
-    <div class="glp-t">Nouveau signé</div>
-    ${s?`<div class="fv-meta">Séance du ${s.date.slice(8,10)}/${s.date.slice(5,7)} à ${s.heure}${s.coach?' · '+esc(s.coach):''}</div>`:''}
-    <div class="ics-lbl">Client</div>
-    <input type="text" id="ics-nom" class="ics-in" placeholder="Prénom Nom"/>
-    <div class="ics-lbl">Pack souscrit</div>
-    <div class="ics-packs">${[['1','Pack 4'],['2','Pack 8'],['3','Illimité']].map(([v,l])=>`<button class="ics-chip ics-pk${v==='2'?' on':''}" data-p="${v}" onclick="document.querySelectorAll('.ics-pk').forEach(c=>c.classList.toggle('on',c===this))">${l}</button>`).join('')}</div>
-    <div class="ics-lbl">2e vendeur <small>(optionnel · commission 50/50)</small></div>
-    <input type="text" id="ics-v2" class="ics-in" list="icsTeamList" placeholder="Vide si vente solo"/>
-    <datalist id="icsTeamList">${team.map(n=>`<option value="${esc(n)}">`).join('')}</datalist>
-    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:16px" onclick="icsSubmitSale('${sessId}')">🎉 Enregistrer la vente</button></div>`);
-  setTimeout(()=>document.getElementById('ics-nom')?.focus(),250);
-}
-function icsSubmitSale(sessId){
-  const nom=(document.getElementById('ics-nom').value||'').trim();
-  if(!nom){toast('Le nom du client est requis');return;}
-  const pkBtn=document.querySelector('.ics-pk.on');
-  const pack=pkBtn?pkBtn.dataset.p:'2';
-  const v2=(document.getElementById('ics-v2').value||'').trim();
-  const now=new Date().toISOString();
-  const p={id:'p_'+Date.now(),nom:nom,tel:'',note:'Vente IC',statut:'abo',pack:pack,rappel:'',obj:'',fiche:'',rep:CFG.rep||'',v2:v2,fullCom:false,icId:sessId,studio:icStudio(),ts:now,maj:now};
-  PROSPECTS.unshift(p);persistProspects();schedulePush();
-  emitEvent(p,'appel');emitEvent(p,'abo',{pack:pack,prime:+PRIMES[+pack]||0,v2:v2,icId:sessId});
-  document.getElementById('icPop')?.remove();
-  toast('🎉 '+packShort(+pack)+' signé · bravo !');
-  renderICPage();
-}
-
 /* ── Import de leads en lot : colle un export (CSV/TSV/lignes) → fiches « à rappeler ».
    Marche avec Fitness Boost, bsport ou n'importe quel tableur, en attendant les API. ── */
 function _normTel(t){return (t||'').replace(/[^0-9+]/g,'').replace(/^\+33/,'0');}

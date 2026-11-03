@@ -359,7 +359,7 @@ serve(async (req) => {
       if (action === "ic_pull") return icOut();
 
       if (action === "ic_bareme_set") {
-        if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
+        if (role !== "admin" && !mgr) return json({ error: "Réservé aux managers" }, 403);
         const b = body.bareme || {};
         const clean = {
           id: "bar_" + Date.now(),
@@ -368,6 +368,7 @@ serve(async (req) => {
           p1: Math.max(0, Math.min(1000, Number(b.p1) || 0)),
           p2: Math.max(0, Math.min(1000, Number(b.p2) || 0)),
           p3: Math.max(0, Math.min(1000, Number(b.p3) || 0)),
+          pu: Math.max(0, Math.min(1000, Number(b.pu) || 0)), // pack 10 séances
         };
         baremes.push(clean);
         baremes.sort((a, b2) => (a.effet < b2.effet ? -1 : 1));
@@ -397,6 +398,12 @@ serve(async (req) => {
             statut: ["prevue", "faite", "annulee"].includes(String(s.statut)) ? String(s.statut) : "prevue",
             booked: Math.max(0, Math.min(99, Number(s.booked) || 0)),
             show: Math.max(0, Math.min(99, Number(s.show) || 0)),
+            // personnes signées saisies dans l'onglet : nom, pack (1, 2, 3 ou u = 10 séances), 1 ou 2 vendeurs
+            signes: (Array.isArray(s.signes) ? s.signes : []).slice(0, 40).filter((x: any) => x && x.id && x.nom).map((x: any) => ({
+              id: String(x.id).slice(0, 40), nom: String(x.nom).slice(0, 80),
+              pack: ["1", "2", "3", "u"].includes(String(x.pack)) ? String(x.pack) : "",
+              v: (Array.isArray(x.v) ? x.v : []).slice(0, 2).map((n: any) => String(n || "").slice(0, 40)).filter(Boolean),
+              at: String(x.at || "").slice(0, 30), by: String(x.by || "").slice(0, 40) })),
             maj: String(s.maj || new Date().toISOString()) };
           const i = sessions.findIndex((x) => x.id === clean.id);
           if (i >= 0 && !inMine(sessions[i])) continue;
