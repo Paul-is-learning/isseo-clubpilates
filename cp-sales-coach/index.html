@@ -4760,17 +4760,20 @@ function prioListHTML(sorted,card){
 // « Tous » = toute la journée du studio, pour tout le monde (chacun peut intervenir sur le prospect d'un collègue) ; « En charge » isole un commercial
 function mineCount(){const t=todayStr();return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;return !prOwnF||(prCharge(p)||'·')===prOwnF;}).length;}
 function nextCallHTML(sorted){return pushBtnHTML()+(sorted.length?'':`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`);}
-// Après un appel sortant passé par la ligne (Allo) : la fenêtre « Décroché / Non décroché » s'ouvre
-// d'elle-même sur la bonne fiche, le bon bouton présélectionné. Une fois par appel, appels de moins de 20 min
+// Après un appel sortant passé par la ligne (Allo, Aircall) : la fenêtre « Décroché / Non décroché » s'ouvre
+// d'elle-même sur la bonne fiche, le bon bouton présélectionné. Une fois par appel, appels de moins de 20 min.
+// Jamais pour un appel noté dans Boost ou à la main (déjà traité par le commercial), ni si l'issue a été
+// saisie à la main dans le quart d'heure (demande de Paul, 3 nov. 2026)
 let _ASEEN=null;
+function _callHandled(p,a){const t=Date.parse(a.ts);return (p.appels||[]).some(x=>x!==a&&/^📞 Appel manuel/.test(String(x.txt||''))&&Math.abs(Date.parse(x.ts)-t)<=15*60000);}
 function autoSheet(){
   if(!COACH_CODE)return;const me=_me();if(!me)return;
   const first=_ASEEN===null;if(first){try{_ASEEN=JSON.parse(localStorage.getItem('cpcoach_aseen')||'{}')||{};}catch(e){_ASEEN={};}}
   const now=Date.now();let cand=null;
-  PSC().forEach(p=>{(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||/Appel manuel|appel entrant|import historique/.test(l0))return;
+  PSC().forEach(p=>{(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞 (Allo|Aircall) /.test(l0)||/appel entrant|import historique/.test(l0))return;
     const k=a.id||(p.id+'|'+a.ts);if(_ASEEN[k])return;const age=now-Date.parse(a.ts);
     if(first||age>20*60000||age<-60000||_callWho(l0)!==me){_ASEEN[k]=1;return;}
-    if(!prOpen(p)||p.bmember)return;
+    if(!prOpen(p)||p.bmember||_callHandled(p,a)){_ASEEN[k]=1;return;}
     if(!cand||a.ts>cand.a.ts)cand={p,a,k,l0};});});
   Object.keys(_ASEEN).forEach(k=>{if(Object.keys(_ASEEN).length>400)delete _ASEEN[k];});
   try{localStorage.setItem('cpcoach_aseen',JSON.stringify(_ASEEN));}catch(e){}
