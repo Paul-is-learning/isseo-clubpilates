@@ -398,9 +398,11 @@ serve(async (req) => {
             statut: ["prevue", "faite", "annulee"].includes(String(s.statut)) ? String(s.statut) : "prevue",
             booked: Math.max(0, Math.min(99, Number(s.booked) || 0)),
             show: Math.max(0, Math.min(99, Number(s.show) || 0)),
+            // inscrits (fiches Mes prospects) pointés présents à l'issue du cours
+            pres: (Array.isArray(s.pres) ? s.pres : []).slice(0, 60).map((x: any) => String(x || "").slice(0, 40)).filter(Boolean),
             // personnes signées saisies dans l'onglet : nom, pack (1, 2, 3 ou u = 10 séances), 1 ou 2 vendeurs
             signes: (Array.isArray(s.signes) ? s.signes : []).slice(0, 40).filter((x: any) => x && x.id && x.nom).map((x: any) => ({
-              id: String(x.id).slice(0, 40), nom: String(x.nom).slice(0, 80),
+              id: String(x.id).slice(0, 40), nom: String(x.nom).slice(0, 80), pid: String(x.pid || "").slice(0, 40),
               pack: ["1", "2", "3", "u"].includes(String(x.pack)) ? String(x.pack) : "",
               v: (Array.isArray(x.v) ? x.v : []).slice(0, 2).map((n: any) => String(n || "").slice(0, 40)).filter(Boolean),
               at: String(x.at || "").slice(0, 30), by: String(x.by || "").slice(0, 40) })),

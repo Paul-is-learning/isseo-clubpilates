@@ -656,6 +656,8 @@ a.menu-item{text-decoration:none;color:inherit}
 .ics-packs{display:flex;gap:8px}
 .ics-chip{flex:1;min-width:0;padding:9px 4px;border:1.5px solid #dce1ea;border-radius:11px;background:#fff;font-size:12.5px;font-weight:700;color:#5a6478;text-transform:capitalize;cursor:pointer;transition:all .15s}
 .ics-pk,.ics-vd{text-transform:none}
+.ics-res{flex:1 1 100%;display:flex;gap:6px;margin-top:4px}.ics-res .ics-chip{flex:1;padding:7px 4px;text-transform:none}
+@keyframes icsBlink{0%,100%{box-shadow:none}50%{box-shadow:0 0 0 3px rgba(31,158,117,.35)}}.ics-blink{animation:icsBlink .8s 2;border-radius:12px}
 .ics-chip.on{background:linear-gradient(135deg,var(--cp-deep),var(--cp-dark));border-color:var(--cp-dark);color:#fff;transform:scale(1.04)}
 .ics-slot{display:flex;align-items:center;gap:10px;padding:10px 12px;border:1px solid #e3e8f1;border-radius:12px;margin-bottom:6px;background:#f8fafd}
 .ics-slot b{font-size:13.5px;color:var(--cp-dark);white-space:nowrap}
@@ -4296,13 +4298,33 @@ function icOpen(id){
 }
 // ── Inscrits d'une séance : fiches Mes prospects rattachées (icBook) · ajout par recherche ou création directe ──
 function icInscHTML(s){
-  const past=s.date<_dstr(new Date()),list=icBooked(s.id);
+  const past=s.date<_dstr(new Date()),due=s.date<=_dstr(new Date()),list=icBooked(s.id);
   const stl={rappeler:'À traiter',contacte:'Contacté',essai:'Séance d\'essai',venu:'RDV venu',abo:'Client',perdu:'Perdu',unit:'Classe unitaire'};
   return `<div class="ics-lbl">Inscrits${list.length?' · '+list.length:''}</div>
-    ${list.length?list.map(p=>`<div class="ics-slot"><b onclick="document.getElementById('icPop')?.remove();openPr('${p.id}')" style="cursor:pointer">${esc(p.nom||'?')}</b><span>${p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 '))+' · ':''}${stl[p.statut]||''}</span><button onclick="icBookProspect('${p.id}','__none','${s.id}')" title="Retirer de la séance">✖</button></div>`).join(''):`<div class="ics-empty">${past?'Aucun inscrit saisi.':'Personne inscrite pour l\'instant.'}</div>`}
+    ${list.length?list.map(p=>{const pr=(s.pres||[]).includes(p.id),sg=(s.signes||[]).some(x=>x.pid===p.id||_fold(x.nom)===_fold(p.nom||''));
+      return `<div class="ics-slot"${due?' style="flex-wrap:wrap"':''}><b onclick="document.getElementById('icPop')?.remove();openPr('${p.id}')" style="cursor:pointer">${esc(p.nom||'?')}</b><span>${p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 '))+' · ':''}${stl[p.statut]||''}</span><button onclick="icBookProspect('${p.id}','__none','${s.id}')" title="Retirer de la séance">✖</button>
+      ${due?`<div class="ics-res"><button class="ics-chip${pr?' on':''}" onclick="icPresToggle('${s.id}','${p.id}')">${pr?'✓ Présent':'Présent'}</button><button class="ics-chip${sg?' on':''}" onclick="${sg?'':`icSignFor('${s.id}','${p.id}')`}">${sg?'🎉 Signé':'Signé ?'}</button></div>`:''}</div>`;}).join(''):`<div class="ics-empty">${past?'Aucun inscrit saisi.':'Personne inscrite pour l\'instant.'}</div>`}
+    ${due&&list.length?'<div class="fv-meta" style="margin:-2px 0 8px">À l\'issue du cours : pointez les présents, puis « Signé ? » pour chaque vente (pack et vendeurs).</div>':''}
     <div class="ics-lbl"><small>Inscrire une personne</small></div>
     <input type="text" id="ici-q" class="ics-in" placeholder="Prénom et nom · fiche existante ou nouvelle" autocomplete="off" oninput="icInscSearch('${s.id}')"/>
     <div id="ici-res"></div>`;
+}
+// Présent pointé sur un inscrit : le compteur Présents suit le nombre de pointés (jamais en dessous)
+function icPresToggle(sessId,pid){
+  const s=IC.sessions.find(x=>x.id===sessId);if(!s)return;
+  const was=s.pres||[];s.pres=was.includes(pid)?was.filter(x=>x!==pid):was.concat([pid]);
+  s.show=Math.max(was.includes(pid)?Math.max(0,(+s.show||0)-1):+s.show||0,s.pres.length);if(s.show>(+s.booked||0))s.booked=s.show;
+  s.maj=new Date().toISOString();icPush([],[s]);renderICPage();icOpen(sessId);
+}
+// « Signé ? » sur un inscrit : formulaire de signature pré-rempli, reste le pack et le ou les vendeurs
+function icSignFor(sessId,pid){
+  const s=IC.sessions.find(x=>x.id===sessId),p=PROSPECTS.find(x=>x.id===pid);if(!s||!p)return;
+  if(!(s.pres||[]).includes(pid)){s.pres=(s.pres||[]).concat([pid]);s.show=Math.max(+s.show||0,s.pres.length);if(s.show>(+s.booked||0))s.booked=s.show;s.maj=new Date().toISOString();icPush([],[s]);renderICPage();icOpen(sessId);}
+  const inp=document.getElementById('ics-nom');if(!inp)return;
+  inp.value=p.nom||'';inp.dataset.pid=pid;
+  const lbl=inp.previousElementSibling;if(lbl)lbl.innerHTML='Signature de '+esc((p.nom||'').split(' ')[0])+' <small>· pack puis vendeur(s)</small>';
+  inp.scrollIntoView({behavior:'smooth',block:'center'});
+  const pk=document.querySelector('.ics-packs');if(pk){pk.classList.add('ics-blink');setTimeout(()=>pk.classList.remove('ics-blink'),1600);}
 }
 function icInscSearch(sessId){
   const box=document.getElementById('ici-res');if(!box)return;
@@ -4342,7 +4364,8 @@ function icSignAdd(sessId){
   if(!pk){toast('Choisissez le pack');return;}
   if(!v.length){toast('Qui a vendu ?');return;}
   if(!s.signes)s.signes=[];
-  s.signes.push({id:'sg_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),nom:nom.slice(0,80),pack:pk.dataset.p,v:v,at:new Date().toISOString(),by:_me()});
+  const pid=document.getElementById('ics-nom').dataset.pid||'';
+  s.signes.push({id:'sg_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),nom:nom.slice(0,80),pid:pid,pack:pk.dataset.p,v:v,at:new Date().toISOString(),by:_me()});
   s.maj=new Date().toISOString();icPush([],[s]);
   toast('🎉 '+nom.split(' ')[0]+' · '+icPackLbl(pk.dataset.p)+' signé · bravo !');
   renderICPage();icOpen(sessId);
