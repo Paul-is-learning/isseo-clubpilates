@@ -1434,6 +1434,8 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
 .pl-quick{display:flex;gap:6px}
 .pl-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--cream-line);background:#fff;display:grid;place-items:center;color:var(--ink-soft);font-size:14px;cursor:pointer;text-decoration:none}
+#verBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 86px);z-index:9000;background:var(--cp-dark,#0B1A3A);color:#fff;padding:10px 14px;border-radius:999px;font-size:13.5px;font-weight:700;box-shadow:0 10px 30px -8px rgba(0,0,0,.45);display:flex;align-items:center;gap:10px;white-space:nowrap}
+#verBar button{background:#fff;color:var(--cp-dark,#0B1A3A);border:none;border-radius:999px;padding:6px 12px;font:inherit;font-weight:800;cursor:pointer}
 .pl-btn.oc{width:auto;padding:0 8px;gap:0;grid-auto-flow:column;font-size:13px}.pl-btn.oc small{font-size:10px;font-weight:700;margin-left:4px;color:var(--ink-mid)}
 .pl-btn.oc.on{background:#FDECEC;border-color:#E24B4B;color:#B4300F;animation:ocPulse 1.4s infinite}.pl-btn.oc.on small{color:#B4300F}
 @keyframes ocPulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,75,.45)}60%{box-shadow:0 0 0 7px rgba(226,75,75,0)}}
@@ -4936,6 +4938,21 @@ setInterval(()=>{try{rappelTick();}catch(e){}},30000);
 const PUSH_PUBLIC_KEY='BKse61EsQ76DAz5vVmuontGOyt7nYvYMpRgyM-GH10_Vz33c0Nlu1svCIX4GIlPXZwh6-G8jUEc9l21wSnupek4';
 function _b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g,'+').replace(/_/g,'/'));const o=new Uint8Array(b.length);for(let i=0;i<b.length;i++)o[i]=b.charCodeAt(i);return o;}
 let _swReg=null;
+// ── Nouvelle version de l'app : vérifiée toutes les 5 min (empreinte ETag du serveur), bandeau « Mettre à jour »,
+// puis rechargement seul au prochain moment calme (retour sur l'app, ou 60 s sans geste), jamais pendant une saisie ni un appel en cours ──
+let _ver0='',_verNew=false,_lastAct=Date.now();
+async function _verTag(){try{const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});return r.headers.get('etag')||r.headers.get('last-modified')||'';}catch(e){return '';}}
+function verInit(){
+  ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{_lastAct=Date.now();},{passive:true}));
+  _verTag().then(t=>{_ver0=t;});
+  setInterval(verCheck,5*60000);
+  setInterval(()=>{if(_verNew&&_verCalm()&&Date.now()-_lastAct>60000)verReload();},5000);
+  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){verCheck().then(()=>{if(_verNew&&_verCalm())verReload();});}});
+}
+async function verCheck(){if(!_ver0||_verNew||document.visibilityState!=='visible')return;const t=await _verTag();if(t&&t!==_ver0){_verNew=true;verBanner();}}
+function _verCalm(){return !_typing()&&!_hasPend()&&!_pushBusy&&!document.getElementById('icPop')&&!(PROSPECTS||[]).some(p=>{const o=prOnCall(p);return o&&o.by===_meN();});}
+function verBanner(){if(document.getElementById('verBar'))return;const d=document.createElement('div');d.id='verBar';d.innerHTML='✨ Nouvelle version disponible <button onclick="verReload()">Mettre à jour</button>';document.body.appendChild(d);}
+function verReload(){try{localStorage.setItem('cpcoach_verup','1');}catch(e){}location.reload();}
 function swInit(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(r=>{_swReg=r;}).catch(()=>{});
   navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='OPEN_PROSPECT'&&d.id)_openLater(d.id);});}
 let _openWanted='';
@@ -5274,7 +5291,8 @@ function showProspects(keepScroll){
   const _ae=document.activeElement,_srch=_ae&&_ae.id==='prSearchIn'?[_ae.selectionStart,_ae.selectionEnd]:null;
   _vReg('prospects');
   clearInterval(_prTick);
-  _prTick=setInterval(()=>{if(document.querySelector('.pr-search')){if(!_typing()){if(COACH_CODE&&!_hasPend()&&!_pushBusy)syncPull(true);else showProspects(true);}}else clearInterval(_prTick);},60000);
+  // Toutes les 15 s, app visible, hors saisie : les fiches de l'équipe (appels en cours, notes, étapes) arrivent sans recharger
+  _prTick=setInterval(()=>{if(!document.querySelector('.pr-search')){clearInterval(_prTick);return;}if(document.visibilityState!=='visible'||_typing())return;if(COACH_CODE&&!_hasPend()&&!_pushBusy)syncPull(true);else showProspects(true);},15000);
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
@@ -5628,16 +5646,17 @@ async function setTemp(id,t){
 // Laisser une note : datée et signée, en tête des notes Boost, envoyée aussitôt à Boost
 let noteOpen=null;
 // ── Appel en cours : drapeau partagé avec l'équipe (champ enCours {by, at}), expiré après 3 h ──
+function _meN(){return _me()||(CFG.rep||'').trim();}
 function prOnCall(p){const o=p&&p.enCours;if(!o||!o.at)return null;return Date.now()-Date.parse(o.at)<3*3600e3?o:null;}
 function _ocSince(o){const m=Math.max(0,Math.round((Date.now()-Date.parse(o.at))/60000));return m<1?'quelques secondes':m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');}
 function callToggle(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const oc=prOnCall(p);
   if(oc){
-    if(oc.by!==_me()&&!(COACH_ROLE==='admin'||IS_MGR)&&!confirm(oc.by+' est en ligne avec ce prospect depuis '+_ocSince(oc)+'.\nTerminer son appel en cours ?'))return;
+    if(oc.by!==_meN()&&!(COACH_ROLE==='admin'||IS_MGR)&&!confirm(oc.by+' est en ligne avec ce prospect depuis '+_ocSince(oc)+'.\nTerminer son appel en cours ?'))return;
     p.enCours=null;p.maj=new Date().toISOString();persistProspects();syncPush();prOpenId=id;showProspects(true);toast('✅ Appel terminé · à vous de saisir');return;
   }
-  p.enCours={by:_me()||CFG.rep||'?',at:new Date().toISOString()};p.maj=new Date().toISOString();persistProspects();syncPush();showProspects(true);
+  p.enCours={by:_meN()||'?',at:new Date().toISOString()};p.maj=new Date().toISOString();persistProspects();syncPush();showProspects(true);
   toast('🔴 Appel en cours · l\'équipe est prévenue');
 }
 // ── Changement d'étape : une note est obligatoire (ce qui s'est dit, pourquoi) ──
@@ -6791,7 +6810,7 @@ window.addEventListener('popstate',function(){
     const u=new URL(location.href);
     urlCode=(u.searchParams.get('code')||'').trim();
     const op=(u.searchParams.get('open')||'').trim();if(op){_openWanted=op;u.searchParams.delete('open');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
-    swInit();
+    swInit();verInit();try{if(localStorage.getItem('cpcoach_verup')){localStorage.removeItem('cpcoach_verup');setTimeout(()=>toast('✨ Application mise à jour'),1200);}}catch(e){}
     if(urlCode){u.searchParams.delete('code');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
   }catch(e){}
   if(urlCode&&urlCode.toUpperCase()!==(COACH_CODE||'').toUpperCase()){
