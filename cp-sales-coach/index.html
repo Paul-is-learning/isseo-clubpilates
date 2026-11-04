@@ -1434,6 +1434,15 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
 .pl-quick{display:flex;gap:6px}
 .pl-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--cream-line);background:#fff;display:grid;place-items:center;color:var(--ink-soft);font-size:14px;cursor:pointer;text-decoration:none}
+.pl-btn.oc{width:auto;padding:0 8px;gap:0;grid-auto-flow:column;font-size:13px}.pl-btn.oc small{font-size:10px;font-weight:700;margin-left:4px;color:var(--ink-mid)}
+.pl-btn.oc.on{background:#FDECEC;border-color:#E24B4B;color:#B4300F;animation:ocPulse 1.4s infinite}.pl-btn.oc.on small{color:#B4300F}
+@keyframes ocPulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,75,.45)}60%{box-shadow:0 0 0 7px rgba(226,75,75,0)}}
+@keyframes ocSpin{to{transform:rotate(360deg)}}
+.pr-card.pl.oncall{border-color:#E24B4B;box-shadow:0 0 0 2px rgba(226,75,75,.25)}
+.pl-oncall{display:inline-flex;align-items:center;gap:6px;padding:3px 10px 3px 6px;border-radius:999px;background:#E24B4B;color:#fff;font-size:12px;font-weight:800;margin-right:6px}.pl-oncall i{font-style:normal;display:inline-block;animation:ocSpin 1.6s linear infinite}
+.pl-oclock{text-align:center;padding:18px 12px 20px;border:2px dashed #E24B4B;border-radius:16px;background:#FFF5F5;margin-bottom:12px}
+.pl-oclock .pl-ocph{font-size:64px;line-height:1;display:inline-block;animation:ocSpin 1.6s linear infinite;margin-bottom:8px}
+.pl-oclock b{display:block;font-size:17px;color:#B4300F;margin-bottom:4px}.pl-oclock span{display:block;font-size:13px;color:var(--ink-mid);margin-bottom:12px;line-height:1.45}
 .pl-btn.call{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 8px 18px -10px rgba(75,82,230,.8)}
 .pl-btn svg{width:17px;height:17px}
 .prw .pr-card.pl.open{box-shadow:var(--sh-m)}
@@ -2913,7 +2922,7 @@ function _retryLater(e){_fails++;clearTimeout(_retryT);_retryT=setTimeout(syncPu
 function _restSt(){return _fails?_failSt:(_pushBusy||_hasPend()?'sync':'ok');}
 // Fiche renvoyée par une action (note, température, coordonnées) : si elle porte une modification locale
 // pas encore envoyée, nos champs restent et repartent avec la nouvelle version
-const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','ouverture','unit'];
+const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','ouverture','unit','enCours'];
 function _takeSrv(id,sp,own){
   const l=PROSPECTS.find(x=>x.id===id);if(!l||!sp)return;
   _SEEN[id]=sp.maj||'';
@@ -5265,7 +5274,7 @@ function showProspects(keepScroll){
   const _ae=document.activeElement,_srch=_ae&&_ae.id==='prSearchIn'?[_ae.selectionStart,_ae.selectionEnd]:null;
   _vReg('prospects');
   clearInterval(_prTick);
-  _prTick=setInterval(()=>{if(document.querySelector('.pr-search')){if(!_typing())showProspects(true);}else clearInterval(_prTick);},60000);
+  _prTick=setInterval(()=>{if(document.querySelector('.pr-search')){if(!_typing()){if(COACH_CODE&&!_hasPend()&&!_pushBusy)syncPull(true);else showProspects(true);}}else clearInterval(_prTick);},60000);
   const scrollY=keepScroll?$('#screen').scrollTop:0;
   const today=todayStr();
   const due=p=>p.rappel&&p.rappel<=today&&(p.statut==='rappeler'||p.statut==='essai');
@@ -5341,11 +5350,12 @@ function showProspects(keepScroll){
     const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):(p.bmember?'':`<button class="pl-notel" onclick="event.stopPropagation();prOpenId='${p.id}';prEditId='${p.id}';showProspects(true)" title="Aucun numéro : saisissez-le, il sera envoyé à Boost">⚠️ Numéro manquant · ajouter</button>`),p.rappel?arrH:''].filter(Boolean).join(' · ');
     const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
     const flags=[p.bmember?'<span class="pl-flag ok">🏅 Adhérent</span>':'',prOuv(p)?'<span class="pl-flag warn">🏗 À rappeler à l\'ouverture</span>':'',p.bid&&bl&&({a_traiter:'rappeler',contacte:'rappeler',rdv_planifie:'rappeler',rdv_nok:'rappeler',rdv_venu:'venu',client:'abo',perdu:'perdu'}[p.bst]||'')!==p.statut&&!(p.statut==='essai'&&p.bst==='rdv_planifie')?`<span class="pl-flag">Boost : ${esc(bl)}</span>`:'',p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?'<span class="pl-flag warn">⏳ envoi Boost</span>':p.bqe?'<span class="pl-flag bad">⚠️ Boost</span>':''].join('');
-    return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}" style="--stc:${pi.c}">
+    const oc=prOnCall(p);
+    return `<div class="pr-card pl${isDue?' due':''}${hot?' rdv-hot':''}${open?' open':''}${oc?' oncall':''}" style="--stc:${pi.c}">
       <div class="pl-line" onclick="togglePr('${p.id}')">
         <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
         <div class="pl-who"><b>${esc(p.nom)}</b><span>${ownPill(p)}${sub?" "+sub:""}</span></div>
-        <div class="pl-st"><span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}${p.statut==='unit'&&unitShort(p.unit)?' · '+unitShort(p.unit):''}</span>${flags}</div>
+        <div class="pl-st">${oc?`<span class="pl-oncall"><i>📞</i> Appel en cours · ${esc(oc.by||'?')} · ${_ocSince(oc)}</span>`:''}<span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}${p.statut==='unit'&&unitShort(p.unit)?' · '+unitShort(p.unit):''}</span>${flags}</div>
         <div class="pl-next">${prOuv(p)?`<span class="pl-when muted">🏗 Le ${new Date(p.ouverture.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.ouverture.by?' · '+esc(p.ouverture.by):''}${studioOpening(p)?' · ouverture '+esc(studioOpening(p)):''}</span><button class="pl-cbtn" onclick="event.stopPropagation();ouvOff('${p.id}')" title="Retirer de « À rappeler à l'ouverture »">↩ Remettre dans les rappels</button>`
           :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${prCalls(p).n?'📞 Contacté · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'📞 À traiter'}</button>`
           :p.statut==='rappeler'&&p.rappel&&prOpen(p)&&!prAutoNew(p)?`${when}<button class="pl-cbtn rap" onclick="event.stopPropagation();contactSheet('${p.id}','rappel')" title="Rappelé · répondu, non répondu, ou à rappeler à l'ouverture">✔ Rappelé ?</button>`
@@ -5356,12 +5366,13 @@ function showProspects(keepScroll){
           ${prUnknown(p)?`<button class="jr-new" onclick="newProspectForm('${p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
           ${prSeg(p)==='unreach'&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">💬</button>`:''}
           ${p.noCall||!p.tel?'':`<button class="pl-btn call" onclick="callMenu('${p.id}')" title="Appeler ou copier le numéro">${ic('phone')}</button>`}
+          <button class="pl-btn oc${oc?' on':''}" onclick="callToggle('${p.id}')" title="${oc?'Appel en cours · toucher pour terminer':'Je suis en ligne avec ce prospect · prévenir l\'équipe'}">${oc?'🔴':'📞'}<small>${oc?'En ligne':'En cours'}</small></button>
           <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
         </div>
       </div>
       ${open?`<div class="pl-detail">
         ${sumBlockHTML(p)}
-        <div class="pl-dgrid">
+        ${oc?`<div class="pl-oclock"><div class="pl-ocph">📞</div><b>Conversation en cours</b><span>${esc(oc.by||'?')} est en ligne avec ${esc((p.nom||'').split(' ')[0])} depuis ${_ocSince(oc)}.<br>La saisie reprend quand l'appel est terminé.</span><button class="pr-act main" onclick="callToggle('${p.id}')">✅ Appel terminé · saisir le résultat</button></div>`:`<div class="pl-dgrid">
           <div>
             <div class="pl-lbl">Étape</div>
             <div class="pr-pipe">${(()=>{const at=prATraiter(p),C='#5B6B8C';
@@ -5414,7 +5425,7 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
               <button onclick="delProspect('${p.id}')" class="pr-act danger" title="Supprimer">🗑</button>
             </div>
           </div>
-        </div>
+        </div>`}
         ${histPanel(p)}
       </div>`:''}
     </div>`;
@@ -5616,6 +5627,36 @@ async function setTemp(id,t){
 }
 // Laisser une note : datée et signée, en tête des notes Boost, envoyée aussitôt à Boost
 let noteOpen=null;
+// ── Appel en cours : drapeau partagé avec l'équipe (champ enCours {by, at}), expiré après 3 h ──
+function prOnCall(p){const o=p&&p.enCours;if(!o||!o.at)return null;return Date.now()-Date.parse(o.at)<3*3600e3?o:null;}
+function _ocSince(o){const m=Math.max(0,Math.round((Date.now()-Date.parse(o.at))/60000));return m<1?'quelques secondes':m<60?m+' min':Math.floor(m/60)+' h '+String(m%60).padStart(2,'0');}
+function callToggle(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const oc=prOnCall(p);
+  if(oc){
+    if(oc.by!==_me()&&!(COACH_ROLE==='admin'||IS_MGR)&&!confirm(oc.by+' est en ligne avec ce prospect depuis '+_ocSince(oc)+'.\nTerminer son appel en cours ?'))return;
+    p.enCours=null;p.maj=new Date().toISOString();persistProspects();syncPush();prOpenId=id;showProspects(true);toast('✅ Appel terminé · à vous de saisir');return;
+  }
+  p.enCours={by:_me()||CFG.rep||'?',at:new Date().toISOString()};p.maj=new Date().toISOString();persistProspects();syncPush();showProspects(true);
+  toast('🔴 Appel en cours · l\'équipe est prévenue');
+}
+// ── Changement d'étape : une note est obligatoire (ce qui s'est dit, pourquoi) ──
+let _STN=null;
+function statutNoteAsk(id,s,seller){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;_STN={id,s,seller};
+  icSheet(`<div class="glp-tag">${PIPE[s].ic} ${esc(PIPE[s].lbl)}</div><div class="glp-t">${esc(p.nom||'')}</div>
+    <div class="fv-meta">Pourquoi ce changement d'étape ? Votre note est enregistrée dans l'historique de la fiche${p.bid?' et envoyée à Boost':''}.</div>
+    <textarea id="stn-txt" class="ics-in" rows="3" maxlength="600" placeholder="Ex. : rappelée ce matin, intéressée par le Pack 8, veut en parler à son mari" style="margin:10px 0 6px;resize:vertical"></textarea>
+    <small id="stn-err" style="color:#B4300F;font-weight:700"></small>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1" onclick="statutNoteGo()">Enregistrer ${esc(PIPE[s].lbl)} ✓</button></div>`);
+  setTimeout(()=>document.getElementById('stn-txt')?.focus(),250);
+}
+function statutNoteGo(){
+  if(!_STN)return;const t=(document.getElementById('stn-txt')?.value||'').trim();
+  if(t.length<3){const e=document.getElementById('stn-err');if(e)e.textContent='Écrivez une note avant de changer l\'étape';return;}
+  document.getElementById('icPop')?.remove();const {id,s,seller}=_STN;_STN=null;
+  setPStatut(id,s,seller,t);
+}
 async function addNote(id){
   const el=document.getElementById('pn-'+id);const text=(el?.value||'').trim();
   if(!text){toast('Écrivez votre note');el?.focus();return;}
@@ -5803,6 +5844,7 @@ function teamFor(p){const f=SELLERS_BY_STUDIO[_sk(p&&p.studio||CFG.studio)];cons
 function _sellerName(n){n=String(n||'').trim().split(/\s+/)[0];if(/^noah?$/i.test(n))return 'Noa';if(/^cl[ée]ment$/i.test(n))return 'Clement';return n;}
 function _sellerList(p){const f=SELLERS_BY_STUDIO[_sk(p&&p.studio||CFG.studio)];return f?f.slice():_sellers(p);}
 function aboPick(k,v,b){_ABO[k]=v;b.parentNode.querySelectorAll('button').forEach(x=>x.classList.toggle('on',x===b));}
+async function _statutNote(p,s,note){try{const d=await syncCall('note_add',{id:p.id,text:(PIPE[s].ic+' '+PIPE[s].lbl+' · '+note).slice(0,600),nom:CFG.rep||''});if(d&&d.ok&&d.prospect){_takeSrv(p.id,d.prospect,['note']);persistProspects();if(document.querySelector('.pr-search')&&!_typing())showProspects(true);}}catch(e){if(e.message!=='code')toast('Note non enregistrée · '+_why(e));}}
 function aboGo(){const p=PROSPECTS.find(x=>x.id===_ABO.id);if(!p)return;const e=document.getElementById('abo-err');const sel=document.getElementById('abo-sel');if(sel)_ABO.seller=sel.value;
   if(!_ABO.pack){if(e)e.textContent='Choisissez le pack acheté';return;}
   if(!_ABO.seller){if(e)e.textContent='Choisissez le vendeur ayant réalisé la vente';return;}
@@ -5816,8 +5858,11 @@ async function _aboNote(p){if(!p||!p.bid||!p.pack)return;const id=p.id;
     if(_DIRTY[id]!==undefined)return; // pas encore enregistré : pas de note (la vente prime)
     const s=await syncCall('note_add',{id,text:'✅ Client · '+(PACK_META[+p.pack]?.name||packShort(+p.pack))+(p.vendeur?' · signé par '+p.vendeur:''),nom:CFG.rep||''});
     if(s&&s.ok&&s.prospect){_takeSrv(id,s.prospect,['note']);persistProspects();}}catch(e){}}
-function setPStatut(id,s,seller){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+function setPStatut(id,s,seller,note){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  if(s===p.statut&&s!=='abo'){showProspects(true);return;}
   if(s==='abo'&&p.statut!=='abo'&&!seller){aboAsk(id);return;}
+  if(note===undefined){statutNoteAsk(id,s,seller);return;}
+  if(note)_statutNote(p,s,note);
   if(s==='abo'&&seller)p.vendeur=String(seller).slice(0,40);
   // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
   if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo'],void:true}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}

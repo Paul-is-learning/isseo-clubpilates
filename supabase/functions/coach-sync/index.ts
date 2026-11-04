@@ -976,6 +976,8 @@ serve(async (req) => {
             unit: p.unit && typeof p.unit === "object" && Number(p.unit.n) > 0
               ? { n: Math.round(Number(p.unit.n)), prix: Number(p.unit.prix) > 0 ? Math.round(Number(p.unit.prix) * 100) / 100 : null, at: String(p.unit.at || "").slice(0, 30) }
               : undefined,
+            // appel en cours (prévenir l'équipe) : qui et depuis quand
+            enCours: p.enCours && typeof p.enCours === "object" && p.enCours.at ? { by: String(p.enCours.by || "").slice(0, 40), at: String(p.enCours.at).slice(0, 30) } : null,
             rk: p.rk === "rdv" || p.rk === "retry" ? p.rk : undefined, // rappel convenu avec le prospect ou retentative (tri du jour)
             ouverture: p.ouverture && typeof p.ouverture === "object" && p.ouverture.at
               ? { at: String(p.ouverture.at).slice(0, 30), by: String(p.ouverture.by || "").slice(0, 40), note: String(p.ouverture.note || "").slice(0, 300) }
