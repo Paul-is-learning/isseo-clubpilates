@@ -5095,10 +5095,19 @@ function _ldstr(d){return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,
 function prOuv(p){return !!(p&&p.ouverture&&p.ouverture.at);}
 // Commercial qui suit la fiche : p.suivi, sinon celui qui a posé le rappel
 // Commercial en charge (suivi, sinon commercial assigné dans Boost) · badge coloré, même couleur pour la même personne partout
-// Par défaut (personne ne suit le lead et aucun commercial assigné dans Boost) : JC à La Garenne-Colombes (demande de Paul)
-// Commercial du studio : en charge de tout contact jamais joint (aucun appel décroché), sauf suivi posé à la main
-const OWNER_DEFAULT={lagarennecolombes:'JC',montpellierlattes:'Solène'};
-function prCharge(p){const d=OWNER_DEFAULT[_sk(p.studio||CFG.studio||'')]||'';const o=prOwner(p);if(o)return o;if(d&&!prCalls(p).ok)return d;return String(p.rep||'').trim().split(/\s+/)[0]||d;}
+// Par défaut (personne ne suit le lead et aucun commercial assigné dans Boost), tout contact jamais joint (aucun appel décroché)
+// revient au(x) commercial(aux) du studio, sauf suivi posé à la main. À La Garenne-Colombes : les leads frais sont répartis
+// à parts égales entre Caroline et Clement, en alternance par ordre d'arrivée (demande de Paul, 4 nov. 2026) ; Solène à Lattes.
+const OWNER_DEFAULT={lagarennecolombes:['Caroline','Clement'],montpellierlattes:'Solène'};
+let _ownRR=null,_ownRRn=0;
+function _ownDefault(p){
+  const d=OWNER_DEFAULT[_sk(p.studio||CFG.studio||'')]||'';if(!Array.isArray(d))return d;
+  // Rang d'arrivée du lead parmi ceux de son studio (stable d'un appareil à l'autre), recalculé quand la liste change
+  if(!_ownRR||_ownRRn!==PROSPECTS.length){_ownRR={};_ownRRn=PROSPECTS.length;const byS={};
+    PROSPECTS.slice().sort((a,b)=>(prArrival(a)+a.id).localeCompare(prArrival(b)+b.id)).forEach(x=>{const k=_sk(x.studio||'');byS[k]=(byS[k]||0)+1;_ownRR[x.id]=byS[k]-1;});}
+  const i=_ownRR[p.id];return d[(i===undefined?0:i)%d.length];
+}
+function prCharge(p){const o=prOwner(p);if(o)return o;const d=_ownDefault(p);if(d&&!prCalls(p).ok)return d;return String(p.rep||'').trim().split(/\s+/)[0]||d;}
 const _OWN_COL=['#2F6FE0','#C2410C','#0F8A5F','#7C3AED','#B4235A','#0E7490','#A16207','#4D5B7C'];
 function ownColor(n){let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return _OWN_COL[h%_OWN_COL.length];}
 function ownPill(p){const n=prCharge(p);if(!n)return '<span class="pl-own none" title="Personne ne suit encore ce lead">👤 À attribuer</span>';const c=ownColor(n);return `<span class="pl-own" style="color:${c};background:color-mix(in srgb,${c} 12%,#fff);border-color:color-mix(in srgb,${c} 35%,#fff)" title="Commercial en charge des rappels">👤 ${esc(n)}</span>`;}
