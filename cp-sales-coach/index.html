@@ -2978,6 +2978,7 @@ function _adoptEpoch(d){
     if(seen||PROSPECTS.length){PROSPECTS=(d.prospects||[]).slice();persistProspects();EVQ=[];_persistEvq();
       _DIRTY={};_PDEL=[];_persistSync();_seenAll(PROSPECTS);
       if($('#topPhase').textContent==='Mes prospects')showProspects(true);
+      if(document.getElementById('hm-due'))_hmRefreshCounts();
       return true;}
   }
   return false;
@@ -3071,6 +3072,7 @@ async function syncPull(rerender){
     _syncState(_restSt());_lastSync=new Date().toISOString();
     if(studioChanged)_rerenderTop();
     else if(rerender&&$('#topPhase').textContent==='Mes prospects'&&!_typing())showProspects(true);
+    if(document.getElementById('hm-due'))_hmRefreshCounts(); // accueil ouvert : compteurs à jour tout de suite
   }catch(e){if(e.message!=='code')_syncState(!_netErr(e)&&_fails?_failSt:'off');}
 }
 
@@ -6480,12 +6482,14 @@ function icGoto(dateS){
   _icWeek=Math.max(0,Math.floor(diff/7));
   showICPage();
 }
+// Compteur d'accueil = la file de Ma journée (même règle, même chiffre) ; rafraîchi après chaque synchronisation
+function _hmDueChip(){let n=0;try{n=mineCount();}catch(e){}return `<button class="hm-chip${n?' hot':''}" id="hm-due" onclick="prSort='mine';try{localStorage.setItem('cpcoach_prsort','mine')}catch(e){};showProspects()"><span class="hc-ic">${ic('bell',18)}</span><span><b>${n}</b> à faire aujourd'hui</span></button>`;}
+function _hmRefreshCounts(){const d=document.getElementById('hm-due');if(d)d.outerHTML=_hmDueChip();const c=document.getElementById('hm-count');if(c)c.textContent=PSC().length;}
 function _hmToday(){
   const d=new Date();d.setHours(12,0,0,0);const todayS=d.toISOString().slice(0,10);
-  const due=PSC().filter(p=>p.rappel&&p.rappel<=todayS&&(p.statut==='rappeler'||p.statut==='essai')).length;
   const nxt=_hmNextIC();
   return `<div class="hm-today">
-    <button class="hm-chip${due?' hot':''}" onclick="showProspects()"><span class="hc-ic">${ic('bell',18)}</span><span><b>${due}</b> relance${due>1?'s':''} à passer</span></button>
+    ${_hmDueChip()}
     <button class="hm-chip" id="hm-ic" onclick="${nxt?`icGoto('${nxt.date}')`:'showICPage()'}">${_hmIcChip()}</button>
     <button class="hm-chip" id="hm-sales" onclick="_statsMonth='';showPerf()"><span class="hc-ic">${ic('chart',18)}</span><span>Mes ventes du mois : <b>…</b></span></button>
   </div>`;
@@ -6500,12 +6504,13 @@ function showHome(){_vReg('home');
   $('#nav').innerHTML='';
   const inCall=!!st.callStart;
   const done=trainDone(),tot=TRAIN_ALL.length;
+  if(COACH_CODE&&!_hasPend()&&!_pushBusy)setTimeout(()=>syncPull(true),50); // chiffres frais dès l'arrivée sur l'accueil
   $('#screen').innerHTML=`<div class="cg">
     ${_hmToday()}
     <div class="hm-sec">Agir</div>
     <div class="hm-grid2">
       <button class="hm-big call" onclick="homeStartCall()"><span class="hm-icbox wh">${ic('phone')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">${inCall?'Reprendre l\'appel':'Démarrer un appel'}</span><span class="s">${inCall&&st.prospectNom?esc(st.prospectNom.split(' ')[0])+' est en cours':'Votre guide, étape par étape'}</span></button>
-      <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, historique, rappels</span>${PSC().length?`<span class="hm-count">${PSC().length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
+      <button class="hm-big" onclick="showProspects()"><span class="hm-icbox lav">${ic('users')}</span><span class="l">Mes prospects</span><span class="s">Fiches, historique, rappels</span>${PSC().length?`<span class="hm-count" id="hm-count">${PSC().length}</span>`:`<span class="hm-arrow">${ic('arrow',16)}</span>`}</button>
       <button class="hm-big" onclick="showPerfPast()"><span class="hm-icbox mnt">${ic('chart')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Performances passées</span><span class="s">Semaine, mois, par commercial</span></button>
       <button class="hm-big" onclick="showICPage()"><span class="hm-icbox pch">${ic('calcheck')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Intro Class</span><span class="s">Séances, présents, signés</span></button>
       <button class="hm-big" onclick="showLeadImport()"><span class="hm-icbox mnt">${ic('download')}</span><span class="hm-arrow">${ic('arrow',16)}</span><span class="l">Importer des leads</span><span class="s">Fitness Boost, bsport, tableur</span></button>
