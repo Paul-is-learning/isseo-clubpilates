@@ -5116,7 +5116,10 @@ function _ownDefault(p){
     PROSPECTS.slice().sort((a,b)=>(prArrival(a)+a.id).localeCompare(prArrival(b)+b.id)).forEach(x=>{const k=_sk(x.studio||'');byS[k]=(byS[k]||0)+1;_ownRR[x.id]=byS[k]-1;});}
   const i=_ownRR[p.id];return d[(i===undefined?0:i)%d.length];
 }
-function prCharge(p){const o=prOwner(p);if(o)return o;const d=_ownDefault(p);if(d&&!prCalls(p).ok)return d;return String(p.rep||'').trim().split(/\s+/)[0]||d;}
+// Orthographe unique des prénoms (« Clément » → « Clement », « JC Colley » → « JC ») pour que les filtres et les classements n'aient qu'une entrée par personne
+const _CANON={clement:'Clement',caroline:'Caroline',noa:'Noa',jc:'JC',paul:'Paul',solene:'Solène',tom:'Tom',lucie:'Lucie'};
+function canonName(n){n=String(n||'').trim().split(/\s+/)[0];return _CANON[_sk(n)]||n;}
+function prCharge(p){const o=prOwner(p);if(o)return canonName(o);const d=_ownDefault(p);if(d&&!prCalls(p).ok)return d;return canonName(String(p.rep||'').trim().split(/\s+/)[0]||d);}
 const _OWN_COL=['#2F6FE0','#C2410C','#0F8A5F','#7C3AED','#B4235A','#0E7490','#A16207','#4D5B7C'];
 function ownColor(n){let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return _OWN_COL[h%_OWN_COL.length];}
 function ownPill(p){const n=prCharge(p);if(!n)return '<span class="pl-own none" title="Personne ne suit encore ce lead">👤 À attribuer</span>';const c=ownColor(n);return `<span class="pl-own" style="color:${c};background:color-mix(in srgb,${c} 12%,#fff);border-color:color-mix(in srgb,${c} 35%,#fff)" title="Commercial en charge des rappels">👤 ${esc(n)}</span>`;}
@@ -5450,7 +5453,7 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
               </div>
             </div>`:''}
             <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="${telHref(p.tel)}">📱 ${esc(p.tel)}</a>`:`<button class="pl-notel big" onclick="prEditId='${p.id}';showProspects(true)">⚠️ Numéro manquant · le saisir (envoyé à Boost)</button>`}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
-            <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="selDefer(this,()=>setPRep('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Paul','JC','Clément','Caroline'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
+            <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="selDefer(this,()=>setPRep('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Noa','Clement','Caroline','Paul'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
             <div class="pl-info">🤝 Suivi par ${(COACH_ROLE==='admin'||IS_MGR)?`<select onchange="selDefer(this,()=>setPSuivi('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">personne</option>${teamFor(p).map(n=>`<option${n===p.suivi?' selected':''}>${esc(n)}</option>`).join('')}</select>`:p.suivi?'<b>'+esc(p.suivi)+'</b>':'personne pour l\'instant <small class="pl-by">le premier contact décroché ou rappel posé l\'attribue</small>'}</div>
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
             ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
@@ -5878,7 +5881,7 @@ function aboAsk(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
     <button class="glp-ok" onclick="aboGo()">✅ Enregistrer le client</button>`);}
 // Vendeurs proposés : liste fixe par studio (demande de Paul), sinon l'équipe connue
 // Commerciaux par studio (demande de Paul) : vendeurs du pack et « Suivi par »
-const SELLERS_BY_STUDIO={lagarennecolombes:['Noa','Clement','Caroline','JC'],montpellierlattes:['Solène','Tom','Lucie']};
+const SELLERS_BY_STUDIO={lagarennecolombes:['Noa','Clement','Caroline'],montpellierlattes:['Solène','Tom','Lucie']};
 // Liste « Suivi par » d'une fiche : l'équipe de son studio (plus le suivi actuel s'il n'y figure pas), sinon l'équipe connue
 function teamFor(p){const f=SELLERS_BY_STUDIO[_sk(p&&p.studio||CFG.studio)];const base=f?f.slice():teamNames();const cur=String(p&&p.suivi||'').trim();if(cur&&!base.includes(cur))base.push(cur);return base;}
 function _sellerName(n){n=String(n||'').trim().split(/\s+/)[0];if(/^noah?$/i.test(n))return 'Noa';if(/^cl[ée]ment$/i.test(n))return 'Clement';return n;}

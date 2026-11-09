@@ -74,7 +74,7 @@ const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*p
 // Base en dur + extension par secret ALLO_REPS ("cle=Nom,cle2=Nom2",
 // clé = début de l'email en minuscules/lettres seules). Inconnu → vide
 // (mieux vaut pas de conseiller qu'un nom fantôme dans le classement).
-const REP_DEFAULTS: Record<string, string> = { jeancharles: "JC", clement: "Clément", caroline: "Caroline" };
+const REP_DEFAULTS: Record<string, string> = { clement: "Clement", caroline: "Caroline", noaclubpilates: "Noa" };
 function resolveRep(email: unknown): string {
   const local = String(email || "").split("@")[0].toLowerCase().replace(/[^a-z]/g, "");
   if (!local) return "";
@@ -143,9 +143,9 @@ const tsMin = (s: unknown): string => {
 };
 
 // Propriétaire de la ligne Allo : identification déterministe fournie par Paul.
-// Ligne 01 88 83 34 18 → Caroline · ligne 07 45 80 42 39 → JC (corrigé par Paul le 27 oct. 2026).
+// Ligne 01 88 83 34 18 (standard) → Clement · ligne 07 45 80 42 39 → Caroline · ligne 06 44 60 57 35 → Noa (Paul, 9 nov. 2026 ; Paul partage la ligne de Noa, les appels restent à Noa).
 // Extensible par secret ALLO_LINES ("33612345678=Nom,…", chiffres seuls).
-const LINE_DEFAULTS: Record<string, string> = { "33188833418": "Caroline", "33745804239": "JC" };
+const LINE_DEFAULTS: Record<string, string> = { "33188833418": "Clement", "33745804239": "Caroline", "33644605735": "Noa" };
 function lineOwner(num: unknown): string {
   const k = String(num || "").replace(/\D/g, "");
   if (k.length < 9) return "";
@@ -236,7 +236,7 @@ serve(async (req: Request) => {
       if (key.length < 9) return json({ ok: true, ignored: "numéro invalide" });
       const callId = String(d.id || "").slice(0, 40);
       const result = String(d.result || "");
-      // Identification par la LIGNE utilisée (01 → Caroline, 07 → JC) ; email en repli
+      // Identification par la LIGNE utilisée (01 → Clement, 07 → Caroline, 06 → Noa) ; email en repli
       const author = lineOwner(d.type === "OUTBOUND" ? d.from_number : d.to) || resolveRep(d.user_email);
       const meta0 = "📞 Allo · " + (d.type === "OUTBOUND" ? "appel sortant" : "appel entrant")
         + (d.length ? " · " + d.length : "") + (result ? " · " + result.toLowerCase() : "")

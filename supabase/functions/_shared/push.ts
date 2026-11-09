@@ -6,7 +6,7 @@
 import webpush from "npm:web-push@3.6.7";
 
 export const ROW_PUSH = "_coach_push";
-const OWNER_DEFAULT: Record<string, string> = { lagarennecolombes: "JC", montpellierlattes: "Solène" };
+const OWNER_DEFAULT: Record<string, string> = { lagarennecolombes: "Noa", montpellierlattes: "Solène" }; // repli quand aucune fiche n'a de suivi : Noa pilote La Garenne
 const LEAD_MIN = 12; // fenêtre d'alerte : rappel dans 0 à 12 minutes (planificateur toutes les 5 min)
 
 export const sk = (s: unknown) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
