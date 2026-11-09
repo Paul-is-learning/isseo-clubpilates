@@ -4900,7 +4900,7 @@ const CLOS_FROM='2026-11-09T18:30:00.000Z'; // mise en ligne de la clôture : le
 function prToClose(p){if(!prOpen(p)||p.bmember||prOuv(p))return false;const t=_lastCallTs(p);if(!_isToday(t))return false;const ti=new Date(t);if(isNaN(ti)||ti.toISOString()<CLOS_FROM)return false;return !p.clos||String(p.clos)<ti.toISOString();}
 // Résultat validé aujourd'hui, et rien de nouveau depuis
 function prDoneToday(p){return !!p.clos&&_isToday(p.clos)&&!prToClose(p);}
-const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les retards en premier'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Déjà joints d\'abord, puis sans réponse, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
+const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les retards en premier · après les leads frais'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Déjà joints d\'abord, puis sans réponse, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
 // Groupe de Ma journée (0 à 5) : « quoi maintenant »
 function mineGroup(p){
   if(prDoneToday(p))return 5;
@@ -4918,7 +4918,8 @@ function _mineTie(a,b,g){
   if(g===5)return String(b.clos||'').localeCompare(String(a.clos||''));
   return prArrival(b).localeCompare(prArrival(a));
 }
-function mineCmp(a,b){const ga=mineGroup(a),gb=mineGroup(b);return ga-gb||_mineTie(a,b,ga);}
+const MG_RANK=[0,2,1,3,4,5]; // ordre d'affichage : à clôturer, leads frais (à rappeler dans les minutes), à l'heure, relances, Boost, fait
+function mineCmp(a,b){const ga=mineGroup(a),gb=mineGroup(b);return MG_RANK[ga]-MG_RANK[gb]||_mineTie(a,b,ga);}
 // Fiches de Ma journée : appels à clôturer, faits du jour, leads frais, tri du jour d'aujourd'hui
 function mineHas(p){if(prToClose(p)||prDoneToday(p))return true;const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===todayStr());}
 function mineList(){return PSC().filter(p=>mineHas(p)&&(!prOwnF||(prCharge(p)||'·')===prOwnF));}
