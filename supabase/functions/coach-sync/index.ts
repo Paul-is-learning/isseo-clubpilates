@@ -979,6 +979,7 @@ serve(async (req) => {
             // appel en cours (prévenir l'équipe) : qui et depuis quand
             enCours: p.enCours && typeof p.enCours === "object" && p.enCours.at ? { by: String(p.enCours.by || "").slice(0, 40), at: String(p.enCours.at).slice(0, 30) } : null,
             rk: p.rk === "rdv" || p.rk === "retry" ? p.rk : undefined, // rappel convenu avec le prospect ou retentative (tri du jour)
+            clos: p.clos ? String(p.clos).slice(0, 30) : undefined, // dernière clôture d'appel validée (Ma journée : « Fait aujourd'hui »)
             ouverture: p.ouverture && typeof p.ouverture === "object" && p.ouverture.at
               ? { at: String(p.ouverture.at).slice(0, 30), by: String(p.ouverture.by || "").slice(0, 40), note: String(p.ouverture.note || "").slice(0, 300) }
               : undefined,

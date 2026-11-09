@@ -846,6 +846,12 @@ a.menu-item{text-decoration:none;color:inherit}
 .cs-b{padding:12px;border-radius:12px;border:1.5px solid #dce1ea;background:#fff;font-weight:800;font-size:14px;cursor:pointer;text-align:left;color:var(--cp-dark)}
 .cs-b.on{border-color:var(--cp-deep);background:#F3F5FB}.cs-b.ok:hover{background:#EAF6F0}.cs-b.ko:hover{background:#FDECE8}.cs-b.ouv{font-weight:700;font-size:13px}
 .cs-hint{font-size:11.5px;color:#8a93a6;margin-top:12px;line-height:1.4}
+.cs-step{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-weight:800;font-size:13px;color:var(--cp-dark)}.cs-n{width:20px;height:20px;border-radius:50%;background:var(--cp-deep);color:#fff;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+.cs-btns.row{flex-direction:row;margin-top:0}.cs-btns.row .cs-b{flex:1;text-align:center;padding:11px 6px;font-size:13px}.cs-b.vm:hover{background:#FFF6E5}
+.cs-chips{display:flex;flex-wrap:wrap;gap:6px}.cs-c{border:1.5px solid #dce1ea;background:#fff;border-radius:99px;padding:7px 11px;font-weight:700;font-size:12.5px;cursor:pointer;color:var(--cp-dark)}.cs-c.on{border-color:var(--cp-deep);background:var(--cp-deep);color:#fff}
+.nc-prog{margin:6px 0 8px;padding:0 4px}.nc-pt{font-size:12.5px;color:var(--ink-mid)}.nc-pb{height:6px;border-radius:99px;background:#EFEAE0;overflow:hidden;margin-top:4px}.nc-pb i{display:block;height:100%;background:#2F7D4F;border-radius:99px;transition:width .4s}
+.pr-grp.mg0>summary{background:#FFF1E3}.pr-grp.mg1>summary{background:#FFF3EA}.pr-grp.mg2>summary{background:#EEF6FF}.pr-grp.mg4>summary{background:#F4F4F4}.pr-grp.mg5>summary{background:#EAF6F0}
+.pl-cbtn.clos{background:#E8620A;color:#fff;border-color:#E8620A;animation:ocPulse 1.6s ease-in-out infinite}
 .rm-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
 .rm-card{background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:12px 14px}.rm-card.me{border-color:var(--accent)}
 .rm-h{display:flex;align-items:center;gap:8px;flex-wrap:wrap}.rm-h b{font-size:15px}.rm-h small{font-size:11px;color:var(--ink-mid)}
@@ -2793,7 +2799,7 @@ let PROSPECTS=[];try{PROSPECTS=JSON.parse(localStorage.getItem('cpcoach_prospect
 function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.stringify(PROSPECTS));}catch(e){}badgeSync();}
 /* ── Pastille sur l'icône de l'app (iPhone écran d'accueil, iOS 16.4+) : mes leads frais + mes rappels du jour, effacée quand tout est traité ── */
 let _bdgT=null;
-function badgeCount(){try{const t=todayStr(),me=_sk(_me());if(!me)return 0;return PSC().filter(p=>{if(_sk(prCharge(p)||'')!==me)return false;const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===t);}).length;}catch(e){return 0;}}
+function badgeCount(){try{const me=_sk(_me());if(!me)return 0;return PSC().filter(p=>_sk(prCharge(p)||'')===me&&mineHas(p)&&!prDoneToday(p)).length;}catch(e){return 0;}}
 function badgeSync(){if(!('setAppBadge' in navigator)||!COACH_CODE)return;clearTimeout(_bdgT);_bdgT=setTimeout(()=>{const n=badgeCount();try{(n?navigator.setAppBadge(n):navigator.clearAppBadge()).catch(()=>{});}catch(e){}},300);}
 
 /* ── Synchronisation équipe : stockage central via coach-sync (code studio requis) ──
@@ -2924,7 +2930,7 @@ function _retryLater(e){_fails++;clearTimeout(_retryT);_retryT=setTimeout(syncPu
 function _restSt(){return _fails?_failSt:(_pushBusy||_hasPend()?'sync':'ok');}
 // Fiche renvoyée par une action (note, température, coordonnées) : si elle porte une modification locale
 // pas encore envoyée, nos champs restent et repartent avec la nouvelle version
-const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','ouverture','unit','enCours'];
+const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','ouverture','unit','enCours','clos'];
 function _takeSrv(id,sp,own){
   const l=PROSPECTS.find(x=>x.id===id);if(!l||!sp)return;
   _SEEN[id]=sp.maj||'';
@@ -4884,8 +4890,51 @@ function prioListHTML(sorted,card){
 }
 // ── 🙋 Ma journée : file personnelle du commercial, « Appel suivant » ouvre la fiche en tête ──
 // « Tous » = toute la journée du studio, pour tout le monde (chacun peut intervenir sur le prospect d'un collègue) ; « En charge » isole un commercial
-function mineCount(){const t=todayStr();return PSC().filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;return !prOwnF||(prCharge(p)||'·')===prOwnF;}).length;}
-function nextCallHTML(sorted){return pushBtnHTML()+(sorted.length?'':`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`);}
+// ── Clôture d'appel (Paul, 9 nov. 2026) : chaque appel du jour reçoit son résultat (fiche « clos » = horodatage de la dernière clôture validée) ──
+function _lastCallTs(p){let m='';(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(/^📞/.test(l0)&&!/import historique/.test(l0)&&String(a.ts||'')>m)m=String(a.ts);});return m;}
+function _isToday(ts){if(!ts)return false;const d=new Date(ts);return !isNaN(d)&&_ldstr(d)===todayStr();}
+// Appel passé aujourd'hui (ligne ou manuel) dont le résultat n'a pas encore été validé
+function prToClose(p){if(!prOpen(p)||p.bmember||prOuv(p))return false;const t=_lastCallTs(p);if(!_isToday(t))return false;const ti=new Date(t);return !p.clos||isNaN(ti)||String(p.clos)<ti.toISOString();}
+// Résultat validé aujourd'hui, et rien de nouveau depuis
+function prDoneToday(p){return !!p.clos&&_isToday(p.clos)&&!prToClose(p);}
+const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les retards en premier'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Déjà joints d\'abord, puis sans réponse, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
+// Groupe de Ma journée (0 à 5) : « quoi maintenant »
+function mineGroup(p){
+  if(prDoneToday(p))return 5;
+  if(prToClose(p))return 0;
+  const r=prPrio(p).r,c=prCalls(p);
+  if(r===1||r===2){if(p.statut==='essai'||p.rappelH||p.bnok||new Date().getHours()>=11)return 1;return 3;} // promesse sans heure : rejoint ⏰ en fin de matinée
+  if(r===3&&!c.n)return 2;
+  if(r===6)return 4;
+  return 3;
+}
+function _mineTie(a,b,g){
+  if(g===0)return _lastCallTs(b).localeCompare(_lastCallTs(a));
+  if(g===1||g===4){const ta=rdvAt(a)?.getTime()||9e15,tb=rdvAt(b)?.getTime()||9e15;return ta-tb||prArrival(b).localeCompare(prArrival(a));}
+  if(g===3){const ok=x=>prCalls(x).ok?0:1;return ok(a)-ok(b)||((rdvAt(a)?.getTime()||9e15)-(rdvAt(b)?.getTime()||9e15))||prArrival(b).localeCompare(prArrival(a));}
+  if(g===5)return String(b.clos||'').localeCompare(String(a.clos||''));
+  return prArrival(b).localeCompare(prArrival(a));
+}
+function mineCmp(a,b){const ga=mineGroup(a),gb=mineGroup(b);return ga-gb||_mineTie(a,b,ga);}
+// Fiches de Ma journée : appels à clôturer, faits du jour, leads frais, tri du jour d'aujourd'hui
+function mineHas(p){if(prToClose(p)||prDoneToday(p))return true;const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===todayStr());}
+function mineList(){return PSC().filter(p=>mineHas(p)&&(!prOwnF||(prCharge(p)||'·')===prOwnF));}
+function mineCount(){return mineList().filter(p=>!prDoneToday(p)).length;}
+function mineListHTML(sorted,card){
+  let out='',g=-1,openG=false;const close=()=>{if(openG)out+='</div></details>';openG=false;};
+  sorted.forEach(p=>{const mg=mineGroup(p);if(mg!==g){close();g=mg;const n=sorted.filter(x=>mineGroup(x)===mg).length;const fold=_PFOLD['m'+mg]===undefined?mg===5:_PFOLD['m'+mg];
+    out+=`<details class="pr-grp mg${mg}"${fold?'':' open'} ontoggle="prFold('m${mg}',this.open)"><summary><span class="pr-grp-i">${MG[mg][0]}</span><b>${MG[mg][1]}</b><span class="pr-grp-n">${n}</span><small>${MG[mg][2]}</small></summary><div class="pr-list">`;openG=true;}
+    out+=card(p);});
+  close();return out;
+}
+function nextCallHTML(sorted){
+  const done=sorted.filter(prDoneToday).length,tot=sorted.length,todo=sorted.filter(p=>!prDoneToday(p)),first=todo[0];
+  const pct=tot?Math.round(done*100/tot):0;
+  const prog=tot?`<div class="nc-prog"><div class="nc-pt"><b>${done} sur ${tot}</b> traité${done>1?'s':''} aujourd'hui</div><div class="nc-pb"><i style="width:${pct}%"></i></div></div>`:'';
+  if(!first)return pushBtnHTML()+prog+`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
+  const g=mineGroup(first),why=prPrio(first).why.replace(/^\S+\s/,'');
+  return pushBtnHTML()+prog+`<div class="nc-bar"><div class="nc-l"><b>${MG[g][0]} ${esc(first.nom||'Prospect')}</b><span>${g===0?'Résultat de l\'appel à valider':esc(why)}</span></div><button class="nc-go" onclick="prOpenId='${first.id}';showProspects(true);${g===0?`contactSheet('${first.id}','${first.rappel?'rappel':'new'}')`:''}">${g===0?'📝 Clôturer':'📞 Appel suivant'}</button></div>`;
+}
 // (Désactivé le 3 nov. 2026 à la demande de Paul : la fenêtre ne s'ouvre jamais seule.) Ancien mécanisme :
 // après un appel sortant passé par la ligne (Allo, Aircall), la fenêtre « Décroché / Non décroché » s'ouvrait
 // d'elle-même sur la bonne fiche, le bon bouton présélectionné. Une fois par appel, appels de moins de 20 min.
@@ -5156,78 +5205,87 @@ function _logCall(p,ok,txt){
   p.appels=(p.appels||[]).concat([{id:'mc_'+now.toString(36)+Math.random().toString(36).slice(2,6),ts:new Date(now).toISOString(),txt:'📞 Appel manuel · appel sortant · '+(ok?'décroché':'sans réponse')+' · par '+(_me()||'Équipe')+(txt?'\n'+txt:'')}]);
   return true;
 }
-// Fenêtre « contact » : nouveau lead (Décroché / Non décroché) ou rappel programmé (Rappelé · répondu / non répondu)
+// ── Fiche de clôture d'appel, en trois temps : résultat, suite, note (Paul, 9 nov. 2026) ──
+let _CS=null,_CS_NOTE=null;
+const CS_SUITES={ok:[['rap2h','⏰ Rappel dans 2 h'],['dem-am','🌅 Demain matin 10:00'],['dem-pm','🌇 Demain 15:00'],['date','📅 Date & heure…'],['essai','🎟 Séance d\'essai…'],['ouv','🏗 À rappeler à l\'ouverture'],['abo','⭐ Client'],['perdu','❌ Perdu']],
+  ko:[['dem','📵 Retenter demain (heure libre)'],['rap2h','⏰ Retenter dans 2 h'],['dem-am','🌅 Demain matin 10:00'],['dem-pm','🌇 Demain 15:00'],['date','📅 Date & heure…'],['ouv','🏗 À rappeler à l\'ouverture'],['perdu','❌ Perdu']]};
 function contactSheet(id,mode){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
-  const r=mode==='rappel',c=prCalls(p);
-  icSheet(`<div class="glp-tag">${r?'⏰ Rappel du '+esc(frDate(p.rappel))+(p.rappelH?' · '+esc(p.rappelH):''):'🆕 '+(c.n?'Contacté · '+c.n+' essai'+(c.n>1?'s':''):'À traiter')}</div>
+  const r=mode==='rappel'&&!!p.rappel,c=prCalls(p),tc=prToClose(p),lt=tc?_lastCallTs(p):'';
+  _CS={id,mode,k:'',s:''};
+  icSheet(`<div class="glp-tag">${tc?'📝 Clôture de l\'appel · '+esc(_relDay(lt)):r?'⏰ Rappel du '+esc(frDate(p.rappel))+(p.rappelH?' · '+esc(p.rappelH):''):'🆕 '+(c.n?'Contacté · '+c.n+' essai'+(c.n>1?'s':''):'À traiter')}</div>
     <div class="glp-t">${esc(p.nom||'Prospect')}</div>
-    <div class="cs-btns">
-      <button class="cs-b ok" onclick="csPick(this,'ok')">✅ ${r?'Rappelé · répondu':'Décroché'}</button>
-      <button class="cs-b ko" onclick="csPick(this,'ko')">📵 ${r?'Rappelé · non répondu':'Non décroché'}</button>
-      <button class="cs-b ouv" onclick="csPick(this,'ouv')">⏸ Ne souhaite plus être contacté pour le moment</button>
+    <div class="cs-step"><span class="cs-n">1</span>Résultat de l'appel</div>
+    <div class="cs-btns row">
+      <button class="cs-b ok" onclick="csPick(this,'ok')">✅ Joint</button>
+      <button class="cs-b vm" onclick="csPick(this,'vm')">📨 Messagerie</button>
+      <button class="cs-b ko" onclick="csPick(this,'ko')">📵 Sans réponse</button>
     </div>
     <div id="cs-more" style="display:none">
-      <div class="ics-lbl" id="cs-lbl">Commentaire *</div>
-      <textarea id="cs-txt" class="ics-in" rows="3" maxlength="500"></textarea>
-      <div id="cs-rap"><div class="ics-lbl">Nouveau rappel (facultatif)</div>
-        <div class="ics-row"><div style="flex:1"><input type="date" id="cs-d" class="ics-in"/></div><div style="flex:1"><input type="time" id="cs-h" class="ics-in"/></div></div></div>
+      <div class="cs-step"><span class="cs-n">2</span>La suite</div>
+      <div class="cs-chips" id="cs-suite"></div>
+      <div id="cs-rap" style="display:none"><div class="ics-row"><div style="flex:1"><div class="ics-lbl" id="cs-dl">Date</div><input type="date" id="cs-d" class="ics-in"/></div><div style="flex:1"><div class="ics-lbl">Heure</div><input type="time" id="cs-h" class="ics-in"/></div></div></div>
+      <div class="cs-step"><span class="cs-n">3</span>Note *</div>
+      <textarea id="cs-txt" class="ics-in" rows="3" maxlength="500" placeholder="Ce qui s'est dit, la suite convenue… une ligne suffit"></textarea>
       <small id="cs-err" style="color:#B4300F;font-weight:700"></small>
-      <button class="glp-ok" id="cs-go" data-k="ok" onclick="csDone('${id}','${mode}',this.dataset.k)">Enregistrer</button>
+      <button class="glp-ok" id="cs-go" onclick="csDone('${id}')">Valider ✓</button>
     </div>
-    <div class="cs-hint">${r?'📵 Non répondu : commentaire facultatif, le rappel passe à demain (heure libre), à votre nom.':'📵 Non décroché : commentaire facultatif, rappel programmé demain (heure à votre choix), le lead passe dans Rappels & RDV (injoignable après 3 essais).'} ⏸ : rangé dans « À rappeler à l'ouverture », hors des listes d'appel.</div>`);
+    <div class="cs-hint">Chaque appel se termine ici : résultat, suite, note. Une fois validée, la fiche quitte la file du jour et reviendra à sa prochaine échéance.</div>`);
 }
 function csPick(b,k){
+  if(!_CS)return;_CS.k=k;_CS.s='';
   document.querySelectorAll('#icPop .cs-b').forEach(x=>x.classList.toggle('on',x===b));
-  const m=document.getElementById('cs-more');if(!m)return;m.style.display='';
-  document.getElementById('cs-go').dataset.k=k;
-  document.getElementById('cs-go').textContent=k==='ouv'?'🏗 Ranger dans « À rappeler à l\'ouverture »':k==='ko'?'📵 Enregistrer · sans réponse':'Enregistrer le contact';
-  document.getElementById('cs-lbl').textContent=k==='ok'?'Commentaire *':'Commentaire (facultatif)';
-  document.getElementById('cs-rap').style.display=k==='ouv'?'none':'';
-  const rl=document.querySelector('#cs-rap .ics-lbl');if(rl)rl.textContent=k==='ko'?'Rappel (facultatif · sinon demain, heure libre)':'Nouveau rappel (facultatif)';
-  const t=document.getElementById('cs-txt');t.placeholder=k==='ouv'?'Ex. : attend de voir le studio, rappeler dès l\'ouverture':k==='ko'?'Ex. : messagerie, message laissé, SMS envoyé…':'Ce qui a été dit, la suite convenue…';t.focus();
+  const m=document.getElementById('cs-more');if(m)m.style.display='';
+  const L=CS_SUITES[k==='ok'?'ok':'ko'];
+  document.getElementById('cs-suite').innerHTML=L.map(([x,l])=>`<button class="cs-c" data-s="${x}" onclick="csSuite('${x}')">${l}</button>`).join('');
+  const t=document.getElementById('cs-txt');if(t)t.placeholder=k==='ok'?'Ce qui s\'est dit, la suite convenue…':k==='vm'?'Message laissé ? SMS envoyé ?':'Ex. : sonne dans le vide, retenter le soir';
   document.getElementById('cs-err').textContent='';
+  csSuite(k==='ok'?'':'dem');
 }
-async function csDone(id,mode,k){
-  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
-  const v=x=>(document.getElementById(x)?.value||'').trim();
-  const txt=v('cs-txt'),d=v('cs-d'),h=v('cs-h').slice(0,5),err=document.getElementById('cs-err');
-  const me=_me(),now=new Date().toISOString(),r=mode==='rappel'&&!!p.rappel;
-  if(k==='ok'&&!txt){if(err)err.textContent='Laissez un commentaire : ce qui a été dit, la suite convenue';document.getElementById('cs-txt')?.focus();return;}
-  if(k!=='ouv'&&h&&!d){if(err)err.textContent='Choisissez aussi la date du rappel';return;}
-  let note='',msg='';
-  if(k==='ko'){
-    const added=_logCall(p,false,'');
-    p.rk='retry';
-    if(r){const t=new Date();t.setDate(t.getDate()+1);p.rappel=_ldstr(_wkMonday(t,p.rappelH));p.rappelH='';p.rappelBy=me;_takeSuivi(p);msg='📵 Non répondu · à rappeler '+(t.getDate()===new Date().getDate()+1?'demain':'lundi')+' (heure libre)';} // l'heure convenue n'a pas tenu : le commercial en choisit une nouvelle
-    else{const c=prCalls(p);
-      if(c.n>=3&&!c.ok)msg='📵 3e essai sans réponse · le lead passe dans Injoignables';
-      else{const t=new Date();t.setDate(t.getDate()+1);const hh=String(new Date().getHours()).padStart(2,'0')+':'+String(new Date().getMinutes()).padStart(2,'0');_wkMonday(t,hh);p.rappel=_ldstr(t);p.rappelH='';p.rappelBy=me;_takeSuivi(p); // sans heure : le commercial choisit le meilleur moment
-        msg='📵 Sans réponse · à rappeler '+(t.getDay()===1&&new Date().getDay()!==0?'lundi':'demain')+' (heure libre) · le lead passe dans Rappels & RDV';}}
-    if(d&&!(c0=>c0.n>=3&&!c0.ok)(prCalls(p))){p.rappel=d;p.rappelH=h;p.rappelBy=me;_takeSuivi(p);msg='📵 Sans réponse · rappel le '+frDate(d)+(h?' à '+h:'')+' · Rappels & RDV';}
-    if(txt)note='📵 '+(r?'Rappelé · non répondu':'Non décroché')+' : '+txt;
-    if(!added)msg+=' (appel déjà enregistré par la ligne)';
-  }else if(k==='ok'){
-    _logCall(p,true,txt);
-    _takeSuivi(p);
-    note=(r?'✅ Rappel du '+frDate(p.rappel)+(p.rappelH?' '+p.rappelH:'')+' fait · répondu : ':'📞 Décroché : ')+txt;
-    p.rappel=d||'';p.rappelH=d?h:'';p.rappelBy=d?me:'';if(d)p.rk='rdv';else delete p.rk;
-    if(p.ouverture)p.ouverture=null;
-    msg='✅ Contact noté'+(d?' · rappel le '+frDate(d)+(h?' à '+h:''):r?' · retiré des rappels programmés':'');
-  }else if(k==='ouv'){
-    p.ouverture={at:now,by:me,note:txt.slice(0,300)};
-    p.rappel='';p.rappelH='';p.rappelBy='';
-    note='🏗 À rappeler à l\'ouverture'+(txt?' · '+txt:'');
-    msg='🏗 Rangé dans « À rappeler à l\'ouverture »';
-  }else return;
+function csSuite(x){
+  if(!_CS)return;_CS.s=x;
+  document.querySelectorAll('#icPop .cs-c').forEach(e=>e.classList.toggle('on',e.dataset.s===x));
+  const rap=document.getElementById('cs-rap');if(rap)rap.style.display=x==='date'||x==='essai'?'':'none';
+  const dl=document.getElementById('cs-dl');if(dl)dl.textContent=x==='essai'?'Date de la séance d\'essai':'Date du rappel';
+  if(x==='date'||x==='essai')setTimeout(()=>document.getElementById('cs-d')?.focus(),50);else if(x)setTimeout(()=>document.getElementById('cs-txt')?.focus(),50);
+}
+// Date et heure de la suite choisie (week-end reporté au lundi)
+function _csWhen(x){
+  const n=new Date(),pad=v=>String(v).padStart(2,'0');
+  if(x==='rap2h'){const t=new Date(n.getTime()+2*36e5);if(t.getHours()>=20){t.setDate(t.getDate()+1);t.setHours(10,0,0,0);_wkMonday(t,'10:00');}return {d:_ldstr(t),h:pad(t.getHours())+':'+pad(t.getMinutes())};}
+  if(x==='dem-am'||x==='dem-pm'||x==='dem'){const t=new Date(n);t.setDate(t.getDate()+1);const h=x==='dem-am'?'10:00':x==='dem-pm'?'15:00':'';_wkMonday(t,h||'10:00');return {d:_ldstr(t),h};}
+  if(x==='date'||x==='essai'){const v=k=>(document.getElementById(k)?.value||'').trim();return {d:v('cs-d'),h:v('cs-h').slice(0,5)};}
+  return {d:'',h:''};
+}
+async function csDone(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p||!_CS)return;
+  const err=document.getElementById('cs-err'),k=_CS.k,x=_CS.s,txt=(document.getElementById('cs-txt')?.value||'').trim();
+  if(!k){if(err)err.textContent='Indiquez d\'abord le résultat de l\'appel';return;}
+  if(!x){if(err)err.textContent='Choisissez la suite à donner';return;}
+  const w=_csWhen(x);
+  if((x==='date'||x==='essai')&&!w.d){if(err)err.textContent='Choisissez la date';document.getElementById('cs-d')?.focus();return;}
+  if(x==='essai'&&!w.h){if(err)err.textContent='Indiquez l\'heure de la séance';document.getElementById('cs-h')?.focus();return;}
+  if(txt.length<3){if(err)err.textContent='Écrivez une note, une ligne suffit';document.getElementById('cs-txt')?.focus();return;}
+  const me=_me(),now=new Date().toISOString(),ok=k==='ok';
+  const resLbl=ok?'✅ Joint':k==='vm'?'📨 Messagerie':'📵 Sans réponse';
+  // L'appel lui-même : noté à la main s'il n'a pas déjà été rangé par la ligne (Allo, Aircall)
+  if(!prToClose(p))_logCall(p,ok,'');
+  p.clos=now;_takeSuivi(p);
+  if(p.ouverture&&x!=='ouv')p.ouverture=null;
+  const setRap=(d,h,rk)=>{p.rappel=d||'';p.rappelH=d?h:'';p.rappelBy=d?me:'';if(d&&rk)p.rk=rk;else delete p.rk;};
+  document.getElementById('icPop')?.remove();_CS=null;
+  if(x==='abo'){p.maj=now;persistProspects();schedulePush();_CS_NOTE={id,txt:resLbl+' · '+txt,at:Date.now()};aboAsk(id);return;}
+  if(x==='perdu'||x==='essai'){if(x==='essai')setRap(w.d,w.h,'rdv');p.maj=now;persistProspects();setPStatut(id,x,'',resLbl+' · '+txt);return;}
+  let note=resLbl+' · ',msg=resLbl;
+  if(x==='ouv'){p.ouverture={at:now,by:me,note:txt.slice(0,300)};setRap('','');note+='🏗 À rappeler à l\'ouverture · '+txt;msg+=' · rangé dans « À rappeler à l\'ouverture »';}
+  else{const c=prCalls(p);
+    if(!ok&&x==='dem'&&c.n>=3&&!c.ok){setRap('','');note+='3e essai sans réponse · '+txt;msg+=' · 3 essais, le lead passe dans Injoignables';}
+    else{setRap(w.d,w.h,ok?'rdv':'retry');note+=(w.d?'rappel '+frDate(w.d)+(w.h?' à '+w.h:' (heure libre)')+' · ':'')+txt;msg+=w.d?' · rappel '+frDate(w.d)+(w.h?' à '+w.h:''):'';}}
   p.maj=now;persistProspects();schedulePush();
-  document.getElementById('icPop')?.remove();
   showProspects(true);toast(msg);
-  if(note){
-    try{const s=await syncCall('note_add',{id,text:note.slice(0,600),nom:CFG.rep||''});
-      if(s&&s.ok&&s.prospect){_takeSrv(id,s.prospect,['note']);persistProspects();if(document.querySelector('.pr-search')&&!_typing())showProspects(true);}}
-    catch(e){if(!_quiet(e))toast('Contact enregistré · note non envoyée à Boost ('+_why(e)+')');}
-  }
+  try{const r=await syncCall('note_add',{id,text:note.slice(0,600),nom:CFG.rep||''});
+    if(r&&r.ok&&r.prospect){_takeSrv(id,r.prospect,['note']);persistProspects();if(document.querySelector('.pr-search')&&!_typing())showProspects(true);}}
+  catch(e){if(!_quiet(e))toast('Enregistré · note non envoyée à Boost ('+_why(e)+')');}
 }
 // Étape « À rappeler à l'ouverture » depuis la fiche : commentaire facultatif, puis rangement direct dans l'onglet
 function ouvAsk(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
@@ -5330,7 +5388,7 @@ function showProspects(keepScroll){
   const clientView=!!prFilter&&prFilter!=='rappeler';
   if(!srch&&!clientView&&prSort!=='journal'){
     if(prSort==='all')list=list.filter(p=>prOpen(p)&&!p.bmember);
-    else if(prSort==='mine'){const t=todayStr(),me=_me();list=list.filter(p=>{const sg=prSeg(p);if(sg!=='new'&&!(sg==='rappels'&&_prioDay(p)===t))return false;const o=prCharge(p)||'·';return !prOwnF||o===prOwnF;});}
+    else if(prSort==='mine')list=list.filter(p=>mineHas(p)&&(!prOwnF||(prCharge(p)||'·')===prOwnF));
     else if(prSort==='short')list=list.filter(prShort);
     else if(prSort==='never')list=list.filter(prNeverJoined);
     else list=list.filter(p=>prSeg(p)===prSort);
@@ -5351,7 +5409,8 @@ function showProspects(keepScroll){
     }
     if(prSort==='unreach'||prSort==='never')return prLastContact(a).localeCompare(prLastContact(b)); // contact le plus ancien d'abord
     if(prSort==='short')return (prTalkMax(b)||0)-(prTalkMax(a)||0)||prLastContact(a).localeCompare(prLastContact(b)); // l'échange le plus long d'abord (le plus prometteur)
-    if(prSort==='rappels'||prSort==='mine')return prioCmp(a,b); // tri du jour : journée, puis rang, puis départage du rang
+    if(prSort==='mine')return mineCmp(a,b); // Ma journée : à clôturer, à l'heure, leads frais, relances, Boost, fait
+    if(prSort==='rappels')return prioCmp(a,b); // tri du jour : journée, puis rang, puis départage du rang
     if(prSort==='ouv')return String(b.ouverture?.at||'').localeCompare(String(a.ouverture?.at||''));
     // 🆕 Nouveaux leads : uniquement par date d'arrivée dans Boost, le plus récent en haut (demande de Paul)
     return prArrival(b).localeCompare(prArrival(a));
@@ -5399,8 +5458,9 @@ function showProspects(keepScroll){
         <div class="pl-who"><b>${esc(p.nom)}</b><span>${ownPill(p)}${sub?" "+sub:""}</span></div>
         <div class="pl-st">${oc?`<span class="pl-oncall"><i>📞</i> Appel en cours · ${esc(oc.by||'?')} · ${_ocSince(oc)}</span>`:''}<span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}${p.statut==='unit'&&unitShort(p.unit)?' · '+unitShort(p.unit):''}</span>${flags}</div>
         <div class="pl-next">${prOuv(p)?`<span class="pl-when muted">🏗 Le ${new Date(p.ouverture.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.ouverture.by?' · '+esc(p.ouverture.by):''}${studioOpening(p)?' · ouverture '+esc(studioOpening(p)):''}</span><button class="pl-cbtn" onclick="event.stopPropagation();ouvOff('${p.id}')" title="Retirer de « À rappeler à l'ouverture »">↩ Remettre dans les rappels</button>`
+          :prToClose(p)?`${when}<button class="pl-cbtn clos" onclick="event.stopPropagation();contactSheet('${p.id}','${p.rappel&&!prAutoNew(p)?'rappel':'new'}')" title="Valider le résultat de l'appel : joint ou non, suite, note">📝 Clôturer l'appel</button>`
           :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${prCalls(p).n?'📞 Contacté · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'📞 À traiter'}</button>`
-          :p.statut==='rappeler'&&p.rappel&&prOpen(p)&&!prAutoNew(p)?`${when}<button class="pl-cbtn rap" onclick="event.stopPropagation();contactSheet('${p.id}','rappel')" title="Rappelé · répondu, non répondu, ou à rappeler à l'ouverture">✔ Rappelé ?</button>`
+          :p.statut==='rappeler'&&p.rappel&&prOpen(p)&&!prAutoNew(p)?`${when}<button class="pl-cbtn rap" onclick="event.stopPropagation();contactSheet('${p.id}','rappel')" title="Clôturer le rappel : joint ou non, suite, note">📝 Clôturer le rappel</button>`
           :`${when}${p.rappel&&prOpen(p)&&rdvAt(p)&&rdvAt(p).getTime()<=Date.now()+15*60000?`<label class="pl-done" onclick="event.stopPropagation()" title="Cochez quand le rappel est fait et que le prospect a décroché"><input type="checkbox" onchange="rappelDone('${p.id}',this)"/> Rappel fait</label>`:''}`}</div>
         <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
         ${plCtx(p)}
@@ -5497,9 +5557,9 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
     </div>
     <div class="hm-sec">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&(prSort==='rappels'||prSort==='mine')&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
     ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted):!clientView&&prSort==='rappels'?pushBtnHTML():''}
-    ${!srch&&!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(p=>{const sg=prSeg(p);return sg==='new'||(sg==='rappels'&&_prioDay(p)===todayStr());}):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
+    ${!srch&&!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(mineHas):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
       return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
-    ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='rappels'||prSort==='mine'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
+    ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='mine'?mineListHTML(sorted,card):prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   if(_srch){const n=document.getElementById('prSearchIn');if(n){n.focus({preventScroll:true});try{n.setSelectionRange(_srch[0],_srch[1]);}catch(e){}}}
@@ -5678,7 +5738,7 @@ function callToggle(id){
   const oc=prOnCall(p);
   if(oc){
     if(oc.by!==_meN()&&!(COACH_ROLE==='admin'||IS_MGR)&&!confirm(oc.by+' est en ligne avec ce prospect depuis '+_ocSince(oc)+'.\nTerminer son appel en cours ?'))return;
-    p.enCours=null;p.maj=new Date().toISOString();persistProspects();syncPush();prOpenId=id;showProspects(true);toast('✅ Appel terminé · à vous de saisir');return;
+    p.enCours=null;p.maj=new Date().toISOString();persistProspects();syncPush();prOpenId=id;showProspects(true);toast('✅ Appel terminé · à vous de saisir');contactSheet(id,p.rappel&&!prAutoNew(p)?'rappel':'new');return;
   }
   p.enCours={by:_meN()||'?',at:new Date().toISOString()};p.maj=new Date().toISOString();persistProspects();syncPush();showProspects(true);
   toast('🔴 Appel en cours · l\'équipe est prévenue');
@@ -5904,7 +5964,7 @@ async function _aboNote(p){if(!p||!p.bid||!p.pack)return;const id=p.id;
 function setPStatut(id,s,seller,note){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   if(s===p.statut&&s!=='abo'){showProspects(true);return;}
   if(s==='abo'&&p.statut!=='abo'&&!seller){aboAsk(id);return;}
-  if(note===undefined){statutNoteAsk(id,s,seller);return;}
+  if(note===undefined){if(_CS_NOTE&&_CS_NOTE.id===id&&Date.now()-_CS_NOTE.at<10*60000){note=_CS_NOTE.txt;_CS_NOTE=null;}else{statutNoteAsk(id,s,seller);return;}}
   if(note)_statutNote(p,s,note);
   if(s==='abo'&&seller)p.vendeur=String(seller).slice(0,40);
   // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
