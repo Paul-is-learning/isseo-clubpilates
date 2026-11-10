@@ -5702,11 +5702,12 @@ function showProspects(keepScroll){
               // Étape « À traiter » (jamais appelé) puis « Contacté » : cliquer « Contacté » sur un lead à traiter ouvre Décroché / Non décroché
               return `<button class="pr-st${at?' on':''}" style="${at?'background:'+C+';color:#fff;border-color:'+C:''}" onclick="${at?'':`toast('Lead déjà appelé · il reste dans son étape')`}">🆕<small>À traiter</small></button>`
               +Object.keys(PIPE).map(k=>{const on=p.statut===k&&!(k==='rappeler'&&(at||prOuv(p)));
+                const extra=k==='rappeler'&&p.statut!=='abo'?`<button class="pr-st${p.rappel?' on':''}" style="${p.rappel?'background:#C9871F;color:#fff;border-color:#C9871F':''}" title="${p.rappel?'Rappel posé le '+esc(frDate(p.rappel))+(p.rappelH?' à '+esc(p.rappelH):'')+' · cliquer pour modifier':'Poser un rappel téléphonique sur la fiche : il rejoint Rappels & RDV, Ma journée et l\'agenda d\'équipe'}" onclick="agForm({pid:'${p.id}',type:'rappel',date:'${esc(p.rappel||'')}',h:'${esc(p.rappelH||'')}'})">⏰<small>${p.rappel?'Appel prévu':'Programmer un appel'}</small></button>`:'';
                 // « Séance d'essai » et « RDV venu » sont des actions : réserver une Intro Class, planifier un RDV physique (agenda d'équipe)
                 const oc=k==='rappeler'&&at?`contactSheet('${p.id}','new')`:k==='essai'?`icBookSheet('${p.id}')`:k==='venu'?`agForm({pid:'${p.id}',type:'rdv'})`:`setPStatut('${p.id}','${k}')`;
                 const lbl=k==='essai'?(on&&p.icBook?'Intro Class réservée':'Réserver Intro Class'):k==='venu'?(on?'RDV venu':'Planifier un RDV physique'):PIPE[k].lbl;
                 const tt=k==='essai'?'Choisir une Intro Class · la fiche passe en « Séance d\'essai »':k==='venu'?'Poser un rendez-vous au studio sur l\'agenda d\'équipe · « Venu » le jour J fait passer la fiche en « RDV venu »':'';
-                return `<button class="pr-st${on?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" title="${tt}" onclick="${oc}">${PIPE[k].ic}<small>${lbl}</small></button>`;}).join('')
+                return `<button class="pr-st${on?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" title="${tt}" onclick="${oc}">${PIPE[k].ic}<small>${lbl}</small></button>`+extra;}).join('')
               +(()=>{const ov=prOuv(p),OC='#6B5B3E';return `<button class="pr-st${ov?' on':''}" style="${ov?'background:'+OC+';color:#fff;border-color:'+OC:''}" title="${ov?'Remettre dans les rappels':'Ne souhaite plus être contacté pour le moment · à rappeler à l\'ouverture du studio'}" onclick="ouvAsk('${p.id}')">🏗<small>À rappeler à l'ouverture</small></button>`;})();})()}</div>
             ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="aboAsk('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeur ayant réalisé la vente" onclick="aboAsk('${p.id}')">👤 ${p.vendeur?'Vendeur : '+esc(p.vendeur):'Choisir le vendeur'}</button></div>`:''}
             ${p.statut==='unit'?unitLine(p):''}
@@ -5715,15 +5716,8 @@ function showProspects(keepScroll){
             ${(()=>{const cur=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;return cur?`<div class="pl-lbl">Séance d'essai · Intro Class</div><div class="pl-rdvs"><div class="pl-rdv">🎟️<b>${esc(icLabel(cur))}</b><button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Changer ou retirer">✏️</button></div></div>`:'';})()}
             ${prRdvs(p).length?`<div class="pl-lbl">Rendez-vous physique au studio <span class="pl-hint">inscrit sur l'agenda d'équipe</span></div>`:''}
             <div class="pl-rdvs">${prRdvs(p).map(e=>`<div class="pl-rdv${e.done?' done':''}">${ici('pin',13)}<b>${esc(frDate(e.date))}${e.h?' · '+esc(e.h):''}</b>${e.who?' · '+esc(e.who):''}${e.note?` <small>· ${esc(e.note)}</small>`:''}${e.done?`<em>${e.done==='venu'?'Venu':'Pas venu'}</em>`:e.date<=todayStr()?`<button class="pl-cbtn rap" onclick="agDone('${e.id}','venu')">${ici('check',12)} Venu</button><button class="pl-cbtn tried" onclick="agDone('${e.id}','absent')">Pas venu</button>`:''}<button class="pl-edit" onclick="agForm({id:'${e.id}'})" title="Modifier ou supprimer">✏️</button></div>`).join('')}</div>
-${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
-            <div class="pl-row">
-              <input type="date" id="rap-d-${p.id}" value="${p.rappel||''}" oninput="rapDirty('${p.id}')" onkeydown="if(event.key==='Enter')savePRappel('${p.id}')" class="pr-date" title="Date de rappel / de séance d'essai convenue avec le client"/>
-              <input type="time" id="rap-h-${p.id}" value="${p.rappelH||''}" oninput="rapDirty('${p.id}')" onkeydown="if(event.key==='Enter')savePRappel('${p.id}')" class="pr-date" title="Heure du rappel · la fiche passe en tête 1 h avant"/>
-              <button id="rap-s-${p.id}" class="pl-cbtn rap-save" onclick="savePRappel('${p.id}')" title="Enregistrer la date et l'heure du rappel">💾 Enregistrer</button>
-              ${p.rappel?`<button class="pl-cbtn rap-del" onclick="savePRappel('${p.id}',true)" title="Retirer le rappel programmé">✕ Retirer</button>`:''}
-              ${p.rappelBy?`<small class="pl-by">${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}
-            </div>
-            <div class="pl-hint">Renseignez la date et l'heure, puis 💾 Enregistrer : la fiche ne bouge pas avant.</div>`}
+${p.statut!=='abo'&&p.rappel?`            <div class="pl-lbl">Appel programmé</div>
+            <div class="pl-rdvs"><div class="pl-rdv">⏰<b>${esc(frDate(p.rappel))}${p.rappelH?' · '+esc(p.rappelH):''}</b>${p.rappelBy?` <small>· ${p.rappelBy==='auto'?'⚡ détecté dans l\'appel':'posé par '+esc(p.rappelBy)}</small>`:''}<button class="pl-edit" onclick="agForm({pid:'${p.id}',type:'rappel',date:'${esc(p.rappel)}',h:'${esc(p.rappelH||'')}'})" title="Modifier la date ou l'heure">✏️</button><button class="pl-edit" onclick="savePRappel('${p.id}',true)" title="Retirer le rappel programmé">✕</button></div></div>`:''}
           </div>
           <div>
             <div class="pl-sec">Fiche &amp; notes</div>
