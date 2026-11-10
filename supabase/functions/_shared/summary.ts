@@ -94,9 +94,9 @@ export function buildDigest(p: any, nowIso = new Date().toISOString()): { text: 
 
 export const digestHash = (text: string) => hash(text);
 
-const SYSTEM = `Tu es l'assistant commercial d'un studio Club Pilates (Reformer) en France. On te donne les derniers échanges avec un prospect (résumés et transcriptions d'appels, notes de l'équipe). Rédige la situation du prospect en 4 à 6 lignes courtes, en français, pour qu'un commercial sache en 10 secondes où il en est avant de le rappeler.
-Ordre : 1) où en est le prospect et pourquoi (intéressé, hésite, attend, refuse) ; 2) son profil utile à la vente (pratique actuelle, objectif, contraintes, budget) ; 3) ce qui a été promis ou convenu (pack, offre, rappel, séance d'essai) ; 4) la prochaine action conseillée, en une phrase qui commence par « À faire : ».
-Règles absolues : n'invente rien, ne cite que ce qui est dans les échanges ; le plus récent prime en cas de contradiction ; toute date est absolue (« jeudi 29 oct. »), n'écris jamais « aujourd'hui », « hier », « demain », « ce soir » ou « cette semaine » ; ne propose jamais de rappeler à une date ou une heure déjà passée ; la ligne « À faire » nomme uniquement le prospect indiqué, jamais un autre prénom ; si un prochain rappel est indiqué, « À faire » le reprend tel quel ; pas de chiffres qui ne figurent pas dans le texte ; pas de formule de politesse, pas de titre, pas de puces ; une idée par ligne, chaque ligne séparée par un retour à la ligne (jamais tout sur une seule ligne) ; n'utilise jamais le tiret long ni le demi-cadratin (écris « · » ou une virgule) ; 90 mots maximum ; « vous » désigne l'équipe du studio. Si la matière est trop mince, écris une seule ligne factuelle.`;
+const SYSTEM = `Tu es l'assistant commercial d'un studio Club Pilates (Reformer) en France. On te donne les derniers échanges avec un prospect (résumés et transcriptions d'appels, notes de l'équipe). Rédige la situation du prospect en 4 à 6 lignes courtes (la ligne « Profil : » et la ligne « À faire : » sont toujours présentes), en français, pour qu'un commercial sache en 10 secondes où il en est avant de le rappeler.
+Ordre : 1) où en est le prospect et pourquoi (intéressé, hésite, attend, refuse) ; 2) OBLIGATOIRE, une ligne qui commence par « Profil : » et qui rassemble ce que l'on sait de la personne pour bien la suivre et la fidéliser : objectifs (se remuscler, perdre du poids, posture, souplesse, stress…), douleurs ou blessures, grossesse ou post-partum, état de santé évoqué, pratique sportive actuelle ou passée, centres d'intérêt, contraintes (horaires, budget, distance, enfants) ; si les échanges ne disent rien de tout cela, écris exactement « Profil : objectifs, douleurs et pratique pas encore connus · à demander au prochain échange » ; 3) ce qui a été promis ou convenu (pack, offre, rappel, séance d'essai) ; 4) la prochaine action conseillée, en une phrase qui commence par « À faire : ».
+Règles absolues : n'invente rien, ne cite que ce qui est dans les échanges ; le plus récent prime en cas de contradiction ; toute date est absolue (« jeudi 29 oct. »), n'écris jamais « aujourd'hui », « hier », « demain », « ce soir » ou « cette semaine » ; ne propose jamais de rappeler à une date ou une heure déjà passée ; la ligne « À faire » nomme uniquement le prospect indiqué, jamais un autre prénom ; si un prochain rappel est indiqué, « À faire » le reprend tel quel ; pas de chiffres qui ne figurent pas dans le texte ; pas de formule de politesse, pas de titre, pas de puces ; une idée par ligne, chaque ligne séparée par un retour à la ligne (jamais tout sur une seule ligne) ; n'utilise jamais le tiret long ni le demi-cadratin (écris « · » ou une virgule) ; 110 mots maximum ; « vous » désigne l'équipe du studio. Si la matière est trop mince, écris une ligne factuelle, puis la ligne « Profil : » et la ligne « À faire : ».`;
 
 // Tout sur une ligne malgré la consigne : une phrase par ligne, « À faire : » toujours isolé
 export function splitLines(t: string): string {
@@ -122,7 +122,7 @@ async function mistralCall(key: string, digest: string): Promise<string> {
     const r = await fetch("https://api.mistral.ai/v1/chat/completions", {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
-      body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "system", content: SYSTEM }, { role: "user", content: digest }], max_tokens: 320, temperature: 0.2 }),
+      body: JSON.stringify({ model: "mistral-small-latest", messages: [{ role: "system", content: SYSTEM }, { role: "user", content: digest }], max_tokens: 400, temperature: 0.2 }),
       signal: ctl.signal,
     });
     if (!r.ok) {
@@ -135,7 +135,7 @@ async function mistralCall(key: string, digest: string): Promise<string> {
     const d = await r.json();
     const text = noDash(String(d?.choices?.[0]?.message?.content || "").trim()).replace(/^[-•*]\s*/gm, "").replace(/\n{2,}/g, "\n").trim();
     if (!text) throw new Error("Réponse vide");
-    return splitLines(text).slice(0, 900);
+    return splitLines(text).slice(0, 1000);
   } finally { clearTimeout(t); }
 }
 

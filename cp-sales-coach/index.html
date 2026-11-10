@@ -1525,6 +1525,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-sum-h button:disabled{opacity:.5;cursor:default}
 .pl-sum ul{margin:8px 0 0;padding-left:18px;font-size:13.5px;line-height:1.45;color:var(--ink)}
 .pl-sum li.todo{list-style:'👉 ';font-weight:700}
+.pl-sum li.profil{list-style:'🎯 ';background:#EEF4F1;border-radius:6px;padding:2px 6px;margin-left:-6px}
 .pl-sum .muted{font-size:12.5px;color:var(--ink-mid);margin-top:6px}
 .pl-lbl{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);margin:2px 0 7px}
 .pl-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center;margin-bottom:10px}
@@ -5428,7 +5429,7 @@ function contactSheet(id,mode){
       <div class="cs-step"><span class="cs-n">2</span>La suite</div>
       <div class="cs-chips" id="cs-suite"></div>
       <div id="cs-rap" style="display:none"><div class="ics-row"><div style="flex:1"><div class="ics-lbl" id="cs-dl">Date</div><input type="date" id="cs-d" class="ics-in"/></div><div style="flex:1"><div class="ics-lbl">Heure</div><input type="time" id="cs-h" class="ics-in"/></div></div></div>
-      <div class="cs-step"><span class="cs-n">3</span>Note *</div>
+      <div class="cs-step"><span class="cs-n">3</span><span id="cs-nl">Note *</span></div>
       <textarea id="cs-txt" class="ics-in" rows="3" maxlength="500" placeholder="Ce qui s'est dit, la suite convenue… une ligne suffit"></textarea>
       <small id="cs-err" style="color:#B4300F;font-weight:700"></small>
       <button class="glp-ok" id="cs-go" onclick="csDone('${id}')">Valider ✓</button>
@@ -5441,7 +5442,8 @@ function csPick(b,k){
   const m=document.getElementById('cs-more');if(m)m.style.display='';
   const L=CS_SUITES[k==='ok'?'ok':'ko'];
   document.getElementById('cs-suite').innerHTML=L.map(([x,l])=>`<button class="cs-c" data-s="${x}" onclick="csSuite('${x}')">${l}</button>`).join('');
-  const t=document.getElementById('cs-txt');if(t)t.placeholder=k==='ok'?'Ce qui s\'est dit, la suite convenue…':k==='vm'?'Message laissé ? SMS envoyé ?':'Ex. : sonne dans le vide, retenter le soir';
+  const t=document.getElementById('cs-txt');if(t)t.placeholder=k==='ok'?'Ce qui s\'est dit, la suite convenue…':k==='vm'?'Facultatif · message laissé ? SMS envoyé ?':'Facultatif · ex. : sonne dans le vide, retenter le soir';
+  const nl=document.getElementById('cs-nl');if(nl)nl.textContent=k==='ok'?'Note *':'Note (facultative)';
   document.getElementById('cs-err').textContent='';
   csSuite(k==='ok'?'':'dem');
 }
@@ -5468,7 +5470,8 @@ async function csDone(id){
   const w=_csWhen(x);
   if((x==='date'||x==='essai')&&!w.d){if(err)err.textContent='Choisissez la date';document.getElementById('cs-d')?.focus();return;}
   if(x==='essai'&&!w.h){if(err)err.textContent='Indiquez l\'heure de la séance';document.getElementById('cs-h')?.focus();return;}
-  if(txt.length<3){if(err)err.textContent='Écrivez une note, une ligne suffit';document.getElementById('cs-txt')?.focus();return;}
+  // Note obligatoire seulement quand le prospect a décroché : sans réponse ou messagerie, on valide sans commentaire
+  if(k==='ok'&&txt.length<3){if(err)err.textContent='Écrivez une note, une ligne suffit';document.getElementById('cs-txt')?.focus();return;}
   const me=_me(),now=new Date().toISOString(),ok=k==='ok';
   const resLbl=ok?'✅ Joint':k==='vm'?'📨 Messagerie':'📵 Sans réponse';
   // L'appel lui-même : noté à la main s'il n'a pas déjà été rangé par la ligne (Allo, Aircall)
@@ -5477,13 +5480,14 @@ async function csDone(id){
   if(p.ouverture&&x!=='ouv')p.ouverture=null;
   const setRap=(d,h,rk)=>{p.rappel=d||'';p.rappelH=d?h:'';p.rappelBy=d?me:'';if(d&&rk)p.rk=rk;else delete p.rk;};
   document.getElementById('icPop')?.remove();_CS=null;
-  if(x==='abo'){p.maj=now;persistProspects();schedulePush();_CS_NOTE={id,txt:resLbl+' · '+txt,at:Date.now()};aboAsk(id);return;}
-  if(x==='perdu'||x==='essai'){if(x==='essai')setRap(w.d,w.h,'rdv');p.maj=now;persistProspects();setPStatut(id,x,'',resLbl+' · '+txt);return;}
+  if(x==='abo'){p.maj=now;persistProspects();schedulePush();_CS_NOTE={id,txt:resLbl+(txt?' · '+txt:''),at:Date.now()};aboAsk(id);return;}
+  if(x==='perdu'||x==='essai'){if(x==='essai')setRap(w.d,w.h,'rdv');p.maj=now;persistProspects();setPStatut(id,x,'',resLbl+(txt?' · '+txt:''));return;}
   let note=resLbl+' · ',msg=resLbl;
-  if(x==='ouv'){p.ouverture={at:now,by:me,note:txt.slice(0,300)};setRap('','');note+='🏗 À rappeler à l\'ouverture · '+txt;msg+=' · rangé dans « À rappeler à l\'ouverture »';}
+  if(x==='ouv'){p.ouverture={at:now,by:me,note:txt.slice(0,300)};setRap('','');note+='🏗 À rappeler à l\'ouverture'+(txt?' · '+txt:'');msg+=' · rangé dans « À rappeler à l\'ouverture »';}
   else{const c=prCalls(p);
-    if(!ok&&x==='dem'&&c.n>=3&&!c.ok){setRap('','');note+='3e essai sans réponse · '+txt;msg+=' · 3 essais, le lead passe dans Injoignables';}
-    else{setRap(w.d,w.h,ok?'rdv':'retry');note+=(w.d?'rappel '+frDate(w.d)+(w.h?' à '+w.h:' (heure libre)')+' · ':'')+txt;msg+=w.d?' · rappel '+frDate(w.d)+(w.h?' à '+w.h:''):'';}}
+    if(!ok&&x==='dem'&&c.n>=3&&!c.ok){setRap('','');note+='3e essai sans réponse'+(txt?' · '+txt:'');msg+=' · 3 essais, le lead passe dans Injoignables';}
+    else{setRap(w.d,w.h,ok?'rdv':'retry');note+=(w.d?'rappel '+frDate(w.d)+(w.h?' à '+w.h:' (heure libre)'):'')+(txt?(w.d?' · ':'')+txt:'');msg+=w.d?' · rappel '+frDate(w.d)+(w.h?' à '+w.h:''):'';}}
+  note=note.replace(/\s*·\s*$/,'');
   p.maj=now;persistProspects();schedulePush();
   showProspects(true);toast(msg);
   try{const r=await syncCall('note_add',{id,text:note.slice(0,600),nom:CFG.rep||''});
@@ -5817,7 +5821,7 @@ function sumBlockHTML(p){
   const when=s&&s.at?new Date(s.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}):'';
   return `<div class="pl-sum"><div class="pl-sum-h">🧭 Situation${s?` <small>· d'après ${s.n||'les'} dernier${s.n>1?'s':''} échange${s.n>1?'s':''}${when?' · '+esc(when):''}${st?' · <b>échanges plus récents, mise à jour en cours</b>':''}</small>`:''}
       <button id="sum-btn-${p.id}" onclick="event.stopPropagation();sumForce('${p.id}')" title="Relire les derniers échanges et réécrire la situation">↻ Actualiser</button></div>
-    ${err?`<div class="muted" style="color:#B4300F">⚠️ Résumé indisponible : ${esc(err)} · réessayez avec Actualiser.</div>`:''}${lines.length?`<ul>${lines.map(l=>`<li class="${/^À faire\s*:/i.test(l)?'todo':''}">${esc(l)}</li>`).join('')}</ul>`:err?'':`<div class="muted">${pend||st?'⏳ Lecture des derniers échanges…':sumHas(p)?'Pas encore de résumé · cliquez sur Actualiser.':'Aucun échange enregistré pour l\'instant : la situation s\'écrira après le premier appel ou la première note.'}</div>`}
+    ${err?`<div class="muted" style="color:#B4300F">⚠️ Résumé indisponible : ${esc(err)} · réessayez avec Actualiser.</div>`:''}${lines.length?`<ul>${lines.map(l=>`<li class="${/^À faire\s*:/i.test(l)?'todo':/^Profil\s*:/i.test(l)?'profil':''}">${esc(l)}</li>`).join('')}</ul>`:err?'':`<div class="muted">${pend||st?'⏳ Lecture des derniers échanges…':sumHas(p)?'Pas encore de résumé · cliquez sur Actualiser.':'Aucun échange enregistré pour l\'instant : la situation s\'écrira après le premier appel ou la première note.'}</div>`}
   </div>`;}
 /* ── Historique complet des points de contact : appels Allo (enregistrés sur la fiche)
    + activités Fitness Boost (appels et durée, SMS, emails, WhatsApp, RDV, notes), lues à la demande ── */
