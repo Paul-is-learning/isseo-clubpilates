@@ -849,7 +849,15 @@ a.menu-item{text-decoration:none;color:inherit}
 .cs-step{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-weight:800;font-size:13px;color:var(--cp-dark)}.cs-n{width:20px;height:20px;border-radius:50%;background:var(--cp-deep);color:#fff;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .cs-btns.row{flex-direction:row;margin-top:0}.cs-btns.row .cs-b{flex:1;text-align:center;padding:11px 6px;font-size:13px}.cs-b.vm:hover{background:#FFF6E5}
 .cs-chips{display:flex;flex-wrap:wrap;gap:6px}.cs-c{border:1.5px solid #dce1ea;background:#fff;border-radius:99px;padding:7px 11px;font-weight:700;font-size:12.5px;cursor:pointer;color:var(--cp-dark)}.cs-c.on{border-color:var(--cp-deep);background:var(--cp-deep);color:#fff}
-.nc-top{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;margin:6px 0 8px}.nc-top .nc-prog{flex:1 1 220px;margin:0}.nc-top .dg{flex:2 1 240px;min-width:0;margin:0;padding:8px 14px;border-radius:14px;box-shadow:none}.nc-top .nc-bell{margin:0}
+.nc-top{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;margin:6px 0 8px}
+.nc-chain{border:1.5px solid #dce1ea;background:#fff;border-radius:99px;padding:7px 12px;font-weight:800;font-size:12.5px;cursor:pointer;color:var(--cp-dark)}.nc-chain.on{background:#223354;border-color:#223354;color:#fff}
+.pl-detail.focus .pl-tempw,.pl-detail.focus .pl-histw{display:none}.pl-focus-t{display:flex;justify-content:center;margin:8px 0 2px}
+.pl-prof{margin:0 0 14px;padding:10px 14px;border:1px solid #D8E6DE;background:#F3F8F5;border-radius:14px}.pl-prof summary{cursor:pointer;font-weight:800;font-size:13px;color:#1F6B4E}.pl-prof summary small{font-weight:600;color:#5c7a6a}
+.pl-prof-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 12px;margin-top:10px}.pl-prof-g label{display:flex;flex-direction:column;gap:3px;font-size:11px;font-weight:800;color:#5c7a6a;text-transform:uppercase;letter-spacing:.05em}.pl-prof-g input{border:1px solid #cfe0d6;border-radius:10px;padding:8px 10px;font:inherit;font-size:13.5px;background:#fff}
+.ics-prof{flex-basis:100%;font-size:12px;color:#1F6B4E;font-weight:600}
+.wb{margin:0 0 12px;padding:10px 14px;border:1px solid var(--cream-line);background:#fff;border-radius:14px}.wb summary{cursor:pointer;font-weight:800;font-size:13.5px}.wb summary small{font-weight:600;color:var(--ink-mid)}
+.wb-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(104px,1fr));gap:8px;margin:10px 0}.wb-t{display:flex;flex-direction:column;align-items:center;padding:8px 6px;border:1px solid var(--cream-line);border-radius:12px;background:#FBF9F3}.wb-t b{font-size:20px}.wb-t span{font-size:11.5px;font-weight:700;color:var(--ink-mid);text-align:center}.wb-t small{font-size:10.5px;color:#8C95A8}
+.wb-l{font-size:13px;line-height:1.5;padding:6px 10px;border-radius:10px;margin-top:6px;background:#F6F4EC}.wb-l.ok{background:#EAF6F0}.wb-l.todo{background:#FFF4E6}.nc-top .nc-prog{flex:1 1 220px;margin:0}.nc-top .dg{flex:2 1 240px;min-width:0;margin:0;padding:8px 14px;border-radius:14px;box-shadow:none}.nc-top .nc-bell{margin:0}
 .nc-prog{margin:6px 0 8px;padding:0 4px}.nc-pt{font-size:12.5px;color:var(--ink-mid)}.nc-pb{height:6px;border-radius:99px;background:#EFEAE0;overflow:hidden;margin-top:4px}.nc-pb i{display:block;height:100%;background:#2F7D4F;border-radius:99px;transition:width .4s}
 .pr-grp.mg0>summary{background:#FFF1E3}.pr-grp.mg1>summary{background:#FFF3EA}.pr-grp.mg2>summary{background:#EEF6FF}.pr-grp.mg4>summary{background:#F4F4F4}.pr-grp.mg5>summary{background:#EAF6F0}
 .pl-cbtn.clos{background:#E8620A;color:#fff;border-color:#E8620A;animation:ocPulse 1.6s ease-in-out infinite}
@@ -4426,7 +4434,7 @@ function icInscHTML(s){
   const stl={rappeler:'À traiter',contacte:'Contacté',essai:'Séance d\'essai',venu:'RDV venu',abo:'Client',perdu:'Perdu',unit:'Classe unitaire'};
   return `<div class="ics-lbl">Inscrits${list.length?' · '+list.length:''}</div>
     ${list.length?list.map(p=>{const pr=(s.pres||[]).includes(p.id),sg=(s.signes||[]).some(x=>x.pid===p.id||_fold(x.nom)===_fold(p.nom||''));
-      return `<div class="ics-slot"${due?' style="flex-wrap:wrap"':''}><b onclick="document.getElementById('icPop')?.remove();openPr('${p.id}')" style="cursor:pointer">${esc(p.nom||'?')}</b><span>${p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 '))+' · ':''}${stl[p.statut]||''}</span><button onclick="icBookProspect('${p.id}','__none','${s.id}')" title="Retirer de la séance">✖</button>
+      return `<div class="ics-slot"${due?' style="flex-wrap:wrap"':''}><b onclick="document.getElementById('icPop')?.remove();openPr('${p.id}')" style="cursor:pointer">${esc(p.nom||'?')}</b><span>${p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 '))+' · ':''}${stl[p.statut]||''}</span><button onclick="icBookProspect('${p.id}','__none','${s.id}')" title="Retirer de la séance">✖</button>${profLine(p)?`<small class="ics-prof">${esc(profLine(p))}</small>`:''}
       ${due?`<div class="ics-res"><button class="ics-chip${pr?' on':''}" onclick="icPresToggle('${s.id}','${p.id}')">${pr?'✓ Présent':'Présent'}</button><button class="ics-chip${sg?' on':''}" onclick="${sg?'':`icSignFor('${s.id}','${p.id}')`}">${sg?'🎉 Signé':'Signé ?'}</button></div>`:''}</div>`;}).join(''):`<div class="ics-empty">${past?'Aucun inscrit saisi.':'Personne inscrite pour l\'instant.'}</div>`}
     ${due&&list.length?'<div class="fv-meta" style="margin:-2px 0 8px">À l\'issue du cours : pointez les présents, puis « Signé ? » pour chaque vente (pack et vendeurs).</div>':''}
     <div class="ics-lbl"><small>Inscrire une personne</small></div>
@@ -4732,7 +4740,7 @@ async function loadHomePerf(){
   if(_hpBusy||!COACH_CODE)return;_hpBusy=true;
   try{
     const [d]=await Promise.all([syncCall('stats_pull'),fetchAvatars()]);
-    _SVOID=d.voids||{};_purgeVoidEvq();const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
+    _SVOID=d.voids||{};_purgeVoidEvq();_EVS=(d.events||[]).filter(inStudio);const map=buildStatsMap((d.events||[]).filter(inStudio),PSC());_hpMap=map;
     const reps={};Object.values(map).forEach(m=>{const k=_repKey(m.rep);if(k)reps[k]=m.rep.split(' ')[0];});
     const mkNow=_mKey(),mkPrev=_mPrev(mkNow);
     let mk=mkNow,rows=Object.entries(reps).map(([k,name])=>({k:k,name:name,a:aggStats(map,name,mkNow)}));
@@ -5036,10 +5044,45 @@ function mineListHTML(sorted,card){
     out+=card(p);});
   close();return out;
 }
+// ── Mode enchaînement : après la clôture, la fiche suivante de Ma journée s'ouvre toute seule (fiche en version courte) ──
+let _fullId=null,_EVS=null,_evsAsked=false;
+function chainOn(){try{return localStorage.getItem('cpcoach_chain')==='1';}catch(e){return false;}}
+function chainToggle(){try{localStorage.setItem('cpcoach_chain',chainOn()?'0':'1');}catch(e){}_fullId=null;toast(chainOn()?'⏩ Enchaînement activé · après chaque clôture, fiche suivante':'Enchaînement désactivé');showProspects(true);}
+function chainNext(){
+  const L=PSC().filter(mineHas).filter(p=>!prDoneToday(p)&&(!prOwnF||(prCharge(p)||'·')===prOwnF)).sort(mineCmp),first=L[0];
+  if(!first){toast('🎉 File vide pour aujourd\'hui');return;}
+  prOpenId=first.id;_fullId=null;showProspects(true);
+  setTimeout(()=>{const c=document.querySelector('.pr-card.open');if(c)c.scrollIntoView({behavior:'smooth',block:'start'});},80);
+  toast('➡️ Suivant : '+(first.nom||'Prospect'));
+}
+function chainAfter(){if(chainOn()&&prSort==='mine'&&!document.querySelector('.pr-search input:focus'))setTimeout(()=>{if(!document.getElementById('icPop'))chainNext();},500);}
+// ── Bilan hebdo personnel : 7 derniers jours, comparé à la médiane des collègues du studio · un point fort, un point à travailler ──
+function weekBilanHTML(){
+  const me=_me();if(!me)return '';
+  if(_EVS===null){if(!_evsAsked&&COACH_CODE){_evsAsked=true;syncCall('stats_pull').then(d=>{_EVS=((d&&d.events)||[]).filter(inStudio);if(prSort==='mine'&&document.querySelector('.prw')&&!_typing())showProspects(true);}).catch(()=>{_evsAsked=false;});}return '';}
+  const sinceIso=new Date(Date.now()-7*864e5).toISOString();
+  const R={},get=n=>{const k=_repKey(n);if(!k)return null;return R[k]||(R[k]={n:String(n).split(' ')[0],calls:0,ok:0,ic:0,venu:0,abo:0});};
+  PSC().forEach(p=>(p.appels||[]).forEach(a=>{const l0=String(a.txt||'').split('\n')[0];if(!/^📞/.test(l0)||/appel entrant/.test(l0)||String(a.ts||'')<sinceIso)return;const r=get(_callWho(l0));if(!r)return;r.calls++;if(_callOk(l0))r.ok++;}));
+  _EVS.forEach(e=>{if(String(e.ts||'')<sinceIso)return;const r=get(String(e.rep||''));if(!r)return;if(e.type==='essai')r.ic++;else if(e.type==='venu')r.venu++;else if(e.type==='abo')r.abo++;});
+  const meK=_repKey(me),mine=R[meK]||{n:me,calls:0,ok:0,ic:0,venu:0,abo:0};
+  const others=Object.keys(R).filter(k=>k!==meK).map(k=>R[k]);
+  const med=arr=>{if(!arr.length)return null;const t=arr.slice().sort((a,b)=>a-b),m=Math.floor(t.length/2);return t.length%2?t[m]:(t[m-1]+t[m])/2;};
+  const M=[['calls','appels passés','Bloquez deux créneaux d\'appels par jour, le matin et en fin d\'après-midi.'],['ok','appels joints','Variez les horaires d\'appel et envoyez un SMS après deux essais sans réponse.'],['ic','Intro Class réservées','Proposez l\'Intro Class dès le premier échange, avec deux dates au choix.'],['venu','venues en séance','Un SMS la veille et un mot le matin même : les absences baissent.'],['abo','ventes','Relancez sous 48 h les personnes venues sans achat.']];
+  const rows=M.map(([k,l,tip])=>({k,l,tip,v:mine[k],med:med(others.map(o=>o[k]))}));
+  const cmp=rows.filter(r=>r.med!==null&&r.med>0).map(r=>Object.assign({},r,{ratio:r.v/r.med}));
+  const best=cmp.filter(r=>r.ratio>=1.15).sort((a,b)=>b.ratio-a.ratio)[0],work=cmp.filter(r=>r.ratio<0.85).sort((a,b)=>a.ratio-b.ratio)[0];
+  const fm=x=>x%1?x.toFixed(1):x,mon=new Date().getDay()===1;
+  return `<details class="wb"${mon?' open':''}><summary>📊 Ma semaine <small>· 7 derniers jours${others.length?' · comparé à l\'équipe du studio':''}</small></summary>
+    <div class="wb-g">${rows.map(r=>`<div class="wb-t"><b>${r.v}</b><span>${r.l}</span>${r.med!==null?`<small>équipe : ${fm(r.med)}</small>`:''}</div>`).join('')}</div>
+    ${best?`<div class="wb-l ok">💪 <b>Point fort :</b> ${best.l} · ${best.v} contre ${fm(best.med)} en médiane d'équipe.</div>`:''}
+    ${work?`<div class="wb-l todo">🎯 <b>À travailler :</b> ${work.l} · ${work.v} contre ${fm(work.med)}. ${work.tip}</div>`:''}
+    ${!others.length?'<div class="wb-l">Dès qu\'un collègue sera actif sur le studio, votre point fort et votre point à travailler apparaîtront ici.</div>':!best&&!work?'<div class="wb-l">Dans la moyenne de l\'équipe sur toute la ligne · la régularité, c\'est ce qui fait vendre.</div>':''}
+  </details>`;
+}
 function nextCallHTML(sorted){
   const done=sorted.filter(prDoneToday).length,tot=sorted.length,todo=sorted.filter(p=>!prDoneToday(p)),first=todo[0];
   const pct=tot?Math.round(done*100/tot):0;
-  const prog=`<div class="nc-top">${tot?`<div class="nc-prog"><div class="nc-pt"><b>${done} sur ${tot}</b> traité${done>1?'s':''} aujourd'hui</div><div class="nc-pb"><i style="width:${pct}%"></i></div></div>`:''}${dayGoalHTML()}${pushBtnHTML()}</div>`;
+  const prog=`<div class="nc-top">${tot?`<div class="nc-prog"><div class="nc-pt"><b>${done} sur ${tot}</b> traité${done>1?'s':''} aujourd'hui</div><div class="nc-pb"><i style="width:${pct}%"></i></div></div>`:''}${dayGoalHTML()}<button class="nc-chain${chainOn()?' on':''}" onclick="chainToggle()" title="${chainOn()?'Mode enchaînement actif : après chaque clôture, la fiche suivante s\'ouvre et la fiche s\'affiche en version courte':'Après chaque clôture d\'appel, passer automatiquement à la fiche suivante'}">⏩ Enchaîner${chainOn()?' ✓':''}</button>${pushBtnHTML()}</div>`+weekBilanHTML();
   if(!first)return prog+`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
   const g=mineGroup(first),why=prPrio(first).why.replace(/^\S+\s/,'');
   return prog+`<div class="nc-bar"><div class="nc-l"><b>${ici(MG_IC[g],16)} ${esc(first.nom||'Prospect')}</b><span>${g===0?'Résultat de l\'appel à valider':esc(_noEmo(why))}</span></div><button class="nc-go" onclick="prOpenId='${first.id}';showProspects(true);${g===0?`contactSheet('${first.id}','${first.rappel?'rappel':'new'}')`:''}">${g===0?ici('check',14)+' Clôturer':ici('phone',14)+' Appel suivant'}</button></div>`;
@@ -5535,6 +5578,7 @@ async function csDone(id){
   try{const r=await syncCall('note_add',{id,text:note.slice(0,600),nom:CFG.rep||''});
     if(r&&r.ok&&r.prospect){_takeSrv(id,r.prospect,['note']);persistProspects();if(document.querySelector('.pr-search')&&!_typing())showProspects(true);}}
   catch(e){if(!_quiet(e))toast('Enregistré · note non envoyée à Boost ('+_why(e)+')');}
+  chainAfter();
 }
 // Étape « À rappeler à l'ouverture » depuis la fiche : commentaire facultatif, puis rangement direct dans l'onglet
 function ouvAsk(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
@@ -5727,8 +5771,9 @@ function showProspects(keepScroll){
           <button class="pl-btn tog${open?' up':''}" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${ici('chevron',16)}</button>
         </div>
       </div>
-      ${open?`<div class="pl-detail">
+      ${open?`<div class="pl-detail${(prSort==='mine'&&!srch&&chainOn()&&_fullId!==p.id)?' focus':''}">
         ${sumBlockHTML(p)}
+        ${profBlockHTML(p)}
         ${oc?`<div class="pl-oclock"><div class="pl-ocph">📞</div><b>Conversation en cours</b><span>${esc(oc.by||'?')} est en ligne avec ${esc((p.nom||'').split(' ')[0])} depuis ${_ocSince(oc)}.<br>La saisie reprend quand l'appel est terminé.</span><button class="pr-act main" onclick="callToggle('${p.id}')">✅ Appel terminé · saisir le résultat</button></div>`:`<div class="pl-dgrid">
           <div>
             <div class="pl-sec">Décider la suite</div>
@@ -5747,8 +5792,8 @@ function showProspects(keepScroll){
               +(()=>{const ov=prOuv(p),OC='#6B5B3E';return `<button class="pr-st${ov?' on':''}" style="${ov?'background:'+OC+';color:#fff;border-color:'+OC:''}" title="${ov?'Remettre dans les rappels':'Ne souhaite plus être contacté pour le moment · à rappeler à l\'ouverture du studio'}" onclick="ouvAsk('${p.id}')">🏗<small>À rappeler à l'ouverture</small></button>`;})();})()}</div>
             ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="aboAsk('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeur ayant réalisé la vente" onclick="aboAsk('${p.id}')">👤 ${p.vendeur?'Vendeur : '+esc(p.vendeur):'Choisir le vendeur'}</button></div>`:''}
             ${p.statut==='unit'?unitLine(p):''}
-            <div class="pl-lbl">Température du lead</div>
-            <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
+            <div class="pl-tempw"><div class="pl-lbl">Température du lead</div>
+            <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div></div>
             ${(()=>{const cur=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;const L=[];
               if(cur){const due=cur.date<=todayStr()&&p.statut!=='abo'&&p.statut!=='venu',pres=(cur.pres||[]).includes(p.id);
                 L.push(`<div class="pl-rdv">🎟️<b>${esc(icLabel(cur))}</b>${pres?'<em>Présente</em>':''}<button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Changer ou retirer">✏️</button></div>`
@@ -5792,7 +5837,8 @@ ${p.statut!=='abo'&&p.rappel?`            <div class="pl-lbl">Appel programmé</
             </div>
           </div>
         </div>`}
-        ${histPanel(p)}
+        ${prSort==='mine'&&!srch&&chainOn()?`<div class="pl-focus-t"><button class="pr-act" onclick="_fullId=${_fullId===p.id?'null':`'${p.id}'`};showProspects(true)">${_fullId===p.id?'↑ Vue courte':'📄 Voir toute la fiche (température, historique)'}</button></div>`:''}
+        <div class="pl-histw">${histPanel(p)}</div>
       </div>`:''}
     </div>`;
   };
@@ -5860,6 +5906,18 @@ async function sumForce(id){_sumFail=0;_sumPause=0;const b=document.getElementBy
   catch(e){_SUMERR[id]=_why(e);toast('Résumé indisponible ('+_why(e)+')');}
   _sumRender(id);}
 function _sumRender(id){if(prOpenId===id&&document.querySelector('.pr-search')&&!_typing())showProspects(true);}
+// ── Profil pour le coach : quatre champs courts, transmis avec l'inscription à l'Intro Class ──
+const PROF_F=[['obj','🎯 Objectif','se remuscler, posture, dos, perte de poids…'],['doul','🩹 Douleurs · santé','dos, genou, post-partum, rien à signaler…'],['prat','🏃 Pratique','yoga 1x/sem, jamais fait de Pilates…'],['contr','🗓 Contraintes','le soir après 18 h, budget, enfants…']];
+function sumProfil(p){const t=p&&p.sum&&p.sum.txt;if(!t)return '';const l=String(t).split('\n').find(x=>/^Profil\s*:/i.test(x));const v=l?l.replace(/^Profil\s*:\s*/i,'').trim():'';return /pas encore connus/i.test(v)?'':v;}
+function profLine(p){const f=p&&p.prof||{};return PROF_F.filter(([k])=>f[k]).map(([k,l])=>l.split(' ')[0]+' '+f[k]).join(' · ');}
+function profBlockHTML(p){
+  if(p.bmember)return '';const f=p.prof||{},n=PROF_F.filter(([k])=>f[k]).length,ia=sumProfil(p);
+  return `<details class="pl-prof"${n<2&&(p.icBook||p.icWait||p.statut==='essai')?' open':''}><summary>🎯 Profil pour le coach <small>· ${n}/4 ${n<4?'à compléter':'complet'}${ia&&!n?' · la Situation IA a déjà repéré des éléments':''}</small></summary>
+    <div class="pl-prof-g">${PROF_F.map(([k,l,ph])=>`<label><span>${l}</span><input id="pf-${k}-${p.id}" value="${esc(f[k]||'')}" maxlength="140" placeholder="${ph}" onkeydown="if(event.key==='Enter')profSave('${p.id}')"/></label>`).join('')}</div>
+    <div class="pl-row" style="margin-top:8px;align-items:center"><button class="pr-act main" onclick="profSave('${p.id}')">💾 Enregistrer</button>${ia?`<button class="pr-act" onclick="profFromIA('${p.id}')" title="${esc(ia)}">⤵️ Reprendre la ligne Profil de la Situation</button>`:''}<small class="pl-hint" style="margin:0">Le coach le voit sur la séance, dans Intro Class.</small></div></details>`;
+}
+function profSave(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const f={};PROF_F.forEach(([k])=>{f[k]=(document.getElementById('pf-'+k+'-'+id)?.value||'').trim().slice(0,140);});p.prof=f;p.maj=new Date().toISOString();persistProspects();schedulePush();toast('🎯 Profil enregistré · visible par le coach');showProspects(true);}
+function profFromIA(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const ia=sumProfil(p);if(!ia)return;const el=document.getElementById('pf-obj-'+id);if(el&&!el.value.trim())el.value=ia.slice(0,140);el?.focus();toast('Relisez et répartissez dans les quatre champs si besoin, puis Enregistrer');}
 function sumBlockHTML(p){
   if(!sumOn(p))return '';
   const s=p.sum,err=_SUMERR[p.id],st=!err&&sumStale(p),pend=!err&&(_sumQ.includes(p.id)||(_sumBusy&&!s));

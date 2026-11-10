@@ -86,6 +86,7 @@ export function buildDigest(p: any, nowIso = new Date().toISOString()): { text: 
     rap,
     voids ? voids + " appel" + (voids > 1 ? "s" : "") + " sans échange (messagerie ou non décroché)" + (lastVoid ? ", le dernier le " + frDate(parisDay(lastVoid)) : "") : "",
     p.obj ? "Objectif noté : " + String(p.obj).slice(0, 200) : "",
+    p.prof && Object.values(p.prof).some(Boolean) ? "Profil noté par le commercial : " + [["obj", "objectif"], ["doul", "douleurs/santé"], ["prat", "pratique"], ["contr", "contraintes"]].filter(([k]) => p.prof[k]).map(([k, l]) => l + " = " + String(p.prof[k]).slice(0, 140)).join(" ; ") : "",
     p.fiche ? "Fiche de découverte :\n" + String(p.fiche).slice(0, 1200) : "",
   ].filter(Boolean).join("\n");
   const text = (ctx + "\n\nDerniers échanges (le plus récent en premier) :\n\n" + kept.map((k, i) => "### Échange " + (i + 1) + "\n" + k.txt).join("\n\n")).slice(0, MAX_DIGEST);

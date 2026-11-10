@@ -1054,6 +1054,8 @@ serve(async (req) => {
             matInt: p.matInt === true, // intéressé(e) par une séance découverte Pilates Mat avant l'ouverture
             lostWhy: String(p.lostWhy || "").slice(0, 20), // raison de perte (prix, distance, horaires, pasprete, concurrent, sansrep)
             smsVeille: String(p.smsVeille || "").slice(0, 10), // date (AAAA-MM-JJ) du dernier SMS de confirmation envoyé
+            // Profil pour le coach : objectif, douleurs/santé, pratique, contraintes (140 car. chacun)
+            prof: ["obj", "doul", "prat", "contr"].reduce((o: Record<string, string>, k) => { o[k] = String((p.prof || {})[k] || "").slice(0, 140); return o; }, {}),
             // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.
             appels: Array.isArray(p.appels)
               ? p.appels.slice(-20).map((a: any) => ({ id: String(a?.id || "").slice(0, 40), ts: String(a?.ts || "").slice(0, 30), rx: String(a?.rx || "").slice(0, 30), sv: Number(a?.sv) || 0, txt: String(a?.txt || "").slice(0, 9000) })).filter((a: any) => a.txt)
