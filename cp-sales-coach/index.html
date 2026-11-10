@@ -4263,7 +4263,25 @@ function icBookSheet(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
     <div class="fv-meta">Choisissez la séance : la fiche passe en « Séance d'essai » et la date devient le rappel convenu.</div>
     <div style="margin-top:10px">${icBookSelect(p).replace('onchange="selDefer(this,()=>icBookProspect(','onchange="document.getElementById(\'icPop\')?.remove();selDefer(this,()=>icBookProspect(')}</div>
     ${p.icBook?`<div class="fv-btns" style="margin-top:10px"><button class="pl-cbtn tried" onclick="document.getElementById('icPop')?.remove();icBookProspect('${p.id}','__none')">Retirer de l'Intro Class</button></div>`:''}
+    <div class="ics-lbl" style="margin-top:14px">Pas encore de date ?</div>
+    <div class="ag-types">
+      <button class="ics-chip${p.icWait?' on':''}" onclick="icWaitToggle('${p.id}')" title="La personne veut une Intro Class : on la rappelle dès que les dates sont connues">⏳ Intro Class à planifier${p.icWait?' ✓':''}</button>
+      <button class="ics-chip${p.matInt?' on':''}" onclick="matIntToggle('${p.id}')" title="Séance découverte Pilates Mat avant l'ouverture, pour rencontrer l'équipe">🧘 Intéressé(e) Pilates Mat découverte${p.matInt?' ✓':''}</button>
+    </div>
+    <div class="fv-meta" style="margin-top:6px">Ces deux listes se retrouvent dans Intro Class · on y revient quand les dates sont fixées.</div>
     <div class="fv-btns" style="margin-top:8px"><button class="pl-cbtn" style="flex:1" onclick="document.getElementById('icPop')?.remove()">Fermer</button></div>`);}
+// Listes d'attente (dates pas encore connues) : Intro Class à planifier, séance découverte Pilates Mat
+function icWaitToggle(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.icWait=!p.icWait;if(p.icWait)_takeSuivi(p);p.maj=new Date().toISOString();persistProspects();schedulePush();toast(p.icWait?'⏳ Sur la liste « Intro Class à planifier »':'Retiré de la liste d\'attente');icBookSheet(id);showProspects(true);}
+function matIntToggle(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.matInt=!p.matInt;p.maj=new Date().toISOString();persistProspects();schedulePush();toast(p.matInt?'🧘 Intéressé(e) Pilates Mat découverte':'Intérêt Pilates Mat retiré');icBookSheet(id);showProspects(true);}
+function icWaitList(){return PSC().filter(x=>x.icWait&&x.statut!=='perdu'&&!x.icBook).sort((a,b)=>String(a.maj||'').localeCompare(String(b.maj||'')));}
+function matIntList(){return PSC().filter(x=>x.matInt&&x.statut!=='perdu').sort((a,b)=>String(a.maj||'').localeCompare(String(b.maj||'')));}
+function icWaitHTML(){
+  const W=icWaitList(),M=matIntList();if(!W.length&&!M.length)return '';
+  const row=x=>`<div class="ics-slot" style="cursor:pointer" onclick="openPr('${x.id}')"><b>${esc(x.nom||'')}</b><span>${x.tel&&!x.noCall?esc(x.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):''}${x.suivi?' · '+esc(x.suivi):''}</span>${x.icWait&&x.matInt?'<small>⏳ 🧘</small>':''}</div>`;
+  return `<div style="margin:14px 0;padding:12px 14px;background:#fff;border:1px solid var(--cream-line);border-radius:14px">
+    ${W.length?`<div class="ics-lbl">⏳ Intro Class à planifier · ${W.length} <small>· à rappeler dès que les dates sont fixées</small></div>${W.map(row).join('')}`:''}
+    ${M.length?`<div class="ics-lbl" style="margin-top:${W.length?12:0}px">🧘 Intéressé(e)s Pilates Mat découverte · ${M.length} <small>· séances avant l'ouverture, dates à venir</small></div>${M.map(row).join('')}`:''}
+  </div>`;}
 function icBookProspect(id,sessId,quiet){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const refresh=()=>{if(quiet){renderICPage();icOpen(quiet);}else showProspects(true);};
@@ -4277,7 +4295,7 @@ function icBookProspect(id,sessId,quiet){
   if(prev&&prev.id!==s.id){prev.booked=Math.max(0,(+prev.booked||0)-1);prev.maj=new Date().toISOString();}
   if(!prev||prev.id!==s.id){s.booked=(+s.booked||0)+1;s.maj=new Date().toISOString();}
   icPush([],[s].concat(prev&&prev.id!==s.id?[prev]:[]));
-  p.icBook=s.id;p.rappel=s.date;p.rappelH=s.heure||'';p.rappelBy=(CFG.rep||'').split(' ')[0]||'équipe';_takeSuivi(p);if(p.ouverture)p.ouverture=null;
+  p.icBook=s.id;p.icWait=false;p.rappel=s.date;p.rappelH=s.heure||'';p.rappelBy=(CFG.rep||'').split(' ')[0]||'équipe';_takeSuivi(p);if(p.ouverture)p.ouverture=null;
   const was=p.statut;p.statut='essai';p.maj=new Date().toISOString();persistProspects();schedulePush();
   if(was!=='essai')emitEvent(p,'essai',{});
   refresh();toast('🎟️ '+(p.nom||'Prospect').split(' ')[0]+' inscrit·e · '+icLabel(s));
@@ -4332,6 +4350,7 @@ function renderICPage(){
     <div class="ic-week"><button onclick="_icWeek--;icEnsureWeek();renderICPage()">‹</button><b>Semaine du ${icFmtD(days[0])}</b><button onclick="_icWeek++;icEnsureWeek();renderICPage()">›</button>${_icWeek?`<button class="ic-today" onclick="_icWeek=0;icEnsureWeek();renderICPage()">Aujourd'hui</button>`:''}</div>
     ${days.map(d=>{const ds=sess.filter(s=>s.date===d);return ds.length?`<div class="ic-day${d===today?' today':''}">${icFmtD(d)}${d===today?' · aujourd\'hui':''}</div>`+ds.map(row).join(''):'';}).join('')||'<div class="pr-empty">Aucune séance cette semaine.<br><small>Ajoutez-en une ci-dessous'+(mgr?', ou définissez le planning type':'')+'.</small></div>'}
     <div class="icr add" onclick="icAddSession()">➕ Ajouter une Intro Class</div>
+    ${icWaitHTML()}
     ${icBilanHTML()}
     ${mgr?'<div class="ic-actions"><button class="pr-act" onclick="icSlotsUI()">⚙️ Planning type</button><button class="pr-act" onclick="icCoachsUI()">👩‍🏫 Coachs</button><button class="pr-act" onclick="icBaremeUI()">💶 Barèmes</button></div>':''}
   </div>`;
@@ -5705,15 +5724,20 @@ function showProspects(keepScroll){
                 const extra=k==='rappeler'&&p.statut!=='abo'?`<button class="pr-st${p.rappel?' on':''}" style="${p.rappel?'background:#C9871F;color:#fff;border-color:#C9871F':''}" title="${p.rappel?'Rappel posé le '+esc(frDate(p.rappel))+(p.rappelH?' à '+esc(p.rappelH):'')+' · cliquer pour modifier':'Poser un rappel téléphonique sur la fiche : il rejoint Rappels & RDV, Ma journée et l\'agenda d\'équipe'}" onclick="agForm({pid:'${p.id}',type:'rappel',date:'${esc(p.rappel||'')}',h:'${esc(p.rappelH||'')}'})">⏰<small>${p.rappel?'Appel prévu':'Programmer un appel'}</small></button>`:'';
                 // « Séance d'essai » et « RDV venu » sont des actions : réserver une Intro Class, planifier un RDV physique (agenda d'équipe)
                 const oc=k==='rappeler'&&at?`contactSheet('${p.id}','new')`:k==='essai'?`icBookSheet('${p.id}')`:k==='venu'?`agForm({pid:'${p.id}',type:'rdv'})`:`setPStatut('${p.id}','${k}')`;
-                const lbl=k==='essai'?(on&&p.icBook?'Intro Class réservée':'Réserver Intro Class'):k==='venu'?(on?'RDV venu':'Planifier un RDV physique'):PIPE[k].lbl;
+                const lbl=k==='essai'?(on&&p.icBook?'Intro Class réservée':p.icWait&&!p.icBook?'IC à planifier':'Réserver Intro Class'):k==='venu'?(on?'RDV venu':'Planifier un RDV physique'):PIPE[k].lbl;
                 const tt=k==='essai'?'Choisir une Intro Class · la fiche passe en « Séance d\'essai »':k==='venu'?'Poser un rendez-vous au studio sur l\'agenda d\'équipe · « Venu » le jour J fait passer la fiche en « RDV venu »':'';
-                return `<button class="pr-st${on?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:''}" title="${tt}" onclick="${oc}">${PIPE[k].ic}<small>${lbl}</small></button>`+extra;}).join('')
+                const wait=k==='essai'&&!on&&p.icWait&&!p.icBook;
+                return `<button class="pr-st${on||wait?' on':''}" style="${on?'background:'+PIPE[k].c+';color:#fff;border-color:'+PIPE[k].c:wait?'background:#fff;color:'+PIPE[k].c+';border-color:'+PIPE[k].c+';border-style:dashed':''}" title="${tt}" onclick="${oc}">${PIPE[k].ic}<small>${lbl}</small></button>`+extra;}).join('')
               +(()=>{const ov=prOuv(p),OC='#6B5B3E';return `<button class="pr-st${ov?' on':''}" style="${ov?'background:'+OC+';color:#fff;border-color:'+OC:''}" title="${ov?'Remettre dans les rappels':'Ne souhaite plus être contacté pour le moment · à rappeler à l\'ouverture du studio'}" onclick="ouvAsk('${p.id}')">🏗<small>À rappeler à l'ouverture</small></button>`;})();})()}</div>
             ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="aboAsk('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeur ayant réalisé la vente" onclick="aboAsk('${p.id}')">👤 ${p.vendeur?'Vendeur : '+esc(p.vendeur):'Choisir le vendeur'}</button></div>`:''}
             ${p.statut==='unit'?unitLine(p):''}
             <div class="pl-lbl">Température du lead</div>
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
-            ${(()=>{const cur=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;return cur?`<div class="pl-lbl">Séance d'essai · Intro Class</div><div class="pl-rdvs"><div class="pl-rdv">🎟️<b>${esc(icLabel(cur))}</b><button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Changer ou retirer">✏️</button></div></div>`:'';})()}
+            ${(()=>{const cur=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;const L=[];
+              if(cur)L.push(`<div class="pl-rdv">🎟️<b>${esc(icLabel(cur))}</b><button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Changer ou retirer">✏️</button></div>`);
+              else if(p.icWait)L.push(`<div class="pl-rdv">⏳<b>Intro Class à planifier</b> <small>· à rappeler dès que les dates sont fixées</small><button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Choisir une séance ou retirer">✏️</button></div>`);
+              if(p.matInt)L.push(`<div class="pl-rdv">🧘<b>Intéressé(e) Pilates Mat découverte</b> <small>· avant l'ouverture</small><button class="pl-edit" onclick="matIntToggle('${p.id}')" title="Retirer">✕</button></div>`);
+              return L.length?`<div class="pl-lbl">Séance d'essai · Intro Class</div><div class="pl-rdvs">${L.join('')}</div>`:'';})()}
             ${prRdvs(p).length?`<div class="pl-lbl">Rendez-vous physique au studio <span class="pl-hint">inscrit sur l'agenda d'équipe</span></div>`:''}
             <div class="pl-rdvs">${prRdvs(p).map(e=>`<div class="pl-rdv${e.done?' done':''}">${ici('pin',13)}<b>${esc(frDate(e.date))}${e.h?' · '+esc(e.h):''}</b>${e.who?' · '+esc(e.who):''}${e.note?` <small>· ${esc(e.note)}</small>`:''}${e.done?`<em>${e.done==='venu'?'Venu':'Pas venu'}</em>`:e.date<=todayStr()?`<button class="pl-cbtn rap" onclick="agDone('${e.id}','venu')">${ici('check',12)} Venu</button><button class="pl-cbtn tried" onclick="agDone('${e.id}','absent')">Pas venu</button>`:''}<button class="pl-edit" onclick="agForm({id:'${e.id}'})" title="Modifier ou supprimer">✏️</button></div>`).join('')}</div>
 ${p.statut!=='abo'&&p.rappel?`            <div class="pl-lbl">Appel programmé</div>
