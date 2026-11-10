@@ -4257,6 +4257,15 @@ function icBookSelect(p){
   const opt=s=>{const left=IC_CAP-icTaken(s);return `<option value="${s.id}"${p.icBook===s.id?' selected':''}${left<=0&&p.icBook!==s.id?' disabled':''}>${icLabel(s)} · ${left>0?left+' place'+(left>1?'s':'')+' restante'+(left>1?'s':''):'complet'}</option>`;};
   return `<select class="pr-date pl-ic" onchange="selDefer(this,()=>icBookProspect('${p.id}',this.value))"><option value="">🎟️ Inscrire à une Intro Class…</option>${list.map(opt).join('')}${cur&&!list.includes(cur)?`<option value="${cur.id}" selected>${icLabel(cur)} (passée)</option>`:''}${p.icBook?'<option value="__none">✖ Retirer de l\'Intro Class</option>':''}</select>`;
 }
+// Résultat de l'Intro Class depuis la fiche : signé (formulaire de signature du module IC), venue sans achat, absente (à rappeler demain)
+function icOutcome(id,r){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const s=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;if(!s){toast('Aucune Intro Class réservée');return;}
+  const mark=()=>{if(!(s.pres||[]).includes(id)){s.pres=(s.pres||[]).concat([id]);s.show=Math.max(+s.show||0,s.pres.length);if(s.show>(+s.booked||0))s.booked=s.show;s.maj=new Date().toISOString();icPush([],[s]);}};
+  if(r==='signe'){mark();showICPage();setTimeout(()=>{icOpen(s.id);icSignFor(s.id,id);},150);return;}
+  if(r==='venue'){mark();setPStatut(id,'venu',null,'Venue à l\'Intro Class · pas de pack pour l\'instant');return;}
+  if(r==='absente'){const d=new Date(Date.now()+864e5);_wkMonday(d,'10:00');p.icBook='';p.rappel=_ldstr(d);p.rappelH='10:00';p.rk='retry';p.rappelBy=(CFG.rep||'').split(' ')[0]||'équipe';p.maj=new Date().toISOString();persistProspects();schedulePush();showProspects(true);toast('Absence notée · rappel '+frDate(p.rappel)+' 10:00');
+    syncCall('note_add',{id,text:'🎟️ Absente à l\''+icLabel(s)+' · à rappeler pour reprogrammer',nom:CFG.rep||''}).then(d=>{if(d&&d.ok&&d.prospect){_takeSrv(id,d.prospect,['note']);persistProspects();}}).catch(()=>{});}
+}
 // Feuille « Réserver Intro Class » ouverte depuis le pipeline de la fiche
 function icBookSheet(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   icSheet(`<div class="glp-tag">🎟️ Réserver Intro Class</div><div class="glp-t">${esc(p.nom||'')}</div>
@@ -5454,6 +5463,7 @@ function contactSheet(id,mode){
     <div id="cs-more" style="display:none">
       <div class="cs-step"><span class="cs-n">2</span>La suite</div>
       <div class="cs-chips" id="cs-suite"></div>
+      <div id="cs-lost" style="display:none"><div class="cs-step"><span class="cs-n">2b</span>Pourquoi perdu ?</div>${lostChips('','csLostPick')}</div>
       <div id="cs-rap" style="display:none"><div class="ics-row"><div style="flex:1"><div class="ics-lbl" id="cs-dl">Date</div><input type="date" id="cs-d" class="ics-in"/></div><div style="flex:1"><div class="ics-lbl">Heure</div><input type="time" id="cs-h" class="ics-in"/></div></div></div>
       <div class="cs-step"><span class="cs-n">3</span><span id="cs-nl">Note *</span></div>
       <textarea id="cs-txt" class="ics-in" rows="3" maxlength="500" placeholder="Ce qui s'est dit, la suite convenue… une ligne suffit"></textarea>
@@ -5473,10 +5483,13 @@ function csPick(b,k){
   document.getElementById('cs-err').textContent='';
   csSuite(k==='ok'?'':'dem');
 }
+function csLostPick(b){if(!_CS)return;_CS.w=b.dataset.w;document.querySelectorAll('#cs-lost .cs-c').forEach(e=>e.classList.toggle('on',e===b));}
 function csSuite(x){
   if(!_CS)return;_CS.s=x;
   document.querySelectorAll('#icPop .cs-c').forEach(e=>e.classList.toggle('on',e.dataset.s===x));
   const rap=document.getElementById('cs-rap');if(rap)rap.style.display=x==='date'||x==='essai'?'':'none';
+  const lo=document.getElementById('cs-lost');if(lo)lo.style.display=x==='perdu'?'':'none';
+  const nl=document.getElementById('cs-nl');if(nl&&x==='perdu')nl.textContent='Note (facultative)';
   const dl=document.getElementById('cs-dl');if(dl)dl.textContent=x==='essai'?'Date de la séance d\'essai':'Date du rappel';
   if(x==='date'||x==='essai')setTimeout(()=>document.getElementById('cs-d')?.focus(),50);else if(x)setTimeout(()=>document.getElementById('cs-txt')?.focus(),50);
 }
@@ -5497,7 +5510,9 @@ async function csDone(id){
   if((x==='date'||x==='essai')&&!w.d){if(err)err.textContent='Choisissez la date';document.getElementById('cs-d')?.focus();return;}
   if(x==='essai'&&!w.h){if(err)err.textContent='Indiquez l\'heure de la séance';document.getElementById('cs-h')?.focus();return;}
   // Note obligatoire seulement quand le prospect a décroché : sans réponse ou messagerie, on valide sans commentaire
-  if(k==='ok'&&txt.length<3){if(err)err.textContent='Écrivez une note, une ligne suffit';document.getElementById('cs-txt')?.focus();return;}
+  if(k==='ok'&&x!=='perdu'&&txt.length<3){if(err)err.textContent='Écrivez une note, une ligne suffit';document.getElementById('cs-txt')?.focus();return;}
+  if(x==='perdu'&&!_CS.w){if(err)err.textContent='Choisissez la raison de la perte';return;}
+  const lw=_CS.w||'';
   const me=_me(),now=new Date().toISOString(),ok=k==='ok';
   const resLbl=ok?'✅ Joint':k==='vm'?'📨 Messagerie':'📵 Sans réponse';
   // L'appel lui-même : noté à la main s'il n'a pas déjà été rangé par la ligne (Allo, Aircall)
@@ -5507,7 +5522,8 @@ async function csDone(id){
   const setRap=(d,h,rk)=>{p.rappel=d||'';p.rappelH=d?h:'';p.rappelBy=d?me:'';if(d&&rk)p.rk=rk;else delete p.rk;};
   document.getElementById('icPop')?.remove();_CS=null;
   if(x==='abo'){p.maj=now;persistProspects();schedulePush();_CS_NOTE={id,txt:resLbl+(txt?' · '+txt:''),at:Date.now()};aboAsk(id);return;}
-  if(x==='perdu'||x==='essai'){if(x==='essai')setRap(w.d,w.h,'rdv');p.maj=now;persistProspects();setPStatut(id,x,'',resLbl+(txt?' · '+txt:''));return;}
+  if(x==='perdu'){p.lostWhy=lw;p.maj=now;persistProspects();setPStatut(id,x,'',resLbl+' · Raison : '+lostLbl(lw).replace(/^\S+\s/,'')+(txt?' · '+txt:''));return;}
+  if(x==='essai'){setRap(w.d,w.h,'rdv');p.maj=now;persistProspects();setPStatut(id,x,'',resLbl+(txt?' · '+txt:''));return;}
   let note=resLbl+' · ',msg=resLbl;
   if(x==='ouv'){p.ouverture={at:now,by:me,note:txt.slice(0,300)};setRap('','');note+='🏗 À rappeler à l\'ouverture'+(txt?' · '+txt:'');msg+=' · rangé dans « À rappeler à l\'ouverture »';}
   else{const c=prCalls(p);
@@ -5734,7 +5750,10 @@ function showProspects(keepScroll){
             <div class="pl-lbl">Température du lead</div>
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
             ${(()=>{const cur=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;const L=[];
-              if(cur)L.push(`<div class="pl-rdv">🎟️<b>${esc(icLabel(cur))}</b><button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Changer ou retirer">✏️</button></div>`);
+              if(cur){const due=cur.date<=todayStr()&&p.statut!=='abo'&&p.statut!=='venu',pres=(cur.pres||[]).includes(p.id);
+                L.push(`<div class="pl-rdv">🎟️<b>${esc(icLabel(cur))}</b>${pres?'<em>Présente</em>':''}<button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Changer ou retirer">✏️</button></div>`
+                +(due?`<div class="pl-rdv" style="flex-wrap:wrap;gap:6px"><small style="flex-basis:100%">Résultat de la séance, en un tap :</small><button class="pl-cbtn rap" onclick="icOutcome('${p.id}','signe')">${ici('check',12)} Venue · a signé</button><button class="pl-cbtn" onclick="icOutcome('${p.id}','venue')">🧘 Venue sans achat</button><button class="pl-cbtn tried" onclick="icOutcome('${p.id}','absente')">Absente</button></div>`:''));}
+              if(p.statut==='perdu')L.push(`<div class="pl-rdv">❌<b>Perdu${p.lostWhy?' · '+esc(lostLbl(p.lostWhy).replace(/^\S+\s/,'')):''}</b>${p.lostWhy?'':' <small>· raison non renseignée</small>'}<button class="pl-edit" onclick="statutNoteAsk('${p.id}','perdu')" title="Indiquer ou changer la raison">✏️</button></div>`);
               else if(p.icWait)L.push(`<div class="pl-rdv">⏳<b>Intro Class à planifier</b> <small>· à rappeler dès que les dates sont fixées</small><button class="pl-edit" onclick="icBookSheet('${p.id}')" title="Choisir une séance ou retirer">✏️</button></div>`);
               if(p.matInt)L.push(`<div class="pl-rdv">🧘<b>Intéressé(e) Pilates Mat découverte</b> <small>· avant l'ouverture</small><button class="pl-edit" onclick="matIntToggle('${p.id}')" title="Retirer">✕</button></div>`);
               return L.length?`<div class="pl-lbl">Séance d'essai · Intro Class</div><div class="pl-rdvs">${L.join('')}</div>`:'';})()}
@@ -5791,7 +5810,8 @@ ${p.statut!=='abo'&&p.rappel?`            <div class="pl-lbl">Appel programmé</
     <div class="pr-search"><span>${ici('search',17)}</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
     <div class="hm-sec"><span class="hs-t">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'||prSort==='agenda'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' rappels · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</span>${!srch&&!clientView&&prSort==='rappels'?pushBtnHTML():''}</div>
-    ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted):''}
+    ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted)+veilleHTML():''}
+    ${!srch&&clientView&&prFilter==='perdu'?lostStatsHTML(sorted):''}
     ${!srch&&!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(mineHas):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
       return `<div class="pr-ownf"><span class="pr-ownf-l">${ici('user',14)} En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
     ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='agenda'?agendaHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='mine'?mineListHTML(sorted,card):prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
@@ -5952,6 +5972,45 @@ function smsRelance(id){
       <button class="pr-act" onclick="smsSent('${p.id}')">✅ C'est envoyé</button>
     </div>`);
 }
+// Confirmations de la veille : Intro Class, RDV au studio et séances d'essai prévues demain (ou aujourd'hui si rien n'a été envoyé)
+function veilleList(){
+  const t=todayStr(),d=new Date(Date.now()+864e5),dm=_ldstr(d),ag=(typeof AGENDA!=='undefined'?AGENDA:[]);
+  const L=[];
+  PSC().forEach(p=>{if(p.statut==='perdu'||p.statut==='abo'||!p.tel||p.noCall)return;
+    const s=p.icBook?IC.sessions.find(x=>x.id===p.icBook&&x.statut!=='annulee'):null;
+    if(s&&(s.date===dm||s.date===t))L.push({p,kind:'ic',date:s.date,h:s.heure||'',lbl:'Intro Class'});
+    else if(p.statut==='essai'&&p.rappel&&(p.rappel===dm||p.rappel===t)&&p.rk==='rdv')L.push({p,kind:'essai',date:p.rappel,h:p.rappelH||'',lbl:'séance d\'essai'});
+    const ev=ag.find(e=>e.type==='rdv'&&e.pid===p.id&&!e.done&&(e.date===dm||e.date===t));
+    if(ev&&!L.some(x=>x.p===p))L.push({p,kind:'rdv',date:ev.date,h:ev.h||'',lbl:'rendez-vous au studio'});});
+  return L.filter(x=>x.p.smsVeille!==x.date).sort((a,b)=>(a.date+a.h).localeCompare(b.date+b.h));
+}
+function veilleHTML(){
+  const L=veilleList();if(!L.length)return '';const t=todayStr();
+  return `<div class="pr-ownf" style="flex-wrap:wrap;align-items:center"><span class="pr-ownf-l">📲 À confirmer par SMS · ${L.length}</span>${L.map(x=>`<button class="pr-ownb" onclick="smsVeille('${x.p.id}')" title="${esc(x.lbl)} ${x.date===t?'aujourd\'hui':'demain'}${x.h?' à '+esc(x.h):''}">${esc((x.p.nom||'').split(' ')[0])} <b>${x.date===t?'auj.':'dem.'}${x.h?' '+esc(x.h):''}</b></button>`).join('')}</div>
+    <div class="pl-hint" style="margin:-2px 4px 10px">La veille d'une Intro Class, d'une séance d'essai ou d'un RDV au studio : un SMS de confirmation évite les absences. Un tap, le texte est prêt.</div>`;
+}
+function smsVeilleText(p,x){
+  const pre=(p.nom||'').trim().split(/\s+/)[0]||'',rep=(CFG.rep||'').trim().split(/\s+/)[0],stu=String(p.studio||CFG.studio||'');
+  return `Bonjour ${pre}, c'est ${rep?rep+' de ':''}Club Pilates ${stu} 😊 Petit rappel : votre ${x.lbl} est prévu${x.kind==='rdv'?'':'e'} ${x.date===todayStr()?'aujourd\'hui':'demain'}${x.h?' à '+x.h:''}. Répondez OUI pour confirmer, ou dites-moi si vous souhaitez décaler. À très vite !`;
+}
+function smsVeille(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const x=veilleList().find(y=>y.p.id===id);if(!x){toast('Rien à confirmer pour cette fiche');return;}
+  icSheet(`<div class="glp-tag">📲 SMS de confirmation</div><div class="glp-t">${esc(p.nom||'')}</div>
+    <div class="fv-meta">${esc(x.lbl)} ${x.date===todayStr()?'aujourd\'hui':'demain'}${x.h?' à '+esc(x.h):''} · personnalisez si besoin, puis envoyez depuis votre téléphone.</div>
+    <textarea id="sms-txt" rows="5" style="width:100%;box-sizing:border-box;margin-top:10px;border:1px solid var(--cream-line);border-radius:12px;padding:10px;font:inherit;font-size:13.5px;line-height:1.5">${esc(smsVeilleText(p,x))}</textarea>
+    <div class="pl-row" style="margin-top:10px">
+      <a class="pr-act main" style="flex:0 0 auto;text-decoration:none" href="#" onclick="this.href='sms:${esc(p.tel)}?&body='+encodeURIComponent(document.getElementById('sms-txt').value)">📱 Ouvrir dans Messages</a>
+      <button class="pr-act" onclick="navigator.clipboard?.writeText(document.getElementById('sms-txt').value).then(()=>toast('SMS copié ✓'))">📋 Copier</button>
+      <button class="pr-act" onclick="smsVeilleSent('${p.id}','${x.date}')">✅ C'est envoyé</button>
+    </div>`);
+}
+async function smsVeilleSent(id,date){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;const t=document.getElementById('sms-txt')?.value||'';
+  p.smsVeille=date;p.maj=new Date().toISOString();persistProspects();schedulePush();
+  try{const d=await syncCall('note_add',{id,text:'📲 SMS de confirmation envoyé ('+frDate(date)+') : '+t.slice(0,160),nom:CFG.rep||''});
+    if(d&&d.ok&&d.prospect){_takeSrv(id,d.prospect,['note']);persistProspects();}}catch(e){}
+  document.getElementById('icPop')?.remove();showProspects(true);toast('📲 Confirmation notée');
+}
 async function smsSent(id){
   const t=document.getElementById('sms-txt')?.value||'';
   try{const d=await syncCall('note_add',{id,text:'💬 SMS de relance envoyé : '+t.slice(0,160),nom:CFG.rep||''});
@@ -5989,20 +6048,37 @@ function callToggle(id){
 }
 // ── Changement d'étape : une note est obligatoire (ce qui s'est dit, pourquoi) ──
 let _STN=null;
+// Raisons de perte : six pastilles, pas plus · la base pour travailler les objections en équipe
+const LOST_WHY=[['prix','💶 Prix'],['distance','📍 Distance'],['horaires','🕒 Horaires'],['pasprete','⏳ Pas prête maintenant'],['concurrent','🏃 Concurrent'],['sansrep','📵 Sans réponse']];
+const lostLbl=k=>(LOST_WHY.find(x=>x[0]===k)||[])[1]||'';
+function lostChips(cur,fn){return `<div class="cs-chips" style="margin:8px 0 4px">${LOST_WHY.map(([k,l])=>`<button class="cs-c${cur===k?' on':''}" data-w="${k}" onclick="${fn}(this)">${l}</button>`).join('')}</div>`;}
+function lostPick(b){if(!_STN)return;_STN.why=b.dataset.w;document.querySelectorAll('#icPop .cs-c').forEach(e=>e.classList.toggle('on',e===b));}
 function statutNoteAsk(id,s,seller){
-  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;_STN={id,s,seller};
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;_STN={id,s,seller,why:s==='perdu'?(p.lostWhy||''):''};
   icSheet(`<div class="glp-tag">${PIPE[s].ic} ${esc(PIPE[s].lbl)}</div><div class="glp-t">${esc(p.nom||'')}</div>
-    <div class="fv-meta">Pourquoi ce changement d'étape ? Votre note est enregistrée dans l'historique de la fiche${p.bid?' et envoyée à Boost':''}.</div>
-    <textarea id="stn-txt" class="ics-in" rows="3" maxlength="600" placeholder="Ex. : rappelée ce matin, intéressée par le Pack 8, veut en parler à son mari" style="margin:10px 0 6px;resize:vertical"></textarea>
+    <div class="fv-meta">${s==='perdu'?'Pourquoi est-ce perdu ? Une pastille suffit, la note est facultative.':'Pourquoi ce changement d\'étape ? Votre note est enregistrée dans l\'historique de la fiche'+(p.bid?' et envoyée à Boost':'')+'.'}</div>
+    ${s==='perdu'?lostChips(p.lostWhy||'','lostPick'):''}
+    <textarea id="stn-txt" class="ics-in" rows="3" maxlength="600" placeholder="${s==='perdu'?'Facultatif · ex. : trouve le Pack 8 trop cher, préfère attendre septembre':'Ex. : rappelée ce matin, intéressée par le Pack 8, veut en parler à son mari'}" style="margin:10px 0 6px;resize:vertical"></textarea>
     <small id="stn-err" style="color:#B4300F;font-weight:700"></small>
     <div class="fv-btns"><button class="glp-ok" style="flex:1" onclick="statutNoteGo()">Enregistrer ${esc(PIPE[s].lbl)} ✓</button></div>`);
   setTimeout(()=>document.getElementById('stn-txt')?.focus(),250);
 }
 function statutNoteGo(){
-  if(!_STN)return;const t=(document.getElementById('stn-txt')?.value||'').trim();
-  if(t.length<3){const e=document.getElementById('stn-err');if(e)e.textContent='Écrivez une note avant de changer l\'étape';return;}
-  document.getElementById('icPop')?.remove();const {id,s,seller}=_STN;_STN=null;
+  if(!_STN)return;const t=(document.getElementById('stn-txt')?.value||'').trim();const e=document.getElementById('stn-err');
+  if(_STN.s==='perdu'){if(!_STN.why){if(e)e.textContent='Choisissez la raison de la perte';return;}}
+  else if(t.length<3){if(e)e.textContent='Écrivez une note avant de changer l\'étape';return;}
+  document.getElementById('icPop')?.remove();const {id,s,seller,why}=_STN;_STN=null;
+  if(s==='perdu'){const p=PROSPECTS.find(x=>x.id===id);if(p)p.lostWhy=why;setPStatut(id,s,seller,'Raison : '+lostLbl(why).replace(/^\S+\s/,'')+(t?' · '+t:''));return;}
   setPStatut(id,s,seller,t);
+}
+// Raisons de perte de la liste affichée (onglet Perdu) : ce mois puis tout · pour la réunion d'équipe
+function lostStatsHTML(list){
+  const ym=todayStr().slice(0,7),cnt=(L)=>{const m={};L.forEach(p=>{const k=p.lostWhy||'';m[k]=(m[k]||0)+1;});return m;};
+  const mois=list.filter(p=>String(p.maj||'').slice(0,7)===ym),mm=cnt(mois),ma=cnt(list);
+  const line=(m,n)=>LOST_WHY.filter(([k])=>m[k]).sort((a,b)=>m[b[0]]-m[a[0]]).map(([k,l])=>`<span class="pl-c" style="gap:4px">${l} <b>${m[k]}</b></span>`).join('')+(m['']?`<span class="pl-c" style="color:#8C95A8">non renseignée <b>${m['']}</b></span>`:'')||'<span class="pl-c" style="color:#8C95A8">aucune</span>';
+  return `<div class="pr-ownf" style="flex-wrap:wrap"><span class="pr-ownf-l">❌ Raisons · ce mois (${mois.length}) :</span>${line(mm)}</div>
+    <div class="pr-ownf" style="flex-wrap:wrap;margin-top:-4px"><span class="pr-ownf-l">Depuis le début (${list.length}) :</span>${line(ma)}</div>
+    <div class="pl-hint" style="margin:0 4px 10px">Une raison par fiche perdue, choisie au moment du « Perdu ». À relire ensemble pour préparer les réponses aux objections.</div>`;
 }
 function noteLines(p){return String(p.note||'').split(' · ').map(x=>x.trim()).filter(x=>x&&!/^(Importé d'Allo|historique|Contact Allo)$/i.test(x));}
 // Supprimer une note de la fiche (notes de l'outil) ou une ligne des notes Boost (Boost est mis à jour)
