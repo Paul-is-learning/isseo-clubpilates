@@ -849,6 +849,7 @@ a.menu-item{text-decoration:none;color:inherit}
 .cs-step{display:flex;align-items:center;gap:8px;margin:14px 0 6px;font-weight:800;font-size:13px;color:var(--cp-dark)}.cs-n{width:20px;height:20px;border-radius:50%;background:var(--cp-deep);color:#fff;font-size:11.5px;display:inline-flex;align-items:center;justify-content:center;flex:none}
 .cs-btns.row{flex-direction:row;margin-top:0}.cs-btns.row .cs-b{flex:1;text-align:center;padding:11px 6px;font-size:13px}.cs-b.vm:hover{background:#FFF6E5}
 .cs-chips{display:flex;flex-wrap:wrap;gap:6px}.cs-c{border:1.5px solid #dce1ea;background:#fff;border-radius:99px;padding:7px 11px;font-weight:700;font-size:12.5px;cursor:pointer;color:var(--cp-dark)}.cs-c.on{border-color:var(--cp-deep);background:var(--cp-deep);color:#fff}
+.nc-top{display:flex;align-items:center;gap:10px 16px;flex-wrap:wrap;margin:6px 0 8px}.nc-top .nc-prog{flex:1 1 220px;margin:0}.nc-top .dg{flex:2 1 240px;min-width:0;margin:0;padding:8px 14px;border-radius:14px;box-shadow:none}.nc-top .nc-bell{margin:0}
 .nc-prog{margin:6px 0 8px;padding:0 4px}.nc-pt{font-size:12.5px;color:var(--ink-mid)}.nc-pb{height:6px;border-radius:99px;background:#EFEAE0;overflow:hidden;margin-top:4px}.nc-pb i{display:block;height:100%;background:#2F7D4F;border-radius:99px;transition:width .4s}
 .pr-grp.mg0>summary{background:#FFF1E3}.pr-grp.mg1>summary{background:#FFF3EA}.pr-grp.mg2>summary{background:#EEF6FF}.pr-grp.mg4>summary{background:#F4F4F4}.pr-grp.mg5>summary{background:#EAF6F0}
 .pl-cbtn.clos{background:#E8620A;color:#fff;border-color:#E8620A;animation:ocPulse 1.6s ease-in-out infinite}
@@ -1341,13 +1342,25 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .prw .pr-howto summary{color:var(--lav-ink)}
 .prw .pr-alert{background:#FDF8ED;border:1px solid #F0E0B8;border-radius:16px;margin:8px 0 0}
 .prw .hm-sec{margin:18px 0 10px}
-.prw .pr-funnel{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:4px;overflow:visible}
+.prw .pr-funrow{display:flex;align-items:center;gap:10px;margin:4px 0 0;min-width:0;max-width:100%}
+.prw .pr-funrow-l{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);flex:0 0 auto}
+.prw .pr-funnel{display:flex;gap:6px;margin:0;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;flex:1 1 0;min-width:0}.prw .pr-funnel::-webkit-scrollbar{display:none}
 .prw .pr-arrow{display:none}
-.prw .pr-fun{border:1px solid var(--cream-line);border-radius:18px;padding:13px 6px 11px;box-shadow:var(--sh-s);min-width:0}
-.prw .pr-fun-n{font-size:26px;font-weight:800}
-.prw .pr-fun-l{font-size:11px;color:var(--ink-soft)}
+.prw .pr-fun{display:flex;align-items:center;gap:7px;border:1px solid var(--cream-line);border-radius:99px;padding:6px 12px 6px 9px;box-shadow:none;min-width:0;flex:0 0 auto;background:#fff}
+.prw .pr-fun-n{font-size:14px;font-weight:800;color:var(--pc);background:color-mix(in srgb,var(--pc) 12%,#fff);border-radius:99px;min-width:22px;padding:1px 6px;text-align:center}
+.prw .pr-fun-l{font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
 .prw .pr-fun.active{background:color-mix(in srgb,var(--pc) 10%,#fff);border-color:var(--pc)}
-.prw .pr-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:14px}
+.prw .pr-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
+.pr-tabgs{display:flex;gap:8px;flex-wrap:wrap;width:100%;min-width:0;max-width:100%}
+.pr-tabgs{gap:5px}
+.pr-tabg{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 100%}
+.pr-tabg-l{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);flex:0 0 104px;text-align:right}
+.pr-tabg .pr-tabs{padding:3px}.pr-tabg .pr-tab{padding:6px 10px;font-size:12px}
+.pr-tabg.cur .pr-tabg-l{color:var(--accent)}
+.pr-tabg .pr-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;flex:1 1 0;min-width:0;max-width:100%}.pr-tabg .pr-tabs::-webkit-scrollbar{display:none}
+.pr-tabg:not(.cur) .pr-tab{color:var(--ink-mid)}
+.prw .pr-howto{margin:22px 0 0}
+.prw .dg{margin:0 0 8px}
 .prw .pr-search{flex:1 1 320px;margin:0;border:1px solid var(--cream-line);border-radius:14px;padding:10px 14px;box-shadow:var(--sh-s)}
 .pr-tabs{display:flex;gap:4px;background:#fff;border:1px solid var(--cream-line);border-radius:14px;padding:4px;box-shadow:var(--sh-s);flex-wrap:wrap}
 .pr-tab{border:0;background:transparent;border-radius:10px;padding:8px 12px;font-size:12.5px;font-weight:700;color:var(--ink-soft);cursor:pointer;white-space:nowrap}
@@ -1485,7 +1498,11 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-c.muted{color:var(--ink-mid)}
 .pl-c.hit{flex:1 1 100%;color:var(--ink);white-space:normal}.pl-c.hit mark{background:#FFE98A;color:inherit;border-radius:3px;padding:0 2px}
 .pl-c.prio{flex:1 1 100%;font-weight:600;color:var(--ink)}
-.pl-c.todo{flex:1 1 100%;color:#2F5D8C;font-weight:600}
+.pl-c.todo{flex:1 1 100%;color:#2F5D8C;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
+.pl-c.last{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;margin-left:auto}.pl-c.last.mid b{color:#B4710F}.pl-c.last.old b{color:#C0492F}
+.pl-c-d{color:var(--ink-mid)}
+.pl-sec{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:2px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--cream-line)}
+@media(max-width:640px){.nc-top .dg,.nc-top .nc-prog{flex:1 1 100%}.pl-quick .pl-btn[title^="Ouvrir"],.pl-quick .pl-btn[title^="Fermer"]{display:none}.pl-btn.oc small{display:none}.pl-btn.oc{width:38px;padding:0}.pl-c.last{margin-left:0;flex:1 1 100%;white-space:normal}.pl-c-d{display:none}.pl-c.todo{white-space:normal}.pr-tabg{flex-direction:column;align-items:stretch;gap:2px}.pr-tabg-l{flex:0 0 auto;text-align:left;padding-left:6px}.pr-tabg .pr-tabs{flex:0 0 auto;width:100%;flex-wrap:nowrap;overflow-x:auto}}
 .pr-day{display:flex;align-items:baseline;gap:10px;margin:18px 0 6px;padding:0 4px;font-size:15px}.pr-day b{font-size:17px}.pr-day span{color:var(--ink-mid);font-size:12.5px}.pr-day em{color:#C0492F;font-style:normal;font-weight:700}
 .pr-grp{margin:8px 0;border:1px solid var(--cream-line);border-radius:14px;background:#fff;overflow:hidden}
 .pr-grp>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FBF9F4;font-size:13.5px;user-select:none}.pr-grp>summary::-webkit-details-marker{display:none}.pr-grp>summary::before{content:'▾';color:var(--ink-mid);width:12px}.pr-grp:not([open])>summary::before{content:'▸'}
@@ -1494,6 +1511,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pr-grp.pg1>summary{background:#FFF3EA}.pr-grp.pg2>summary{background:#FFF0F0}.pr-grp.pg3>summary{background:#EEF6FF}.pr-grp.pg6>summary{background:#F4F4F4}
 @media(max-width:640px){.pr-grp>summary small{display:none}}
 .pl-c.note{flex:1 1 280px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#4A4F5E}
+.pl-ctx .pl-c.prio{flex:1 1 280px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 .pl-quick{grid-column:-2/-1;grid-row:1/3;align-self:center;justify-content:flex-end}
 .pl-ava{grid-column:1;grid-row:1/3;align-self:start}
 .pl-who,.pl-st,.pl-next,.pl-meta{grid-row:1}
@@ -4934,10 +4952,10 @@ function mineListHTML(sorted,card){
 function nextCallHTML(sorted){
   const done=sorted.filter(prDoneToday).length,tot=sorted.length,todo=sorted.filter(p=>!prDoneToday(p)),first=todo[0];
   const pct=tot?Math.round(done*100/tot):0;
-  const prog=tot?`<div class="nc-prog"><div class="nc-pt"><b>${done} sur ${tot}</b> traité${done>1?'s':''} aujourd'hui</div><div class="nc-pb"><i style="width:${pct}%"></i></div></div>`:'';
-  if(!first)return pushBtnHTML()+prog+`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
+  const prog=`<div class="nc-top">${tot?`<div class="nc-prog"><div class="nc-pt"><b>${done} sur ${tot}</b> traité${done>1?'s':''} aujourd'hui</div><div class="nc-pb"><i style="width:${pct}%"></i></div></div>`:''}${dayGoalHTML()}${pushBtnHTML()}</div>`;
+  if(!first)return prog+`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
   const g=mineGroup(first),why=prPrio(first).why.replace(/^\S+\s/,'');
-  return pushBtnHTML()+prog+`<div class="nc-bar"><div class="nc-l"><b>${MG[g][0]} ${esc(first.nom||'Prospect')}</b><span>${g===0?'Résultat de l\'appel à valider':esc(why)}</span></div><button class="nc-go" onclick="prOpenId='${first.id}';showProspects(true);${g===0?`contactSheet('${first.id}','${first.rappel?'rappel':'new'}')`:''}">${g===0?'📝 Clôturer':'📞 Appel suivant'}</button></div>`;
+  return prog+`<div class="nc-bar"><div class="nc-l"><b>${MG[g][0]} ${esc(first.nom||'Prospect')}</b><span>${g===0?'Résultat de l\'appel à valider':esc(why)}</span></div><button class="nc-go" onclick="prOpenId='${first.id}';showProspects(true);${g===0?`contactSheet('${first.id}','${first.rappel?'rappel':'new'}')`:''}">${g===0?'📝 Clôturer':'📞 Appel suivant'}</button></div>`;
 }
 // (Désactivé le 3 nov. 2026 à la demande de Paul : la fenêtre ne s'ouvre jamais seule.) Ancien mécanisme :
 // après un appel sortant passé par la ligne (Allo, Aircall), la fenêtre « Décroché / Non décroché » s'ouvrait
@@ -5107,16 +5125,11 @@ function dayGoalHTML(){
   const goal=+CFG.dayGoal||0;
   const pct=goal?Math.min(100,Math.round(total/goal*100)):0;
   return `<div class="dg">
-    <div class="dg-h"><b>🎯 Aujourd'hui</b>
-      <span class="dg-k" onclick="setPrFilter(null);setPrSort('new')">🆕 <b>${nNew}</b> nouveau${nNew>1?'x':''} à appeler</span>
-      <span class="dg-k${nRap?' hot':''}" onclick="setPrFilter(null);setPrSort('rappels')">⏰ <b>${nRap}</b> rappel${nRap>1?'s':''} du jour ou en retard</span>
-      <span class="dg-k" onclick="setPrFilter(null);setPrSort('redo')">🔁 <b>${redo.length}</b> à recontacter${nHot?` · dont <b>${nHot}</b> 🔥`:''}</span>
-    </div>
-    <div class="dg-bar"><div class="dg-fill" style="width:${pct}%"></div></div>
     <div class="dg-f"><span>📞 <b>${total}</b> appel${total>1?'s':''} sortant${total>1?'s':''} aujourd'hui${goal?` sur <b>${goal}</b> · ${pct} %`:''}</span>
       ${Object.entries(byRep).sort((x,y)=>y[1]-x[1]).map(([n,c])=>`<span class="dg-rep">${avaTag(avatarOf(n),16,n)} ${esc(n)} <b>${c}</b></span>`).join('')}
       <span class="dg-goal">Objectif <input type="number" min="0" max="500" value="${goal||''}" placeholder="—" onchange="setDayGoal(this.value)"/> appels / jour</span>
     </div>
+    ${goal?`<div class="dg-bar"><div class="dg-fill" style="width:${pct}%"></div></div>`:''}
   </div>`;
 }
 // ── Segments « intelligents » des leads ouverts (statut Contacté) ──
@@ -5147,6 +5160,7 @@ function prTalkMax(p){let mx=null;(p.appels||[]).forEach(a=>{const l0=String(a.t
 function prShort(p){if(!prOpen(p)||p.bmember)return false;const mx=prTalkMax(p);return mx!==null&&mx>=30&&mx<180;}
 // 🚫 Jamais joints : appelés, mais aucun échange de 30 s ou plus
 function prNeverJoined(p){if(!prOpen(p)||p.bmember)return false;const c=prCalls(p);if(!c.n)return false;const mx=prTalkMax(p);return mx===null?!c.ok:mx<30;}
+const TAB_GROUPS=[['À faire',['mine','new','rappels','redo']],['À retravailler',['unreach','short','never','ouv']],['Consulter',['team','all','journal','trash']]];
 const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : leads frais, puis promesses, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Leads frais','Arrivés depuis moins de 72 h, traités ou non, et tous les leads jamais appelés · le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost · les 🆕 leads frais sont dans leur onglet'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['short','⏱ Échanges courts','Joints au moins une fois, mais jamais plus de 3 minutes de conversation · non convertis, à retravailler'],['never','🚫 Jamais joints','Appelés, mais aucun échange de 30 secondes ou plus · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
@@ -5432,12 +5446,15 @@ function showProspects(keepScroll){
       const who=(l0.match(/ par ([^·\n]+?)(?= · |$)/)||[])[1]||'';
       const kind=/^💬/.test(l0)?(/reçu/.test(l0)?'💬 SMS reçu':'💬 SMS envoyé'):/sans réponse|manqué|voicemail|messagerie|received/.test(l0)?'📵 appel '+(/entrant/.test(l0)?'manqué':'sans réponse'):'📞 appel '+(/entrant/.test(l0)?'entrant':'sortant');
       const dur=(l0.match(/· (\d+ m \d+ s|\d+ s|\d+\s*min)\b/)||[])[1]||'';
-      lastH=`<span class="pl-c"><b>Dernier contact</b> ${isNaN(t)?'':t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})+' · '}${kind}${dur?' · '+dur:''}${who?' · '+esc(who.split(' ')[0]):''}</span>`;}
-    else lastH='<span class="pl-c muted"><b>Dernier contact</b> aucun appel enregistré</span>';
-    const vol=calls.length||sms.length?`<span class="pl-c">${calls.length} appel${calls.length>1?'s':''}${calls.length?' · '+ok+' abouti'+(ok>1?'s':''):''}${sms.length?' · '+sms.length+' SMS':''}</span>`:'';
-    const note=(sumLine(p)||noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
-    const prio=!clientView&&(prSort==='rappels'||prSort==='mine')?prPrio(p):null,todo=prio?sumTodo(p):'';
-    return `<div class="pl-ctx">${srch?prHit(p):''}${prio?`<span class="pl-c prio">${esc(prio.why)}</span>${todo?`<span class="pl-c todo">🧭 ${esc(todo)}</span>`:''}`:''}${prOuv(p)&&p.ouverture.note?`<span class="pl-c note" title="${esc(p.ouverture.note)}">🏗 ${esc(p.ouverture.note)}</span>`:''}${lastH}${vol}${note?`<span class="pl-c note" title="${esc(note)}">${sumLine(p)?'🧭':'📝'} ${esc(note.length>140?note.slice(0,140)+'…':note)}</span>`:''}</div>`;
+      const ago=isNaN(t)?-1:Math.floor((Date.now()-t.getTime())/864e5),agoH=ago<0?'':ago===0?'aujourd\'hui':ago===1?'hier':`il y a ${ago} j`;
+      const vol=calls.length?` · ${calls.length} appel${calls.length>1?'s':''}, ${ok} abouti${ok>1?'s':''}`:'';
+      lastH=`<span class="pl-c last${ago>=14?' old':ago>=7?' mid':''}"><b>Dernier contact</b> ${agoH}${isNaN(t)?'':' · '+t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}<span class="pl-c-d"> · ${kind}${dur?' · '+dur:''}${who?' · '+esc(who.split(' ')[0]):''}${vol}${sms.length?' · '+sms.length+' SMS':''}</span></span>`;}
+    else{const a=Math.floor((Date.now()-new Date(prArrival(p)).getTime())/864e5);lastH=`<span class="pl-c last muted${a>=3?' mid':''}"><b>Jamais appelé</b>${isNaN(a)?'':a===0?' · arrivé aujourd\'hui':a===1?' · arrivé hier':' · arrivé il y a '+a+' j'}</span>`;}
+    const note=(noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
+    const prio=!clientView&&(prSort==='rappels'||prSort==='mine')?prPrio(p):null,todo=sumTodo(p),sit=sumLine(p);
+    // Une seule phrase « quoi faire » : la consigne du résumé IA, sinon la situation, sinon la note, sinon la raison de la priorité
+    const main=todo?`<span class="pl-c todo" title="${esc(todo)}">🧭 ${esc(todo)}</span>`:(prio&&prio.r===3&&!calls.length)?'':sit?`<span class="pl-c note" title="${esc(sit)}">🧭 ${esc(sit.length>160?sit.slice(0,160)+'…':sit)}</span>`:note?`<span class="pl-c note" title="${esc(note)}">📝 ${esc(note.length>160?note.slice(0,160)+'…':note)}</span>`:prio?`<span class="pl-c prio" title="${esc(prio.why)}">${esc(prio.why)}</span>`:'';
+    return `<div class="pl-ctx">${srch?prHit(p):''}${prOuv(p)&&p.ouverture.note?`<span class="pl-c note" title="${esc(p.ouverture.note)}">🏗 ${esc(p.ouverture.note)}</span>`:''}${main}${lastH}</div>`;
   };
   const card=p=>{
     const pi=PIPE[p.statut]||PIPE.rappeler;
@@ -5446,13 +5463,14 @@ function showProspects(keepScroll){
     const hot=prSort==='rappels'&&rdvHot(p);
     const u=prRdvState(p);
     const late=rappelLate(p)&&prOpen(p);
+    const whyT=!clientView&&(prSort==='rappels'||prSort==='mine')?' title="'+esc(prPrio(p).why)+'"':'';
     const when=p.rappel
-      ?`<span class="pl-when${late?' late':isDue?' due':''}">${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
-      :`<span class="pl-when muted">${srcLogo(p.src)}${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
+      ?`<span class="pl-when${late?' late':isDue?' due':''}"${whyT}>${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
+      :`<span class="pl-when muted"${whyT}>${srcLogo(p.src)}${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     const arr=new Date(prArrival(p));
     const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${p.bentry?'Arrivé':'Créé'} le ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     // L'heure d'arrivée est dans la colonne « prochaine étape » ; si un rappel l'occupe, elle passe sous le nom
-    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):(p.bmember?'':`<button class="pl-notel" onclick="event.stopPropagation();prOpenId='${p.id}';prEditId='${p.id}';showProspects(true)" title="Aucun numéro : saisissez-le, il sera envoyé à Boost">⚠️ Numéro manquant · ajouter</button>`),p.rappel?arrH:''].filter(Boolean).join(' · ');
+    const sub=[p.noCall?'<span style="color:#B4300F">📵 ne pas appeler</span>':p.tel?esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):(p.bmember?'':`<button class="pl-notel" onclick="event.stopPropagation();prOpenId='${p.id}';prEditId='${p.id}';showProspects(true)" title="Aucun numéro : saisissez-le, il sera envoyé à Boost">⚠️ Numéro manquant · ajouter</button>`)].filter(Boolean).join(' · ');
     const bl=p.bid?(BOOST_ST[p.bst]||p.bst||''):'';
     const flags=[p.bmember?'<span class="pl-flag ok">🏅 Adhérent</span>':'',prOuv(p)?'<span class="pl-flag warn">🏗 À rappeler à l\'ouverture</span>':'',p.bid&&bl&&({a_traiter:'rappeler',contacte:'rappeler',rdv_planifie:'rappeler',rdv_nok:'rappeler',rdv_venu:'venu',client:'abo',perdu:'perdu'}[p.bst]||'')!==p.statut&&!(p.statut==='essai'&&p.bst==='rdv_planifie')?`<span class="pl-flag">Boost : ${esc(bl)}</span>`:'',p.bq&&[p.bq.statut,p.bq.rappel,p.bq.rappelH].join('|')!==p.bqs?'<span class="pl-flag warn">⏳ envoi Boost</span>':p.bqe?'<span class="pl-flag bad">⚠️ Boost</span>':''].join('');
     const oc=prOnCall(p);
@@ -5463,10 +5481,10 @@ function showProspects(keepScroll){
         <div class="pl-st">${oc?`<span class="pl-oncall"><i>📞</i> Appel en cours · ${esc(oc.by||'?')} · ${_ocSince(oc)}</span>`:''}<span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}${p.statut==='unit'&&unitShort(p.unit)?' · '+unitShort(p.unit):''}</span>${flags}</div>
         <div class="pl-next">${prOuv(p)?`<span class="pl-when muted">🏗 Le ${new Date(p.ouverture.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.ouverture.by?' · '+esc(p.ouverture.by):''}${studioOpening(p)?' · ouverture '+esc(studioOpening(p)):''}</span><button class="pl-cbtn" onclick="event.stopPropagation();ouvOff('${p.id}')" title="Retirer de « À rappeler à l'ouverture »">↩ Remettre dans les rappels</button>`
           :prToClose(p)?`${when}<button class="pl-cbtn clos" onclick="event.stopPropagation();contactSheet('${p.id}','${p.rappel&&!prAutoNew(p)?'rappel':'new'}')" title="Valider le résultat de l'appel : joint ou non, suite, note">📝 Clôturer l'appel</button>`
-          :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${prCalls(p).n?'📞 Contacté · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'📞 À traiter'}</button>`
+          :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${prCalls(p).n?'📝 Noter · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'📝 Noter l\'appel'}</button>`
           :p.statut==='rappeler'&&p.rappel&&prOpen(p)&&!prAutoNew(p)?`${when}<button class="pl-cbtn rap" onclick="event.stopPropagation();contactSheet('${p.id}','rappel')" title="Clôturer le rappel : joint ou non, suite, note">📝 Clôturer le rappel</button>`
           :`${when}${p.rappel&&prOpen(p)&&rdvAt(p)&&rdvAt(p).getTime()<=Date.now()+15*60000?`<label class="pl-done" onclick="event.stopPropagation()" title="Cochez quand le rappel est fait et que le prospect a décroché"><input type="checkbox" onchange="rappelDone('${p.id}',this)"/> Rappel fait</label>`:''}`}</div>
-        <div class="pl-meta">${prAgeChip(p)}${prAppChip(p)}</div>
+        <div class="pl-meta">${prAppChip(p)}</div>
         ${plCtx(p)}
         <div class="pl-quick" onclick="event.stopPropagation()">
           ${prUnknown(p)?`<button class="jr-new" onclick="newProspectForm('${p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
@@ -5480,6 +5498,7 @@ function showProspects(keepScroll){
         ${sumBlockHTML(p)}
         ${oc?`<div class="pl-oclock"><div class="pl-ocph">📞</div><b>Conversation en cours</b><span>${esc(oc.by||'?')} est en ligne avec ${esc((p.nom||'').split(' ')[0])} depuis ${_ocSince(oc)}.<br>La saisie reprend quand l'appel est terminé.</span><button class="pr-act main" onclick="callToggle('${p.id}')">✅ Appel terminé · saisir le résultat</button></div>`:`<div class="pl-dgrid">
           <div>
+            <div class="pl-sec">Décider la suite</div>
             <div class="pl-lbl">Étape</div>
             <div class="pr-pipe">${(()=>{const at=prATraiter(p),C='#5B6B8C';
               // Étape « À traiter » (jamais appelé) puis « Contacté » : cliquer « Contacté » sur un lead à traiter ouvre Décroché / Non décroché
@@ -5504,6 +5523,7 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
             <div class="pl-hint">Renseignez la date et l'heure, puis 💾 Enregistrer : la fiche ne bouge pas avant.</div>`}
           </div>
           <div>
+            <div class="pl-sec">Fiche &amp; notes</div>
             <div class="pl-lbl">Coordonnées <button class="pl-edit" onclick="prEditId='${p.id}';showProspects(true)">✏️ Modifier</button></div>
             ${prEditId===p.id?`<div class="pl-form">
               <label>Nom<input id="pe-nom" value="${esc(p.nom||'')}" maxlength="80"/></label>
@@ -5541,6 +5561,19 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
       <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="pr-new" onclick="newProspectForm()">＋ Nouveau prospect</button><span id="syncBadge" class="sync-badge ${_syncSt==='wait'?'sync':_syncSt}">${_syncTxt(_syncSt)}</span></div>
     </div>
+    <div class="pr-funrow"><span class="pr-funrow-l">Pipeline</span><div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'👥 Prospects':PIPE[k].ic+' '+PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div></div>
+    <div class="pr-tools">
+    ${prFilter&&prFilter!=='rappeler'?'':(()=>{const tab=([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():k==='short'?PSC().filter(prShort).length:k==='never'?PSC().filter(prNeverJoined).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
+      return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${l}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;};
+      // Trois familles d'onglets : ce qu'il y a à faire, ce qui mérite d'être retravaillé, ce qu'on consulte
+      return `<div class="pr-tabgs">${TAB_GROUPS.map(([g,ks])=>`<div class="pr-tabg${ks.includes(prSort)?' cur':''}"><span class="pr-tabg-l">${g}</span><div class="pr-tabs">${PR_SEGS.filter(x=>ks.includes(x[0])).map(tab).join('')}</div></div>`).join('')}</div>`;})()}
+    <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
+    </div>
+    <div class="hm-sec">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
+    ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted):!clientView&&prSort==='rappels'?pushBtnHTML():''}
+    ${!srch&&!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(mineHas):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
+      return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
+    ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='mine'?mineListHTML(sorted,card):prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
         <div><span class="hn">1</span><span><b>Les fiches viennent de Fitness Boost</b> : nouveaux leads, rappels, statuts et commercial arrivent toutes les 5 minutes · les appels Allo (résumé, transcription) s'y rattachent automatiquement.</span></div>
@@ -5550,20 +5583,6 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
         <div><span class="hn">5</span><span>Les fiches sont <b>partagées avec toute l'équipe</b> et sauvegardées au studio · le badge en haut vous dit si tout est synchronisé.</span></div>
       </div>
     </details>
-    ${dayGoalHTML()}
-    <div class="hm-sec">Pipeline</div>
-    <div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'👥 Prospects':PIPE[k].ic+' '+PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div>
-    <div class="pr-tools">
-    ${prFilter&&prFilter!=='rappeler'?'':`<div class="pr-tabs">${PR_SEGS.map(([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():k==='short'?PSC().filter(prShort).length:k==='never'?PSC().filter(prNeverJoined).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
-      return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${l}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;}).join('')}
-    </div>`}
-    <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
-    </div>
-    <div class="hm-sec">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&(prSort==='rappels'||prSort==='mine')&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
-    ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted):!clientView&&prSort==='rappels'?pushBtnHTML():''}
-    ${!srch&&!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(mineHas):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
-      return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
-    ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='mine'?mineListHTML(sorted,card):prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
   </div>`;
   $('#screen').innerHTML=h;$('#screen').scrollTop=scrollY;relocateBoxes();
   if(_srch){const n=document.getElementById('prSearchIn');if(n){n.focus({preventScroll:true});try{n.setSelectionRange(_srch[0],_srch[1]);}catch(e){}}}
