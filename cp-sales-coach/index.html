@@ -897,6 +897,9 @@ a.menu-item{text-decoration:none;color:inherit}
 .pr-bnotes{margin:6px 0 2px;font-size:12.5px;color:var(--ink-mid);background:#F7F8FB;border:1px solid #E7EAF1;border-radius:10px;padding:6px 10px}
 .pr-bnotes summary{cursor:pointer;font-weight:700;color:var(--ink)}
 .pr-bnotes div{margin-top:5px;white-space:pre-wrap;max-height:180px;overflow:auto}
+.pr-bnotes .pr-bn{display:flex;align-items:flex-start;gap:8px;margin:0;padding:3px 0;border-top:1px solid #EEF0F5;white-space:pre-wrap}.pr-bnotes .pr-bn:first-child{border-top:0}.pr-bnotes .pr-bn span{flex:1;min-width:0}
+.pr-notes{display:flex;flex-direction:column;gap:4px;margin:5px 0}.pr-notes .pr-note{display:flex;align-items:flex-start;gap:8px;margin:0}.pr-notes .pr-note span{flex:1;min-width:0}
+.pr-note-x{flex:0 0 auto;width:22px;height:22px;border-radius:7px;border:1px solid #E3E7EF;background:#fff;color:#8C95A8;font-size:11px;font-weight:800;cursor:pointer;display:grid;place-items:center}.pr-note-x:hover{color:#C0392B;border-color:#F0B8B0;background:#FDECEA}
 .pr-card.due{box-shadow:0 4px 18px rgba(201,135,31,.18);border-color:#f0d9a8}
 .pr-top{display:flex;align-items:center;gap:11px;margin-bottom:8px}
 .pr-ava{flex:0 0 40px;height:40px;border-radius:50%;color:#fff;font-weight:800;font-size:14.5px;display:flex;align-items:center;justify-content:center;letter-spacing:.5px}
@@ -1455,6 +1458,42 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-next{border-left:1px solid var(--cream-line);padding-left:14px;align-content:center}
 .pl-when.muted{font-weight:600;color:var(--ink-mid)}
 .pl-when.due{color:#B07A1C}.pl-when.late{color:#C0492F}
+.ag-top{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 10px}
+.ag-nav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.ag-nb{width:34px;height:34px;border:1.5px solid var(--cream-line);background:#fff;border-radius:10px;font:800 18px var(--sans);color:var(--ink);cursor:pointer;display:grid;place-items:center}
+.ag-nb.txt{width:auto;padding:0 12px;font-size:13px}.ag-nb.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.ag-range{font-size:15px;font-weight:800;color:var(--ink);margin-left:6px}.ag-range small{font-size:12.5px;font-weight:600;color:var(--ink-mid)}
+.ag-sep{flex:0 0 1px;height:22px;background:var(--cream-line);margin:0 4px}
+.ag-kb{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:4px 10px}
+.ag-sum{font-size:13px;color:var(--ink-mid);font-weight:600;margin:0 0 12px}.ag-sum b{color:var(--ink)}
+.ag-week{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px}
+.ag-day{background:#fff;border:1px solid var(--cream-line);border-radius:14px;padding:8px;min-height:170px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.ag-day.today{border-color:var(--accent);box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 18%,#fff)}
+.ag-day.past{background:#FAF8F3}
+.ag-dh{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:800;color:var(--ink);padding:2px 2px 6px;border-bottom:1px solid var(--cream-line);min-width:0}
+.ag-dh b{text-transform:capitalize;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.ag-dh i{font-style:normal;font-size:10px;font-weight:800;color:var(--accent);text-transform:uppercase;letter-spacing:.05em}
+.ag-day.today .ag-dh b{color:var(--accent)}
+.ag-dh span{font-size:11px;background:#F0F1F7;border-radius:99px;padding:1px 7px;color:var(--ink-mid)}
+.ag-add{margin-left:auto;width:22px;height:22px;border-radius:7px;border:1px solid var(--cream-line);background:#fff;color:var(--ink-mid);display:grid;place-items:center;cursor:pointer;flex:0 0 auto}
+.ag-none{font-size:11.5px;color:#A8AEBD;font-weight:600;padding:6px 2px}
+.ag-ev{display:grid;grid-template-columns:auto auto minmax(0,1fr);grid-template-areas:"h ic n" "h ic w";align-items:center;column-gap:6px;row-gap:1px;text-align:left;border:1.5px solid color-mix(in srgb,var(--kc) 35%,#fff);border-left:4px solid var(--kc);background:color-mix(in srgb,var(--kc) 5%,#fff);border-radius:10px;padding:6px 8px;cursor:pointer;color:var(--ink);font-family:inherit;width:100%}
+.ag-ev .ag-h{grid-area:h;font-size:12px;font-weight:800;color:var(--kc);white-space:nowrap}
+.ag-ev .ag-ic{grid-area:ic;color:var(--kc);display:flex}
+.ag-ev .ag-n{grid-area:n;font-size:12.5px;font-weight:700;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.25;min-width:0;word-break:break-word}
+.ag-ev .ag-w{grid-area:w;font-size:10.5px;font-weight:700;color:var(--oc)}
+.ag-ev .ag-d{grid-area:w;justify-self:start;font-size:10px;font-weight:800;color:#1F7A55;background:#EEF9F3;border-radius:99px;padding:1px 7px}
+.ag-ev.past{opacity:.72}.ag-ev.done{opacity:.62}.ag-ev.done .ag-n{text-decoration:line-through}
+@media(hover:hover){.ag-ev:hover{box-shadow:var(--sh-s);transform:translateY(-1px)}}
+.ag-types{display:flex;gap:8px}.ag-types .ics-chip{display:inline-flex;align-items:center;justify-content:center;gap:6px;text-transform:none;font-size:12px}
+.ag-types .ics-chip[disabled]{opacity:.5;cursor:not-allowed}
+.pl-rdvs{display:flex;flex-direction:column;gap:6px;margin:0 0 12px}
+.pl-rdv{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:13px;color:var(--ink);background:#fff;border:1px solid var(--cream-line);border-left:4px solid #1F7A55;border-radius:10px;padding:6px 10px}
+.pl-rdv>.lic{color:#1F7A55}.pl-rdv small{color:var(--ink-mid);font-weight:600}.pl-rdv em{font-style:normal;font-size:11px;font-weight:800;color:#1F7A55;background:#EEF9F3;border-radius:99px;padding:2px 8px}
+.pl-rdv.done{opacity:.75;border-left-color:#C9CED9}.pl-rdv .pl-edit{margin-left:auto}
+@media(max-width:1100px){.ag-week{grid-template-columns:repeat(4,minmax(0,1fr))}}
+@media(max-width:900px){.ag-week{grid-template-columns:repeat(2,minmax(0,1fr))}.ag-day{min-height:0}}
+@media(max-width:640px){.ag-week{grid-template-columns:1fr}.ag-day.empty:not(.today){display:none}.ag-top .pr-new{width:100%;justify-content:center}}
+
 .pl-when em{font-style:normal;font-size:11.5px;font-weight:700;background:#FDECEA;color:#C0392B;border-radius:99px;padding:2px 9px;margin-left:2px}.pl-when em.soon{background:#EAF6F0;color:#1F7A55}
 .pl-notel{border:1px solid #F5C9B2;background:#FDEBE3;color:#B4430F;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:800;cursor:pointer}
 .pl-notel.big{font-size:12.5px;padding:5px 12px}
@@ -3041,7 +3080,7 @@ async function syncPush(){
   catch(e){err=e;}
   if(_PDEL.length&&!_quiet(err)){try{await _sendDel();}catch(e){if(!err)err=e;}}
   if(_pushAt===tok)_pushBusy=false;
-  if(!err){_fails=0;_syncState(_hasPend()?'sync':'ok');_lastSync=new Date().toISOString();}
+  if(!err){_fails=0;_syncState(_hasPend()?'sync':'ok');_lastSync=new Date().toISOString();if(_AGQ.length)agFlush();}
   else if(err.message==='otp')_syncState('off');
   else if(err.message!=='code')_retryLater(err);
   if(_pushAgain){_pushAgain=false;schedulePush();}
@@ -3053,6 +3092,7 @@ async function syncPull(rerender){
   try{
     const d=await syncCall('pull');
     if(d&&Array.isArray(d.calls)){CALLS=d.calls;try{localStorage.setItem('cpcoach_calls',JSON.stringify(CALLS));}catch(e){}}
+    if(d&&Array.isArray(d.agenda))_agAdopt(d.agenda);
     if(d&&d.crev)_crev=d.crev;
     // Un envoi a répondu pendant la lecture : sa liste est au moins aussi récente, celle-ci est ignorée
     if(_pushN!==n0){_syncState(_restSt());if(rerender&&$('#topPhase').textContent==='Mes prospects'&&!_typing())showProspects(true);return;}
@@ -5171,8 +5211,142 @@ function prTalkMax(p){let mx=null;(p.appels||[]).forEach(a=>{const l0=String(a.t
 function prShort(p){if(!prOpen(p)||p.bmember)return false;const mx=prTalkMax(p);return mx!==null&&mx>=30&&mx<180;}
 // 🚫 Jamais joints : appelés, mais aucun échange de 30 s ou plus
 function prNeverJoined(p){if(!prOpen(p)||p.bmember)return false;const c=prCalls(p);if(!c.n)return false;const mx=prTalkMax(p);return mx===null?!c.ok:mx<30;}
-const TAB_GROUPS=[['À faire',['mine','new','rappels','redo']],['À retravailler',['unreach','short','never','ouv']],['Consulter',['team','all','journal','trash']]];
-const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : leads frais, puis promesses, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Leads frais','Arrivés depuis moins de 72 h, traités ou non, et tous les leads jamais appelés · le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost · les 🆕 leads frais sont dans leur onglet'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['short','⏱ Échanges courts','Joints au moins une fois, mais jamais plus de 3 minutes de conversation · non convertis, à retravailler'],['never','🚫 Jamais joints','Appelés, mais aucun échange de 30 secondes ou plus · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
+const TAB_GROUPS=[['À faire',['mine','new','rappels','redo','agenda']],['À retravailler',['unreach','short','never','ouv']],['Consulter',['team','all','journal','trash']]];
+
+// ── Agenda d'équipe ───────────────────────────────────────────────────────────
+// Planning partagé du studio. Les RDV physiques au studio et les événements d'équipe vivent dans
+// l'agenda (ligne serveur _coach_agenda, cache local, écritures mises en file et rejouées). Les rappels
+// et séances d'essai viennent des fiches, les Intro Class du module IC : ils ne sont jamais recopiés.
+let AGENDA=[];try{AGENDA=JSON.parse(localStorage.getItem('cpcoach_agenda')||'[]')||[];}catch(e){AGENDA=[];}
+let _AGQ=[];try{_AGQ=JSON.parse(localStorage.getItem('cpcoach_agq')||'[]')||[];}catch(e){_AGQ=[];}
+let _agBusy=false,_agWeek=0,_agWho='',_agKind='';
+function _agPersist(){try{localStorage.setItem('cpcoach_agenda',JSON.stringify(AGENDA));localStorage.setItem('cpcoach_agq',JSON.stringify(_AGQ));}catch(e){}}
+// Liste reçue du serveur : ce qui attend encore d'être envoyé d'ici reste tel quel
+function _agAdopt(list){if(!Array.isArray(list))return;const pend=new Set(_AGQ.map(o=>o.op==='del'?o.id:o.ev.id));AGENDA=list.filter(e=>e&&e.id&&!pend.has(e.id));_AGQ.forEach(o=>{if(o.op==='set')AGENDA.push(o.ev);});_agPersist();}
+async function agFlush(){
+  if(_agBusy||!_AGQ.length||!COACH_CODE)return;_agBusy=true;
+  try{while(_AGQ.length){const o=_AGQ[0];const d=o.op==='del'?await syncCall('agenda_del',{id:o.id}):await syncCall('agenda_set',{ev:o.ev});_AGQ.shift();_agPersist();if(d&&Array.isArray(d.agenda))_agAdopt(d.agenda);}}
+  catch(e){if(e&&e.message==='code'){_AGQ=[];_agPersist();}}
+  _agBusy=false;
+  if($('#topPhase').textContent==='Mes prospects'&&prSort==='agenda'&&!_typing())showProspects(true);
+}
+function agSave(ev){ev.maj=new Date().toISOString();const i=AGENDA.findIndex(e=>e.id===ev.id);if(i>=0)AGENDA[i]=ev;else AGENDA.push(ev);_AGQ=_AGQ.filter(o=>!(o.op==='set'&&o.ev.id===ev.id));_AGQ.push({op:'set',ev:ev});_agPersist();agFlush();}
+function agDelete(id){AGENDA=AGENDA.filter(e=>e.id!==id);_AGQ=_AGQ.filter(o=>!(o.op==='set'&&o.ev.id===id));_AGQ.push({op:'del',id:id});_agPersist();agFlush();}
+function _agStudioOk(st){return !CFG.studio||!st||_sk(st)===_sk(CFG.studio);}
+// RDV au studio d'une fiche (les plus récents en dernier) et prochain RDV à venir
+function prRdvs(p){return AGENDA.filter(e=>e.pid===p.id&&e.type!=='autre').sort((a,b)=>(a.date+a.h).localeCompare(b.date+b.h)).slice(-6);}
+function prRdvNext(p){const t=todayStr();return AGENDA.filter(e=>e.pid===p.id&&e.type!=='autre'&&!e.done&&e.date>=t).sort((a,b)=>(a.date+a.h).localeCompare(b.date+b.h))[0]||null;}
+const AG_KIND={rdv:{l:'RDV au studio',ic:'pin',c:'#1F7A55'},rappel:{l:'Rappel',ic:'bell',c:'#B07A1C'},essai:{l:'Séance d\'essai',ic:'ticket',c:'#4B52E6'},ic:{l:'Intro Class',ic:'yoga',c:'#7A4BB5'},autre:{l:'Équipe',ic:'clipboard',c:'#5B6B8C'}};
+// Tous les événements du planning sous une forme commune
+function agAll(){
+  const out=[];
+  AGENDA.forEach(e=>{if(!e||!e.date||!_agStudioOk(e.studio))return;const p=e.pid?PROSPECTS.find(x=>x.id===e.pid):null;
+    out.push({key:'a:'+e.id,kind:e.type==='autre'?'autre':'rdv',date:e.date,h:e.h||'',nom:e.type==='autre'?(e.titre||'Événement'):(p&&p.nom)||e.nom||'Prospect',who:e.who||'',pid:e.pid||'',ev:e,done:e.done||''});});
+  PSC().forEach(p=>{if(!prOpen(p)||!p.rappel||prAutoNew(p)||prOuv(p))return;
+    out.push({key:'p:'+p.id,kind:p.statut==='essai'?'essai':'rappel',date:p.rappel,h:p.rappelH||'',nom:p.nom||'Prospect',who:prCharge(p)||'',pid:p.id,p:p,done:''});});
+  (IC.sessions||[]).forEach(s=>{if(!s||!s.date||s.statut==='annulee'||!_agStudioOk(s.studio))return;const n=PSC().filter(p=>p.icBook===s.id).length;
+    out.push({key:'s:'+s.id,kind:'ic',date:s.date,h:s.heure||'',nom:'Intro Class'+(n?' · '+n+' inscrit'+(n>1?'s':''):''),who:s.coach||'',pid:'',s:s,done:''});});
+  return out.sort((a,b)=>(a.date+(a.h||'99')).localeCompare(b.date+(b.h||'99')));
+}
+function agCountToday(){const t=todayStr();return agAll().filter(e=>e.date===t&&!e.done).length;}
+function showAgenda(){prFilter=null;prSort='agenda';try{localStorage.setItem('cpcoach_prsort','agenda');}catch(e){}showProspects();}
+function agendaHTML(){
+  const mon=_monday(_agWeek),days=[...Array(7)].map((_,i)=>{const d=new Date(mon);d.setDate(d.getDate()+i);return _ldstr(d);});
+  const t=todayStr(),hhmm=new Date().toTimeString().slice(0,5);
+  const all=agAll().filter(e=>e.date>=days[0]&&e.date<=days[6]);
+  const whos={};all.forEach(e=>{if(e.who)whos[e.who]=(whos[e.who]||0)+1;});
+  const L=all.filter(e=>(!_agWho||e.who===_agWho)&&(!_agKind||e.kind===_agKind));
+  const cnt=k=>L.filter(e=>e.kind===k).length;
+  const sun=new Date(mon);sun.setDate(sun.getDate()+6);
+  const fd=d=>d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'});
+  const wk=_agWeek===0?'Cette semaine':_agWeek===1?'Semaine prochaine':_agWeek===-1?'Semaine dernière':'Semaine du '+fd(mon);
+  const ev=e=>{const k=AG_KIND[e.kind],col=e.who?ownColor(e.who):'#8C95A8',past=e.date<t||(e.date===t&&!!e.h&&e.h<hhmm);
+    return `<button class="ag-ev${e.done?' done':past?' past':''}" style="--kc:${k.c};--oc:${col}" onclick="agOpen('${e.key}')" title="${esc(k.l)}${e.who?' · '+esc(e.who):''}"><span class="ag-h">${e.h||'journée'}</span><span class="ag-ic">${ici(k.ic,13)}</span><span class="ag-n">${esc(e.nom||'')}</span>${e.done?`<span class="ag-d">${e.done==='venu'?'Venu':e.done==='absent'?'Pas venu':'Fait'}</span>`:e.who?`<span class="ag-w">${esc(e.who)}</span>`:''}</button>`;};
+  const col=d=>{const E=L.filter(e=>e.date===d),isT=d===t;
+    return `<div class="ag-day${isT?' today':''}${d<t?' past':''}${E.length?'':' empty'}"><div class="ag-dh"><b>${new Date(d+'T12:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric'})}</b>${isT?'<i>aujourd\'hui</i>':''}${E.length?`<span>${E.length}</span>`:''}<button class="ag-add" onclick="agForm({date:'${d}'})" title="Ajouter à cette journée">${ici('plus',13)}</button></div>${E.length?E.map(ev).join(''):'<div class="ag-none">Rien de prévu</div>'}</div>`;};
+  return `<div class="ag">
+    <div class="ag-top">
+      <div class="ag-nav"><button class="ag-nb" onclick="_agWeek--;showProspects(true)" title="Semaine précédente">‹</button><button class="ag-nb txt${_agWeek?'':' on'}" onclick="_agWeek=0;showProspects(true)">Aujourd'hui</button><button class="ag-nb" onclick="_agWeek++;showProspects(true)" title="Semaine suivante">›</button><span class="ag-range">${wk} <small>· ${fd(mon)} au ${fd(sun)}</small></span></div>
+      <button class="pr-new" onclick="agForm({})">${ici('plus',16)} Ajouter au planning</button>
+    </div>
+    <div class="pr-ownf"><span class="pr-ownf-l">${ici('user',14)} Commercial :</span><button class="pr-ownb${!_agWho?' on':''}" onclick="_agWho='';showProspects(true)">Tous <b>${all.length}</b></button>${Object.keys(whos).sort().map(n=>`<button class="pr-ownb${_agWho===n?' on':''}" style="--oc:${ownColor(n)}" onclick="_agWho='${n.replace(/'/g,"\\'")}';showProspects(true)">${esc(n)} <b>${whos[n]}</b></button>`).join('')}<span class="ag-sep"></span>${Object.keys(AG_KIND).map(k=>`<button class="pr-ownb ag-kb${_agKind===k?' on':''}" style="--oc:${AG_KIND[k].c}" onclick="_agKind=_agKind==='${k}'?'':'${k}';showProspects(true)">${ici(AG_KIND[k].ic,13)} ${AG_KIND[k].l}</button>`).join('')}</div>
+    <div class="ag-sum"><b>${cnt('rdv')}</b> RDV au studio · <b>${cnt('rappel')}</b> rappel${cnt('rappel')>1?'s':''} · <b>${cnt('essai')}</b> séance${cnt('essai')>1?'s':''} d'essai · <b>${cnt('ic')}</b> Intro Class${cnt('autre')?' · <b>'+cnt('autre')+'</b> équipe':''}</div>
+    <div class="ag-week">${days.map(col).join('')}</div>
+    <div class="pl-hint" style="display:block;margin:10px 4px 0">Les rappels et séances d'essai viennent des fiches prospects, les Intro Class du module IC. Les RDV au studio et les événements d'équipe s'ajoutent ici ou depuis la fiche (« Rendez-vous physique au studio »).</div>
+  </div>`;
+}
+function agOpen(key){const e=agAll().find(x=>x.key===key);if(!e)return;
+  if(e.kind==='ic'){showICPage();setTimeout(()=>icOpen(e.s.id),60);return;}
+  if(e.kind==='rappel'||e.kind==='essai'){openPr(e.pid);return;}
+  const ev=e.ev,k=AG_KIND[e.kind],p=ev.pid?PROSPECTS.find(x=>x.id===ev.pid):null;
+  icSheet(`<div class="glp-tag">${ici(k.ic,12)} ${esc(k.l)}${ev.who?' · '+esc(ev.who):''}</div>
+    <div class="glp-t">${esc(e.nom||'Événement')}</div>
+    <div class="fv-meta">${esc(frDate(ev.date))}${ev.h?' · '+esc(ev.h):''}${ev.dur?' · '+ev.dur+' min':''}${p&&p.tel&&!p.noCall?' · '+esc(p.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):''}</div>
+    ${ev.note?`<div class="pr-note">📝 ${esc(ev.note)}</div>`:''}
+    <div class="fv-meta" style="margin-top:8px">${ev.done==='venu'?'✅ Le prospect est venu':ev.done==='absent'?'⚠️ Le prospect n\'est pas venu':ev.done==='fait'?'✅ Fait':'À venir'} · posé par ${esc(ev.by||'?')}</div>
+    <div class="fv-btns" style="flex-wrap:wrap">
+      ${p?`<button class="pr-act" onclick="document.getElementById('icPop')?.remove();openPr('${p.id}')">📇 Ouvrir la fiche</button>`:''}
+      <button class="pr-act" onclick="agForm({id:'${ev.id}'})">✏️ Modifier</button>
+      ${!ev.done&&e.kind==='rdv'?`<button class="pr-act main" onclick="agDone('${ev.id}','venu')">✅ Venu</button><button class="pr-act" onclick="agDone('${ev.id}','absent')">Pas venu</button>`:!ev.done?`<button class="pr-act main" onclick="agDone('${ev.id}','fait')">✅ Fait</button>`:`<button class="pr-act" onclick="agDone('${ev.id}','')">↺ Remettre à venir</button>`}
+      <button class="pr-act danger" onclick="agRemove('${ev.id}')" title="Supprimer du planning">🗑</button>
+    </div>`);
+}
+function agDone(id,v){const ev=AGENDA.find(e=>e.id===id);if(!ev)return;ev.done=v;agSave(Object.assign({},ev));document.getElementById('icPop')?.remove();
+  if(v==='venu'&&ev.pid){const p=PROSPECTS.find(x=>x.id===ev.pid);
+    if(p&&(p.statut==='rappeler'||p.statut==='essai')){setPStatut(p.id,'venu',null,'Venu au rendez-vous au studio');toast('✅ Venu · la fiche passe en « RDV venu »');return;}}
+  toast(v==='venu'?'✅ Venu noté':v==='absent'?'Absence notée':v?'✅ Fait':'Remis à venir');showProspects(true);}
+function agRemove(id){if(!confirm('Retirer cet événement du planning ?'))return;agDelete(id);document.getElementById('icPop')?.remove();toast('🗑 Retiré du planning');showProspects(true);}
+// Formulaire : RDV au studio (avec ou sans fiche), rappel téléphonique (posé sur la fiche) ou événement d'équipe
+function agForm(pre){pre=pre||{};const ev=pre.id?AGENDA.find(e=>e.id===pre.id):null;
+  const pid=(ev&&ev.pid)||pre.pid||'',p=pid?PROSPECTS.find(x=>x.id===pid):null;
+  const type=ev?ev.type:(pre.type||'rdv'),date=ev?ev.date:(pre.date||todayStr());
+  const who=ev?(ev.who||''):(pre.who||(p?prCharge(p):'')||_me());
+  const team=teamFor(p).slice();if(who&&!team.includes(who))team.push(who);
+  const opts=PSC().filter(x=>!x.bmember&&x.statut!=='perdu').sort((a,b)=>String(a.nom||'').localeCompare(String(b.nom||''),'fr'));
+  icSheet(`<div class="glp-tag">${ici('calendar',12)} Agenda d'équipe</div>
+    <div class="glp-t">${ev?'Modifier':'Ajouter au planning'}</div>
+    <div class="ics-lbl">Quoi</div>
+    <div class="ag-types">${[['rdv','pin','RDV au studio'],['rappel','bell','Rappel téléphonique'],['autre','clipboard','Événement d\'équipe']].map(([k,i,l])=>`<button class="ics-chip ag-type${type===k?' on':''}" data-k="${k}" onclick="agTypePick(this)"${ev?' disabled':''}>${ici(i,13)} ${l}</button>`).join('')}</div>
+    <div class="ics-lbl">Prospect <small>· facultatif pour un événement d'équipe</small></div>
+    <input list="ag-plist" id="ag-prosp" class="ics-in" placeholder="Nom du prospect…" value="${esc(p?p.nom||'':(ev&&ev.nom)||'')}" autocomplete="off" oninput="agProspPick(this)"/>
+    <datalist id="ag-plist">${opts.map(x=>`<option value="${esc(x.nom||'')}">${x.tel&&!x.noCall?esc(x.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):''}</option>`).join('')}</datalist>
+    <input type="hidden" id="ag-pid" value="${esc(pid)}"/>
+    <div class="ics-lbl" id="ag-titre-l" style="${type==='autre'?'':'display:none'}">Titre</div>
+    <input id="ag-titre" class="ics-in" maxlength="120" placeholder="Ex. : réunion d'équipe, visite du bailleur…" value="${esc(ev&&ev.titre||'')}" style="${type==='autre'?'':'display:none'}"/>
+    <div class="ics-row">
+      <div style="flex:1"><div class="ics-lbl">Date</div><input type="date" id="ag-date" class="ics-in" value="${date}"/></div>
+      <div style="flex:1"><div class="ics-lbl">Heure</div><input type="time" id="ag-h" class="ics-in" value="${ev?ev.h||'':(pre.h||'')}"/></div>
+      <div style="flex:0 0 108px"><div class="ics-lbl">Durée</div><select id="ag-dur" class="ics-in">${[0,15,30,45,60,90].map(m=>`<option value="${m}"${(ev?(ev.dur||0):30)===m?' selected':''}>${m?m+' min':'—'}</option>`).join('')}</select></div>
+    </div>
+    <div class="ics-lbl">Commercial</div>
+    <select id="ag-who" class="ics-in">${team.map(n=>`<option${n===who?' selected':''}>${esc(n)}</option>`).join('')}<option value=""${who?'':' selected'}>Toute l'équipe</option></select>
+    <div class="ics-lbl">Note <small>· facultatif</small></div>
+    <input id="ag-note" class="ics-in" maxlength="500" placeholder="Ex. : vient avec sa sœur, veut voir le Reformer…" value="${esc(ev&&ev.note||'')}"/>
+    <div class="fv-btns"><button class="glp-ok" style="flex:1;margin-top:12px" onclick="agSubmit('${ev?ev.id:''}')">${ev?'Enregistrer ✓':'Ajouter au planning ✓'}</button></div>`);
+}
+function agTypePick(b){document.querySelectorAll('.ag-type').forEach(c=>c.classList.toggle('on',c===b));const o=b.dataset.k==='autre';['ag-titre-l','ag-titre'].forEach(id=>{const n=document.getElementById(id);if(n)n.style.display=o?'':'none';});}
+function agProspPick(inp){const v=inp.value.trim().toLowerCase();const m=PSC().find(x=>String(x.nom||'').trim().toLowerCase()===v);document.getElementById('ag-pid').value=m?m.id:'';}
+function agSubmit(id){
+  const type=(document.querySelector('.ag-type.on')||{dataset:{}}).dataset.k||'rdv';
+  const g=i=>(document.getElementById(i)||{}).value||'';
+  const date=g('ag-date').slice(0,10),h=g('ag-h').slice(0,5),pid=g('ag-pid'),nomIn=g('ag-prosp').trim(),who=g('ag-who'),note=g('ag-note').trim(),dur=+g('ag-dur')||0,titre=g('ag-titre').trim();
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(date)){toast('Choisissez une date');return;}
+  const p=pid?PROSPECTS.find(x=>x.id===pid):null;
+  if(type==='rappel'){ // un rappel vit sur la fiche : il rejoint Rappels & RDV, Ma journée et l'agenda
+    if(!p){toast('Choisissez un prospect de la liste pour un rappel');return;}
+    p.rappel=date;p.rappelH=h;p.rk='rdv';p.rappelBy=who||_me()||'équipe';if(!p.suivi)p.suivi=who||_me();if(p.ouverture)p.ouverture=null;
+    p.maj=new Date().toISOString();persistProspects();schedulePush();
+    document.getElementById('icPop')?.remove();toast('⏰ Rappel posé · '+frDate(date)+(h?' '+h:''));showProspects(true);return;}
+  if(type==='rdv'&&!p&&!nomIn){toast('Indiquez le prospect, ou au moins son nom');return;}
+  if(type==='autre'&&!titre){toast('Donnez un titre à l\'événement');return;}
+  const ex=id?AGENDA.find(e=>e.id===id):null;
+  const ev=Object.assign({},ex||{id:'ag_'+Date.now().toString(36)+Math.random().toString(36).slice(2,6),by:_me()||'équipe',at:new Date().toISOString(),studio:CFG.studio||'',done:''},{type:type==='autre'?'autre':'rdv',date:date,h:h,dur:dur,titre:type==='autre'?titre:'',pid:p?p.id:'',nom:p?(p.nom||''):nomIn,who:who,note:note});
+  agSave(ev);
+  if(p&&!ex){if(!p.suivi)p.suivi=who||_me();p.maj=new Date().toISOString();persistProspects();schedulePush();}
+  document.getElementById('icPop')?.remove();toast((ex?'✏️ Modifié':type==='autre'?'📅 Ajouté au planning':'📍 RDV au studio ajouté au planning')+' · '+frDate(date)+(h?' '+h:''));
+  if($('#topPhase').textContent==='Mes prospects')showProspects(true);
+}
+const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : leads frais, puis promesses, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Leads frais','Arrivés depuis moins de 72 h, traités ou non, et tous les leads jamais appelés · le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost · les 🆕 leads frais sont dans leur onglet'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['agenda','📅 Agenda équipe','Planning partagé du studio : RDV au studio, rappels programmés, séances d\'essai et Intro Class · semaine par semaine, renseigné par toute l\'équipe'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['short','⏱ Échanges courts','Joints au moins une fois, mais jamais plus de 3 minutes de conversation · non convertis, à retravailler'],['never','🚫 Jamais joints','Appelés, mais aucun échange de 30 secondes ou plus · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 // Rappel automatique (demain, sans réponse) : jamais du samedi 12h au dimanche, reporté au lundi même heure
@@ -5475,8 +5649,10 @@ function showProspects(keepScroll){
     const u=prRdvState(p);
     const late=rappelLate(p)&&prOpen(p);
     const whyT=!clientView&&(prSort==='rappels'||prSort==='mine')?' title="'+esc(prPrio(p).why)+'"':'';
+    const nrdv=p.rappel?null:prRdvNext(p);
     const when=p.rappel
       ?`<span class="pl-when${late?' late':isDue?' due':''}"${whyT}>${ici(p.statut==='essai'?'ticket':'calendar',14)} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em class="soon">dans ${u.diffMin} min</em>`:late?` <em>En retard</em>`:''}</span>`
+      :nrdv?`<span class="pl-when${nrdv.date<today?' late':nrdv.date===today?' due':''}" title="Rendez-vous au studio · agenda d'équipe">${ici('pin',14)} RDV ${frDate(nrdv.date)}${nrdv.h?' · '+nrdv.h:''}${nrdv.who?' · '+esc(nrdv.who):''}</span>`
       :`<span class="pl-when muted"${whyT}>${srcLogo(p.src)}${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     const arr=new Date(prArrival(p));
     const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${p.bentry?'Arrivé':'Créé'} le ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
@@ -5523,6 +5699,8 @@ function showProspects(keepScroll){
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div>
             <div class="pl-lbl">Séance d'essai · Intro Class</div>
             <div class="pl-row">${icBookSelect(p)}</div>
+            <div class="pl-lbl">Rendez-vous physique au studio <span class="pl-hint">inscrit sur l'agenda d'équipe</span></div>
+            <div class="pl-rdvs">${prRdvs(p).map(e=>`<div class="pl-rdv${e.done?' done':''}">${ici('pin',13)}<b>${esc(frDate(e.date))}${e.h?' · '+esc(e.h):''}</b>${e.who?' · '+esc(e.who):''}${e.note?` <small>· ${esc(e.note)}</small>`:''}${e.done?`<em>${e.done==='venu'?'Venu':'Pas venu'}</em>`:e.date<=todayStr()?`<button class="pl-cbtn rap" onclick="agDone('${e.id}','venu')">${ici('check',12)} Venu</button><button class="pl-cbtn tried" onclick="agDone('${e.id}','absent')">Pas venu</button>`:''}<button class="pl-edit" onclick="agForm({id:'${e.id}'})" title="Modifier ou supprimer">✏️</button></div>`).join('')}<div><button class="pl-cbtn" onclick="agForm({pid:'${p.id}',type:'rdv'})">${ici('plus',12)} Planifier un RDV au studio</button></div></div>
 ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
             <div class="pl-row">
               <input type="date" id="rap-d-${p.id}" value="${p.rappel||''}" oninput="rapDirty('${p.id}')" onkeydown="if(event.key==='Enter')savePRappel('${p.id}')" class="pr-date" title="Date de rappel / de séance d'essai convenue avec le client"/>
@@ -5551,8 +5729,8 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
             <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="selDefer(this,()=>setPRep('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Noa','Clement','Caroline','Paul'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
             <div class="pl-info">🤝 Suivi par ${(COACH_ROLE==='admin'||IS_MGR)?`<select onchange="selDefer(this,()=>setPSuivi('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">personne</option>${teamFor(p).map(n=>`<option${n===p.suivi?' selected':''}>${esc(n)}</option>`).join('')}</select>`:p.suivi?'<b>'+esc(p.suivi)+'</b>':'personne pour l\'instant <small class="pl-by">le premier contact décroché ou rappel posé l\'attribue</small>'}</div>
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
-            ${noteShow(p)?`<div class="pr-note">📝 ${esc(noteShow(p))}</div>`:''}
-            ${p.bnotes?`<details class="pr-bnotes"${noteOpen===p.id?' open':''}><summary>🗂️ Notes Boost</summary><div>${esc(p.bnotes)}</div></details>`:''}
+            ${(()=>{const L=noteLines(p);return L.length?`<div class="pr-notes">${L.map((x,i)=>`<div class="pr-note"><span>📝 ${esc(x)}</span><button class="pr-note-x" onclick="delNote('${p.id}',${i},false)" title="Supprimer cette note">✕</button></div>`).join('')}</div>`:'';})()}
+            ${p.bnotes?`<details class="pr-bnotes"${noteOpen===p.id?' open':''}><summary>🗂️ Notes Boost</summary><div>${String(p.bnotes).split('\n').map((l,i)=>l.trim()?`<div class="pr-bn"><span>${esc(l)}</span><button class="pr-note-x" onclick="delNote('${p.id}',${i},true)" title="Supprimer cette note (retirée aussi de Boost)">✕</button></div>`:'').join('')}</div></details>`:''}
             <div class="pl-lbl" style="margin-top:10px">Nouvelle note${p.bid?' <span class="pl-hint">envoyée aussitôt à Boost</span>':''}</div>
             <div class="pl-note"><textarea id="pn-${p.id}" rows="2" maxlength="600" placeholder="Ex. : préfère être rappelée après 18 h, intéressée par le Pack 8…" oninput="this.nextElementSibling.classList.toggle('on',!!this.value.trim())"></textarea><button class="pl-note-btn" onclick="addNote('${p.id}')" title="Enregistrer la note">Enregistrer</button></div>
             <div class="pl-row" style="margin-top:8px">
@@ -5574,17 +5752,17 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
     </div>
     <div class="pr-funrow"><span class="pr-funrow-l">Pipeline</span><div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')">${ici(k==='rappeler'?'users':PIPE_IC[k],16)}<div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'Prospects':PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div></div>
     <div class="pr-tools">
-    ${prFilter&&prFilter!=='rappeler'?'':(()=>{const tab=([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():k==='short'?PSC().filter(prShort).length:k==='never'?PSC().filter(prNeverJoined).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
+    ${prFilter&&prFilter!=='rappeler'?'':(()=>{const tab=([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='agenda'?agCountToday():k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():k==='short'?PSC().filter(prShort).length:k==='never'?PSC().filter(prNeverJoined).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
       return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${ici(TAB_IC[k]||'folder',15)}${l.replace(/^\S+\s/,'')}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;};
       // Trois familles d'onglets : ce qu'il y a à faire, ce qui mérite d'être retravaillé, ce qu'on consulte
       return `<div class="pr-tabgs">${TAB_GROUPS.map(([g,ks])=>`<div class="pr-tabg${ks.includes(prSort)?' cur':''}"><span class="pr-tabg-l">${g}</span><div class="pr-tabs">${PR_SEGS.filter(x=>ks.includes(x[0])).map(tab).join('')}</div></div>`).join('')}</div>`;})()}
     <div class="pr-search"><span>${ici('search',17)}</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
-    <div class="hm-sec"><span class="hs-t">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' rappels · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</span>${!srch&&!clientView&&prSort==='rappels'?pushBtnHTML():''}</div>
+    <div class="hm-sec"><span class="hs-t">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'||prSort==='agenda'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' rappels · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</span>${!srch&&!clientView&&prSort==='rappels'?pushBtnHTML():''}</div>
     ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted):''}
     ${!srch&&!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(mineHas):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
       return `<div class="pr-ownf"><span class="pr-ownf-l">${ici('user',14)} En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
-    ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='mine'?mineListHTML(sorted,card):prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
+    ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='agenda'?agendaHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='mine'?mineListHTML(sorted,card):prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
         <div><span class="hn">1</span><span><b>Les fiches viennent de Fitness Boost</b> : nouveaux leads, rappels, statuts et commercial arrivent toutes les 5 minutes · les appels Allo (résumé, transcription) s'y rattachent automatiquement.</span></div>
@@ -5793,6 +5971,20 @@ function statutNoteGo(){
   if(t.length<3){const e=document.getElementById('stn-err');if(e)e.textContent='Écrivez une note avant de changer l\'étape';return;}
   document.getElementById('icPop')?.remove();const {id,s,seller}=_STN;_STN=null;
   setPStatut(id,s,seller,t);
+}
+function noteLines(p){return String(p.note||'').split(' · ').map(x=>x.trim()).filter(x=>x&&!/^(Importé d'Allo|historique|Contact Allo)$/i.test(x));}
+// Supprimer une note de la fiche (notes de l'outil) ou une ligne des notes Boost (Boost est mis à jour)
+async function delNote(id,i,boost){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const line=boost?String(p.bnotes||'').split('\n')[i]:noteLines(p)[i];
+  if(!line||!line.trim())return;
+  if(!confirm('Supprimer cette note ?\n\n« '+line.trim().slice(0,160)+(line.trim().length>160?'…':'')+' »'+(boost?'\n\nElle sera aussi retirée de Fitness Boost.':'')))return;
+  try{
+    const d=await syncCall('note_del',{id,line:line.trim(),boost:!!boost});
+    if(!d.ok){toast(d.error||'Note non supprimée');return;}
+    _takeSrv(id,d.prospect,['note']);persistProspects();noteOpen=boost?id:noteOpen;showProspects(true);
+    toast(d.boost?'🗑 Note supprimée · Boost mis à jour':'🗑 Note supprimée');
+  }catch(e){if(e.message!=='code')toast('Connexion impossible · note non supprimée');}
 }
 async function addNote(id){
   const el=document.getElementById('pn-'+id);const text=(el?.value||'').trim();
@@ -6036,7 +6228,7 @@ let _prTick=null;
 // (la lecture relance aussitôt l'envoi des modifications en attente)
 document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&COACH_CODE)syncPull(true);});
 // Retour du réseau : envoi en attente relancé tout de suite
-window.addEventListener('online',()=>{if(COACH_CODE&&(_fails||_hasPend())){_fails=0;syncPush();}});
+window.addEventListener('online',()=>{if(COACH_CODE&&(_fails||_hasPend())){_fails=0;syncPush();}if(COACH_CODE&&_AGQ.length)agFlush();});
 // Mises à jour en quasi temps réel : toutes les 15 s (onglet visible), un signal léger « rev » dit si
 // la liste a changé (saisie d'un collègue, appel Aircall/Allo, synchro Boost) ; on ne retélécharge qu'alors
 var _rev='',_revBusy=false,_crev='';
@@ -6460,6 +6652,7 @@ function closeObj(){$('#objBg').classList.remove('on');$('#objSheet').classList.
 const IC_PATHS={
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
   calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  pin:'<path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
   calcheck:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/><path d="m9 16 2 2 4-4"/>',
   chart:'<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
   phone:'<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
@@ -6508,7 +6701,7 @@ const IC_PATHS={
 // Icône filaire alignée sur le texte (remplace les émojis dans la page Mes prospects)
 function ici(n,s){return `<svg class="lic ii" width="${s||14}" height="${s||14}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${IC_PATHS[n]||''}</svg>`;}
 const PIPE_IC={rappeler:'phone',essai:'calendar',venu:'yoga',unit:'tag',abo:'checkcircle',perdu:'x'};
-const TAB_IC={mine:'sun',new:'sprout',rappels:'bell',redo:'userplus',unreach:'phoneoff',short:'messages',never:'ban',ouv:'flag',team:'users',all:'folder',journal:'phone',trash:'trash'};
+const TAB_IC={mine:'sun',new:'sprout',rappels:'bell',redo:'userplus',agenda:'calendar',unreach:'phoneoff',short:'messages',never:'ban',ouv:'flag',team:'users',all:'folder',journal:'phone',trash:'trash'};
 const PRIO_IC=[null,'target','bolt','sprout','flame','phoneoff','bot'];
 const MG_IC=['clipboard','clock','sprout','repeat','bot','checkcircle'];
 // Retire l'émoji de tête d'une phrase (les icônes filaires le remplacent dans la page Mes prospects)
@@ -6598,6 +6791,7 @@ function showHome(){_vReg('home');
     </div>
     <div class="hm-sec">Piloter</div>
     <div class="ht-grid pilot">
+      <button class="ht-tile" onclick="showAgenda()"><span class="ht-ic">${ic('calendar',22)}</span><span class="ht-lbl">Agenda équipe${(()=>{let n=0;try{n=agCountToday();}catch(e){}return n?' · '+n:'';})()}</span></button>
       <button class="ht-tile" onclick="showCallStats()"><span class="ht-ic">${ic('chart',22)}</span><span class="ht-lbl">Appels du jour</span></button>
       <button class="ht-tile" onclick="_statsMonth='';showPerf()"><span class="ht-ic">${ic('trophy',22)}</span><span class="ht-lbl">Performances</span></button>
       ${(COACH_ROLE==='admin'||IS_MGR)?`<button class="ht-tile" onclick="showTeam()"><span class="ht-ic">${ic('users',22)}</span><span class="ht-lbl">Équipe</span></button>`:''}
@@ -6708,6 +6902,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showTraining()"><span class="mic">🎬</span><span>Formation<small>${TRAIN_MODULES.length} fondamentaux puis ${SIM_CURRICULUM.length} cas pratiques à valider</small></span></button>
     <a class="menu-item" href="livret-formation-commerciale.pdf?v=2026102520" target="_blank" rel="noopener" onclick="return openLivret(event)"><span class="mic">📘</span><span>Livret de formation (PDF)<small>7 pages · tout savoir avant de décrocher</small></span></a>
     ${COACH_ROLE==='admin'?`<button class="menu-item" onclick="closeMenu();showTrainAdmin()"><span class="mic">👥</span><span>Suivi de la formation<small>Qui a fait quoi, scores et taux de réussite</small></span></button>`:''}
+    <button class="menu-item" onclick="closeMenu();showAgenda()"><span class="mic">📅</span><span>Agenda d'équipe<small>RDV au studio, rappels et séances d'essai · semaine par semaine</small></span></button>
     <button class="menu-item" onclick="closeMenu();showCallStats()"><span class="mic">📊</span><span>Appels du jour<small>Compteur d'activité : total et par commercial</small></span></button>
     <button class="menu-item" onclick="closeMenu();showPerfPast()"><span class="mic">📈</span><span>Performances passées<small>Leads, transfo, ventes, closing · semaine ou mois</small></span></button>
     <button class="menu-item" onclick="closeMenu();_statsMonth='';showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>

@@ -36,6 +36,8 @@ const ROW_ACCESS = "_coach_access";
 const ROW_STATS = "_coach_stats";
 const ROW_IC = "_ic_data";
 const ROW_TRAIN = "_training";
+const ROW_AGENDA = "_coach_agenda"; // agenda d'équipe : RDV au studio et événements partagés
+const MAX_AGENDA = 4000;
 const MAX_IC = 8000;
 const MAX_EVENTS = 20000;
 const EV_TYPES = ["appel", "essai", "venu", "abo", "perdu"];
@@ -440,6 +442,57 @@ serve(async (req) => {
       }
     }
 
+    // ── Agenda d'équipe : RDV physiques (prospects ou libres), partagés par studio ──
+    // Chaque écriture renvoie la liste complète visible par ce salarié. Dernier écrit gagne (maj).
+    if (action === "agenda_pull" || action === "agenda_set" || action === "agenda_del") {
+      const ag = await getRow(admin, ROW_AGENDA);
+      // deno-lint-ignore no-explicit-any
+      let items: any[] = Array.isArray(ag.items) ? (ag.items as any[]) : [];
+      const now = new Date().toISOString();
+      const agOut = () => json({ ok: true, agenda: items.filter((e) => inMine({ studio: e?.studio })), arev: now });
+      if (action === "agenda_pull") return agOut();
+      if (action === "agenda_del") {
+        const id = String(body.id || "").slice(0, 40);
+        const i = items.findIndex((e) => e.id === id);
+        if (i >= 0) { if (!inMine(items[i])) return json({ error: "Événement d'un autre studio" }, 403); items.splice(i, 1); await putRow(admin, ROW_AGENDA, { items }); }
+        return agOut();
+      }
+      // deno-lint-ignore no-explicit-any
+      const e: any = body.ev && typeof body.ev === "object" ? body.ev : null;
+      if (!e || !e.id) return json({ error: "Événement manquant" }, 400);
+      const i = items.findIndex((x) => x.id === String(e.id).slice(0, 40));
+      const ex = i >= 0 ? items[i] : null;
+      if (ex && !inMine(ex)) return json({ error: "Événement d'un autre studio" }, 403);
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(String(e.date || "")) ? String(e.date) : "";
+      if (!date) return json({ error: "Date manquante" }, 400);
+      const clean = {
+        id: String(e.id).slice(0, 40),
+        type: e.type === "autre" ? "autre" : "rdv", // rdv = rendez-vous physique au studio ; autre = événement d'équipe
+        date,
+        h: /^\d{2}:\d{2}$/.test(String(e.h || "")) ? String(e.h) : "",
+        dur: Math.max(0, Math.min(600, Math.round(Number(e.dur) || 0))),
+        titre: String(e.titre || "").slice(0, 120),
+        pid: String(e.pid || "").slice(0, 60), // fiche prospect liée (facultatif)
+        nom: String(e.nom || "").slice(0, 80),
+        who: String(e.who || "").slice(0, 40), // commercial qui assure le RDV (prénom)
+        note: String(e.note || "").slice(0, 500),
+        done: e.done === "venu" || e.done === "absent" || e.done === "fait" ? e.done : "",
+        by: String(ex?.by || e.by || rep || "").slice(0, 40),
+        at: String(ex?.at || now).slice(0, 30),
+        maj: now,
+        studio: "",
+      };
+      ownStudio(clean, ex);
+      if (ex && String(ex.maj || "") > String(e.maj || "") && e.maj) { /* copie plus ancienne : le serveur garde la sienne */ return agOut(); }
+      if (i >= 0) items[i] = clean; else items.push(clean);
+      // Les événements de plus de 400 jours sont oubliés, la liste reste bornée
+      const cut = new Date(Date.now() - 400 * 864e5).toISOString().slice(0, 10);
+      items = items.filter((x) => String(x.date || "") >= cut);
+      if (items.length > MAX_AGENDA) items = items.slice(-MAX_AGENDA);
+      await putRow(admin, ROW_AGENDA, { items });
+      return agOut();
+    }
+
     // ── Formation : scores du parcours de cas pratiques, par salarié ──
     // Le serveur attribue le score au code CONNECTÉ (un salarié ne peut pas
     // valider la formation d'un autre). Meilleur score conservé.
@@ -754,7 +807,11 @@ serve(async (req) => {
         const { data: cl } = await admin.from("coach_store").select("data,updated_at").eq("id", "_allo_calls").maybeSingle();
         // deno-lint-ignore no-explicit-any
         const calls = ((cl?.data?.items as any[]) || []).filter((c) => inMine({ studio: c?.studio }));
-        return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: cur.rev || await revNow(), calls, crev: String(cl?.updated_at || "") });
+        // Agenda d'équipe (RDV au studio) : livré avec chaque lecture, l'appli le garde en cache
+        const ag = await getRow(admin, ROW_AGENDA);
+        // deno-lint-ignore no-explicit-any
+        const agenda = (Array.isArray(ag.items) ? (ag.items as any[]) : []).filter((e) => inMine({ studio: e?.studio }));
+        return json({ ok: true, prospects: list.filter(inMine).map(outP), epoch, studio: myStudio, studios: myStudios, scoped, tomb, rev: cur.rev || await revNow(), calls, crev: String(cl?.updated_at || ""), agenda });
       }
 
       // ── Historique d'une fiche : activités Boost (appels + durée, SMS, emails, WhatsApp, RDV…)
@@ -885,6 +942,35 @@ serve(async (req) => {
         if (!(await saveList())) continue replay;
         if (p.bid) await pushBoostNow(admin);
         return json({ ok: true, prospect: outP(p), boost: !!p.bid });
+      }
+
+      // ── Supprimer une note : une ligne des notes Boost (Boost mis à jour) ou une note de l'outil ──
+      if (action === "note_del") {
+        const i = list.findIndex((x) => x.id === String(body.id || ""));
+        if (i < 0 || !inMine(list[i])) return json({ error: "Fiche introuvable" }, 404);
+        const line = String(body.line || "").trim();
+        if (!line) return json({ error: "Note vide" }, 400);
+        const p = list[i];
+        const now = new Date();
+        const by = String(rep || (role === "admin" ? String(body.nom || "Paul") : "")).trim().split(/\s+/)[0] || "Équipe";
+        if (body.boost && p.bid) {
+          const lines = String(p.bnotes || "").split("\n");
+          const j = lines.findIndex((l) => l.trim() === line);
+          if (j < 0) return json({ error: "Note introuvable (déjà supprimée ?)" }, 404);
+          lines.splice(j, 1);
+          p.bnotes = lines.join("\n").replace(/^\n+|\n+$/g, "");
+          p.bqi = { nom: p.nom, tel: p.tel, email: p.email || "", notes: p.bnotes, at: now.toISOString(), by };
+        } else {
+          const parts = String(p.note || "").split(" · ").map((x: string) => x.trim()).filter(Boolean);
+          const j = parts.indexOf(line);
+          if (j < 0) return json({ error: "Note introuvable (déjà supprimée ?)" }, 404);
+          parts.splice(j, 1);
+          p.note = parts.join(" · ");
+        }
+        p.maj = now.toISOString();
+        if (!(await saveList())) continue replay;
+        if (body.boost && p.bid) await pushBoostNow(admin);
+        return json({ ok: true, prospect: outP(p), boost: !!(body.boost && p.bid) });
       }
 
       // ── Modifier les coordonnées d'une fiche (nom, téléphone, email, notes Boost) ──
