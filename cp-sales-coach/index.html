@@ -818,8 +818,8 @@ a.menu-item{text-decoration:none;color:inherit}
 .pl-done input{width:14px;height:14px;margin:0;accent-color:#1F9E75;cursor:pointer}
 .pl-done:hover{background:#DDF1E6}
 .pl-next{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
-.pl-cbtn{margin-left:4px;font-size:11px;font-weight:800;border-radius:99px;padding:3px 10px;border:1px solid #F2D7A8;background:#FFF6E0;color:#8A5A00;cursor:pointer;white-space:nowrap}
-.pl-cbtn.tried{border-color:#E3E7EF;background:#F4F6FA;color:#55607A}.pl-cbtn.rap{border-color:#BFE8D6;background:#EAF6F0;color:#1F7A55}
+.pl-cbtn{margin-left:0;font-size:12px;font-weight:700;border-radius:99px;padding:4px 12px;border:1.5px solid #F2D7A8;background:#FFF6E0;color:#8A5A00;cursor:pointer;white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.pl-cbtn.tried{border-color:#E3E7EF;background:#F4F6FA;color:#55607A}.pl-cbtn.rap{border-color:#8FD3B5;background:#EEF9F3;color:#1F7A55}
 .pp-bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:12px 0 14px}
 .pp-seg{display:inline-flex;border:1.5px solid #dce1ea;border-radius:12px;overflow:hidden;background:#fff}
 .pp-seg button{border:0;background:transparent;padding:8px 14px;font-size:13px;font-weight:800;color:var(--ink-mid);cursor:pointer}
@@ -1341,24 +1341,30 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .prw .pr-howto{background:#fff;border:1px solid var(--cream-line);border-radius:16px;padding:11px 16px;margin-bottom:6px}
 .prw .pr-howto summary{color:var(--lav-ink)}
 .prw .pr-alert{background:#FDF8ED;border:1px solid #F0E0B8;border-radius:16px;margin:8px 0 0}
-.prw .hm-sec{margin:18px 0 10px}
+.prw .hm-sec{margin:20px 0 10px;text-transform:none;letter-spacing:0;font-size:17px;font-weight:800;color:var(--ink);gap:10px}
+.prw .hm-sec::before{content:'';width:9px;height:9px;border-radius:50%;background:var(--accent);flex:0 0 auto}
+.prw .hm-sec::after{content:'';flex:1 1 auto;height:1px;background:var(--cream-line);margin-left:6px}
+.prw .hm-sec b{font-weight:800}.prw .hm-sec .nc-bell{order:2;margin:0}.hs-t{min-width:0}
+@media(max-width:640px){.prw .hm-sec{flex-wrap:wrap;font-size:15px}.prw .hm-sec::after{display:none}.prw .hm-sec .nc-bell{flex:1 1 100%;justify-content:center}}
 .prw .pr-funrow{display:flex;align-items:center;gap:10px;margin:4px 0 0;min-width:0;max-width:100%}
 .prw .pr-funrow-l{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);flex:0 0 auto}
 .prw .pr-funnel{display:flex;gap:6px;margin:0;overflow-x:auto;padding:2px 0 4px;scrollbar-width:none;flex:1 1 0;min-width:0}.prw .pr-funnel::-webkit-scrollbar{display:none}
 .prw .pr-arrow{display:none}
-.prw .pr-fun{display:flex;align-items:center;gap:7px;border:1px solid var(--cream-line);border-radius:99px;padding:6px 12px 6px 9px;box-shadow:none;min-width:0;flex:0 0 auto;background:#fff}
-.prw .pr-fun-n{font-size:14px;font-weight:800;color:var(--pc);background:color-mix(in srgb,var(--pc) 12%,#fff);border-radius:99px;min-width:22px;padding:1px 6px;text-align:center}
-.prw .pr-fun-l{font-size:12px;font-weight:700;color:var(--ink-soft);white-space:nowrap}
+.prw .pr-fun{display:flex;align-items:center;gap:8px;border:1.5px solid var(--cream-line);border-radius:99px;padding:7px 14px 7px 12px;box-shadow:none;min-width:0;flex:0 0 auto;background:#fff;color:var(--ink-soft)}
+.prw .pr-fun-n{font-size:13.5px;font-weight:800;color:var(--pc);background:color-mix(in srgb,var(--pc) 12%,#fff);border-radius:99px;min-width:26px;padding:2px 8px;text-align:center}
+.prw .pr-fun-l{font-size:14px;font-weight:700;color:var(--ink);white-space:nowrap}
 .prw .pr-fun.active{background:color-mix(in srgb,var(--pc) 10%,#fff);border-color:var(--pc)}
 .prw .pr-tools{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-top:12px}
-.pr-tabgs{display:flex;gap:8px;flex-wrap:wrap;width:100%;min-width:0;max-width:100%}
-.pr-tabgs{gap:5px}
-.pr-tabg{display:flex;align-items:center;gap:8px;min-width:0;flex:1 1 100%}
-.pr-tabg-l{font-size:10px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);flex:0 0 104px;text-align:right}
-.pr-tabg .pr-tabs{padding:3px}.pr-tabg .pr-tab{padding:6px 10px;font-size:12px}
+.pr-tabgs{display:flex;flex-direction:column;gap:0;width:100%;min-width:0;max-width:100%;background:#fff;border:1px solid var(--cream-line);border-radius:16px;overflow:hidden;box-shadow:var(--sh-s)}
+.pr-tabg{display:flex;align-items:stretch;gap:0;min-width:0;flex:1 1 100%;border-top:1px solid var(--cream-line)}.pr-tabg:first-child{border-top:0}
+.pr-tabg-l{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-mid);flex:0 0 150px;display:flex;align-items:center;padding:0 16px;background:#FAF8F3;border-right:1px solid var(--cream-line)}
+.pr-tabg .pr-tabs{padding:5px 8px;border:0;border-radius:0;box-shadow:none;background:transparent;gap:2px}
+.pr-tabg .pr-tab{padding:7px 12px;font-size:13.5px;display:inline-flex;align-items:center;gap:8px;color:var(--ink)}
+.pr-tabg .pr-tab .lic{opacity:.75}.pr-tabg .pr-tab.on .lic{opacity:1}
+.pr-tabg .pr-tabn{font-size:12px;padding:1px 8px;margin-left:0}.pr-tab.on .pr-tabn{background:rgba(255,255,255,.22);color:#fff}
 .pr-tabg.cur .pr-tabg-l{color:var(--accent)}
 .pr-tabg .pr-tabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;flex:1 1 0;min-width:0;max-width:100%}.pr-tabg .pr-tabs::-webkit-scrollbar{display:none}
-.pr-tabg:not(.cur) .pr-tab{color:var(--ink-mid)}
+.pr-tabg:not(.cur) .pr-tab{color:var(--ink)}
 .prw .pr-howto{margin:22px 0 0}
 .prw .dg{margin:0 0 8px}
 .prw .pr-search{flex:1 1 320px;margin:0;border:1px solid var(--cream-line);border-radius:14px;padding:10px 14px;box-shadow:var(--sh-s)}
@@ -1398,12 +1404,13 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 /* Ligne prospect (style accueil : aéré, une ligne lisible, détail au clic) */
 .prw .pr-card.pl{padding:0;border-radius:18px}
 .prw .pr-card.pl::before{top:14px;bottom:14px}
-.pl-line{display:grid;grid-template-columns:44px minmax(220px,340px) minmax(170px,1fr) 250px 200px 88px;align-items:center;gap:16px;padding:11px 14px 11px 20px;cursor:pointer}
-.pl-ava{width:44px;height:44px;border-radius:14px;display:grid;place-items:center;font-weight:800;font-size:14px}
+.pl-line{display:grid;grid-template-columns:46px minmax(220px,340px) minmax(150px,1fr) 250px 130px 206px;align-items:center;gap:16px;padding:12px 16px 12px 22px;cursor:pointer}
+.pl-ava{width:46px;height:46px;border-radius:50%;display:grid;place-items:center;font-weight:800;font-size:15px}
 .pl-who{min-width:0}.pl-who b{display:block;font-size:15px;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pl-who>span{display:block;font-size:12px;color:var(--ink-mid);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
 .pl-st{display:flex;flex-wrap:wrap;gap:4px;align-items:center;justify-content:center}
-.pl-chip{font-size:11.5px;font-weight:800;border-radius:99px;padding:4px 10px;white-space:nowrap}
+.pl-chip{font-size:12px;font-weight:700;border-radius:99px;padding:4px 11px;white-space:nowrap;border:1.5px solid;display:inline-flex;align-items:center;gap:6px}
+.lic.ii{display:inline-block;vertical-align:-2px;flex:0 0 auto}
 .pl-st .pl-chip{white-space:normal;text-align:center;line-height:1.3;max-width:100%}
 .pl-flag{font-size:10.5px;font-weight:700;border-radius:99px;padding:2px 8px;background:#EEF2FB;color:#2A3F6B;white-space:nowrap}
 .pl-flag.ok{background:var(--mnt);color:var(--mnt-ink)}.pl-flag.warn{background:#FFF6E0;color:#8A5A00}.pl-flag.bad{background:#FDECE8;color:#B4300F}
@@ -1435,27 +1442,30 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .hs-res{font-size:11px;font-weight:800;border-radius:99px;padding:2px 8px;margin-left:6px;white-space:nowrap}
 .hs-res.r-ok{background:#E3F4E8;color:#1E8E3E}.hs-res.r-vm{background:#FBEFD5;color:#9A6512}.hs-res.r-ko{background:#EEF0F4;color:#6B7590}
 .hs-call .hs-s{font-weight:600;color:var(--ink)}
-.pl-own{display:inline-flex;align-items:center;gap:3px;margin-right:6px;padding:2px 9px;border:1px solid;border-radius:99px;font-size:12px;font-weight:800;vertical-align:2px;white-space:nowrap}
+.pl-own{display:inline-flex;align-items:center;gap:5px;margin-right:6px;padding:2px 10px;border:1.5px solid;border-radius:99px;font-size:12px;font-weight:700;vertical-align:2px;white-space:nowrap}
 .pl-own.none{color:#8C95A8;background:#F3F4F7;border-color:#E2E5EC;font-weight:700}
 .pr-ownf{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin:0 0 10px}
-.pr-ownf-l{font-size:12px;font-weight:800;color:#5B6B86;margin-right:2px}
+.pr-ownf-l{font-size:13.5px;font-weight:700;color:var(--ink);margin-right:4px;display:inline-flex;align-items:center;gap:6px}
 .pr-ownb{--oc:#0F1F3D;border:1.5px solid color-mix(in srgb,var(--oc) 35%,#fff);background:#fff;color:var(--oc);border-radius:99px;padding:5px 12px;font:700 13px var(--sans);cursor:pointer}
 .pf-mnav{background:none;border:1px solid #d9b86a;color:inherit;text-transform:none;letter-spacing:0;border-radius:6px;padding:0 6px;font-size:11px;cursor:pointer;vertical-align:middle}.pf-mnav:disabled{opacity:.3;cursor:default}
 .pr-ownb b{font-weight:800;opacity:.75;margin-left:3px}
 .pr-ownb.on{background:var(--oc);color:#fff;border-color:var(--oc)}
 .pr-ownb.on b{opacity:.9}
-.pl-when{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap;display:inline-flex;align-items:center}
+.pl-when{font-size:13.5px;font-weight:700;color:var(--ink);white-space:nowrap;display:inline-flex;align-items:center;gap:6px}
+.pl-next{border-left:1px solid var(--cream-line);padding-left:14px;align-content:center}
 .pl-when.muted{font-weight:600;color:var(--ink-mid)}
 .pl-when.due{color:#B07A1C}.pl-when.late{color:#C0492F}
-.pl-when em{font-style:normal;font-size:11px;font-weight:800;background:#FDECE8;color:#B4300F;border-radius:99px;padding:1px 7px;margin-left:4px}
+.pl-when em{font-style:normal;font-size:11.5px;font-weight:700;background:#FDECEA;color:#C0392B;border-radius:99px;padding:2px 9px;margin-left:2px}.pl-when em.soon{background:#EAF6F0;color:#1F7A55}
 .pl-notel{border:1px solid #F5C9B2;background:#FDEBE3;color:#B4430F;border-radius:99px;padding:1px 9px;font-size:11px;font-weight:800;cursor:pointer}
 .pl-notel.big{font-size:12.5px;padding:5px 12px}
 .pl-meta{display:flex;flex-wrap:wrap;gap:6px;align-items:center;font-size:11.5px}
 .pl-quick{display:flex;gap:6px}
-.pl-btn{width:38px;height:38px;border-radius:12px;border:1px solid var(--cream-line);background:#fff;display:grid;place-items:center;color:var(--ink-soft);font-size:14px;cursor:pointer;text-decoration:none}
+.pl-btn{width:40px;height:40px;border-radius:12px;border:1.5px solid var(--cream-line);background:#fff;display:grid;place-items:center;color:var(--ink);font-size:14px;cursor:pointer;text-decoration:none}
+.pl-btn.tog .lic{transition:transform .15s}.pl-btn.tog.up .lic{transform:rotate(180deg)}
 #verBar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 86px);z-index:9000;background:var(--cp-dark,#0B1A3A);color:#fff;padding:10px 14px;border-radius:999px;font-size:13.5px;font-weight:700;box-shadow:0 10px 30px -8px rgba(0,0,0,.45);display:flex;align-items:center;gap:10px;white-space:nowrap}
 #verBar button{background:#fff;color:var(--cp-dark,#0B1A3A);border:none;border-radius:999px;padding:6px 12px;font:inherit;font-weight:800;cursor:pointer}
-.pl-btn.oc{width:auto;padding:0 8px;gap:0;grid-auto-flow:column;font-size:13px}.pl-btn.oc small{font-size:10px;font-weight:700;margin-left:4px;color:var(--ink-mid)}
+.pl-btn.oc{width:auto;padding:0 11px;gap:7px;grid-auto-flow:column;font-size:13px}.pl-btn.oc small{font-size:13px;font-weight:700;color:var(--ink);white-space:nowrap}
+.nc-go{display:inline-flex;align-items:center;gap:7px}.nc-l b{display:inline-flex;align-items:center;gap:7px}.oc-dot{width:10px;height:10px;border-radius:50%;background:#E24B4B;display:inline-block}
 .pl-btn.oc.on{background:#FDECEC;border-color:#E24B4B;color:#B4300F;animation:ocPulse 1.4s infinite}.pl-btn.oc.on small{color:#B4300F}
 @keyframes ocPulse{0%,100%{box-shadow:0 0 0 0 rgba(226,75,75,.45)}60%{box-shadow:0 0 0 7px rgba(226,75,75,0)}}
 @keyframes ocSpin{to{transform:rotate(360deg)}}
@@ -1464,7 +1474,7 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-oclock{text-align:center;padding:18px 12px 20px;border:2px dashed #E24B4B;border-radius:16px;background:#FFF5F5;margin-bottom:12px}
 .pl-oclock .pl-ocph{font-size:64px;line-height:1;display:inline-block;animation:ocSpin 1.6s linear infinite;margin-bottom:8px}
 .pl-oclock b{display:block;font-size:17px;color:#B4300F;margin-bottom:4px}.pl-oclock span{display:block;font-size:13px;color:var(--ink-mid);margin-bottom:12px;line-height:1.45}
-.pl-btn.call{background:var(--accent);border-color:var(--accent);color:#fff;box-shadow:0 8px 18px -10px rgba(75,82,230,.8)}
+.pl-btn.call{background:#fff;border-color:var(--cream-line);color:var(--ink)}.pl-btn.call:hover{border-color:var(--accent);color:var(--accent)}
 .pl-btn svg{width:17px;height:17px}
 .prw .pr-card.pl.open{box-shadow:var(--sh-m)}
 .pl-detail{border-top:1px solid var(--cream-line);padding:14px 18px 16px 20px}
@@ -1483,30 +1493,30 @@ body.v-pr::before,body.v-pr::after{display:none!important}
 .pl-ic{min-width:0;max-width:100%}
 .pl-by{font-size:11px;color:var(--ink-mid);font-weight:600}
 .pl-hint{font-size:11px;color:var(--ink-mid);margin:-2px 0 8px}
-.nc-bell{display:inline-block;margin:4px 0 8px;background:#FFF3EA;border:1px solid #F0C9A8;color:#8A4B12;border-radius:10px;padding:7px 12px;font-weight:700;font-size:12.5px;cursor:pointer}
+.nc-bell{display:inline-flex;align-items:center;gap:6px;white-space:nowrap;margin:4px 0 8px;background:#FFF3EA;border:1px solid #F0C9A8;color:#8A4B12;border-radius:10px;padding:7px 12px;font-weight:700;font-size:12.5px;cursor:pointer}
 .nc-bar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:12px;margin:6px 0 10px;padding:10px 14px;border-radius:14px;background:#223354;color:#fff;box-shadow:var(--sh-s)}.nc-bar.done{background:#2F7D4F;justify-content:center;font-weight:600}.nc-l{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1}.nc-l b{font-size:14px}.nc-l span{font-size:12px;opacity:.9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.nc-go{background:#fff;color:#223354;border:0;border-radius:10px;padding:9px 14px;font-weight:800;font-size:13px;cursor:pointer;white-space:nowrap}
 .pl-cbtn.rap-save.on{background:#2F5D8C;color:#fff;border-color:#2F5D8C;box-shadow:0 0 0 3px rgba(47,93,140,.18)}
 .pl-cbtn.rap-del{color:#B4300F}
 .pl-info{font-size:12.5px;color:var(--ink-soft);margin-bottom:5px}.pl-info a{color:var(--lav-ink);text-decoration:none;font-weight:600}
-@media(max-width:1100px){.pl-line{grid-template-columns:44px minmax(0,1fr) 160px 220px 88px}.pl-st .pl-flag{display:none}.pl-meta{display:none}}
+@media(max-width:1100px){.pl-line{grid-template-columns:46px minmax(0,1fr) 160px 220px 206px}.pl-st .pl-flag{display:none}.pl-meta{display:none}}
 @media(max-width:640px){.pl-line{grid-template-columns:40px minmax(0,1fr) auto;gap:4px 10px;padding:10px 10px 10px 16px}.pl-st{grid-column:2/3;grid-row:2}.pl-next{grid-column:2/4;grid-row:3}.pl-quick{grid-column:3;grid-row:1/3}.pl-ava{width:40px;height:40px}.pl-dgrid{grid-template-columns:1fr;gap:6px}}
 
 /* Ligne prospect : 2e ligne de contexte */
 .pl-line{row-gap:6px}
-.pl-ctx{grid-column:2/-2;grid-row:2;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;min-width:0;padding-top:7px;border-top:1px dashed var(--cream-line);font-size:12px;color:var(--ink-soft)}
-.pl-c b{font-weight:700;color:var(--ink-mid);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;margin-right:4px}
+.pl-ctx{grid-column:2/-2;grid-row:2;display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;min-width:0;padding-top:8px;border-top:1px solid var(--cream-line);font-size:12.5px;color:var(--ink-soft)}
+.pl-c{display:inline-flex;align-items:center;gap:6px}.pl-c b{font-weight:700;color:var(--ink);font-size:12.5px;margin-right:0}
 .pl-c.muted{color:var(--ink-mid)}
 .pl-c.hit{flex:1 1 100%;color:var(--ink);white-space:normal}.pl-c.hit mark{background:#FFE98A;color:inherit;border-radius:3px;padding:0 2px}
 .pl-c.prio{flex:1 1 100%;font-weight:600;color:var(--ink)}
-.pl-c.todo{flex:1 1 100%;color:#2F5D8C;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
-.pl-c.last{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;margin-left:auto}.pl-c.last.mid b{color:#B4710F}.pl-c.last.old b{color:#C0492F}
+.pl-c.todo{flex:1 1 auto;color:var(--ink);font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;display:inline}.pl-c.todo .lic,.pl-c.note .lic,.pl-c.prio .lic{margin-right:6px}.pl-c.note,.pl-c.prio{display:inline;color:var(--ink)}
+.pl-c.last{flex:0 1 auto;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;margin-left:auto;border-left:1px solid var(--cream-line);padding-left:14px;display:inline;color:var(--ink-mid)}.pl-c.last .lic{margin:0 2px}.pl-c.last.mid b{color:#B4710F}.pl-c.last.old b{color:#C0492F}
 .pl-c-d{color:var(--ink-mid)}
 .pl-sec{font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin:2px 0 8px;padding-bottom:6px;border-bottom:1px solid var(--cream-line)}
-@media(max-width:640px){.nc-top .dg,.nc-top .nc-prog{flex:1 1 100%}.pl-quick .pl-btn[title^="Ouvrir"],.pl-quick .pl-btn[title^="Fermer"]{display:none}.pl-btn.oc small{display:none}.pl-btn.oc{width:38px;padding:0}.pl-c.last{margin-left:0;flex:1 1 100%;white-space:normal}.pl-c-d{display:none}.pl-c.todo{white-space:normal}.pr-tabg{flex-direction:column;align-items:stretch;gap:2px}.pr-tabg-l{flex:0 0 auto;text-align:left;padding-left:6px}.pr-tabg .pr-tabs{flex:0 0 auto;width:100%;flex-wrap:nowrap;overflow-x:auto}}
-.pr-day{display:flex;align-items:baseline;gap:10px;margin:18px 0 6px;padding:0 4px;font-size:15px}.pr-day b{font-size:17px}.pr-day span{color:var(--ink-mid);font-size:12.5px}.pr-day em{color:#C0492F;font-style:normal;font-weight:700}
+@media(max-width:640px){.pl-next{border-left:0;padding-left:0}.pl-c.last{border-left:0;padding-left:0}.pr-tabg-l{border-right:0;background:transparent;padding:6px 10px 0}.nc-top .dg,.nc-top .nc-prog{flex:1 1 100%}.pl-quick .pl-btn.tog{display:none}.pl-btn.oc small{font-size:11px}.pl-btn.oc{padding:0 9px;gap:5px}.pl-c.last{margin-left:0;flex:1 1 100%;white-space:normal}.pl-c-d{display:none}.pl-c.todo{white-space:normal}.pr-tabg{flex-direction:column;align-items:stretch;gap:2px}.pr-tabg-l{flex:0 0 auto;text-align:left;padding-left:6px}.pr-tabg .pr-tabs{flex:0 0 auto;width:100%;flex-wrap:nowrap;overflow-x:auto}}
+.pr-day{display:flex;align-items:center;gap:12px;margin:18px 0 8px;padding:0 4px;font-size:15px}.pr-day b{font-size:21px;font-weight:800;letter-spacing:-.01em}.pr-day span{color:var(--ink-mid);font-size:12.5px;margin-left:auto}.pr-day em{color:#C0392B;background:#FDECEA;border-radius:99px;padding:3px 11px;font-style:normal;font-weight:700;font-size:13px}
 .pr-grp{margin:8px 0;border:1px solid var(--cream-line);border-radius:14px;background:#fff;overflow:hidden}
 .pr-grp>summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:10px 14px;background:#FBF9F4;font-size:13.5px;user-select:none}.pr-grp>summary::-webkit-details-marker{display:none}.pr-grp>summary::before{content:'▾';color:var(--ink-mid);width:12px}.pr-grp:not([open])>summary::before{content:'▸'}
-.pr-grp-i{font-size:16px}.pr-grp-n{background:#EFEAE0;border-radius:99px;padding:1px 8px;font-weight:700;font-size:12px}.pr-grp>summary small{color:var(--ink-mid);margin-left:auto;font-size:11.5px}
+.pr-grp-i{display:inline-flex;color:var(--ink);opacity:.8}.pr-grp>summary b{font-size:15px}.pr-grp-n{background:#EFEAE0;border-radius:99px;padding:1px 9px;font-weight:700;font-size:12.5px}.pr-grp>summary small{color:var(--ink-mid);margin-left:auto;font-size:11.5px}
 .pr-grp .pr-list{padding:8px}
 .pr-grp.pg1>summary{background:#FFF3EA}.pr-grp.pg2>summary{background:#FFF0F0}.pr-grp.pg3>summary{background:#EEF6FF}.pr-grp.pg6>summary{background:#F4F4F4}
 @media(max-width:640px){.pr-grp>summary small{display:none}}
@@ -2985,7 +2995,8 @@ async function syncCall(action,extra){
   return d;
 }
 function _syncTxt(s){return s==='ok'?'☁️ Synchronisé · équipe':s==='sync'?'⏳ Synchronisation…':s==='wait'?'⏳ Enregistrement en attente · nouvel essai…':'📴 Hors ligne · sauvegardé sur ce poste';}
-function _syncState(s){_syncSt=s;const b=$('#syncBadge');if(!b)return;b.className='sync-badge '+(s==='wait'?'sync':s);b.textContent=_syncTxt(s);}
+function _syncHTML(s){return ici(s==='ok'?'cloud':s==='off'?'phoneoff':'hourglass',13)+' '+esc(_syncTxt(s).replace(/^\S+\s/,''));}
+function _syncState(s){_syncSt=s;const b=$('#syncBadge');if(!b)return;b.className='sync-badge '+(s==='wait'?'sync':s);b.innerHTML=_syncHTML(s);}
 // Purge administrative : si le serveur a été remis à zéro après notre dernière
 // synchro, on vide le stock local au lieu de re-pousser d'anciennes fiches.
 function _adoptEpoch(d){
@@ -4901,9 +4912,9 @@ function prioListHTML(sorted,card){
   sorted.forEach(p=>{
     const d=_prioDay(p),r=prPrio(p).r;
     if(d!==day){close();day=d;rank=0;const L=sorted.filter(x=>_prioDay(x)===d),late=L.filter(rappelLate).length;
-      out+=`<div class="pr-day"><b>${_dayLbl(d)}</b><span>${L.length} rappel${L.length>1?'s':''}${late&&d<=todayStr()?' · <em>'+late+' en retard</em>':''}</span></div>`;}
+      out+=`<div class="pr-day"><b>${_dayLbl(d)}</b>${late&&d<=todayStr()?'<em>'+late+' en retard</em>':''}<span>${L.length} rappel${L.length>1?'s':''}</span></div>`;}
     if(r!==rank){close();rank=r;const n=sorted.filter(x=>_prioDay(x)===d&&prPrio(x).r===r).length;
-      out+=`<details class="pr-grp pg${r}"${_PFOLD[r]?'':' open'} ontoggle="prFold(${r},this.open)"><summary><span class="pr-grp-i">${PRIO[r][0]}</span><b>${PRIO[r][1]}</b><span class="pr-grp-n">${n}</span><small>${PRIO[r][2]}</small></summary><div class="pr-list">`;openGrp=true;}
+      out+=`<details class="pr-grp pg${r}"${_PFOLD[r]?'':' open'} ontoggle="prFold(${r},this.open)"><summary><span class="pr-grp-i">${ici(PRIO_IC[r],18)}</span><b>${PRIO[r][1]}</b><span class="pr-grp-n">${n}</span><small>${PRIO[r][2]}</small></summary><div class="pr-list">`;openGrp=true;}
     out+=card(p);
   });
   close();return out;
@@ -4945,7 +4956,7 @@ function mineCount(){return mineList().filter(p=>!prDoneToday(p)).length;}
 function mineListHTML(sorted,card){
   let out='',g=-1,openG=false;const close=()=>{if(openG)out+='</div></details>';openG=false;};
   sorted.forEach(p=>{const mg=mineGroup(p);if(mg!==g){close();g=mg;const n=sorted.filter(x=>mineGroup(x)===mg).length;const fold=_PFOLD['m'+mg]===undefined?mg===5:_PFOLD['m'+mg];
-    out+=`<details class="pr-grp mg${mg}"${fold?'':' open'} ontoggle="prFold('m${mg}',this.open)"><summary><span class="pr-grp-i">${MG[mg][0]}</span><b>${MG[mg][1]}</b><span class="pr-grp-n">${n}</span><small>${MG[mg][2]}</small></summary><div class="pr-list">`;openG=true;}
+    out+=`<details class="pr-grp mg${mg}"${fold?'':' open'} ontoggle="prFold('m${mg}',this.open)"><summary><span class="pr-grp-i">${ici(MG_IC[mg],18)}</span><b>${MG[mg][1]}</b><span class="pr-grp-n">${n}</span><small>${MG[mg][2]}</small></summary><div class="pr-list">`;openG=true;}
     out+=card(p);});
   close();return out;
 }
@@ -4955,7 +4966,7 @@ function nextCallHTML(sorted){
   const prog=`<div class="nc-top">${tot?`<div class="nc-prog"><div class="nc-pt"><b>${done} sur ${tot}</b> traité${done>1?'s':''} aujourd'hui</div><div class="nc-pb"><i style="width:${pct}%"></i></div></div>`:''}${dayGoalHTML()}${pushBtnHTML()}</div>`;
   if(!first)return prog+`<div class="nc-bar done">🎉 File vide pour aujourd'hui · tout est fait ou en attente d'un rappel futur</div>`;
   const g=mineGroup(first),why=prPrio(first).why.replace(/^\S+\s/,'');
-  return prog+`<div class="nc-bar"><div class="nc-l"><b>${MG[g][0]} ${esc(first.nom||'Prospect')}</b><span>${g===0?'Résultat de l\'appel à valider':esc(why)}</span></div><button class="nc-go" onclick="prOpenId='${first.id}';showProspects(true);${g===0?`contactSheet('${first.id}','${first.rappel?'rappel':'new'}')`:''}">${g===0?'📝 Clôturer':'📞 Appel suivant'}</button></div>`;
+  return prog+`<div class="nc-bar"><div class="nc-l"><b>${ici(MG_IC[g],16)} ${esc(first.nom||'Prospect')}</b><span>${g===0?'Résultat de l\'appel à valider':esc(_noEmo(why))}</span></div><button class="nc-go" onclick="prOpenId='${first.id}';showProspects(true);${g===0?`contactSheet('${first.id}','${first.rappel?'rappel':'new'}')`:''}">${g===0?ici('check',14)+' Clôturer':ici('phone',14)+' Appel suivant'}</button></div>`;
 }
 // (Désactivé le 3 nov. 2026 à la demande de Paul : la fenêtre ne s'ouvre jamais seule.) Ancien mécanisme :
 // après un appel sortant passé par la ligne (Allo, Aircall), la fenêtre « Décroché / Non décroché » s'ouvrait
@@ -5048,7 +5059,7 @@ async function askRdvNotif(){
   }catch(e){_report('push: '+(e&&e.message),'','Mes prospects');toast('Alertes impossibles sur cet appareil ('+String(e&&e.message||e).slice(0,50)+')');}
   showProspects(true);
 }
-function pushBtnHTML(){if(!('Notification' in window)||pushOn())return '';return `<button class="nc-bell" onclick="askRdvNotif()" title="Recevoir une alerte 10 min avant chaque rappel à l'heure, même app fermée (ajoutez l'app à l'écran d'accueil sur iPhone)">🔔 Activer les alertes</button>`;}
+function pushBtnHTML(){if(!('Notification' in window)||pushOn())return '';return `<button class="nc-bell" onclick="askRdvNotif()" title="Recevoir une alerte 10 min avant chaque rappel à l'heure, même app fermée (ajoutez l'app à l'écran d'accueil sur iPhone)">${ici('bell',14)} Activer les alertes</button>`;}
 /* Rappel programmé à l'heure : priorité absolue quand l'échéance approche (60 min) */
 function prRdvState(p){
   if(!p.rappel)return null;
@@ -5100,9 +5111,9 @@ function prAppetenceAuto(p){
 }
 function prAppChip(p){
   const a=prAppetence(p);if(!a)return '';
-  const m={chaud:['🔥','Chaud','#FDEBE3;color:#B4430F;border-color:#F5C9B2'],tiede:['🌤','Tiède','#FFF6DE;color:#8A6A14;border-color:#EFDCA6'],froid:['❄️','Froid','#E8F0FA;color:#39609C;border-color:#C9DAF2'],aqualifier:['🎯','À qualifier','#F2F0E9;color:#6B6456;border-color:#DCD5C4']}[a.tier];
+  const m={chaud:[ici('flame',13),'Chaud','#fff;color:#C2410C;border-color:#E8805A'],tiede:[ici('sun',13),'Tiède','#fff;color:#A16207;border-color:#E0B451'],froid:[ici('snow',13),'Froid','#fff;color:#39609C;border-color:#9DB8E0'],aqualifier:[ici('target',13),'À qualifier','#fff;color:#6B6456;border-color:#CFC7B4']}[a.tier];
   if(!m)return '';
-  return `<span class="pr-appet" title="Appétence estimée depuis les appels · ${a.why.join(' · ')}" style="background:${m[2]};border:1px solid;border-radius:99px;padding:1px 8px;font-size:10.5px;font-weight:800">${m[0]} ${m[1]}</span>`;
+  return `<span class="pr-appet" title="Appétence estimée depuis les appels · ${a.why.join(' · ')}" style="background:${m[2]};border:1.5px solid;border-radius:99px;padding:3px 10px;font-size:12px;font-weight:700;display:inline-flex;align-items:center;gap:5px">${m[0]}${m[1]}</span>`;
 }
 function prAgeChip(p){
   if(p.statut!=='rappeler'&&p.statut!=='essai')return '';
@@ -5189,7 +5200,7 @@ function canonName(n){n=String(n||'').trim().split(/\s+/)[0];return _CANON[_sk(n
 function prCharge(p){const o=prOwner(p);if(o)return canonName(o);const d=_ownDefault(p);if(d&&!prCalls(p).ok)return d;return canonName(String(p.rep||'').trim().split(/\s+/)[0]||d);}
 const _OWN_COL=['#2F6FE0','#C2410C','#0F8A5F','#7C3AED','#B4235A','#0E7490','#A16207','#4D5B7C'];
 function ownColor(n){let h=0;for(const ch of String(n))h=(h*31+ch.charCodeAt(0))>>>0;return _OWN_COL[h%_OWN_COL.length];}
-function ownPill(p){const n=prCharge(p);if(!n)return '<span class="pl-own none" title="Personne ne suit encore ce lead">👤 À attribuer</span>';const c=ownColor(n);return `<span class="pl-own" style="color:${c};background:color-mix(in srgb,${c} 12%,#fff);border-color:color-mix(in srgb,${c} 35%,#fff)" title="Commercial en charge des rappels">👤 ${esc(n)}</span>`;}
+function ownPill(p){const n=prCharge(p);if(!n)return `<span class="pl-own none" title="Personne ne suit encore ce lead">${ici('user',12)} À attribuer</span>`;const c=ownColor(n);return `<span class="pl-own" style="color:${c};background:color-mix(in srgb,${c} 10%,#fff);border-color:color-mix(in srgb,${c} 40%,#fff)" title="Commercial en charge des rappels">${ici('user',12)} ${esc(n)}</span>`;}
 let prOwnF=localStorage.getItem('cpcoach_ownf')||'';
 function setOwnF(v){prOwnF=v;localStorage.setItem('cpcoach_ownf',v);showProspects(true);}
 function prOwner(p){return String(p.suivi||'').trim().split(/\s+/)[0]||(p.rappelBy&&!/^(Boost|auto|équipe)$/.test(p.rappelBy)?String(p.rappelBy).trim().split(/\s+/)[0]:'');}
@@ -5444,16 +5455,16 @@ function showProspects(keepScroll){
     const last=ap[0];let lastH='';
     if(last){const l0=String(last.txt||'').split('\n')[0];const t=new Date(last.ts);
       const who=(l0.match(/ par ([^·\n]+?)(?= · |$)/)||[])[1]||'';
-      const kind=/^💬/.test(l0)?(/reçu/.test(l0)?'💬 SMS reçu':'💬 SMS envoyé'):/sans réponse|manqué|voicemail|messagerie|received/.test(l0)?'📵 appel '+(/entrant/.test(l0)?'manqué':'sans réponse'):'📞 appel '+(/entrant/.test(l0)?'entrant':'sortant');
+      const kind=/^💬/.test(l0)?(/reçu/.test(l0)?ici('messages',12)+' SMS reçu':ici('messages',12)+' SMS envoyé'):/sans réponse|manqué|voicemail|messagerie|received/.test(l0)?ici('phoneoff',12)+' appel '+(/entrant/.test(l0)?'manqué':'sans réponse'):ici('phone',12)+' appel '+(/entrant/.test(l0)?'entrant':'sortant');
       const dur=(l0.match(/· (\d+ m \d+ s|\d+ s|\d+\s*min)\b/)||[])[1]||'';
       const ago=isNaN(t)?-1:Math.floor((Date.now()-t.getTime())/864e5),agoH=ago<0?'':ago===0?'aujourd\'hui':ago===1?'hier':`il y a ${ago} j`;
       const vol=calls.length?` · ${calls.length} appel${calls.length>1?'s':''}, ${ok} abouti${ok>1?'s':''}`:'';
-      lastH=`<span class="pl-c last${ago>=14?' old':ago>=7?' mid':''}"><b>Dernier contact</b> ${agoH}${isNaN(t)?'':' · '+t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}<span class="pl-c-d"> · ${kind}${dur?' · '+dur:''}${who?' · '+esc(who.split(' ')[0]):''}${vol}${sms.length?' · '+sms.length+' SMS':''}</span></span>`;}
+      lastH=`<span class="pl-c last${ago>=14?' old':ago>=7?' mid':''}"><b>Dernier contact :</b> ${agoH}${isNaN(t)?'':' · '+t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}<span class="pl-c-d"> · ${kind}${dur?' · '+dur:''}${who?' · '+esc(who.split(' ')[0]):''}${vol}${sms.length?' · '+sms.length+' SMS':''}</span></span>`;}
     else{const a=Math.floor((Date.now()-new Date(prArrival(p)).getTime())/864e5);lastH=`<span class="pl-c last muted${a>=3?' mid':''}"><b>Jamais appelé</b>${isNaN(a)?'':a===0?' · arrivé aujourd\'hui':a===1?' · arrivé hier':' · arrivé il y a '+a+' j'}</span>`;}
     const note=(noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
     const prio=!clientView&&(prSort==='rappels'||prSort==='mine')?prPrio(p):null,todo=sumTodo(p),sit=sumLine(p);
     // Une seule phrase « quoi faire » : la consigne du résumé IA, sinon la situation, sinon la note, sinon la raison de la priorité
-    const main=todo?`<span class="pl-c todo" title="${esc(todo)}">🧭 ${esc(todo)}</span>`:(prio&&prio.r===3&&!calls.length)?'':sit?`<span class="pl-c note" title="${esc(sit)}">🧭 ${esc(sit.length>160?sit.slice(0,160)+'…':sit)}</span>`:note?`<span class="pl-c note" title="${esc(note)}">📝 ${esc(note.length>160?note.slice(0,160)+'…':note)}</span>`:prio?`<span class="pl-c prio" title="${esc(prio.why)}">${esc(prio.why)}</span>`:'';
+    const main=todo?`<span class="pl-c todo" title="${esc(todo)}">${ici('clipboard',13)}<b>À faire :</b> ${esc(todo.replace(/^À faire\s*:\s*/i,''))}</span>`:(prio&&prio.r===3&&!calls.length)?'':sit?`<span class="pl-c note" title="${esc(sit)}">${ici('clipboard',13)}<b>Situation :</b> ${esc(sit.length>160?sit.slice(0,160)+'…':sit)}</span>`:note?`<span class="pl-c note" title="${esc(note)}">${ici('clipboard',13)}<b>Note :</b> ${esc(note.length>160?note.slice(0,160)+'…':note)}</span>`:prio?`<span class="pl-c prio" title="${esc(prio.why)}">${ici('bolt',13)}${esc(_noEmo(prio.why))}</span>`:'';
     return `<div class="pl-ctx">${srch?prHit(p):''}${prOuv(p)&&p.ouverture.note?`<span class="pl-c note" title="${esc(p.ouverture.note)}">🏗 ${esc(p.ouverture.note)}</span>`:''}${main}${lastH}</div>`;
   };
   const card=p=>{
@@ -5465,7 +5476,7 @@ function showProspects(keepScroll){
     const late=rappelLate(p)&&prOpen(p);
     const whyT=!clientView&&(prSort==='rappels'||prSort==='mine')?' title="'+esc(prPrio(p).why)+'"':'';
     const when=p.rappel
-      ?`<span class="pl-when${late?' late':isDue?' due':''}"${whyT}>${p.statut==='essai'?'🎟️':'🔔'} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em>dans ${u.diffMin} min</em>`:late?` <em>en retard</em>`:''}</span>`
+      ?`<span class="pl-when${late?' late':isDue?' due':''}"${whyT}>${ici(p.statut==='essai'?'ticket':'calendar',14)} ${frDate(p.rappel)}${p.rappelH?' · '+p.rappelH:''}${u&&u.t==='imminent'?` <em class="soon">dans ${u.diffMin} min</em>`:late?` <em>En retard</em>`:''}</span>`
       :`<span class="pl-when muted"${whyT}>${srcLogo(p.src)}${p.bentry?'Arrivé':'Créé'} le ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${new Date(prArrival(p)).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
     const arr=new Date(prArrival(p));
     const arrH=isNaN(arr)?'':`<span class="pl-arr" title="Arrivée du lead">${srcLogo(p.src)||'🕐 '}${p.bentry?'Arrivé':'Créé'} le ${arr.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})} à ${arr.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;
@@ -5478,11 +5489,11 @@ function showProspects(keepScroll){
       <div class="pl-line" onclick="togglePr('${p.id}')">
         <div class="pl-ava" style="background:color-mix(in srgb,${pi.c} 14%,#fff);color:${pi.c}">${esc(prInitials(p.nom))}</div>
         <div class="pl-who"><b>${esc(p.nom)}</b><span>${ownPill(p)}${sub?" "+sub:""}</span></div>
-        <div class="pl-st">${oc?`<span class="pl-oncall"><i>📞</i> Appel en cours · ${esc(oc.by||'?')} · ${_ocSince(oc)}</span>`:''}<span class="pl-chip" style="color:${pi.c};background:color-mix(in srgb,${pi.c} 11%,#fff)">${pi.ic} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}${p.statut==='unit'&&unitShort(p.unit)?' · '+unitShort(p.unit):''}</span>${flags}</div>
+        <div class="pl-st">${oc?`<span class="pl-oncall"><i>📞</i> Appel en cours · ${esc(oc.by||'?')} · ${_ocSince(oc)}</span>`:''}<span class="pl-chip" style="color:${pi.c};border-color:color-mix(in srgb,${pi.c} 45%,#fff);background:color-mix(in srgb,${pi.c} 6%,#fff)">${ici(prATraiter(p)?'phone':PIPE_IC[p.statut]||'phone',13)} ${stLabel(p)}${p.statut==='abo'&&p.pack?' · '+packShort(+p.pack):''}${p.statut==='unit'&&unitShort(p.unit)?' · '+unitShort(p.unit):''}</span>${flags}</div>
         <div class="pl-next">${prOuv(p)?`<span class="pl-when muted">🏗 Le ${new Date(p.ouverture.at).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.ouverture.by?' · '+esc(p.ouverture.by):''}${studioOpening(p)?' · ouverture '+esc(studioOpening(p)):''}</span><button class="pl-cbtn" onclick="event.stopPropagation();ouvOff('${p.id}')" title="Retirer de « À rappeler à l'ouverture »">↩ Remettre dans les rappels</button>`
-          :prToClose(p)?`${when}<button class="pl-cbtn clos" onclick="event.stopPropagation();contactSheet('${p.id}','${p.rappel&&!prAutoNew(p)?'rappel':'new'}')" title="Valider le résultat de l'appel : joint ou non, suite, note">📝 Clôturer l'appel</button>`
-          :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${prCalls(p).n?'📝 Noter · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'📝 Noter l\'appel'}</button>`
-          :p.statut==='rappeler'&&p.rappel&&prOpen(p)&&!prAutoNew(p)?`${when}<button class="pl-cbtn rap" onclick="event.stopPropagation();contactSheet('${p.id}','rappel')" title="Clôturer le rappel : joint ou non, suite, note">📝 Clôturer le rappel</button>`
+          :prToClose(p)?`${when}<button class="pl-cbtn clos" onclick="event.stopPropagation();contactSheet('${p.id}','${p.rappel&&!prAutoNew(p)?'rappel':'new'}')" title="Valider le résultat de l'appel : joint ou non, suite, note">${ici('check',12)} Clôturer l'appel</button>`
+          :prSeg(p)==='new'?`${when}<button class="pl-cbtn${prCalls(p).n?' tried':''}" onclick="event.stopPropagation();contactSheet('${p.id}','new')" title="Noter l'appel : décroché ou non décroché">${ici('clipboard',12)} ${prCalls(p).n?'Noter · '+prCalls(p).n+' essai'+(prCalls(p).n>1?'s':''):'Noter l\'appel'}</button>`
+          :p.statut==='rappeler'&&p.rappel&&prOpen(p)&&!prAutoNew(p)?`${when}<button class="pl-cbtn rap" onclick="event.stopPropagation();contactSheet('${p.id}','rappel')" title="Clôturer le rappel : joint ou non, suite, note">${ici('check',12)} Clôturer le rappel</button>`
           :`${when}${p.rappel&&prOpen(p)&&rdvAt(p)&&rdvAt(p).getTime()<=Date.now()+15*60000?`<label class="pl-done" onclick="event.stopPropagation()" title="Cochez quand le rappel est fait et que le prospect a décroché"><input type="checkbox" onchange="rappelDone('${p.id}',this)"/> Rappel fait</label>`:''}`}</div>
         <div class="pl-meta">${prAppChip(p)}</div>
         ${plCtx(p)}
@@ -5490,8 +5501,8 @@ function showProspects(keepScroll){
           ${prUnknown(p)?`<button class="jr-new" onclick="newProspectForm('${p.id}')" title="Numéro inconnu de Boost · créer la fiche client">➕ Créer la fiche</button>`:''}
           ${(prSeg(p)==='unreach'||prSort==='never')&&p.tel&&!p.noCall&&p.cSms!==false?`<button class="pl-btn sms" onclick="smsRelance('${p.id}')" title="SMS de relance (injoignable)">💬</button>`:''}
           ${p.noCall||!p.tel?'':`<button class="pl-btn call" onclick="callMenu('${p.id}')" title="Appeler ou copier le numéro">${ic('phone')}</button>`}
-          <button class="pl-btn oc${oc?' on':''}" onclick="callToggle('${p.id}')" title="${oc?'Appel en cours · toucher pour terminer':'Je suis en ligne avec ce prospect · prévenir l\'équipe'}">${oc?'🔴':'📞'}<small>${oc?'En ligne':'En cours'}</small></button>
-          <button class="pl-btn" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${open?'▴':'▾'}</button>
+          <button class="pl-btn oc${oc?' on':''}" onclick="callToggle('${p.id}')" title="${oc?'Appel en cours · toucher pour terminer':'Je suis en ligne avec ce prospect · prévenir l\'équipe'}">${oc?'<i class="oc-dot"></i>':ici('phone',14)}<small>${oc?'En ligne':'En cours'}</small></button>
+          <button class="pl-btn tog${open?' up':''}" onclick="togglePr('${p.id}')" title="${open?'Fermer':'Ouvrir la fiche et l\'historique'}">${ici('chevron',16)}</button>
         </div>
       </div>
       ${open?`<div class="pl-detail">
@@ -5559,20 +5570,20 @@ ${p.statut==='abo'?'':`            <div class="pl-lbl">Rappel convenu</div>
   const h=`<div class="cg prw">
     <div class="pr-head">
       <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
-      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="pr-new" onclick="newProspectForm()">＋ Nouveau prospect</button><span id="syncBadge" class="sync-badge ${_syncSt==='wait'?'sync':_syncSt}">${_syncTxt(_syncSt)}</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="pr-new" onclick="newProspectForm()">${ici('plus',16)} Nouveau prospect</button><span id="syncBadge" class="sync-badge ${_syncSt==='wait'?'sync':_syncSt}">${_syncHTML(_syncSt)}</span></div>
     </div>
-    <div class="pr-funrow"><span class="pr-funrow-l">Pipeline</span><div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')"><div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'👥 Prospects':PIPE[k].ic+' '+PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div></div>
+    <div class="pr-funrow"><span class="pr-funrow-l">Pipeline</span><div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')">${ici(k==='rappeler'?'users':PIPE_IC[k],16)}<div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'Prospects':PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div></div>
     <div class="pr-tools">
     ${prFilter&&prFilter!=='rappeler'?'':(()=>{const tab=([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():k==='short'?PSC().filter(prShort).length:k==='never'?PSC().filter(prNeverJoined).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
-      return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${l}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;};
+      return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${ici(TAB_IC[k]||'folder',15)}${l.replace(/^\S+\s/,'')}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;};
       // Trois familles d'onglets : ce qu'il y a à faire, ce qui mérite d'être retravaillé, ce qu'on consulte
       return `<div class="pr-tabgs">${TAB_GROUPS.map(([g,ks])=>`<div class="pr-tabg${ks.includes(prSort)?' cur':''}"><span class="pr-tabg-l">${g}</span><div class="pr-tabs">${PR_SEGS.filter(x=>ks.includes(x[0])).map(tab).join('')}</div></div>`).join('')}</div>`;})()}
-    <div class="pr-search"><span>🔎</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
+    <div class="pr-search"><span>${ici('search',17)}</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
     </div>
-    <div class="hm-sec">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · 🎯 <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</div>
-    ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted):!clientView&&prSort==='rappels'?pushBtnHTML():''}
+    <div class="hm-sec"><span class="hs-t">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' rappels · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</span>${!srch&&!clientView&&prSort==='rappels'?pushBtnHTML():''}</div>
+    ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted):''}
     ${!srch&&!clientView&&(prSort==='rappels'||prSort==='mine')?(()=>{const L=prSort==='mine'?PSC().filter(mineHas):PSC().filter(p=>prSeg(p)==='rappels');const m={};L.forEach(p=>{const n=prCharge(p)||'·';m[n]=(m[n]||0)+1;});const ks=Object.keys(m).sort((a,b)=>a==='·'?1:b==='·'?-1:m[b]-m[a]);
-      return `<div class="pr-ownf"><span class="pr-ownf-l">👤 En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
+      return `<div class="pr-ownf"><span class="pr-ownf-l">${ici('user',14)} En charge :</span><button class="pr-ownb${!prOwnF?' on':''}" onclick="setOwnF('')">Tous <b>${L.length}</b></button>${ks.map(n=>{const c=n==='·'?'#8C95A8':ownColor(n);return `<button class="pr-ownb${prOwnF===n?' on':''}" style="--oc:${c}" onclick="setOwnF('${n.replace(/'/g,"\\'")}')">${n==='·'?'À attribuer':esc(n)} <b>${m[n]}</b></button>`;}).join('')}</div>`;})():''}
     ${srch?(sorted.length?`<div class="pr-list">${sorted.map(card).join('')}</div>`:`<div class="pr-empty">Aucune fiche ne mentionne « ${esc(prQueryRaw.trim())} ».<br><small>La recherche couvre le nom, l'email, les notes, les notes Boost, la situation, la fiche découverte et les résumés d'appels.</small></div>`):!clientView&&prSort==='trash'?trashHTML():!clientView&&prSort==='team'?teamRoadmapHTML():!clientView&&prSort==='journal'?callJournalHTML(null,list.filter(p=>!prFilter||p.statut===prFilter)):sorted.length?(prSort==='mine'?mineListHTML(sorted,card):prSort==='rappels'?prioListHTML(sorted,card):`<div class="pr-list">${sorted.map(card).join('')}</div>`):`<div class="pr-empty">${PSC().length?'Aucune fiche ne correspond à ce filtre.':'📇 Aucune fiche pour l\'instant.<br><small>À la fin de chaque appel, enregistrez le prospect depuis l\'écran « Récap de l\'appel ».</small>'}</div>`}
     <details class="pr-howto"><summary>💡 Comment ça marche ?</summary>
       <div class="pr-howto-b">
@@ -6465,7 +6476,43 @@ const IC_PATHS={
   trophy:'<path d="M8 21h8M12 17v4"/><path d="M7 4h10v6a5 5 0 0 1-10 0z"/><path d="M17 4h3v2a4 4 0 0 1-4 4M7 4H4v2a4 4 0 0 0 4 4"/>',
   sliders:'<line x1="4" y1="21" x2="4" y2="14"/><line x1="4" y1="10" x2="4" y2="3"/><line x1="12" y1="21" x2="12" y2="12"/><line x1="12" y1="8" x2="12" y2="3"/><line x1="20" y1="21" x2="20" y2="16"/><line x1="20" y1="12" x2="20" y2="3"/><line x1="1" y1="14" x2="7" y2="14"/><line x1="9" y1="8" x2="15" y2="8"/><line x1="17" y1="16" x2="23" y2="16"/>',
   arrow:'<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>',
+  user:'<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  userplus:'<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>',
+  phoneoff:'<path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.42 19.42 0 0 1-3.33-2.67m-2.67-3.34a19.79 19.79 0 0 1-3.07-8.63A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"/><line x1="23" y1="1" x2="1" y2="23"/>',
+  ban:'<circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/>',
+  flag:'<path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/>',
+  folder:'<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+  trash:'<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  search:'<circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>',
+  plus:'<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+  tag:'<path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/>',
+  x:'<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  check:'<polyline points="20 6 9 17 4 12"/>',
+  checkcircle:'<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+  clock:'<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  flame:'<path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/>',
+  snow:'<line x1="2" y1="12" x2="22" y2="12"/><line x1="12" y1="2" x2="12" y2="22"/><path d="m20 16-4-4 4-4M4 8l4 4-4 4M16 4l-4 4-4-4M8 20l4-4 4 4"/>',
+  target:'<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+  bolt:'<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+  bot:'<rect x="3" y="11" width="18" height="10" rx="2"/><circle cx="12" cy="5" r="2"/><path d="M12 7v4"/><line x1="8" y1="16" x2="8" y2="16"/><line x1="16" y1="16" x2="16" y2="16"/>',
+  clipboard:'<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/>',
+  chevron:'<polyline points="6 9 12 15 18 9"/>',
+  cloud:'<path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/>',
+  repeat:'<polyline points="17 1 21 5 17 9"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><polyline points="7 23 3 19 7 15"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/>',
+  sprout:'<path d="M7 20h10"/><path d="M12 20v-9"/><path d="M12 11c-3 0-5-2-5-5 3 0 5 2 5 5z"/><path d="M12 14c3 0 5-2 5-5-3 0-5 2-5 5z"/>',
+  ticket:'<path d="M2 9a3 3 0 0 1 0 6v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a3 3 0 0 1 0-6V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z"/><path d="M13 5v2M13 17v2M13 11v2"/>',
+  yoga:'<circle cx="12" cy="4" r="2"/><path d="M4 20l4-4 4 2 4-2 4 4"/><path d="M12 6v8"/><path d="M6 12l6 2 6-2"/>',
+  hourglass:'<path d="M5 22h14M5 2h14M17 22v-4.172a2 2 0 0 0-.586-1.414L12 12l-4.414 4.414A2 2 0 0 0 7 17.828V22M7 2v4.172a2 2 0 0 0 .586 1.414L12 12l4.414-4.414A2 2 0 0 0 17 6.172V2"/>',
 };
+// Icône filaire alignée sur le texte (remplace les émojis dans la page Mes prospects)
+function ici(n,s){return `<svg class="lic ii" width="${s||14}" height="${s||14}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">${IC_PATHS[n]||''}</svg>`;}
+const PIPE_IC={rappeler:'phone',essai:'calendar',venu:'yoga',unit:'tag',abo:'checkcircle',perdu:'x'};
+const TAB_IC={mine:'sun',new:'sprout',rappels:'bell',redo:'userplus',unreach:'phoneoff',short:'messages',never:'ban',ouv:'flag',team:'users',all:'folder',journal:'phone',trash:'trash'};
+const PRIO_IC=[null,'target','bolt','sprout','flame','phoneoff','bot'];
+const MG_IC=['clipboard','clock','sprout','repeat','bot','checkcircle'];
+// Retire l'émoji de tête d'une phrase (les icônes filaires le remplacent dans la page Mes prospects)
+function _noEmo(t){return String(t||'').replace(/^[^\p{L}\p{N}«"(]+\s*/u,'');}
 function ic(n,s){return `<svg class="lic" width="${s||20}" height="${s||20}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${IC_PATHS[n]||''}</svg>`;}
 
 /* ── Accueil : hub de l'app ── */
