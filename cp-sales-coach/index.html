@@ -5011,7 +5011,8 @@ function _lastCallTs(p){let m='';(p.appels||[]).forEach(a=>{const l0=String(a.tx
 function _isToday(ts){if(!ts)return false;const d=new Date(ts);return !isNaN(d)&&_ldstr(d)===todayStr();}
 // Appel passé aujourd'hui (ligne ou manuel) dont le résultat n'a pas encore été validé
 const CLOS_FROM='2026-11-09T18:30:00.000Z'; // mise en ligne de la clôture : les appels antérieurs ont été traités avec l'ancien écran, jamais réclamés
-function prToClose(p){if(!prOpen(p)||p.bmember||prOuv(p))return false;const t=_lastCallTs(p);if(!_isToday(t))return false;const ti=new Date(t);if(isNaN(ti)||ti.toISOString()<CLOS_FROM)return false;return !p.clos||String(p.clos)<ti.toISOString();}
+// Tolérance de 3 min : un appel reçu de la ligne (Allo, Aircall) horodaté juste après la clôture est le même appel (horloges différentes, clôture pendant la conversation)
+function prToClose(p){if(!prOpen(p)||p.bmember||prOuv(p))return false;const t=_lastCallTs(p);if(!_isToday(t))return false;const ti=new Date(t);if(isNaN(ti)||ti.toISOString()<CLOS_FROM)return false;if(!p.clos)return true;const c=Date.parse(p.clos);return !isNaN(c)&&ti.getTime()-c>3*60000;}
 // Résultat validé aujourd'hui, et rien de nouveau depuis
 function prDoneToday(p){return !!p.clos&&_isToday(p.clos)&&!prToClose(p);}
 const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les retards en premier · après les leads frais'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Déjà joints d\'abord, puis sans réponse, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
@@ -5581,7 +5582,8 @@ async function csDone(id){
   const resLbl=ok?'✅ Joint':k==='vm'?'📨 Messagerie':'📵 Sans réponse';
   // L'appel lui-même : noté à la main s'il n'a pas déjà été rangé par la ligne (Allo, Aircall)
   if(!prToClose(p))_logCall(p,ok,'');
-  p.clos=now;_takeSuivi(p);
+  // Clôturé APRÈS le dernier appel connu (manuel ou ligne) : sinon la fiche redemandait aussitôt une clôture
+  p.clos=new Date(Math.max(Date.now(),(Date.parse(_lastCallTs(p))||0)+1000)).toISOString();_takeSuivi(p);
   if(p.ouverture&&x!=='ouv')p.ouverture=null;
   const setRap=(d,h,rk)=>{p.rappel=d||'';p.rappelH=d?h:'';p.rappelBy=d?me:'';if(d&&rk)p.rk=rk;else delete p.rk;};
   document.getElementById('icPop')?.remove();_CS=null;
