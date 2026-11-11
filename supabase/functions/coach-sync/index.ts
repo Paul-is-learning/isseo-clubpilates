@@ -202,22 +202,22 @@ serve(async (req) => {
       const pub = { nom: c.nom, studio: c.studio, tel: c.tel, email: c.email, naiss: c.naiss, adr: c.adr, pack: PACK_LBL[c.pack] || "", montant: c.montant, date: c.date, status: c.status, signedAt: c.signedAt || "" };
       if (action === "contrat_get") return json({ ok: true, contrat: pub });
       if (c.status === "signe") return json({ error: "Ce contrat est déjà signé" }, 409);
-      const iban = ibanOk(String(body.iban || "")), bic = bicOk(String(body.bic || ""));
+      const iban = ibanOk(String(body.iban || "")), bic = body.bic ? bicOk(String(body.bic)) : "";
       if (!iban) return json({ error: "IBAN invalide · vérifiez la saisie" }, 400);
-      if (!bic) return json({ error: "BIC invalide · 8 ou 11 caractères" }, 400);
+      if (bic === null) return json({ error: "BIC invalide · 8 ou 11 caractères" }, 400);
       if (body.accept !== true) return json({ error: "Merci d'accepter les conditions générales de vente" }, 400);
       if (String(body.lu || "").trim().toLowerCase().replace(/\s+/g, " ") !== "lu et approuvé") return json({ error: "Écrivez « Lu et approuvé »" }, 400);
       const png = String(body.sig || "").replace(/^data:image\/png;base64,/, "");
       if (!png || png.length < 400 || png.length > 400_000 || !/^[A-Za-z0-9+/=]+$/.test(png)) return json({ error: "Signature manquante" }, 400);
       const at = new Date().toISOString(), ih = await ipHash(req);
       let pdf: Uint8Array;
-      try { pdf = await buildPdf(c, { pngBase64: png, iban, bic, at, ipHash: ih }); } catch (e) { console.warn("[contrat_sign] pdf", e); return json({ error: "Impossible de préparer le contrat signé" }, 502); }
+      try { pdf = await buildPdf(c, { pngBase64: png, iban, bic: bic || "", at, ipHash: ih }); } catch (e) { console.warn("[contrat_sign] pdf", e); return json({ error: "Impossible de préparer le contrat signé" }, 502); }
       const path = skey(c.studio) + "/" + c.token + ".pdf";
       // Coffre privé des contrats signés (créé à la première signature ; aucune policy publique)
       try { await admin.storage.createBucket(BUCKET, { public: false, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: ["application/pdf"] }); } catch { /* existe déjà */ }
       const up = await admin.storage.from(BUCKET).upload(path, pdf, { contentType: "application/pdf", upsert: true });
       if (up.error) { console.warn("[contrat_sign] storage", up.error); return json({ error: "Enregistrement impossible" }, 502); }
-      const signed: Contrat = { ...c, status: "signe", signedAt: at, file: path, ibanEnc: await encrypt(iban), ibanLast: iban.slice(-4), bic, ipHash: ih };
+      const signed: Contrat = { ...c, status: "signe", signedAt: at, file: path, ibanEnc: await encrypt(iban), ibanLast: iban.slice(-4), bic: bic || "", ipHash: ih };
       await putRow(admin, rowId(tok), signed);
       // La fiche du client garde la trace (visible dans l'assistant au prochain rafraîchissement)
       try {
@@ -359,6 +359,11 @@ serve(async (req) => {
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || to.length > 120) return json({ error: "Adresse e-mail du client invalide" }, 400);
       if (!nom) return json({ error: "Nom du client requis" }, 400);
       if (!PACK_LBL[String(body.pack || "")]) return json({ error: "Abonnement requis" }, 400);
+      // Identité complète obligatoire : elle est imprimée sur le contrat
+      if (!String(body.tel || "").trim()) return json({ error: "Téléphone requis" }, 400);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(body.naiss || ""))) return json({ error: "Date de naissance requise" }, 400);
+      if (String(body.adr || "").trim().length < 8) return json({ error: "Adresse complète requise" }, 400);
+      if (!String(body.montant || "").trim()) return json({ error: "Montant mensuel requis" }, 400);
       const c: Contrat = {
         token: newToken(), pid: String(body.pid || "").slice(0, 60), studio, nom, tel: String(body.tel || "").slice(0, 30), email: to,
         naiss: String(body.naiss || "").slice(0, 10), adr: String(body.adr || "").slice(0, 120), pack: String(body.pack), montant: String(body.montant || "").slice(0, 40),

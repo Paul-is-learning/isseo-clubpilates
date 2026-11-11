@@ -108,7 +108,7 @@ export async function buildPdf(c: Contrat, sig?: Signature): Promise<Uint8Array>
     // IBAN : 27 cases en groupes de 4 (le dernier de 3), BIC : 11 cases
     const iban = sig.iban.replace(/\s+/g, "").toUpperCase();
     for (let i = 0; i < Math.min(iban.length, 27); i++) { const g = Math.floor(i / 4), k = i % 4, x = (118 + 81 * g + 18 * k + 5.5) / 1.25; pg.drawText(iban[i], { x, y: H - 630, size: 10, font: bold, color: ink }); }
-    const bic = sig.bic.replace(/\s+/g, "").toUpperCase();
+    const bic = (sig.bic || "").replace(/\s+/g, "").toUpperCase(); // facultatif (le studio le retrouve depuis l'IBAN)
     for (let i = 0; i < Math.min(bic.length, 11); i++) { const x = (118 + 17.7 * i + 5.5) / 1.25; pg.drawText(bic[i], { x, y: H - 668, size: 10, font: bold, color: ink }); }
     pg.drawText("Lu et approuvé", { x: 95, y: H - 716, size: 11, font: ital, color: ink });
     try {
