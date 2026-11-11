@@ -4050,8 +4050,20 @@ function contratLineHTML(p){
   if(c&&c.signe)return `<div class="pr-packline" style="margin-top:-2px"><span class="pl-chip" style="color:#1F7A55;border-color:#BFE0CF;background:#EEF8F2">✅ Contrat signé le ${esc(_trDate(c.signe))}</span><button class="pr-act" onclick="contratOpen('${p.id}')">📎 Voir le contrat</button>${mgr?`<button class="pr-act" onclick="contratIban('${p.id}')">🏦 IBAN</button>`:''}<button class="pr-act" style="opacity:.7" onclick="contratSheet('${p.id}')">Renvoyer</button></div>`;
   return `<div class="pr-packline" style="margin-top:-2px"><button class="pr-act" onclick="contratSheet('${p.id}')">📄 ${c?'Renvoyer le contrat':'Contrat d\'inscription'}</button>${c?`<small style="color:#5B6B8C">envoyé le ${esc(_trDate(c.at))}${c.by?' par '+esc(c.by):''}${c.to?' à '+esc(c.to):''} · en attente de signature</small>`:'<small style="color:#8C95A8">pré-rempli, signé en ligne par le client</small>'}</div>`;
 }
+// Petite fenêtre PDF (iPhone : pas d'ouverture d'onglet après une attente réseau) · aperçu + Ouvrir + Télécharger
+function contratViewer(titre,sub,url,dl,fname){
+  icSheet(`<div class="glp-tag">📄 ${esc(titre)}</div><div class="glp-t" style="font-size:17px">${esc(sub)}</div>
+    <div class="fv-btns" style="flex-wrap:wrap;margin-top:8px">
+      <a class="pr-act main" style="flex:1;text-align:center;text-decoration:none" href="${esc(url)}" target="_blank" rel="noopener">↗️ Ouvrir</a>
+      <a class="pr-act" style="flex:1;text-align:center;text-decoration:none" href="${esc(dl||url)}" download="${esc(fname||'contrat.pdf')}" target="_blank" rel="noopener">⬇️ Télécharger</a>
+    </div>
+    <iframe src="${esc(url)}#toolbar=0" style="width:100%;height:52vh;border:1px solid #DCE1EA;border-radius:12px;background:#fff;margin-top:10px" title="${esc(titre)}"></iframe>
+    <div class="pl-hint" style="display:block;margin:6px 0 0">Sur iPhone, l'aperçu montre la première page : « Ouvrir » affiche tout le document, « Télécharger » l'enregistre dans Fichiers.</div>`);
+}
+function _contratFname(p){return 'Contrat-Club-Pilates-'+String(p.nom||'client').normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^\w-]+/g,'-').slice(0,40)+'.pdf';}
 async function contratOpen(id){const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.contrat||!p.contrat.tok)return;toast('📎 Ouverture du contrat…');
-  try{const r=await syncCall('contrat_file',{token:p.contrat.tok});if(!r||!r.ok)throw new Error((r&&r.error)||'indisponible');window.open(r.url,'_blank');}
+  try{const r=await syncCall('contrat_file',{token:p.contrat.tok});if(!r||!r.ok)throw new Error((r&&r.error)||'indisponible');
+    contratViewer('Contrat signé'+(r.signedAt?' le '+_trDate(r.signedAt):''),p.nom||'',r.url,r.dl||r.url,_contratFname(p));}
   catch(e){toast('Contrat indisponible · '+(e.message||''));}}
 async function contratIban(id){const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.contrat||!p.contrat.tok)return;
   try{const r=await syncCall('contrat_iban',{token:p.contrat.tok});if(!r||!r.ok)throw new Error((r&&r.error)||'indisponible');
@@ -4102,7 +4114,7 @@ async function contratPdf(id,silent){
   try{const r=await syncCall('contrat_preview',{to:v.email,nom:v.nom,tel:v.tel,naiss:v.naiss,adr:v.adr,pack:v.pack,montant:v.montant,date:v.date,studio:v.p.studio||CFG.studio||''});
     if(!r||!r.ok||!r.pdf)throw new Error((r&&r.error)||'indisponible');
     const bytes=Uint8Array.from(atob(r.pdf),ch=>ch.charCodeAt(0));_contratKeep(v);
-    if(!silent){const blob=new Blob([bytes],{type:'application/pdf'}),href=URL.createObjectURL(blob);window.open(href,'_blank');setTimeout(()=>URL.revokeObjectURL(href),120000);}
+    if(!silent){const blob=new Blob([bytes],{type:'application/pdf'}),href=URL.createObjectURL(blob);contratViewer('Aperçu du contrat',v.nom,href,href,_contratFname(v.p));}
     return bytes;}catch(e){console.warn('[contrat]',e);toast('Impossible de préparer le PDF · '+(e.message||'réessayez'));return null;}
 }
 async function contratSend(id){

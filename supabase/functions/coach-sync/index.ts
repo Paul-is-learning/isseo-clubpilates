@@ -402,9 +402,10 @@ serve(async (req) => {
         if (role !== "admin" && !mgr) return json({ error: "Réservé aux managers" }, 403);
         return json({ ok: true, iban: await decrypt(c.ibanEnc || ""), bic: c.bic || "", nom: c.nom, signedAt: c.signedAt });
       }
-      const { data: su, error } = await admin.storage.from(BUCKET).createSignedUrl(c.file || "", 180);
+      const { data: su, error } = await admin.storage.from(BUCKET).createSignedUrl(c.file || "", 300);
       if (error || !su?.signedUrl) return json({ error: "Fichier indisponible" }, 502);
-      return json({ ok: true, url: su.signedUrl, signedAt: c.signedAt });
+      const { data: sd } = await admin.storage.from(BUCKET).createSignedUrl(c.file || "", 300, { download: fileName(c.nom) });
+      return json({ ok: true, url: su.signedUrl, dl: sd?.signedUrl || su.signedUrl, signedAt: c.signedAt });
     }
 
     // ── Avatars : chacun définit le sien, tout le monde voit ceux des autres ──
