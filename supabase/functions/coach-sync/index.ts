@@ -202,6 +202,13 @@ serve(async (req) => {
       const pub = { nom: c.nom, studio: c.studio, tel: c.tel, email: c.email, naiss: c.naiss, adr: c.adr, pack: PACK_LBL[c.pack] || "", montant: c.montant, date: c.date, status: c.status, signedAt: c.signedAt || "" };
       if (action === "contrat_get") return json({ ok: true, contrat: pub });
       if (c.status === "signe") return json({ error: "Ce contrat est déjà signé" }, 409);
+      // Le client complète lui-même son identité sur la page de signature
+      const nomIn = String(body.nom || "").trim().slice(0, 80), naissIn = String(body.naiss || ""), adrIn = String(body.adr || "").trim().slice(0, 120), telIn = String(body.tel || "").trim().slice(0, 30);
+      if (nomIn.length < 3) return json({ error: "Nom et prénom requis" }, 400);
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(naissIn)) return json({ error: "Date de naissance requise" }, 400);
+      if (adrIn.length < 8) return json({ error: "Adresse complète requise" }, 400);
+      if (telIn.replace(/\D/g, "").length < 9) return json({ error: "Téléphone requis" }, 400);
+      c.nom = nomIn; c.naiss = naissIn; c.adr = adrIn; c.tel = telIn;
       const iban = ibanOk(String(body.iban || "")), bic = body.bic ? bicOk(String(body.bic)) : "";
       if (!iban) return json({ error: "IBAN invalide · vérifiez la saisie" }, 400);
       if (bic === null) return json({ error: "BIC invalide · 8 ou 11 caractères" }, 400);
@@ -224,7 +231,7 @@ serve(async (req) => {
         const store = await getRow(admin, ROW_PROSPECTS);
         const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
         const p = list.find((x) => x.id === c.pid);
-        if (p) { p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.maj = at; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+        if (p) { p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.naiss = c.naiss; p.adr = c.adr; if (!p.tel) p.tel = c.tel; p.maj = at; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
       } catch (e) { console.warn("[contrat_sign] fiche", e); }
       const sm = studioMail(c.studio), m = mailSigne(signed);
       const r = await sendMail({ to: c.email, cc: sm ? [sm] : [], replyTo: sm || undefined, ...m, attachments: [{ filename: fileName(c.nom), base64: b64(pdf) }] }, c.studio);
@@ -361,8 +368,6 @@ serve(async (req) => {
       if (!PACK_LBL[String(body.pack || "")]) return json({ error: "Abonnement requis" }, 400);
       // Identité complète obligatoire : elle est imprimée sur le contrat
       if (!String(body.tel || "").trim()) return json({ error: "Téléphone requis" }, 400);
-      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(body.naiss || ""))) return json({ error: "Date de naissance requise" }, 400);
-      if (String(body.adr || "").trim().length < 8) return json({ error: "Adresse complète requise" }, 400);
       if (!String(body.montant || "").trim()) return json({ error: "Montant mensuel requis" }, 400);
       const c: Contrat = {
         token: newToken(), pid: String(body.pid || "").slice(0, 60), studio, nom, tel: String(body.tel || "").slice(0, 30), email: to,

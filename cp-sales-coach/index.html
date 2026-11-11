@@ -4070,13 +4070,12 @@ function contratSheet(id){
   const pk=String(p.pack||'');
   icSheet(`<div class="glp-tag">${ici('calendar',12)} Contrat d'inscription</div>
     <div class="glp-t">${esc(p.nom||'Prospect')}</div>
-    <div class="pl-hint" style="display:block;margin:4px 0 0">Toutes les lignes sont obligatoires et imprimées telles quelles sur la fiche d'inscription. Le client recevra un e-mail avec le PDF et un lien pour renseigner son IBAN et signer depuis son téléphone.</div>
+    <div class="pl-hint" style="display:block;margin:4px 0 0">Le client recevra un e-mail avec le PDF et un lien : il y complète lui-même sa date de naissance, son adresse, son IBAN, puis signe depuis son téléphone.</div>
     <div class="ics-lbl">Nom et prénom</div><input id="ct-nom" class="ics-in" maxlength="80" value="${esc(p.nom||'')}"/>
     <div class="ics-row">
-      <div style="flex:1"><div class="ics-lbl">Date de naissance</div><input type="date" id="ct-naiss" class="ics-in" value="${esc(p.naiss||'')}"/></div>
       <div style="flex:1"><div class="ics-lbl">Date du contrat</div><input type="date" id="ct-date" class="ics-in" value="${todayStr()}"/></div>
     </div>
-    <div class="ics-lbl">Adresse</div><input id="ct-adr" class="ics-in" maxlength="120" placeholder="N°, rue, code postal, ville" value="${esc(p.adr||'')}"/>
+    <input type="hidden" id="ct-naiss" value="${esc(p.naiss||'')}"/><input type="hidden" id="ct-adr" value="${esc(p.adr||'')}"/>
     <div class="ics-row">
       <div style="flex:1"><div class="ics-lbl">Téléphone</div><input id="ct-tel" class="ics-in" inputmode="tel" value="${esc(p.tel||'')}"/></div>
       <div style="flex:1.4"><div class="ics-lbl">E-mail <small>· destinataire du contrat</small></div><input id="ct-email" type="email" class="ics-in" value="${esc(p.email||'')}"/></div>
@@ -4122,7 +4121,7 @@ async function contratSend(id){
   if(!v.nom){toast('Indiquez le nom du client');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)){toast('Indiquez l\'e-mail du client');return;}
   if(!v.pack){toast('Choisissez l\'abonnement');return;}
-  const miss=[['tel','le téléphone'],['naiss','la date de naissance'],['adr','l\'adresse complète'],['montant','le montant mensuel']].find(([k])=>!(v[k]||'').trim()||(k==='adr'&&v.adr.trim().length<8));
+  const miss=[['tel','le téléphone'],['montant','le montant mensuel']].find(([k])=>!(v[k]||'').trim());
   if(miss){toast('Indiquez '+miss[1]+' · obligatoire sur le contrat');document.getElementById('ct-'+miss[0])?.focus();return;}
   if(v.p.contrat&&v.p.contrat.signe&&!confirm('Ce contrat est déjà signé. Renvoyer un nouveau contrat à signer ?'))return;
   if(v.p.contrat&&!v.p.contrat.signe&&!confirm('Un contrat a déjà été envoyé le '+_trDate(v.p.contrat.at)+'. Le renvoyer (nouveau lien) ?'))return;

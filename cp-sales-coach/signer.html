@@ -21,7 +21,7 @@ h1{font-size:23px;margin:0 0 6px;letter-spacing:-.01em}
 .row{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:15px}
 .row:last-child{border:0}.row span{color:var(--muted)}.row b{text-align:right;font-weight:600}
 .lbl{font-size:12.5px;font-weight:700;color:var(--muted);margin:12px 0 6px;text-transform:uppercase;letter-spacing:.05em}
-input[type=text]{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;font-size:17px;font-family:inherit;background:#fff;color:var(--ink);-webkit-appearance:none}
+input[type=text],input.dt{width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:12px;font-size:17px;font-family:inherit;background:#fff;color:var(--ink);-webkit-appearance:none}
 input:focus{outline:none;border-color:var(--deep)}
 .hint{font-size:13px;color:var(--muted);margin:6px 0 0}
 .cgv{border:1px solid var(--line);border-radius:12px;overflow:auto;max-height:50vh;background:#fff;padding:4px 14px;font-size:14px;line-height:1.5;-webkit-overflow-scrolling:touch}
@@ -50,10 +50,16 @@ input:focus{outline:none;border-color:var(--deep)}
     <h1>Vérifier et signer mon contrat</h1>
     <p class="sub">Trois étapes : vos informations, vos coordonnées bancaires, votre signature. Deux minutes, sur votre téléphone.</p>
 
-    <div class="card"><h2>1 · Vos informations</h2><div id="infos"></div><p class="hint">Une erreur ? Répondez à l'e-mail reçu : le studio corrige et vous renvoie le lien.</p></div>
+    <div class="card"><h2>1 · Vos informations</h2>
+      <div class="lbl">Nom et prénom</div><input type="text" id="nom" autocomplete="name" maxlength="80">
+      <div class="lbl">Date de naissance</div><input type="date" id="naiss" class="dt">
+      <div class="lbl">Adresse postale</div><input type="text" id="adr" autocomplete="street-address" placeholder="N°, rue, code postal, ville" maxlength="120">
+      <div class="lbl">Téléphone</div><input type="text" id="tel" inputmode="tel" autocomplete="tel" maxlength="20">
+      <div id="infos"></div>
+      <p class="hint">Ces informations figureront sur votre contrat. Pour changer l'e-mail ou l'abonnement, répondez à l'e-mail reçu : le studio corrige et vous renvoie le lien.</p></div>
 
     <div class="card"><h2>2 · Prélèvement mensuel</h2>
-      <div class="lbl">IBAN</div><input type="text" id="iban" inputmode="latin" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="FR76 …" maxlength="42">
+      <div class="lbl">IBAN</div><input type="text" id="iban" inputmode="latin" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="FR76 1234 5678 9012 3456 7890 123" maxlength="42" oninput="fmtIban(this)">
             <p class="hint">Vos coordonnées bancaires sont chiffrées et servent uniquement au prélèvement de votre abonnement.</p>
     </div>
 
@@ -134,8 +140,9 @@ async function load(){
   try{var d=await call({action:'contrat_get',t:T});C=d.contrat;}catch(e){$('load').textContent=e.message==='Service indisponible'?'Le service est momentanément indisponible. Réessayez dans quelques minutes.':e.message;return;}
   $('studio').textContent='Club Pilates '+C.studio;if(LEGAL[C.studio])$('legal').textContent=LEGAL[C.studio];
   if(C.status==='signe'){$('doneT').textContent='Contrat déjà signé';$('doneP').textContent='Signé le '+new Date(C.signedAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})+'. Votre exemplaire vous a été envoyé par e-mail.';show('done');return;}
-  var rows=[['Nom et prénom',C.nom],['Date de naissance',frd(C.naiss)],['Adresse',C.adr],['Téléphone',C.tel],['E-mail',C.email],['Abonnement',C.pack],['Montant mensuel',C.montant],['Date du contrat',frd(C.date)]];
-  $('infos').innerHTML=rows.map(function(r){return '<div class="row"><span>'+r[0]+'</span><b>'+(r[1]?esc(r[1]):'<i style="color:#AAB4C8;font-weight:400">non renseigné</i>')+'</b></div>';}).join('');
+  $('nom').value=C.nom||'';$('naiss').value=C.naiss||'';$('adr').value=C.adr||'';$('tel').value=C.tel||'';
+  var rows=[['E-mail',C.email],['Abonnement',C.pack],['Montant mensuel',C.montant],['Date du contrat',frd(C.date)]];
+  $('infos').innerHTML='<div style="height:10px"></div>'+rows.map(function(r){return '<div class="row"><span>'+r[0]+'</span><b>'+(r[1]?esc(r[1]):'<i style="color:#AAB4C8;font-weight:400">non renseigné</i>')+'</b></div>';}).join('');
   show('form');initPad();
 }
 // ── Pavé de signature ──
@@ -146,16 +153,24 @@ function initPad(){cv=$('pad');var r=cv.getBoundingClientRect(),dpr=window.devic
   var move=function(e){if(!drawing)return;e.preventDefault();var p=pos(e);ctx.beginPath();ctx.moveTo(last.x,last.y);ctx.lineTo(p.x,p.y);ctx.stroke();last=p;strokes++;};
   var up=function(){drawing=false;};
   cv.addEventListener('pointerdown',down);cv.addEventListener('pointermove',move);window.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);}
+function fmtIban(i){var v=i.value.replace(/[^A-Za-z0-9]/g,'').toUpperCase().slice(0,34);i.value=v.replace(/(.{4})/g,'$1 ').trim();}
+function ibanMod97(s){var t=(s.slice(4)+s.slice(0,4)).replace(/[A-Z]/g,function(c){return String(c.charCodeAt(0)-55);});var m=0;for(var k=0;k<t.length;k++)m=(m*10+Number(t[k]))%97;return m===1;}
 function clearPad(){if(!ctx)return;ctx.clearRect(0,0,cv.width,cv.height);strokes=0;$('ph').style.display='flex';}
 function fail(m){var x=$('msg');x.className='msg err';x.textContent=m;}
 async function sign(){
   var iban=$('iban').value.replace(/\s+/g,'').toUpperCase();
-  if(!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban))return fail('Vérifiez votre IBAN (il commence par FR76 pour un compte français).');
+  var nom=$('nom').value.trim(),naiss=$('naiss').value,adr=$('adr').value.trim(),tel=$('tel').value.trim();
+  if(nom.length<3)return fail('Indiquez votre nom et prénom.');
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(naiss))return fail('Indiquez votre date de naissance.');
+  if(adr.length<8)return fail('Indiquez votre adresse complète (rue, code postal, ville).');
+  if(tel.replace(/\D/g,'').length<9)return fail('Indiquez votre numéro de téléphone.');
+  if(!/^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(iban))return fail('Vérifiez votre IBAN : il commence par FR76 pour un compte français et compte 27 caractères.');
+  if(!ibanMod97(iban))return fail('Cet IBAN ne passe pas le contrôle bancaire : un chiffre est probablement erroné. Recopiez-le depuis votre RIB.');
   if(!$('accept').checked)return fail('Merci de cocher l\'acceptation des conditions générales de vente.');
   if($('lu').value.trim().toLowerCase().replace(/\s+/g,' ')!=='lu et approuvé')return fail('Écrivez exactement « Lu et approuvé ».');
   if(strokes<8)return fail('Signez dans le cadre avec le doigt.');
   var b=$('go');b.disabled=true;b.textContent='Signature en cours…';$('msg').className='msg';
-  try{var d=await call({action:'contrat_sign',t:T,iban:iban,accept:true,lu:$('lu').value,sig:cv.toDataURL('image/png')});
+  try{var d=await call({action:'contrat_sign',t:T,iban:iban,nom:nom,naiss:naiss,adr:adr,tel:tel,accept:true,lu:$('lu').value,sig:cv.toDataURL('image/png')});
     $('doneT').textContent='Merci, votre contrat est signé !';$('doneP').textContent=(d.mailed?'Votre exemplaire signé vient de vous être envoyé par e-mail. ':'Votre contrat est enregistré ; le studio vous enverra votre exemplaire. ')+'À très vite chez Club Pilates '+C.studio+' !';show('done');window.scrollTo(0,0);
   }catch(e){fail(e.message||'Signature impossible, réessayez.');b.disabled=false;b.textContent='Signer mon contrat ✓';}
 }
