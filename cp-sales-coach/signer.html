@@ -61,7 +61,7 @@ input:focus{outline:none;border-color:var(--deep)}
       <div class="cgv" id="cgv">
 <h3>1. Champ d'application</h3>
 <p>Les présentes CGV s'appliquent à tout achat ou réservation de produits et prestations CLUB PILATES, effectué sur www.club-pilates.fr ou en Studio, par toute personne (le « Client »). Elles sont acceptées avant toute commande. Les CGV applicables sont celles en vigueur à la date de la commande. Toute modification ne s'applique pas aux abonnements en cours sans information préalable du Client et sans qu'il puisse résilier s'il refuse la modification.</p>
-<p>La prestation est fournie par la société exploitant le Studio choisi : [raison sociale, adresse, SIREN du Studio, mentionnés lors de la commande]. Le Site est exploité par TMCP FITNESS FRANCE (voir Mentions légales).</p>
+<p>La prestation est fournie par la société exploitant le Studio choisi : <span id="legal">[raison sociale, adresse, SIREN du Studio, mentionnés lors de la commande]</span>. Le Site est exploité par TMCP FITNESS FRANCE (voir Mentions légales).</p>
 <h3>2. Compte et commande</h3>
 <p>Tout achat suppose un compte personnel et unique. Le Client protège ses identifiants et prévient sans délai le Studio en cas de perte ou de vol. La commande est ferme après validation, paiement accepté par la banque et envoi d'un numéro de commande. Un e-mail de confirmation est envoyé ; le Client signale toute anomalie ou absence de confirmation dans les 5 jours.</p>
 <h3>3. Prix et paiement</h3>
@@ -122,6 +122,8 @@ input:focus{outline:none;border-color:var(--deep)}
 var SYNC='https://wfqtpcujujqxgfsgbpvp.supabase.co/functions/v1/coach-sync';
 var T=new URLSearchParams(location.search).get('t')||'';
 var C=null;
+// Société exploitante de chaque studio (registre du commerce), clé = nom du studio
+var LEGAL={'La Garenne-Colombes':'COBE LGC, EURL au capital de 100 €, siège 10 rue William Shakespeare, 78280 Guyancourt, SIREN 108 756 263, RCS Versailles, TVA FR86108756263, représentée par sa gérante Caroline Coquel'};
 function $(i){return document.getElementById(i);}
 function esc(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
 function frd(d){return /^\d{4}-\d{2}-\d{2}$/.test(d||'')?d.slice(8)+'/'+d.slice(5,7)+'/'+d.slice(0,4):'';}
@@ -130,7 +132,7 @@ async function call(body){var r=await fetch(SYNC,{method:'POST',headers:{'Conten
 async function load(){
   if(!/^[0-9a-f]{32}$/.test(T)){$('load').textContent='Ce lien est invalide. Reprenez-le depuis l\'e-mail reçu du studio.';return;}
   try{var d=await call({action:'contrat_get',t:T});C=d.contrat;}catch(e){$('load').textContent=e.message==='Service indisponible'?'Le service est momentanément indisponible. Réessayez dans quelques minutes.':e.message;return;}
-  $('studio').textContent='Club Pilates '+C.studio;
+  $('studio').textContent='Club Pilates '+C.studio;if(LEGAL[C.studio])$('legal').textContent=LEGAL[C.studio];
   if(C.status==='signe'){$('doneT').textContent='Contrat déjà signé';$('doneP').textContent='Signé le '+new Date(C.signedAt).toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})+'. Votre exemplaire vous a été envoyé par e-mail.';show('done');return;}
   var rows=[['Nom et prénom',C.nom],['Date de naissance',frd(C.naiss)],['Adresse',C.adr],['Téléphone',C.tel],['E-mail',C.email],['Abonnement',C.pack],['Montant mensuel',C.montant],['Date du contrat',frd(C.date)]];
   $('infos').innerHTML=rows.map(function(r){return '<div class="row"><span>'+r[0]+'</span><b>'+(r[1]?esc(r[1]):'<i style="color:#AAB4C8;font-weight:400">non renseigné</i>')+'</b></div>';}).join('');
