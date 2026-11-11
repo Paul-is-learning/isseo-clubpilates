@@ -111,6 +111,8 @@ function genCode(nom: string, taken: (c: string) => boolean): string {
   return "";
 }
 const ROW_OTP = "_coach_otp";
+// Boîte e-mail de chaque studio (réponse + copie des contrats envoyés), clé = studio normalisé (sk)
+const STUDIO_MAIL: Record<string, string> = { lagarennecolombes: "Lagarennecolombes@clubpilates.fr" };
 const OTP_TTL_MS = 10 * 60 * 1000, OTP_TRIES = 5, MAX_DEVICES = 4, DEVICE_TTL_MS = 30 * 24 * 3600 * 1000;
 const sha = async (t: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))).map((b) => b.toString(16).padStart(2, "0")).join("");
 const maskEmail = (e: string) => { const [u, d] = e.split("@"); return (u || "").slice(0, 2) + "•••@" + (d || ""); };
@@ -312,6 +314,36 @@ serve(async (req) => {
     };
 
     if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio, studios: myStudios, scoped });
+
+    // ── Contrat d'inscription : PDF rempli côté client, envoyé par e-mail au client (copie au studio) ──
+    if (action === "contrat_send") {
+      const to = String(body.to || "").trim(), nom = String(body.nom || "").trim().slice(0, 80), pdf = String(body.pdf || "");
+      const studio = canon(body.studio) || myStudio || "", who = String(body.rep || rep || "").trim().slice(0, 40);
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || to.length > 120) return json({ error: "Adresse e-mail du client invalide" }, 400);
+      if (!nom) return json({ error: "Nom du client requis" }, 400);
+      if (!pdf || pdf.length > 4_000_000 || !/^[A-Za-z0-9+/=]+$/.test(pdf)) return json({ error: "PDF manquant ou trop lourd" }, 400);
+      const key = Deno.env.get("RESEND_API_KEY");
+      if (!key) return json({ error: "Envoi d'e-mail non configuré" }, 500);
+      const studioMail = STUDIO_MAIL[sk(studio)] || "";
+      const esc = (t: string) => t.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "\"": "&quot;" }[c] || c));
+      const first = nom.split(/\s+/)[0] || "";
+      const html = `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;color:#1F2A44;line-height:1.5">
+        <p>Bonjour ${esc(first)},</p>
+        <p>Merci pour votre confiance et bienvenue chez <b>Club Pilates ${esc(studio)}</b> !</p>
+        <p>Vous trouverez en pièce jointe votre fiche d'inscription, pré-remplie avec vos informations, ainsi que nos conditions générales de vente. Merci de la vérifier, de compléter l'IBAN et le BIC, d'écrire « Lu et approuvé » et de la signer, puis de nous la retourner en réponse à cet e-mail ou de la rapporter au studio.</p>
+        <p>Une question ? Répondez simplement à ce message${who ? ", " + esc(who) + " vous répondra" : ""}.</p>
+        <p>À très vite sur le Reformer,<br>L'équipe Club Pilates ${esc(studio)}</p></div>`;
+      const text = `Bonjour ${first},\n\nMerci pour votre confiance et bienvenue chez Club Pilates ${studio} !\n\nVous trouverez en pièce jointe votre fiche d'inscription pré-remplie ainsi que nos conditions générales de vente. Merci de la vérifier, de compléter l'IBAN et le BIC, d'écrire « Lu et approuvé » et de la signer, puis de nous la retourner en réponse à cet e-mail ou de la rapporter au studio.\n\nUne question ? Répondez simplement à ce message.\n\nL'équipe Club Pilates ${studio}`;
+      const fname = "Contrat-Club-Pilates-" + nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w-]+/g, "-").slice(0, 40) + ".pdf";
+      const payload: Record<string, unknown> = { from: `Club Pilates ${studio} <noreply@isseo-dev.com>`, to: [to], subject: "Votre contrat d'inscription · Club Pilates " + studio, html, text, attachments: [{ filename: fname, content: pdf }] };
+      if (studioMail) { payload.reply_to = studioMail; payload.cc = [studioMail]; }
+      try {
+        const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" }, body: JSON.stringify(payload) });
+        const d = await r.json().catch(() => ({}));
+        if (!r.ok) { console.warn("[contrat_send] resend", r.status, d?.message || ""); return json({ error: "Le service d'e-mail a refusé l'envoi" }, 502); }
+        return json({ ok: true, id: d?.id || "" });
+      } catch (e) { console.warn("[contrat_send]", e); return json({ error: "Envoi impossible" }, 502); }
+    }
 
     // ── Avatars : chacun définit le sien, tout le monde voit ceux des autres ──
     if (action === "avatar_set") {
@@ -1054,6 +1086,10 @@ serve(async (req) => {
             matInt: p.matInt === true, // intéressé(e) par une séance découverte Pilates Mat avant l'ouverture
             lostWhy: String(p.lostWhy || "").slice(0, 20), // raison de perte (prix, distance, horaires, pasprete, concurrent, sansrep)
             smsVeille: String(p.smsVeille || "").slice(0, 10), // date (AAAA-MM-JJ) du dernier SMS de confirmation envoyé
+            naiss: String(p.naiss || "").slice(0, 10), // date de naissance (contrat d'inscription)
+            adr: String(p.adr || "").slice(0, 120), // adresse postale (contrat d'inscription)
+            // Contrat d'inscription envoyé par e-mail : quand, par qui, à quelle adresse
+            contrat: p.contrat && typeof p.contrat === "object" && p.contrat.at ? { at: String(p.contrat.at).slice(0, 30), by: String(p.contrat.by || "").slice(0, 40), to: String(p.contrat.to || "").slice(0, 120) } : undefined,
             // Profil pour le coach : objectif, douleurs/santé, pratique, contraintes (140 car. chacun)
             prof: ["obj", "doul", "prat", "contr"].reduce((o: Record<string, string>, k) => { o[k] = String((p.prof || {})[k] || "").slice(0, 140); return o; }, {}),
             // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.

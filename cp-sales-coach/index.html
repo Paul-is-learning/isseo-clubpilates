@@ -3006,7 +3006,7 @@ function _retryLater(e){_fails++;clearTimeout(_retryT);_retryT=setTimeout(syncPu
 function _restSt(){return _fails?_failSt:(_pushBusy||_hasPend()?'sync':'ok');}
 // Fiche renvoyée par une action (note, température, coordonnées) : si elle porte une modification locale
 // pas encore envoyée, nos champs restent et repartent avec la nouvelle version
-const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','ouverture','unit','enCours','clos'];
+const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','naiss','adr','contrat','ouverture','unit','enCours','clos'];
 function _takeSrv(id,sp,own){
   const l=PROSPECTS.find(x=>x.id===id);if(!l||!sp)return;
   _SEEN[id]=sp.maj||'';
@@ -4033,6 +4033,81 @@ async function openLivret(ev){
     toast(`📘 Votre livret est prêt, ${first}`);
   }catch(e){console.warn('[livret]',e);window.open(LIVRET_URL,'_blank');}
   return false;
+}
+// ── Contrat d'inscription (fiche + CGV) : rempli dans le navigateur, envoyé par e-mail au client ──
+const CONTRAT_URL='contrat-inscription-cgv.pdf?v=2026111101';
+const STUDIO_MAIL={'La Garenne-Colombes':'Lagarennecolombes@clubpilates.fr'};
+function contratLineHTML(p){
+  if(p.bmember||!(p.statut==='abo'||p.statut==='venu'||p.statut==='essai'))return '';
+  const c=p.contrat;
+  return `<div class="pr-packline" style="margin-top:-2px"><button class="pr-act" onclick="contratSheet('${p.id}')">📄 ${c?'Renvoyer le contrat':'Contrat d\'inscription'}</button>${c?`<small style="color:#5B6B8C">envoyé le ${esc(_trDate(c.at))}${c.by?' par '+esc(c.by):''}${c.to?' à '+esc(c.to):''}</small>`:'<small style="color:#8C95A8">fiche d\'inscription + CGV, pré-remplie</small>'}</div>`;
+}
+function _cFmt(d){if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))return '';const [y,m,j]=d.split('-');return j+'/'+m+'/'+y;}
+function contratVals(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return null;const g=i=>((document.getElementById(i)||{}).value||'').trim();
+  return {p,nom:g('ct-nom'),naiss:g('ct-naiss'),adr:g('ct-adr'),tel:g('ct-tel'),email:g('ct-email'),pack:(document.querySelector('.ct-pack.on')||{dataset:{}}).dataset.k||'',montant:g('ct-montant'),date:g('ct-date')};}
+function contratSheet(id){
+  const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
+  const pk=String(p.pack||'');
+  icSheet(`<div class="glp-tag">${ici('calendar',12)} Contrat d'inscription</div>
+    <div class="glp-t">${esc(p.nom||'Prospect')}</div>
+    <div class="pl-hint" style="display:block;margin:4px 0 0">Vérifiez chaque ligne : elle sera imprimée telle quelle sur la fiche d'inscription. L'IBAN, le BIC et la signature restent à remplir par le client, à la main.</div>
+    <div class="ics-lbl">Nom et prénom</div><input id="ct-nom" class="ics-in" maxlength="80" value="${esc(p.nom||'')}"/>
+    <div class="ics-row">
+      <div style="flex:1"><div class="ics-lbl">Date de naissance</div><input type="date" id="ct-naiss" class="ics-in" value="${esc(p.naiss||'')}"/></div>
+      <div style="flex:1"><div class="ics-lbl">Date du contrat</div><input type="date" id="ct-date" class="ics-in" value="${todayStr()}"/></div>
+    </div>
+    <div class="ics-lbl">Adresse</div><input id="ct-adr" class="ics-in" maxlength="120" placeholder="N°, rue, code postal, ville" value="${esc(p.adr||'')}"/>
+    <div class="ics-row">
+      <div style="flex:1"><div class="ics-lbl">Téléphone</div><input id="ct-tel" class="ics-in" inputmode="tel" value="${esc(p.tel||'')}"/></div>
+      <div style="flex:1.4"><div class="ics-lbl">E-mail <small>· destinataire du contrat</small></div><input id="ct-email" type="email" class="ics-in" value="${esc(p.email||'')}"/></div>
+    </div>
+    <div class="ics-lbl">Abonnement mensuel</div>
+    <div class="ag-types">${[['1','Pack 4 classes'],['2','Pack 8 classes'],['3','Classes illimitées']].map(([k,l])=>`<button class="ics-chip ct-pack${pk===k?' on':''}" data-k="${k}" onclick="document.querySelectorAll('.ct-pack').forEach(c=>c.classList.toggle('on',c===this))">${l}</button>`).join('')}</div>
+    <div class="ics-lbl">Montant du prélèvement mensuel <small>· facultatif, tel qu'écrit sur le contrat</small></div><input id="ct-montant" class="ics-in" maxlength="40" placeholder="Ex. : 149 € / mois" value=""/>
+    <div class="fv-btns" style="flex-wrap:wrap;margin-top:14px">
+      <button class="pr-act" onclick="contratPdf('${p.id}',false)">👁 Voir le PDF</button>
+      <button class="pr-act main" style="flex:1" onclick="contratSend('${p.id}')">✉️ Envoyer au client par e-mail</button>
+    </div>`);
+}
+function _contratKeep(v){const p=v.p;let ch=false;
+  ['naiss','adr'].forEach(k=>{if(v[k]&&v[k]!==p[k]){p[k]=v[k];ch=true;}});
+  if(v.email&&v.email!==p.email){p.email=v.email;ch=true;}
+  if(v.pack&&v.pack!==String(p.pack||'')&&p.statut==='abo'){p.pack=v.pack;ch=true;}
+  if(ch){p.maj=new Date().toISOString();persistProspects();schedulePush();}}
+async function contratBuild(v){
+  const [{PDFDocument,StandardFonts,rgb},bytes]=await Promise.all([_loadPdfLib(),fetch(CONTRAT_URL).then(r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer();})]);
+  const doc=await PDFDocument.load(bytes),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold);
+  const pg=doc.getPages()[0],H=pg.getSize().height,ink=rgb(.12,.16,.28),bleu=rgb(.29,.47,.74);
+  const T=(t,x,yTop,s,f)=>{if(t)pg.drawText(String(t).normalize('NFD').replace(/[̀-ͯ]/g,''),{x,y:H-yTop,size:s||10,font:f||font,color:ink});};
+  const city=(CFG.studio||'').trim();
+  T(_cFmt(v.date),98,51,10,bold);
+  T(v.nom,172,147,11,bold);T(_cFmt(v.naiss),180,173);T(v.adr,135,200);T(v.tel,147,228);T(v.email,110,255);
+  const by={1:342,2:366,3:389}[v.pack];if(by)pg.drawText('X',{x:516,y:H-by,size:13,font:bold,color:bleu});
+  T(v.montant,135,587,10,bold);
+  T(city,352,659,7);T(_cFmt(v.date),470,659,7);
+  doc.setTitle('Contrat d\'inscription Club Pilates · '+v.nom);doc.setSubject('Fiche d\'inscription et CGV');
+  return await doc.save();
+}
+async function contratPdf(id,silent){
+  const v=contratVals(id);if(!v)return null;if(!v.nom){toast('Indiquez le nom du client');return null;}
+  try{const bytes=await contratBuild(v);_contratKeep(v);
+    if(!silent){const blob=new Blob([bytes],{type:'application/pdf'}),href=URL.createObjectURL(blob);window.open(href,'_blank');setTimeout(()=>URL.revokeObjectURL(href),120000);}
+    return bytes;}catch(e){console.warn('[contrat]',e);toast('Impossible de préparer le PDF · réessayez');return null;}
+}
+async function contratSend(id){
+  const v=contratVals(id);if(!v)return;
+  if(!v.nom){toast('Indiquez le nom du client');return;}
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)){toast('Indiquez l\'e-mail du client');return;}
+  if(!v.pack){toast('Choisissez l\'abonnement');return;}
+  if(v.p.contrat&&!confirm('Un contrat a déjà été envoyé le '+_trDate(v.p.contrat.at)+'. Le renvoyer ?'))return;
+  const b=document.querySelector('#icPop .pr-act.main');if(b){b.disabled=true;b.textContent='Envoi…';}
+  const bytes=await contratPdf(id,true);if(!bytes){if(b){b.disabled=false;b.textContent='✉️ Envoyer au client par e-mail';}return;}
+  let bin='';const u8=new Uint8Array(bytes);for(let i=0;i<u8.length;i+=8192)bin+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));
+  try{const r=await syncCall('contrat_send',{to:v.email,nom:v.nom,pack:v.pack,studio:v.p.studio||CFG.studio||'',rep:CFG.rep||'',pdf:btoa(bin)});
+    if(!r||!r.ok)throw new Error((r&&r.error)||'envoi refusé');
+    v.p.contrat={at:new Date().toISOString(),by:(CFG.rep||'').split(' ')[0],to:v.email};v.p.maj=new Date().toISOString();persistProspects();schedulePush();
+    document.getElementById('icPop')?.remove();toast('✉️ Contrat envoyé à '+v.email);showProspects(true);
+  }catch(e){console.warn('[contrat send]',e);toast('Envoi impossible · '+(e.message||'réessayez'));if(b){b.disabled=false;b.textContent='✉️ Envoyer au client par e-mail';}}
 }
 // Suivi de la formation (admin) : qui a fait quoi, avec quel score. Le serveur garde le MEILLEUR score par étape (pas le nombre d'essais).
 function _trDate(ts){try{return new Date(ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}catch(e){return '';}}
@@ -5838,6 +5913,7 @@ function showProspects(keepScroll){
               +(()=>{const ov=prOuv(p),OC='#6B5B3E';return `<button class="pr-st${ov?' on':''}" style="${ov?'background:'+OC+';color:#fff;border-color:'+OC:''}" title="${ov?'Remettre dans les rappels':'Ne souhaite plus être contacté pour le moment · à rappeler à l\'ouverture du studio'}" onclick="ouvAsk('${p.id}')">🏗<small>À rappeler à l'ouverture</small></button>`;})();})()}</div>
             ${p.statut==='abo'&&!p.bmember?`<div class="pr-packline">${p.pack?'':'<span class="pr-pack-ask">Quel abonnement a été pris ?</span>'}${[1,2,3].map(pk=>`<button class="pr-pack sm${+p.pack===pk?' on':''}" onclick="aboAsk('${p.id}',${pk})">${packShort(pk)}</button>`).join('')}<button class="pr-act" style="padding:4px 9px;font-size:11px" title="Vendeur ayant réalisé la vente" onclick="aboAsk('${p.id}')">👤 ${p.vendeur?'Vendeur : '+esc(p.vendeur):'Choisir le vendeur'}</button></div>`:''}
             ${p.statut==='unit'?unitLine(p):''}
+            ${contratLineHTML(p)}
             <div class="pl-tempw"><div class="pl-lbl">Température du lead</div>
             <div class="pl-row pl-temp">${[['chaud','🔥 Chaud'],['tiede','🌤 Tiède'],['froid','❄️ Froid'],['','↺ Auto']].map(([k,l])=>`<button class="pl-tb${(p.temp||'')===k?' on':''} t-${k||'auto'}" onclick="setTemp('${p.id}','${k}')">${l}</button>`).join('')}${!p.temp&&prAppetenceAuto(p)?`<small class="pl-by">auto : ${({chaud:'🔥 chaud',tiede:'🌤 tiède',froid:'❄️ froid',aqualifier:'à qualifier'})[prAppetenceAuto(p).tier]||''}</small>`:''}</div></div>
             ${(()=>{const cur=p.icBook?IC.sessions.find(x=>x.id===p.icBook):null;const L=[];
