@@ -364,7 +364,7 @@ serve(async (req) => {
     if (action === "contrat_preview") {
       const c: Contrat = {
         token: "apercu", pid: "", studio: canon(body.studio) || myStudio || "", nom: String(body.nom || "").trim().slice(0, 80), tel: String(body.tel || "").slice(0, 30), email: String(body.to || "").trim().slice(0, 120),
-        naiss: String(body.naiss || "").slice(0, 10), adr: String(body.adr || "").slice(0, 120), pack: String(body.pack || ""), montant: String(body.montant || "").slice(0, 60),
+        naiss: String(body.naiss || "").slice(0, 10), adr: String(body.adr || "").slice(0, 120), pack: String(body.pack || ""), montant: String(body.montant || "").slice(0, 80),
         date: /^\d{4}-\d{2}-\d{2}$/.test(String(body.date || "")) ? String(body.date) : new Date().toISOString().slice(0, 10), by: rep, at: new Date().toISOString(), status: "envoye",
       };
       try { return json({ ok: true, pdf: b64(await buildPdf(c)) }); } catch (e) { console.warn("[contrat_preview]", e); return json({ error: "Impossible de préparer le PDF" }, 502); }
@@ -380,7 +380,7 @@ serve(async (req) => {
       if (!String(body.montant || "").trim()) return json({ error: "Montant mensuel requis" }, 400);
       const c: Contrat = {
         token: newToken(), pid: String(body.pid || "").slice(0, 60), studio, nom, tel: String(body.tel || "").slice(0, 30), email: to,
-        naiss: String(body.naiss || "").slice(0, 10), adr: String(body.adr || "").slice(0, 120), pack: String(body.pack), montant: String(body.montant || "").slice(0, 40),
+        naiss: String(body.naiss || "").slice(0, 10), adr: String(body.adr || "").slice(0, 120), pack: String(body.pack), montant: String(body.montant || "").slice(0, 80),
         date: /^\d{4}-\d{2}-\d{2}$/.test(String(body.date || "")) ? String(body.date) : new Date().toISOString().slice(0, 10),
         by: who, at: new Date().toISOString(), status: "envoye",
       };
