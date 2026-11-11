@@ -28,7 +28,7 @@ export const newToken = () => Array.from(crypto.getRandomValues(new Uint8Array(1
 export const esc = (t: string) => String(t).replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", '"': "&quot;" }[c] || c));
 const fr = (d: string) => (/^\d{4}-\d{2}-\d{2}$/.test(d) ? d.slice(8) + "/" + d.slice(5, 7) + "/" + d.slice(0, 4) : "");
 // Caractères imprimables par les polices standard (Latin-1 + euro) ; le reste est retiré
-const ascii = (t: string) => String(t || "").normalize("NFC").replace(/[^\x20-\x7E\xA0-\xFF\u20AC]/g, "");
+const ascii = (t: string) => String(t || "").normalize("NFC").replace(/[^\x20-\x7E\xA0-\xFF\u20AC\u2022]/g, "");
 
 // ── E-mail ────────────────────────────────────────────────────────────────
 export type Mail = { to: string; cc?: string[]; replyTo?: string; from?: string; subject: string; html: string; text: string; attachments?: { filename: string; base64: string }[] };
@@ -79,17 +79,18 @@ export function mailSigne(c: Contrat) {
   const first = c.nom.split(/\s+/)[0] || "", S = c.studio;
   const html = `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;color:#1F2A44;line-height:1.5">
     <p>Bonjour ${esc(first)},</p>
-    <p>Votre contrat d'inscription <b>Club Pilates ${esc(S)}</b> est signé. Vous le trouverez en pièce jointe, avec nos conditions générales de vente : conservez-le précieusement.</p>
+    <p>Votre contrat d'inscription <b>Club Pilates ${esc(S)}</b> est signé. Vous le trouverez en pièce jointe, avec nos conditions générales de vente : conservez-le précieusement. Par sécurité, votre IBAN y est partiellement masqué.</p>
     <p>Toute l'équipe a hâte de vous accueillir au studio !</p>
     <p>L'équipe Club Pilates ${esc(S)}</p></div>`;
-  const text = `Bonjour ${first},\n\nVotre contrat d'inscription Club Pilates ${S} est signé. Vous le trouverez en pièce jointe, avec nos conditions générales de vente.\n\nToute l'équipe a hâte de vous accueillir au studio !\n\nL'équipe Club Pilates ${S}`;
+  const text = `Bonjour ${first},\n\nVotre contrat d'inscription Club Pilates ${S} est signé. Vous le trouverez en pièce jointe, avec nos conditions générales de vente. Par sécurité, votre IBAN y est partiellement masqué.\n\nToute l'équipe a hâte de vous accueillir au studio !\n\nL'équipe Club Pilates ${S}`;
   return { subject: "Votre contrat signé · Club Pilates " + S, html, text };
 }
 export const fileName = (nom: string) => "Contrat-Club-Pilates-" + ascii(nom).replace(/[^\w-]+/g, "-").slice(0, 40) + ".pdf";
 
 // ── PDF ───────────────────────────────────────────────────────────────────
 // Page 1 dessinée en vectoriel (lisible, moderne), page 2 = CGV du modèle publié sur le site.
-export type Signature = { pngBase64: string; iban: string; bic?: string; at: string; ipHash: string };
+export type Signature = { pngBase64: string; iban: string; bic?: string; at: string; ipHash: string; mask?: boolean };
+// mask : copie e-mail · seuls les 4 premiers et 3 derniers caractères de l'IBAN restent lisibles (le contrat complet est dans le coffre).
 export const STUDIO_LEGAL: Record<string, string> = {
   lagarennecolombes: "COBE LGC, EURL au capital de 100 €, siège 10 rue William Shakespeare, 78280 Guyancourt, SIREN 108 756 263, RCS Versailles, TVA FR86108756263, gérante Caroline Coquel",
 };
@@ -159,9 +160,11 @@ export async function buildPdf(c: Contrat, sig?: Signature): Promise<Uint8Array>
   section("4", "Prélèvement mensuel", 482);
   txt("Le montant de l'abonnement est prélevé chaque mois sur le compte ci-dessous.", M, 506, 9.2, font, INK);
   txt("IBAN", M, 532, 6.6, bold, MUTED);
-  const iban = (sig?.iban || "").replace(/\s+/g, "").toUpperCase(), bw = 13.6, gap = 6, groups = [4, 4, 4, 4, 4, 4, 3];
+  const full = (sig?.iban || "").replace(/\s+/g, "").toUpperCase(), bw = 13.6, gap = 6, groups = [4, 4, 4, 4, 4, 4, 3];
+  const iban = sig?.mask && full ? full.replace(/^(.{4})(.*)(.{3})$/, (_m, a, b, c) => a + b.replace(/./g, "\u2022") + c) : full;
   let bx = M, idx = 0;
   groups.forEach((n) => { for (let k = 0; k < n; k++) { rect(bx, 538, bw, 18, { fill: WHITE, stroke: iban ? LINE : BLUE, bw: .8 }); if (iban[idx]) txt(iban[idx], bx + 3.4, 551, 10.5, bold, INK); bx += bw; idx++; } bx += gap; });
+  if (sig?.mask) txt("IBAN masqué sur cette copie · l'original complet est conservé par le studio.", M, 568, 7.2, ital, MUTED);
 
   // ── 5 · Acceptation et signature ──
   section("5", "Acceptation et signature", 582);

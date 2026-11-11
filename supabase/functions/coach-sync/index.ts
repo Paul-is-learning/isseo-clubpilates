@@ -234,7 +234,10 @@ serve(async (req) => {
         if (p) { p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.naiss = c.naiss; p.adr = c.adr; if (!p.tel) p.tel = c.tel; p.maj = at; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
       } catch (e) { console.warn("[contrat_sign] fiche", e); }
       const sm = studioMail(c.studio), m = mailSigne(signed);
-      const r = await sendMail({ to: c.email, cc: sm ? [sm] : [], replyTo: sm || undefined, ...m, attachments: [{ filename: fileName(c.nom), base64: b64(pdf) }] }, c.studio);
+      // Copie e-mail avec IBAN masqué (l'original complet reste dans le coffre, consultable depuis la fiche)
+      let mailPdf = pdf;
+      try { mailPdf = await buildPdf(c, { pngBase64: png, iban, bic: bic || "", at, ipHash: ih, mask: true }); } catch (e) { console.warn("[contrat_sign] pdf masqué", e); mailPdf = new Uint8Array(0); }
+      const r = mailPdf.length ? await sendMail({ to: c.email, cc: sm ? [sm] : [], replyTo: sm || undefined, ...m, attachments: [{ filename: fileName(c.nom), base64: b64(mailPdf) }] }, c.studio) : { ok: false };
       return json({ ok: true, signedAt: at, mailed: r.ok });
     }
 
