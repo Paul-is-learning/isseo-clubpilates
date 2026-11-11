@@ -53,7 +53,7 @@ export async function rappelPush(admin: any, prospects: any[], nowDate = new Dat
   if (!items.length) return { ...R, note: "aucun appareil abonné" };
   const now = parisNow(nowDate), gone = new Set<string>();
   for (const p of prospects) {
-    if (!p || !p.rappel || !p.rappelH || p.noCall || !["rappeler", "essai"].includes(String(p.statut))) continue;
+    if (!p || !p.rappel || !p.rappelH || p.noCall || p.icWait || p.matInt || !["rappeler", "essai"].includes(String(p.statut))) continue; // liste d'attente IC / Pilates Mat : plus de démarchage
     if (p.rappel !== now.d) continue;
     const m = /^(\d{1,2}):(\d{2})$/.exec(String(p.rappelH)); if (!m) continue;
     const lead = +m[1] * 60 + +m[2] - now.min;
@@ -66,7 +66,7 @@ export async function rappelPush(admin: any, prospects: any[], nowDate = new Dat
     if (!subs.length) { R.sans_appareil++; sent[key] = Date.now(); continue; }
     const todo = todoOf(p);
     // Pastille de l'icône : rappels du jour (avec ou sans heure) encore ouverts pour ce commercial
-    const badge = prospects.filter((q) => q && q.rappel && q.rappel <= now.d && !q.noCall && ["rappeler", "essai"].includes(String(q.statut)) && sk(ownerOf(q)) === owner && (!q.studio || !p.studio || sk(q.studio) === sk(p.studio))).length;
+    const badge = prospects.filter((q) => q && q.rappel && q.rappel <= now.d && !q.noCall && !q.icWait && !q.matInt && ["rappeler", "essai"].includes(String(q.statut)) && sk(ownerOf(q)) === owner && (!q.studio || !p.studio || sk(q.studio) === sk(p.studio))).length;
     const payload = { badge, title: "⏰ Rappel à " + p.rappelH + (lead > 1 ? " · dans " + lead + " min" : " · maintenant"), body: String(p.nom || "Prospect") + (p.statut === "essai" ? " · séance d'essai" : "") + (todo ? "\n" + todo : ""), tag: key, data: { open: p.id } };
     for (const it of subs) {
       const r = await sendPush(it.sub, payload);
