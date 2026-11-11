@@ -4037,6 +4037,13 @@ async function openLivret(ev){
 // ── Contrat d'inscription (fiche + CGV) : rempli dans le navigateur, envoyé par e-mail au client ──
 const CONTRAT_URL='contrat-inscription-cgv.pdf?v=2026111101';
 const STUDIO_MAIL={'La Garenne-Colombes':'Lagarennecolombes@clubpilates.fr'};
+// Montant mensuel : tarifs du studio (Réglages : p1/p2/p3) et remise fondateur (CFG.founding), jamais devinés ici
+const CT_OFFRES={fond:'Membre Fondateur',std:'Tarif standard'};
+function contratMontant(){const pk=+(document.querySelector('.ct-pack.on')||{dataset:{}}).dataset.k,of=(document.querySelector('.ct-offre.on')||{dataset:{}}).dataset.k,m=document.getElementById('ct-montant');if(!m||!pk||!of)return;
+  const std=parseFloat(packMonthly(pk)),fo=of==='fond'?foundingMonthly(pk):null,v=of==='fond'&&fo!=null?fo:std,pct=parseFloat(CFG.founding)||0;
+  if(isNaN(v)){m.value='';m.placeholder='Tarif du '+packShort(pk)+' non renseigné dans Réglages · à saisir';return;}
+  const eur=v.toFixed(2).replace(/\.00$/,'');
+  m.value=of==='fond'&&fo!=null?`${packShort(pk)} Membre Fondateur (-${pct}% à vie) ${eur}€/mois`:`${packShort(pk)} ${eur}€/mois`;m.placeholder='';}
 function contratLineHTML(p){
   if(p.bmember||!(p.statut==='abo'||p.statut==='venu'||p.statut==='essai'))return '';
   const c=p.contrat,mgr=COACH_ROLE==='admin'||IS_MGR;
@@ -4063,7 +4070,7 @@ function contratSheet(id){
   const pk=String(p.pack||'');
   icSheet(`<div class="glp-tag">${ici('calendar',12)} Contrat d'inscription</div>
     <div class="glp-t">${esc(p.nom||'Prospect')}</div>
-    <div class="pl-hint" style="display:block;margin:4px 0 0">Vérifiez chaque ligne : elle sera imprimée telle quelle sur la fiche d'inscription. Le client recevra un e-mail avec le PDF et un lien pour renseigner son IBAN et signer depuis son téléphone.</div>
+    <div class="pl-hint" style="display:block;margin:4px 0 0">Toutes les lignes sont obligatoires et imprimées telles quelles sur la fiche d'inscription. Le client recevra un e-mail avec le PDF et un lien pour renseigner son IBAN et signer depuis son téléphone.</div>
     <div class="ics-lbl">Nom et prénom</div><input id="ct-nom" class="ics-in" maxlength="80" value="${esc(p.nom||'')}"/>
     <div class="ics-row">
       <div style="flex:1"><div class="ics-lbl">Date de naissance</div><input type="date" id="ct-naiss" class="ics-in" value="${esc(p.naiss||'')}"/></div>
@@ -4075,12 +4082,15 @@ function contratSheet(id){
       <div style="flex:1.4"><div class="ics-lbl">E-mail <small>· destinataire du contrat</small></div><input id="ct-email" type="email" class="ics-in" value="${esc(p.email||'')}"/></div>
     </div>
     <div class="ics-lbl">Abonnement mensuel</div>
-    <div class="ag-types">${[['1','Pack 4 classes'],['2','Pack 8 classes'],['3','Classes illimitées']].map(([k,l])=>`<button class="ics-chip ct-pack${pk===k?' on':''}" data-k="${k}" onclick="document.querySelectorAll('.ct-pack').forEach(c=>c.classList.toggle('on',c===this))">${l}</button>`).join('')}</div>
-    <div class="ics-lbl">Montant du prélèvement mensuel <small>· facultatif, tel qu'écrit sur le contrat</small></div><input id="ct-montant" class="ics-in" maxlength="40" placeholder="Ex. : 149 € / mois" value=""/>
+    <div class="ag-types">${[['1','Pack 4 classes'],['2','Pack 8 classes'],['3','Classes illimitées']].map(([k,l])=>`<button class="ics-chip ct-pack${pk===k?' on':''}" data-k="${k}" onclick="document.querySelectorAll('.ct-pack').forEach(c=>c.classList.toggle('on',c===this));contratMontant()">${l}</button>`).join('')}</div>
+    <div class="ics-lbl">Offre</div>
+    <div class="ag-types">${Object.keys(CT_OFFRES).map(k=>`<button class="ics-chip ct-offre${k==='fond'?' on':''}" data-k="${k}" onclick="document.querySelectorAll('.ct-offre').forEach(c=>c.classList.toggle('on',c===this));contratMontant()">${CT_OFFRES[k]}</button>`).join('')}</div>
+    <div class="ics-lbl">Montant du prélèvement mensuel <small>· rempli selon le pack et l'offre, modifiable</small></div><input id="ct-montant" class="ics-in" maxlength="60" value=""/>
     <div class="fv-btns" style="flex-wrap:wrap;margin-top:14px">
       <button class="pr-act" onclick="contratPdf('${p.id}',false)">👁 Voir le PDF</button>
       <button class="pr-act main" style="flex:1" onclick="contratSend('${p.id}')">✉️ Envoyer à signer</button>
     </div>`);
+  contratMontant();
 }
 function _contratKeep(v){const p=v.p;let ch=false;
   ['naiss','adr'].forEach(k=>{if(v[k]&&v[k]!==p[k]){p[k]=v[k];ch=true;}});
@@ -4112,6 +4122,8 @@ async function contratSend(id){
   if(!v.nom){toast('Indiquez le nom du client');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)){toast('Indiquez l\'e-mail du client');return;}
   if(!v.pack){toast('Choisissez l\'abonnement');return;}
+  const miss=[['tel','le téléphone'],['naiss','la date de naissance'],['adr','l\'adresse complète'],['montant','le montant mensuel']].find(([k])=>!(v[k]||'').trim()||(k==='adr'&&v.adr.trim().length<8));
+  if(miss){toast('Indiquez '+miss[1]+' · obligatoire sur le contrat');document.getElementById('ct-'+miss[0])?.focus();return;}
   if(v.p.contrat&&v.p.contrat.signe&&!confirm('Ce contrat est déjà signé. Renvoyer un nouveau contrat à signer ?'))return;
   if(v.p.contrat&&!v.p.contrat.signe&&!confirm('Un contrat a déjà été envoyé le '+_trDate(v.p.contrat.at)+'. Le renvoyer (nouveau lien) ?'))return;
   const b=document.querySelector('#icPop .pr-act.main'),lbl='✉️ Envoyer à signer';if(b){b.disabled=true;b.textContent='Envoi…';}
