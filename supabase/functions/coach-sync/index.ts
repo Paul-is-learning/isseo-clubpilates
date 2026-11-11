@@ -25,6 +25,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { RateLimited, refreshSummary, summaryOn } from "../_shared/summary.ts";
 import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
 import { ROW_PUSH, rappelPush, sendPush } from "../_shared/push.ts";
+import { BUCKET, Contrat, PACK_LBL, b64, bicOk, buildPdf, decrypt, encrypt, fileName, ibanOk, ipHash, mailEnvoi, mailSigne, newToken, rowId, sendMail, skey, studioMail } from "../_shared/contrat.ts";
 import { AIRCALL_STUDIO, aircallGet, aircallHeaders, aircallPost, callTs, matchAircallUser, telKey, transcriptText } from "../_shared/aircall.ts";
 
 const CORS = {
@@ -111,8 +112,6 @@ function genCode(nom: string, taken: (c: string) => boolean): string {
   return "";
 }
 const ROW_OTP = "_coach_otp";
-// Boîte e-mail de chaque studio (réponse + copie des contrats envoyés), clé = studio normalisé (sk)
-const STUDIO_MAIL: Record<string, string> = { lagarennecolombes: "Lagarennecolombes@clubpilates.fr" };
 const OTP_TTL_MS = 10 * 60 * 1000, OTP_TRIES = 5, MAX_DEVICES = 4, DEVICE_TTL_MS = 30 * 24 * 3600 * 1000;
 const sha = async (t: string) => Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(t)))).map((b) => b.toString(16).padStart(2, "0")).join("");
 const maskEmail = (e: string) => { const [u, d] = e.split("@"); return (u || "").slice(0, 2) + "•••@" + (d || ""); };
@@ -192,6 +191,44 @@ serve(async (req) => {
       if (!(cronKey.length >= 32 && safeEq(given, cronKey))) return json({ error: "Clé invalide" }, 401);
       const store = await getRow(admin, "_coach_prospects");
       return json({ ok: true, ...(await rappelPush(admin, Array.isArray(store?.prospects) ? store.prospects : [])) });
+    }
+
+    // ── Page de signature (client, sans code) : lecture du contrat par son jeton, puis signature ──
+    if (action === "contrat_get" || action === "contrat_sign") {
+      const tok = String(body.t || "");
+      if (!/^[0-9a-f]{32}$/.test(tok)) return json({ error: "Lien invalide" }, 404);
+      const c = (await getRow(admin, rowId(tok))) as Contrat;
+      if (!c || !c.token) return json({ error: "Lien invalide ou expiré" }, 404);
+      const pub = { nom: c.nom, studio: c.studio, tel: c.tel, email: c.email, naiss: c.naiss, adr: c.adr, pack: PACK_LBL[c.pack] || "", montant: c.montant, date: c.date, status: c.status, signedAt: c.signedAt || "" };
+      if (action === "contrat_get") return json({ ok: true, contrat: pub });
+      if (c.status === "signe") return json({ error: "Ce contrat est déjà signé" }, 409);
+      const iban = ibanOk(String(body.iban || "")), bic = bicOk(String(body.bic || ""));
+      if (!iban) return json({ error: "IBAN invalide · vérifiez la saisie" }, 400);
+      if (!bic) return json({ error: "BIC invalide · 8 ou 11 caractères" }, 400);
+      if (body.accept !== true) return json({ error: "Merci d'accepter les conditions générales de vente" }, 400);
+      if (String(body.lu || "").trim().toLowerCase().replace(/\s+/g, " ") !== "lu et approuvé") return json({ error: "Écrivez « Lu et approuvé »" }, 400);
+      const png = String(body.sig || "").replace(/^data:image\/png;base64,/, "");
+      if (!png || png.length < 400 || png.length > 400_000 || !/^[A-Za-z0-9+/=]+$/.test(png)) return json({ error: "Signature manquante" }, 400);
+      const at = new Date().toISOString(), ih = await ipHash(req);
+      let pdf: Uint8Array;
+      try { pdf = await buildPdf(c, { pngBase64: png, iban, bic, at, ipHash: ih }); } catch (e) { console.warn("[contrat_sign] pdf", e); return json({ error: "Impossible de préparer le contrat signé" }, 502); }
+      const path = skey(c.studio) + "/" + c.token + ".pdf";
+      // Coffre privé des contrats signés (créé à la première signature ; aucune policy publique)
+      try { await admin.storage.createBucket(BUCKET, { public: false, fileSizeLimit: 5 * 1024 * 1024, allowedMimeTypes: ["application/pdf"] }); } catch { /* existe déjà */ }
+      const up = await admin.storage.from(BUCKET).upload(path, pdf, { contentType: "application/pdf", upsert: true });
+      if (up.error) { console.warn("[contrat_sign] storage", up.error); return json({ error: "Enregistrement impossible" }, 502); }
+      const signed: Contrat = { ...c, status: "signe", signedAt: at, file: path, ibanEnc: await encrypt(iban), ibanLast: iban.slice(-4), bic, ipHash: ih };
+      await putRow(admin, rowId(tok), signed);
+      // La fiche du client garde la trace (visible dans l'assistant au prochain rafraîchissement)
+      try {
+        const store = await getRow(admin, ROW_PROSPECTS);
+        const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
+        const p = list.find((x) => x.id === c.pid);
+        if (p) { p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.maj = at; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+      } catch (e) { console.warn("[contrat_sign] fiche", e); }
+      const sm = studioMail(c.studio), m = mailSigne(signed);
+      const r = await sendMail({ to: c.email, cc: sm ? [sm] : [], replyTo: sm || undefined, ...m, attachments: [{ filename: fileName(c.nom), base64: b64(pdf) }] }, c.studio);
+      return json({ ok: true, signedAt: at, mailed: r.ok });
     }
 
     // ── Limite d'essais : 8 échecs en 15 min depuis une même adresse → blocage 15 min ──
@@ -315,34 +352,40 @@ serve(async (req) => {
 
     if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio, studios: myStudios, scoped });
 
-    // ── Contrat d'inscription : PDF rempli côté client, envoyé par e-mail au client (copie au studio) ──
+    // ── Contrat d'inscription : envoi au client (lien de signature + PDF pré-rempli), fichier signé, IBAN (managers) ──
     if (action === "contrat_send") {
-      const to = String(body.to || "").trim(), nom = String(body.nom || "").trim().slice(0, 80), pdf = String(body.pdf || "");
+      const to = String(body.to || "").trim(), nom = String(body.nom || "").trim().slice(0, 80);
       const studio = canon(body.studio) || myStudio || "", who = String(body.rep || rep || "").trim().slice(0, 40);
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to) || to.length > 120) return json({ error: "Adresse e-mail du client invalide" }, 400);
       if (!nom) return json({ error: "Nom du client requis" }, 400);
-      if (!pdf || pdf.length > 4_000_000 || !/^[A-Za-z0-9+/=]+$/.test(pdf)) return json({ error: "PDF manquant ou trop lourd" }, 400);
-      const key = Deno.env.get("RESEND_API_KEY");
-      if (!key) return json({ error: "Envoi d'e-mail non configuré" }, 500);
-      const studioMail = STUDIO_MAIL[sk(studio)] || "";
-      const esc = (t: string) => t.replace(/[<>&"]/g, (c) => ({ "<": "&lt;", ">": "&gt;", "&": "&amp;", "\"": "&quot;" }[c] || c));
-      const first = nom.split(/\s+/)[0] || "";
-      const html = `<div style="font-family:Arial,sans-serif;max-width:520px;margin:auto;padding:24px;color:#1F2A44;line-height:1.5">
-        <p>Bonjour ${esc(first)},</p>
-        <p>Merci pour votre confiance et bienvenue chez <b>Club Pilates ${esc(studio)}</b> !</p>
-        <p>Vous trouverez en pièce jointe votre fiche d'inscription, pré-remplie avec vos informations, ainsi que nos conditions générales de vente. Merci de la vérifier, de compléter l'IBAN et le BIC, d'écrire « Lu et approuvé » et de la signer, puis de nous la retourner en réponse à cet e-mail ou de la rapporter au studio.</p>
-        <p>Une question ? Répondez simplement à ce message${who ? ", " + esc(who) + " vous répondra" : ""}.</p>
-        <p>À très vite sur le Reformer,<br>L'équipe Club Pilates ${esc(studio)}</p></div>`;
-      const text = `Bonjour ${first},\n\nMerci pour votre confiance et bienvenue chez Club Pilates ${studio} !\n\nVous trouverez en pièce jointe votre fiche d'inscription pré-remplie ainsi que nos conditions générales de vente. Merci de la vérifier, de compléter l'IBAN et le BIC, d'écrire « Lu et approuvé » et de la signer, puis de nous la retourner en réponse à cet e-mail ou de la rapporter au studio.\n\nUne question ? Répondez simplement à ce message.\n\nL'équipe Club Pilates ${studio}`;
-      const fname = "Contrat-Club-Pilates-" + nom.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^\w-]+/g, "-").slice(0, 40) + ".pdf";
-      const payload: Record<string, unknown> = { from: `Club Pilates ${studio} <noreply@isseo-dev.com>`, to: [to], subject: "Votre contrat d'inscription · Club Pilates " + studio, html, text, attachments: [{ filename: fname, content: pdf }] };
-      if (studioMail) { payload.reply_to = studioMail; payload.cc = [studioMail]; }
-      try {
-        const r = await fetch("https://api.resend.com/emails", { method: "POST", headers: { Authorization: "Bearer " + key, "Content-Type": "application/json" }, body: JSON.stringify(payload) });
-        const d = await r.json().catch(() => ({}));
-        if (!r.ok) { console.warn("[contrat_send] resend", r.status, d?.message || ""); return json({ error: "Le service d'e-mail a refusé l'envoi" }, 502); }
-        return json({ ok: true, id: d?.id || "" });
-      } catch (e) { console.warn("[contrat_send]", e); return json({ error: "Envoi impossible" }, 502); }
+      if (!PACK_LBL[String(body.pack || "")]) return json({ error: "Abonnement requis" }, 400);
+      const c: Contrat = {
+        token: newToken(), pid: String(body.pid || "").slice(0, 60), studio, nom, tel: String(body.tel || "").slice(0, 30), email: to,
+        naiss: String(body.naiss || "").slice(0, 10), adr: String(body.adr || "").slice(0, 120), pack: String(body.pack), montant: String(body.montant || "").slice(0, 40),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(body.date || "")) ? String(body.date) : new Date().toISOString().slice(0, 10),
+        by: who, at: new Date().toISOString(), status: "envoye",
+      };
+      let pdf: Uint8Array;
+      try { pdf = await buildPdf(c); } catch (e) { console.warn("[contrat_send] pdf", e); return json({ error: "Impossible de préparer le PDF" }, 502); }
+      const m = mailEnvoi(c, who), sm = studioMail(studio);
+      const r = await sendMail({ to, cc: sm ? [sm] : [], replyTo: sm || undefined, ...m, attachments: [{ filename: fileName(nom), base64: b64(pdf) }] }, studio);
+      if (!r.ok) return json({ error: r.err || "Envoi impossible" }, 502);
+      await putRow(admin, rowId(c.token), c);
+      return json({ ok: true, token: c.token, how: r.how });
+    }
+    if (action === "contrat_file" || action === "contrat_iban") {
+      const tok = String(body.token || "");
+      if (!/^[0-9a-f]{32}$/.test(tok)) return json({ error: "Contrat introuvable" }, 404);
+      const c = (await getRow(admin, rowId(tok))) as Contrat;
+      if (!c || !c.token || c.status !== "signe") return json({ error: "Contrat pas encore signé" }, 404);
+      if (scoped && !inMine({ studio: c.studio })) return json({ error: "Accès refusé" }, 403);
+      if (action === "contrat_iban") {
+        if (role !== "admin" && !mgr) return json({ error: "Réservé aux managers" }, 403);
+        return json({ ok: true, iban: await decrypt(c.ibanEnc || ""), bic: c.bic || "", nom: c.nom, signedAt: c.signedAt });
+      }
+      const { data: su, error } = await admin.storage.from(BUCKET).createSignedUrl(c.file || "", 180);
+      if (error || !su?.signedUrl) return json({ error: "Fichier indisponible" }, 502);
+      return json({ ok: true, url: su.signedUrl, signedAt: c.signedAt });
     }
 
     // ── Avatars : chacun définit le sien, tout le monde voit ceux des autres ──
@@ -1089,7 +1132,7 @@ serve(async (req) => {
             naiss: String(p.naiss || "").slice(0, 10), // date de naissance (contrat d'inscription)
             adr: String(p.adr || "").slice(0, 120), // adresse postale (contrat d'inscription)
             // Contrat d'inscription envoyé par e-mail : quand, par qui, à quelle adresse
-            contrat: p.contrat && typeof p.contrat === "object" && p.contrat.at ? { at: String(p.contrat.at).slice(0, 30), by: String(p.contrat.by || "").slice(0, 40), to: String(p.contrat.to || "").slice(0, 120) } : undefined,
+            contrat: p.contrat && typeof p.contrat === "object" && p.contrat.at ? { at: String(p.contrat.at).slice(0, 30), by: String(p.contrat.by || "").slice(0, 40), to: String(p.contrat.to || "").slice(0, 120), tok: String(p.contrat.tok || "").slice(0, 32), signe: String(p.contrat.signe || "").slice(0, 30), file: String(p.contrat.file || "").slice(0, 120) } : undefined,
             // Profil pour le coach : objectif, douleurs/santé, pratique, contraintes (140 car. chacun)
             prof: ["obj", "doul", "prat", "contr"].reduce((o: Record<string, string>, k) => { o[k] = String((p.prof || {})[k] || "").slice(0, 140); return o; }, {}),
             // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.
@@ -1119,6 +1162,8 @@ serve(async (req) => {
           ownStudio(clean, i >= 0 ? list[i] : null);
           if (i >= 0) {
             keepBoost(clean, list[i]);
+            // Signature posée par le client (page de signature) : jamais effacée par une copie de l'assistant
+            const sc = list[i].contrat; if (sc && sc.signe && clean.contrat && !clean.contrat.signe) clean.contrat = { ...clean.contrat, tok: clean.contrat.tok || sc.tok, signe: sc.signe, file: sc.file };
             if ((clean.maj || "") >= (list[i].maj || "")) {
               if (markBq(clean, list[i], rep)) queued = true;
               // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne

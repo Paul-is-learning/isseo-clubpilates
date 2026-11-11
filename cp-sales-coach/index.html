@@ -4039,9 +4039,22 @@ const CONTRAT_URL='contrat-inscription-cgv.pdf?v=2026111101';
 const STUDIO_MAIL={'La Garenne-Colombes':'Lagarennecolombes@clubpilates.fr'};
 function contratLineHTML(p){
   if(p.bmember||!(p.statut==='abo'||p.statut==='venu'||p.statut==='essai'))return '';
-  const c=p.contrat;
-  return `<div class="pr-packline" style="margin-top:-2px"><button class="pr-act" onclick="contratSheet('${p.id}')">📄 ${c?'Renvoyer le contrat':'Contrat d\'inscription'}</button>${c?`<small style="color:#5B6B8C">envoyé le ${esc(_trDate(c.at))}${c.by?' par '+esc(c.by):''}${c.to?' à '+esc(c.to):''}</small>`:'<small style="color:#8C95A8">fiche d\'inscription + CGV, pré-remplie</small>'}</div>`;
+  const c=p.contrat,mgr=COACH_ROLE==='admin'||IS_MGR;
+  if(c&&c.signe)return `<div class="pr-packline" style="margin-top:-2px"><span class="pl-chip" style="color:#1F7A55;border-color:#BFE0CF;background:#EEF8F2">✅ Contrat signé le ${esc(_trDate(c.signe))}</span><button class="pr-act" onclick="contratOpen('${p.id}')">📎 Voir le contrat</button>${mgr?`<button class="pr-act" onclick="contratIban('${p.id}')">🏦 IBAN</button>`:''}<button class="pr-act" style="opacity:.7" onclick="contratSheet('${p.id}')">Renvoyer</button></div>`;
+  return `<div class="pr-packline" style="margin-top:-2px"><button class="pr-act" onclick="contratSheet('${p.id}')">📄 ${c?'Renvoyer le contrat':'Contrat d\'inscription'}</button>${c?`<small style="color:#5B6B8C">envoyé le ${esc(_trDate(c.at))}${c.by?' par '+esc(c.by):''}${c.to?' à '+esc(c.to):''} · en attente de signature</small>`:'<small style="color:#8C95A8">pré-rempli, signé en ligne par le client</small>'}</div>`;
 }
+async function contratOpen(id){const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.contrat||!p.contrat.tok)return;toast('📎 Ouverture du contrat…');
+  try{const r=await syncCall('contrat_file',{token:p.contrat.tok});if(!r||!r.ok)throw new Error((r&&r.error)||'indisponible');window.open(r.url,'_blank');}
+  catch(e){toast('Contrat indisponible · '+(e.message||''));}}
+async function contratIban(id){const p=PROSPECTS.find(x=>x.id===id);if(!p||!p.contrat||!p.contrat.tok)return;
+  try{const r=await syncCall('contrat_iban',{token:p.contrat.tok});if(!r||!r.ok)throw new Error((r&&r.error)||'indisponible');
+    const ib=(r.iban||'').replace(/(.{4})/g,'$1 ').trim();
+    icSheet(`<div class="glp-tag">🏦 Coordonnées bancaires</div><div class="glp-t">${esc(p.nom||'')}</div>
+      <div class="pl-hint" style="display:block;margin:4px 0 10px">Saisies et signées par le client le ${esc(_trDate(r.signedAt||''))}. À reporter dans votre outil de prélèvement, puis à ne pas recopier ailleurs.</div>
+      <div class="ics-lbl">IBAN</div><div class="ics-in" style="font-family:ui-monospace,monospace;letter-spacing:.04em">${esc(ib)}</div>
+      <div class="ics-lbl">BIC</div><div class="ics-in" style="font-family:ui-monospace,monospace">${esc(r.bic||'')}</div>
+      <div class="fv-btns"><button class="pr-act main" style="flex:1;margin-top:12px" onclick="navigator.clipboard&&navigator.clipboard.writeText('${esc(r.iban||'')}').then(()=>toast('IBAN copié'))">Copier l'IBAN</button></div>`);
+  }catch(e){toast(e.message==='Réservé aux managers'?'Réservé aux managers':'IBAN indisponible · '+(e.message||''));}}
 function _cFmt(d){if(!/^\d{4}-\d{2}-\d{2}$/.test(d||''))return '';const [y,m,j]=d.split('-');return j+'/'+m+'/'+y;}
 function contratVals(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return null;const g=i=>((document.getElementById(i)||{}).value||'').trim();
   return {p,nom:g('ct-nom'),naiss:g('ct-naiss'),adr:g('ct-adr'),tel:g('ct-tel'),email:g('ct-email'),pack:(document.querySelector('.ct-pack.on')||{dataset:{}}).dataset.k||'',montant:g('ct-montant'),date:g('ct-date')};}
@@ -4050,7 +4063,7 @@ function contratSheet(id){
   const pk=String(p.pack||'');
   icSheet(`<div class="glp-tag">${ici('calendar',12)} Contrat d'inscription</div>
     <div class="glp-t">${esc(p.nom||'Prospect')}</div>
-    <div class="pl-hint" style="display:block;margin:4px 0 0">Vérifiez chaque ligne : elle sera imprimée telle quelle sur la fiche d'inscription. L'IBAN, le BIC et la signature restent à remplir par le client, à la main.</div>
+    <div class="pl-hint" style="display:block;margin:4px 0 0">Vérifiez chaque ligne : elle sera imprimée telle quelle sur la fiche d'inscription. Le client recevra un e-mail avec le PDF et un lien pour renseigner son IBAN et signer depuis son téléphone.</div>
     <div class="ics-lbl">Nom et prénom</div><input id="ct-nom" class="ics-in" maxlength="80" value="${esc(p.nom||'')}"/>
     <div class="ics-row">
       <div style="flex:1"><div class="ics-lbl">Date de naissance</div><input type="date" id="ct-naiss" class="ics-in" value="${esc(p.naiss||'')}"/></div>
@@ -4066,7 +4079,7 @@ function contratSheet(id){
     <div class="ics-lbl">Montant du prélèvement mensuel <small>· facultatif, tel qu'écrit sur le contrat</small></div><input id="ct-montant" class="ics-in" maxlength="40" placeholder="Ex. : 149 € / mois" value=""/>
     <div class="fv-btns" style="flex-wrap:wrap;margin-top:14px">
       <button class="pr-act" onclick="contratPdf('${p.id}',false)">👁 Voir le PDF</button>
-      <button class="pr-act main" style="flex:1" onclick="contratSend('${p.id}')">✉️ Envoyer au client par e-mail</button>
+      <button class="pr-act main" style="flex:1" onclick="contratSend('${p.id}')">✉️ Envoyer à signer</button>
     </div>`);
 }
 function _contratKeep(v){const p=v.p;let ch=false;
@@ -4099,15 +4112,15 @@ async function contratSend(id){
   if(!v.nom){toast('Indiquez le nom du client');return;}
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v.email)){toast('Indiquez l\'e-mail du client');return;}
   if(!v.pack){toast('Choisissez l\'abonnement');return;}
-  if(v.p.contrat&&!confirm('Un contrat a déjà été envoyé le '+_trDate(v.p.contrat.at)+'. Le renvoyer ?'))return;
-  const b=document.querySelector('#icPop .pr-act.main');if(b){b.disabled=true;b.textContent='Envoi…';}
-  const bytes=await contratPdf(id,true);if(!bytes){if(b){b.disabled=false;b.textContent='✉️ Envoyer au client par e-mail';}return;}
-  let bin='';const u8=new Uint8Array(bytes);for(let i=0;i<u8.length;i+=8192)bin+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));
-  try{const r=await syncCall('contrat_send',{to:v.email,nom:v.nom,pack:v.pack,studio:v.p.studio||CFG.studio||'',rep:CFG.rep||'',pdf:btoa(bin)});
+  if(v.p.contrat&&v.p.contrat.signe&&!confirm('Ce contrat est déjà signé. Renvoyer un nouveau contrat à signer ?'))return;
+  if(v.p.contrat&&!v.p.contrat.signe&&!confirm('Un contrat a déjà été envoyé le '+_trDate(v.p.contrat.at)+'. Le renvoyer (nouveau lien) ?'))return;
+  const b=document.querySelector('#icPop .pr-act.main'),lbl='✉️ Envoyer à signer';if(b){b.disabled=true;b.textContent='Envoi…';}
+  try{const r=await syncCall('contrat_send',{pid:v.p.id,to:v.email,nom:v.nom,tel:v.tel,naiss:v.naiss,adr:v.adr,pack:v.pack,montant:v.montant,date:v.date,studio:v.p.studio||CFG.studio||'',rep:CFG.rep||''});
     if(!r||!r.ok)throw new Error((r&&r.error)||'envoi refusé');
-    v.p.contrat={at:new Date().toISOString(),by:(CFG.rep||'').split(' ')[0],to:v.email};v.p.maj=new Date().toISOString();persistProspects();schedulePush();
-    document.getElementById('icPop')?.remove();toast('✉️ Contrat envoyé à '+v.email);showProspects(true);
-  }catch(e){console.warn('[contrat send]',e);toast('Envoi impossible · '+(e.message||'réessayez'));if(b){b.disabled=false;b.textContent='✉️ Envoyer au client par e-mail';}}
+    _contratKeep(v);
+    v.p.contrat={at:new Date().toISOString(),by:(CFG.rep||'').split(' ')[0],to:v.email,tok:r.token||''};v.p.maj=new Date().toISOString();persistProspects();schedulePush();
+    document.getElementById('icPop')?.remove();toast('✉️ Contrat envoyé à '+v.email+' · signature en ligne');showProspects(true);
+  }catch(e){console.warn('[contrat send]',e);toast('Envoi impossible · '+(e.message||'réessayez'));if(b){b.disabled=false;b.textContent=lbl;}}
 }
 // Suivi de la formation (admin) : qui a fait quoi, avec quel score. Le serveur garde le MEILLEUR score par étape (pas le nombre d'essais).
 function _trDate(ts){try{return new Date(ts).toLocaleDateString('fr-FR',{day:'numeric',month:'short'});}catch(e){return '';}}
