@@ -4035,7 +4035,6 @@ async function openLivret(ev){
   return false;
 }
 // ── Contrat d'inscription (fiche + CGV) : rempli dans le navigateur, envoyé par e-mail au client ──
-const CONTRAT_URL='contrat-inscription-cgv.pdf?v=2026111102';
 const STUDIO_MAIL={'La Garenne-Colombes':'Lagarennecolombes@clubpilates.fr'};
 // Montant mensuel : tarifs du studio (Réglages : p1/p2/p3) et remise fondateur (CFG.founding), jamais devinés ici
 const CT_OFFRES={fond:'Membre Fondateur',std:'Tarif standard'};
@@ -4096,25 +4095,14 @@ function _contratKeep(v){const p=v.p;let ch=false;
   if(v.email&&v.email!==p.email){p.email=v.email;ch=true;}
   if(v.pack&&v.pack!==String(p.pack||'')&&p.statut==='abo'){p.pack=v.pack;ch=true;}
   if(ch){p.maj=new Date().toISOString();persistProspects();schedulePush();}}
-async function contratBuild(v){
-  const [{PDFDocument,StandardFonts,rgb},bytes]=await Promise.all([_loadPdfLib(),fetch(CONTRAT_URL).then(r=>{if(!r.ok)throw new Error(r.status);return r.arrayBuffer();})]);
-  const doc=await PDFDocument.load(bytes),font=await doc.embedFont(StandardFonts.Helvetica),bold=await doc.embedFont(StandardFonts.HelveticaBold);
-  const pg=doc.getPages()[0],H=pg.getSize().height,ink=rgb(.12,.16,.28),bleu=rgb(.29,.47,.74);
-  const T=(t,x,yTop,s,f)=>{if(t)pg.drawText(String(t).normalize('NFD').replace(/[̀-ͯ]/g,''),{x,y:H-yTop,size:s||10,font:f||font,color:ink});};
-  const city=(CFG.studio||'').trim();
-  T(_cFmt(v.date),98,51,10,bold);
-  T(v.nom,172,147,11,bold);T(_cFmt(v.naiss),180,173);T(v.adr,135,200);T(v.tel,147,228);T(v.email,110,255);
-  const by={1:342,2:366,3:389}[v.pack];if(by)pg.drawText('X',{x:516,y:H-by,size:13,font:bold,color:bleu});
-  T(v.montant,135,587,10,bold);
-  T(city,352,659,7);T(_cFmt(v.date),470,659,7);
-  doc.setTitle('Contrat d\'inscription Club Pilates · '+v.nom);doc.setSubject('Fiche d\'inscription et CGV');
-  return await doc.save();
-}
 async function contratPdf(id,silent){
   const v=contratVals(id);if(!v)return null;if(!v.nom){toast('Indiquez le nom du client');return null;}
-  try{const bytes=await contratBuild(v);_contratKeep(v);
+  toast('📄 Préparation de l\'aperçu…');
+  try{const r=await syncCall('contrat_preview',{to:v.email,nom:v.nom,tel:v.tel,naiss:v.naiss,adr:v.adr,pack:v.pack,montant:v.montant,date:v.date,studio:v.p.studio||CFG.studio||''});
+    if(!r||!r.ok||!r.pdf)throw new Error((r&&r.error)||'indisponible');
+    const bytes=Uint8Array.from(atob(r.pdf),ch=>ch.charCodeAt(0));_contratKeep(v);
     if(!silent){const blob=new Blob([bytes],{type:'application/pdf'}),href=URL.createObjectURL(blob);window.open(href,'_blank');setTimeout(()=>URL.revokeObjectURL(href),120000);}
-    return bytes;}catch(e){console.warn('[contrat]',e);toast('Impossible de préparer le PDF · réessayez');return null;}
+    return bytes;}catch(e){console.warn('[contrat]',e);toast('Impossible de préparer le PDF · '+(e.message||'réessayez'));return null;}
 }
 async function contratSend(id){
   const v=contratVals(id);if(!v)return;

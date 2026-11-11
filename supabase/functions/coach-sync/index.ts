@@ -360,6 +360,15 @@ serve(async (req) => {
     if (action === "ping") return json({ ok: true, role, rep, manager: mgr, primes, avatar: myAvatar, studio: myStudio, studios: myStudios, scoped });
 
     // ── Contrat d'inscription : envoi au client (lien de signature + PDF pré-rempli), fichier signé, IBAN (managers) ──
+    // Aperçu du contrat (même rendu que l'envoi), sans enregistrement ni e-mail
+    if (action === "contrat_preview") {
+      const c: Contrat = {
+        token: "apercu", pid: "", studio: canon(body.studio) || myStudio || "", nom: String(body.nom || "").trim().slice(0, 80), tel: String(body.tel || "").slice(0, 30), email: String(body.to || "").trim().slice(0, 120),
+        naiss: String(body.naiss || "").slice(0, 10), adr: String(body.adr || "").slice(0, 120), pack: String(body.pack || ""), montant: String(body.montant || "").slice(0, 60),
+        date: /^\d{4}-\d{2}-\d{2}$/.test(String(body.date || "")) ? String(body.date) : new Date().toISOString().slice(0, 10), by: rep, at: new Date().toISOString(), status: "envoye",
+      };
+      try { return json({ ok: true, pdf: b64(await buildPdf(c)) }); } catch (e) { console.warn("[contrat_preview]", e); return json({ error: "Impossible de préparer le PDF" }, 502); }
+    }
     if (action === "contrat_send") {
       const to = String(body.to || "").trim(), nom = String(body.nom || "").trim().slice(0, 80);
       const studio = canon(body.studio) || myStudio || "", who = String(body.rep || rep || "").trim().slice(0, 40);

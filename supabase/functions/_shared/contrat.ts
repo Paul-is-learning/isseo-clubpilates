@@ -88,38 +88,106 @@ export function mailSigne(c: Contrat) {
 export const fileName = (nom: string) => "Contrat-Club-Pilates-" + ascii(nom).replace(/[^\w-]+/g, "-").slice(0, 40) + ".pdf";
 
 // ── PDF ───────────────────────────────────────────────────────────────────
-// Mêmes repères que dans l'assistant (index.html, contratBuild) : x en points, y mesuré depuis le haut de la page A4.
-export type Signature = { pngBase64: string; iban: string; bic: string; at: string; ipHash: string };
+// Page 1 dessinée en vectoriel (lisible, moderne), page 2 = CGV du modèle publié sur le site.
+export type Signature = { pngBase64: string; iban: string; bic?: string; at: string; ipHash: string };
+export const STUDIO_LEGAL: Record<string, string> = {
+  lagarennecolombes: "COBE LGC, EURL au capital de 100 €, siège 10 rue William Shakespeare, 78280 Guyancourt, SIREN 108 756 263, RCS Versailles, TVA FR86108756263, gérante Caroline Coquel",
+};
+const ENGAGEMENT = [
+  "Engagement initial de 6 mois, puis reconduction tacite pour une durée indéterminée (préavis de 1 mois).",
+  "Frais de résiliation pendant la période d'engagement : 100 € TTC, sauf motif légitime justifié.",
+  "Annulation d'un cours gratuite jusqu'à 12 h avant · gel possible une fois par an (voir CGV, page 2).",
+];
 export async function buildPdf(c: Contrat, sig?: Signature): Promise<Uint8Array> {
-  const r = await fetch(TEMPLATE_URL);
-  if (!r.ok) throw new Error("Modèle de contrat indisponible");
-  const doc = await PDFDocument.load(await r.arrayBuffer());
+  const [tr, lr] = await Promise.all([fetch(TEMPLATE_URL), fetch(SITE + "logo-cp.png")]);
+  if (!tr.ok) throw new Error("Modèle de contrat indisponible");
+  const tpl = await PDFDocument.load(await tr.arrayBuffer());
+  const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica), bold = await doc.embedFont(StandardFonts.HelveticaBold), ital = await doc.embedFont(StandardFonts.HelveticaOblique);
-  const pg = doc.getPages()[0], H = pg.getSize().height, ink = rgb(.12, .16, .28), bleu = rgb(.29, .47, .74);
-  const T = (t: string, x: number, yTop: number, s = 10, f = font) => { if (t) pg.drawText(ascii(t), { x, y: H - yTop, size: s, font: f, color: ink }); };
-  T(fr(c.date), 98, 51, 10, bold);
-  T(c.nom, 172, 147, 11, bold); T(fr(c.naiss), 180, 173); T(c.adr, 135, 200); T(c.tel, 147, 228); T(c.email, 110, 255);
-  const by = ({ "1": 342, "2": 366, "3": 389 } as Record<string, number>)[c.pack];
-  if (by) pg.drawText("X", { x: 516, y: H - by, size: 13, font: bold, color: bleu });
-  T(c.montant, 135, 587, 10, bold);
-  T(c.studio, 352, 659, 7); T(fr(c.date), 470, 659, 7);
+  const W = 595.32, H = 841.92, pg = doc.addPage([W, H]);
+  const BLUE = rgb(.29, .47, .74), DEEP = rgb(.18, .3, .54), INK = rgb(.12, .16, .28), MUTED = rgb(.42, .47, .58), LINE = rgb(.80, .85, .92), PANEL = rgb(.95, .97, .99), WHITE = rgb(1, 1, 1);
+  const M = 44, CW = W - 2 * M; // marge, largeur utile
+  const y = (top: number) => H - top;
+  const txt = (t: string, x: number, top: number, size: number, f = font, color = INK) => { if (t) pg.drawText(ascii(t), { x, y: y(top), size, font: f, color }); };
+  const w = (t: string, size: number, f = font) => f.widthOfTextAtSize(ascii(t), size);
+  const right = (t: string, xr: number, top: number, size: number, f = font, color = INK) => txt(t, xr - w(t, size, f), top, size, f, color);
+  const rect = (x: number, top: number, wd: number, ht: number, o: { fill?: ReturnType<typeof rgb>; stroke?: ReturnType<typeof rgb>; bw?: number }) =>
+    pg.drawRectangle({ x, y: y(top) - ht, width: wd, height: ht, color: o.fill, borderColor: o.stroke, borderWidth: o.stroke ? (o.bw ?? .8) : 0 });
+  const section = (n: string, title: string, top: number) => {
+    rect(M, top, 16, 16, { fill: BLUE }); right(n, M + 11.5, top + 12, 9.5, bold, WHITE);
+    txt(title.toUpperCase(), M + 24, top + 12, 10.5, bold, DEEP);
+    pg.drawLine({ start: { x: M + 30 + w(title.toUpperCase(), 10.5, bold), y: y(top + 8) }, end: { x: W - M, y: y(top + 8) }, thickness: .6, color: LINE });
+  };
+  const field = (label: string, value: string, x: number, top: number, wd: number) => {
+    txt(label.toUpperCase(), x, top + 7, 6.6, bold, MUTED);
+    txt(value || "", x, top + 22, 10.5, bold, INK);
+    pg.drawLine({ start: { x, y: y(top + 27) }, end: { x: x + wd, y: y(top + 27) }, thickness: .6, color: value ? LINE : BLUE });
+  };
+  const box = (x: number, top: number, on: boolean, size = 11) => { rect(x, top, size, size, { fill: on ? BLUE : WHITE, stroke: BLUE, bw: 1 }); if (on) txt("X", x + 2.4, top + size - 2.2, size - 2, bold, WHITE); };
+  const fit = (t: string, maxW: number, size: number, f = font) => { let s = ascii(t); while (s.length > 3 && f.widthOfTextAtSize(s, size) > maxW) s = s.slice(0, -2); return s === ascii(t) ? t : s.replace(/\s?\S*$/, "") + "…"; };
+
+  // ── En-tête ──
+  try { const logo = await doc.embedPng(await lr.arrayBuffer()); const lw = 150, lh = lw * logo.height / logo.width; pg.drawImage(logo, { x: M - 6, y: y(40) - lh, width: lw, height: lh }); } catch { txt("CLUB PILATES", M, 62, 18, bold, BLUE); }
+  right("Contrat d'adhésion", W - M, 60, 21, bold, DEEP);
+  right("Club Pilates " + c.studio, W - M, 76, 10.5, font, MUTED);
+  right("Date : " + fr(c.date) + "   ·   Réf. " + c.token.slice(0, 10).toUpperCase(), W - M, 90, 8.5, font, MUTED);
+  pg.drawLine({ start: { x: M, y: y(104) }, end: { x: W - M, y: y(104) }, thickness: 1.2, color: BLUE });
+
+  // ── 1 · Adhérent ──
+  section("1", "Adhérent(e)", 118);
+  const col2 = M + CW / 2 + 10, half = CW / 2 - 10;
+  field("Nom et prénom", c.nom, M, 142, half); field("Date de naissance", fr(c.naiss), col2, 142, half);
+  field("Adresse", fit(c.adr, CW, 10.5, bold), M, 178, CW);
+  field("Téléphone", c.tel, M, 214, half); field("E-mail", c.email, col2, 214, half);
+
+  // ── 2 · Abonnement ──
+  section("2", "Abonnement mensuel", 262);
+  const opts: [string, string, string][] = [["1", "Pack 4", "4 classes par mois"], ["2", "Pack 8", "8 classes par mois"], ["3", "Illimité", "1 classe par jour"]];
+  const ow = (CW - 2 * 10) / 3;
+  opts.forEach(([k, t, d], i) => { const x = M + i * (ow + 10), on = c.pack === k, top = 284;
+    rect(x, top, ow, 44, { fill: on ? PANEL : WHITE, stroke: on ? BLUE : LINE, bw: on ? 1.4 : .8 });
+    box(x + 12, top + 16, on, 12); txt(t, x + 32, top + 19, 11.5, bold, on ? DEEP : INK); txt(d, x + 32, top + 33, 8.5, font, MUTED); });
+  txt("Montant mensuel", M, 349, 6.6, bold, MUTED);
+  txt(c.montant || "", M, 366, 13, bold, DEEP);
+  pg.drawLine({ start: { x: M, y: y(372) }, end: { x: W - M, y: y(372) }, thickness: .6, color: c.montant ? LINE : BLUE });
+
+  // ── 3 · Engagement ──
+  section("3", "Engagement et résiliation", 396);
+  ENGAGEMENT.forEach((l, i) => { const top = 420 + i * 15; pg.drawCircle({ x: M + 4, y: y(top) + 3, size: 1.6, color: BLUE }); txt(l, M + 14, top + 3, 9.2, font, INK); });
+
+  // ── 4 · Prélèvement SEPA ──
+  section("4", "Prélèvement mensuel", 482);
+  txt("Le montant de l'abonnement est prélevé chaque mois sur le compte ci-dessous.", M, 506, 9.2, font, INK);
+  txt("IBAN", M, 532, 6.6, bold, MUTED);
+  const iban = (sig?.iban || "").replace(/\s+/g, "").toUpperCase(), bw = 13.6, gap = 6, groups = [4, 4, 4, 4, 4, 4, 3];
+  let bx = M, idx = 0;
+  groups.forEach((n) => { for (let k = 0; k < n; k++) { rect(bx, 538, bw, 18, { fill: WHITE, stroke: iban ? LINE : BLUE, bw: .8 }); if (iban[idx]) txt(iban[idx], bx + 3.4, 551, 10.5, bold, INK); bx += bw; idx++; } bx += gap; });
+
+  // ── 5 · Acceptation et signature ──
+  section("5", "Acceptation et signature", 582);
+  box(M, 604, !!sig, 11); txt("J'ai lu et j'accepte les conditions générales de vente (page 2), l'engagement et les frais de résiliation ci-dessus.", M + 18, 613, 9.2, font, INK);
+  txt("Mention « Lu et approuvé »", M, 636, 6.6, bold, MUTED);
+  if (sig) txt("Lu et approuvé", M, 653, 12, ital, INK);
+  pg.drawLine({ start: { x: M, y: y(658) }, end: { x: M + half, y: y(658) }, thickness: .6, color: sig ? LINE : BLUE });
+  field("Fait à", c.studio, M, 672, half / 2 - 6); field("Le", sig ? fr(sig.at.slice(0, 10)) : "", M + half / 2 + 6, 672, half / 2 - 6);
+  const sx = col2, sTop = 628, sW = half, sH = 84;
+  rect(sx, sTop, sW, sH, { fill: WHITE, stroke: BLUE, bw: 1 }); txt("SIGNATURE", sx + 8, sTop + 11, 6.6, bold, MUTED);
   if (sig) {
-    pg.drawText("X", { x: 516, y: H - 518, size: 13, font: bold, color: bleu }); // J'accepte les CGV
-    // IBAN : 27 cases en groupes de 4 (le dernier de 3), BIC : 11 cases
-    const iban = sig.iban.replace(/\s+/g, "").toUpperCase();
-    for (let i = 0; i < Math.min(iban.length, 27); i++) { const g = Math.floor(i / 4), k = i % 4, x = (118 + 81 * g + 18 * k + 5.5) / 1.25; pg.drawText(iban[i], { x, y: H - 630, size: 10, font: bold, color: ink }); }
-    const bic = (sig.bic || "").replace(/\s+/g, "").toUpperCase(); // facultatif (le studio le retrouve depuis l'IBAN)
-    for (let i = 0; i < Math.min(bic.length, 11); i++) { const x = (118 + 17.7 * i + 5.5) / 1.25; pg.drawText(bic[i], { x, y: H - 668, size: 10, font: bold, color: ink }); }
-    pg.drawText("Lu et approuvé", { x: 95, y: H - 716, size: 11, font: ital, color: ink });
-    try {
-      const png = await doc.embedPng(Uint8Array.from(atob(sig.pngBase64), (ch) => ch.charCodeAt(0)));
-      const maxW = 185, maxH = 58, sc = Math.min(maxW / png.width, maxH / png.height);
-      pg.drawImage(png, { x: 330, y: H - 762, width: png.width * sc, height: png.height * sc });
-    } catch (e) { console.warn("[contrat pdf] signature", e); }
-    const foot = `Signé électroniquement le ${new Date(sig.at).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })} (Paris) par ${ascii(c.nom)} <${c.email}> · empreinte ${sig.ipHash.slice(0, 12)} · ref ${c.token.slice(0, 10)}`;
-    pg.drawText(foot, { x: 40, y: 16, size: 6.2, font, color: rgb(.45, .5, .6) });
+    try { const png = await doc.embedPng(Uint8Array.from(atob(sig.pngBase64), (ch) => ch.charCodeAt(0))); const maxW = sW - 20, maxH = sH - 22, sc = Math.min(maxW / png.width, maxH / png.height);
+      pg.drawImage(png, { x: sx + 10 + (maxW - png.width * sc) / 2, y: y(sTop + sH - 6) , width: png.width * sc, height: png.height * sc }); } catch (e) { console.warn("[contrat pdf] signature", e); }
   }
-  doc.setTitle("Contrat d'inscription Club Pilates · " + c.nom); doc.setSubject(sig ? "Contrat signe electroniquement" : "Fiche d'inscription et CGV");
+
+  // ── Pied de page ──
+  const legal = STUDIO_LEGAL[skey(c.studio)] || "";
+  pg.drawLine({ start: { x: M, y: y(776) }, end: { x: W - M, y: y(776) }, thickness: .6, color: LINE });
+  const wrap = (t: string, maxW: number, size: number) => { const out: string[] = []; let line = ""; for (const word of t.split(" ")) { const tr = line ? line + " " + word : word; if (w(tr, size) > maxW && line) { out.push(line); line = word; } else line = tr; } if (line) out.push(line); return out; };
+  let ft = 786;
+  wrap((legal ? legal + ". " : "") + "Le Site est exploité par TMCP FITNESS FRANCE · conditions générales de vente en page 2.", CW, 6.6).slice(0, 3).forEach((l) => { txt(l, M, ft, 6.6, font, MUTED); ft += 9; });
+  if (sig) txt(`Signé électroniquement le ${new Date(sig.at).toLocaleString("fr-FR", { timeZone: "Europe/Paris" })} (Paris) par ${c.nom} <${c.email}> · empreinte ${sig.ipHash.slice(0, 12)} · réf. ${c.token.slice(0, 10)}`, M, ft + 3, 6.2, font, rgb(.45, .5, .6));
+
+  // ── Page 2 : CGV ──
+  if (tpl.getPageCount() > 1) { const [p2] = await doc.copyPages(tpl, [1]); doc.addPage(p2); }
+  doc.setTitle("Contrat d'adhésion Club Pilates · " + c.nom); doc.setSubject(sig ? "Contrat signé électroniquement" : "Contrat d'adhésion et CGV");
   return await doc.save();
 }
 export const b64 = (u: Uint8Array) => { let s = ""; for (let i = 0; i < u.length; i += 8192) s += String.fromCharCode(...u.subarray(i, i + 8192)); return btoa(s); };
