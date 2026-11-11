@@ -5337,14 +5337,14 @@ function _agStudioOk(st){return !CFG.studio||!st||_sk(st)===_sk(CFG.studio);}
 // RDV au studio d'une fiche (les plus récents en dernier) et prochain RDV à venir
 function prRdvs(p){return AGENDA.filter(e=>e.pid===p.id&&e.type!=='autre').sort((a,b)=>(a.date+a.h).localeCompare(b.date+b.h)).slice(-6);}
 function prRdvNext(p){const t=todayStr();return AGENDA.filter(e=>e.pid===p.id&&e.type!=='autre'&&!e.done&&e.date>=t).sort((a,b)=>(a.date+a.h).localeCompare(b.date+b.h))[0]||null;}
-const AG_KIND={rdv:{l:'RDV au studio',ic:'pin',c:'#1F7A55'},rappel:{l:'Rappel',ic:'bell',c:'#B07A1C'},essai:{l:'Séance d\'essai',ic:'ticket',c:'#4B52E6'},ic:{l:'Intro Class',ic:'yoga',c:'#7A4BB5'},autre:{l:'Équipe',ic:'clipboard',c:'#5B6B8C'}};
+const AG_KIND={rdv:{l:'RDV au studio',ic:'pin',c:'#1F7A55'},essai:{l:'Séance d\'essai',ic:'ticket',c:'#4B52E6'},ic:{l:'Intro Class',ic:'yoga',c:'#7A4BB5'},autre:{l:'Équipe',ic:'clipboard',c:'#5B6B8C'}};
 // Tous les événements du planning sous une forme commune
 function agAll(){
   const out=[];
   AGENDA.forEach(e=>{if(!e||!e.date||!_agStudioOk(e.studio))return;const p=e.pid?PROSPECTS.find(x=>x.id===e.pid):null;
     out.push({key:'a:'+e.id,kind:e.type==='autre'?'autre':'rdv',date:e.date,h:e.h||'',nom:e.type==='autre'?(e.titre||'Événement'):(p&&p.nom)||e.nom||'Prospect',who:e.who||'',pid:e.pid||'',ev:e,done:e.done||''});});
-  PSC().forEach(p=>{if(!prOpen(p)||!p.rappel||prAutoNew(p)||prOuv(p))return;
-    out.push({key:'p:'+p.id,kind:p.statut==='essai'?'essai':'rappel',date:p.rappel,h:p.rappelH||'',nom:p.nom||'Prospect',who:prCharge(p)||'',pid:p.id,p:p,done:''});});
+  PSC().forEach(p=>{if(!prOpen(p)||!p.rappel||p.statut!=='essai'||prAutoNew(p)||prOuv(p))return; // les rappels d'appel restent dans « Rappels & RDV »
+    out.push({key:'p:'+p.id,kind:'essai',date:p.rappel,h:p.rappelH||'',nom:p.nom||'Prospect',who:prCharge(p)||'',pid:p.id,p:p,done:''});});
   (IC.sessions||[]).forEach(s=>{if(!s||!s.date||s.statut==='annulee'||!_agStudioOk(s.studio))return;const n=PSC().filter(p=>p.icBook===s.id).length;
     out.push({key:'s:'+s.id,kind:'ic',date:s.date,h:s.heure||'',nom:'Intro Class'+(n?' · '+n+' inscrit'+(n>1?'s':''):''),who:s.coach||'',pid:'',s:s,done:''});});
   return out.sort((a,b)=>(a.date+(a.h||'99')).localeCompare(b.date+(b.h||'99')));
@@ -5371,14 +5371,14 @@ function agendaHTML(){
       <button class="pr-new" onclick="agForm({})">${ici('plus',16)} Ajouter au planning</button>
     </div>
     <div class="pr-ownf"><span class="pr-ownf-l">${ici('user',14)} Commercial :</span><button class="pr-ownb${!_agWho?' on':''}" onclick="_agWho='';showProspects(true)">Tous <b>${all.length}</b></button>${Object.keys(whos).sort().map(n=>`<button class="pr-ownb${_agWho===n?' on':''}" style="--oc:${ownColor(n)}" onclick="_agWho='${n.replace(/'/g,"\\'")}';showProspects(true)">${esc(n)} <b>${whos[n]}</b></button>`).join('')}<span class="ag-sep"></span>${Object.keys(AG_KIND).map(k=>`<button class="pr-ownb ag-kb${_agKind===k?' on':''}" style="--oc:${AG_KIND[k].c}" onclick="_agKind=_agKind==='${k}'?'':'${k}';showProspects(true)">${ici(AG_KIND[k].ic,13)} ${AG_KIND[k].l}</button>`).join('')}</div>
-    <div class="ag-sum"><b>${cnt('rdv')}</b> RDV au studio · <b>${cnt('rappel')}</b> rappel${cnt('rappel')>1?'s':''} · <b>${cnt('essai')}</b> séance${cnt('essai')>1?'s':''} d'essai · <b>${cnt('ic')}</b> Intro Class${cnt('autre')?' · <b>'+cnt('autre')+'</b> équipe':''}</div>
+    <div class="ag-sum"><b>${cnt('rdv')}</b> RDV au studio · <b>${cnt('essai')}</b> séance${cnt('essai')>1?'s':''} d'essai · <b>${cnt('ic')}</b> Intro Class${cnt('autre')?' · <b>'+cnt('autre')+'</b> équipe':''}</div>
     <div class="ag-week">${days.map(col).join('')}</div>
-    <div class="pl-hint" style="display:block;margin:10px 4px 0">Les rappels et séances d'essai viennent des fiches prospects, les Intro Class du module IC. Les RDV au studio et les événements d'équipe s'ajoutent ici ou depuis la fiche (« Rendez-vous physique au studio »).</div>
+    <div class="pl-hint" style="display:block;margin:10px 4px 0">Uniquement les rendez-vous : RDV au studio, séances d'essai datées, Intro Class et événements d'équipe. Les appels et rappels à passer restent dans « Rappels & RDV » et « Ma journée ». Un RDV s'ajoute ici ou depuis la fiche (« Planifier un RDV physique »).</div>
   </div>`;
 }
 function agOpen(key){const e=agAll().find(x=>x.key===key);if(!e)return;
   if(e.kind==='ic'){showICPage();setTimeout(()=>icOpen(e.s.id),60);return;}
-  if(e.kind==='rappel'||e.kind==='essai'){openPr(e.pid);return;}
+  if(e.kind==='essai'){openPr(e.pid);return;}
   const ev=e.ev,k=AG_KIND[e.kind],p=ev.pid?PROSPECTS.find(x=>x.id===ev.pid):null;
   icSheet(`<div class="glp-tag">${ici(k.ic,12)} ${esc(k.l)}${ev.who?' · '+esc(ev.who):''}</div>
     <div class="glp-t">${esc(e.nom||'Événement')}</div>
@@ -5397,7 +5397,7 @@ function agDone(id,v){const ev=AGENDA.find(e=>e.id===id);if(!ev)return;ev.done=v
     if(p&&(p.statut==='rappeler'||p.statut==='essai')){setPStatut(p.id,'venu',null,'Venu au rendez-vous au studio');toast('✅ Venu · la fiche passe en « RDV venu »');return;}}
   toast(v==='venu'?'✅ Venu noté':v==='absent'?'Absence notée':v?'✅ Fait':'Remis à venir');showProspects(true);}
 function agRemove(id){if(!confirm('Retirer cet événement du planning ?'))return;agDelete(id);document.getElementById('icPop')?.remove();toast('🗑 Retiré du planning');showProspects(true);}
-// Formulaire : RDV au studio (avec ou sans fiche), rappel téléphonique (posé sur la fiche) ou événement d'équipe
+// Formulaire : RDV au studio (avec ou sans fiche) ou événement d'équipe · les rappels d'appel se programment depuis la fiche (« Programmer un appel »)
 function agForm(pre){pre=pre||{};const ev=pre.id?AGENDA.find(e=>e.id===pre.id):null;
   const pid=(ev&&ev.pid)||pre.pid||'',p=pid?PROSPECTS.find(x=>x.id===pid):null;
   const type=ev?ev.type:(pre.type||'rdv'),date=ev?ev.date:(pre.date||todayStr());
@@ -5407,7 +5407,7 @@ function agForm(pre){pre=pre||{};const ev=pre.id?AGENDA.find(e=>e.id===pre.id):n
   icSheet(`<div class="glp-tag">${ici('calendar',12)} Agenda d'équipe</div>
     <div class="glp-t">${ev?'Modifier':'Ajouter au planning'}</div>
     <div class="ics-lbl">Quoi</div>
-    <div class="ag-types">${[['rdv','pin','RDV au studio'],['rappel','bell','Rappel téléphonique'],['autre','clipboard','Événement d\'équipe']].map(([k,i,l])=>`<button class="ics-chip ag-type${type===k?' on':''}" data-k="${k}" onclick="agTypePick(this)"${ev?' disabled':''}>${ici(i,13)} ${l}</button>`).join('')}</div>
+    <div class="ag-types">${[['rdv','pin','RDV au studio'],['autre','clipboard','Événement d\'équipe']].map(([k,i,l])=>`<button class="ics-chip ag-type${type===k?' on':''}" data-k="${k}" onclick="agTypePick(this)"${ev?' disabled':''}>${ici(i,13)} ${l}</button>`).join('')}</div>
     <div class="ics-lbl">Prospect <small>· facultatif pour un événement d'équipe</small></div>
     <input list="ag-plist" id="ag-prosp" class="ics-in" placeholder="Nom du prospect…" value="${esc(p?p.nom||'':(ev&&ev.nom)||'')}" autocomplete="off" oninput="agProspPick(this)"/>
     <datalist id="ag-plist">${opts.map(x=>`<option value="${esc(x.nom||'')}">${x.tel&&!x.noCall?esc(x.tel.replace(/(\d{2})(?=\d)/g,'$1 ')):''}</option>`).join('')}</datalist>
@@ -5447,7 +5447,7 @@ function agSubmit(id){
   document.getElementById('icPop')?.remove();toast((ex?'✏️ Modifié':type==='autre'?'📅 Ajouté au planning':'📍 RDV au studio ajouté au planning')+' · '+frDate(date)+(h?' '+h:''));
   if($('#topPhase').textContent==='Mes prospects')showProspects(true);
 }
-const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : leads frais, puis promesses, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Leads frais','Arrivés depuis moins de 72 h, traités ou non, et tous les leads jamais appelés · le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost · les 🆕 leads frais sont dans leur onglet'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['agenda','📅 Agenda équipe','Planning partagé du studio : RDV au studio, rappels programmés, séances d\'essai et Intro Class · semaine par semaine, renseigné par toute l\'équipe'],['retrav','🔁 À retravailler','Leads appelés mais pas convertis : injoignables, échanges courts, jamais joints · la raison en pastille, à tenter par SMS ou à un autre horaire'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['short','⏱ Échanges courts','Joints au moins une fois, mais jamais plus de 3 minutes de conversation · non convertis, à retravailler'],['never','🚫 Jamais joints','Appelés, mais aucun échange de 30 secondes ou plus · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
+const PR_SEGS=[['mine','🙋 Ma journée','La journée du studio : leads frais, puis promesses, puis le reste du tri du jour · « En charge » isole un commercial'],['new','🆕 Leads frais','Arrivés depuis moins de 72 h, traités ou non, et tous les leads jamais appelés · le plus récent en haut'],['rappels','⏰ Rappels & RDV','Tri du jour : la journée, puis 🎯 promesses, ⚡ moments clés, 🔥 déjà joints, 📵 sans réponse, 🤖 séquences Boost · les 🆕 leads frais sont dans leur onglet'],['redo','🔁 À recontacter','Déjà joints, sans rappel convenu · les 🔥 chauds en tête, puis le contact le plus ancien'],['agenda','📅 Agenda équipe','Planning partagé du studio : uniquement les rendez-vous · RDV au studio, séances d\'essai datées, Intro Class et événements d\'équipe · semaine par semaine, renseigné par toute l\'équipe'],['retrav','🔁 À retravailler','Leads appelés mais pas convertis : injoignables, échanges courts, jamais joints · la raison en pastille, à tenter par SMS ou à un autre horaire'],['unreach','📵 Injoignables','3 appels ou plus, jamais décroché · à tenter par SMS ou à un autre horaire'],['short','⏱ Échanges courts','Joints au moins une fois, mais jamais plus de 3 minutes de conversation · non convertis, à retravailler'],['never','🚫 Jamais joints','Appelés, mais aucun échange de 30 secondes ou plus · à tenter par SMS ou à un autre horaire'],['ouv','🏗 À rappeler à l\'ouverture','Ne souhaitent plus être contactés pour le moment · à rappeler à l\'ouverture du studio'],['team','👥 Roadmap équipe','Appels du jour, rappels et RDV de chaque commercial (celui qui suit la relation)'],['all','🗂️ Tous','Tous les leads ouverts, par ordre d\'arrivée'],['journal','📞 Historique d\'appels','Tous les appels, avec transcriptions'],['trash','🗑 Clients supprimés','Fiches supprimées par erreur (clients et prospects) · un clic pour les restaurer']];
 // ── Suivi de la relation : le commercial qui l'a débutée la suit et assure les RDV ──
 function _me(){return (CFG.rep||'').trim().split(/\s+/)[0]||'';}
 // Rappel automatique (demain, sans réponse) : jamais du samedi 12h au dimanche, reporté au lundi même heure
@@ -7115,7 +7115,7 @@ function openMenu(){
     <button class="menu-item" onclick="closeMenu();showTraining()"><span class="mic">🎬</span><span>Formation<small>${TRAIN_MODULES.length} fondamentaux puis ${SIM_CURRICULUM.length} cas pratiques à valider</small></span></button>
     <a class="menu-item" href="livret-formation-commerciale.pdf?v=2026102520" target="_blank" rel="noopener" onclick="return openLivret(event)"><span class="mic">📘</span><span>Livret de formation (PDF)<small>7 pages · tout savoir avant de décrocher</small></span></a>
     ${COACH_ROLE==='admin'?`<button class="menu-item" onclick="closeMenu();showTrainAdmin()"><span class="mic">👥</span><span>Suivi de la formation<small>Qui a fait quoi, scores et taux de réussite</small></span></button>`:''}
-    <button class="menu-item" onclick="closeMenu();showAgenda()"><span class="mic">📅</span><span>Agenda d'équipe<small>RDV au studio, rappels et séances d'essai · semaine par semaine</small></span></button>
+    <button class="menu-item" onclick="closeMenu();showAgenda()"><span class="mic">📅</span><span>Agenda d'équipe<small>Rendez-vous seulement : RDV au studio, séances d'essai, Intro Class · semaine par semaine</small></span></button>
     <button class="menu-item" onclick="closeMenu();showCallStats()"><span class="mic">📊</span><span>Appels du jour<small>Compteur d'activité : total et par commercial</small></span></button>
     <button class="menu-item" onclick="closeMenu();showPerfPast()"><span class="mic">📈</span><span>Performances passées<small>Leads, transfo, ventes, closing · semaine ou mois</small></span></button>
     <button class="menu-item" onclick="closeMenu();_statsMonth='';showPerf()"><span class="mic">🏆</span><span>Mes performances<small>Ventes, primes, paliers · et vue équipe pour le responsable</small></span></button>
