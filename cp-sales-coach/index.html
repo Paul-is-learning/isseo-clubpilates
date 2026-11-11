@@ -4376,8 +4376,8 @@ function icBookSheet(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
     <div class="fv-meta" style="margin-top:6px">Ces deux listes se retrouvent dans Intro Class · on y revient quand les dates sont fixées.</div>
     <div class="fv-btns" style="margin-top:8px"><button class="pl-cbtn" style="flex:1" onclick="document.getElementById('icPop')?.remove()">Fermer</button></div>`);}
 // Listes d'attente (dates pas encore connues) : Intro Class à planifier, séance découverte Pilates Mat
-function icWaitToggle(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.icWait=!p.icWait;if(p.icWait)_takeSuivi(p);p.maj=new Date().toISOString();persistProspects();schedulePush();toast(p.icWait?'⏳ Sur la liste « Intro Class à planifier »':'Retiré de la liste d\'attente');icBookSheet(id);showProspects(true);}
-function matIntToggle(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.matInt=!p.matInt;p.maj=new Date().toISOString();persistProspects();schedulePush();toast(p.matInt?'🧘 Intéressé(e) Pilates Mat découverte':'Intérêt Pilates Mat retiré');icBookSheet(id);showProspects(true);}
+function icWaitToggle(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.icWait=!p.icWait;if(p.icWait){_takeSuivi(p);if(p.statut==='rappeler'){p.rappel='';p.rappelH='';p.rk=undefined;p.rappelBy='';}}p.maj=new Date().toISOString();persistProspects();schedulePush();toast(p.icWait?'⏳ Sur la liste « Intro Class à planifier »':'Retiré de la liste d\'attente');icBookSheet(id);showProspects(true);}
+function matIntToggle(id){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;p.matInt=!p.matInt;if(p.matInt&&p.statut==='rappeler'){p.rappel='';p.rappelH='';p.rk=undefined;p.rappelBy='';}p.maj=new Date().toISOString();persistProspects();schedulePush();toast(p.matInt?'🧘 Intéressé(e) Pilates Mat découverte':'Intérêt Pilates Mat retiré');icBookSheet(id);showProspects(true);}
 function icWaitList(){return PSC().filter(x=>x.icWait&&x.statut!=='perdu'&&!x.icBook).sort((a,b)=>String(a.maj||'').localeCompare(String(b.maj||'')));}
 function matIntList(){return PSC().filter(x=>x.matInt&&x.statut!=='perdu').sort((a,b)=>String(a.maj||'').localeCompare(String(b.maj||'')));}
 function icWaitHTML(){
@@ -5551,6 +5551,8 @@ function _migrateAvantOuverture(){let n=0;const now=new Date().toISOString();
     if(p.statut==='essai'){const s=p.icBook&&IC.sessions.find(x=>x.id===p.icBook&&x.statut!=='annulee');
       if(!s){p.statut='rappeler';p.matInt=true;p.icBook='';ch=true;}}
     if(p.ouverture&&p.ouverture.at){p.icWait=true;p.ouverture=null;ch=true;}
+    // Liste d'attente IC ou Pilates Mat : plus aucun rappel posé (on les recontacte quand les dates sont connues)
+    if((p.icWait||p.matInt)&&p.statut==='rappeler'&&(p.rappel||p.rappelH)){p.rappel='';p.rappelH='';p.rk=undefined;p.rappelBy='';ch=true;}
     if(ch){p.maj=now;_DIRTY[p.id]=now;n++;}});
   return n;}
 // Commercial qui suit la fiche : p.suivi, sinon celui qui a posé le rappel
