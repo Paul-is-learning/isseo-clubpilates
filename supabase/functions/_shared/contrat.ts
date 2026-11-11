@@ -36,11 +36,13 @@ export type Mail = { to: string; cc?: string[]; replyTo?: string; from?: string;
 export async function sendMail(m: Mail, studio: string): Promise<{ ok: boolean; how: string; err?: string }> {
   const user = Deno.env.get("SMTP_USER") || "", pass = Deno.env.get("SMTP_PASS") || "";
   const fromName = "Club Pilates " + studio;
+  // Expéditeur affiché : alias de la boîte studio (à déclarer dans Google Workspace), sinon la boîte elle-même
+  const fromAddr = Deno.env.get("SMTP_FROM") || "inscriptions@clubpilates.fr";
   if (user && pass) {
     try {
       const c = new SMTPClient({ connection: { hostname: Deno.env.get("SMTP_HOST") || "smtp.gmail.com", port: Number(Deno.env.get("SMTP_PORT")) || 465, tls: true, auth: { username: user, password: pass } } });
       await c.send({
-        from: `${fromName} <${user}>`, to: m.to, cc: m.cc?.filter((x) => x && x.toLowerCase() !== m.to.toLowerCase()), replyTo: m.replyTo || user,
+        from: `${fromName} <${fromAddr}>`, to: m.to, cc: m.cc?.filter((x) => x && x.toLowerCase() !== m.to.toLowerCase()), replyTo: m.replyTo || user,
         subject: m.subject, content: m.text, html: m.html,
         attachments: (m.attachments || []).map((a) => ({ filename: a.filename, content: a.base64, encoding: "base64" as const, contentType: "application/pdf" })),
       });
