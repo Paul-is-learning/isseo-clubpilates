@@ -406,6 +406,13 @@ serve(async (req) => {
       const r = await sendMail({ to, cc: sm ? [sm] : [], replyTo: sm || undefined, ...m, attachments: [{ filename: fileName(nom), base64: b64(pdf) }] }, studio);
       if (!r.ok) return json({ error: r.err || "Envoi impossible" }, 502);
       await putRow(admin, rowId(c.token), c);
+      // La fiche porte la trace de l'envoi côté serveur (pas seulement sur l'appareil qui a envoyé)
+      try {
+        const store = await getRow(admin, ROW_PROSPECTS);
+        const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
+        const p = list.find((x) => x.id === c.pid);
+        if (p && !(p.contrat && p.contrat.signe)) { p.contrat = { at: c.at, by: c.by, to: c.email, tok: c.token }; p.maj = c.at; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+      } catch (e) { console.warn("[contrat_send] fiche", e); }
       return json({ ok: true, token: c.token, how: r.how });
     }
     if (action === "contrat_file" || action === "contrat_iban") {
@@ -1201,6 +1208,8 @@ serve(async (req) => {
             // Signature posée par le client (page de signature) : jamais effacée par une copie de l'assistant
             const sc = list[i].contrat; if (sc && sc.signe && clean.contrat && !clean.contrat.signe) clean.contrat = { ...clean.contrat, tok: clean.contrat.tok || sc.tok, signe: sc.signe, file: sc.file };
             if (sc && sc.vu && clean.contrat && !clean.contrat.vu && (!clean.contrat.tok || clean.contrat.tok === sc.tok)) clean.contrat = { ...clean.contrat, vu: sc.vu };
+            // Contrat envoyé connu du serveur : une copie d'un autre appareil qui ne le connaît pas encore ne l'efface pas
+            if (sc && sc.tok && !clean.contrat) clean.contrat = sc;
             if ((clean.maj || "") >= (list[i].maj || "")) {
               if (markBq(clean, list[i], rep)) queued = true;
               // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
