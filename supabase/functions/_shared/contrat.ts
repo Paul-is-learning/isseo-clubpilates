@@ -20,7 +20,7 @@ export const studioMail = (studio: string) => STUDIO_MAIL[skey(studio)] || "";
 export type Contrat = {
   token: string; pid: string; studio: string; nom: string; tel: string; email: string; naiss: string; adr: string;
   pack: string; montant: string; date: string; by: string; at: string;
-  status: "envoye" | "signe"; signedAt?: string; file?: string; ibanEnc?: string; ibanLast?: string; bic?: string; ipHash?: string;
+  status: "envoye" | "signe"; openedAt?: string; signedAt?: string; file?: string; ibanEnc?: string; ibanLast?: string; bic?: string; ipHash?: string;
 };
 export const PACK_LBL: Record<string, string> = { "1": "Pack 4 classes/mois", "2": "Pack 8 classes/mois", "3": "Pack classes illimitées" };
 export const rowId = (token: string) => "_contrat_" + token;

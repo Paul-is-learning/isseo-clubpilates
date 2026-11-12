@@ -200,7 +200,20 @@ serve(async (req) => {
       const c = (await getRow(admin, rowId(tok))) as Contrat;
       if (!c || !c.token) return json({ error: "Lien invalide ou expiré" }, 404);
       const pub = { nom: c.nom, studio: c.studio, tel: c.tel, email: c.email, naiss: c.naiss, adr: c.adr, pack: PACK_LBL[c.pack] || "", montant: c.montant, date: c.date, status: c.status, signedAt: c.signedAt || "" };
-      if (action === "contrat_get") return json({ ok: true, contrat: pub });
+      if (action === "contrat_get") {
+        // Accusé de réception : première ouverture du lien par le client, notée sur le contrat et sur la fiche
+        if (c.status === "envoye" && !c.openedAt) {
+          const vu = new Date().toISOString();
+          try {
+            await putRow(admin, rowId(tok), { ...c, openedAt: vu });
+            const store = await getRow(admin, ROW_PROSPECTS);
+            const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
+            const p = list.find((x) => x.id === c.pid);
+            if (p && p.contrat && p.contrat.tok === tok && !p.contrat.vu) { p.contrat = { ...p.contrat, vu }; p.maj = vu; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+          } catch (e) { console.warn("[contrat_get] vu", e); }
+        }
+        return json({ ok: true, contrat: pub });
+      }
       if (c.status === "signe") return json({ error: "Ce contrat est déjà signé" }, 409);
       // Le client complète lui-même son identité sur la page de signature
       const nomIn = String(body.nom || "").trim().slice(0, 80), naissIn = String(body.naiss || ""), adrIn = String(body.adr || "").trim().slice(0, 120), telIn = String(body.tel || "").trim().slice(0, 30);
@@ -1155,7 +1168,7 @@ serve(async (req) => {
             naiss: String(p.naiss || "").slice(0, 10), // date de naissance (contrat d'inscription)
             adr: String(p.adr || "").slice(0, 120), // adresse postale (contrat d'inscription)
             // Contrat d'inscription envoyé par e-mail : quand, par qui, à quelle adresse
-            contrat: p.contrat && typeof p.contrat === "object" && p.contrat.at ? { at: String(p.contrat.at).slice(0, 30), by: String(p.contrat.by || "").slice(0, 40), to: String(p.contrat.to || "").slice(0, 120), tok: String(p.contrat.tok || "").slice(0, 32), signe: String(p.contrat.signe || "").slice(0, 30), file: String(p.contrat.file || "").slice(0, 120) } : undefined,
+            contrat: p.contrat && typeof p.contrat === "object" && p.contrat.at ? { at: String(p.contrat.at).slice(0, 30), by: String(p.contrat.by || "").slice(0, 40), to: String(p.contrat.to || "").slice(0, 120), tok: String(p.contrat.tok || "").slice(0, 32), signe: String(p.contrat.signe || "").slice(0, 30), file: String(p.contrat.file || "").slice(0, 120), vu: String(p.contrat.vu || "").slice(0, 30) } : undefined,
             // Profil pour le coach : objectif, douleurs/santé, pratique, contraintes (140 car. chacun)
             prof: ["obj", "doul", "prat", "contr"].reduce((o: Record<string, string>, k) => { o[k] = String((p.prof || {})[k] || "").slice(0, 140); return o; }, {}),
             // Résumés IA des appels (plateforme Allo) : {ts, txt}, 20 max, 5000 car.
@@ -1187,6 +1200,7 @@ serve(async (req) => {
             keepBoost(clean, list[i]);
             // Signature posée par le client (page de signature) : jamais effacée par une copie de l'assistant
             const sc = list[i].contrat; if (sc && sc.signe && clean.contrat && !clean.contrat.signe) clean.contrat = { ...clean.contrat, tok: clean.contrat.tok || sc.tok, signe: sc.signe, file: sc.file };
+            if (sc && sc.vu && clean.contrat && !clean.contrat.vu && (!clean.contrat.tok || clean.contrat.tok === sc.tok)) clean.contrat = { ...clean.contrat, vu: sc.vu };
             if ((clean.maj || "") >= (list[i].maj || "")) {
               if (markBq(clean, list[i], rep)) queued = true;
               // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
