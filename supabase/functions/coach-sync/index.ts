@@ -209,7 +209,8 @@ serve(async (req) => {
             const store = await getRow(admin, ROW_PROSPECTS);
             const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
             const p = list.find((x) => x.id === c.pid);
-            if (p && p.contrat && p.contrat.tok === tok && !p.contrat.vu) { p.contrat = { ...p.contrat, vu }; p.maj = vu; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+            // Fiche sans trace du contrat (copie écrasée par un autre appareil) : on la rétablit au passage
+            if (p && !(p.contrat && p.contrat.signe) && !(p.contrat && p.contrat.tok === tok && p.contrat.vu)) { p.contrat = { at: c.at, by: c.by, to: c.email, tok, vu }; p.maj = vu; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
           } catch (e) { console.warn("[contrat_get] vu", e); }
         }
         return json({ ok: true, contrat: pub });
