@@ -4096,7 +4096,7 @@ function contratSheet(id){
     <div class="ag-types">${[['1','Pack 4 classes'],['2','Pack 8 classes'],['3','Classes illimitées']].map(([k,l])=>`<button class="ics-chip ct-pack${pk===k?' on':''}" data-k="${k}" onclick="document.querySelectorAll('.ct-pack').forEach(c=>c.classList.toggle('on',c===this));contratMontant()">${l}</button>`).join('')}</div>
     <div class="ics-lbl">Offre</div>
     <div class="ag-types">${Object.keys(CT_OFFRES).map(k=>`<button class="ics-chip ct-offre${k==='fond'?' on':''}" data-k="${k}" onclick="document.querySelectorAll('.ct-offre').forEach(c=>c.classList.toggle('on',c===this));contratMontant()">${CT_OFFRES[k]}</button>`).join('')}</div>
-    <div class="ics-lbl">Montant du prélèvement mensuel <small>· rempli selon le pack et l'offre, modifiable</small></div><input id="ct-montant" class="ics-in" maxlength="60" value=""/>
+    <div class="ics-lbl">Montant du prélèvement mensuel <small>· rempli selon le pack et l'offre, modifiable</small></div><input id="ct-montant" class="ics-in" maxlength="80" value=""/>
     <div class="fv-btns" style="flex-wrap:wrap;margin-top:14px">
       <button class="pr-act" onclick="contratPdf('${p.id}',false)">👁 Voir le PDF</button>
       <button class="pr-act main" style="flex:1" onclick="contratSend('${p.id}')">✉️ Envoyer à signer</button>
