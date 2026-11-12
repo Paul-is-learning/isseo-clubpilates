@@ -5044,7 +5044,7 @@ const prOpen=p=>(p.statut==='rappeler'||p.statut==='essai')&&!p.noCall;
 // Lead jamais appelé (aucun appel noté) : il reste TOUJOURS dans « Nouveaux leads », quel que soit le rappel posé dessus ; dès le premier essai il en sort (demande de Paul)
 function prAutoNew(p){return !!p.rappel&&prNever(p);}
 // ── Tri du jour (⏰ Rappels & RDV) : la journée d'abord, puis 6 rangs de priorité (validés par Paul, 1er nov. 2026) ──
-const PRIO=[null,['🎯','Promesses au prospect','RDV ou rappel convenu avec lui : on a donné notre parole'],['⚡','Moments clés','RDV non venu : relancer dans la journée'],['🆕','Leads frais','Arrivés depuis moins de 72 h, traités ou non, et tous les leads jamais appelés · les plus récents en haut'],['🔥','Déjà joints, à faire avancer','Un vrai échange a eu lieu, le dossier est vivant'],['📵','Sans réponse, à retenter','1 ou 2 essais : tenter à un autre moment'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés']];
+const PRIO=[null,['🎯','Promesses au prospect','RDV ou rappel convenu avec lui : on a donné notre parole'],['⚡','Moments clés','RDV non venu : relancer dans la journée'],['🆕','Leads frais','Arrivés depuis moins de 72 h, traités ou non, et tous les leads jamais appelés · les plus récents en haut'],['🔥','Déjà joints, à faire avancer','Un vrai échange a eu lieu, le dossier est vivant'],['📵','Sans réponse, à retenter','1 ou 2 essais : tenter à un autre moment'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés · les leads les plus récents en haut']];
 const FRESH_H=72;
 // Lead frais : arrivé depuis moins de FRESH_H heures, encore en prospection · reste 🆕 qu'il ait été appelé ou non (demande de Paul, 9 nov. 2026)
 function prFresh(p){if(!prOpen(p)||p.bmember||p.statut!=='rappeler'||p.bnok||prOuv(p))return false;const a=new Date(prArrival(p)).getTime();return !isNaN(a)&&Date.now()-a<FRESH_H*36e5;}
@@ -5115,7 +5115,7 @@ const CLOS_FROM='2026-11-09T18:30:00.000Z'; // mise en ligne de la clôture : le
 function prToClose(p){if(!prOpen(p)||p.bmember||prOuv(p))return false;const t=_lastCallTs(p);if(!_isToday(t))return false;const ti=new Date(t);if(isNaN(ti)||ti.toISOString()<CLOS_FROM)return false;if(!p.clos)return true;const c=Date.parse(p.clos);return !isNaN(c)&&ti.getTime()-c>3*60000;}
 // Résultat validé aujourd'hui, et rien de nouveau depuis
 function prDoneToday(p){return !!p.clos&&_isToday(p.clos)&&!prToClose(p);}
-const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les leads les plus récents en haut · après les leads frais'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Les leads les plus récents en haut, les plus anciens en bas, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
+const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les leads les plus récents en haut · après les leads frais'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Les leads les plus récents en haut, les plus anciens en bas, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés · les leads les plus récents en haut'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
 // Groupe de Ma journée (0 à 5) : « quoi maintenant »
 function mineGroup(p){
   if(prDoneToday(p))return 5;
@@ -5128,9 +5128,8 @@ function mineGroup(p){
 }
 function _mineTie(a,b,g){
   if(g===0)return _lastCallTs(b).localeCompare(_lastCallTs(a));
-  // À l'heure et Relances : le lead le plus récent en haut (priorité aux leads jeunes, demande de Paul, 12 nov. 2026), puis l'heure convenue
-  if(g===1||g===3){const ta=rdvAt(a)?.getTime()||9e15,tb=rdvAt(b)?.getTime()||9e15;return prArrival(b).localeCompare(prArrival(a))||ta-tb;}
-  if(g===4){const ta=rdvAt(a)?.getTime()||9e15,tb=rdvAt(b)?.getTime()||9e15;return ta-tb||prArrival(b).localeCompare(prArrival(a));}
+  // À l'heure, Relances et Séquences Boost : le lead le plus récent en haut (priorité aux leads jeunes, demande de Paul, 12 nov. 2026), puis l'heure convenue
+  if(g===1||g===3||g===4){const ta=rdvAt(a)?.getTime()||9e15,tb=rdvAt(b)?.getTime()||9e15;return prArrival(b).localeCompare(prArrival(a))||ta-tb;}
   if(g===5)return String(b.clos||'').localeCompare(String(a.clos||''));
   return prArrival(b).localeCompare(prArrival(a));
 }
