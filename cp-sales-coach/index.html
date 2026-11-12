@@ -6431,6 +6431,11 @@ function histPanel(p){
     if(a.ds)bits.push({delivered:'distribué',sent:'envoyé',failed:'échec d\'envoi',read:'lu',opened:'ouvert',bounced:'rejeté'}[a.ds]||a.ds);
     items.push({at:a.at,ic,lbl,sub:bits.join(' · '),txt:a.txt,who:a.who,src:'Boost',type:a.type});
   });
+  // E-mails envoyés par Joseph depuis la boîte du studio (contrat d'inscription) : envoi, ouverture, signature
+  const cm=p.contrat,cEmails=[];
+  if(cm&&cm.at){cEmails.push({at:cm.at,ic:'✉️',lbl:'E-mail · contrat d\'inscription',sub:['envoyé à '+(cm.to||''),cm.by?'par '+cm.by:'',cm.signe?'signé':cm.vu?'ouvert par le client '+dt(cm.vu):'pas encore ouvert'].filter(Boolean).join(' · '),src:'Joseph',type:'email'});
+    if(cm.signe)cEmails.push({at:cm.signe,ic:'✅',lbl:'Contrat signé en ligne',sub:'contrat signé envoyé par e-mail à '+(cm.to||''),src:'Joseph',type:'email'});}
+  cEmails.forEach(x=>items.push(x));
   items.sort((x,y)=>String(y.at).localeCompare(String(x.at)));
   const B=((h&&h.items)||[]).filter(a=>a.src!=='Aircall');
   const n=k=>B.filter(a=>k.test(a.type)).length;
@@ -6441,7 +6446,7 @@ function histPanel(p){
   const kpi=(ic,v,l)=>`<div class="hs-k"><b>${ic} ${v}</b><span>${l}</span></div>`;
   const when=iso=>{const t=new Date(iso);return isNaN(t)?'<b>?</b>':`<b>${t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}</b><span>${t.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}</span>`;};
   return `<div class="pr-msgs hs ht">
-    <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/)+alloSms.length,'SMS')}${kpi('✉️',n(/^email/),n(/^email/)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
+    <div class="hs-kpis">${kpi('📞',calls,'appels'+(callMin?' · '+callMin+' min':''))}${kpi('💬',n(/^sms/)+alloSms.length,'SMS')}${kpi('✉️',n(/^email/)+cEmails.length,(n(/^email/)+cEmails.length)>1?'emails':'email')}${kpi('🟢',n(/^whatsapp/),'WhatsApp')}${kpi('📅',n(/^(rdv|seance_essai|bilan)/),'RDV')}</div>
     ${!h||h.loading?'<div class="hs-load">⏳ Chargement de l\'historique Boost…</div>':h.err||!h.ok?'<div class="hs-load">📴 Historique Boost indisponible pour le moment · seuls les appels Allo sont affichés.</div>':!h.boost&&!p.bid?'<div class="hs-load">Fiche absente de Boost · seuls les appels Allo sont affichés.</div>':''}
     <div class="ht-head"><b>Historique des échanges</b>${autoHid?`<span>${autoHid} rappel${autoHid>1?'s':''} automatique${autoHid>1?'s':''} Boost ${_HSAUTO[p.id]?'affiché':'masqué'}${autoHid>1?'s':''} · <a href="#" onclick="event.preventDefault();hsAutoToggle('${p.id}')">${_HSAUTO[p.id]?'Masquer':'Afficher'}</a></span>`:''}</div>
     ${replaced?`<div class="hs-load">🧹 ${replaced} rappel${replaced>1?'s':''} automatique${replaced>1?'s':''} Boost masqué${replaced>1?'s':''} : remplacé${replaced>1?'s':''} par le rappel convenu du ${new Date(humanT).toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'})} à ${new Date(humanT).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'})}.</div>`:''}
