@@ -4043,7 +4043,8 @@ function contratMontant(){const pk=+(document.querySelector('.ct-pack.on')||{dat
   const std=parseFloat(packMonthly(pk)),fo=of==='fond'?foundingMonthly(pk):null,v=of==='fond'&&fo!=null?fo:std,pct=parseFloat(CFG.founding)||0;
   if(isNaN(v)){m.value='';m.placeholder='Tarif du '+packShort(pk)+' non renseigné dans Réglages · à saisir';return;}
   const eur=v.toFixed(2).replace(/\.00$/,'');
-  m.value=of==='fond'&&fo!=null?`${packShort(pk)} Membre Fondateur (-${pct}% à vie) ${eur}€/mois`:`${packShort(pk)} ${eur}€/mois`;m.placeholder='';}
+  // Pack 4 fondateur : pas de remise, 1 séance offerte par mois pendant 3 mois (wording de Paul, 12 nov. 2026)
+  m.value=of==='fond'&&pk===1?`${packShort(pk)} · ${eur} €/mois + 1 séance offerte/mois (pendant 3 mois)`:of==='fond'&&fo!=null?`${packShort(pk)} · Membre Fondateur (-${pct}% à vie) · ${eur} €/mois`:`${packShort(pk)} · ${eur} €/mois`;m.placeholder='';}
 function contratLineHTML(p){
   if(p.bmember||!(p.statut==='abo'||p.statut==='venu'||p.statut==='essai'))return '';
   const c=p.contrat,mgr=COACH_ROLE==='admin'||IS_MGR;
