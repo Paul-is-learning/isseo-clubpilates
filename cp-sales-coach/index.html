@@ -5883,6 +5883,8 @@ function showProspects(keepScroll){
       const vol=calls.length?` · ${calls.length} appel${calls.length>1?'s':''}, ${ok} abouti${ok>1?'s':''}`:'';
       lastH=`<span class="pl-c last${ago>=14?' old':ago>=7?' mid':''}"><b>Dernier contact :</b> ${agoH}${isNaN(t)?'':' · '+t.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}<span class="pl-c-d"> · ${kind}${dur?' · '+dur:''}${who?' · '+esc(who.split(' ')[0]):''}${vol}${sms.length?' · '+sms.length+' SMS':''}</span></span>`;}
     else{const a=Math.floor((Date.now()-new Date(prArrival(p)).getTime())/864e5);lastH=`<span class="pl-c last muted${a>=3?' mid':''}"><b>Jamais appelé</b>${isNaN(a)?'':a===0?' · arrivé aujourd\'hui':a===1?' · arrivé hier':' · arrivé il y a '+a+' j'}</span>`;}
+    // Date d'arrivée du lead toujours visible, jour + heure Boost (demande de Paul, 12 nov. 2026)
+    {const d=new Date(prArrival(p));if(!isNaN(d))lastH+=`<span class="pl-c last muted" title="Date d'arrivée du lead">${ici('calendar',12)} ${p.bentry?'Arrivé le':'Créé le'} ${d.toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+d.toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.src?' · '+esc(BOOST_SRC[p.src]||p.src):''}</span>`;}
     const note=(noteShow(p)||p.bnotes||p.obj||'').replace(/\s+/g,' ').trim();
     const prio=!clientView&&(prSort==='rappels'||prSort==='mine')?prPrio(p):null,todo=sumTodo(p),sit=sumLine(p);
     // Une seule phrase « quoi faire » : la consigne du résumé IA, sinon la situation, sinon la note, sinon la raison de la priorité
