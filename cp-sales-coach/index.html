@@ -5115,7 +5115,7 @@ const CLOS_FROM='2026-11-09T18:30:00.000Z'; // mise en ligne de la clôture : le
 function prToClose(p){if(!prOpen(p)||p.bmember||prOuv(p))return false;const t=_lastCallTs(p);if(!_isToday(t))return false;const ti=new Date(t);if(isNaN(ti)||ti.toISOString()<CLOS_FROM)return false;if(!p.clos)return true;const c=Date.parse(p.clos);return !isNaN(c)&&ti.getTime()-c>3*60000;}
 // Résultat validé aujourd'hui, et rien de nouveau depuis
 function prDoneToday(p){return !!p.clos&&_isToday(p.clos)&&!prToClose(p);}
-const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les retards en premier · après les leads frais'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Déjà joints d\'abord, puis sans réponse, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
+const MG=[['📝','À clôturer','Appels du jour sans résultat validé · à saisir avant de continuer'],['⏰','À l\'heure','Rappels et séances d\'essai convenus avec une heure · les leads les plus récents en haut · après les leads frais'],['🆕','Leads frais','Jamais appelés · les plus récents en haut, à rappeler dans les minutes'],['🔁','Relances du jour','Les leads les plus récents en haut, les plus anciens en bas, avec le créneau suggéré'],['🤖','Séquences Boost','Rappels automatiques, personne ne les a décidés'],['✅','Fait aujourd\'hui','Résultat validé · la fiche reviendra à sa prochaine échéance']];
 // Groupe de Ma journée (0 à 5) : « quoi maintenant »
 function mineGroup(p){
   if(prDoneToday(p))return 5;
@@ -5128,8 +5128,9 @@ function mineGroup(p){
 }
 function _mineTie(a,b,g){
   if(g===0)return _lastCallTs(b).localeCompare(_lastCallTs(a));
-  if(g===1||g===4){const ta=rdvAt(a)?.getTime()||9e15,tb=rdvAt(b)?.getTime()||9e15;return ta-tb||prArrival(b).localeCompare(prArrival(a));}
-  if(g===3){const ok=x=>prCalls(x).ok?0:1;return ok(a)-ok(b)||((rdvAt(a)?.getTime()||9e15)-(rdvAt(b)?.getTime()||9e15))||prArrival(b).localeCompare(prArrival(a));}
+  // À l'heure et Relances : le lead le plus récent en haut (priorité aux leads jeunes, demande de Paul, 12 nov. 2026), puis l'heure convenue
+  if(g===1||g===3){const ta=rdvAt(a)?.getTime()||9e15,tb=rdvAt(b)?.getTime()||9e15;return prArrival(b).localeCompare(prArrival(a))||ta-tb;}
+  if(g===4){const ta=rdvAt(a)?.getTime()||9e15,tb=rdvAt(b)?.getTime()||9e15;return ta-tb||prArrival(b).localeCompare(prArrival(a));}
   if(g===5)return String(b.clos||'').localeCompare(String(a.clos||''));
   return prArrival(b).localeCompare(prArrival(a));
 }
