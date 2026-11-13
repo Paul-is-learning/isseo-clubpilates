@@ -2872,7 +2872,33 @@ function copyRecap(){const t=buildRecap();navigator.clipboard?.writeText(t).then
    Stockage local au poste du commercial (localStorage).
    ════════════════════════════════════════════════════════════════ */
 let PROSPECTS=[];try{PROSPECTS=JSON.parse(localStorage.getItem('cpcoach_prospects')||'[]');}catch(e){PROSPECTS=[];}
-function persistProspects(){try{localStorage.setItem('cpcoach_prospects',JSON.stringify(PROSPECTS));}catch(e){}badgeSync();}
+/* ── Copie locale des fiches : IndexedDB (localStorage plafonne vers 5 Mo sur iPhone, la liste d'un studio le dépasse · 13 nov. 2026) ──
+   · la liste complète part dans IndexedDB (écriture groupée, 250 ms)
+   · les fiches modifiées pas encore envoyées restent aussi dans localStorage, en synchrone (petit), pour ne rien perdre si l'app se ferme
+   · l'ancienne copie localStorage est lue une dernière fois puis supprimée dès qu'IndexedDB a pris le relais */
+let _idb=null,_persT=null,_persWarned=false,_localDone=false;
+function _idbOpen(){return new Promise((res,rej)=>{try{const r=indexedDB.open('cpcoach',1);r.onupgradeneeded=()=>{r.result.createObjectStore('kv');};r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error||new Error('idb'));r.onblocked=()=>rej(new Error('idb bloquée'));}catch(e){rej(e);}});}
+async function _idbGet(k){if(!_idb)_idb=await _idbOpen();return new Promise((res,rej)=>{const q=_idb.transaction('kv').objectStore('kv').get(k);q.onsuccess=()=>res(q.result);q.onerror=()=>rej(q.error);});}
+async function _idbSet(k,v){if(!_idb)_idb=await _idbOpen();return new Promise((res,rej)=>{const tx=_idb.transaction('kv','readwrite');tx.objectStore('kv').put(v,k);tx.oncomplete=()=>res();tx.onerror=()=>rej(tx.error);tx.onabort=()=>rej(tx.error||new Error('idb abandon'));});}
+// Fiches modifiées ici et pas encore confirmées par le serveur : copie synchrone, relue au démarrage
+function _persistUnsent(){if(!_localDone)return;try{const u=PROSPECTS.filter(p=>p&&p.id&&((typeof _DIRTY!=='undefined'&&_DIRTY[p.id]!==undefined)||(typeof _SEEN!=='undefined'&&_SEEN[p.id]!==(p.maj||''))));if(u.length)localStorage.setItem('cpcoach_unsent',JSON.stringify(u));else localStorage.removeItem('cpcoach_unsent');}catch(e){}}
+async function _persistNow(){clearTimeout(_persT);_persT=null;try{await _localReady;}catch(e){}let s='';try{s=JSON.stringify(PROSPECTS);}catch(e){return;}
+  try{await _idbSet('prospects',s);try{localStorage.removeItem('cpcoach_prospects');}catch(e){}}
+  catch(e){try{localStorage.setItem('cpcoach_prospects',s);}catch(e2){if(!_persWarned){_persWarned=true;console.warn('[copie locale]',e,e2);try{toast('⚠️ Mémoire de cet appareil pleine · vos fiches restent à jour en ligne, gardez la connexion');}catch(e3){}}}}}
+function persistProspects(){_persistUnsent();clearTimeout(_persT);_persT=setTimeout(_persistNow,250);badgeSync();}
+function _persistFlush(){return _persT?_persistNow():Promise.resolve();}
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='hidden')_persistFlush();});
+addEventListener('pagehide',()=>{_persistFlush();});
+// Lecture au démarrage : IndexedDB, puis les fiches non envoyées par-dessus · les synchros attendent cette lecture
+let _localReady=null;
+function _loadLocal(){return (async()=>{
+  let U=[];try{U=JSON.parse(localStorage.getItem('cpcoach_unsent')||'[]');}catch(e){}
+  try{const s=await _idbGet('prospects');if(s){const L=JSON.parse(s);if(Array.isArray(L))PROSPECTS=L;}}catch(e){console.warn('[copie locale] lecture',e);}
+  try{if(Array.isArray(U)&&U.length){const ix=new Map(PROSPECTS.map((p,i)=>[p.id,i]));
+    U.forEach(u=>{if(!u||!u.id)return;const i=ix.get(u.id);if(i===undefined)PROSPECTS.push(u);else if((u.maj||'')>(PROSPECTS[i].maj||''))PROSPECTS[i]=u;});}}catch(e){}
+  try{_SEEN={};PROSPECTS.forEach(p=>{if(p&&p.id)_SEEN[p.id]=p.maj||'';});}catch(e){}
+  _localDone=true;
+})();}
 /* ── Pastille sur l'icône de l'app (iPhone écran d'accueil, iOS 16.4+) : mes leads frais + mes rappels du jour, effacée quand tout est traité ── */
 let _bdgT=null;
 function badgeCount(){try{const me=_sk(_me());if(!me)return 0;return PSC().filter(p=>_sk(prCharge(p)||'')===me&&mineHas(p)&&!prDoneToday(p)).length;}catch(e){return 0;}}
@@ -2990,7 +3016,8 @@ try{_PDEL=JSON.parse(localStorage.getItem('cpcoach_pdel')||'[]')||[];}catch(e){_
 // _SEEN : version (maj) de chaque fiche telle que reçue du serveur
 var _SEEN={},_syncSt='ok',_failSt='off',_fails=0,_retryT=null,_pushBusy=false,_pushAt=0,_pushAgain=false,_pushN=0;
 PROSPECTS.forEach(p=>{if(p&&p.id)_SEEN[p.id]=p.maj||'';});
-function _persistSync(){try{localStorage.setItem('cpcoach_dirty',JSON.stringify(_DIRTY));localStorage.setItem('cpcoach_pdel',JSON.stringify(_PDEL));}catch(e){}}
+_localReady=_loadLocal();
+function _persistSync(){try{localStorage.setItem('cpcoach_dirty',JSON.stringify(_DIRTY));localStorage.setItem('cpcoach_pdel',JSON.stringify(_PDEL));}catch(e){}_persistUnsent();}
 function _hasPend(){return Object.keys(_DIRTY).length>0||_PDEL.length>0;}
 function _seenAll(list){_SEEN={};list.forEach(p=>{if(p&&p.id)_SEEN[p.id]=p.maj||'';});}
 // Une fiche dont la version diffère de la dernière reçue du serveur est une modification locale
@@ -3075,12 +3102,14 @@ async function _sendDel(){const ids=_PDEL.slice();if(!ids.length||!COACH_CODE)re
 // en attente et repartent seules
 async function syncPush(){
   if(!COACH_CODE)return;
+  try{await _localReady;}catch(e){}
   clearTimeout(_pushT);clearTimeout(_retryT);_markDirty();
   if(_pushBusy&&Date.now()-_pushAt<45000){_pushAgain=true;return;}
   const tok=_pushAt=Date.now();_pushBusy=true;_syncState('sync');
   const sent=new Map(PROSPECTS.map(p=>[p.id,p.maj||'']));
   let err=null;
-  try{const d=await syncCall('push',{prospects:PROSPECTS});_pushN++;_DIRTY0=false;if(d&&d.rev)_rev=d.rev;
+  // Seules les fiches modifiées ici partent (la liste entière pesait plusieurs Mo à chaque geste) ; le serveur fusionne fiche par fiche
+  try{const d=await syncCall('push',{prospects:PROSPECTS.filter(p=>p&&_DIRTY[p.id]!==undefined)});_pushN++;_DIRTY0=false;if(d&&d.rev)_rev=d.rev;
     // Reçu par le serveur : ce qui n'a pas bougé depuis l'envoi n'est plus en attente
     sent.forEach((m,id)=>{if(_DIRTY[id]===m)delete _DIRTY[id];});
     if(!_adoptEpoch(d)&&d&&d.prospects){PROSPECTS=_keepLocal(d.prospects,sent);persistProspects();}
@@ -3096,6 +3125,7 @@ async function syncPush(){
 }
 async function syncPull(rerender){
   if(!COACH_CODE)return;
+  try{await _localReady;}catch(e){}
   _syncState('sync');
   const n0=_pushN;
   try{
@@ -5246,19 +5276,31 @@ function _b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g
 let _swReg=null;
 // ── Nouvelle version de l'app : vérifiée toutes les 5 min (empreinte ETag du serveur), bandeau « Mettre à jour »,
 // puis rechargement seul au prochain moment calme (retour sur l'app, ou 60 s sans geste), jamais pendant une saisie ni un appel en cours ──
-let _ver0='',_verNew=false,_lastAct=Date.now();
-async function _verTag(){try{const r=await fetch(location.pathname,{method:'HEAD',cache:'no-store'});return r.headers.get('etag')||r.headers.get('last-modified')||'';}catch(e){return '';}}
+const APP_BUILD='2026-11-13 18:49'; // posé par stamp.sh à chaque publication, identique à version.json
+let _verNew=false,_verRemote='',_lastAct=Date.now();
+const _verLbl=b=>{const m=String(b||'').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})$/);return m?(+m[3])+' '+['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][+m[2]-1]+' · '+m[4]:String(b||'?');};
+// Version publiée : petit fichier lu sans cache (ne dépend plus de ce que l'app a vu au démarrage)
+async function _verFetch(){try{const r=await fetch('version.json?t='+Date.now(),{cache:'no-store'});if(!r.ok)return '';const d=await r.json();return String((d&&d.build)||'');}catch(e){return '';}}
+// Garde-fou : jamais plus de 3 rechargements pour une même version (page et version.json désaccordés)
+function _verTry(){try{return JSON.parse(localStorage.getItem('cpcoach_vertry')||'null')||{};}catch(e){return {};}}
+function _verMay(b){const t=_verTry();return t.b!==b||((t.n||0)<3&&Date.now()-(t.t||0)>90000);}
 function verInit(){
   ['pointerdown','keydown','touchstart'].forEach(ev=>document.addEventListener(ev,()=>{_lastAct=Date.now();},{passive:true}));
-  _verTag().then(t=>{_ver0=t;});
+  setTimeout(verCheck,4000);
   setInterval(verCheck,5*60000);
   setInterval(()=>{if(_verNew&&_verCalm()&&Date.now()-_lastAct>60000)verReload();},5000);
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){verCheck().then(()=>{if(_verNew&&_verCalm())verReload();});}});
 }
-async function verCheck(){if(!_ver0||_verNew||document.visibilityState!=='visible')return;const t=await _verTag();if(t&&t!==_ver0){_verNew=true;verBanner();}}
+async function verCheck(){if(_verNew||document.visibilityState!=='visible')return;const b=await _verFetch();if(!b)return;_verRemote=b;if(b!==APP_BUILD&&_verMay(b)){_verNew=true;verBanner();}}
 function _verCalm(){return !_typing()&&!_hasPend()&&!_pushBusy&&!document.getElementById('icPop')&&!(PROSPECTS||[]).some(p=>{const o=prOnCall(p);return o&&o.by===_meN();});}
 function verBanner(){if(document.getElementById('verBar'))return;const d=document.createElement('div');d.id='verBar';d.innerHTML='✨ Nouvelle version disponible <button onclick="verReload()">Mettre à jour</button>';document.body.appendChild(d);}
-function verReload(){try{localStorage.setItem('cpcoach_verup','1');}catch(e){}location.reload();}
+function verReload(){try{localStorage.setItem('cpcoach_verup','1');const t=_verTry(),b=_verRemote||'';localStorage.setItem('cpcoach_vertry',JSON.stringify({b,n:t.b===b?(t.n||0)+1:1,t:Date.now()}));}catch(e){}
+  const go=()=>{try{location.replace(location.pathname+'?v='+Date.now());}catch(e){location.reload();}};_persistFlush().then(go,go);}
+// Menu : version installée + mise à jour à la demande
+async function verManual(){toast('Vérification de la version…');const b=await _verFetch();if(!b){toast('Impossible de vérifier · pas de connexion ?');return;}
+  if(b===APP_BUILD){toast('✅ Vous avez la dernière version · '+_verLbl(APP_BUILD));return;}
+  if(_hasPend()){toast('Envoi de vos modifications, puis mise à jour…');try{await syncPush();}catch(e){}}
+  _verRemote=b;try{localStorage.removeItem('cpcoach_vertry');}catch(e){}verReload();}
 function swInit(){if(!('serviceWorker' in navigator))return;navigator.serviceWorker.register('sw.js').then(r=>{_swReg=r;}).catch(()=>{});
   navigator.serviceWorker.addEventListener('message',e=>{const d=e.data||{};if(d.type==='OPEN_PROSPECT'&&d.id)_openLater(d.id);});}
 let _openWanted='';
@@ -7223,6 +7265,7 @@ function pageNav(){
 function openMenu(){
   $('#menuBody').innerHTML=`
     <button class="menu-item" onclick="closeMenu();showHome()"><span class="mic">🏠</span><span>Accueil<small>Aujourd'hui, actions, formation, pilotage</small></span></button>
+    <button class="menu-item" onclick="closeMenu();verManual()"><span class="mic">✨</span><span>Version du ${_verLbl(APP_BUILD)}<small>Toucher pour vérifier et installer la dernière version</small></span></button>
     <button class="menu-item" onclick="closeMenu();openSet()"><span class="mic">⚙️</span><span>Réglages du studio<small>Studio, commercial, tarifs, places</small></span></button>
     <button class="menu-item" onclick="closeMenu();showStudiosFR()"><span class="mic">📍</span><span>Studios ouverts en France<small>16 studios + ouvertures à venir · téléphones cliquables</small></span></button>
     <button class="menu-item" onclick="showPresentation()"><span class="mic">📣</span><span>Présentation Club Pilates<small>Chiffres clés, histoire, studio complet</small></span></button>
@@ -7496,7 +7539,8 @@ window.addEventListener('popstate',function(){
     const u=new URL(location.href);
     urlCode=(u.searchParams.get('code')||'').trim();
     const op=(u.searchParams.get('open')||'').trim();if(op){_openWanted=op;u.searchParams.delete('open');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
-    swInit();verInit();try{if(localStorage.getItem('cpcoach_verup')){localStorage.removeItem('cpcoach_verup');setTimeout(()=>toast('✨ Application mise à jour'),1200);}}catch(e){}
+    swInit();verInit();try{if(u.searchParams.has('v')){u.searchParams.delete('v');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
+      if(localStorage.getItem('cpcoach_verup')){localStorage.removeItem('cpcoach_verup');const t=_verTry();if(!t.b||t.b===APP_BUILD){localStorage.removeItem('cpcoach_vertry');setTimeout(()=>toast('✨ Application mise à jour · version du '+_verLbl(APP_BUILD)),1200);}}}catch(e){}
     if(urlCode){u.searchParams.delete('code');history.replaceState({cp:1},'',u.pathname+(u.searchParams.toString()?'?'+u.searchParams.toString():''));}
   }catch(e){}
   if(urlCode&&urlCode.toUpperCase()!==(COACH_CODE||'').toUpperCase()){
