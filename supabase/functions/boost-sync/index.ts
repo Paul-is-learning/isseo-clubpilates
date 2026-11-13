@@ -17,7 +17,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { getRow, putRow, rateLimit, readProspectsRow, safeEq, writeProspectsRow } from "../_shared/store.ts";
 import { reconcile } from "./sync.ts";
 
 const BASE = "https://www.app-boost.com/api/v1";
@@ -155,9 +155,10 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
   if (!contacts.ok || !acts.ok || users.status !== 200 || !deleted.ok || !calls.ok)
     return json({ error: "Lecture Boost incomplète", http: { contacts: contacts.status, activites: acts.status, users: users.status, suppressions: deleted.status, appels: calls.status } }, 502);
   // Une seule lecture de la grosse ligne (la migration depuis `studios` est terminée)
-  const { data: row } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
-  if (!row) return json({ error: "Liste des fiches introuvable · rien n'est écrit" }, 503);
-  const store = row?.data || {};
+  let row;
+  try { row = await readProspectsRow(admin); } catch (_e) { return json({ error: "Liste des fiches introuvable · rien n'est écrit" }, 503); }
+  if (!row.updated_at) return json({ error: "Liste des fiches introuvable · rien n'est écrit" }, 503);
+  const store = row.data || {};
   const access = await getRow(admin, "_coach_access");
   // deno-lint-ignore no-explicit-any
   const prospects: any[] = store.prospects || [];
@@ -179,14 +180,17 @@ async function runSync(admin: any, token: string, club: { secret: string; studio
     const bak = "_coach_prospects_bak_" + day;
     const { data: hasBak } = await admin.from("coach_store").select("id").eq("id", bak).maybeSingle();
     if (!hasBak) {
-      await putRow(admin, bak, store);
+      // Photo complète du jour (une écriture par jour), fiches telles que lues avant ce passage
+      await putRow(admin, bak, { ...store, prospects });
+      // Purge : les sauvegardes de plus de 7 jours, repérées par leur date (l'ancien filtre ne supprimait rien)
       const old = new Date(Date.now() - 7 * 864e5).toISOString().slice(0, 10).replace(/-/g, "");
-      await admin.from("coach_store").delete().like("id", "\\_coach\\_prospects\\_bak\\_%").lt("id", "_coach_prospects_bak_" + old);
+      const { data: baks } = await admin.from("coach_store").select("id").gte("id", "_coach_prospects_bak_").lt("id", "_coach_prospects_bak_" + old);
+      // deno-lint-ignore no-explicit-any
+      const gone = ((baks as any[]) || []).map((b) => String(b.id)).filter((id) => /^_coach_prospects_bak_\d{8}/.test(id));
+      if (gone.length) await admin.from("coach_store").delete().in("id", gone);
     }
-    const { data: upd } = await admin.from("coach_store")
-      .update({ data: { ...store, prospects: res.list }, updated_at: new Date().toISOString() })
-      .eq("id", "_coach_prospects").eq("updated_at", row?.updated_at).select("id");
-    if (!upd || !upd.length) return json({ error: "Les fiches ont changé pendant la synchro · reprise au prochain passage", report }, 409);
+    const nrev = await writeProspectsRow(admin, row, { ...store, prospects: res.list });
+    if (!nrev) return json({ error: "Les fiches ont changé pendant la synchro · reprise au prochain passage", report }, 409);
   }
   // Pierres tombales : fiches supprimées dans Boost ou retirées ; une fiche recréée plus tard en sort
   const t = await getRow(admin, "_coach_tomb");

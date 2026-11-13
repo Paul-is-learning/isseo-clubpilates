@@ -15,6 +15,7 @@
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { AIRCALL_STUDIO, aircallGet } from "../_shared/aircall.ts";
+import { readProspectsRow } from "../_shared/store.ts";
 
 const RESEND_API_KEY = Deno.env.get("RESEND_API_KEY") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
@@ -161,9 +162,9 @@ Deno.serve(async (req) => {
       if (!r.body.meta?.next_page_link) { ok = true; break; }
       await new Promise((res) => setTimeout(res, 1100));
     }
-    const { data: prRow } = await sb.from("coach_store").select("data").eq("id", "_coach_prospects").maybeSingle();
+    const prRow = await readProspectsRow(sb);
     // deno-lint-ignore no-explicit-any
-    const plist: any[] = Array.isArray(prRow?.data?.prospects) ? prRow!.data.prospects : [];
+    const plist: any[] = Array.isArray(prRow.data?.prospects) ? prRow.data.prospects : [];
     let rattaches = 0;
     // deno-lint-ignore no-explicit-any
     for (const p of plist) if (sk(p?.studio) === sk(AIRCALL_STUDIO)) for (const a of (p.appels || [])) if (String(a?.id || "").startsWith("ac_") && String(a?.ts || "") >= from && String(a?.ts || "") < to) rattaches++;

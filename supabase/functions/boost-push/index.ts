@@ -29,7 +29,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { getRow, putRow, rateLimit, readProspectsRow, revStr, safeEq, writeProspectsRow } from "../_shared/store.ts";
 import { bqiSig, bqSig, buildOps, identityPatch } from "../boost-sync/sync.ts";
 
 const BASE = "https://www.app-boost.com/api/v1";
@@ -130,10 +130,10 @@ serve(async (req: Request) => {
     if (herr || !head) return json({ error: "Liste des fiches illisible" }, 503);
     // Marqueur de veille rangé à part (_boost_push_rev) : un passage ne réécrit jamais la ligne des réglages pour lui
     const revRow = await getRow(admin, "_boost_push_rev");
-    if (revRow.cleanRev && revRow.cleanRev === head.updated_at && url.searchParams.get("force") !== "1") return json({ ok: true, mode, idle: true });
-    const { data: row, error: rerr } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
-    if (rerr || !row) return json({ error: "Liste des fiches illisible" }, 503); // rien n'est noté : le passage suivant reprendra
-    const readRev = String(row.updated_at || "");
+    if (revRow.cleanRev && revStr(revRow.cleanRev) === revStr(head.updated_at) && url.searchParams.get("force") !== "1") return json({ ok: true, mode, idle: true });
+    let row;
+    try { row = await readProspectsRow(admin); } catch (_e) { return json({ error: "Liste des fiches illisible" }, 503); } // rien n'est noté : le passage suivant reprendra
+    const readRev = revStr(row.updated_at);
     // deno-lint-ignore no-explicit-any
     const list: any[] = row?.data?.prospects || [];
     // Budget du passage, commun aux trois étapes : 30 écritures, dont 10 au plus pour les nouveaux essais
@@ -337,15 +337,13 @@ serve(async (req: Request) => {
     // d'autre ne l'a modifiée entre la lecture et le marquage (sinon : pas de veille, on repasse)
     let cleanRev: string | null = nres ? null : readRev;
     for (let attempt = 0; attempt < 4 && nres; attempt++) {
-      const { data: cur } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
+      const cur = await readProspectsRow(admin);
       let dirty = false;
       // deno-lint-ignore no-explicit-any
       const plist: any[] = (cur?.data?.prospects || []).map((p: any) => { const n = mark(p); if (n !== p) dirty = true; return n; });
       if (!dirty) break; // rien à noter (résultats dépassés par un passage plus récent) : aucune écriture
-      const { data: upd } = await admin.from("coach_store")
-        .update({ data: { ...(cur?.data || {}), prospects: plist }, updated_at: new Date().toISOString() })
-        .eq("id", "_coach_prospects").eq("updated_at", cur?.updated_at).select("id,updated_at");
-      if (upd && upd.length) { if (attempt === 0 && cur?.updated_at === readRev) cleanRev = String(upd[0].updated_at || "") || null; break; }
+      const nrev = await writeProspectsRow(admin, cur, { ...(cur.data || {}), prospects: plist });
+      if (nrev) { if (attempt === 0 && revStr(cur.updated_at) === readRev) cleanRev = revStr(nrev) || null; break; }
       await new Promise((r) => setTimeout(r, 300));
     }
     // Tout est traité (aucun report, aucun nouvel essai, rien en attente) : la version propre est notée pour la veille

@@ -18,7 +18,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { rateLimit, readProspectsRow, safeEq, writeProspectsRow } from "../_shared/store.ts";
 
 const ROW_PROSPECTS = "_coach_prospects";
 const TXT_MAX = 9000;
@@ -30,15 +30,6 @@ function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 }
 
-// Ligne des fiches avec sa date d'écriture (absente : migration douce depuis studios)
-async function readProspects(admin: any): Promise<any> {
-  const read = () => admin.from("coach_store").select("data,updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
-  const first = await read();
-  if (first.error) throw new Error("Stockage indisponible");
-  if (first.data) return first.data;
-  await getRow(admin, ROW_PROSPECTS);
-  return (await read()).data;
-}
 
 const telKey = (s: unknown) => String(s ?? "").replace(/\D/g, "").slice(-9);
 const idEq = (a: unknown, b: unknown) =>
@@ -368,13 +359,10 @@ serve(async (req: Request) => {
     // 4. Écriture conditionnelle : si une autre écriture (téléphone, Boost,
     //    Aircall, webhook) passe entre la lecture et l'écriture, on relit et on rejoue.
     for (let attempt = 0; attempt < TRIES; attempt++) {
-      const row = await readProspects(admin);
-      const list: any[] = (row?.data?.prospects as any[]) || [];
+      const row = await readProspectsRow(admin);
+      const list: any[] = (row.data?.prospects as any[]) || [];
       const res = apply(list);
-      const { data: upd } = await admin.from("coach_store")
-        .update({ data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() })
-        .eq("id", ROW_PROSPECTS).eq("updated_at", row?.updated_at).select("id");
-      if (upd && upd.length) return json({ ok: true, numeros: alloNumbers, ...res });
+      if (await writeProspectsRow(admin, row, { ...(row.data || {}), prospects: list })) return json({ ok: true, numeros: alloNumbers, ...res });
       if (attempt < TRIES - 1) await new Promise((r) => setTimeout(r, 150 + Math.floor(Math.random() * 250)));
     }
     return json({ error: "Les fiches changeaient pendant l'écriture · relancez l'import" }, 503);

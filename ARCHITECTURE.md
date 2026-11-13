@@ -337,6 +337,7 @@ alors que `loadAll` range ces deux lignes parmi les studios.
 | `notifications` | Notifications in-app, une ligne par destinataire. Temps réel sur `INSERT` filtré par utilisateur (`subscribeNotifications`) |
 | `push_subscriptions` | Abonnements Web Push des appareils (`js/push.js`, fonction `send-push`) |
 | `coach_store` | Données du Sales Coach (`_coach_prospects`, `_coach_access`, `_coach_stats`, `_ic_data`, `_training`, journaux Boost et Aircall...). Sécurité active sans aucune règle d'accès : lisible **uniquement** par les Edge Functions (clé service role). Voir `supabase/migrations/006_coach_store.sql` et `supabase/functions/_shared/store.ts` |
+| `coach_prospects` | Fiches prospects du Sales Coach, **une ligne par fiche** (migration 013, nov. 2026). La ligne `_coach_prospects` de `coach_store` ne garde que les réglages et `split:true` ; sa date est la version de la liste. Toutes les fonctions passent par `readProspectsRow` / `writeProspectsRow` (`_shared/store.ts`) : lecture groupée, écriture conditionnelle des seules fiches modifiées. Tests : `deno run -A tests/coach-split/split_test.ts`. |
 | Stockage `studio-files` | Fichiers des studios, justificatifs de dépenses (`uploadJustif`), photos de profil (`uploadAvatar`) |
 | RPC `patch_studio_data` | Fusion atomique dans `studios.data`, avec contrôle de conflit (`expected_updated_at`). Appelée par `rpcPatch` (`js/state.js`). Définie par `supabase/migrations/004_patch_studio_data.sql`, verrouillée par `005_lock_patch_studio_data.sql` (session obligatoire) |
 

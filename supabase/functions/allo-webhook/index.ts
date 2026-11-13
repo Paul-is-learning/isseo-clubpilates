@@ -23,7 +23,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRow } from "../_shared/store.ts";
+import { readProspectsRow, writeProspectsRow } from "../_shared/store.ts";
 
 const ROW_PROSPECTS = "_coach_prospects";
 const TXT_MAX = 9000;
@@ -34,15 +34,6 @@ function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 }
 
-// Ligne des fiches avec sa date d'écriture (absente : migration douce depuis studios)
-async function readProspects(admin: any): Promise<any> {
-  const read = () => admin.from("coach_store").select("data,updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
-  const first = await read();
-  if (first.error) throw new Error("Stockage indisponible");
-  if (first.data) return first.data;
-  await getRow(admin, ROW_PROSPECTS);
-  return (await read()).data;
-}
 
 // Lecture, modification, écriture conditionnelle : si une autre écriture
 // (téléphone, Boost, Aircall) passe entre la lecture et l'écriture, on relit
@@ -51,14 +42,11 @@ async function readProspects(admin: any): Promise<any> {
 type Step = { res: Record<string, unknown>; write: boolean };
 async function commit(admin: any, apply: (list: any[]) => Step): Promise<Response> {
   for (let attempt = 0; attempt < TRIES; attempt++) {
-    const row = await readProspects(admin);
-    const list: any[] = (row?.data?.prospects as any[]) || [];
+    const row = await readProspectsRow(admin);
+    const list: any[] = (row.data?.prospects as any[]) || [];
     const step = apply(list);
     if (!step.write) return json(step.res);
-    const { data: upd } = await admin.from("coach_store")
-      .update({ data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() })
-      .eq("id", ROW_PROSPECTS).eq("updated_at", row?.updated_at).select("id");
-    if (upd && upd.length) return json(step.res);
+    if (await writeProspectsRow(admin, row, { ...(row.data || {}), prospects: list })) return json(step.res);
     if (attempt < TRIES - 1) await new Promise((r) => setTimeout(r, 150 + Math.floor(Math.random() * 250)));
   }
   return json({ error: "Conflit d'écriture" }, 503); // Allo renverra le webhook

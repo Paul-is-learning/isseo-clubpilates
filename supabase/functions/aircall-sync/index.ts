@@ -20,7 +20,7 @@
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { getRow, putRow, rateLimit, readProspectsRow, safeEq, writeProspectsRow } from "../_shared/store.ts";
 import { AIRCALL_STUDIO, callMeta, callTs, telKey } from "../_shared/aircall.ts";
 
 const BASE = "https://api.aircall.io/v1";
@@ -129,16 +129,13 @@ serve(async (req: Request) => {
       };
       const report = { jours: days, appels_aircall: calls.length, pages };
       for (let attempt = 0; attempt < 4; attempt++) {
-        const { data: row } = await admin.from("coach_store").select("data,updated_at").eq("id", "_coach_prospects").maybeSingle();
+        const row = await readProspectsRow(admin);
         // deno-lint-ignore no-explicit-any
-        const list: any[] = structuredClone(row?.data?.prospects || []);
+        const list: any[] = structuredClone(row.data?.prospects || []);
         const res = apply(list);
         if (!write) return json({ ok: true, mode: "simulation", ...report, ...res });
         if (!res.rattaches) return json({ ok: true, mode: "import", ...report, ...res });
-        const { data: upd } = await admin.from("coach_store")
-          .update({ data: { ...(row?.data || {}), prospects: list }, updated_at: new Date().toISOString() })
-          .eq("id", "_coach_prospects").eq("updated_at", row?.updated_at).select("id");
-        if (upd && upd.length) return json({ ok: true, mode: "import", ...report, ...res });
+        if (await writeProspectsRow(admin, row, { ...(row.data || {}), prospects: list })) return json({ ok: true, mode: "import", ...report, ...res });
         await new Promise((res2) => setTimeout(res2, 400));
       }
       return json({ ok: false, error: "Les fiches changeaient pendant l'écriture · relancez" }, 409);

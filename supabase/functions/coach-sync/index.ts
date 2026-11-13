@@ -23,7 +23,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { RateLimited, refreshSummary, summaryOn } from "../_shared/summary.ts";
-import { getRow, putRow, rateLimit, safeEq } from "../_shared/store.ts";
+import { getRow, putRow, rateLimit, readProspectsRow, revStr, safeEq, writeProspectsRow } from "../_shared/store.ts";
 import { ROW_PUSH, rappelPush, sendPush } from "../_shared/push.ts";
 import { BUCKET, Contrat, PACK_LBL, b64, bicOk, buildPdf, decrypt, encrypt, fileName, ibanOk, ipHash, mailEnvoi, mailSigne, newToken, rowId, sendMail, skey, studioMail } from "../_shared/contrat.ts";
 import { AIRCALL_STUDIO, aircallGet, aircallHeaders, aircallPost, callTs, matchAircallUser, telKey, transcriptText } from "../_shared/aircall.ts";
@@ -84,6 +84,22 @@ async function pushBoostNow(admin: any) {
 // Refus d'appel noté dans Boost : le numéro ne quitte jamais le serveur
 // deno-lint-ignore no-explicit-any
 const outP = (p: any) => (p && p.cPhone === false ? { ...p, tel: "", noCall: true } : p);
+
+// Modifie une fiche par son identifiant : écriture conditionnelle, rejouée si un autre écrit au même moment.
+// `fn` rend false quand il n'y a rien à changer.
+// deno-lint-ignore no-explicit-any
+async function patchFiche(admin: any, pid: string, fn: (p: any) => boolean): Promise<void> {
+  for (let attempt = 0; attempt < 4; attempt++) {
+    const row = await readProspectsRow(admin);
+    // deno-lint-ignore no-explicit-any
+    const list: any[] = Array.isArray(row.data?.prospects) ? row.data.prospects : [];
+    const p = list.find((x) => x && x.id === pid);
+    if (!p || !fn(p)) return;
+    if (await writeProspectsRow(admin, row, { ...row.data, prospects: list })) return;
+    await new Promise((r) => setTimeout(r, 120 + Math.floor(Math.random() * 200)));
+  }
+  console.warn("[patchFiche] conflit d'écriture persistant", pid);
+}
 
 function json(obj: unknown, status = 200) {
   return new Response(JSON.stringify(obj), {
@@ -189,7 +205,7 @@ serve(async (req) => {
       const { data: cron } = await admin.from("coach_store").select("data").eq("id", "_boost_cron").maybeSingle();
       const cronKey = String(cron?.data?.key || "");
       if (!(cronKey.length >= 32 && safeEq(given, cronKey))) return json({ error: "Clé invalide" }, 401);
-      const store = await getRow(admin, "_coach_prospects");
+      const store = (await readProspectsRow(admin)).data;
       return json({ ok: true, ...(await rappelPush(admin, Array.isArray(store?.prospects) ? store.prospects : [])) });
     }
 
@@ -206,11 +222,11 @@ serve(async (req) => {
           const vu = new Date().toISOString();
           try {
             await putRow(admin, rowId(tok), { ...c, openedAt: vu });
-            const store = await getRow(admin, ROW_PROSPECTS);
-            const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
-            const p = list.find((x) => x.id === c.pid);
             // Fiche sans trace du contrat (copie écrasée par un autre appareil) : on la rétablit au passage
-            if (p && !(p.contrat && p.contrat.signe) && !(p.contrat && p.contrat.tok === tok && p.contrat.vu)) { p.contrat = { at: c.at, by: c.by, to: c.email, tok, vu }; p.maj = vu; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+            await patchFiche(admin, c.pid, (p) => {
+              if ((p.contrat && p.contrat.signe) || (p.contrat && p.contrat.tok === tok && p.contrat.vu)) return false;
+              p.contrat = { at: c.at, by: c.by, to: c.email, tok, vu }; p.maj = vu; return true;
+            });
           } catch (e) { console.warn("[contrat_get] vu", e); }
         }
         return json({ ok: true, contrat: pub });
@@ -242,10 +258,9 @@ serve(async (req) => {
       await putRow(admin, rowId(tok), signed);
       // La fiche du client garde la trace (visible dans l'assistant au prochain rafraîchissement)
       try {
-        const store = await getRow(admin, ROW_PROSPECTS);
-        const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
-        const p = list.find((x) => x.id === c.pid);
-        if (p) { p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.naiss = c.naiss; p.adr = c.adr; if (!p.tel) p.tel = c.tel; p.maj = at; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+        await patchFiche(admin, c.pid, (p) => {
+          p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.naiss = c.naiss; p.adr = c.adr; if (!p.tel) p.tel = c.tel; p.maj = at; return true;
+        });
       } catch (e) { console.warn("[contrat_sign] fiche", e); }
       const sm = studioMail(c.studio), m = mailSigne(signed);
       // Copie e-mail avec IBAN masqué (l'original complet reste dans le coffre, consultable depuis la fiche)
@@ -409,10 +424,10 @@ serve(async (req) => {
       await putRow(admin, rowId(c.token), c);
       // La fiche porte la trace de l'envoi côté serveur (pas seulement sur l'appareil qui a envoyé)
       try {
-        const store = await getRow(admin, ROW_PROSPECTS);
-        const list: any[] = Array.isArray(store?.prospects) ? store.prospects : [];
-        const p = list.find((x) => x.id === c.pid);
-        if (p && !(p.contrat && p.contrat.signe)) { p.contrat = { at: c.at, by: c.by, to: c.email, tok: c.token }; p.maj = c.at; await putRow(admin, ROW_PROSPECTS, { ...store, prospects: list }); }
+        await patchFiche(admin, c.pid, (p) => {
+          if (p.contrat && p.contrat.signe) return false;
+          p.contrat = { at: c.at, by: c.by, to: c.email, tok: c.token }; p.maj = c.at; return true;
+        });
       } catch (e) { console.warn("[contrat_send] fiche", e); }
       return json({ ok: true, token: c.token, how: r.how });
     }
@@ -869,7 +884,7 @@ serve(async (req) => {
     if (action === "rev") {
       const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
       const { data: cv } = await admin.from("coach_store").select("updated_at").eq("id", "_allo_calls").maybeSingle();
-      return json({ ok: true, rev: String(rv?.updated_at || ""), crev: String(cv?.updated_at || "") });
+      return json({ ok: true, rev: revStr(rv?.updated_at), crev: String(cv?.updated_at || "") });
     }
 
     // Remise à zéro administrative : date la purge pour que chaque appareil
@@ -878,21 +893,23 @@ serve(async (req) => {
     if (action === "purge_all") {
       if (role !== "admin") return json({ error: "Réservé au responsable" }, 403);
       const newEpoch = Date.now();
-      await putRow(admin, ROW_PROSPECTS, { prospects: [], epoch: newEpoch });
+      // Rejouée jusqu'à passer : la purge l'emporte sur toute écriture concurrente
+      for (let attempt = 0; attempt < 6; attempt++) {
+        const row = await readProspectsRow(admin);
+        if (await writeProspectsRow(admin, row, { prospects: [], epoch: newEpoch })) break;
+        if (attempt === 5) return json({ error: "Purge impossible · réessayez" }, 409);
+      }
       return json({ ok: true, prospects: [], epoch: newEpoch });
     }
 
     const tomb: string[] = ((await getRow(admin, "_coach_tomb")).ids as string[]) || [];
     const tombSet = new Set(tomb);
-    const revNow = async () => { const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle(); return String(rv?.updated_at || ""); };
+    const revNow = async () => { const { data: rv } = await admin.from("coach_store").select("updated_at").eq("id", ROW_PROSPECTS).maybeSingle(); return revStr(rv?.updated_at); };
     // Lecture de la liste AVEC sa version (updated_at) : l'enregistrement ne passe que si personne
     // (boost-sync, boost-push, webhooks Aircall/Allo, autre téléphone) n'a écrit entre-temps
     const readList = async () => {
-      const q = () => admin.from("coach_store").select("data,updated_at").eq("id", ROW_PROSPECTS).maybeSingle();
-      let { data: r, error } = await q();
-      if (error) throw new Error("Stockage indisponible");
-      if (!r) { await getRow(admin, ROW_PROSPECTS); ({ data: r } = await q()); } // migration douce depuis studios
-      return { data: r?.data || {}, rev: r?.updated_at ? String(r.updated_at) : "" };
+      const row = await readProspectsRow(admin);
+      return { data: row.data || {}, rev: revStr(row.updated_at), row };
     };
 
     // Écriture concurrente entre la lecture et l'enregistrement : l'action est rejouée sur une
@@ -909,15 +926,9 @@ serve(async (req) => {
       // Enregistrement conditionnel : false si la liste a changé depuis la lecture (rien n'est écrit)
       const saveList = async (): Promise<boolean> => {
         const data = { ...cur.data, prospects: list, epoch };
-        if (!cur.rev) { await putRow(admin, ROW_PROSPECTS, data); return true; } // ligne absente : création
-        // Nouvelle version toujours différente de celle lue, même à la milliseconde (horloges décalées)
-        const last = Date.parse(cur.rev);
-        const at = new Date(isNaN(last) ? Date.now() : Math.max(Date.now(), last + 1)).toISOString();
-        const { data: upd, error } = await admin.from("coach_store").update({ data, updated_at: at })
-          .eq("id", ROW_PROSPECTS).eq("updated_at", cur.rev).select("id,updated_at");
-        if (error) throw new Error("Stockage indisponible");
-        if (!upd || !upd.length) return false;
-        savedRev = String(upd[0].updated_at || "");
+        const rev = await writeProspectsRow(admin, cur.row, data);
+        if (!rev) return false;
+        savedRev = revStr(rev);
         return true;
       };
       // rev lu avec la liste : jamais la version d'une écriture que la liste renvoyée ne contient pas
