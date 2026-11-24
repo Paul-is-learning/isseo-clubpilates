@@ -29,7 +29,7 @@ import { getRow, putRow, rateLimit, readProspectsRow, revStr, safeEq } from "../
 
 const API = "https://api.withallo.com/v2/api";
 const ROW = "_allo_contacts";
-const LIMIT = 120; // une écriture par contact (~0,4 s) : un passage reste sous la minute
+const LIMIT = 100; // une écriture par contact (~0,6 s) : un passage dure environ une minute
 
 const json = (obj: unknown, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 const sk = (s: unknown) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
@@ -47,6 +47,21 @@ export function e164(raw: unknown): string {
 // Un vrai nom : au moins deux lettres, et pas un numéro ni un libellé technique
 export const realName = (n: unknown) => { const s = String(n ?? "").trim(); return /\p{L}{2}/u.test(s) && !/^(inconnu|sans nom|numéro|appel|allo)\b/i.test(s) ? s.replace(/\s+/g, " ").slice(0, 80) : ""; };
 const wait = (ms: number) => new Promise((r) => setTimeout(r, ms));
+// Appel à Allo qui patiente quand Allo demande de ralentir (429 + délai indiqué), 4 essais au plus.
+// `hint` garde le dernier délai demandé, pour le signaler si Allo refuse toujours.
+const hint = { s: 0 };
+async function allo(url: string, init: RequestInit): Promise<Response> {
+  let r = await fetch(url, init);
+  for (let i = 0; i < 3 && r.status === 429; i++) {
+    const ra = Number(r.headers.get("retry-after")) || Number(((await r.clone().json().catch(() => ({})))?.error?.retry_after_seconds)) || 2;
+    hint.s = ra;
+    if (ra > 25) break; // attente trop longue pour ce passage : on rend la main
+    await r.body?.cancel().catch(() => {});
+    await wait(Math.min(25, ra) * 1000 + 300);
+    r = await fetch(url, init);
+  }
+  return r;
+}
 
 type Done = { id: string; nom: string; at: string; how: "created" | "named" | "renamed" | "kept" | "existing" };
 
@@ -105,7 +120,7 @@ serve(async (req: Request) => {
     type Person = { id: string; name?: string; last_name?: string; numbers?: string[] };
     const book = new Map<string, Person>();
     for (let page = 1; page <= 60; page++) {
-      const rs = await fetch(API + "/crm/people/search", { method: "POST", headers: H, body: JSON.stringify({ page, size: 100 }) });
+      const rs = await allo(API + "/crm/people/search", { method: "POST", headers: H, body: JSON.stringify({ page, size: 100 }) });
       if (rs.status === 401 || rs.status === 403) return json({ ok: false, arret: "La clé Allo n'a pas le droit de lire le carnet (CRM_READ)" }, 502);
       if (!rs.ok) return json({ ok: false, arret: "Carnet Allo illisible (" + rs.status + ") · reprise au prochain passage" }, 502);
       const d = await rs.json().catch(() => ({}));
@@ -125,18 +140,18 @@ serve(async (req: Request) => {
           const exName = realName(((ex.name || "") + " " + (ex.last_name || "")).trim());
           const ours = done[k] && done[k].id === ex.id && done[k].how !== "kept" && done[k].how !== "existing" && String(ex.name || "").trim() === done[k].nom && !String(ex.last_name || "").trim();
           if (exName && !ours) { done[k] = { id: ex.id, nom: f.nom, at: now, how: "kept" }; res.conserves++; continue; } // nommé par l'équipe : intouché (aucun appel à Allo, pas d'attente)
-          const ru = await fetch(API + "/crm/people/" + encodeURIComponent(ex.id), { method: "PUT", headers: H, body: JSON.stringify({ name: f.nom }) });
+          const ru = await allo(API + "/crm/people/" + encodeURIComponent(ex.id), { method: "PUT", headers: H, body: JSON.stringify({ name: f.nom }) });
           if (ru.status === 401 || ru.status === 403) { stop = "La clé Allo n'a pas le droit d'écrire dans le carnet (CRM_WRITE)"; break; }
-          if (ru.status === 429) { stop = "Limite de débit Allo atteinte · reprise au prochain passage"; break; }
+          if (ru.status === 429) { stop = "Limite de débit Allo atteinte" + (hint.s ? " (attente demandée : " + hint.s + " s)" : "") + " · reprise au prochain passage"; break; }
           if (!ru.ok) { res.erreurs++; continue; }
           done[k] = { id: ex.id, nom: f.nom, at: now, how: ours ? "renamed" : "named" };
           if (ours) res.renommes++; else res.nommes++;
         } else {
           const body: Record<string, unknown> = { name: f.nom, numbers: [f.num] };
           if (/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(f.email)) body.emails = [f.email];
-          const rc = await fetch(API + "/crm/people", { method: "POST", headers: H, body: JSON.stringify(body) });
+          const rc = await allo(API + "/crm/people", { method: "POST", headers: H, body: JSON.stringify(body) });
           if (rc.status === 401 || rc.status === 403) { stop = "La clé Allo n'a pas le droit d'écrire dans le carnet (CRM_WRITE)"; break; }
-          if (rc.status === 429) { stop = "Limite de débit Allo atteinte · reprise au prochain passage"; break; }
+          if (rc.status === 429) { stop = "Limite de débit Allo atteinte" + (hint.s ? " (attente demandée : " + hint.s + " s)" : "") + " · reprise au prochain passage"; break; }
           if (rc.status === 409) { done[k] = { id: "", nom: f.nom, at: now, how: "existing" }; res.conserves++; continue; } // numéro déjà attribué dans Allo
           if (!rc.ok) { res.erreurs++; continue; }
           const d = await rc.json().catch(() => ({}));
@@ -145,7 +160,7 @@ serve(async (req: Request) => {
           res.crees++;
         }
       } catch (_e) { res.erreurs++; }
-      await wait(230); // au plus ~4 écritures par seconde
+      await wait(450); // deux écritures par seconde, large marge sous la limite d'Allo
     }
     const reste = [...byKey.entries()].filter(([k, f]) => !done[k] || ((done[k].how === "created" || done[k].how === "named" || done[k].how === "renamed") && done[k].nom !== f.nom)).length;
     await putRow(admin, ROW, { v: 2, done, rev: reste ? "" : rev, last: new Date().toISOString(), dernier: res });
