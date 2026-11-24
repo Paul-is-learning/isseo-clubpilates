@@ -259,7 +259,9 @@ serve(async (req) => {
       // La fiche du client garde la trace (visible dans l'assistant au prochain rafraîchissement)
       try {
         await patchFiche(admin, c.pid, (p) => {
-          p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.naiss = c.naiss; p.adr = c.adr; if (!p.tel) p.tel = c.tel; p.maj = at; return true;
+          p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.naiss = c.naiss; p.adr = c.adr; if (!p.tel) p.tel = c.tel; p.maj = at;
+          delete p.attSig; // signature reçue : « Client en attente de signature » → « Client », automatiquement
+          return true;
         });
       } catch (e) { console.warn("[contrat_sign] fiche", e); }
       const sm = studioMail(c.studio), m = mailSigne(signed);
@@ -1186,6 +1188,9 @@ serve(async (req) => {
             smsVeille: String(p.smsVeille || "").slice(0, 10), // date (AAAA-MM-JJ) du dernier SMS de confirmation envoyé
             naiss: String(p.naiss || "").slice(0, 10), // date de naissance (contrat d'inscription)
             adr: String(p.adr || "").slice(0, 120), // adresse postale (contrat d'inscription)
+            // Client en attente de signature : date du passage en client (vide une fois le contrat signé ou reçu en papier)
+            attSig: p.attSig && String(p.statut) === "abo" ? String(p.attSig).slice(0, 30) : undefined,
+            sigPapier: p.sigPapier ? String(p.sigPapier).slice(0, 30) : undefined,
             // Contrat d'inscription envoyé par e-mail : quand, par qui, à quelle adresse
             contrat: p.contrat && typeof p.contrat === "object" && p.contrat.at ? { at: String(p.contrat.at).slice(0, 30), by: String(p.contrat.by || "").slice(0, 40), to: String(p.contrat.to || "").slice(0, 120), tok: String(p.contrat.tok || "").slice(0, 32), signe: String(p.contrat.signe || "").slice(0, 30), file: String(p.contrat.file || "").slice(0, 120), vu: String(p.contrat.vu || "").slice(0, 30) } : undefined,
             // Profil pour le coach : objectif, douleurs/santé, pratique, contraintes (140 car. chacun)
@@ -1222,6 +1227,8 @@ serve(async (req) => {
             if (sc && sc.vu && clean.contrat && !clean.contrat.vu && (!clean.contrat.tok || clean.contrat.tok === sc.tok)) clean.contrat = { ...clean.contrat, vu: sc.vu };
             // Contrat envoyé connu du serveur : une copie d'un autre appareil qui ne le connaît pas encore ne l'efface pas
             if (sc && sc.tok && !clean.contrat) clean.contrat = sc;
+            // Contrat signé : la fiche n'est plus « en attente de signature », quelle que soit la copie reçue
+            if (clean.contrat && clean.contrat.signe) clean.attSig = undefined;
             if ((clean.maj || "") >= (list[i].maj || "")) {
               if (markBq(clean, list[i], rep)) queued = true;
               // Les appels arrivés côté serveur (webhook Allo) ne sont jamais écrasés par une copie client plus ancienne
