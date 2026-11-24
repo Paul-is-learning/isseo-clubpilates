@@ -3033,7 +3033,7 @@ function _retryLater(e){_fails++;clearTimeout(_retryT);_retryT=setTimeout(syncPu
 function _restSt(){return _fails?_failSt:(_pushBusy||_hasPend()?'sync':'ok');}
 // Fiche renvoyée par une action (note, température, coordonnées) : si elle porte une modification locale
 // pas encore envoyée, nos champs restent et repartent avec la nouvelle version
-const _MINE=['nom','tel','note','statut','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','naiss','adr','contrat','ouverture','unit','enCours','clos'];
+const _MINE=['nom','tel','note','statut','attSig','sigPapier','rappel','rappelH','rappelBy','obj','fiche','pack','v2','fullCom','icId','icBook','appels','rep','studio','suivi','naiss','adr','contrat','ouverture','unit','enCours','clos'];
 function _takeSrv(id,sp,own){
   const l=PROSPECTS.find(x=>x.id===id);if(!l||!sp)return;
   _SEEN[id]=sp.maj||'';
@@ -3381,6 +3381,8 @@ let EVQ=[];try{EVQ=JSON.parse(localStorage.getItem('cpcoach_evq')||'[]');}catch(
 function _persistEvq(){try{localStorage.setItem('cpcoach_evq',JSON.stringify(EVQ));}catch(e){}}
 function emitEvent(p,type,extra){
   if(!p||!p.id)return;
+  // Client en attente de signature : la vente et la prime ne comptent qu'à la signature (décision de Paul, 24 nov. 2026)
+  if(type==='abo'&&prSigWait(p))return;
   // Vente : comptée pour la personne qui a fait signer (p.vendeur), pas pour le commercial de la fiche
   const ev=Object.assign({k:p.id+':'+type,type:type,rep:(type==='abo'&&p.vendeur?p.vendeur:(p.rep||CFG.rep||'')),nom:p.nom||'',studio:(p.studio||CFG.studio||''),ts:new Date().toISOString()},extra||{});
   const i=EVQ.findIndex(e=>e.k===ev.k);if(i>=0)EVQ[i]=ev;else EVQ.push(ev);
@@ -3535,6 +3537,21 @@ const PIPE={
   abo:{ic:'✅',lbl:'Client',c:'#1F9E75'},
   perdu:{ic:'✖️',lbl:'Perdu',c:'#8C95A8'}
 };
+// « Client en attente de signature » (demande de Paul, 24 nov. 2026) : un prospect passé « Client » y reste tant que son
+// contrat n'est pas signé (en ligne : bascule automatique à la signature ; papier : bouton « Contrat papier reçu »).
+// Le statut interne reste « abo » (vente, primes et envoi vers Boost inchangés) ; attSig = date du passage en client.
+// Les clients d'avant cette date et les adhérents importés de Boost n'ont pas attSig : ils restent « Client ».
+const SIGW={ic:'✍️',lbl:'Client en attente de signature',c:'#D97706'};
+function prSigWait(p){return !!p&&p.statut==='abo'&&!p.bmember&&!!p.attSig&&!(p.contrat&&p.contrat.signe);}
+const pipeOf=k=>k==='sig'?SIGW:PIPE[k];
+// Message de vente : prime annoncée seulement quand la vente compte (contrat signé)
+const venteToast=(p,pk,mot)=>prSigWait(p)?'✍️ '+packShort(+pk)+' · en attente de signature · vente et '+mot+' comptées à la signature':'🎉 '+packShort(+pk)+' vendu · +'+(+PRIMES[pk]||0)+' € de '+mot+' !';
+const pipeKey=p=>prSigWait(p)?'sig':p.statut;
+function sigDone(id){const p=PROSPECTS.find(x=>x.id===id);if(!p||!prSigWait(p))return;
+  if(!confirm('Contrat papier signé reçu pour '+p.nom+' ?\nLa fiche passe en « Client ».'))return;
+  p.attSig='';p.sigPapier=new Date().toISOString();p.maj=new Date().toISOString();persistProspects();schedulePush();
+  emitEvent(p,'abo',{pack:p.pack||'',prime:p.pack?(+PRIMES[+p.pack]||0):0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''});_aboNote(p);
+  if(prFilter==='sig')prFilter='abo';showProspects(true);toast(p.pack?'✅ Contrat papier reçu · '+venteToast(p,p.pack,'prime'):'✅ '+p.nom+' · Client (contrat papier reçu)');}
 // Libellé précis d'une fiche « à rappeler », comme dans Boost : À traiter · Contacté · RDV planifié · RDV non venu
 // « À traiter » : lead jamais appelé (aucun appel noté), quel que soit le statut ou le rappel posé côté Boost
 // Lead déjà pris en main dans Boost (statut autre que « À traiter ») : contacté par email, Instagram, sur place… sans appel enregistrable
@@ -3542,6 +3559,7 @@ function prTouched(p){const b=String(p.bst||'');return !!b&&b!=='a_traiter';}
 function prNever(p){return !prCalls(p).n&&!prTouched(p);}
 function prATraiter(p){return p.statut==='rappeler'&&prNever(p);}
 function stLabel(p){
+  if(prSigWait(p))return 'Client · en attente de signature';
   if(p.statut!=='rappeler')return (PIPE[p.statut]||PIPE.rappeler).lbl;
   if(prATraiter(p))return 'À traiter';
   if(p.bnok)return 'RDV non venu';
@@ -3595,7 +3613,7 @@ function saveProspect(){
   emitEvent(p,'appel',_dur?{dur:_dur}:{});
   st.callStart=null;const _tt=document.getElementById('topTimer');if(_tt)_tt.textContent='';
   if(p.statut==='essai')emitEvent(p,'essai');
-  if(p.statut==='abo'){emitEvent(p,'abo',{pack:p.pack,prime:+PRIMES[p.pack]||0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''});if(p.pack)toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[p.pack]||0)+' € de commission !');}
+  if(p.statut==='abo'){emitEvent(p,'abo',{pack:p.pack,prime:+PRIMES[p.pack]||0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''});if(p.pack)toast(venteToast(p,p.pack,'commission'));}
   st._prSaved=true;renderScreen();
   if(!ex)toast('📇 '+nom+' ajouté à Mes prospects ✓');
 }
@@ -3797,7 +3815,7 @@ function buildStatsMap(events,prospects){
     const m=touch(p.id);m.rep=m.rep||p.rep||'';m.nom=m.nom||p.nom||'';m.appel=true;m.ts=m.ts||p.ts||'';
     if(p.statut==='essai')m.essai=true;
     if(p.statut==='venu'){m.essai=true;m.venu=true;}
-    if(p.statut==='abo'&&!_SVOID[p.id]){ // fiche d'une vente annulée : seule une nouvelle vente (événement daté après l'annulation) la refait compter
+    if(p.statut==='abo'&&!prSigWait(p)&&!_SVOID[p.id]){ // en attente de signature : pas encore une vente · fiche d'une vente annulée : seule une nouvelle vente (événement daté après l'annulation) la refait compter
       m.abo=true;if(p.vendeur)m.rep=p.vendeur;if(p.pack)m.pack=p.pack;m.aboTs=m.aboTs||p.maj||p.ts||'';m.v2=m.v2||p.v2||'';if(p.fullCom)m.fullCom=true;m.icId=m.icId||p.icId||'';}
     if(p.statut==='perdu')m.perdu=true;
   });
@@ -4078,8 +4096,9 @@ function contratMontant(){const pk=+(document.querySelector('.ct-pack.on')||{dat
 function contratLineHTML(p){
   if(p.bmember||!(p.statut==='abo'||p.statut==='venu'||p.statut==='essai'))return '';
   const c=p.contrat,mgr=COACH_ROLE==='admin'||IS_MGR;
+  const sw=prSigWait(p)?`<div class="pr-packline" style="margin-top:-2px"><span class="pl-chip" style="color:${SIGW.c};border-color:#F5D9A8;background:#FFF8EB">✍️ En attente de signature${p.attSig?' depuis le '+esc(_trDate(p.attSig)):''}</span><small style="color:#5B6B8C">passe en « Client » dès le contrat signé en ligne · vente et prime comptées à ce moment</small><button class="pr-act" style="opacity:.8" onclick="sigDone('${p.id}')">Contrat papier reçu</button></div>`:'';
   if(c&&c.signe)return `<div class="pr-packline" style="margin-top:-2px"><span class="pl-chip" style="color:#1F7A55;border-color:#BFE0CF;background:#EEF8F2">✅ Contrat signé le ${esc(_trDate(c.signe))}</span><button class="pr-act" onclick="contratOpen('${p.id}')">📎 Voir le contrat</button>${mgr?`<button class="pr-act" onclick="contratIban('${p.id}')">🏦 IBAN</button>`:''}<button class="pr-act" style="opacity:.7" onclick="contratSheet('${p.id}')">Renvoyer</button></div>`;
-  return `<div class="pr-packline" style="margin-top:-2px"><button class="pr-act" onclick="contratSheet('${p.id}')">📄 ${c?'Renvoyer le contrat':'Contrat d\'inscription'}</button>${c?`<small style="color:#5B6B8C">envoyé le ${esc(_trDate(c.at))}${c.by?' par '+esc(c.by):''}${c.to?' à '+esc(c.to):''} · ${c.vu?`<b style="color:#1F7A55">ouvert par le client le ${esc(_trDate(c.vu))}</b>`:'<b style="color:#B4710F">pas encore ouvert</b>'} · en attente de signature</small>`:'<small style="color:#8C95A8">pré-rempli, signé en ligne par le client</small>'}</div>`;
+  return sw+`<div class="pr-packline" style="margin-top:-2px"><button class="pr-act${sw&&!c?' main':''}" onclick="contratSheet('${p.id}')">📄 ${c?'Renvoyer le contrat':'Contrat d\'inscription'}</button>${c?`<small style="color:#5B6B8C">envoyé le ${esc(_trDate(c.at))}${c.by?' par '+esc(c.by):''}${c.to?' à '+esc(c.to):''} · ${c.vu?`<b style="color:#1F7A55">ouvert par le client le ${esc(_trDate(c.vu))}</b>`:'<b style="color:#B4710F">pas encore ouvert</b>'} · en attente de signature</small>`:'<small style="color:#8C95A8">pré-rempli, signé en ligne par le client</small>'}</div>`;
 }
 // Petite fenêtre PDF (iPhone : pas d'ouverture d'onglet après une attente réseau) · aperçu + Ouvrir + Télécharger
 function contratViewer(titre,sub,url,dl,fname){
@@ -4448,7 +4467,7 @@ function icBookProspect(id,sessId,quiet){
   if(was!=='essai')emitEvent(p,'essai',{});
   refresh();toast('🎟️ '+(p.nom||'Prospect').split(' ')[0]+' inscrit·e · '+icLabel(s));
 }
-function icSalesOf(sessId){return PROSPECTS.filter(p=>p.statut==='abo'&&p.icId===sessId);}
+function icSalesOf(sessId){return PROSPECTS.filter(p=>p.statut==='abo'&&!prSigWait(p)&&p.icId===sessId);}
 function icSet(id,field,val){
   const s=IC.sessions.find(x=>x.id===id);if(!s)return;
   if(field==='booked'||field==='show'){val=Math.max(0,Math.min(99,(+s[field]||0)+val));if(field==='show'&&val>(+s.booked||0))s.booked=val;}
@@ -5276,7 +5295,7 @@ function _b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g
 let _swReg=null;
 // ── Nouvelle version de l'app : vérifiée toutes les 5 min (empreinte ETag du serveur), bandeau « Mettre à jour »,
 // puis rechargement seul au prochain moment calme (retour sur l'app, ou 60 s sans geste), jamais pendant une saisie ni un appel en cours ──
-const APP_BUILD='2026-11-13 18:49'; // posé par stamp.sh à chaque publication, identique à version.json
+const APP_BUILD='2026-11-24 19:26'; // posé par stamp.sh à chaque publication, identique à version.json
 let _verNew=false,_verRemote='',_lastAct=Date.now();
 const _verLbl=b=>{const m=String(b||'').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})$/);return m?(+m[3])+' '+['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][+m[2]-1]+' · '+m[4]:String(b||'?');};
 // Version publiée : petit fichier lu sans cache (ne dépend plus de ce que l'app a vu au démarrage)
@@ -5805,14 +5824,14 @@ function openPr(id){
   const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
   const sg=prSeg(p);prQuery='';prQueryRaw='';
   // Fiche hors des listes d'appel (client, séance d'essai, perdu…) : ouverte dans la liste de son étape
-  if(sg||!PIPE[p.statut]||(p.statut==='rappeler'&&prOpen(p))){prFilter=null;prSort=sg||'all';}else prFilter=p.statut;
+  if(sg||!PIPE[p.statut]||(p.statut==='rappeler'&&prOpen(p))){prFilter=null;prSort=sg||'all';}else prFilter=pipeKey(p);
   try{localStorage.setItem('cpcoach_prsort',prSort);}catch(e){}
   // Le filtre « En charge » ne doit jamais cacher la fiche demandée
   if(prOwnF){prOwnF='';try{localStorage.setItem('cpcoach_ownf','');}catch(e){}}
   prOpenId=id;loadHist(id);showProspects();
   // Fiche absente de la liste choisie (cas limite) : repli sur « Tous », puis sur son étape
   if(!document.querySelector('.pr-card.open')){prFilter=null;prSort='all';showProspects();}
-  if(!document.querySelector('.pr-card.open')&&PIPE[p.statut]){prFilter=p.statut;showProspects();}
+  if(!document.querySelector('.pr-card.open')&&PIPE[p.statut]){prFilter=pipeKey(p);showProspects();}
   // Groupe replié du tri du jour : on l'ouvre pour montrer la fiche
   setTimeout(()=>{const c=document.querySelector('.pr-card.open');if(!c)return;const g=c.closest('details.pr-grp');if(g&&!g.open)g.open=true;c.scrollIntoView({block:'center'});},30);
 }
@@ -5872,7 +5891,7 @@ function showProspects(keepScroll){
   // Mot-clé tapé : recherche sur toutes les fiches du studio, onglets et tuiles ignorés (résultats à plat, extrait surligné)
   const srch=!!prWords().length;
   if(srch)list=list.filter(prMatch);
-  else if(prFilter)list=list.filter(p=>p.statut===prFilter);
+  else if(prFilter)list=list.filter(p=>pipeKey(p)===prFilter);
   // 🆕 Leads récents : ordre d'arrivée, le plus récent en tête (comme dans Boost)
   // 🎯 À contacter d'abord : leads ouverts sans rappel programmé · jamais appelés d'abord (les plus anciens en tête), puis dernier contact le plus ancien
   // ⏰ Rappels programmés : par date et heure, retards en tête
@@ -5893,6 +5912,7 @@ function showProspects(keepScroll){
     if(clientView){
       if(prFilter==='essai')return (rdvAt(a)?.getTime()||9e15)-(rdvAt(b)?.getTime()||9e15); // par date de séance
       if(prFilter==='abo')return String(a.nom||'').localeCompare(String(b.nom||''),'fr',{sensitivity:'base'});
+      if(prFilter==='sig')return String(a.attSig||'').localeCompare(String(b.attSig||'')); // la plus ancienne attente en tête
       if(prFilter==='perdu')return String(b.maj||'').localeCompare(String(a.maj||''));
       return prArrival(b).localeCompare(prArrival(a));
     }
@@ -5909,7 +5929,7 @@ function showProspects(keepScroll){
     // 🆕 Nouveaux leads : uniquement par date d'arrivée dans Boost, le plus récent en haut (demande de Paul)
     return prArrival(b).localeCompare(prArrival(a));
   });
-  const counts={};Object.keys(PIPE).forEach(k=>counts[k]=PSC().filter(p=>p.statut===k).length);
+  const counts={sig:0};Object.keys(PIPE).forEach(k=>counts[k]=0);PSC().forEach(p=>{const k=pipeKey(p);if(counts[k]!==undefined)counts[k]++;});
   const nbDue=PSC().filter(due).length;
   // Une ligne par prospect (lecture rapide) · le détail s'ouvre au clic
   // 2e ligne de contexte : dernier contact, volume d'échanges, note la plus utile
@@ -5935,7 +5955,7 @@ function showProspects(keepScroll){
     return `<div class="pl-ctx">${srch?prHit(p):''}${!srch&&prSort==='retrav'?retChip(p):''}${prBooked(p)?`<span class="pl-c" style="color:#185FA5" title="Déjà inscrit(e) : ne figure plus dans les listes d'appel">🎟️ ${p.icBook?'Intro Class réservée':p.icWait?'Intro Class à planifier':p.matInt?'Pilates Mat découverte':'Séance d\'essai convenue'} · hors listes d'appel</span>`:''}${prOuv(p)&&p.ouverture.note?`<span class="pl-c note" title="${esc(p.ouverture.note)}">🏗 ${esc(p.ouverture.note)}</span>`:''}${main}${lastH}</div>`;
   };
   const card=p=>{
-    const pi=PIPE[p.statut]||PIPE.rappeler;
+    const pi=prSigWait(p)?SIGW:(PIPE[p.statut]||PIPE.rappeler);
     const isDue=due(p);
     const open=prOpenId===p.id;
     const hot=prSort==='rappels'&&rdvHot(p);
@@ -6051,15 +6071,15 @@ ${p.statut!=='abo'&&p.rappel?`            <div class="pl-lbl">Appel programmé</
       <div><h2 class="pr-h2">Mes prospects</h2><div class="pr-h2s">${PSC().length} fiche${PSC().length>1?'s':''} · ${esc(CFG.studio||'tous les studios')} · pipeline commercial du studio</div></div>
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><button class="pr-new" onclick="newProspectForm()">${ici('plus',16)} Nouveau prospect</button><span id="syncBadge" class="sync-badge ${_syncSt==='wait'?'sync':_syncSt}">${_syncHTML(_syncSt)}</span></div>
     </div>
-    <div class="pr-funrow"><span class="pr-funrow-l">Pipeline</span><div class="pr-funnel">${Object.keys(PIPE).filter(k=>k!=='venu'&&k!=='essai').map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${PIPE[k].c}" onclick="setPrFilter('${k}')">${ici(k==='rappeler'?'users':PIPE_IC[k],16)}<div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'Prospects':PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div></div>
+    <div class="pr-funrow"><span class="pr-funrow-l">Pipeline</span><div class="pr-funnel">${['rappeler','unit','sig','abo','perdu'].map((k,i)=>`<button class="pr-fun${prFilter===k?' active':''}" style="--pc:${pipeOf(k).c}" onclick="setPrFilter('${k}')">${ici(k==='rappeler'?'users':k==='sig'?'clock':PIPE_IC[k],16)}<div class="pr-fun-n">${counts[k]}</div><div class="pr-fun-l">${k==='rappeler'?'Prospects':k==='sig'?'En attente de signature':PIPE[k].lbl}</div></button>${i<4?'<span class="pr-arrow">›</span>':''}`).join('')}</div></div>
     <div class="pr-tools">
     ${prFilter&&prFilter!=='rappeler'?'':(()=>{const tab=([k,l,t])=>{const n=k==='journal'||k==='team'||k==='trash'?'':k==='agenda'?agCountToday():k==='all'?PSC().filter(p=>prOpen(p)&&!p.bmember).length:k==='mine'?mineCount():k==='short'?PSC().filter(prShort).length:k==='never'?PSC().filter(prNeverJoined).length:k==='retrav'?PSC().filter(p=>prRetWhy(p)).length:PSC().filter(p=>prSeg(p)===k).length;const hot=k==='rappels'?PSC().filter(rdvHot).length:0;
       return `<button class="pr-tab${prSort===k?' on':''}" onclick="setPrSort('${k}')" title="${t}">${ici(TAB_IC[k]||'folder',15)}${l.replace(/^\S+\s/,'')}${k==='journal'||k==='team'||k==='trash'?'':` <span class="pr-tabn">${n}</span>`}${hot?` <span id="prRdvBadge" class="pr-rdvb">${hot}</span>`:k==='rappels'?'<span id="prRdvBadge" class="pr-rdvb" style="display:none">0</span>':''}</button>`;};
       // Trois familles d'onglets : ce qu'il y a à faire, ce qui mérite d'être retravaillé, ce qu'on consulte
       return `<div class="pr-tabgs">${TAB_GROUPS.map(([g,ks])=>`<div class="pr-tabg${ks.includes(prSort)?' cur':''}"><span class="pr-tabg-l">${g}</span><div class="pr-tabs">${PR_SEGS.filter(x=>ks.includes(x[0])).map(tab).join('')}</div></div>`).join('')}</div>`;})()}
-    <div class="pr-search"><span>${ici('search',17)}</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${PIPE[prFilter].lbl}</button>`:''}</div>
+    <div class="pr-search"><span>${ici('search',17)}</span><input id="prSearchIn" type="search" autocomplete="off" placeholder="Rechercher : nom, numéro, mot-clé (notes, appels, fiche)…" value="${esc(prQueryRaw||prQuery)}" oninput="prSearch(this.value)"/>${prFilter?`<button class="pr-clearf" onclick="setPrFilter(null)">✕ ${pipeOf(prFilter).lbl}</button>`:''}</div>
     </div>
-    <div class="hm-sec"><span class="hs-t">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'||prSort==='agenda'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' rappels · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</span>${!srch&&!clientView&&prSort==='rappels'?pushBtnHTML():''}</div>
+    <div class="hm-sec"><span class="hs-t">${srch?'🔎 '+sorted.length+' fiche'+(sorted.length>1?'s':'')+' pour « '+esc(prQueryRaw.trim())+' »':clientView?(prFilter==='abo'?'Clients':prFilter==='sig'?'Clients en attente de signature':prFilter==='essai'?'Séances d\'essai réservées':PIPE[prFilter].lbl)+' · '+sorted.length:((PR_SEGS.find(x=>x[0]===prSort)||PR_SEGS[0])[1].replace(/^\S+\s/,''))+(prSort==='journal'||prSort==='team'||prSort==='trash'||prSort==='agenda'?'':' · '+sorted.length)}${!clientView&&prSort==='ouv'&&studioOpening({})?' · ouverture du studio prévue '+esc(studioOpening({})):''}${!clientView&&prSort==='rappels'&&sorted.length?(()=>{const t=todayStr(),T=sorted.filter(p=>_prioDay(p)===t),pr=T.filter(p=>prPrio(p).r===1).length;return ' rappels · <b>'+T.length+'</b> aujourd\'hui'+(pr?' · <b>'+pr+'</b> promesse'+(pr>1?'s':''):'');})():''}</span>${!srch&&!clientView&&prSort==='rappels'?pushBtnHTML():''}</div>
     ${srch?'':!clientView&&prSort==='mine'?nextCallHTML(sorted)+veilleHTML():''}
     ${!srch&&clientView&&prFilter==='perdu'?lostStatsHTML(sorted):''}
     ${!srch&&!clientView&&prSort==='retrav'?retFilterHTML():''}
@@ -6524,7 +6544,7 @@ function editSale(id){
 }
 function setPPack(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;if(!p.vendeur&&p.statut==='abo'){aboAsk(id,pk);return;}p.pack=String(pk);p.maj=new Date().toISOString();persistProspects();schedulePush();
   emitEvent(p,'abo',{pack:String(pk),prime:+PRIMES[pk]||0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''});
-  _aboNote(p);showProspects(true);toast('🎉 '+packShort(pk)+' vendu · +'+(+PRIMES[pk]||0)+' € de prime !');}
+  _aboNote(p);showProspects(true);toast(venteToast(p,pk,'prime'));}
 // Passage en « Client » : on demande d'abord qui a fait signer (course du mois et primes)
 function _sellers(p){const S=new Set();const add=n=>{n=String(n||'').trim().split(/\s+/)[0];if(n&&!/^(Boost|auto|équipe)$/i.test(n))S.add(n);};
   add(p&&p.vendeur);add(p&&prCharge(p));add(CFG.rep);(window._TEAM||[]).forEach(i=>add(i.nom));
@@ -6558,7 +6578,7 @@ function aboGo(){const p=PROSPECTS.find(x=>x.id===_ABO.id);if(!p)return;const e=
   else{p.pack=String(_ABO.pack);setPStatut(p.id,'abo',_ABO.seller);}}
 // Pack et vendeur notés dans Boost (note sur la fiche du contact)
 // Envoyée APRÈS l'enregistrement du pack et du vendeur : sinon la note, plus récente, écraserait la vente
-async function _aboNote(p){if(!p||!p.bid||!p.pack)return;const id=p.id;
+async function _aboNote(p){if(!p||!p.bid||!p.pack||prSigWait(p))return;const id=p.id;
   try{await syncPush();for(let i=0;i<24&&_DIRTY[id]!==undefined;i++)await new Promise(r=>setTimeout(r,500));
     if(_DIRTY[id]!==undefined)return; // pas encore enregistré : pas de note (la vente prime)
     const s=await syncCall('note_add',{id,text:'✅ Client · '+(PACK_META[+p.pack]?.name||packShort(+p.pack))+(p.vendeur?' · signé par '+p.vendeur:''),nom:CFG.rep||''});
@@ -6571,11 +6591,13 @@ function setPStatut(id,s,seller,note){const p=PROSPECTS.find(x=>x.id===id);if(!p
   if(s==='abo'&&seller)p.vendeur=String(seller).slice(0,40);
   // Une fiche qui quitte « Client » n'est plus une vente : retirée du journal (course du mois, primes)
   if(p.statut==='abo'&&s!=='abo'){EVQ=EVQ.filter(e=>e.k!==id+':abo');_persistEvq();syncCall('stats_del',{ks:[id+':abo'],void:true}).then(()=>{_hpCache='';toast('Vente retirée de la course du mois');}).catch(e=>{if(e.message!=='code')toast('Vente à retirer du journal par un recruteur');});}
+  if(s==='abo'&&p.statut!=='abo'&&!p.bmember&&!(p.contrat&&p.contrat.signe))p.attSig=new Date().toISOString();
+  if(s!=='abo'&&p.attSig)p.attSig='';
   p.statut=s;if(s!=='rappeler'&&p.ouverture)p.ouverture=null;if(s==='abo'){p.rappel='';p.rappelH='';p.rappelBy='';}if(s==='abo'&&p.icBook&&!p.icId)p.icId=p.icBook;p.maj=new Date().toISOString();persistProspects();schedulePush();
   if(s!=='rappeler'&&s!=='unit')emitEvent(p,s,s==='abo'?{pack:p.pack||'',prime:p.pack?(+PRIMES[+p.pack]||0):0,v2:p.v2||'',fullCom:!!p.fullCom,icId:p.icId||''}:{}); // classe unitaire : aucun événement de vente
   showProspects(true);
-  if(s==='abo'&&p.pack){_aboNote(p);toast('🎉 '+packShort(+p.pack)+' vendu · +'+(+PRIMES[+p.pack]||0)+' € de prime !');}
-  else toast(PIPE[s].ic+' '+PIPE[s].lbl);}
+  if(s==='abo'&&p.pack){_aboNote(p);toast(venteToast(p,p.pack,'prime'));}
+  else toast(prSigWait(p)?SIGW.ic+' '+SIGW.lbl:PIPE[s].ic+' '+PIPE[s].lbl);}
 // Saisie du rappel sur la fiche : date + heure dans une zone tampon, rien ne bouge avant « 💾 Enregistrer »
 // (avant, la fiche changeait de liste dès la date saisie, sans laisser le temps de renseigner l'heure)
 function rapDirty(id){const b=document.getElementById('rap-s-'+id);if(b){b.classList.add('on');b.textContent='💾 Enregistrer';}}
