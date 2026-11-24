@@ -24,6 +24,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { RateLimited, refreshSummary, summaryOn } from "../_shared/summary.ts";
 import { getRow, putRow, rateLimit, readProspectsRow, revStr, safeEq, writeProspectsRow } from "../_shared/store.ts";
+import { boostJournal } from "../_shared/boostlog.ts";
 import { ROW_PUSH, rappelPush, sendPush } from "../_shared/push.ts";
 import { BUCKET, Contrat, PACK_LBL, b64, bicOk, buildPdf, decrypt, encrypt, fileName, ibanOk, ipHash, mailEnvoi, mailSigne, newToken, rowId, sendMail, skey, studioMail } from "../_shared/contrat.ts";
 import { AIRCALL_STUDIO, aircallGet, aircallHeaders, aircallPost, callTs, matchAircallUser, telKey, transcriptText } from "../_shared/aircall.ts";
@@ -61,9 +62,14 @@ function keepBoost(clean: any, ex: any) {
 // Changement fait dans l'outil sur une fiche Boost (statut, rappel) : mis en file pour boost-push,
 // qui l'écrira dans Boost (bq = à envoyer, bqs = signature du dernier envoi)
 // deno-lint-ignore no-explicit-any
+// Client en attente de signature (statut abo + attSig) : rien n'est envoyé à Boost tant que le contrat
+// n'est pas signé ; à la levée de l'attente (signature en ligne ou contrat papier reçu), « client » part.
+// deno-lint-ignore no-explicit-any
+const sigWait = (x: any) => !!x && x.statut === "abo" && !!x.attSig && !(x.contrat && x.contrat.signe);
 function markBq(next: any, ex: any, by: string): boolean {
   if (!ex?.bid) return false;
-  if (next.statut === ex.statut && String(next.rappel || "") === String(ex.rappel || "") && String(next.rappelH || "") === String(ex.rappelH || "")) return false;
+  if (sigWait(next)) return false;
+  if (next.statut === ex.statut && sigWait(ex) === sigWait(next) && String(next.rappel || "") === String(ex.rappel || "") && String(next.rappelH || "") === String(ex.rappelH || "")) return false;
   next.bq = { statut: next.statut, rappel: String(next.rappel || ""), rappelH: String(next.rappelH || ""), at: new Date().toISOString(), by: String(by || "").slice(0, 60) };
   return true;
 }
@@ -258,11 +264,33 @@ serve(async (req) => {
       await putRow(admin, rowId(tok), signed);
       // La fiche du client garde la trace (visible dans l'assistant au prochain rafraîchissement)
       try {
+        // deno-lint-ignore no-explicit-any
+        let sale: any = null;
         await patchFiche(admin, c.pid, (p) => {
+          const waiting = p.statut === "abo" && !!p.attSig;
           p.contrat = { ...(p.contrat || {}), tok, to: c.email, signe: at, file: path }; p.naiss = c.naiss; p.adr = c.adr; if (!p.tel) p.tel = c.tel; p.maj = at;
           delete p.attSig; // signature reçue : « Client en attente de signature » → « Client », automatiquement
+          boostJournal(p, "email", at, "contrat signé en ligne");
+          // La vente n'était pas encore comptée (elle attendait la signature) : elle l'est maintenant, datée de la signature
+          sale = waiting ? { k: String(p.id) + ":abo", type: "abo", rep: String(p.vendeur || p.rep || "").slice(0, 60), nom: String(p.nom || "").slice(0, 80), pack: String(p.pack || "").slice(0, 2), v2: String(p.v2 || "").slice(0, 60), fullCom: p.fullCom === true, icId: String(p.icId || "").slice(0, 60), studio: String(p.studio || "").slice(0, 60), dur: 0, ts: at } : null;
+          // … et Boost reçoit « client » (fiche liée seulement)
+          if (waiting && p.bid) p.bq = { statut: "abo", rappel: "", rappelH: "", at, by: "signature" };
           return true;
         });
+        if (sale) {
+          try {
+            const acc = await getRow(admin, ROW_ACCESS);
+            const primes: Record<string, number> = { ...DEFAULT_PRIMES, ...((acc?.primes as Record<string, number>) || {}) };
+            const st = await getRow(admin, ROW_STATS);
+            // deno-lint-ignore no-explicit-any
+            const events: any[] = Array.isArray(st?.events) ? st.events : [];
+            const ev = { ...sale, prime: Math.max(0, Math.min(1000, Number(primes[sale.pack]) || 0)) };
+            const i = events.findIndex((e) => e && e.k === ev.k);
+            if (i >= 0) events[i] = ev; else events.push(ev);
+            await putRow(admin, ROW_STATS, { ...st, events });
+          } catch (e) { console.warn("[contrat_sign] vente", e); }
+          pushBoostNow(admin);
+        }
       } catch (e) { console.warn("[contrat_sign] fiche", e); }
       const sm = studioMail(c.studio), m = mailSigne(signed);
       // Copie e-mail avec IBAN masqué (l'original complet reste dans le coffre, consultable depuis la fiche)
@@ -428,7 +456,9 @@ serve(async (req) => {
       try {
         await patchFiche(admin, c.pid, (p) => {
           if (p.contrat && p.contrat.signe) return false;
-          p.contrat = { at: c.at, by: c.by, to: c.email, tok: c.token }; p.maj = c.at; return true;
+          p.contrat = { at: c.at, by: c.by, to: c.email, tok: c.token }; p.maj = c.at;
+          boostJournal(p, "email", c.at, "contrat d'inscription envoyé" + (c.by ? " · " + String(c.by).split(/\s+/)[0] : ""));
+          return true;
         });
       } catch (e) { console.warn("[contrat_send] fiche", e); }
       return json({ ok: true, token: c.token, how: r.how });

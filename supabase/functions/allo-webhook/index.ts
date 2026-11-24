@@ -24,6 +24,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { readProspectsRow, writeProspectsRow } from "../_shared/store.ts";
+import { boostJournal, callDetail } from "../_shared/boostlog.ts";
 
 const ROW_PROSPECTS = "_coach_prospects";
 const TXT_MAX = 9000;
@@ -308,6 +309,7 @@ serve(async (req: Request) => {
         if ((callId && match.appels.some((a: any) => idEq(a?.id, callId)))
           || match.appels.some((a: any) => !String(a?.txt || "").startsWith("💬") && tsMin(a?.ts) === tsMin(entryTs))) return { res: { ok: true, dedup: true }, write: false };
         match.appels.push({ id: callId, ts: entryTs, rx: now(), txt: entryTxt(meta0, summary + extraInfo, transcript) });
+        boostJournal(match, "appel", entryTs, callDetail(meta0)); // une ligne dans les notes Boost (jamais le résumé)
         if (match.appels.length > 20) match.appels = match.appels.slice(-20);
         if (/^Contact 0/.test(String(match.nom || "")) && isRealName(extractedName)) match.nom = extractedName.slice(0, 80);
         if (!String(match.rep || "") && author) match.rep = author;
@@ -340,6 +342,7 @@ serve(async (req: Request) => {
           match.appels = Array.isArray(match.appels) ? match.appels : [];
           if (msgId && match.appels.some((a: any) => idEq(a?.id, msgId))) return { res: { ok: true, dedup: true }, write: false };
           match.appels.push({ ...entry });
+          boostJournal(match, "sms", entry.ts, inbound ? "SMS reçu" : "SMS envoyé" + (smsAuthor ? " · " + smsAuthor : "")); // sans le contenu du message
           if (match.appels.length > 20) match.appels = match.appels.slice(-20);
           match.maj = now();
           return { res: { ok: true, matched: true }, write: true };

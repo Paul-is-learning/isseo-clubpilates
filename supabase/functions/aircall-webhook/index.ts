@@ -15,6 +15,7 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getRow, readProspectsRow, safeEq, writeProspectsRow } from "../_shared/store.ts";
 import { AIRCALL_STUDIO, aircallGet, callMeta, callTs, telKey, transcriptText } from "../_shared/aircall.ts";
+import { boostJournal, callDetail } from "../_shared/boostlog.ts";
 
 const TXT_MAX = 9000;
 const sk = (s: unknown) => String(s ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase().replace(/[^a-z]/g, "");
@@ -61,7 +62,7 @@ serve(async (req: Request) => {
       const txt = (callMeta(call) + (transcript ? "\n\n— Transcription —\n" + transcript : prevTr)).slice(0, TXT_MAX);
       const entry = { id: entryId, ts: callTs(call), rx: new Date().toISOString(), sv: 0, txt };
       if (i >= 0) { if (prev === txt) return ok({ ok: true, dedup: true }); f.appels[i] = entry; }
-      else { f.appels.push(entry); f.appels.sort((a: any, b: any) => String(a.ts).localeCompare(String(b.ts))); if (f.appels.length > 20) f.appels = f.appels.slice(-20); }
+      else { boostJournal(f, "appel", entry.ts, callDetail(callMeta(call))); f.appels.push(entry); f.appels.sort((a: any, b: any) => String(a.ts).localeCompare(String(b.ts))); if (f.appels.length > 20) f.appels = f.appels.slice(-20); }
       f.maj = new Date().toISOString();
       if (await writeProspectsRow(admin, row, { ...(row.data || {}), prospects: list })) return ok({ ok: true, matched: true });
       await new Promise((r) => setTimeout(r, 250));

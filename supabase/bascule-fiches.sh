@@ -2,7 +2,7 @@
 # Bascule « une ligne par fiche » du Sales Coach (migration 013).
 # À lancer depuis le dossier isseo-app, de préférence hors heures d'appel :
 #   ./supabase/bascule-fiches.sh
-# Étapes : 1) déploie les 8 fonctions (elles lisent les deux formats, rien ne change tant que la
+# Étapes : 1) déploie les 9 fonctions (elles lisent les deux formats, rien ne change tant que la
 # base n'est pas basculée)  2) bascule la base en une seule transaction, avec sauvegarde complète
 # 3) contrôle. Retour arrière : voir la fin de supabase/migrations/013_coach_prospects_split.sql.
 set -e
@@ -10,7 +10,7 @@ REF=wfqtpcujujqxgfsgbpvp
 cd "$(dirname "$0")/.."
 
 echo "── 1/3 · Déploiement des fonctions ──"
-for f in coach-sync allo-webhook allo-backfill aircall-webhook aircall-sync boost-push boost-sync weekly-digest; do
+for f in coach-sync allo-webhook allo-backfill aircall-webhook aircall-sync boost-push boost-sync weekly-digest allo-contacts; do
   echo "→ $f"
   supabase functions deploy "$f" --no-verify-jwt --project-ref "$REF" >/dev/null
 done
