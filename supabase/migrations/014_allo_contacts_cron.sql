@@ -1,7 +1,7 @@
 -- ═══════════════════════════════════════════════════════════════════════════
 -- 014 · Noms des contacts dans Allo (nov. 2026)
 -- Toutes les 10 minutes en journée, la fonction allo-contacts crée dans le carnet Allo les
--- contacts des nouvelles fiches du studio (vrai nom + numéro). 40 contacts au plus par passage ;
+-- contacts des nouvelles fiches du studio (vrai nom + numéro). 120 contacts au plus par passage ;
 -- rien n'est fait quand la liste des fiches n'a pas changé.
 -- À lancer APRÈS : 1) clé ALLO_API_KEY dotée des droits CRM_READ + CRM_WRITE
 --                  2) déploiement de la fonction allo-contacts
