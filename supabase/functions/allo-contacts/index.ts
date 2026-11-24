@@ -29,7 +29,7 @@ import { getRow, putRow, rateLimit, readProspectsRow, revStr, safeEq } from "../
 
 const API = "https://api.withallo.com/v2/api";
 const ROW = "_allo_contacts";
-const LIMIT = 100; // une écriture par contact (~0,6 s) : un passage dure environ une minute
+const LIMIT = 60; // jusqu'à trois appels à Allo par contact (~1,2 s) : un passage dure environ une minute
 
 const json = (obj: unknown, status = 200) => new Response(JSON.stringify(obj), { status, headers: { "Content-Type": "application/json" } });
 const sk = (s: unknown) => String(s ?? "").toLowerCase().normalize("NFD").replace(/[^a-z0-9]/g, "");
@@ -97,9 +97,9 @@ serve(async (req: Request) => {
       const cur = byKey.get(k);
       if (!cur || String(p.maj || "") > String(cur.maj || "")) byKey.set(k, { num, nom, email: String(p.email || "").trim(), maj: p.maj || "" });
     }
-    // v2 : l'état d'avant (recherche Allo par numéro, non fiable) est ignoré et repart de zéro
+    // v3 : les états d'avant (recherche par numéro non fiable, puis numéros déjà attribués non nommés) sont ignorés
     const state0 = await getRow(admin, ROW);
-    const state = state0.v === 2 ? state0 : {};
+    const state = state0.v === 3 ? state0 : {};
     const done: Record<string, Done> = (state.done && typeof state.done === "object") ? state.done : {};
     const todo = [...byKey.entries()].filter(([k, f]) => !done[k] || ((done[k].how === "created" || done[k].how === "named" || done[k].how === "renamed") && done[k].nom !== f.nom));
 
@@ -107,13 +107,13 @@ serve(async (req: Request) => {
       let scopes: string[] = [], me = 0;
       try { const r = await fetch(API + "/me", { headers: H }); me = r.status; const d = await r.json().catch(() => ({})); scopes = (d?.data?.scopes || d?.scopes || []) as string[]; } catch (_e) { /* réseau */ }
       const has = (s: string) => scopes.includes(s);
-      return json({ ok: true, version: 2, studio: STUDIO, cle_allo: { http: me, lecture_crm: has("CRM_READ"), ecriture_crm: has("CRM_WRITE") }, fiches_avec_nom_et_numero: byKey.size, deja_traitees: Object.keys(done).length, a_traiter: todo.length, par_passage: LIMIT });
+      return json({ ok: true, version: 3, studio: STUDIO, cle_allo: { http: me, lecture_crm: has("CRM_READ"), ecriture_crm: has("CRM_WRITE") }, fiches_avec_nom_et_numero: byKey.size, deja_traitees: Object.keys(done).length, a_traiter: todo.length, par_passage: LIMIT });
     }
     if (action !== "run") return json({ error: "Action inconnue" }, 400);
 
     // Veille : liste des fiches inchangée depuis un passage sans reste → rien à faire
     const rev = revStr(row.updated_at);
-    if (!todo.length) { if (state.rev !== rev) await putRow(admin, ROW, { ...state, v: 2, done, rev, last: new Date().toISOString() }); return json({ ok: true, idle: true, a_traiter: 0 }); }
+    if (!todo.length) { if (state.rev !== rev) await putRow(admin, ROW, { ...state, v: 3, done, rev, last: new Date().toISOString() }); return json({ ok: true, idle: true, a_traiter: 0 }); }
 
     // Carnet Allo complet, lu page par page : la recherche d'Allo par numéro renvoie tout le carnet quand
     // le numéro est inconnu, on compare donc nous-mêmes les numéros (9 derniers chiffres)
@@ -131,7 +131,7 @@ serve(async (req: Request) => {
     }
 
     const res = { crees: 0, nommes: 0, renommes: 0, conserves: 0, erreurs: 0 };
-    let stop = "";
+    let stop = "", diag = "";
     for (const [k, f] of todo.slice(0, LIMIT)) {
       const now = new Date().toISOString();
       try {
@@ -152,7 +152,27 @@ serve(async (req: Request) => {
           const rc = await allo(API + "/crm/people", { method: "POST", headers: H, body: JSON.stringify(body) });
           if (rc.status === 401 || rc.status === 403) { stop = "La clé Allo n'a pas le droit d'écrire dans le carnet (CRM_WRITE)"; break; }
           if (rc.status === 429) { stop = "Limite de débit Allo atteinte" + (hint.s ? " (attente demandée : " + hint.s + " s)" : "") + " · reprise au prochain passage"; break; }
-          if (rc.status === 409) { done[k] = { id: "", nom: f.nom, at: now, how: "existing" }; res.conserves++; continue; } // numéro déjà attribué dans Allo
+          if (rc.status === 409) {
+            // Numéro déjà attribué : Allo a créé seul une fiche sans nom lors d'un appel (absente du carnet).
+            // Sa réponse donne l'identifiant de cette fiche : on la lit, et on la nomme si personne ne l'a fait.
+            const txt = await rc.text().catch(() => "");
+            const ids = [...new Set(txt.match(/per-[0-9A-Za-z]{8,}/g) || [])];
+            if (!ids.length) { res.erreurs++; if (!diag) diag = "409 sans identifiant · " + txt.replace(/\+?\d{6,}/g, "#").slice(0, 160); continue; }
+            await wait(120);
+            const rg = await allo(API + "/crm/people/" + encodeURIComponent(ids[0]), { headers: H });
+            if (rg.status === 429) { stop = "Limite de débit Allo atteinte" + (hint.s ? " (attente demandée : " + hint.s + " s)" : "") + " · reprise au prochain passage"; break; }
+            if (!rg.ok) { res.erreurs++; if (!diag) diag = "lecture fiche " + rg.status; continue; }
+            const gd = await rg.json().catch(() => ({}));
+            const per = (gd?.data || gd || {}) as { name?: string; last_name?: string };
+            if (realName(((per.name || "") + " " + (per.last_name || "")).trim())) { done[k] = { id: ids[0], nom: f.nom, at: now, how: "kept" }; res.conserves++; continue; }
+            await wait(120);
+            const rp = await allo(API + "/crm/people/" + encodeURIComponent(ids[0]), { method: "PUT", headers: H, body: JSON.stringify({ name: f.nom }) });
+            if (rp.status === 429) { stop = "Limite de débit Allo atteinte" + (hint.s ? " (attente demandée : " + hint.s + " s)" : "") + " · reprise au prochain passage"; break; }
+            if (!rp.ok) { res.erreurs++; if (!diag) diag = "nommage " + rp.status; continue; }
+            done[k] = { id: ids[0], nom: f.nom, at: now, how: "named" };
+            res.nommes++;
+            continue;
+          }
           if (!rc.ok) { res.erreurs++; continue; }
           const d = await rc.json().catch(() => ({}));
           done[k] = { id: String(d?.data?.id || d?.id || ""), nom: f.nom, at: now, how: "created" };
@@ -163,8 +183,8 @@ serve(async (req: Request) => {
       await wait(450); // deux écritures par seconde, large marge sous la limite d'Allo
     }
     const reste = [...byKey.entries()].filter(([k, f]) => !done[k] || ((done[k].how === "created" || done[k].how === "named" || done[k].how === "renamed") && done[k].nom !== f.nom)).length;
-    await putRow(admin, ROW, { v: 2, done, rev: reste ? "" : rev, last: new Date().toISOString(), dernier: res });
-    return json({ ok: !stop, ...res, reste, ...(stop ? { arret: stop } : {}) }, stop ? 502 : 200);
+    await putRow(admin, ROW, { v: 3, done, rev: reste ? "" : rev, last: new Date().toISOString(), dernier: res });
+    return json({ ok: !stop, ...res, reste, ...(diag ? { diagnostic: diag } : {}), ...(stop ? { arret: stop } : {}) }, stop ? 502 : 200);
   } catch (e) {
     console.warn("[allo-contacts]", e);
     return json({ error: "Erreur interne" }, 500);
