@@ -5295,7 +5295,7 @@ function _b64u(s){const p='='.repeat((4-s.length%4)%4),b=atob((s+p).replace(/-/g
 let _swReg=null;
 // ── Nouvelle version de l'app : vérifiée toutes les 5 min (empreinte ETag du serveur), bandeau « Mettre à jour »,
 // puis rechargement seul au prochain moment calme (retour sur l'app, ou 60 s sans geste), jamais pendant une saisie ni un appel en cours ──
-const APP_BUILD='2026-11-24 19:26'; // posé par stamp.sh à chaque publication, identique à version.json
+const APP_BUILD='2026-11-25 10:10'; // posé par stamp.sh à chaque publication, identique à version.json
 let _verNew=false,_verRemote='',_lastAct=Date.now();
 const _verLbl=b=>{const m=String(b||'').match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}:\d{2})$/);return m?(+m[3])+' '+['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'][+m[2]-1]+' · '+m[4]:String(b||'?');};
 // Version publiée : petit fichier lu sans cache (ne dépend plus de ce que l'app a vu au démarrage)
@@ -5635,8 +5635,12 @@ function _migrateAvantOuverture(){let n=0;const now=new Date().toISOString();
 // revient au(x) commercial(aux) du studio, sauf suivi posé à la main. À La Garenne-Colombes : les leads frais sont répartis
 // à parts égales entre Caroline et Clement, en alternance par ordre d'arrivée (demande de Paul, 4 nov. 2026) ; Solène à Lattes.
 const OWNER_DEFAULT={lagarennecolombes:['Caroline','Clement'],montpellierlattes:'Solène'};
+// Depuis le 25 nov. 2026, tous les nouveaux leads de La Garenne vont à Cedric, commercial en chef (demande de Paul) ;
+// les leads arrivés avant gardent leur répartition Caroline / Clement.
+const OWNER_SINCE={lagarennecolombes:{from:'2026-11-25',to:'Cedric'}};
 let _ownRR=null,_ownRRn=0;
 function _ownDefault(p){
+  const since=OWNER_SINCE[_sk(p.studio||CFG.studio||'')];if(since&&String(prArrival(p)||'').slice(0,10)>=since.from)return since.to;
   const d=OWNER_DEFAULT[_sk(p.studio||CFG.studio||'')]||'';if(!Array.isArray(d))return d;
   // Rang d'arrivée du lead parmi ceux de son studio (stable d'un appareil à l'autre), recalculé quand la liste change
   if(!_ownRR||_ownRRn!==PROSPECTS.length){_ownRR={};_ownRRn=PROSPECTS.length;const byS={};
@@ -5644,7 +5648,7 @@ function _ownDefault(p){
   const i=_ownRR[p.id];return d[(i===undefined?0:i)%d.length];
 }
 // Orthographe unique des prénoms (« Clément » → « Clement », « JC Colley » → « JC ») pour que les filtres et les classements n'aient qu'une entrée par personne
-const _CANON={clement:'Clement',caroline:'Caroline',noa:'Noa',jc:'JC',paul:'Paul',solene:'Solène',tom:'Tom',lucie:'Lucie'};
+const _CANON={cedric:'Cedric',clement:'Clement',caroline:'Caroline',noa:'Noa',jc:'JC',paul:'Paul',solene:'Solène',tom:'Tom',lucie:'Lucie'};
 function canonName(n){n=String(n||'').trim().split(/\s+/)[0];return _CANON[_sk(n)]||n;}
 function prCharge(p){const o=prOwner(p);if(o)return canonName(o);const d=_ownDefault(p);if(d&&!prCalls(p).ok)return d;return canonName(String(p.rep||'').trim().split(/\s+/)[0]||d);}
 const _OWN_COL=['#2F6FE0','#C2410C','#0F8A5F','#7C3AED','#B4235A','#0E7490','#A16207','#4D5B7C'];
@@ -6046,7 +6050,7 @@ ${p.statut!=='abo'&&p.rappel?`            <div class="pl-lbl">Appel programmé</
               </div>
             </div>`:''}
             <div class="pl-info">${p.noCall?'📵 Refus d\'appel noté dans Boost':p.tel?`<a href="${telHref(p.tel)}">📱 ${esc(p.tel)}</a>`:`<button class="pl-notel big" onclick="prEditId='${p.id}';showProspects(true)">⚠️ Numéro manquant · le saisir (envoyé à Boost)</button>`}${p.email&&p.cEmail!==false?` · <a href="mailto:${esc(p.email)}">✉️ ${esc(p.email)}</a>`:''}</div>
-            <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="selDefer(this,()=>setPRep('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Noa','Clement','Caroline','Paul'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
+            <div class="pl-info">👤 ${p.rep?esc(p.rep)+(p.v2?' + '+esc(p.v2)+(p.fullCom?' (100 %)':' (50/50)'):''):p.bid?'non assigné dans Boost':`<select onchange="selDefer(this,()=>setPRep('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">Attribuer à…</option>${['Cedric','Noa','Clement','Caroline','Paul'].map(n=>`<option value="${n}">${n}</option>`).join('')}</select>`} · ${p.bentry?'arrivé le':'créé le'} ${new Date(prArrival(p)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'})}${p.bentry?' à '+new Date(p.bentry).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'}):''}${p.statut==='abo'?(p.icId?' · 🗓️ via IC':' · 📞 hors IC'):''}</div>
             <div class="pl-info">🤝 Suivi par ${(COACH_ROLE==='admin'||IS_MGR)?`<select onchange="selDefer(this,()=>setPSuivi('${p.id}',this.value))" class="pr-date" style="width:auto"><option value="">personne</option>${teamFor(p).map(n=>`<option${n===p.suivi?' selected':''}>${esc(n)}</option>`).join('')}</select>`:p.suivi?'<b>'+esc(p.suivi)+'</b>':'personne pour l\'instant <small class="pl-by">le premier contact décroché ou rappel posé l\'attribue</small>'}</div>
             ${p.obj?`<div class="pr-obj">🎯 ${esc(p.obj)}</div>`:''}
             ${(()=>{const L=noteLines(p);return L.length?`<div class="pr-notes">${L.map((x,i)=>`<div class="pr-note"><span>📝 ${esc(x)}</span><button class="pr-note-x" onclick="delNote('${p.id}',${i},false)" title="Supprimer cette note">✕</button></div>`).join('')}</div>`:'';})()}
@@ -6563,7 +6567,7 @@ function aboAsk(id,pk){const p=PROSPECTS.find(x=>x.id===id);if(!p)return;
     <button class="glp-ok" onclick="aboGo()">✅ Enregistrer le client</button>`);}
 // Vendeurs proposés : liste fixe par studio (demande de Paul), sinon l'équipe connue
 // Commerciaux par studio (demande de Paul) : vendeurs du pack et « Suivi par »
-const SELLERS_BY_STUDIO={lagarennecolombes:['Noa','Clement','Caroline'],montpellierlattes:['Solène','Tom','Lucie']};
+const SELLERS_BY_STUDIO={lagarennecolombes:['Cedric','Noa','Clement','Caroline'],montpellierlattes:['Solène','Tom','Lucie']};
 // Liste « Suivi par » d'une fiche : l'équipe de son studio (plus le suivi actuel s'il n'y figure pas), sinon l'équipe connue
 function teamFor(p){const f=SELLERS_BY_STUDIO[_sk(p&&p.studio||CFG.studio)];const base=f?f.slice():teamNames();const cur=String(p&&p.suivi||'').trim();if(cur&&!base.includes(cur))base.push(cur);return base;}
 function _sellerName(n){n=String(n||'').trim().split(/\s+/)[0];if(/^noah?$/i.test(n))return 'Noa';if(/^cl[ée]ment$/i.test(n))return 'Clement';return n;}

@@ -63,7 +63,7 @@ const isRealName = (n: string) => !!n && !/^[+\d\s().-]+$/.test(n) && !/club\s*p
 // Base en dur + extension par secret ALLO_REPS ("cle=Nom,cle2=Nom2",
 // clé = début de l'email en minuscules/lettres seules). Inconnu → vide
 // (mieux vaut pas de conseiller qu'un nom fantôme dans le classement).
-const REP_DEFAULTS: Record<string, string> = { clement: "Clement", caroline: "Caroline", noaclubpilates: "Noa" };
+const REP_DEFAULTS: Record<string, string> = { cedric: "Cedric", clement: "Clement", caroline: "Caroline", noaclubpilates: "Noa" };
 function resolveRep(email: unknown): string {
   const local = String(email || "").split("@")[0].toLowerCase().replace(/[^a-z]/g, "");
   if (!local) return "";
@@ -134,7 +134,8 @@ const tsMin = (s: unknown): string => {
 // Propriétaire de la ligne Allo : identification déterministe fournie par Paul.
 // Ligne 01 88 83 34 18 (standard) → Clement · ligne 07 45 80 42 39 → Caroline · ligne 06 44 60 57 35 → Noa (Paul, 9 nov. 2026 ; Paul partage la ligne de Noa, les appels restent à Noa).
 // Extensible par secret ALLO_LINES ("33612345678=Nom,…", chiffres seuls).
-const LINE_DEFAULTS: Record<string, string> = { "33188833418": "Clement", "33745804239": "Caroline", "33644605735": "Noa" };
+// Ligne 07 45 80 99 01 → Cedric (commercial en chef, 25 nov. 2026)
+const LINE_DEFAULTS: Record<string, string> = { "33188833418": "Clement", "33745804239": "Caroline", "33644605735": "Noa", "33745809901": "Cedric" };
 function lineOwner(num: unknown): string {
   const k = String(num || "").replace(/\D/g, "");
   if (k.length < 9) return "";

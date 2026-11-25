@@ -57,10 +57,12 @@ export function weekendLeadMonday(entryIso: string, nowIso: string): string {
   const today = parisDT(nowIso)?.d || "";
   return mon >= today ? mon : "";
 }
-// Répartition des nouveaux leads entre commerciaux (Paul, 4 et 9 nov. 2026 : Caroline 50, Clement 50 ; JC a quitté l'équipe) : parts par studio.
+// Répartition des nouveaux leads entre commerciaux : parts par studio.
+// Depuis le 25 nov. 2026 (Paul) : tous les nouveaux leads de La Garenne vont à Cedric, commercial en chef
+// (avant : Caroline 50, Clement 50). Les leads déjà attribués ne changent pas de main.
 // Chaque nouveau lead jamais appelé et sans suivi va au commercial le plus « en retard » sur sa part,
 // compté sur les leads arrivés le même jour (Paris). Sans réglage pour un studio : pas d'attribution.
-export const DISPATCH: Record<string, Record<string, number>> = { lagarennecolombes: { Caroline: 50, Clement: 50 } };
+export const DISPATCH: Record<string, Record<string, number>> = { lagarennecolombes: { Cedric: 100 } };
 const parisDay = (iso: string) => { const p = parisDT(iso); return p ? p.d : ""; };
 export function pickOwner(list: any[], p: any, nowIso: string): string {
   const shares = DISPATCH[sk(p.studio)];
